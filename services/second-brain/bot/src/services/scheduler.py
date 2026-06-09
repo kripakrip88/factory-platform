@@ -5,20 +5,9 @@ from aiogram import Bot
 
 from src.config import settings
 from src.services import storage
+from src.keyboards import CATEGORY_EMOJI, CATEGORY_RU
 
 logger = logging.getLogger(__name__)
-
-CATEGORY_EMOJI = {
-    "idea": "💡",
-    "health": "🩺",
-    "article": "📖",
-    "inspiration": "✨",
-    "video": "🎬",
-    "image": "🖼",
-    "file": "📎",
-    "link": "🔗",
-    "other": "📌",
-}
 
 _scheduler: AsyncIOScheduler | None = None
 
@@ -26,8 +15,9 @@ _scheduler: AsyncIOScheduler | None = None
 def build_review_card(item: dict) -> tuple[str, list]:
     emoji = CATEGORY_EMOJI.get(item["category"], "📌")
     tags_str = ", ".join(item["tags"]) if item["tags"] else "—"
+    cat_ru = CATEGORY_RU.get(item["category"], item["category"])
     text = (
-        f"{emoji} <b>{item['category'].capitalize()}</b>\n\n"
+        f"{emoji} <b>{cat_ru}</b>\n\n"
         f"{item['summary']}\n\n"
         f"🏷 {tags_str}\n"
         f"⭐ Важность: {item['importance']}/5"

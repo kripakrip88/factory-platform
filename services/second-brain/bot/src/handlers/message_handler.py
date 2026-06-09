@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from aiogram import Router
 from aiogram.filters import Command
@@ -9,6 +10,10 @@ from src.keyboards import review_keyboard, main_menu, CATEGORY_EMOJI, CATEGORY_R
 
 logger = logging.getLogger(__name__)
 router = Router()
+
+# Буфер для группировки альбомов: media_group_id -> список сообщений
+_album_buffer: dict[str, list] = {}
+_album_tasks: dict[str, asyncio.Task] = {}
 
 
 def _extract_content(message: Message):
@@ -44,44 +49,8 @@ def _is_allowed(message: Message) -> bool:
     return user_id == settings.owner_user_id or chat_id in settings.telegram_group_ids
 
 
-@router.message(Command("start"))
-async def cmd_start(message: Message) -> None:
-    if not (message.from_user and message.from_user.id == settings.owner_user_id):
-        return
-    await message.answer(
-        "👋 Привет! Я твой <b>Second Brain</b>.\n\n"
-        "Отправляй мне всё что хочешь сохранить — идеи, ссылки, заметки о здоровье.\n"
-        "Я классифицирую и сохраню с резюме от Claude.\n\n"
-        "Используй меню внизу для навигации.",
-        parse_mode="HTML",
-        reply_markup=main_menu(),
-    )
-
-
-@router.message()
-async def handle_message(message: Message) -> None:
-    if not _is_allowed(message):
-        return
-
-    # Обработка кнопок главного меню
-    if message.text in ("📬 Дайджест", "📊 Статистика", "📂 Категории", "🔍 Поиск"):
-        from src.handlers.review_handler import (
-            cmd_review_logic, cmd_stats_logic, cmd_categories_logic
-        )
-        if message.text == "📬 Дайджест":
-            await cmd_review_logic(message)
-        elif message.text == "📊 Статистика":
-            await cmd_stats_logic(message)
-        elif message.text == "📂 Категории":
-            await cmd_categories_logic(message)
-        elif message.text == "🔍 Поиск":
-            await message.answer("Введи запрос:\n/search <текст>")
-        return
-
-    text, media_type, media_url = _extract_content(message)
-    if not text and not media_url:
-        return
-
+async def _process_and_reply(message: Message, text, media_type, media_url, album_count=1):
+    """Классифицирует, сохраняет и отвечает карточкой."""
     is_direct = message.from_user and message.from_user.id == settings.owner_user_id
 
     try:
@@ -104,8 +73,9 @@ async def handle_message(message: Message) -> None:
             emoji = CATEGORY_EMOJI.get(result["category"], "📌")
             cat_ru = CATEGORY_RU.get(result["category"], result["category"])
             tags_str = " ".join(f"#{t}" for t in result["tags"]) if result["tags"] else ""
+            album_note = f" <i>({album_count} фото)</i>" if album_count > 1 else ""
             caption = (
-                f"✅ <b>Сохранено</b>\n"
+                f"✅ <b>Сохранено</b>{album_note}\n"
                 f"{emoji} <b>{cat_ru}</b>  ⭐{result['importance']}/5\n\n"
                 f"{result['summary']}\n"
                 f"{tags_str}"
@@ -119,3 +89,72 @@ async def handle_message(message: Message) -> None:
         logger.error("Failed to process message %s: %s", message.message_id, exc)
         if is_direct and message.chat.type == "private":
             await message.reply("❌ Ошибка при сохранении. Попробуй ещё раз.")
+
+
+async def _flush_album(group_id: str, trigger_message: Message):
+    """Ждёт 0.5с и обрабатывает весь альбом как один айтем."""
+    await asyncio.sleep(0.5)
+    messages = _album_buffer.pop(group_id, [])
+    _album_tasks.pop(group_id, None)
+    if not messages:
+        return
+
+    # Берём текст из caption первого сообщения с подписью
+    text = next((m.caption for m in messages if m.caption), None)
+    media_url = None
+    for m in messages:
+        if m.photo:
+            media_url = m.photo[-1].file_id
+            break
+
+    await _process_and_reply(trigger_message, text, "photo", media_url, album_count=len(messages))
+
+
+@router.message(Command("start"))
+async def cmd_start(message: Message) -> None:
+    if not (message.from_user and message.from_user.id == settings.owner_user_id):
+        return
+    await message.answer(
+        "👋 Привет! Я твой <b>Second Brain</b>.\n\n"
+        "Отправляй мне всё что хочешь сохранить — идеи, ссылки, заметки о здоровье.\n"
+        "Я классифицирую и сохраню с резюме от Claude.\n\n"
+        "Используй меню внизу для навигации.",
+        parse_mode="HTML",
+        reply_markup=main_menu(),
+    )
+
+
+@router.message()
+async def handle_message(message: Message) -> None:
+    if not _is_allowed(message):
+        return
+
+    # Кнопки главного меню
+    if message.text in ("📬 Дайджест", "📊 Статистика", "📂 Категории", "🔍 Поиск"):
+        from src.handlers.review_handler import (
+            cmd_review_logic, cmd_stats_logic, cmd_categories_logic
+        )
+        if message.text == "📬 Дайджест":
+            await cmd_review_logic(message)
+        elif message.text == "📊 Статистика":
+            await cmd_stats_logic(message)
+        elif message.text == "📂 Категории":
+            await cmd_categories_logic(message)
+        elif message.text == "🔍 Поиск":
+            await message.answer("Введи запрос:\n/search <текст>")
+        return
+
+    # Альбом (несколько фото в одном посте)
+    if message.media_group_id:
+        group_id = message.media_group_id
+        _album_buffer.setdefault(group_id, []).append(message)
+        if group_id not in _album_tasks:
+            task = asyncio.create_task(_flush_album(group_id, message))
+            _album_tasks[group_id] = task
+        return
+
+    text, media_type, media_url = _extract_content(message)
+    if not text and not media_url:
+        return
+
+    await _process_and_reply(message, text, media_type, media_url)
