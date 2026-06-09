@@ -23,5 +23,5 @@ jobs:
           script: |
             cd /opt/factory-platform
             git pull origin ${{ github.ref_name }}
-            docker compose -f infra/docker-compose.yml build telegram-bot
-            docker compose -f infra/docker-compose.yml up -d telegram-bot
+            docker compose --env-file .env -f infra/docker-compose.yml build telegram-bot
+            docker compose --env-file .env -f infra/docker-compose.yml up -d telegram-bot
