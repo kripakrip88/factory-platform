@@ -9,8 +9,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 10s
@@ -23,23 +22,21 @@ services:
     restart: unless-stopped
     volumes:
       - redis_data:/data
-    ports:
-      - "6379:6379"
 
   # ─── AI Assistant ───────────────────────────────────────────────────────────
-  ai-assistant:
-    build:
-      context: ../services/ai-assistant
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    env_file: ../.env
-    ports:
-      - "${AI_PORT:-3001}:3001"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    volumes:
-      - ai_uploads:/app/uploads
+  # ai-assistant:
+  #   build:
+  #     context: ../services/ai-assistant
+  #     dockerfile: Dockerfile
+  #   restart: unless-stopped
+  #   env_file: ../.env
+  #   ports:
+  #     - "${AI_PORT:-3001}:3001"
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   volumes:
+  #     - ai_uploads:/app/uploads
 
   # ─── n8n ────────────────────────────────────────────────────────────────────
   n8n:
@@ -85,7 +82,6 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./ssl:/etc/nginx/ssl:ro
     depends_on:
-      - ai-assistant
       - n8n
 
 volumes:
