@@ -115,7 +115,7 @@ services/ai-assistant/
 | Кэш/очереди | Redis |
 | Прокси | Nginx |
 | Деплой | Docker Compose + GitHub Actions |
-| Сервер | Hetzner CX32, Ubuntu 24.04 |
+| Сервер | Бегет VPS, Ubuntu 24.04, IP: 155.212.143.179 |
 
 ## Деплой
 
