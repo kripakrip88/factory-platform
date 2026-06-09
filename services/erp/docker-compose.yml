@@ -39,7 +39,7 @@ services:
 
   # ─── ERPNext backend ────────────────────────────────────────────────────────
   backend:
-    image: frappe/erpnext:v15
+    image: frappe/erpnext:v15.110.0
     restart: unless-stopped
     environment:
       - DB_HOST=db
@@ -57,7 +57,7 @@ services:
 
   # ─── Frontend (nginx static) ─────────────────────────────────────────────────
   frontend:
-    image: frappe/erpnext:v15
+    image: frappe/erpnext:v15.110.0
     restart: unless-stopped
     command: nginx-entrypoint.sh
     environment:
@@ -79,7 +79,7 @@ services:
 
   # ─── Websocket ───────────────────────────────────────────────────────────────
   websocket:
-    image: frappe/erpnext:v15
+    image: frappe/erpnext:v15.110.0
     restart: unless-stopped
     command: node /home/frappe/frappe-bench/apps/frappe/socketio.js
     environment:
@@ -91,7 +91,7 @@ services:
 
   # ─── Workers ─────────────────────────────────────────────────────────────────
   queue-short:
-    image: frappe/erpnext:v15
+    image: frappe/erpnext:v15.110.0
     restart: unless-stopped
     command: bench worker --queue short
     volumes:
@@ -101,7 +101,7 @@ services:
       - redis-queue
 
   queue-long:
-    image: frappe/erpnext:v15
+    image: frappe/erpnext:v15.110.0
     restart: unless-stopped
     command: bench worker --queue long
     volumes:
@@ -111,7 +111,7 @@ services:
       - redis-queue
 
   queue-default:
-    image: frappe/erpnext:v15
+    image: frappe/erpnext:v15.110.0
     restart: unless-stopped
     command: bench worker --queue default
     volumes:
@@ -122,7 +122,7 @@ services:
 
   # ─── Scheduler ───────────────────────────────────────────────────────────────
   scheduler:
-    image: frappe/erpnext:v15
+    image: frappe/erpnext:v15.110.0
     restart: unless-stopped
     command: bench schedule
     volumes:
