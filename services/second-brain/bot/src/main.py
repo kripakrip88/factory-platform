@@ -23,8 +23,8 @@ async def main() -> None:
     bot = Bot(token=settings.telegram_bot_token)
     dp = Dispatcher(storage=redis_storage)
 
-    dp.include_router(review_handler.router)
-    dp.include_router(message_handler.router)
+    dp.include_router(review_handler.router)  # сначала команды и callback
+    dp.include_router(message_handler.router)  # потом обычные сообщения
 
     scheduler.start_scheduler(bot)
 

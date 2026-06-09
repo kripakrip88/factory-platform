@@ -52,6 +52,44 @@ async def get_unreviewed(limit: int = 5) -> list[dict]:
     return [dict(r) for r in rows]
 
 
+async def get_by_category(category: str, limit: int = 10, offset: int = 0) -> list[dict]:
+    rows = await _pool.fetch(
+        """
+        SELECT id::text, category, summary, tags, importance, raw_text, created_at
+        FROM brain.items
+        WHERE category = $1
+        ORDER BY created_at DESC
+        LIMIT $2 OFFSET $3
+        """,
+        category, limit, offset,
+    )
+    return [dict(r) for r in rows]
+
+
+async def get_item(item_id: str) -> Optional[dict]:
+    row = await _pool.fetchrow(
+        "SELECT id::text, category, summary, tags, importance, raw_text, created_at, review_score FROM brain.items WHERE id = $1::uuid",
+        item_id,
+    )
+    return dict(row) if row else None
+
+
+async def get_neighbours(item_id: str) -> dict:
+    """Возвращает id предыдущего и следующего айтема по дате."""
+    prev_row = await _pool.fetchrow(
+        "SELECT id::text FROM brain.items WHERE created_at < (SELECT created_at FROM brain.items WHERE id=$1::uuid) ORDER BY created_at DESC LIMIT 1",
+        item_id,
+    )
+    next_row = await _pool.fetchrow(
+        "SELECT id::text FROM brain.items WHERE created_at > (SELECT created_at FROM brain.items WHERE id=$1::uuid) ORDER BY created_at ASC LIMIT 1",
+        item_id,
+    )
+    return {
+        "prev": prev_row["id"] if prev_row else None,
+        "next": next_row["id"] if next_row else None,
+    }
+
+
 async def mark_reviewed(item_id: str, score: int) -> None:
     await _pool.execute(
         """
