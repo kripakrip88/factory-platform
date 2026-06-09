@@ -22,5 +22,6 @@ jobs:
           script: |
             cd /opt/factory-platform
             git pull origin ${{ github.ref_name }}
+            grep -q '^N8N_SECURE_COOKIE=' .env || echo 'N8N_SECURE_COOKIE=false' >> .env
             docker compose -f infra/docker-compose.yml --env-file .env up -d --force-recreate
             curl -f http://localhost/health || exit 1
