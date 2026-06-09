@@ -95,11 +95,13 @@ services/ai-assistant/
 - Production Assistant
 - Drawing Analyzer (PDF чертежи)
 - Knowledge Base
+- Qdrant — векторная база для Drawing/PDF Analyzer (семантический поиск по номенклатуре металла)
 
 **Месяц 7-12 — AI Core полностью**
 - ERP Copilot
 - DWG/DXF анализ
 - Роли-агенты с памятью (mem0)
+- mem0 — персистентная память AI про клиентов и сделки
 
 ## Стек
 
