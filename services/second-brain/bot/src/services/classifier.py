@@ -37,7 +37,7 @@ async def classify(text: str, media_type: str | None = None) -> dict:
 
     try:
         response = await get_client().messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-sonnet-4-5",
             max_tokens=256,
             system=SYSTEM_PROMPT,
             messages=[{"role": "user", "content": content}],
