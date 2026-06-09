@@ -53,10 +53,14 @@ class Settings(BaseSettings):
         settings_cls: Type[BaseSettings],
         **kwargs,
     ) -> Tuple[PydanticBaseSettingsSource, ...]:
-        init_settings = kwargs.get("init_settings")
-        dotenv_settings = kwargs.get("dotenv_settings")
-        secrets_settings = kwargs.get("secrets_settings")
-        return (init_settings, _EnvSource(settings_cls), dotenv_settings, secrets_settings)
+        sources = [
+            kwargs.get("init_settings"),
+            _EnvSource(settings_cls),
+            kwargs.get("dotenv_settings"),
+            kwargs.get("secrets_settings"),
+            kwargs.get("file_secret_settings"),
+        ]
+        return tuple(s for s in sources if s is not None)
 
     class Config:
         env_file = ".env"
