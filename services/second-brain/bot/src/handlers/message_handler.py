@@ -59,6 +59,7 @@ def _is_allowed(message: Message) -> bool:
 
 async def _process_and_reply(message: Message, text, media_type, media_url, album_count=1):
     """Классифицирует, сохраняет и отвечает карточкой."""
+    logger.info("Processing: media_type=%s, has_media_url=%s, text_len=%s", media_type, bool(media_url), len(text or ""))
     is_direct = message.from_user and message.from_user.id == settings.owner_user_id
 
     try:
@@ -136,7 +137,9 @@ async def cmd_start(message: Message) -> None:
 
 @router.message()
 async def handle_message(message: Message) -> None:
+    logger.info("Incoming: chat=%s type=%s has_photo=%s has_text=%s", message.chat.id, message.chat.type, bool(message.photo), bool(message.text))
     if not _is_allowed(message):
+        logger.info("Rejected: not allowed user=%s chat=%s", getattr(message.from_user, 'id', None), message.chat.id)
         return
 
     # Кнопки главного меню
