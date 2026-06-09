@@ -7,6 +7,7 @@ on:
       - develop
     paths:
       - "services/second-brain/**"
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -35,4 +36,8 @@ jobs:
 
             docker compose pull brain-db brain-redis brain-n8n 2>/dev/null || true
             docker compose up -d --build brain-bot
+            sleep 5
+            docker compose exec -T brain-db psql -U "${POSTGRES_USER:-brain}" -d "${POSTGRES_DB:-brain}" \
+              -c "ALTER TABLE brain.items ADD COLUMN IF NOT EXISTS user_rating SMALLINT DEFAULT NULL;" || true
+            docker compose logs brain-bot --tail 30
             docker compose ps

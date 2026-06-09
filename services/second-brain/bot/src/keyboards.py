@@ -47,7 +47,16 @@ def review_keyboard(item_id: str, prev_id: str = None, next_id: str = None, url:
         InlineKeyboardButton(text="⏭ Скип", callback_data=f"review_skip_{item_id}"),
         InlineKeyboardButton(text="★ Избранное", callback_data=f"review_save_{item_id}"),
     ]
-    rows = [action_row]
+    rating_row = [
+        InlineKeyboardButton(text="⭐", callback_data=f"rate_1_{item_id}"),
+        InlineKeyboardButton(text="⭐⭐", callback_data=f"rate_2_{item_id}"),
+        InlineKeyboardButton(text="⭐⭐⭐", callback_data=f"rate_3_{item_id}"),
+    ]
+    extra_row = [
+        InlineKeyboardButton(text="✏️ Переописать", callback_data=f"redesc_{item_id}"),
+        InlineKeyboardButton(text="📂 Категория", callback_data=f"chcat_{item_id}"),
+    ]
+    rows = [action_row, rating_row, extra_row]
 
     if url:
         rows.append([InlineKeyboardButton(text="🔗 Открыть", url=url)])

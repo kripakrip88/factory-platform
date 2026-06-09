@@ -124,6 +124,30 @@ async def search(query: str) -> list[dict]:
     return [dict(r) for r in rows]
 
 
+async def set_user_rating(item_id: str, rating: int) -> None:
+    await _pool.execute(
+        "UPDATE brain.items SET user_rating=$1 WHERE id=$2::uuid",
+        rating, item_id,
+    )
+
+
+async def update_classification(item_id: str, result: dict) -> None:
+    await _pool.execute(
+        """UPDATE brain.items
+           SET category=$1, summary=$2, tags=$3, importance=$4
+           WHERE id=$5::uuid""",
+        result["category"], result["summary"],
+        result["tags"], result["importance"], item_id,
+    )
+
+
+async def update_category(item_id: str, category: str) -> None:
+    await _pool.execute(
+        "UPDATE brain.items SET category=$1 WHERE id=$2::uuid",
+        category, item_id,
+    )
+
+
 async def get_stats() -> dict:
     total = await _pool.fetchval("SELECT COUNT(*) FROM brain.items")
     unreviewed = await _pool.fetchval(

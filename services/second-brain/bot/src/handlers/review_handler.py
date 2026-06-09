@@ -1,7 +1,8 @@
 import logging
 import re
 from aiogram import Router, F
-from aiogram.filters import Command
+from aiogram.filters import Command, StateFilter
+from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 
 URL_RE = re.compile(r'https?://[^\s<>"\']+')
@@ -15,7 +16,7 @@ def _extract_url(item: dict) -> str | None:
     return m.group(0) if m else None
 
 from src.config import settings
-from src.services import storage, scheduler, importer
+from src.services import storage, scheduler, importer, classifier
 from src.keyboards import (
     review_keyboard, categories_keyboard, category_nav_keyboard,
     CATEGORY_EMOJI, CATEGORY_RU, main_menu,
@@ -278,3 +279,68 @@ async def handle_category_callback(callback: CallbackQuery) -> None:
         await _send_item_card(callback.message, item)
 
     await callback.answer()
+
+
+# ── Callback: рейтинг ⭐ ──────────────────────────────────────────────────────
+
+@router.callback_query(F.data.startswith("rate_"))
+async def handle_rating(callback: CallbackQuery) -> None:
+    _, rating, item_id = callback.data.split("_", 2)
+    await storage.set_user_rating(item_id, int(rating))
+    await callback.answer(f"Рейтинг {'⭐' * int(rating)} сохранён")
+
+
+# ── Callback: переописать ✏️ ──────────────────────────────────────────────────
+
+@router.callback_query(F.data.startswith("redesc_"))
+async def handle_redescribe(callback: CallbackQuery, state: FSMContext) -> None:
+    item_id = callback.data.split("_", 1)[1]
+    await state.set_state("waiting_redesc")
+    await state.update_data(item_id=item_id)
+    await callback.message.answer(
+        "Напиши комментарий для Claude (например: 'это про здоровье, не про идею'):"
+    )
+    await callback.answer()
+
+
+@router.message(StateFilter("waiting_redesc"))
+async def handle_redesc_comment(message: Message, state: FSMContext) -> None:
+    data = await state.get_data()
+    item_id = data["item_id"]
+    item = await storage.get_item(item_id)
+    comment = message.text
+
+    result = await classifier.classify(
+        f"{item.get('raw_text', '')} [Подсказка пользователя: {comment}]",
+        item.get("media_type"),
+    )
+    await storage.update_classification(item_id, result)
+    await state.clear()
+    await message.answer(
+        f"✅ Переописано:\n{result['summary']}\nКатегория: {result['category']}"
+    )
+
+
+# ── Callback: сменить категорию 📂 ────────────────────────────────────────────
+
+@router.callback_query(F.data.startswith("chcat_"))
+async def handle_change_category(callback: CallbackQuery) -> None:
+    item_id = callback.data.split("_", 1)[1]
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text=f"{CATEGORY_EMOJI[cat]} {CATEGORY_RU[cat]}",
+            callback_data=f"setcat_{cat}_{item_id}",
+        )]
+        for cat in CATEGORY_EMOJI
+    ])
+    await callback.message.answer("Выбери категорию:", reply_markup=kb)
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("setcat_"))
+async def handle_set_category(callback: CallbackQuery) -> None:
+    _, cat, item_id = callback.data.split("_", 2)
+    await storage.update_category(item_id, cat)
+    emoji = CATEGORY_EMOJI.get(cat, "📌")
+    await callback.answer(f"Категория изменена: {emoji} {CATEGORY_RU.get(cat, cat)}")
+    await callback.message.delete()
