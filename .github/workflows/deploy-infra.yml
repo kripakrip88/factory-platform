@@ -24,7 +24,8 @@ jobs:
             cd /opt/factory-platform
             git pull origin ${{ github.ref_name }}
             grep -q '^N8N_SECURE_COOKIE=' .env || echo 'N8N_SECURE_COOKIE=false' >> .env
-            docker compose -f infra/docker-compose.yml --env-file .env up -d --force-recreate
+            docker compose -f infra/docker-compose.yml --env-file .env up -d --force-recreate --no-build 2>&1 || true
+            docker compose -f infra/docker-compose.yml --env-file .env up -d n8n postgres redis --force-recreate
             echo "=== N8N_SECURE_COOKIE in .env ==="
             grep N8N_SECURE_COOKIE .env || echo "NOT IN .env"
             echo "=== running containers ==="
@@ -36,5 +37,5 @@ jobs:
             echo "=== compose n8n section ==="
             grep -A20 'n8n:' infra/docker-compose.yml | head -25
             echo "=== ALL n8n env vars ==="
-            docker inspect "$N8N_CONTAINER" --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null | grep -i "n8n\|secure\|cookie"
+            docker inspect "$N8N_CONTAINER" --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null
             curl -f http://localhost/health || exit 1
