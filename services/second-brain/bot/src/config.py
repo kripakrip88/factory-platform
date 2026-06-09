@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings
+from pydantic import field_validator
 from typing import List
 
 
@@ -6,6 +7,17 @@ class Settings(BaseSettings):
     telegram_bot_token: str
     telegram_group_ids: List[int]
     owner_user_id: int
+
+    @field_validator("telegram_group_ids", mode="before")
+    @classmethod
+    def parse_group_ids(cls, v):
+        if isinstance(v, str):
+            v = v.strip()
+            if v.startswith("["):
+                import json
+                return json.loads(v)
+            return [int(x.strip()) for x in v.split(",") if x.strip()]
+        return v
 
     anthropic_api_key: str
 
