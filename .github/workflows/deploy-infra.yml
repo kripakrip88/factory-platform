@@ -33,6 +33,8 @@ jobs:
             sleep 5
             N8N_CONTAINER=$(docker ps --format "{{.Names}}" | grep n8n | head -1)
             echo "Container name: $N8N_CONTAINER"
+            echo "=== compose n8n section ==="
+            grep -A20 'n8n:' infra/docker-compose.yml | head -25
             echo "=== ALL n8n env vars ==="
-            docker inspect "$N8N_CONTAINER" --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null | grep -i n8n
+            docker inspect "$N8N_CONTAINER" --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null | grep -i "n8n\|secure\|cookie"
             curl -f http://localhost/health || exit 1
