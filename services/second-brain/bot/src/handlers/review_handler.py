@@ -7,7 +7,7 @@ from src.config import settings
 from src.services import storage, scheduler, importer
 from src.keyboards import (
     review_keyboard, categories_keyboard, category_nav_keyboard,
-    CATEGORY_EMOJI, main_menu,
+    CATEGORY_EMOJI, CATEGORY_RU, main_menu,
 )
 
 logger = logging.getLogger(__name__)
@@ -31,9 +31,10 @@ def _owner_only(message: Message) -> bool:
 
 def _build_item_text(item: dict) -> str:
     emoji = CATEGORY_EMOJI.get(item["category"], "📌")
+    cat_ru = CATEGORY_RU.get(item["category"], item["category"])
     tags_str = " ".join(f"#{t}" for t in item["tags"]) if item["tags"] else ""
     text = (
-        f"{emoji} <b>{item['category']}</b>  ⭐{item['importance']}/5\n\n"
+        f"{emoji} <b>{cat_ru}</b>  ⭐{item['importance']}/5\n\n"
         f"{item['summary'] or item.get('raw_text', '')[:200]}\n"
         f"{tags_str}"
     ).strip()
@@ -64,7 +65,8 @@ async def cmd_stats_logic(message: Message) -> None:
     ]
     for cat, cnt in stats["by_category"]:
         emoji = CATEGORY_EMOJI.get(cat, "📌")
-        lines.append(f"  {emoji} {cat}: <b>{cnt}</b>")
+        cat_ru = CATEGORY_RU.get(cat, cat)
+        lines.append(f"  {emoji} {cat_ru}: <b>{cnt}</b>")
     await message.answer("\n".join(lines), parse_mode="HTML")
 
 

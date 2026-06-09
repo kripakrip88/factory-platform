@@ -5,7 +5,7 @@ from aiogram.types import Message
 
 from src.config import settings
 from src.services import classifier, storage
-from src.keyboards import review_keyboard, main_menu, CATEGORY_EMOJI
+from src.keyboards import review_keyboard, main_menu, CATEGORY_EMOJI, CATEGORY_RU
 
 logger = logging.getLogger(__name__)
 router = Router()
@@ -102,10 +102,11 @@ async def handle_message(message: Message) -> None:
 
         if is_direct and message.chat.type == "private":
             emoji = CATEGORY_EMOJI.get(result["category"], "📌")
+            cat_ru = CATEGORY_RU.get(result["category"], result["category"])
             tags_str = " ".join(f"#{t}" for t in result["tags"]) if result["tags"] else ""
             caption = (
                 f"✅ <b>Сохранено</b>\n"
-                f"{emoji} <b>{result['category']}</b>  ⭐{result['importance']}/5\n\n"
+                f"{emoji} <b>{cat_ru}</b>  ⭐{result['importance']}/5\n\n"
                 f"{result['summary']}\n"
                 f"{tags_str}"
             ).strip()

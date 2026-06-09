@@ -15,6 +15,18 @@ CATEGORY_EMOJI = {
     "other": "📌",
 }
 
+CATEGORY_RU = {
+    "idea": "Идея",
+    "health": "Здоровье",
+    "article": "Статья",
+    "inspiration": "Вдохновение",
+    "video": "Видео",
+    "image": "Фото",
+    "file": "Файл",
+    "link": "Ссылка",
+    "other": "Прочее",
+}
+
 CATEGORIES = list(CATEGORY_EMOJI.keys())
 
 
@@ -51,7 +63,8 @@ def categories_keyboard() -> InlineKeyboardMarkup:
     rows = []
     row = []
     for cat, emoji in CATEGORY_EMOJI.items():
-        row.append(InlineKeyboardButton(text=f"{emoji} {cat}", callback_data=f"cat_{cat}_0"))
+        label = f"{emoji} {CATEGORY_RU.get(cat, cat)}"
+        row.append(InlineKeyboardButton(text=label, callback_data=f"cat_{cat}_0"))
         if len(row) == 2:
             rows.append(row)
             row = []
