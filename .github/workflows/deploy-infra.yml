@@ -27,7 +27,11 @@ jobs:
             docker compose -f infra/docker-compose.yml --env-file .env up -d --force-recreate
             echo "=== N8N_SECURE_COOKIE in .env ==="
             grep N8N_SECURE_COOKIE .env || echo "NOT IN .env"
+            echo "=== running containers ==="
+            docker ps --format "{{.Names}}"
             echo "=== N8N_SECURE_COOKIE in container ==="
             sleep 5
-            docker inspect $(docker ps -qf name=infra-n8n) --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null | grep -i secure || echo "NOT FOUND IN CONTAINER"
+            N8N_CONTAINER=$(docker ps --format "{{.Names}}" | grep n8n | head -1)
+            echo "Container name: $N8N_CONTAINER"
+            docker inspect "$N8N_CONTAINER" --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null | grep -i secure || echo "NOT FOUND IN CONTAINER"
             curl -f http://localhost/health || exit 1
