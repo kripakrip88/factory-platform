@@ -43,6 +43,12 @@ async def classify(text: str, media_type: str | None = None) -> dict:
             messages=[{"role": "user", "content": content}],
         )
         raw = response.content[0].text.strip()
+        # убираем markdown-обёртку если модель добавила ```json ... ```
+        if raw.startswith("```"):
+            raw = raw.split("```", 2)[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+            raw = raw.strip()
         result = json.loads(raw)
         return {
             "category": result.get("category", "other"),
