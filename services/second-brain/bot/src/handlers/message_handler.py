@@ -167,4 +167,10 @@ async def handle_message(message: Message) -> None:
     if not text and not media_url:
         return
 
+    # Отфильтровываем мусор: слэш-команды и слишком короткий текст без медиа/URL
+    if text and text.startswith("/"):
+        return
+    if text and not media_url and not _find_url(text) and len(text.strip()) < 10:
+        return
+
     await _process_and_reply(message, text, media_type, media_url)
