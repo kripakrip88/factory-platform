@@ -1,8 +1,8 @@
 # Second Brain — Персональный AI-ассистент
 
-Telegram-бот для автоматического сбора, классификации и review личных знаний:
-идеи, статьи, анализы крови, ссылки, вдохновение из TG-групп и личных сообщений.
-Каждый айтем классифицируется через Claude API и сохраняется с тегами в PostgreSQL.
+Telegram-бот для автоматического сбора, классификации и review личных знаний.
+Читает сообщения из личных TG-групп и личных сообщений, классифицирует через Claude API,
+сохраняет в PostgreSQL с тегами и резюме. Каждый айтем доступен для review прямо в боте.
 
 ---
 
@@ -11,15 +11,10 @@ Telegram-бот для автоматического сбора, классиф
 ```bash
 cd services/second-brain
 
-# 1. Скопировать и заполнить переменные
 cp .env.example .env
-# Открой .env и заполни TELEGRAM_BOT_TOKEN, OWNER_USER_ID, ANTHROPIC_API_KEY и пароли
+# Заполни .env (токены, пароли)
 
-# 2. Запустить
 docker compose up -d
-
-# 3. Проверить
-docker compose ps
 docker compose logs brain-bot -f
 ```
 
@@ -27,16 +22,18 @@ docker compose logs brain-bot -f
 
 ## Как создать бота
 
-1. Открой [@BotFather](https://t.me/BotFather) в Telegram
-2. Отправь `/newbot`, задай имя и username
-3. Скопируй токен в `TELEGRAM_BOT_TOKEN`
+1. Открой [@BotFather](https://t.me/BotFather) → `/newbot`
+2. Скопируй токен в `TELEGRAM_BOT_TOKEN`
+3. Обязательно: `/mybots` → выбери бота → **Bot Settings → Group Privacy → Turn off**
+   (без этого бот не видит обычные сообщения в группах)
 
 ## Как получить ID групп
 
-Способ 1: добавь [@userinfobot](https://t.me/userinfobot) в группу — он покажет chat ID.
-Способ 2: перешли сообщение из группы боту [@username_to_id_bot](https://t.me/username_to_id_bot).
+Добавь [@getidsbot](https://t.me/getidsbot) в группу — он покажет chat ID (отрицательное число).
 
-ID группы — отрицательное число, например `-1001234567890`.
+## Как узнать свой OWNER_USER_ID
+
+Напиши [@userinfobot](https://t.me/userinfobot) — он покажет твой Telegram ID.
 
 ---
 
@@ -44,47 +41,130 @@ ID группы — отрицательное число, например `-10
 
 | Команда | Описание |
 |---------|----------|
-| `/review` | Показать батч непросмотренных айтемов |
-| `/stats` | Статистика по категориям и количеству |
+| `/start` | Запустить бота, показать главное меню |
+| `/review` | Показать батч непросмотренных айтемов с кнопками |
+| `/stats` | Статистика: всего айтемов, по категориям, непросмотрено |
+| `/categories` | Просмотр айтемов по категориям |
 | `/search <запрос>` | Полнотекстовый поиск по базе |
 | `/import` | Инструкция по импорту истории групп |
 
----
-
-## Кнопки review
+## Главное меню (постоянные кнопки)
 
 | Кнопка | Действие |
 |--------|----------|
-| 👍 Сохранить | Отмечает как просмотрено и важное |
-| ⏭ Скипнуть | Пропускает без сохранения |
-| ★ Избранное | Помечает как избранное (score=2) |
+| 📬 Дайджест | Показать айтемы на review |
+| 📊 Статистика | Статистика по базе |
+| 📂 Категории | Просмотр по категориям |
+| 🔍 Поиск | Подсказка по команде /search |
 
-Дайджест автоматически приходит каждый день в 20:00 (настраивается через `REVIEW_CRON`).
+## Кнопки на каждой карточке
+
+| Кнопка | Действие | Score в БД |
+|--------|----------|------------|
+| 👍 | Сохранить как важное | 1 |
+| ⏭ Скип | Пропустить | -1 |
+| ★ Избранное | В избранное | 2 |
+| ‹ Пред / След › | Навигация между айтемами | — |
+
+---
+
+## Категории
+
+| Категория | Эмодзи | Что попадает |
+|-----------|--------|-------------|
+| `idea` | 💡 | Идеи, планы, задачи |
+| `health` | 🩺 | Здоровье, анализы, самочувствие |
+| `article` | 📖 | Статьи, посты |
+| `inspiration` | ✨ | Вдохновение, мотивация |
+| `video` | 🎬 | YouTube, видео |
+| `image` | 🖼 | Фото, картинки |
+| `file` | 📎 | Документы, файлы |
+| `link` | 🔗 | Ссылки |
+| `other` | 📌 | Всё остальное |
+
+---
+
+## Дайджест
+
+Каждый день в 20:00 бот автоматически присылает батч из 5 непросмотренных айтемов.
+Время и размер батча настраиваются через `.env`:
+
+```env
+REVIEW_CRON=0 20 * * *   # cron выражение
+REVIEW_BATCH_SIZE=5       # количество айтемов
+```
 
 ---
 
 ## Импорт истории Telegram-групп
 
-Для импорта используется Telethon (userbot, не Bot API).
+### Способ 1 — Экспорт из Telegram Desktop (рекомендуется)
 
-### Получение credentials
-
-1. Зайди на [my.telegram.org/apps](https://my.telegram.org/apps)
-2. Создай приложение, получи `API_ID` и `API_HASH`
-3. Добавь в `.env`:
-   ```
-   TELEGRAM_API_ID=12345678
-   TELEGRAM_API_HASH=abcdef1234567890abcdef1234567890
-   ```
-
-### Запуск импорта
+1. Установи [Telegram Desktop](https://desktop.telegram.org) (не нативный Mac-клиент)
+2. Открой группу → три точки `···` → «Экспорт истории чата»
+3. Формат: **JSON**, медиафайлы можно не включать
+4. Скопируй `result.json` на сервер и запусти импорт:
 
 ```bash
-docker compose exec brain-bot python -m src.scripts.import_history
+# Скопировать файлы на сервер
+scp ~/Downloads/result.json root@SERVER_IP:/tmp/zavod.json
+
+# Запустить импорт внутри контейнера
+docker cp /tmp/zavod.json brain-bot:/tmp/zavod.json
+docker exec brain-bot bash -c "
+  ANTHROPIC_API_KEY=... DB_DSN=postgresql://brain_user:...@brain-db:5432/second_brain \
+  python3 /tmp/import_tg_export.py /tmp/zavod.json
+"
 ```
 
-При первом запуске Telethon попросит номер телефона и код подтверждения.
-Прогресс сохраняется в `brain.import_progress` — повторный запуск продолжит с последнего сообщения.
+Скрипт проверяет дубликаты — повторный запуск безопасен, продолжит с места остановки.
+
+### Способ 2 — Telethon userbot (для будущего автоматического импорта)
+
+Требует `TELEGRAM_API_ID` и `TELEGRAM_API_HASH` с [my.telegram.org/apps](https://my.telegram.org/apps).
+
+```bash
+docker compose exec brain-bot python3 -m src.scripts.import_history
+```
+
+---
+
+## Импорт закладок браузера
+
+Экспортируй закладки в HTML:
+- **Chrome/Edge/Brave**: Настройки → Закладки → Экспорт закладок
+- **Safari**: Файл → Экспорт закладок
+
+Импорт реализуется отдельным скриптом (в разработке).
+
+---
+
+## Архитектура
+
+```
+brain-bot ──── brain-db    (PostgreSQL 16, схема brain.*)
+          └─── brain-redis (Redis 7, FSM storage для aiogram)
+
+brain-n8n ──── brain-db    (схема n8n, порт 5679)
+```
+
+Все сервисы в изолированной сети `brain-net`.
+Никаких зависимостей от основного стека платформы (`infra/docker-compose.yml` не изменён).
+
+### Схема базы данных
+
+```sql
+brain.items          -- основная таблица айтемов
+brain.import_progress -- прогресс импорта истории групп
+```
+
+Поля `brain.items`:
+- `source_type` — откуда пришёл айтем (`telegram`, `tg_export`, `bookmark`)
+- `category` — категория от Claude
+- `summary` — резюме от Claude (1-2 предложения)
+- `tags` — массив тегов
+- `importance` — важность 1-5
+- `review_score` — оценка: 1=сохранить, -1=скип, 2=избранное
 
 ---
 
@@ -92,26 +172,11 @@ docker compose exec brain-bot python -m src.scripts.import_history
 
 Модуль спроектирован для расширения. Чтобы добавить источник:
 
-1. Создай файл `bot/src/services/pocket_importer.py` (или другой источник)
-2. В `save_item()` передавай `source_type="pocket"` (или нужный тип)
-3. Добавь команду-обработчик в `review_handler.py`
-4. **Не трогай** `infra/docker-compose.yml` — модуль полностью изолирован
+1. Создай скрипт `bot/src/scripts/import_<source>.py`
+2. В `save_item()` передавай `source_type="<source>"`
+3. **Не трогай** `infra/docker-compose.yml`
 
 Планируемые источники:
-- Pocket / Instapaper
-- Закладки браузера (Chrome extensions)
+- Pocket / Instapaper (через API)
+- Закладки браузера (Chrome расширение или парсинг HTML)
 - PDF-файлы (анализы крови, документы)
-- RSS-ленты
-
----
-
-## Архитектура
-
-```
-brain-bot ─── brain-db  (PostgreSQL 16)
-          └── brain-redis (Redis 7, FSM storage)
-
-brain-n8n ─── brain-db  (схема n8n)
-```
-
-Все сервисы в изолированной сети `brain-net`. Никаких зависимостей от основного стека платформы.
