@@ -1,8 +1,16 @@
 import asyncio
 import logging
+import re
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
+
+URL_RE = re.compile(r'https?://[^\s<>"\']+')
+
+
+def _find_url(text: str) -> str | None:
+    m = URL_RE.search(text or "")
+    return m.group(0) if m else None
 
 from src.config import settings
 from src.services import classifier, storage
@@ -62,6 +70,7 @@ async def _process_and_reply(message: Message, text, media_type, media_url, albu
             "raw_text": text,
             "media_url": media_url,
             "media_type": media_type,
+            "original_url": _find_url(text),
             "category": result["category"],
             "summary": result["summary"],
             "tags": result["tags"],
@@ -82,7 +91,8 @@ async def _process_and_reply(message: Message, text, media_type, media_url, albu
             ).strip()
 
             neighbours = await storage.get_neighbours(item_id)
-            keyboard = review_keyboard(item_id, neighbours["prev"], neighbours["next"])
+            url = _find_url(text)
+            keyboard = review_keyboard(item_id, neighbours["prev"], neighbours["next"], url=url)
             await message.reply(caption, parse_mode="HTML", reply_markup=keyboard)
 
     except Exception as exc:

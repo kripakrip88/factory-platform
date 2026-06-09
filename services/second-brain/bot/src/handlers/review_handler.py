@@ -1,7 +1,18 @@
 import logging
+import re
 from aiogram import Router, F
 from aiogram.filters import Command
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+
+URL_RE = re.compile(r'https?://[^\s<>"\']+')
+
+
+def _extract_url(item: dict) -> str | None:
+    if item.get("original_url"):
+        return item["original_url"]
+    text = item.get("raw_text") or ""
+    m = URL_RE.search(text)
+    return m.group(0) if m else None
 
 from src.config import settings
 from src.services import storage, scheduler, importer
@@ -29,8 +40,13 @@ def _owner_only(message: Message) -> bool:
     return message.from_user and message.from_user.id == settings.owner_user_id
 
 
-async def _send_item_card(target, item: dict, keyboard) -> None:
+async def _send_item_card(target, item: dict, keyboard=None) -> None:
     """Отправляет карточку айтема — с фото если есть, иначе текстом."""
+    if keyboard is None:
+        neighbours = await storage.get_neighbours(item["id"])
+        url = _extract_url(item)
+        keyboard = review_keyboard(item["id"], neighbours["prev"], neighbours["next"], url=url)
+
     text = _build_item_text(item)
     media_url = item.get("media_url")
     media_type = item.get("media_type")
@@ -43,7 +59,6 @@ async def _send_item_card(target, item: dict, keyboard) -> None:
         else:
             await target.answer(text, parse_mode="HTML", reply_markup=keyboard)
     except Exception:
-        # file_id мог протухнуть — шлём без медиа
         await target.answer(text, parse_mode="HTML", reply_markup=keyboard)
 
 
@@ -68,9 +83,7 @@ async def cmd_review_logic(message: Message) -> None:
         return
     await message.answer(f"📬 <b>{len(items)} айтемов на review:</b>", parse_mode="HTML")
     for item in items:
-        neighbours = await storage.get_neighbours(item["id"])
-        keyboard = review_keyboard(item["id"], neighbours["prev"], neighbours["next"])
-        await _send_item_card(message, item, keyboard)
+        await _send_item_card(message, item)
 
 
 async def cmd_stats_logic(message: Message) -> None:
@@ -140,9 +153,7 @@ async def cmd_search(message: Message) -> None:
         return
     await message.answer(f"🔍 Найдено: <b>{len(results)}</b>", parse_mode="HTML")
     for item in results:
-        neighbours = await storage.get_neighbours(item["id"])
-        keyboard = review_keyboard(item["id"], neighbours["prev"], neighbours["next"])
-        await _send_item_card(message, item, keyboard)
+        await _send_item_card(message, item)
 
 
 @router.message(Command("import"))
@@ -194,10 +205,19 @@ async def handle_nav_callback(callback: CallbackQuery) -> None:
         return
 
     neighbours = await storage.get_neighbours(item_id)
-    keyboard = review_keyboard(item_id, neighbours["prev"], neighbours["next"])
-    await callback.message.edit_text(
-        _build_item_text(item), parse_mode="HTML", reply_markup=keyboard
-    )
+    url = _extract_url(item)
+    keyboard = review_keyboard(item_id, neighbours["prev"], neighbours["next"], url=url)
+    text = _build_item_text(item)
+    media_url = item.get("media_url")
+    media_type = item.get("media_type")
+    try:
+        if media_url and media_type == "photo":
+            await callback.message.answer_photo(media_url, caption=text, parse_mode="HTML", reply_markup=keyboard)
+            await callback.message.delete()
+        else:
+            await callback.message.edit_text(text, parse_mode="HTML", reply_markup=keyboard)
+    except Exception:
+        await callback.message.edit_text(text, parse_mode="HTML", reply_markup=keyboard)
     await callback.answer()
 
 
@@ -255,8 +275,6 @@ async def handle_category_callback(callback: CallbackQuery) -> None:
 
     # Каждый айтем отдельной карточкой с кнопками
     for item in items:
-        neighbours = await storage.get_neighbours(item["id"])
-        keyboard = review_keyboard(item["id"], neighbours["prev"], neighbours["next"])
-        await _send_item_card(callback.message, item, keyboard)
+        await _send_item_card(callback.message, item)
 
     await callback.answer()

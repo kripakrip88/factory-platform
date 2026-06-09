@@ -41,21 +41,25 @@ def main_menu() -> ReplyKeyboardMarkup:
     )
 
 
-def review_keyboard(item_id: str, prev_id: str = None, next_id: str = None) -> InlineKeyboardMarkup:
+def review_keyboard(item_id: str, prev_id: str = None, next_id: str = None, url: str = None) -> InlineKeyboardMarkup:
     action_row = [
         InlineKeyboardButton(text="👍", callback_data=f"review_like_{item_id}"),
         InlineKeyboardButton(text="⏭ Скип", callback_data=f"review_skip_{item_id}"),
         InlineKeyboardButton(text="★ Избранное", callback_data=f"review_save_{item_id}"),
     ]
+    rows = [action_row]
+
+    if url:
+        rows.append([InlineKeyboardButton(text="🔗 Открыть", url=url)])
+
     nav_row = []
     if prev_id:
         nav_row.append(InlineKeyboardButton(text="‹ Пред", callback_data=f"nav_prev_{prev_id}"))
     if next_id:
         nav_row.append(InlineKeyboardButton(text="След ›", callback_data=f"nav_next_{next_id}"))
-
-    rows = [action_row]
     if nav_row:
         rows.append(nav_row)
+
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
