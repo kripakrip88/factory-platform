@@ -63,7 +63,7 @@ async def _process_and_reply(message: Message, text, media_type, media_url, albu
     is_direct = message.from_user and message.from_user.id == settings.owner_user_id
 
     try:
-        result = await classifier.classify(text or "", media_type)
+        result = await classifier.classify(text or "", media_type, media_url=media_url, original_url=_find_url(text))
         item_data = {
             "source_type": "telegram",
             "source_id": str(message.message_id),
