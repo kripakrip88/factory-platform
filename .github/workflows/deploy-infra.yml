@@ -33,5 +33,6 @@ jobs:
             sleep 5
             N8N_CONTAINER=$(docker ps --format "{{.Names}}" | grep n8n | head -1)
             echo "Container name: $N8N_CONTAINER"
-            docker inspect "$N8N_CONTAINER" --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null | grep -i secure || echo "NOT FOUND IN CONTAINER"
+            echo "=== ALL n8n env vars ==="
+            docker inspect "$N8N_CONTAINER" --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null | grep -i n8n
             curl -f http://localhost/health || exit 1
