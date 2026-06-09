@@ -1,23 +1,22 @@
-from pydantic_settings import BaseSettings
-from pydantic import field_validator
-from typing import List
+from pydantic_settings import BaseSettings, EnvSettingsSource, PydanticBaseSettingsSource
+from typing import List, Type, Tuple
+
+
+class _EnvSource(EnvSettingsSource):
+    """Поддерживает запятую-разделённые списки: -100xxx,-100yyy"""
+
+    def prepare_field_value(self, field_name, field, value, value_is_complex):
+        if field_name == "telegram_group_ids" and isinstance(value, str):
+            s = value.strip()
+            if s and not s.startswith("["):
+                value = "[" + s + "]"
+        return super().prepare_field_value(field_name, field, value, value_is_complex)
 
 
 class Settings(BaseSettings):
     telegram_bot_token: str
     telegram_group_ids: List[int]
     owner_user_id: int
-
-    @field_validator("telegram_group_ids", mode="before")
-    @classmethod
-    def parse_group_ids(cls, v):
-        if isinstance(v, str):
-            v = v.strip()
-            if v.startswith("["):
-                import json
-                return json.loads(v)
-            return [int(x.strip()) for x in v.split(",") if x.strip()]
-        return v
 
     anthropic_api_key: str
 
@@ -47,6 +46,17 @@ class Settings(BaseSettings):
     @property
     def redis_url(self) -> str:
         return f"redis://:{self.redis_password}@brain-redis:6379"
+
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: Type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        secrets_settings: PydanticBaseSettingsSource,
+    ) -> Tuple[PydanticBaseSettingsSource, ...]:
+        return (init_settings, _EnvSource(settings_cls), dotenv_settings, secrets_settings)
 
     class Config:
         env_file = ".env"
