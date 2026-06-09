@@ -1,0 +1,38 @@
+name: Deploy Second Brain
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - "services/second-brain/**"
+
+jobs:
+  deploy:
+    name: Deploy to server
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            set -e
+            cd /opt/factory-platform
+
+            BRANCH="${{ github.ref_name }}"
+            git fetch origin "$BRANCH"
+            git checkout "$BRANCH"
+            git pull origin "$BRANCH"
+
+            cd services/second-brain
+
+            docker compose pull brain-db brain-redis brain-n8n 2>/dev/null || true
+            docker compose up -d --build brain-bot
+            docker compose ps

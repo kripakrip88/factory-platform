@@ -1,0 +1,98 @@
+services:
+  brain-bot:
+    build:
+      context: ./bot
+      dockerfile: Dockerfile
+    container_name: brain-bot
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      brain-db:
+        condition: service_healthy
+      brain-redis:
+        condition: service_healthy
+    networks:
+      - brain-net
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  brain-n8n:
+    image: n8nio/n8n:latest
+    container_name: brain-n8n
+    restart: unless-stopped
+    ports:
+      - "5679:5678"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=${N8N_USER}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_PASSWORD}
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=brain-db
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=${POSTGRES_DB}
+      - DB_POSTGRESDB_USER=${POSTGRES_USER}
+      - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_POSTGRESDB_SCHEMA=n8n
+    depends_on:
+      brain-db:
+        condition: service_healthy
+    networks:
+      - brain-net
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:5678/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    volumes:
+      - brain-n8n-data:/home/node/.n8n
+
+  brain-db:
+    image: postgres:16-alpine
+    container_name: brain-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - brain-db-data:/var/lib/postgresql/data
+      - ./bot/src/migrations/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - brain-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  brain-redis:
+    image: redis:7-alpine
+    container_name: brain-redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    networks:
+      - brain-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    volumes:
+      - brain-redis-data:/data
+
+networks:
+  brain-net:
+    driver: bridge
+
+volumes:
+  brain-db-data:
+  brain-redis-data:
+  brain-n8n-data:
