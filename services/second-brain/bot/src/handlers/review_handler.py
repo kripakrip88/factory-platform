@@ -202,7 +202,6 @@ async def handle_category_callback(callback: CallbackQuery) -> None:
         return
 
     parts = callback.data.split("_")
-    # формат: cat_{category}_{offset}
     category = parts[1]
     offset = int(parts[2])
 
@@ -212,18 +211,35 @@ async def handle_category_callback(callback: CallbackQuery) -> None:
         return
 
     emoji = CATEGORY_EMOJI.get(category, "📌")
-    header = f"{emoji} <b>{category}</b> (показано {offset + 1}–{offset + len(items)})\n\n"
-    lines = []
-    for item in items:
-        tags_str = " ".join(f"#{t}" for t in item["tags"]) if item["tags"] else ""
-        lines.append(f"• {item['summary'] or item.get('raw_text','')[:100]}\n  {tags_str}")
-
     has_more = len(items) == 5
-    keyboard = category_nav_keyboard(category, offset, has_more)
+
+    # Заголовок с навигацией по страницам
+    nav_row = []
+    if offset > 0:
+        nav_row.append(InlineKeyboardButton(text="‹ Назад", callback_data=f"cat_{category}_{offset - 5}"))
+    if has_more:
+        nav_row.append(InlineKeyboardButton(text="Ещё ›", callback_data=f"cat_{category}_{offset + 5}"))
+
+    from aiogram.types import InlineKeyboardMarkup
+    header_kb = InlineKeyboardMarkup(inline_keyboard=[
+        nav_row,
+        [InlineKeyboardButton(text="↩ К категориям", callback_data="show_categories")],
+    ]) if nav_row else InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="↩ К категориям", callback_data="show_categories")],
+    ])
 
     await callback.message.edit_text(
-        header + "\n\n".join(lines),
+        f"{emoji} <b>{category}</b> — айтемы {offset + 1}–{offset + len(items)}:",
         parse_mode="HTML",
-        reply_markup=keyboard,
+        reply_markup=header_kb,
     )
+
+    # Каждый айтем отдельной карточкой с кнопками
+    for item in items:
+        neighbours = await storage.get_neighbours(item["id"])
+        keyboard = review_keyboard(item["id"], neighbours["prev"], neighbours["next"])
+        await callback.message.answer(
+            _build_item_text(item), parse_mode="HTML", reply_markup=keyboard
+        )
+
     await callback.answer()
