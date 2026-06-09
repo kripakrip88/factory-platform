@@ -63,7 +63,7 @@ services:
     environment:
       - BACKEND=backend:8000
       - SOCKETIO=websocket:9000
-      - FRAPPE_SITE_NAME_HEADER=erp.${DOMAIN:-localhost}
+      - FRAPPE_SITE_NAME_HEADER=erp.localhost
       - UPSTREAM_REAL_IP_ADDRESS=127.0.0.1
       - UPSTREAM_REAL_IP_HEADER=X-Forwarded-For
       - UPSTREAM_REAL_IP_RECURSIVE=off
