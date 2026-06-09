@@ -51,11 +51,11 @@ class Settings(BaseSettings):
     def settings_customise_sources(
         cls,
         settings_cls: Type[BaseSettings],
-        init_settings: PydanticBaseSettingsSource,
-        env_settings: PydanticBaseSettingsSource,
-        dotenv_settings: PydanticBaseSettingsSource,
-        secrets_settings: PydanticBaseSettingsSource,
+        **kwargs,
     ) -> Tuple[PydanticBaseSettingsSource, ...]:
+        init_settings = kwargs.get("init_settings")
+        dotenv_settings = kwargs.get("dotenv_settings")
+        secrets_settings = kwargs.get("secrets_settings")
         return (init_settings, _EnvSource(settings_cls), dotenv_settings, secrets_settings)
 
     class Config:
