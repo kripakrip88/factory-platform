@@ -1,90 +1,136 @@
-# Factory Platform — Claude Rules
+# Factory Platform — Project Brain
 
-## Что это за репозиторий
+## Что это
 
-Монорепозиторий платформы управления металлоконструкционным заводом.
-Включает ERPNext, AI Assistant, n8n оркестратор, Telegram Bot.
+Цифровая платформа управления заводом металлоконструкций.
+Монорепозиторий: github.com/kripakrip88/factory-platform
 
-**Связанный репозиторий (legacy AI module):** https://github.com/kripakrip88/metalpro-ai-polygon
+## Проблема которую решаем
 
----
+- Заявки от клиентов приходят по email хаотично, обрабатываются вручную 2-5 дней
+- КП считаются в Excel, долго согласовываются
+- Производство планируется "в голове", нет видимости загрузки
+- Данные разбросаны по таблицам, почте, мессенджерам
 
-## Перед началом любой задачи
+## Решение
 
-1. Прочитать `CLAUDE.md` (этот файл)
-2. Если задача затрагивает конкретный сервис — прочитать `services/<name>/README.md`
-3. Показать план и ждать подтверждения
+Четыре сервиса в одном репо:
 
----
+| Сервис | Что делает |
+|--------|-----------|
+| ERPNext | Единая база: клиенты, сделки, заказы, производство, склад, финансы |
+| AI Assistant | Читает письма/PDF, извлекает параметры заявки, создаёт черновики КП |
+| n8n | Связывает всё: email → ERP → уведомления → согласования |
+| Telegram Bot | Уведомления и согласования прямо в Telegram |
 
-## Структура
+## Сценарий работы
+
+1. Клиент отправляет письмо с запросом
+2. AI читает письмо, извлекает: тип изделия, параметры, сроки, контакты
+3. В ERP автоматически создаётся лид + черновик КП
+4. Менеджер получает уведомление в Telegram
+5. Считается цена (материалы + работа + маржа)
+6. Директор согласует КП кнопкой в Telegram
+7. PDF автоматически уходит клиенту
+8. После принятия — создаётся производственный заказ
+
+## Архитектура AI (важно)
+
+AI — не OCR-сервис. AI — центральный интеллект платформы.
 
 ```
-services/
-  erp/            — ERPNext (Python/Frappe)
-  ai-assistant/   — NestJS + Claude API + OCR
-  n8n/            — workflow конфиги
-  telegram-bot/   — Node.js бот
-infra/
-  docker-compose.yml
-  nginx/
-.github/workflows/ — CI/CD per service
+services/ai-assistant/
+├── api/              # HTTP endpoint для n8n
+├── agents/
+│   └── email/        # EmailAnalyzer — первый агент
+├── prompts/          # промпты
+├── parsers/          # структурированный вывод
+├── integrations/
+│   └── erpnext/      # REST API к ERPNext
+├── tests/
+└── knowledge/        # примеры писем, КП, тестовые данные
 ```
 
----
+Роли AI на горизонте 12 месяцев:
+- **Email Analyzer** — читает входящие, извлекает параметры заявки
+- **Quotation Assistant** — считает КП из данных ERP
+- **Production Assistant** — отвечает на вопросы о загрузке, просрочках
+- **Drawing Analyzer** — извлекает размеры/материалы из PDF чертежей
+- **ERP Copilot** — создаёт документы в ERPNext голосом/текстом
+
+## Текущее состояние
+
+| Компонент | Статус |
+|-----------|--------|
+| Структура репо | ✅ готова |
+| GitHub репо | ✅ kripakrip88/factory-platform |
+| Docker Compose | ✅ написан, не проверен на сервере |
+| GitHub Actions | ✅ написан, не запускался |
+| AI Assistant | ❌ пустая папка, нужно написать с нуля |
+| Telegram Bot | ❌ только /start и /help |
+| n8n воркфлоу | ❌ пусто |
+| ERPNext | ❌ не настроен |
+| Сервер | ❌ не арендован |
+
+## Дорожная карта
+
+**Месяц 1-2 — фундамент**
+- Сервер Hetzner CX32, Ubuntu 24.04
+- Docker + автодеплой через GitHub Actions
+- ERPNext запущен и базово настроен
+- n8n читает email
+- Email Analyzer → лид в ERP
+- Telegram-уведомление менеджеру
+
+**Месяц 3-4 — первая ценность**
+- Quotation Assistant (считает КП из данных ERP)
+- Согласование в Telegram
+- PDF → клиенту автоматически
+
+**Месяц 5-6 — расширение AI**
+- Production Assistant
+- Drawing Analyzer (PDF чертежи)
+- Knowledge Base
+
+**Месяц 7-12 — AI Core полностью**
+- ERP Copilot
+- DWG/DXF анализ
+- Роли-агенты с памятью (mem0)
 
 ## Стек
 
-- **ERPNext:** Python, Frappe, MariaDB
-- **AI Assistant:** NestJS, TypeScript, PostgreSQL, Claude API (claude-sonnet-4-20250514)
-- **n8n:** Docker, PostgreSQL
-- **Telegram Bot:** Node.js, TypeScript
-- **Infra:** Docker Compose, Nginx, GitHub Actions
-
----
+| Слой | Технология |
+|------|-----------|
+| ERP | ERPNext (Python, Frappe, MariaDB) |
+| AI | NestJS, TypeScript, Claude API (claude-sonnet-4-20250514) |
+| Оркестратор | n8n |
+| Бот | Node.js, TypeScript, node-telegram-bot-api |
+| БД | PostgreSQL (n8n, AI), MariaDB (ERPNext) |
+| Кэш/очереди | Redis |
+| Прокси | Nginx |
+| Деплой | Docker Compose + GitHub Actions |
+| Сервер | Hetzner CX32, Ubuntu 24.04 |
 
 ## Деплой
 
-Осуществляется через GitHub Actions автоматически.
-`develop` → staging, `main` → production.
+- `develop` → staging
+- `main` → production
+- Деплой через SSH: `appleboy/ssh-action`
+- Путь на сервере: `/opt/factory-platform`
 
-```
-git push
-  ↓ GitHub Actions
-  ↓ SSH → сервер
-  ↓ docker compose build + up
-```
-
-## Secrets (GitHub → Settings → Secrets)
+## GitHub Secrets
 
 | Secret | Описание |
 |--------|----------|
 | `SERVER_HOST` | IP сервера |
-| `SERVER_USER` | SSH пользователь |
+| `SERVER_USER` | SSH пользователь (deploy) |
 | `SERVER_SSH_KEY` | Приватный SSH ключ |
 
----
+## Правила для AI-ассистентов
 
-## Правила веток
-
-- **Никогда не пушить напрямую в `main`**
-- Ветки: `feature/...`, `fix/...`, `refactor/...`
-- PR: `feature/...` → `develop` → `main`
-
----
-
-## Правила БД
-
-Разрешено: новые таблицы, колонки, индексы, безопасные миграции.
-Запрещено без согласования: DROP TABLE, DROP COLUMN, изменение типов с потерей данных.
-
----
-
-## После каждого значимого изменения
-
-Обновить `CHANGELOG.md`:
-```
-## YYYY-MM-DD
-### factory-platform
-- [feat] название — зачем
-```
+1. Читай этот файл в начале каждой сессии
+2. Перед задачей затрагивающей сервис — читай `services/<name>/README.md`
+3. Показывай план и жди подтверждения перед изменениями
+4. Не переусложняй — один рабочий агент лучше шести пустых папок
+5. Сервер ещё не арендован — не пиши код завязанный на конкретный IP
+6. ERPNext ещё не настроен — интеграции с ним пока в планах, не в коде
