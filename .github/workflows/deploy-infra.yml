@@ -24,21 +24,5 @@ jobs:
             cd /opt/factory-platform
             git pull origin ${{ github.ref_name }}
             grep -q '^N8N_SECURE_COOKIE=' .env || echo 'N8N_SECURE_COOKIE=false' >> .env
-            docker compose -f infra/docker-compose.yml --env-file .env up -d --no-build 2>&1 || true
-            docker compose -f infra/docker-compose.yml --env-file .env stop n8n
-            docker compose -f infra/docker-compose.yml --env-file .env rm -f n8n
-            docker volume rm infra_n8n_data 2>/dev/null || true
-            docker compose -f infra/docker-compose.yml --env-file .env up -d n8n
-            echo "=== N8N_SECURE_COOKIE in .env ==="
-            grep N8N_SECURE_COOKIE .env || echo "NOT IN .env"
-            echo "=== running containers ==="
-            docker ps --format "{{.Names}}"
-            echo "=== N8N_SECURE_COOKIE in container ==="
-            sleep 5
-            N8N_CONTAINER=$(docker ps --format "{{.Names}}" | grep n8n | head -1)
-            echo "Container name: $N8N_CONTAINER"
-            echo "=== compose n8n section ==="
-            grep -A20 'n8n:' infra/docker-compose.yml | head -25
-            echo "=== ALL n8n env vars ==="
-            docker inspect "$N8N_CONTAINER" --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null
+            docker compose -f infra/docker-compose.yml --env-file .env up -d --no-build
             curl -f http://localhost/health || exit 1
