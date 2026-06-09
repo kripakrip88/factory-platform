@@ -1,4 +1,3 @@
-from typing import Optional
 """
 Импорт истории из экспорта Telegram Desktop (JSON).
 
@@ -10,8 +9,10 @@ from typing import Optional
 """
 import asyncio
 import json
+import os
 import sys
 import logging
+from typing import Optional
 import asyncpg
 import anthropic
 
