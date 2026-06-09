@@ -5,6 +5,7 @@ on:
     branches: [main, develop]
     paths:
       - 'infra/**'
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -24,4 +25,9 @@ jobs:
             git pull origin ${{ github.ref_name }}
             grep -q '^N8N_SECURE_COOKIE=' .env || echo 'N8N_SECURE_COOKIE=false' >> .env
             docker compose -f infra/docker-compose.yml --env-file .env up -d --force-recreate
+            echo "=== N8N_SECURE_COOKIE in .env ==="
+            grep N8N_SECURE_COOKIE .env || echo "NOT IN .env"
+            echo "=== N8N_SECURE_COOKIE in container ==="
+            sleep 5
+            docker inspect $(docker ps -qf name=infra-n8n) --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null | grep -i secure || echo "NOT FOUND IN CONTAINER"
             curl -f http://localhost/health || exit 1
