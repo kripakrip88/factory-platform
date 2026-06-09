@@ -41,7 +41,8 @@ async def save_item(data: dict) -> str:
 async def get_unreviewed(limit: int = 5) -> list[dict]:
     rows = await _pool.fetch(
         """
-        SELECT id::text, category, summary, tags, importance, raw_text, created_at
+        SELECT id::text, category, summary, tags, importance, raw_text,
+               media_url, media_type, created_at
         FROM brain.items
         WHERE reviewed_at IS NULL
         ORDER BY importance DESC, created_at ASC
@@ -55,7 +56,8 @@ async def get_unreviewed(limit: int = 5) -> list[dict]:
 async def get_by_category(category: str, limit: int = 10, offset: int = 0) -> list[dict]:
     rows = await _pool.fetch(
         """
-        SELECT id::text, category, summary, tags, importance, raw_text, created_at
+        SELECT id::text, category, summary, tags, importance, raw_text,
+               media_url, media_type, created_at
         FROM brain.items
         WHERE category = $1
         ORDER BY created_at DESC
@@ -68,7 +70,11 @@ async def get_by_category(category: str, limit: int = 10, offset: int = 0) -> li
 
 async def get_item(item_id: str) -> Optional[dict]:
     row = await _pool.fetchrow(
-        "SELECT id::text, category, summary, tags, importance, raw_text, created_at, review_score FROM brain.items WHERE id = $1::uuid",
+        """
+        SELECT id::text, category, summary, tags, importance, raw_text,
+               media_url, media_type, created_at, review_score
+        FROM brain.items WHERE id = $1::uuid
+        """,
         item_id,
     )
     return dict(row) if row else None
@@ -105,7 +111,8 @@ async def mark_reviewed(item_id: str, score: int) -> None:
 async def search(query: str) -> list[dict]:
     rows = await _pool.fetch(
         """
-        SELECT id::text, category, summary, tags, importance, raw_text, created_at
+        SELECT id::text, category, summary, tags, importance, raw_text,
+               media_url, media_type, created_at
         FROM brain.items
         WHERE to_tsvector('russian', COALESCE(raw_text,'') || ' ' || COALESCE(summary,''))
               @@ plainto_tsquery('russian', $1)

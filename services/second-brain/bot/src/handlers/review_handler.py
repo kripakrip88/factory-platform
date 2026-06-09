@@ -1,7 +1,7 @@
 import logging
 from aiogram import Router, F
 from aiogram.filters import Command
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 
 from src.config import settings
 from src.services import storage, scheduler, importer
@@ -29,6 +29,24 @@ def _owner_only(message: Message) -> bool:
     return message.from_user and message.from_user.id == settings.owner_user_id
 
 
+async def _send_item_card(target, item: dict, keyboard) -> None:
+    """Отправляет карточку айтема — с фото если есть, иначе текстом."""
+    text = _build_item_text(item)
+    media_url = item.get("media_url")
+    media_type = item.get("media_type")
+
+    try:
+        if media_url and media_type == "photo":
+            await target.answer_photo(media_url, caption=text, parse_mode="HTML", reply_markup=keyboard)
+        elif media_url and media_type == "video":
+            await target.answer_video(media_url, caption=text, parse_mode="HTML", reply_markup=keyboard)
+        else:
+            await target.answer(text, parse_mode="HTML", reply_markup=keyboard)
+    except Exception:
+        # file_id мог протухнуть — шлём без медиа
+        await target.answer(text, parse_mode="HTML", reply_markup=keyboard)
+
+
 def _build_item_text(item: dict) -> str:
     emoji = CATEGORY_EMOJI.get(item["category"], "📌")
     cat_ru = CATEGORY_RU.get(item["category"], item["category"])
@@ -52,7 +70,7 @@ async def cmd_review_logic(message: Message) -> None:
     for item in items:
         neighbours = await storage.get_neighbours(item["id"])
         keyboard = review_keyboard(item["id"], neighbours["prev"], neighbours["next"])
-        await message.answer(_build_item_text(item), parse_mode="HTML", reply_markup=keyboard)
+        await _send_item_card(message, item, keyboard)
 
 
 async def cmd_stats_logic(message: Message) -> None:
@@ -124,7 +142,7 @@ async def cmd_search(message: Message) -> None:
     for item in results:
         neighbours = await storage.get_neighbours(item["id"])
         keyboard = review_keyboard(item["id"], neighbours["prev"], neighbours["next"])
-        await message.answer(_build_item_text(item), parse_mode="HTML", reply_markup=keyboard)
+        await _send_item_card(message, item, keyboard)
 
 
 @router.message(Command("import"))
@@ -222,7 +240,6 @@ async def handle_category_callback(callback: CallbackQuery) -> None:
     if has_more:
         nav_row.append(InlineKeyboardButton(text="Ещё ›", callback_data=f"cat_{category}_{offset + 5}"))
 
-    from aiogram.types import InlineKeyboardMarkup
     header_kb = InlineKeyboardMarkup(inline_keyboard=[
         nav_row,
         [InlineKeyboardButton(text="↩ К категориям", callback_data="show_categories")],
@@ -240,8 +257,6 @@ async def handle_category_callback(callback: CallbackQuery) -> None:
     for item in items:
         neighbours = await storage.get_neighbours(item["id"])
         keyboard = review_keyboard(item["id"], neighbours["prev"], neighbours["next"])
-        await callback.message.answer(
-            _build_item_text(item), parse_mode="HTML", reply_markup=keyboard
-        )
+        await _send_item_card(callback.message, item, keyboard)
 
     await callback.answer()
