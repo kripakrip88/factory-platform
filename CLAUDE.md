@@ -85,6 +85,7 @@ services/ai-assistant/
 - ⏳ n8n воркфлоу: email → лид
 - ⏳ Email Analyzer → лид в ERP
 - ⏳ Telegram-уведомление менеджеру
+- ⏳ Автобэкап баз данных (PostgreSQL + brain-db) — cron job на сервере, дамп раз в сутки
 
 **Месяц 3-4 — первая ценность**
 - Quotation Assistant (считает КП из данных ERP)
