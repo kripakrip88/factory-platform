@@ -27,8 +27,8 @@ DB_DSN = os.environ.get("DB_DSN", "postgresql://brain_user:password@brain-db:543
 TG_API = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
 
-async def send_photo(client: httpx.AsyncClient, photo_path: Path) -> str | None:
-    """Загружает фото в Telegram, возвращает file_id."""
+async def send_photo_with_msg_id(client: httpx.AsyncClient, photo_path: Path) -> tuple[str, int] | None:
+    """Загружает фото в Telegram, возвращает (file_id, message_id)."""
     if not photo_path.exists():
         return None
     try:
@@ -44,7 +44,7 @@ async def send_photo(client: httpx.AsyncClient, photo_path: Path) -> str | None:
             logger.warning("sendPhoto failed: %s", data)
             return None
         sizes = data["result"]["photo"]
-        return sizes[-1]["file_id"]
+        return sizes[-1]["file_id"], data["result"]["message_id"]
     except Exception as e:
         logger.warning("Upload error %s: %s", photo_path, e)
         return None
@@ -90,10 +90,12 @@ async def process_file(json_path: str, pool: asyncpg.Pool, client: httpx.AsyncCl
             continue
 
         photo_path = export_dir / photo_rel
-        file_id = await send_photo(client, photo_path)
-        if not file_id:
+        result = await send_photo_with_msg_id(client, photo_path)
+        if not result:
             logger.warning("Не удалось загрузить: %s", photo_path)
             continue
+        file_id, msg_id = result
+        await delete_uploaded_message(client, msg_id)
 
         await pool.execute(
             "UPDATE brain.items SET media_url=$1 WHERE id=$2",
