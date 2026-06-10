@@ -39,6 +39,8 @@ OPPORTUNITY_PROPERTY_SETTERS = [
 ]
 
 
+# Создаём типы сделок даже если поле скрыто —
+# дефолтное значение "Продажи" валидируется при сохранении документа
 def setup_opportunity_types():
     created = 0
     for ot in OPPORTUNITY_TYPES:
