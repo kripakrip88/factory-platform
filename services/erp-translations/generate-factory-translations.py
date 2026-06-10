@@ -21,6 +21,7 @@ import logging
 import subprocess
 from datetime import date
 from pathlib import Path
+from typing import Optional
 
 from factory_glossary import FACTORY_GLOSSARY
 
@@ -62,16 +63,29 @@ SYSTEM_PROMPT = """Ты — эксперт по локализации ERP-си�
 
 # ─── Загрузка строк ───────────────────────────────────────────────────────────
 
-def load_strings_from_progress() -> dict[str, str]:
-    """Загружает строки из существующего progress.json как источник."""
-    if not SOURCE_PROGRESS.exists():
-        log.warning("progress.json не найден, используется пустой словарь")
-        return {}
-    with open(SOURCE_PROGRESS, encoding="utf-8") as f:
-        return json.load(f)
+def load_strings_from_progress() -> dict:
+    """Загружает строки из progress.json или ru-metal.csv как источник."""
+    if SOURCE_PROGRESS.exists():
+        with open(SOURCE_PROGRESS, encoding="utf-8") as f:
+            return json.load(f)
+
+    # Фолбэк: читаем исходные строки из ru-metal.csv
+    ru_metal = SCRIPT_DIR / "ru-metal.csv"
+    if ru_metal.exists():
+        log.info("progress.json не найден — читаем строки из ru-metal.csv")
+        result = {}
+        with open(ru_metal, encoding="utf-8") as f:
+            for row in csv.reader(f):
+                if row and len(row) >= 1:
+                    result[row[0]] = row[1] if len(row) >= 2 else ""
+        log.info(f"Загружено {len(result)} строк из ru-metal.csv")
+        return result
+
+    log.warning("Ни progress.json ни ru-metal.csv не найдены")
+    return {}
 
 
-def extract_strings_from_container() -> list[str] | None:
+def extract_strings_from_container() -> Optional[list]:
     """Пытается извлечь строки из Docker-контейнера ERPNext."""
     try:
         result = subprocess.run(
@@ -111,7 +125,7 @@ def extract_strings_from_container() -> list[str] | None:
 
 # ─── Прогресс ────────────────────────────────────────────────────────────────
 
-def load_progress() -> dict[str, str]:
+def load_progress() -> dict:
     if PROGRESS_FILE.exists():
         with open(PROGRESS_FILE, encoding="utf-8") as f:
             return json.load(f)
@@ -125,7 +139,7 @@ def save_progress(progress: dict[str, str]) -> None:
 
 # ─── API-перевод ─────────────────────────────────────────────────────────────
 
-def translate_batch(client: anthropic.Anthropic, batch: list[str]) -> dict[int, str]:
+def translate_batch(client: anthropic.Anthropic, batch: list) -> dict:
     payload = {str(i): s for i, s in enumerate(batch)}
     message = client.messages.create(
         model=MODEL,
