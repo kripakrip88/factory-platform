@@ -71,6 +71,21 @@ ANTHROPIC_API_KEY=<key> ERP_API_KEY=<key> ERP_API_SECRET=<secret> \
   python3 services/erp-translations/upload-translations.py
 ```
 
+## Настройка CRM
+
+После первого запуска применить настройки CRM одной командой:
+
+```bash
+docker compose -f services/erp/docker-compose.yml cp \
+  services/erp/setup/crm_setup.py backend:/tmp/crm_setup.py
+docker compose -f services/erp/docker-compose.yml exec backend \
+  bench --site erp.localhost execute /tmp/crm_setup.py
+```
+
+Создаёт 7 этапов воронки и скрывает лишние поля в форме Opportunity.
+
+Реестр всех отключённых полей и модулей: [`docs/disabled-features.md`](../../docs/disabled-features.md)
+
 ## Установленные приложения
 
 | Приложение | Репозиторий | Ветка | Описание |
