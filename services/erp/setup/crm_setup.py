@@ -10,6 +10,8 @@
 
 import frappe
 
+OPPORTUNITY_TYPES = ["Продажи", "Поддержка", "Обслуживание"]
+
 SALES_STAGES = [
     "Новый запрос",
     "Квалификация",
@@ -35,6 +37,16 @@ OPPORTUNITY_PROPERTY_SETTERS = [
     ("competitors_section", "hidden", "1"),
     ("terms_section",       "hidden", "1"),
 ]
+
+
+def setup_opportunity_types():
+    created = 0
+    for ot in OPPORTUNITY_TYPES:
+        if not frappe.db.exists("Opportunity Type", ot):
+            frappe.get_doc({"doctype": "Opportunity Type", "name": ot}).insert(ignore_permissions=True)
+            created += 1
+    frappe.db.commit()
+    return created
 
 
 def setup_sales_stages():
@@ -73,11 +85,13 @@ def apply_property_setters():
 
 
 def execute():
+    types_created = setup_opportunity_types()
     stages_created = setup_sales_stages()
     setters_applied = apply_property_setters()
     frappe.clear_cache(doctype="Opportunity")
 
     print("=== CRM Setup ===")
+    print(f"Типов сделки создано: {types_created}")
     print(f"Этапов воронки создано: {stages_created} (пропущено существующих: {len(SALES_STAGES) - stages_created})")
     print(f"Property Setter применено: {setters_applied}")
     print("Кэш Opportunity очищен.")
