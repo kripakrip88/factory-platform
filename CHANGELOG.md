@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-06-11 (2)
+
+### services/erp
+- [feat] скрыты модули: Бухучёт (Invoicing/Financial Reports), Основные средства, Проекты, Качество, Субподряд, Support, Website, Integrations, Build, Users
+- [fix] зафиксировано скрытие модулей в init-site.sh — восстанавливается при новом деплое
+- [docs] обновлён README.md: список приложений, раздел скрытых модулей
+- [docs] обновлён CLAUDE.md: стек и дорожная карта
+
 ## 2026-06-11
 
 ### services/erp

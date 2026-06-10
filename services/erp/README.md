@@ -73,11 +73,23 @@ ANTHROPIC_API_KEY=<key> ERP_API_KEY=<key> ERP_API_SECRET=<secret> \
 
 ## Установленные приложения
 
-| Приложение | Репозиторий | Ветка | Описание |
-|------------|-------------|-------|----------|
-| erpnext | frappe/erpnext | v16 | Core ERP — продажи, закупки, производство, склад |
+| Приложение | Версия | Описание |
+|------------|--------|----------|
+| erpnext | v16 | Core ERP — продажи, закупки, производство, склад |
+| erp-translations | — | Русская локализация под терминологию металлопроизводства |
 
-CRM: используется встроенный CRM ERPNext (модуль CRM в основном приложении).
+CRM: используется встроенный модуль CRM ERPNext.
+
+## Скрытые модули
+
+Следующие модули скрыты через Workspace (не удалены — можно вернуть через Workspace settings):
+
+- Accounting / Invoicing / Financial Reports (Бухучёт)
+- Assets (Основные средства)
+- Projects (Проекты)
+- Quality (Качество)
+- Subcontracting (Субподряд)
+- Support, Website, Integrations, Build, Users (системные)
 
 ## История версий
 

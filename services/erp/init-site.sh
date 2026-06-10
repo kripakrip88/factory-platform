@@ -40,6 +40,12 @@ docker compose -f services/erp/docker-compose.yml exec db \
   mysql -uroot -p"$DB_ROOT_PASSWORD" -e \
   "GRANT ALL ON \`${DB_NAME}\`.* TO '${DB_NAME}'@'%' IDENTIFIED BY '${DB_PASS}'; FLUSH PRIVILEGES;"
 
+# Hide unused modules (not deleted — can be re-enabled via Workspace settings)
+echo "Hiding unused Workspace modules..."
+docker compose -f services/erp/docker-compose.yml exec db \
+  mysql -uroot -p"$DB_ROOT_PASSWORD" \
+  -e "USE \`${DB_NAME}\`; UPDATE \`tabWorkspace\` SET is_hidden=1 WHERE name IN ('Assets','Financial Reports','Invoicing','Projects','Quality','Subcontracting','Support','Website','Integrations','Build','Users');"
+
 echo "Setting site as default"
 docker compose -f services/erp/docker-compose.yml exec backend \
   bench --site "$SITE_NAME" set-config host_name "http://$SITE_NAME"
