@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-06-10 (3)
+
+### services/erp
+- [feat] установлена frappe-theme (devlpr-nitish/frappe-theme, ветка develop) — UI тема с Theme Settings
+- [chore] удалена saas_theme (сломанный build)
+
 ## 2026-06-10 (2)
 
 ### services/erp
