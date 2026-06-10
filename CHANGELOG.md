@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-06-11 (3)
+
+### services/erp-translations
+- [feat] добавлен `factory-glossary.py` — ~200 точных терминов завода без API
+- [feat] добавлен `generate-factory-translations.py` — v2 генератор с глоссарием и улучшенным промптом
+- [docs] обновлён README: v2 как рекомендуемый метод, раздел об ограничении падежей
+- [docs] создан Issue #2 — проработка контекстных ключей перевода
+
 ## 2026-06-11
 
 ### services/erp

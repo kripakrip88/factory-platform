@@ -14,11 +14,22 @@
 
 | Файл | Назначение |
 |------|-----------|
-| `generate-translations.py` | Генерирует `ru-metal.csv` через Claude API (запуск внутри контейнера) |
+| `generate-translations.py` | v1: генерирует `ru-metal.csv` через Claude API (запуск внутри контейнера) |
+| `generate-factory-translations.py` | v2: улучшенная генерация — глоссарий + API, запуск с хоста |
+| `factory-glossary.py` | Словарь точных терминов завода (~200 строк), применяется без API |
 | `upload-translations.py` | Загружает переводы в Translation DocType через REST API (запуск с хоста) |
 | `reset.sh` | Откат к стандартным переводам |
-| `ru-metal.csv` | Сгенерированный файл переводов (коммитится в репо) |
-| `progress.json` | Временный файл прогресса (создаётся и удаляется скриптом) |
+| `ru-metal.csv` | Переводы v1 (коммитится в репо) |
+| `ru-factory-YYYY-MM-DD.csv` | Переводы v2 (датированный выходной файл) |
+| `progress.json` | Прогресс v1-скрипта |
+| `progress-factory.json` | Прогресс v2-скрипта |
+
+## ⚠️ Известное ограничение: падежи и контекстные ключи
+
+Frappe поддерживает одну форму перевода на один английский ключ. Для корректного
+русского языка (кнопки vs статусы, именительный vs родительный падеж) нужна ручная
+доработка отдельных ключей. Задача зафиксирована в
+[Issue #2](https://github.com/kripakrip88/factory-platform/issues/2).
 
 ## Как работает загрузка переводов
 
@@ -32,7 +43,33 @@
 4. Заливает всё в Translation DocType по одной записи через REST API
 5. Очищает кэш ERPNext
 
-## Быстрый старт
+## Быстрый старт (v2 — рекомендуется)
+
+### 1. Генерация переводов с заводским глоссарием
+
+Запускать **с хоста** из корня репозитория:
+
+```bash
+ANTHROPIC_API_KEY=<key> python3 services/erp-translations/generate-factory-translations.py
+```
+
+Скрипт:
+- Применяет `factory-glossary.py` без API (~200 терминов мгновенно)
+- Остальные строки переводит через Claude Haiku API батчами по 40
+- Сохраняет прогресс в `progress-factory.json`
+- Генерирует `ru-factory-YYYY-MM-DD.csv`
+
+### 2. Загрузка v2-переводов в ERPNext
+
+```bash
+ERP_API_KEY=<key> ERP_API_SECRET=<secret> \
+python3 services/erp-translations/upload-translations.py \
+  services/erp-translations/ru-factory-YYYY-MM-DD.csv
+```
+
+---
+
+## Генерация v1 (устаревший метод, запуск внутри контейнера)
 
 ### 1. Генерация переводов (при первой установке или после обновления)
 

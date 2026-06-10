@@ -81,8 +81,10 @@ services/ai-assistant/
 **Месяц 1-2 — фундамент** ✅ в процессе
 - ✅ Сервер Бегет VPS, Ubuntu 24.04
 - ✅ Docker + автодеплой через GitHub Actions
-- ✅ ERPNext запущен (v16, мигрировали с v15)
+- ✅ ERPNext v16 запущен (мигрировали с v15)
 - ✅ Кастомные переводы ERPNext v16 (~14k строк, залиты в Translation DocType)
+- ✅ Скрыты неиспользуемые модули (Бухучёт, Основные средства, Проекты, Качество, Субподряд)
+- ⏳ Улучшенные переводы v2 — заводской глоссарий + правильные ERP-термины
 - ⏳ n8n воркфлоу: email → лид
 - ⏳ Email Analyzer → лид в ERP
 - ⏳ Telegram-уведомление менеджеру
@@ -109,7 +111,7 @@ services/ai-assistant/
 
 | Слой | Технология |
 |------|-----------|
-| ERP | ERPNext v16 + Frappe CRM + saas_theme (Python, Frappe, MariaDB) |
+| ERP | ERPNext v16 + встроенный CRM (Python, Frappe, MariaDB) |
 | AI | NestJS, TypeScript, Claude API (claude-sonnet-4-20250514) |
 | Оркестратор | n8n |
 | Бот | Node.js, TypeScript, node-telegram-bot-api |
