@@ -16,8 +16,7 @@ fi
 
 echo "[1/2] Удаление кастомных переводов..."
 docker compose ${ERP_COMPOSE} exec backend \
-  bench --site "${SITE_NAME}" execute frappe.translate.clear_translations \
-  --args "['ru']"
+  bench --site "${SITE_NAME}" execute frappe.translate.clear_translations --args "['ru']"
 echo "    OK"
 
 echo "[2/2] Очистка кэша..."

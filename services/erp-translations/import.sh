@@ -34,8 +34,7 @@ echo "    OK → ${CONTAINER_CSV}"
 
 echo "[3/4] Импорт переводов..."
 docker compose ${ERP_COMPOSE} exec backend \
-  bench --site "${SITE_NAME}" execute frappe.translate.import_translations \
-  --args "['ru', '${CONTAINER_CSV}']"
+  bench --site "${SITE_NAME}" import-translations ru "${CONTAINER_CSV}"
 echo "    OK"
 
 # ─── Очистка кэша ─────────────────────────────────────────────────────────────
