@@ -173,7 +173,7 @@ def translate_batch(client: anthropic.Anthropic, batch: list[str], batch_index: 
     for attempt in range(3):
         try:
             message = client.messages.create(
-                model="claude-sonnet-4-20250514",
+                model="claude-haiku-4-5-20251001",
                 max_tokens=4096,
                 system=SYSTEM_PROMPT,
                 messages=[{"role": "user", "content": user_prompt}],
