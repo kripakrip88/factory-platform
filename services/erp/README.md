@@ -86,6 +86,21 @@ docker compose -f services/erp/docker-compose.yml exec backend \
 
 Реестр всех отключённых полей и модулей: [`docs/disabled-features.md`](../../docs/disabled-features.md)
 
+## Настройка единиц измерения и складов
+
+После настройки CRM применить скрипт UOM:
+
+```bash
+docker compose -f services/erp/docker-compose.yml cp \
+  services/erp/setup/uom_setup.py backend:/tmp/uom_setup.py
+docker compose -f services/erp/docker-compose.yml exec backend \
+  bench --site erp.localhost execute /tmp/uom_setup.py
+```
+
+Создаёт русские единицы измерения (тн, шт, м, мм, м², кг), коэффициенты конвертации,
+4 склада (Металлопрокат, Обрезки, Готовая продукция, Брак), группы номенклатуры
+и атрибут "Длина" для вариантов прутков по длине.
+
 ## Установленные приложения
 
 | Приложение | Репозиторий | Ветка | Описание |
