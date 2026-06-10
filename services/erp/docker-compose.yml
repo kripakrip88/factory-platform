@@ -195,4 +195,6 @@ volumes:
   redis_socketio:
   sites:
   assets:
+    external: true
+    name: erp_assets
   logs:
