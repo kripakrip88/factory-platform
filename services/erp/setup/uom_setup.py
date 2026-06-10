@@ -27,7 +27,7 @@ def create_uoms():
 
 def create_uom_conversions():
     conversions = [
-        {"from_uom": "тн", "to_uom": "кг", "value": 1000, "category": "Weight"},
+        {"from_uom": "тн", "to_uom": "кг", "value": 1000, "category": "Mass"},
         {"from_uom": "м",  "to_uom": "мм", "value": 1000, "category": "Length"},
     ]
     created = 0
