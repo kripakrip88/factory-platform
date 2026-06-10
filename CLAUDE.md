@@ -109,7 +109,7 @@ services/ai-assistant/
 
 | Слой | Технология |
 |------|-----------|
-| ERP | ERPNext v16 (Python, Frappe, MariaDB) |
+| ERP | ERPNext v16 + Frappe CRM + saas_theme (Python, Frappe, MariaDB) |
 | AI | NestJS, TypeScript, Claude API (claude-sonnet-4-20250514) |
 | Оркестратор | n8n |
 | Бот | Node.js, TypeScript, node-telegram-bot-api |

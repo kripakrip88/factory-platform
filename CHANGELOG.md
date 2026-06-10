@@ -6,6 +6,9 @@
 - [feat] миграция ERPNext v15 → v16
 - [feat] перевод интерфейса под v16, ~14k строк через Claude Haiku API
 - [feat] переводы залиты в Translation DocType (Построение → Перевод)
+- [feat] установлен Frappe CRM (ветка main)
+- [feat] установлена saas_theme (version-16)
+- [docs] создан docs/erp-updates.md — инструкции по патч и мажорным обновлениям
 
 ## 2026-06-09
 
