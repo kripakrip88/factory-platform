@@ -75,6 +75,7 @@ services:
       - SOCKETIO_PORT=9000
     volumes:
       - sites:/home/frappe/frappe-bench/sites
+      - assets:/home/frappe/frappe-bench/assets
       - logs:/home/frappe/frappe-bench/logs
     depends_on:
       db:
@@ -101,6 +102,7 @@ services:
       - CLIENT_MAX_BODY_SIZE=50m
     volumes:
       - sites:/home/frappe/frappe-bench/sites
+      - assets:/home/frappe/frappe-bench/assets
     ports:
       - "8080:8080"
     depends_on:
@@ -192,4 +194,5 @@ volumes:
   redis_queue:
   redis_socketio:
   sites:
+  assets:
   logs:
