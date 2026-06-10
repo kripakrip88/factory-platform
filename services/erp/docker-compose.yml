@@ -59,7 +59,7 @@ services:
 
   # ─── ERPNext backend ────────────────────────────────────────────────────────
   backend:
-    image: frappe/erpnext:v15.110.0
+    image: frappe/erpnext:v16
     restart: unless-stopped
     logging:
       driver: json-file
@@ -82,7 +82,7 @@ services:
 
   # ─── Frontend (nginx static) ─────────────────────────────────────────────────
   frontend:
-    image: frappe/erpnext:v15.110.0
+    image: frappe/erpnext:v16
     restart: unless-stopped
     logging:
       driver: json-file
@@ -109,7 +109,7 @@ services:
 
   # ─── Websocket ───────────────────────────────────────────────────────────────
   websocket:
-    image: frappe/erpnext:v15.110.0
+    image: frappe/erpnext:v16
     restart: unless-stopped
     logging:
       driver: json-file
@@ -126,7 +126,7 @@ services:
 
   # ─── Workers ─────────────────────────────────────────────────────────────────
   queue-short:
-    image: frappe/erpnext:v15.110.0
+    image: frappe/erpnext:v16
     restart: unless-stopped
     logging:
       driver: json-file
@@ -141,7 +141,7 @@ services:
       - redis-queue
 
   queue-long:
-    image: frappe/erpnext:v15.110.0
+    image: frappe/erpnext:v16
     restart: unless-stopped
     logging:
       driver: json-file
@@ -156,7 +156,7 @@ services:
       - redis-queue
 
   queue-default:
-    image: frappe/erpnext:v15.110.0
+    image: frappe/erpnext:v16
     restart: unless-stopped
     logging:
       driver: json-file
@@ -172,7 +172,7 @@ services:
 
   # ─── Scheduler ───────────────────────────────────────────────────────────────
   scheduler:
-    image: frappe/erpnext:v15.110.0
+    image: frappe/erpnext:v16
     restart: unless-stopped
     logging:
       driver: json-file

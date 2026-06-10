@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-06-10
+
+### services/erp
+- [feat] миграция ERPNext v15 → v16
+- [feat] перевод интерфейса под v16, ~14k строк через Claude Haiku API
+- [feat] переводы залиты в Translation DocType (Построение → Перевод)
+
 ## 2026-06-09
 
 ### factory-platform

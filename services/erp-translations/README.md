@@ -1,4 +1,4 @@
-# erp-translations — Кастомная русская локализация ERPNext
+# erp-translations — Кастомная русская локализация ERPNext v16
 
 Модуль генерирует профессиональный русский перевод интерфейса ERPNext,
 адаптированный под терминологию завода металлоконструкций, и загружает его
@@ -102,11 +102,33 @@ bash services/erp-translations/reset.sh
 
 Изменения применяются сразу после сохранения.
 
-## При установке новых модулей ERPNext
+## При обновлении ERPNext или установке новых модулей
 
-1. Запустите `generate-translations.py` — он переведёт только новые строки (прогресс сохраняется)
-2. Закоммитьте обновлённый `ru-metal.csv`
-3. Запустите `upload-translations.py` — он допольёт только отсутствующие записи в DocType
+При обновлении версии ERPNext строки интерфейса меняются — нужно перегенерировать CSV с нуля:
+
+```bash
+# Удалить прогресс предыдущей генерации
+rm -f services/erp-translations/progress.json
+
+# Перегенерировать (скрипт переведёт все строки заново)
+docker compose -f services/erp/docker-compose.yml cp \
+  services/erp-translations/generate-translations.py \
+  backend:/tmp/generate-translations.py
+docker compose -f services/erp/docker-compose.yml exec \
+  -e ANTHROPIC_API_KEY=$(grep ANTHROPIC_API_KEY .env | cut -d= -f2) \
+  backend python /tmp/generate-translations.py
+docker compose -f services/erp/docker-compose.yml cp \
+  backend:/tmp/ru-metal.csv services/erp-translations/ru-metal.csv
+```
+
+При добавлении нового модуля (без смены версии) — `progress.json` удалять не нужно,
+скрипт допереведёт только новые строки.
+
+После генерации:
+1. Закоммитьте обновлённый `ru-metal.csv`
+2. Запустите `upload-translations.py` — он допольёт только отсутствующие записи в DocType
+
+> Текущий `ru-metal.csv` актуален для ERPNext **v16**.
 
 ## Словарь якорей
 
