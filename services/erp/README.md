@@ -76,7 +76,6 @@ ANTHROPIC_API_KEY=<key> ERP_API_KEY=<key> ERP_API_SECRET=<secret> \
 | Приложение | Репозиторий | Ветка | Описание |
 |------------|-------------|-------|----------|
 | erpnext | frappe/erpnext | v16 | Core ERP — продажи, закупки, производство, склад |
-| frappe_theme | devlpr-nitish/frappe-theme | develop | UI тема с настройкой цветов |
 
 CRM: используется встроенный CRM ERPNext (модуль CRM в основном приложении).
 

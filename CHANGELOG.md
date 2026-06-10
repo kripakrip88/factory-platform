@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-06-11
+
+### services/erp
+- [chore] удалена frappe-theme — кривая верстка, оставлен стандартный UI ERPNext
+
 ## 2026-06-10 (3)
 
 ### services/erp

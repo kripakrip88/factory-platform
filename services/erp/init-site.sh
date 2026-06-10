@@ -40,14 +40,6 @@ docker compose -f services/erp/docker-compose.yml exec db \
   mysql -uroot -p"$DB_ROOT_PASSWORD" -e \
   "GRANT ALL ON \`${DB_NAME}\`.* TO '${DB_NAME}'@'%' IDENTIFIED BY '${DB_PASS}'; FLUSH PRIVILEGES;"
 
-echo "Installing frappe-theme..."
-docker compose -f services/erp/docker-compose.yml exec backend \
-  bench get-app frappe_theme https://github.com/devlpr-nitish/frappe-theme --branch develop
-docker compose -f services/erp/docker-compose.yml exec backend \
-  bench --site "$SITE_NAME" install-app frappe_theme
-docker compose -f services/erp/docker-compose.yml exec backend \
-  bench build --app frappe_theme || true
-
 echo "Setting site as default"
 docker compose -f services/erp/docker-compose.yml exec backend \
   bench --site "$SITE_NAME" set-config host_name "http://$SITE_NAME"
