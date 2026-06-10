@@ -40,18 +40,6 @@ docker compose -f services/erp/docker-compose.yml exec db \
   mysql -uroot -p"$DB_ROOT_PASSWORD" -e \
   "GRANT ALL ON \`${DB_NAME}\`.* TO '${DB_NAME}'@'%' IDENTIFIED BY '${DB_PASS}'; FLUSH PRIVILEGES;"
 
-echo "Installing Frappe CRM..."
-docker compose -f services/erp/docker-compose.yml exec backend \
-  bench get-app crm --branch main
-docker compose -f services/erp/docker-compose.yml exec backend \
-  bench --site "$SITE_NAME" install-app crm
-
-echo "Installing saas_theme..."
-docker compose -f services/erp/docker-compose.yml exec backend \
-  bench get-app saas_theme --branch version-16 https://github.com/vineyrawat/saas_theme
-docker compose -f services/erp/docker-compose.yml exec backend \
-  bench --site "$SITE_NAME" install-app saas_theme
-
 echo "Setting site as default"
 docker compose -f services/erp/docker-compose.yml exec backend \
   bench --site "$SITE_NAME" set-config host_name "http://$SITE_NAME"
@@ -63,4 +51,3 @@ echo ""
 echo "✅ ERPNext site created: $SITE_NAME"
 echo "   Admin password: $ADMIN_PASSWORD"
 echo "   ERP:  http://SERVER_IP:8080"
-echo "   CRM:  http://SERVER_IP:8080/crm"

@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-06-10 (2)
+
+### services/erp
+- [chore] удалён Frappe CRM — используется встроенный CRM ERPNext
+
 ## 2026-06-10
 
 ### services/erp

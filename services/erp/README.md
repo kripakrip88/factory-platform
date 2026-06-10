@@ -76,10 +76,8 @@ ANTHROPIC_API_KEY=<key> ERP_API_KEY=<key> ERP_API_SECRET=<secret> \
 | Приложение | Ветка | Описание |
 |------------|-------|----------|
 | erpnext | v16 | Core ERP — продажи, закупки, производство, склад |
-| crm | main | Frappe CRM — воронка продаж, лиды, сделки |
-| saas_theme | version-16 | Современная UI тема |
 
-CRM доступен по адресу: `http://SERVER_IP:8080/crm`
+CRM: используется встроенный CRM ERPNext (модуль CRM в основном приложении).
 
 ## История версий
 
