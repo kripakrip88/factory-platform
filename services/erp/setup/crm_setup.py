@@ -38,6 +38,10 @@ OPPORTUNITY_PROPERTY_SETTERS = [
     ("terms_section",       "hidden", "1"),
 ]
 
+# Секции sidebar CRM которые отключаем (вместе со всеми дочерними ссылками).
+# Sidebar определяется в Workspace Sidebar DocType (source: erpnext/workspace_sidebar/crm.json).
+REMOVE_SIDEBAR_SECTIONS = {"Reports", "Maintenance", "Sales Pipeline", "Campaign"}
+
 
 # Создаём типы сделок даже если поле скрыто —
 # дефолтное значение "Продажи" валидируется при сохранении документа
@@ -86,15 +90,40 @@ def apply_property_setters():
     return applied
 
 
+def cleanup_crm_workspace():
+    """Отключает лишние секции из бокового меню CRM через Workspace Sidebar."""
+    ws = frappe.get_doc("Workspace Sidebar", "CRM")
+    original_count = len(ws.items)
+
+    keep = []
+    in_removed_section = False
+
+    for item in ws.items:
+        if item.type == "Section Break":
+            in_removed_section = item.label in REMOVE_SIDEBAR_SECTIONS
+            if not in_removed_section:
+                keep.append(item)
+        elif not in_removed_section:
+            keep.append(item)
+
+    ws.items = keep
+    ws.save(ignore_permissions=True)
+    frappe.clear_cache()
+
+    removed = original_count - len(keep)
+    print(f"Sidebar: отключено {removed} элементов, осталось {len(keep)}")
+    return removed
+
+
 def execute():
     types_created = setup_opportunity_types()
     stages_created = setup_sales_stages()
     setters_applied = apply_property_setters()
-    frappe.clear_cache(doctype="Opportunity")
+    sidebar_removed = cleanup_crm_workspace()
 
     print("=== CRM Setup ===")
     print(f"Типов сделки создано: {types_created}")
     print(f"Этапов воронки создано: {stages_created} (пропущено существующих: {len(SALES_STAGES) - stages_created})")
     print(f"Property Setter применено: {setters_applied}")
-    print("Кэш Opportunity очищен.")
+    print(f"Sidebar: отключено элементов: {sidebar_removed}")
     print("Готово.")
