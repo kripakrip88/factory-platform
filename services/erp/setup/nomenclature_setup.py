@@ -190,8 +190,6 @@ def create_test_stock():
 # ── Точка входа ───────────────────────────────────────────────────────────────
 
 def execute():
-    frappe.db.begin()
-
     deleted = delete_old_data()
     frappe.db.commit()
 
