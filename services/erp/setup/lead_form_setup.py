@@ -3,6 +3,7 @@
 
 Скрипт выполняет ПОЛНЫЙ ПЕРЕСБОР: удаляет все существующие Custom Field
 и Property Setter для Lead, затем создаёт всё заново в правильном порядке.
+Client Script для синхронизации mw_full_name/mw_job_title создаётся/обновляется.
 
 Запуск:
     # 1. Скопировать файл в контейнер
@@ -20,40 +21,68 @@
       "'
 
 Целевой макет:
-    [TOP]
-      Серия | — | Владелец Лида | Статус
+    [без секции]
+      Серия | Владелец | Статус
 
-    [Информация о контакте]
-      ФИО *     | Email          | Телефон
-      Должность | Мобильный      |
+    [Контакт]
+      ФИО *     | Email     | Телефон
+      Должность | Мобильный |
 
     [Организация и запрос]
-      Название орг. * | Источник
-                      | Город
-                      | Регион
-      ─────────────────────────────
-      Объём (тонн)    | Дата поставки
-      ─────────────────────────────
-      Наличие чертежей
+      Название орг. *       | Источник
+      Объём (тонн)          | Город
+      Желаемая дата поставки| Регион
+      Наличие чертежей      |
       AI-комментарий
       Примечание
-
-Примечание о синхронизации mw_full_name → first_name:
-    first_name используется ERPNext внутренне для построения lead_name.
-    Добавить Client Script (ERPNext Admin → Client Script):
-
-    frappe.ui.form.on('Lead', {
-        mw_full_name: function(frm) {
-            frm.set_value('first_name', frm.doc.mw_full_name);
-        }
-    });
 """
 
 import frappe
 
+# ─── Стандартные поля — скрыть через Property Setter ──────────────────────────
+HIDE_STANDARD = [
+    # Личные данные
+    "salutation", "gender", "middle_name", "last_name", "lead_name",
+    "first_name",    # заменён кастомным mw_full_name
+    "job_title",     # заменён кастомным mw_job_title
+    # Тип / статус
+    "type", "customer", "request_type",
+    # Контакты — лишние
+    "phone_ext", "whatsapp_no", "website",
+    # Организация — нерелевантные
+    "annual_revenue", "no_of_employees", "industry", "market_segment", "fax",
+    # UTM — заменён mw_source; остальные не нужны
+    "utm_source", "utm_campaign", "utm_medium", "utm_content",
+    # Секции — пустые/ненужные
+    "utm_analytics_section", "address_section", "other_info_tab",
+    # Сертификация
+    "qualification_tab", "qualified_by", "qualified_on", "qualification_status",
+    # Доп. информация
+    "language", "unsubscribed", "blog_subscriber", "disabled",
+    # Адрес — заменён кастомными mw_city / mw_state
+    "city", "state", "country", "territory",
+    # Наша компания
+    "company",
+]
+
+# Стандартные Column Break которые ломают сетку — скрыть
+HIDE_COLUMN_BREAKS = [
+    "col_break123",    # TOP: пустая средняя колонка
+    "column_break_20", # Contact: разрыв между email и mobile
+    "column_break_16", # Contact: разрыв перед phone
+    "column_break_28", # Org: пустой col2
+    "column_break_31", # Org: пустой col3
+]
+
+# ─── Property Setter: переименования секций ────────────────────────────────────
+RENAMES = [
+    ("organization_section", "label", "Организация и запрос"),
+    ("contact_info_tab",     "label", "Контакт"),
+]
+
 # ─── Кастомные поля — создаются в указанном порядке ───────────────────────────
 CUSTOM_FIELDS = [
-    # ── Блок «Информация о контакте» ─────────────────────────────────────────
+    # ── Блок «Контакт» ────────────────────────────────────────────────────────
     {
         "fieldname": "mw_full_name",
         "fieldtype": "Data",
@@ -68,27 +97,52 @@ CUSTOM_FIELDS = [
         "insert_after": "mw_full_name",
     },
     {
-        "fieldname": "mw_cb_contact",          # col break: ФИО+Должность | Email+Мобильный
+        "fieldname": "mw_cb_contact",      # col break → email, mobile в col2
         "fieldtype": "Column Break",
-        "label": "",
         "insert_after": "mw_job_title",
     },
-    # email_id, mobile_no — стандартные, встают в col2 автоматически
-    {
-        "fieldname": "mw_cb_contact2",         # col break: Email+Мобильный | Телефон
-        "fieldtype": "Column Break",
-        "label": "",
-        "insert_after": "mobile_no",
-    },
-    # phone — стандартный, встаёт в col3 автоматически
+    # email_id, mobile_no → col2; mw_cb_contact2 отделяет phone → col3
+    # (col2/col3 формируются скрытием стандартных column_break_20 и column_break_16)
 
-    # ── Блок «Организация и запрос» ───────────────────────────────────────────
+    # ── Блок «Организация и запрос» — левая колонка ───────────────────────────
     # company_name — стандартное, col1
     {
-        "fieldname": "mw_cb_org",              # col break: Название орг. | Источник
-        "fieldtype": "Column Break",
-        "label": "",
+        "fieldname": "mw_estimated_volume",
+        "fieldtype": "Float",
+        "label": "Объём (тонн)",
         "insert_after": "company_name",
+    },
+    {
+        "fieldname": "mw_desired_delivery_date",
+        "fieldtype": "Date",
+        "label": "Желаемая дата поставки",
+        "insert_after": "mw_estimated_volume",
+    },
+    {
+        "fieldname": "mw_drawing_status",
+        "fieldtype": "Select",
+        "label": "Наличие чертежей",
+        "options": "\nЕсть готовые\nНужна разработка\nЧастично",
+        "insert_after": "mw_desired_delivery_date",
+    },
+    {
+        "fieldname": "mw_ai_comment",
+        "fieldtype": "Text",
+        "label": "AI-комментарий",
+        "read_only": 1,
+        "insert_after": "mw_drawing_status",
+    },
+    {
+        "fieldname": "mw_note",
+        "fieldtype": "Small Text",
+        "label": "Примечание",
+        "insert_after": "mw_ai_comment",
+    },
+    # ── Блок «Организация и запрос» — правая колонка ─────────────────────────
+    {
+        "fieldname": "mw_cb_org",          # col break → Источник/Город/Регион в col2
+        "fieldtype": "Column Break",
+        "insert_after": "mw_note",
     },
     {
         "fieldname": "mw_source",
@@ -109,95 +163,23 @@ CUSTOM_FIELDS = [
         "label": "Регион",
         "insert_after": "mw_city",
     },
-    # Section Break без label — "переносит строку": Объём/Дата встают под Название орг.
-    {
-        "fieldname": "mw_sb_details",
-        "fieldtype": "Section Break",
-        "label": "",
-        "insert_after": "mw_state",
-    },
-    {
-        "fieldname": "mw_estimated_volume",
-        "fieldtype": "Float",
-        "label": "Ориентировочный объём (тонн)",
-        "insert_after": "mw_sb_details",
-    },
-    {
-        "fieldname": "mw_cb_details",          # col break: Объём | Дата поставки
-        "fieldtype": "Column Break",
-        "label": "",
-        "insert_after": "mw_estimated_volume",
-    },
-    {
-        "fieldname": "mw_desired_delivery_date",
-        "fieldtype": "Date",
-        "label": "Желаемая дата поставки",
-        "insert_after": "mw_cb_details",
-    },
-    # Section Break без label — широкие поля на всю ширину
-    {
-        "fieldname": "mw_sb_wide",
-        "fieldtype": "Section Break",
-        "label": "",
-        "insert_after": "mw_desired_delivery_date",
-    },
-    {
-        "fieldname": "mw_drawing_status",
-        "fieldtype": "Select",
-        "label": "Наличие чертежей",
-        "options": "\nЕсть готовые\nНужна разработка\nЧастично",
-        "insert_after": "mw_sb_wide",
-    },
-    {
-        "fieldname": "mw_ai_comment",
-        "fieldtype": "Text",
-        "label": "AI-комментарий",
-        "read_only": 1,
-        "insert_after": "mw_drawing_status",
-    },
-    {
-        "fieldname": "mw_note",
-        "fieldtype": "Small Text",
-        "label": "Примечание",
-        "insert_after": "mw_ai_comment",
-    },
 ]
 
-# ─── Стандартные поля — скрыть через Property Setter ──────────────────────────
-FIELDS_TO_HIDE = [
-    # Личные данные
-    "salutation", "gender", "middle_name", "last_name", "lead_name",
-    # Тип / статус
-    "type", "customer", "request_type",
-    # Заменены кастомными
-    "first_name", "job_title",
-    # Контакты — лишние
-    "phone_ext", "whatsapp_no", "website",
-    # Организация — нерелевантные
-    "annual_revenue", "no_of_employees", "industry", "market_segment", "fax",
-    # UTM — заменён mw_source; остальные не нужны
-    "utm_campaign", "utm_medium", "utm_content", "utm_source",
-    # Секции — пустые/ненужные
-    "utm_analytics_section", "address_section", "other_info_tab",
-    # Сертификация
-    "qualification_tab", "qualified_by", "qualified_on", "qualification_status",
-    # Доп. информация
-    "language", "unsubscribed", "blog_subscriber", "disabled",
-    # Адрес — заменён кастомными mw_city / mw_state
-    "city", "state", "country", "territory",
-    # Наша компания — автозаполняется
-    "company",
-]
-
-# ─── Property Setter: переименования ──────────────────────────────────────────
-# (fieldname, property, value, property_type)
-LABEL_OVERRIDES = [
-    ("organization_section", "label", "Организация и запрос", "Data"),
-]
+# ─── Client Script: синхронизация кастомных полей со стандартными ─────────────
+CLIENT_SCRIPT_NAME = "Lead-Form"
+CLIENT_SCRIPT = """\
+frappe.ui.form.on('Lead', {
+    mw_full_name: function(frm) {
+        frm.set_value('first_name', frm.doc.mw_full_name);
+    },
+    mw_job_title: function(frm) {
+        frm.set_value('job_title', frm.doc.mw_job_title);
+    }
+});
+"""
 
 
 def _delete_existing():
-    """Удаляем все старые Custom Field и Property Setter для Lead."""
     old_cfs = frappe.get_all("Custom Field", filters={"dt": "Lead"}, pluck="name")
     for name in old_cfs:
         frappe.delete_doc("Custom Field", name, ignore_permissions=True, force=True)
@@ -214,11 +196,11 @@ def _delete_existing():
 def _create_custom_fields():
     for fd in CUSTOM_FIELDS:
         frappe.get_doc({"doctype": "Custom Field", "dt": "Lead", **fd}).insert(ignore_permissions=True)
-        print(f"  created: {fd['fieldname']} ({fd['fieldtype']})")
+        print(f"  + {fd['fieldname']} ({fd['fieldtype']})")
 
 
 def _apply_property_setters():
-    for fieldname in FIELDS_TO_HIDE:
+    for fieldname in HIDE_STANDARD + HIDE_COLUMN_BREAKS:
         frappe.get_doc({
             "doctype": "Property Setter",
             "doctype_or_field": "DocField",
@@ -230,7 +212,7 @@ def _apply_property_setters():
         }).insert(ignore_permissions=True)
         print(f"  hidden: {fieldname}")
 
-    for fieldname, prop, value, prop_type in LABEL_OVERRIDES:
+    for fieldname, prop, value in RENAMES:
         frappe.get_doc({
             "doctype": "Property Setter",
             "doctype_or_field": "DocField",
@@ -238,22 +220,47 @@ def _apply_property_setters():
             "field_name": fieldname,
             "property": prop,
             "value": value,
-            "property_type": prop_type,
+            "property_type": "Data",
         }).insert(ignore_permissions=True)
-        print(f"  {prop}: {fieldname} → '{value}'")
+        print(f"  rename: {fieldname} → '{value}'")
+
+
+def _upsert_client_script():
+    existing = frappe.db.get_value("Client Script", {"dt": "Lead"}, "name")
+    if existing:
+        doc = frappe.get_doc("Client Script", existing)
+        doc.script = CLIENT_SCRIPT
+        doc.enabled = 1
+        doc.save(ignore_permissions=True)
+        print(f"  обновлён: {existing}")
+    else:
+        frappe.get_doc({
+            "doctype": "Client Script",
+            "name": CLIENT_SCRIPT_NAME,
+            "dt": "Lead",
+            "view": "Form",
+            "enabled": 1,
+            "script": CLIENT_SCRIPT,
+        }).insert(ignore_permissions=True)
+        print(f"  создан: {CLIENT_SCRIPT_NAME}")
 
 
 def execute():
     print("=== Lead Form Setup: Завод металлоконструкций ===")
 
-    print("\n[1/3] Удаляем старые настройки...")
+    print("\n[1/4] Удаляем старые настройки...")
     _delete_existing()
 
-    print("\n[2/3] Создаём кастомные поля...")
+    print("\n[2/4] Создаём кастомные поля...")
     _create_custom_fields()
 
-    print("\n[3/3] Property Setter: скрытие и переименования...")
+    print("\n[3/4] Property Setter: скрытие и переименования...")
     _apply_property_setters()
+
+    frappe.db.commit()
+
+    print("\n[4/4] Client Script...")
+    _upsert_client_script()
 
     frappe.db.commit()
     print("\n✅ Готово. Перезагрузите страницу ERPNext (Ctrl+R).")
