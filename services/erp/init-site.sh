@@ -27,7 +27,8 @@ docker compose -f services/erp/docker-compose.yml exec backend \
   bench new-site "$SITE_NAME" \
   --mariadb-root-password "$DB_ROOT_PASSWORD" \
   --admin-password "$ADMIN_PASSWORD" \
-  --install-app erpnext
+  --install-app erpnext \
+  --install-app saas_theme
 
 # Grant DB user access from any host (needed in Docker networking)
 DB_NAME=$(docker compose -f services/erp/docker-compose.yml exec backend \
