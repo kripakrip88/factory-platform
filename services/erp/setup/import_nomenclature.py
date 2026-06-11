@@ -20,9 +20,44 @@ GROUP       = "Сортовой прокат"
 UOM         = "шт"
 
 
+def _attr_meta(attribute_name):
+    """Читаем numeric_values и диапазон из Item Attribute чтобы правильно заполнить дочернюю таблицу."""
+    return frappe.db.get_value(
+        "Item Attribute",
+        attribute_name,
+        ["numeric_values", "from_range", "to_range", "increment"],
+        as_dict=True,
+    ) or {}
+
+
 def create_template(code):
     if frappe.db.exists("Item", code):
+        # Обновляем numeric_values в существующих дочерних строках если они неправильные
+        for attr_name in ["Длина", "Площадь покраски (м²/м)", "Марка стали"]:
+            meta = _attr_meta(attr_name)
+            frappe.db.set_value(
+                "Item Variant Attribute",
+                {"attribute": attr_name, "parent": code},
+                {
+                    "numeric_values": meta.get("numeric_values", 0),
+                    "from_range":     meta.get("from_range", 0),
+                    "to_range":       meta.get("to_range", 0),
+                    "increment":      meta.get("increment", 0),
+                },
+            )
         return False
+
+    attrs = []
+    for attr_name in ["Марка стали", "Длина", "Площадь покраски (м²/м)"]:
+        meta = _attr_meta(attr_name)
+        attrs.append({
+            "attribute":     attr_name,
+            "numeric_values": meta.get("numeric_values", 0),
+            "from_range":    meta.get("from_range", 0),
+            "to_range":      meta.get("to_range", 0),
+            "increment":     meta.get("increment", 0),
+        })
+
     doc = frappe.get_doc({
         "doctype": "Item",
         "item_code": code,
@@ -30,11 +65,7 @@ def create_template(code):
         "item_group": GROUP,
         "stock_uom": UOM,
         "has_variants": 1,
-        "attributes": [
-            {"attribute": "Марка стали"},
-            {"attribute": "Длина"},
-            {"attribute": "Площадь покраски (м²/м)"},
-        ],
+        "attributes": attrs,
     })
     doc.insert(ignore_permissions=True)
     return True
