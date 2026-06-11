@@ -88,7 +88,9 @@ def create_item_groups():
     return created
 
 
-def create_length_attribute():
+def create_item_attributes():
+    created = 0
+
     if not frappe.db.exists("Item Attribute", "Длина"):
         doc = frappe.get_doc({
             "doctype": "Item Attribute",
@@ -99,8 +101,34 @@ def create_length_attribute():
             "increment": 1,
         })
         doc.insert(ignore_permissions=True)
-        return 1
-    return 0
+        created += 1
+
+    if not frappe.db.exists("Item Attribute", "Марка стали"):
+        doc = frappe.get_doc({
+            "doctype": "Item Attribute",
+            "attribute_name": "Марка стали",
+            "numeric_values": 0,
+            "item_attribute_values": [
+                {"attribute_value": v, "abbr": v}
+                for v in ["Ст3сп", "С245", "С345", "09Г2С", "10ХСНД"]
+            ],
+        })
+        doc.insert(ignore_permissions=True)
+        created += 1
+
+    if not frappe.db.exists("Item Attribute", "Площадь покраски (м²/м)"):
+        doc = frappe.get_doc({
+            "doctype": "Item Attribute",
+            "attribute_name": "Площадь покраски (м²/м)",
+            "numeric_values": 1,
+            "from_range": 0,
+            "to_range": 100,
+            "increment": 0.001,
+        })
+        doc.insert(ignore_permissions=True)
+        created += 1
+
+    return created
 
 
 def execute():
@@ -110,7 +138,7 @@ def execute():
     conversions = create_uom_conversions()
     warehouses = create_warehouses()
     groups = create_item_groups()
-    attributes = create_length_attribute()
+    attributes = create_item_attributes()
 
     frappe.db.commit()
 
