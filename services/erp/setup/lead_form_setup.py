@@ -20,35 +20,54 @@
 import frappe
 
 FIELDS_TO_HIDE = [
-    # Секция «Основные данные»
+    # Личные данные — нерелевантны для B2B
     ("salutation", "Lead"),
     ("gender", "Lead"),
-    ("lead_type", "Lead"),
-    ("last_name", "Lead"),
     ("middle_name", "Lead"),
-    ("request_type", "Lead"),
-    # Секция «Информация о контакте»
+    ("last_name", "Lead"),
+    ("lead_name", "Lead"),        # Full Name — автогенерируемый дубль ФИО
+    # Тип и статус
+    ("type", "Lead"),             # Тип Лида (правильный fieldname, не lead_type)
+    ("customer", "Lead"),         # From Customer
+    # Контакты — лишние
+    ("phone_ext", "Lead"),        # Внутренний номер (правильный fieldname, не ext)
+    ("whatsapp_no", "Lead"),
     ("website", "Lead"),
-    ("ext", "Lead"),
-    # Секция «Организация»
+    # Организация — нерелевантные
     ("annual_revenue", "Lead"),
     ("no_of_employees", "Lead"),
     ("industry", "Lead"),
     ("market_segment", "Lead"),
     ("fax", "Lead"),
-    # Секция «Аналитика»
-    ("campaign_name", "Lead"),
-    ("medium", "Lead"),
-    ("content", "Lead"),
-    # Секция «Сертификация»
+    # UTM / Аналитика — utm_source оставляем видимым, остальное скрываем
+    ("utm_campaign", "Lead"),     # правильный fieldname (не campaign_name)
+    ("utm_medium", "Lead"),       # правильный fieldname (не medium)
+    ("utm_content", "Lead"),      # правильный fieldname (не content)
+    # Секции — скрываем пустые/ненужные
+    ("utm_analytics_section", "Lead"),
+    ("address_section", "Lead"),
+    ("other_info_tab", "Lead"),
+    # Сертификация — вся секция и отдельные поля
+    ("qualification_tab", "Lead"),
     ("qualified_by", "Lead"),
     ("qualified_on", "Lead"),
     ("qualification_status", "Lead"),
-    # Секция «Дополнительная информация»
+    # Дополнительная информация
     ("language", "Lead"),
     ("unsubscribed", "Lead"),
     ("blog_subscriber", "Lead"),
     ("disabled", "Lead"),
+    # Запрос
+    ("request_type", "Lead"),
+]
+
+# Перестановка полей: (fieldname, insert_after)
+# utm_source переносим в секцию Организация рядом с company_name
+# city и state — туда же, чтобы не нужна была секция Адрес
+FIELD_ORDER = [
+    ("utm_source", "company_name"),
+    ("city", "utm_source"),
+    ("state", "city"),
 ]
 
 CUSTOM_FIELDS = [
@@ -164,17 +183,44 @@ def add_custom_fields():
         print(f"  Created custom field: {fieldname}")
 
 
-def execute():
-    print("=== Lead Form Setup: Завод металлоконструкций ===")
+def reorder_fields():
+    """Переставляем поля через Property Setter insert_after."""
+    for fieldname, insert_after_value in FIELD_ORDER:
+        existing = frappe.db.get_value(
+            "Property Setter",
+            {"doc_type": "Lead", "field_name": fieldname, "property": "insert_after"},
+            "name",
+        )
+        if existing:
+            frappe.db.set_value("Property Setter", existing, "value", insert_after_value)
+            print(f"  Updated insert_after for Lead.{fieldname} → {insert_after_value}")
+        else:
+            frappe.get_doc({
+                "doctype": "Property Setter",
+                "doctype_or_field": "DocField",
+                "doc_type": "Lead",
+                "field_name": fieldname,
+                "property": "insert_after",
+                "value": insert_after_value,
+                "property_type": "Data",
+            }).insert(ignore_permissions=True)
+            print(f"  Set insert_after for Lead.{fieldname} → {insert_after_value}")
 
-    print("\n[1/3] Скрытие стандартных полей...")
+
+def execute():
+    print("=== Lead Form Fix: Завод металлоконструкций ===")
+
+    print("\n[1/4] Скрытие полей...")
     hide_fields()
 
-    print("\n[2/3] Переименование поля 'Имя' → 'ФИО'...")
+    print("\n[2/4] Переименование 'Имя' → 'ФИО'...")
     rename_first_name_label()
 
-    print("\n[3/3] Добавление кастомных полей...")
+    print("\n[3/4] Добавление кастомных полей...")
     add_custom_fields()
 
+    print("\n[4/4] Перестановка полей...")
+    reorder_fields()
+
     frappe.db.commit()
-    print("\nГотово. Перезагрузите страницу ERPNext для применения изменений.")
+    print("\n✅ Готово. Перезагрузите страницу ERPNext для применения изменений.")
