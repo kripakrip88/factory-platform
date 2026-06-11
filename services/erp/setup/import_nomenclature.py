@@ -5,6 +5,7 @@
 """
 
 import frappe
+from erpnext.controllers.item_variant import create_variant
 
 TEMPLATES = [
     {"code": "Уголок 50х50х5",          "paint": 0.19},
@@ -39,25 +40,19 @@ def create_template(code):
     return True
 
 
-def create_variant(template_code, length, paint):
+def create_item_variant(template_code, length, paint):
     variant_code = f"{template_code}-{length}"
     if frappe.db.exists("Item", variant_code):
         return False
 
-    doc = frappe.get_doc({
-        "doctype": "Item",
-        "item_code": variant_code,
-        "item_name": variant_code,
-        "item_group": GROUP,
-        "stock_uom": UOM,
-        "variant_of": template_code,
-        "attributes": [
-            {"attribute": "Марка стали",              "attribute_value": STEEL_GRADE},
-            {"attribute": "Длина",                    "attribute_value": str(length)},
-            {"attribute": "Площадь покраски (м²/м)",  "attribute_value": str(paint)},
-        ],
+    variant = create_variant(template_code, {
+        "Марка стали":             STEEL_GRADE,
+        "Длина":                   str(length),
+        "Площадь покраски (м²/м)": str(paint),
     })
-    doc.insert(ignore_permissions=True)
+    variant.item_code = variant_code
+    variant.item_name = variant_code
+    variant.insert(ignore_permissions=True)
     return True
 
 
@@ -73,7 +68,7 @@ def execute():
 
     for t in TEMPLATES:
         for length in LENGTHS:
-            if create_variant(t["code"], length, t["paint"]):
+            if create_item_variant(t["code"], length, t["paint"]):
                 variants_created += 1
 
     frappe.db.commit()
