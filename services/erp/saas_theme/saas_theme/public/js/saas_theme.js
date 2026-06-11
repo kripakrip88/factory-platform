@@ -104,6 +104,7 @@ saas_theme.sidebar = {
 	},
 
 	build_workspace_rail() {
+		try {
 		if (this.rail_built) return;
 
 		const workspaces = this.get_workspaces();
@@ -183,6 +184,9 @@ saas_theme.sidebar = {
 
 		this.rail_built = true;
 		this.update_rail_active();
+		} catch(e) {
+			console.warn("saas_theme: build_workspace_rail error:", e);
+		}
 	},
 
 	get_workspaces() {
@@ -190,6 +194,7 @@ saas_theme.sidebar = {
 		const sidebar_items = frappe.boot.workspace_sidebar_item || {};
 
 		return icons.filter((icon) => {
+			if (!icon || !icon.label) return false;
 			return (
 				icon.hidden !== 1 &&
 				icon.link_type === "Workspace Sidebar" &&
@@ -219,7 +224,10 @@ saas_theme.sidebar = {
 	},
 
 	get_icon_for_workspace(ws) {
-		const sidebar_data = frappe.boot.workspace_sidebar_item[ws.label.toLowerCase()];
+		if (!ws || !ws.label) return `<span class="st-rail-initials">?</span>`;
+
+		const sidebar_items = frappe.boot.workspace_sidebar_item || {};
+		const sidebar_data = sidebar_items[ws.label.toLowerCase()];
 		if (sidebar_data && sidebar_data.header_icon) {
 			return frappe.utils.icon(sidebar_data.header_icon, "md", "", "", "", true);
 		}
@@ -230,12 +238,17 @@ saas_theme.sidebar = {
 
 	switch_workspace(workspace_name) {
 		if (!workspace_name) return;
-		frappe.app.sidebar.setup(workspace_name);
-		this.update_rail_active();
+		if (!frappe.app?.sidebar?.setup) return;
+		try {
+			frappe.app.sidebar.setup(workspace_name);
+			this.update_rail_active();
+		} catch(e) {
+			console.warn("saas_theme: switch_workspace error:", e);
+		}
 	},
 
 	update_rail_active() {
-		const current = (frappe.app.sidebar.sidebar_title || "").toLowerCase();
+		const current = ((frappe.app?.sidebar?.sidebar_title) || "").toLowerCase();
 
 		$(".st-rail-item").removeClass("active").css({
 			"background": "",

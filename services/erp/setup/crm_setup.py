@@ -92,8 +92,15 @@ def apply_property_setters():
 
 def cleanup_crm_workspace():
     """Отключает лишние секции из бокового меню CRM через Workspace Sidebar."""
+    if not frappe.db.exists("Workspace Sidebar", "CRM"):
+        print("Workspace Sidebar 'CRM' not found — skipping")
+        return 0
+
     ws = frappe.get_doc("Workspace Sidebar", "CRM")
     original_count = len(ws.items)
+
+    # Удалить items с пустым label (вызывают null crash в JS)
+    ws.items = [item for item in ws.items if item.label and item.label.strip()]
 
     keep = []
     in_removed_section = False
