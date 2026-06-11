@@ -1716,6 +1716,28 @@ body.st-dual-sidebar .body-sidebar-container:not(.expanded) .dropdown-notificati
 }
 
 /* ============================================
+   18b. PAGE HEAD — rail offset fix
+   Rail (60px) is outside Frappe's layout, so page-head
+   needs to shrink by the same amount to avoid overflow.
+   ============================================ */
+
+.st-workspace-rail ~ .body-sidebar-container .page-head,
+.st-workspace-rail ~ .body-sidebar-container .page-container {
+	max-width: calc(100vw - 60px);
+	overflow: hidden;
+}
+
+.st-workspace-rail ~ .body-sidebar-container .page-actions {
+	flex-shrink: 0;
+	min-width: 0;
+}
+
+.st-workspace-rail ~ .body-sidebar-container .page-head .title-area {
+	min-width: 0;
+	overflow: hidden;
+}
+
+/* ============================================
    19. RESPONSIVE
    ============================================ */
 
