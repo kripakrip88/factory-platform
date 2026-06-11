@@ -101,6 +101,49 @@ docker compose -f services/erp/docker-compose.yml exec backend \
 4 склада (Металлопрокат, Обрезки, Готовая продукция, Брак), группы номенклатуры
 и атрибут "Длина" для вариантов прутков по длине.
 
+## Полная настройка с нуля
+
+После деплоя или обновления ERPNext — один мастер-скрипт накатывает все настройки по порядку:
+
+```bash
+docker compose -f services/erp/docker-compose.yml cp \
+  services/erp/setup/setup_all.py backend:/tmp/setup_all.py
+docker compose -f services/erp/docker-compose.yml exec backend \
+  bench --site erp.localhost execute /tmp/setup_all.py
+```
+
+Порядок: initial_setup → uom_setup → crm_setup → nomenclature_setup.
+Если один упал — остальные продолжают выполняться, в конце сводка.
+
+## Обновление ERPNext
+
+Всегда обновлять через скрипт — он делает бэкап, обновляет и восстанавливает настройки:
+
+```bash
+bash services/erp/scripts/update.sh
+```
+
+## Автобэкап
+
+Установить cron job (один раз на сервере):
+
+```bash
+bash services/erp/scripts/install-cron.sh
+```
+
+Бэкапы хранятся в `/opt/factory-platform/backups/erp/`, ротация 7 дней.
+
+## Восстановление настроек
+
+Если после обновления что-то слетело — прогнать мастер-скрипт:
+
+```bash
+docker compose -f services/erp/docker-compose.yml cp \
+  services/erp/setup/setup_all.py backend:/tmp/setup_all.py
+docker compose -f services/erp/docker-compose.yml exec backend \
+  bench --site erp.localhost execute /tmp/setup_all.py
+```
+
 ## Установленные приложения
 
 | Приложение | Репозиторий | Ветка | Описание |
