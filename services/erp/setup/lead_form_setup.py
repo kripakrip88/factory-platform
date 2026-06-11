@@ -81,7 +81,7 @@ CUSTOM_FIELDS = [
         "fieldname": "mw_source",
         "fieldtype": "Link",
         "label": "Источник",
-        "options": "Lead Source",
+        "options": "UTM Source",
         "insert_after": "mw_col_break_org",
     },
     {
