@@ -15,11 +15,23 @@
         execute()
         frappe.destroy()
       "'
+
+Целевой макет:
+    [TOP]           Серия | Владелец | Статус
+    [Contact Info]  ФИО * | email
+                    Должность | Мобильный | Телефон
+    [Орг и запрос]  Название орг * | Источник
+                                   | Город
+                                   | Регион
+                    Объём  | Дата поставки
+                    Чертежи |
+                    AI-комментарий
+                    Примечание
 """
 
 import frappe
 
-# ─── Стандартные поля DocType Lead ────────────────────────────────────────────
+# ─── Стандартные поля — скрыть через Property Setter ──────────────────────────
 FIELDS_TO_HIDE = [
     # Личные данные — нерелевантны для B2B
     ("salutation", "Lead"),
@@ -27,13 +39,13 @@ FIELDS_TO_HIDE = [
     ("middle_name", "Lead"),
     ("last_name", "Lead"),
     ("lead_name", "Lead"),           # Full Name — автогенерируемый дубль
-    ("first_name", "Lead"),          # перенесён как mw_full_name в блок Contact Info
+    ("first_name", "Lead"),          # перенесён как mw_full_name в Contact Info
     # Тип и статус
     ("type", "Lead"),                # Тип Лида (правильный fieldname, не lead_type)
     ("customer", "Lead"),            # From Customer
-    ("job_title", "Lead"),           # перемещается в Contact Info через Property Setter
+    ("job_title", "Lead"),           # перенесён как mw_job_title в Contact Info
     # Контакты — лишние
-    ("phone_ext", "Lead"),           # Внутренний номер (правильный fieldname, не ext)
+    ("phone_ext", "Lead"),           # Внутренний номер
     ("whatsapp_no", "Lead"),
     ("website", "Lead"),
     # Организация — нерелевантные
@@ -45,16 +57,16 @@ FIELDS_TO_HIDE = [
     ("territory", "Lead"),           # Территория продаж — нерелевантно при создании
     ("country", "Lead"),             # Страна — всегда Россия
     ("company", "Lead"),             # Наша компания — автозаполняется
-    # UTM / Аналитика — все скрываем (utm_source заменён кастомным mw_source)
-    ("utm_source", "Lead"),          # оригинал заменён кастомным mw_source
-    ("utm_campaign", "Lead"),        # правильный fieldname (не campaign_name)
-    ("utm_medium", "Lead"),          # правильный fieldname (не medium)
-    ("utm_content", "Lead"),         # правильный fieldname (не content)
-    # Секции — скрываем пустые/ненужные
+    # UTM / Аналитика — utm_source заменён кастомным mw_source
+    ("utm_source", "Lead"),
+    ("utm_campaign", "Lead"),
+    ("utm_medium", "Lead"),
+    ("utm_content", "Lead"),
+    # Секции — пустые/ненужные
     ("utm_analytics_section", "Lead"),
     ("address_section", "Lead"),
     ("other_info_tab", "Lead"),
-    # Сертификация — вся секция и отдельные поля
+    # Сертификация
     ("qualification_tab", "Lead"),
     ("qualified_by", "Lead"),
     ("qualified_on", "Lead"),
@@ -64,16 +76,37 @@ FIELDS_TO_HIDE = [
     ("unsubscribed", "Lead"),
     ("blog_subscriber", "Lead"),
     ("disabled", "Lead"),
-    # Запрос
+    # Прочее
     ("request_type", "Lead"),
-    # Адрес — оригиналы заменены кастомными mw_city / mw_state
-    ("city", "Lead"),
-    ("state", "Lead"),
+    ("city", "Lead"),                # оригинал заменён кастомным mw_city
+    ("state", "Lead"),               # оригинал заменён кастомным mw_state
 ]
 
-# ─── Кастомные поля ────────────────────────────────────────────────────────────
+# ─── Кастомные поля — скрыть напрямую через Custom Field DocType ───────────────
+CUSTOM_FIELDS_TO_HIDE = [
+    "mw_section_break",    # разделитель убран — секции объединяются визуально
+    "mw_project_region",   # дублирует mw_state (Регион)
+]
+
+# ─── Property Setter: переименования, перестановки, insert_after ───────────────
+# (fieldname, property, value, property_type)
+PROPERTY_SETTERS = [
+    # Переименовать секцию «Организация» → «Организация и запрос»
+    ("organization_section", "label",        "Организация и запрос", "Data"),
+    # Перепривязать mw_* — убрать зависимость от скрытого mw_section_break
+    ("mw_estimated_volume",      "insert_after", "mw_state",               "Data"),
+    ("mw_col_break_details",     "insert_after", "mw_estimated_volume",    "Data"),
+    ("mw_desired_delivery_date", "insert_after", "mw_col_break_details",   "Data"),
+    ("mw_drawing_status",        "insert_after", "mw_desired_delivery_date","Data"),
+    ("mw_ai_comment",            "insert_after", "mw_drawing_status",      "Data"),
+    ("mw_note",                  "insert_after", "mw_ai_comment",          "Data"),
+    # Перепривязать Column Break в Contact Info — после mw_job_title
+    ("mw_col_break_contact",     "insert_after", "mw_job_title",           "Data"),
+]
+
+# ─── Кастомные поля — создать если не существуют ──────────────────────────────
 CUSTOM_FIELDS = [
-    # ── Блок «Информация о контакте» — ФИО + Email / Должность / Телефоны ──
+    # ── Contact Info: ФИО (левая колонка) ──────────────────────────────────
     {
         "dt": "Lead",
         "fieldname": "mw_full_name",
@@ -84,11 +117,25 @@ CUSTOM_FIELDS = [
     },
     {
         "dt": "Lead",
-        "fieldname": "mw_col_break_contact",
-        "fieldtype": "Column Break",
+        "fieldname": "mw_job_title",
+        "fieldtype": "Data",
+        "label": "Должность",
         "insert_after": "mw_full_name",
     },
-    # ── Секция «Организация» — правая колонка (Источник, Город, Регион) ──────
+    {
+        "dt": "Lead",
+        "fieldname": "mw_col_break_contact",
+        "fieldtype": "Column Break",
+        "insert_after": "mw_job_title",
+    },
+    # ── Contact Info: Column Break между email и телефонами ─────────────────
+    {
+        "dt": "Lead",
+        "fieldname": "mw_col_break_contact2",
+        "fieldtype": "Column Break",
+        "insert_after": "email_id",
+    },
+    # ── Организация: правая колонка (Источник / Город / Регион) ────────────
     {
         "dt": "Lead",
         "fieldname": "mw_col_break_org",
@@ -117,14 +164,14 @@ CUSTOM_FIELDS = [
         "label": "Регион",
         "insert_after": "mw_city",
     },
-    # ── Column Break — разделяет Источник/Город/Регион от Объём/Дата ─────────
+    # ── Организация: поля запроса (через Column Break — двухколоночные) ─────
     {
         "dt": "Lead",
         "fieldname": "mw_col_break_details",
         "fieldtype": "Column Break",
         "insert_after": "mw_state",
     },
-    # ── Секция «Металлозавод» (визуально объединена с Организацией) ──────────
+    # ── Section Break «Металлозавод» — создаём, но сразу скрываем ──────────
     {
         "dt": "Lead",
         "fieldname": "mw_section_break",
@@ -178,22 +225,6 @@ CUSTOM_FIELDS = [
     },
 ]
 
-# ─── Property Setter для стандартных полей ────────────────────────────────────
-# (fieldname, property, value, property_type)
-PROPERTY_SETTERS = [
-    # Переименовать секцию «Организация» → «Организация и запрос»
-    ("organization_section", "label", "Организация и запрос", "Data"),
-    # Переместить job_title в блок Contact Info
-    ("job_title", "insert_after", "mw_col_break_contact", "Data"),
-]
-
-# ─── Кастомные поля — скрытие через Custom Field (не Property Setter) ─────────
-# Property Setter hidden=1 не всегда работает для кастомных полей
-CUSTOM_FIELDS_TO_HIDE = [
-    "mw_section_break",    # убираем разделитель — секции визуально объединяются
-    "mw_project_region",   # дублирует mw_state (Регион)
-]
-
 
 def hide_fields():
     """Скрываем стандартные поля через Property Setter."""
@@ -230,8 +261,19 @@ def hide_custom_fields():
             print(f"  Custom field not found: Lead.{fieldname}, skipping")
 
 
+def add_custom_fields():
+    """Добавляем кастомные поля."""
+    for field_def in CUSTOM_FIELDS:
+        fieldname = field_def["fieldname"]
+        if frappe.db.exists("Custom Field", {"dt": "Lead", "fieldname": fieldname}):
+            print(f"  Custom field already exists: {fieldname}, skipping")
+            continue
+        frappe.get_doc({"doctype": "Custom Field", **field_def}).insert(ignore_permissions=True)
+        print(f"  Created custom field: {fieldname}")
+
+
 def apply_property_setters():
-    """Применяем Property Setter для перестановок и переименований."""
+    """Применяем Property Setter: переименования, перестановки, insert_after."""
     for fieldname, prop, value, prop_type in PROPERTY_SETTERS:
         existing = frappe.db.get_value(
             "Property Setter",
@@ -254,19 +296,8 @@ def apply_property_setters():
             print(f"  Set {prop} for Lead.{fieldname} → {value}")
 
 
-def add_custom_fields():
-    """Добавляем кастомные поля."""
-    for field_def in CUSTOM_FIELDS:
-        fieldname = field_def["fieldname"]
-        if frappe.db.exists("Custom Field", {"dt": "Lead", "fieldname": fieldname}):
-            print(f"  Custom field already exists: {fieldname}, skipping")
-            continue
-        frappe.get_doc({"doctype": "Custom Field", **field_def}).insert(ignore_permissions=True)
-        print(f"  Created custom field: {fieldname}")
-
-
 def execute():
-    print("=== Lead Form Layout: Завод металлоконструкций ===")
+    print("=== Lead Form Setup: Завод металлоконструкций ===")
 
     print("\n[1/4] Скрытие стандартных полей...")
     hide_fields()
