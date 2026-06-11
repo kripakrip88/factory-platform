@@ -1796,15 +1796,13 @@ th:hover .st-col-resizer,
     background: var(--primary);
 }
 
-.list-row-head,
-table.list-table,
-.datatable table {
-    table-layout: fixed;
+/* Frappe ListView uses flex divs — position relative needed for handle */
+.list-row-head .list-row-col {
+    position: relative;
 }
 
-.list-row-head .list-header-subject,
-table.list-table th,
-table.list-table td {
+.list-row-head .list-row-col,
+.frappe-list .list-row .list-row-col {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

@@ -625,40 +625,43 @@ saas_theme.columns = {
 		const doctype = this.get_doctype();
 		if (!doctype) return;
 
-		const $table = $(".list-row-head, .dt-header, .datatable .dt-head");
-		const $ths = $table.find(".list-header-subject, .dt-cell--header, th");
-		const $thead = $("table.list-table thead th, .list-logical-row th");
-		const $headers = $ths.length ? $ths : $thead;
-		if (!$headers.length) return;
+		// Frappe ListView: header cols are .list-row-col inside .list-row-head
+		// Each col may have a class matching fieldname (e.g. "status", "name")
+		const $head = $(".list-row-head .list-header-subject, .list-row-head.level-left");
+		const $cols = $head.length
+			? $head.find(".list-row-col")
+			: $(".list-row-head .list-row-col");
 
-		if ($headers.first().find(".st-col-resizer").length) return;
+		if (!$cols.length) return;
+
+		// Already attached
+		if ($cols.first().find(".st-col-resizer").length) return;
 
 		const saved = this.load(doctype);
-		$headers.each((i, th) => {
-			const $th = $(th);
-			const key = this._col_key($th, i);
+		$cols.each((i, col) => {
+			const $col = $(col);
+			const key = this._col_key($col, i);
 
 			if (saved[key]) {
-				$th.css("width", saved[key] + "px");
-				$th.css("min-width", saved[key] + "px");
+				$col.css({ "width": saved[key] + "px", "min-width": saved[key] + "px", "flex": "none" });
+				// Apply same width to all data rows for this column index
+				$(`.frappe-list .list-row .list-row-col:nth-child(${i + 1})`).css({
+					"width": saved[key] + "px", "min-width": saved[key] + "px", "flex": "none"
+				});
 			}
 
-			if (!$th.find(".st-col-resizer").length) {
-				$th.css("position", "relative");
-				$th.append('<div class="st-col-resizer" aria-hidden="true"></div>');
-			}
-
-			this._bind_drag($th, i, doctype);
+			$col.css("position", "relative");
+			$col.append('<div class="st-col-resizer" aria-hidden="true"></div>');
+			this._bind_drag($col, i, doctype);
 		});
 	},
 
-	_col_key($th, index) {
-		return (
-			$th.attr("data-fieldname") ||
-			$th.attr("data-col") ||
-			$th.find("[data-fieldname]").attr("data-fieldname") ||
-			"col_" + index
-		);
+	_col_key($col, index) {
+		// Try to find fieldname from classes (Frappe adds fieldname as a class)
+		const classes = ($col.attr("class") || "").split(/\s+/);
+		const skip = ["list-row-col", "ellipsis", "hidden-xs", "text-right", "list-subject", "level", "tag-col", "hide"];
+		const fieldname = classes.find(c => c && !skip.includes(c) && !c.startsWith("st-"));
+		return fieldname || "col_" + index;
 	},
 
 	_bind_drag($th, index, doctype) {
@@ -667,6 +670,15 @@ saas_theme.columns = {
 		handle._st_bound = true;
 
 		let startX, startW;
+
+		const apply_width = (newW) => {
+			const w = newW + "px";
+			$th.css({ width: w, "min-width": w, flex: "none" });
+			// Sync all data rows at same column index
+			$(`.frappe-list .list-row .list-row-col:nth-child(${index + 1})`).css({
+				width: w, "min-width": w, flex: "none"
+			});
+		};
 
 		handle.addEventListener("mousedown", (e) => {
 			e.preventDefault();
@@ -678,8 +690,7 @@ saas_theme.columns = {
 			$("body").addClass("st-col-resizing-body");
 
 			const onMove = (e) => {
-				const newW = Math.max(this.MIN_WIDTH, startW + e.clientX - startX);
-				$th.css({ width: newW + "px", "min-width": newW + "px" });
+				apply_width(Math.max(this.MIN_WIDTH, startW + e.clientX - startX));
 			};
 
 			const onUp = () => {
@@ -687,8 +698,7 @@ saas_theme.columns = {
 				$("body").removeClass("st-col-resizing-body");
 
 				const saved = this.load(doctype);
-				const key = this._col_key($th, index);
-				saved[key] = $th.outerWidth();
+				saved[this._col_key($th, index)] = $th.outerWidth();
 				this.save(doctype, saved);
 
 				document.removeEventListener("mousemove", onMove);
@@ -706,14 +716,12 @@ saas_theme.columns = {
 
 			const onMove = (e) => {
 				const t = e.touches[0];
-				const newW = Math.max(this.MIN_WIDTH, startW + t.clientX - startX);
-				$th.css({ width: newW + "px", "min-width": newW + "px" });
+				apply_width(Math.max(this.MIN_WIDTH, startW + t.clientX - startX));
 			};
 
 			const onEnd = () => {
 				const saved = this.load(doctype);
-				const key = this._col_key($th, index);
-				saved[key] = $th.outerWidth();
+				saved[this._col_key($th, index)] = $th.outerWidth();
 				this.save(doctype, saved);
 
 				handle.removeEventListener("touchmove", onMove);
