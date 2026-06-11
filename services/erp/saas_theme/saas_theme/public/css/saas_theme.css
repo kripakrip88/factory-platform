@@ -350,6 +350,120 @@
 }
 
 /* ============================================
+   4b. TOOLBAR BUTTONS — dark mode fix
+   ============================================ */
+
+/* Все кнопки в тулбаре страницы */
+[data-theme="dark"] .page-actions .btn,
+[data-theme="dark"] .page-head .btn,
+[data-theme="dark"] .list-page-toolbar .btn,
+[data-theme="dark"] .toolbar .btn,
+[data-theme="dark"] .btn-default,
+[data-theme="dark"] .btn.btn-default {
+    background:    #263344 !important;
+    border-color:  #3A4F63 !important;
+    color:         #C5D5E5 !important;
+    box-shadow: none !important;
+}
+
+[data-theme="dark"] .page-actions .btn:hover,
+[data-theme="dark"] .page-head .btn:hover,
+[data-theme="dark"] .list-page-toolbar .btn:hover,
+[data-theme="dark"] .btn-default:hover {
+    background:   #2A3A50 !important;
+    border-color: #4A6378 !important;
+    color:        #DDE8F2 !important;
+}
+
+/* Иконки внутри кнопок — ярче */
+[data-theme="dark"] .btn-default .icon,
+[data-theme="dark"] .btn-default svg,
+[data-theme="dark"] .page-actions .btn .icon,
+[data-theme="dark"] .page-actions .btn svg,
+[data-theme="dark"] .list-page-toolbar .btn .icon,
+[data-theme="dark"] .list-page-toolbar .btn svg {
+    color:   #93C5FD !important;
+    stroke:  #93C5FD !important;
+    opacity: 1 !important;
+}
+
+/* Primary кнопка (синяя) — чуть мягче */
+[data-theme="dark"] .btn-primary {
+    background:   #2563EB !important;
+    border-color: #2563EB !important;
+    color:        #ffffff !important;
+    box-shadow: none !important;
+}
+
+[data-theme="dark"] .btn-primary:hover {
+    background:   #1D4ED8 !important;
+    border-color: #1D4ED8 !important;
+}
+
+/* Кнопки с иконкой без текста (квадратные) */
+[data-theme="dark"] .btn.icon-btn,
+[data-theme="dark"] .btn[class*="icon-only"],
+[data-theme="dark"] .list-toolbar-item .btn {
+    background:   #263344 !important;
+    border-color: #3A4F63 !important;
+    color:        #93C5FD !important;
+}
+
+/* Фильтр-бейдж (Фильтры 2) */
+[data-theme="dark"] .filter-selector .btn,
+[data-theme="dark"] .filter-button {
+    background:   #263344 !important;
+    border-color: #3A4F63 !important;
+    color:        #93C5FD !important;
+}
+
+[data-theme="dark"] .filter-selector .btn .filter-count,
+[data-theme="dark"] .active-filter-count {
+    background: #3B82F6 !important;
+    color:      #ffffff !important;
+}
+
+/* Dropdown-кнопки (Представление списка, Дата создания) */
+[data-theme="dark"] .list-view-select,
+[data-theme="dark"] .sort-selector .btn,
+[data-theme="dark"] [data-toggle="dropdown"].btn {
+    background:   #263344 !important;
+    border-color: #3A4F63 !important;
+    color:        #C5D5E5 !important;
+}
+
+/* ============================================
+   4c. TOOLBAR SPACING — отступы
+   ============================================ */
+
+/* Зазор между кнопками в тулбаре */
+.page-actions,
+.list-page-toolbar .btn-group,
+.list-toolbar-wrapper {
+    gap: 6px !important;
+}
+
+.page-actions .btn + .btn,
+.list-toolbar-item + .list-toolbar-item {
+    margin-left: 4px !important;
+}
+
+/* Внутренние отступы кнопок тулбара */
+.page-actions .btn,
+.list-page-toolbar .btn {
+    padding-left:  10px !important;
+    padding-right: 10px !important;
+}
+
+/* Квадратные иконка-кнопки */
+.page-actions .btn.icon-btn,
+.list-toolbar-item .btn {
+    padding-left:  7px !important;
+    padding-right: 7px !important;
+    min-width: 32px !important;
+}
+
+/* ============================================
    5. INPUTS — Squarish + Blue Focus
    ============================================ */
 
