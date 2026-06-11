@@ -74,14 +74,26 @@ HIDE_COLUMN_BREAKS = [
     "column_break_31", # Org: пустой col3
 ]
 
-# ─── Property Setter: переименования секций ────────────────────────────────────
+# ─── Property Setter: переименования + insert_after для стандартных полей ─────
 RENAMES = [
-    ("organization_section", "label", "Организация и запрос"),
-    ("contact_info_tab",     "label", "Контакт"),
+    ("organization_section", "label",        "Организация и запрос"),
+    ("contact_info_tab",     "label",        "Контакт"),
+    # TOP: lead_owner/status после нашего mw_cb_top (col_break123 скрыт)
+    ("lead_owner",           "insert_after", "mw_cb_top"),
+    ("status",               "insert_after", "lead_owner"),
+    # Contact: email → mobile → phone в одной колонке (column_break_20/16 скрыты)
+    ("mobile_no",            "insert_after", "email_id"),
+    ("phone",                "insert_after", "mobile_no"),
 ]
 
 # ─── Кастомные поля — создаются в указанном порядке ───────────────────────────
 CUSTOM_FIELDS = [
+    # ── TOP: Column Break после series → lead_owner/status в col2 ─────────────
+    {
+        "fieldname": "mw_cb_top",
+        "fieldtype": "Column Break",
+        "insert_after": "series",
+    },
     # ── Блок «Контакт» ────────────────────────────────────────────────────────
     {
         "fieldname": "mw_full_name",
