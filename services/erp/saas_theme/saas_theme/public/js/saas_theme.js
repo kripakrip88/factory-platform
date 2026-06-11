@@ -575,19 +575,28 @@ saas_theme.columns = {
 		if (this._listeners_bound) return;
 		this._listeners_bound = true;
 
+		// Fire on page navigation — list renders async, so wait longer
 		$(document).on("page-change", () => {
+			setTimeout(() => this.try_attach(), 500);
+			setTimeout(() => this.try_attach(), 1200);
+		});
+
+		// Fire after list data refresh (filters, sorting, pagination)
+		$(document).on("list-update render-complete", () => {
 			setTimeout(() => this.try_attach(), 300);
 		});
 
-		$(document).on("list-update", () => {
-			setTimeout(() => this.try_attach(), 150);
-		});
+		// Frappe router hook — catches SPA navigation
+		if (frappe.router) {
+			frappe.router.on("change", () => {
+				setTimeout(() => this.try_attach(), 600);
+				setTimeout(() => this.try_attach(), 1500);
+			});
+		}
 
-		const observer = new MutationObserver(
-			frappe.utils.debounce(() => this.try_attach(), 200)
-		);
-		observer.observe(document.body, { childList: true, subtree: true });
-		this._observers.push(observer);
+		// Initial attach — in case we're already on a list page
+		setTimeout(() => this.try_attach(), 800);
+		setTimeout(() => this.try_attach(), 2000);
 	},
 
 	get_doctype() {
@@ -626,16 +635,22 @@ saas_theme.columns = {
 		if (!doctype) return;
 
 		// Frappe ListView: header cols are .list-row-col inside .list-row-head
-		// Each col may have a class matching fieldname (e.g. "status", "name")
-		const $head = $(".list-row-head .list-header-subject, .list-row-head.level-left");
+		const $head = $(".list-row-head .list-header-subject");
 		const $cols = $head.length
 			? $head.find(".list-row-col")
 			: $(".list-row-head .list-row-col");
 
+		console.log("[st-cols] try_attach", doctype, "cols found:", $cols.length);
+
 		if (!$cols.length) return;
 
 		// Already attached
-		if ($cols.first().find(".st-col-resizer").length) return;
+		if ($cols.first().find(".st-col-resizer").length) {
+			console.log("[st-cols] already attached, skip");
+			return;
+		}
+
+		console.log("[st-cols] attaching handles to", $cols.length, "cols");
 
 		const saved = this.load(doctype);
 		$cols.each((i, col) => {
