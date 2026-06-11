@@ -1,136 +1,187 @@
 """
-Номенклатура металлопроката — Вариант А (партионный учёт длин).
-Схема: одна позиция = профиль + марка стали. Длина хлыста — в Batch.
+Номенклатура металлопроката — гибридная схема.
+
+Склад Металлопрокат: шаблоны + варианты по атрибуту Длина (6000/11700/12000 мм).
+Склад Обрезки:       отдельные номенклатуры с суффиксом -ОБР, учёт через Batch.
 
 Запуск: bench --site erp.localhost execute erpnext.nomenclature_setup.execute
 Идемпотентен.
 """
 
 import frappe
+from erpnext.controllers.item_variant import create_variant
 
-# ── Номенклатура ──────────────────────────────────────────────────────────────
+# ── Данные ────────────────────────────────────────────────────────────────────
 
-ITEMS = [
-    {
-        "item_code":       "УГ-50х50х5-С245",
-        "item_name":       "Уголок 50х50х5 С245",
-        "item_group":      "Сортовой прокат",
-        "weight_per_unit": 3.77,
-        "painting_area":   0.19,
-    },
-    {
-        "item_code":       "ШВ-10-С245",
-        "item_name":       "Швеллер 10 С245",
-        "item_group":      "Сортовой прокат",
-        "weight_per_unit": 8.59,
-        "painting_area":   0.36,
-    },
-    {
-        "item_code":       "ТП-40х40х3-С245",
-        "item_name":       "Труба профильная 40х40х3 С245",
-        "item_group":      "Сортовой прокат",
-        "weight_per_unit": 3.45,
-        "painting_area":   0.16,
-    },
-    {
-        "item_code":       "ТК-57х3-С245",
-        "item_name":       "Труба круглая 57х3 С245",
-        "item_group":      "Сортовой прокат",
-        "weight_per_unit": 3.97,
-        "painting_area":   0.18,
-    },
+TEMPLATES = [
+    {"code": "УГ-50х50х5-С245",   "name": "Уголок 50х50х5 С245",            "kg_m": 3.77, "paint": 0.19},
+    {"code": "ШВ-10-С245",        "name": "Швеллер 10 С245",                 "kg_m": 8.59, "paint": 0.36},
+    {"code": "ТП-40х40х3-С245",   "name": "Труба профильная 40х40х3 С245",   "kg_m": 3.45, "paint": 0.16},
+    {"code": "ТК-57х3-С245",      "name": "Труба круглая 57х3 С245",         "kg_m": 3.97, "paint": 0.18},
 ]
 
-# Тестовые партии для первой номенклатуры
-TEST_BATCHES = [
-    {"item_code": "УГ-50х50х5-С245", "batch_id": "УГ-50х50х5-С245-12000", "length_mm": 12000},
-    {"item_code": "УГ-50х50х5-С245", "batch_id": "УГ-50х50х5-С245-6000",  "length_mm": 6000},
-    {"item_code": "УГ-50х50х5-С245", "batch_id": "УГ-50х50х5-С245-3700",  "length_mm": 3700},
-]
+LENGTHS = [6000, 11700, 12000]
 
-# Старые шаблоны и варианты для удаления
-OLD_ITEMS = [
-    "Уголок 50х50х5-12000", "Уголок 50х50х5-11700", "Уголок 50х50х5-6000",
-    "Швеллер 10-12000",      "Швеллер 10-11700",      "Швеллер 10-6000",
-    "Труба профильная 40х40х3-12000", "Труба профильная 40х40х3-11700", "Труба профильная 40х40х3-6000",
-    "Труба круглая 57х3-12000",       "Труба круглая 57х3-11700",       "Труба круглая 57х3-6000",
-    "Уголок 50х50х5", "Швеллер 10", "Труба профильная 40х40х3", "Труба круглая 57х3",
-]
+COMPANY_ABBR   = "ЗМК"
+WH_METAL       = f"Металлопрокат - {COMPANY_ABBR}"
+WH_SCRAP       = f"Обрезки - {COMPANY_ABBR}"
+GROUP_METAL    = "Сортовой прокат"
+GROUP_SCRAP    = "Обрезки"
 
-
-# ── Вспомогательные функции ───────────────────────────────────────────────────
-
-def ensure_custom_field(doctype, fieldname, label, fieldtype, insert_after=None):
-    exists = frappe.db.exists("Custom Field", {"dt": doctype, "fieldname": fieldname})
-    if not exists:
-        doc = frappe.get_doc({
-            "doctype":      "Custom Field",
-            "dt":           doctype,
-            "fieldname":    fieldname,
-            "label":        label,
-            "fieldtype":    fieldtype,
-            "insert_after": insert_after or "description",
-        })
-        doc.insert(ignore_permissions=True)
-        return True
-    return False
+# Все коды для сброса (старые + текущие)
+ALL_ITEM_CODES = (
+    [t["code"] for t in TEMPLATES]
+    + [f"{t['code']}-{l}" for t in TEMPLATES for l in LENGTHS]
+    + [f"{t['code']}-ОБР" for t in TEMPLATES]
+    # legacy batch-only items из предыдущей итерации
+    + ["УГ-50х50х5-С245", "ШВ-10-С245", "ТП-40х40х3-С245", "ТК-57х3-С245"]
+)
 
 
-def delete_old_items():
+# ── Шаг 0: очистка ────────────────────────────────────────────────────────────
+
+def delete_old_data():
+    codes = list(dict.fromkeys(ALL_ITEM_CODES))  # дедупликация с сохранением порядка
     deleted = 0
-    for code in OLD_ITEMS:
+    for code in codes:
         if not frappe.db.exists("Item", code):
             continue
-        # Удаляем складские остатки если есть (иначе ERPNext не даст удалить)
-        frappe.db.delete("Bin",              {"item_code": code})
         frappe.db.delete("Stock Ledger Entry", {"item_code": code})
-        frappe.db.delete("Item Price",       {"item_code": code})
+        frappe.db.delete("Bin",                {"item_code": code})
+        frappe.db.delete("Item Price",         {"item_code": code})
+        frappe.db.delete("Batch",              {"item": code})
         frappe.delete_doc("Item", code, ignore_permissions=True, force=True)
         deleted += 1
+    # Удаляем незакрытые Stock Entry (только черновики)
+    for se in frappe.get_all("Stock Entry", filters={"docstatus": 0}, pluck="name"):
+        frappe.delete_doc("Stock Entry", se, ignore_permissions=True, force=True)
     return deleted
 
 
-def create_item(data, painting_cf_exists):
-    code = data["item_code"]
-    if frappe.db.exists("Item", code):
-        # Обновляем painting_area если поле уже есть
-        if painting_cf_exists:
-            frappe.db.set_value("Item", code, "painting_area", data["painting_area"])
-        return False
+# ── Шаг 1: шаблоны ───────────────────────────────────────────────────────────
 
+def _fix_numeric_attr(item_code, attr_name):
+    """Копирует numeric_values/range из Item Attribute в дочернюю строку шаблона."""
+    meta = frappe.db.get_value(
+        "Item Attribute", attr_name,
+        ["numeric_values", "from_range", "to_range", "increment"],
+        as_dict=True,
+    ) or {}
+    frappe.db.set_value(
+        "Item Variant Attribute",
+        {"attribute": attr_name, "parent": item_code},
+        {
+            "numeric_values": meta.get("numeric_values", 0),
+            "from_range":     meta.get("from_range", 0),
+            "to_range":       meta.get("to_range", 0),
+            "increment":      meta.get("increment", 0),
+        },
+    )
+
+
+def create_template(t):
     doc = frappe.get_doc({
-        "doctype":         "Item",
-        "item_code":       code,
-        "item_name":       data["item_name"],
-        "item_group":      data["item_group"],
-        "stock_uom":       "шт",
-        "is_stock_item":   1,
-        "has_variants":    0,
-        "has_batch_no":    1,
+        "doctype":      "Item",
+        "item_code":    t["code"],
+        "item_name":    t["name"],
+        "item_group":   GROUP_METAL,
+        "stock_uom":    "шт",
+        "is_stock_item": 1,
+        "has_variants": 1,
+        "weight_per_unit": t["kg_m"],
+        "weight_uom":   "кг",
+        "attributes":   [{"attribute": "Длина"}],
+    })
+    doc.insert(ignore_permissions=True)
+    _fix_numeric_attr(t["code"], "Длина")
+    frappe.db.set_value("Item", t["code"], "painting_area", t["paint"])
+    return True
+
+
+# ── Шаг 2: варианты ──────────────────────────────────────────────────────────
+
+def create_item_variant(tmpl, length):
+    variant_code = f"{tmpl['code']}-{length}"
+    weight = round(tmpl["kg_m"] * length / 1000, 2)
+
+    variant = create_variant(tmpl["code"], {"Длина": str(length)})
+    variant.item_code        = variant_code
+    variant.item_name        = variant_code
+    variant.weight_per_unit  = weight
+    variant.weight_uom       = "кг"
+    variant.insert(ignore_permissions=True)
+    frappe.db.set_value("Item", variant_code, "painting_area", tmpl["paint"])
+    return True
+
+
+# ── Шаг 3: номенклатуры обрезков ─────────────────────────────────────────────
+
+def create_scrap_item(t):
+    code = f"{t['code']}-ОБР"
+    name = f"{t['name'].replace(' С245', '')} С245 Обрезок"
+    doc = frappe.get_doc({
+        "doctype":       "Item",
+        "item_code":     code,
+        "item_name":     name,
+        "item_group":    GROUP_SCRAP,
+        "stock_uom":     "шт",
+        "is_stock_item": 1,
+        "has_variants":  0,
+        "has_batch_no":  1,
         "create_new_batch": 0,
-        "weight_per_unit": data["weight_per_unit"],
-        "weight_uom":      "кг",
+        "weight_uom":    "кг",
     })
     doc.insert(ignore_permissions=True)
-
-    if painting_cf_exists:
-        frappe.db.set_value("Item", code, "painting_area", data["painting_area"])
-
+    frappe.db.set_value("Item", code, "painting_area", t["paint"])
     return True
 
 
-def create_batch(item_code, batch_id, length_mm, length_cf_exists):
-    if frappe.db.exists("Batch", batch_id):
-        return False
-    doc = frappe.get_doc({
-        "doctype":   "Batch",
-        "batch_id":  batch_id,
-        "item":      item_code,
+# ── Шаг 4: тестовые остатки ──────────────────────────────────────────────────
+
+def create_test_stock():
+    scrap_item  = "УГ-50х50х5-С245-ОБР"
+
+    # Создаём партию для обрезка
+    batch_id = f"{scrap_item}-1700"
+    if not frappe.db.exists("Batch", batch_id):
+        b = frappe.get_doc({"doctype": "Batch", "batch_id": batch_id, "item": scrap_item})
+        b.insert(ignore_permissions=True)
+        frappe.db.set_value("Batch", batch_id, "length_mm", 1700)
+
+    se = frappe.get_doc({
+        "doctype":            "Stock Entry",
+        "stock_entry_type":   "Material Receipt",
+        "items": [
+            {
+                "item_code":           "УГ-50х50х5-С245-6000",
+                "qty":                 5,
+                "t_warehouse":         WH_METAL,
+                "uom":                 "шт",
+                "conversion_factor":   1,
+                "basic_rate":          0,
+            },
+            {
+                "item_code":           "УГ-50х50х5-С245-12000",
+                "qty":                 4,
+                "t_warehouse":         WH_METAL,
+                "uom":                 "шт",
+                "conversion_factor":   1,
+                "basic_rate":          0,
+            },
+            {
+                "item_code":           scrap_item,
+                "qty":                 2,
+                "t_warehouse":         WH_SCRAP,
+                "uom":                 "шт",
+                "conversion_factor":   1,
+                "basic_rate":          0,
+                "batch_no":            batch_id,
+            },
+        ],
     })
-    doc.insert(ignore_permissions=True)
-    if length_cf_exists:
-        frappe.db.set_value("Batch", batch_id, "length_mm", length_mm)
-    return True
+    se.insert(ignore_permissions=True)
+    se.submit()
+    return se.name
 
 
 # ── Точка входа ───────────────────────────────────────────────────────────────
@@ -138,33 +189,30 @@ def create_batch(item_code, batch_id, length_mm, length_cf_exists):
 def execute():
     frappe.db.begin()
 
-    # 1. Кастомные поля
-    painting_cf = ensure_custom_field(
-        "Item", "painting_area", "Площадь покраски (м²/м)", "Float", "weight_uom"
-    )
-    length_cf = ensure_custom_field(
-        "Batch", "length_mm", "Длина (мм)", "Int", "description"
-    )
+    deleted = delete_old_data()
     frappe.db.commit()
 
-    # 2. Удаляем старые варианты
-    deleted = delete_old_items()
+    for t in TEMPLATES:
+        create_template(t)
     frappe.db.commit()
 
-    # 3. Создаём новую номенклатуру
-    created_items = sum(create_item(d, True) for d in ITEMS)
+    variants_created = 0
+    for t in TEMPLATES:
+        for length in LENGTHS:
+            create_item_variant(t, length)
+            variants_created += 1
     frappe.db.commit()
 
-    # 4. Создаём тестовые партии
-    created_batches = sum(
-        create_batch(b["item_code"], b["batch_id"], b["length_mm"], True)
-        for b in TEST_BATCHES
-    )
+    for t in TEMPLATES:
+        create_scrap_item(t)
     frappe.db.commit()
 
-    print(f"\n✅ Номенклатура настроена (Вариант А — партионный учёт):")
-    print(f"   Кастомное поле Item.painting_area:  {'создано' if painting_cf else 'уже было'}")
-    print(f"   Кастомное поле Batch.length_mm:     {'создано' if length_cf else 'уже было'}")
-    print(f"   Старых записей удалено: {deleted}")
-    print(f"   Номенклатур создано:    {created_items}")
-    print(f"   Тестовых партий создано: {created_batches}")
+    se_name = create_test_stock()
+    frappe.db.commit()
+
+    print(f"\n✅ Номенклатура металлопроката настроена (гибридная схема):")
+    print(f"   Старых записей удалено:  {deleted}")
+    print(f"   Шаблонов создано:        {len(TEMPLATES)}")
+    print(f"   Вариантов создано:       {variants_created}")
+    print(f"   Номенклатур обрезков:    {len(TEMPLATES)}")
+    print(f"   Тестовое поступление:    {se_name}")
