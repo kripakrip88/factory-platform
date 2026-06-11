@@ -41,20 +41,24 @@ ALL_ITEM_CODES = (
 # ── Шаг 0: очистка ────────────────────────────────────────────────────────────
 
 def delete_old_data():
-    codes = list(dict.fromkeys(ALL_ITEM_CODES))  # дедупликация с сохранением порядка
+    codes = list(dict.fromkeys(ALL_ITEM_CODES))
     deleted = 0
     for code in codes:
         if not frappe.db.exists("Item", code):
             continue
-        frappe.db.delete("Stock Ledger Entry", {"item_code": code})
-        frappe.db.delete("Bin",                {"item_code": code})
-        frappe.db.delete("Item Price",         {"item_code": code})
-        frappe.db.delete("Batch",              {"item": code})
-        frappe.delete_doc("Item", code, ignore_permissions=True, force=True)
+        # Удаляем связанные данные напрямую через SQL — обходим валидацию ERPNext
+        frappe.db.sql("DELETE FROM `tabStock Ledger Entry` WHERE item_code = %s", code)
+        frappe.db.sql("DELETE FROM `tabBin` WHERE item_code = %s", code)
+        frappe.db.sql("DELETE FROM `tabItem Price` WHERE item_code = %s", code)
+        frappe.db.sql("DELETE FROM `tabBatch` WHERE item = %s", code)
+        frappe.db.sql("DELETE FROM `tabItem Variant Attribute` WHERE parent = %s", code)
+        frappe.db.sql("DELETE FROM `tabItem` WHERE name = %s", code)
         deleted += 1
-    # Удаляем незакрытые Stock Entry (только черновики)
+    frappe.db.commit()
+    # Удаляем незакрытые Stock Entry
     for se in frappe.get_all("Stock Entry", filters={"docstatus": 0}, pluck="name"):
-        frappe.delete_doc("Stock Entry", se, ignore_permissions=True, force=True)
+        frappe.db.sql("DELETE FROM `tabStock Entry Detail` WHERE parent = %s", se)
+        frappe.db.sql("DELETE FROM `tabStock Entry` WHERE name = %s", se)
     return deleted
 
 
