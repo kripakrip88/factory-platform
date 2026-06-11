@@ -113,6 +113,7 @@ def create_item_variant(tmpl, length):
     variant.item_name        = variant_code
     variant.weight_per_unit  = weight
     variant.weight_uom       = "кг"
+    variant.uoms             = []  # сбрасываем — ERPNext добавит stock_uom автоматически
     variant.insert(ignore_permissions=True)
     frappe.db.set_value("Item", variant_code, "painting_area", tmpl["paint"])
     return True
