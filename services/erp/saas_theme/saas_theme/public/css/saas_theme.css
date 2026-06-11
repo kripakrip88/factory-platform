@@ -1974,6 +1974,28 @@ body.st-dual-sidebar .main-section {
 	flex: 1;
 }
 
+.st-rail-bottom {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	padding: 0 8px 8px;
+	width: 100%;
+}
+
+.st-theme-toggle {
+	opacity: 0.6;
+	transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.st-theme-toggle:hover {
+	opacity: 1;
+}
+
+.st-theme-toggle svg {
+	color: #CBD5E1;
+	stroke: #CBD5E1;
+}
+
 /* ===== Rail Item ===== */
 .st-rail-item {
 	width: 44px;
