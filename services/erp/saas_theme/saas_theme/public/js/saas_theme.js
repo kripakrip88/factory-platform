@@ -640,17 +640,10 @@ saas_theme.columns = {
 			? $head.find(".list-row-col")
 			: $(".list-row-head .list-row-col");
 
-		console.log("[st-cols] try_attach", doctype, "cols found:", $cols.length);
-
 		if (!$cols.length) return;
 
 		// Already attached
-		if ($cols.first().find(".st-col-resizer").length) {
-			console.log("[st-cols] already attached, skip");
-			return;
-		}
-
-		console.log("[st-cols] attaching handles to", $cols.length, "cols");
+		if ($cols.first().find(".st-col-resizer").length) return;
 
 		const saved = this.load(doctype);
 		$cols.each((i, col) => {
