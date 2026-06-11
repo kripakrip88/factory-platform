@@ -23,7 +23,7 @@ def execute():
         print(f"\n▶  {description} ({module_name})...")
         try:
             import importlib
-            mod = importlib.import_module(module_name)
+            mod = importlib.import_module(f"erpnext.{module_name}")
             importlib.reload(mod)
             mod.execute()
             results.append((module_name, description, True, None))
