@@ -22,37 +22,41 @@ body[data-path="login"] .page-content-wrapper {
 	margin: 0 !important;
 }
 
-/* ===== Centered single-column wrapper ===== */
+/* ===== Two-column split wrapper ===== */
 .st-login-wrapper {
 	display: flex !important;
-	flex-direction: column !important;
-	align-items: center;
-	justify-content: center;
+	flex-direction: row !important;
 	min-height: 100vh;
 	width: 100vw;
 	margin: 0;
 	padding: 0;
-	background: #F8FAFC;
 }
 
-/* ===== Form column — centered card ===== */
+/* ===== Left column — form ===== */
 .st-login-form-col {
-	width: 100%;
-	max-width: 440px;
+	flex: 1 1 50%;
+	min-height: 100vh;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
-	padding: 48px 40px;
+	padding: 48px 80px;
 	background: #fff;
-	border-radius: 12px;
-	box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
 	overflow-y: auto;
 }
 
-/* ===== Right panel — hidden in centered layout ===== */
+/* ===== Right panel ===== */
 .st-login-panel {
-	display: none !important;
+	flex: 1 1 50%;
+	min-height: 100vh;
+	background: linear-gradient(160deg, #EDF2FB 0%, #D6E4F7 40%, #C5D8F0 100%);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 60px 48px;
+	position: relative;
+	overflow: hidden;
 }
 
 /* Decorative floating bars */
@@ -95,7 +99,7 @@ body[data-path="login"] .page-content-wrapper {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	box-shadow: 0 8px 32px rgba(37, 99, 235, 0.12);
+	box-shadow: 0 8px 32px rgba(0, 82, 255, 0.12);
 	transform: rotate(-5deg);
 }
 
@@ -109,7 +113,7 @@ body[data-path="login"] .page-content-wrapper {
 .st-panel-content h2 {
 	font-size: 26px;
 	font-weight: 700;
-	color: #1E293B;
+	color: #0A2540;
 	line-height: 1.3;
 	margin-bottom: 12px;
 }
@@ -165,7 +169,7 @@ body[data-path="login"] .page-content-wrapper {
 .st-login-form-col .page-card-head h4 {
 	font-size: 26px;
 	font-weight: 700;
-	color: #1E293B;
+	color: #0A2540;
 	letter-spacing: -0.02em;
 	margin-top: 24px;
 	margin-bottom: 4px;
@@ -211,8 +215,8 @@ body[data-path="login"] .page-content-wrapper {
 }
 
 .st-login-form-col .page-card-body input:focus {
-	border-color: #2563EB !important;
-	box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
+	border-color: #0052FF !important;
+	box-shadow: 0 0 0 3px rgba(0, 82, 255, 0.1) !important;
 	outline: none !important;
 }
 
@@ -239,7 +243,7 @@ body[data-path="login"] .page-content-wrapper {
 }
 
 .st-login-form-col .toggle-password:hover {
-	color: #2563EB !important;
+	color: #0052FF !important;
 }
 
 /* ===== Forgot password ===== */
@@ -255,7 +259,7 @@ body[data-path="login"] .page-content-wrapper {
 }
 
 .st-login-form-col .forgot-password-message a:hover {
-	color: #2563EB !important;
+	color: #0052FF !important;
 }
 
 /* ===== All primary buttons ===== */
@@ -267,7 +271,7 @@ body[data-path="login"] .page-content-wrapper {
 	border-radius: 10px !important;
 	font-size: 15px !important;
 	font-weight: 600 !important;
-	background: #2563EB !important;
+	background: #0052FF !important;
 	border: none !important;
 	color: #fff !important;
 	box-shadow: none !important;
@@ -278,8 +282,8 @@ body[data-path="login"] .page-content-wrapper {
 .st-login-form-col .btn-login:hover,
 .st-login-form-col .btn-forgot:hover,
 .st-login-form-col .btn-login-with-email-link:hover {
-	background: #1D4ED8 !important;
-	box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25) !important;
+	background: #0047DB !important;
+	box-shadow: 0 4px 12px rgba(0, 82, 255, 0.25) !important;
 	transform: translateY(-1px);
 }
 
@@ -343,7 +347,7 @@ body[data-path="login"] .page-content-wrapper {
 }
 
 .st-login-form-col .sign-up-message a {
-	color: #2563EB !important;
+	color: #0052FF !important;
 	font-weight: 500 !important;
 	text-decoration: none !important;
 }
@@ -397,8 +401,8 @@ body[data-path="login"] .page-content-wrapper {
 }
 
 [data-theme="dark"] .st-login-form-col .page-card-body input:focus {
-	border-color: #2563EB !important;
-	box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2) !important;
+	border-color: #0052FF !important;
+	box-shadow: 0 0 0 3px rgba(0, 82, 255, 0.2) !important;
 }
 
 [data-theme="dark"] .st-login-form-col .btn-login-option {

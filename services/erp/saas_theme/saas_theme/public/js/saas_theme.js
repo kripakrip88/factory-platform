@@ -15,7 +15,6 @@ $(document).ready(function () {
 	frappe.after_ajax(function () {
 		saas_theme.sidebar.init();
 		saas_theme.attachments.init();
-		saas_theme.columns.init();
 	});
 
 	// Re-init on sidebar_setup in case frappe.after_ajax fired too early
@@ -47,64 +46,7 @@ saas_theme.sidebar = {
 	   WORKSPACE RAIL
 	   ============================================ */
 
-	/* Color palette for workspace modules — keyed by lowercase label */
-	WORKSPACE_COLORS: {
-		// Core
-		"home":            "#64748B",
-		"desk":            "#64748B",
-		// CRM & Sales
-		"crm":             "#6366F1",
-		"selling":         "#3B82F6",
-		"sales":           "#3B82F6",
-		// Buying & Procurement
-		"buying":          "#F59E0B",
-		"purchase":        "#F59E0B",
-		"procurement":     "#F59E0B",
-		// Stock & Warehouse
-		"stock":           "#10B981",
-		"warehouse":       "#10B981",
-		"inventory":       "#10B981",
-		// Manufacturing
-		"manufacturing":   "#EF4444",
-		"production":      "#EF4444",
-		// HR & Payroll
-		"hr":              "#8B5CF6",
-		"human resources": "#8B5CF6",
-		"payroll":         "#8B5CF6",
-		// Projects
-		"projects":        "#06B6D4",
-		"project":         "#06B6D4",
-		// Accounting
-		"accounting":      "#EC4899",
-		"accounts":        "#EC4899",
-		"finance":         "#EC4899",
-		// Assets
-		"assets":          "#F97316",
-		// Support
-		"support":         "#14B8A6",
-		"helpdesk":        "#14B8A6",
-		// Settings / Tools
-		"settings":        "#94A3B8",
-		"tools":           "#94A3B8",
-		"integrations":    "#94A3B8",
-	},
-
-	get_workspace_color(label) {
-		const key = (label || "").toLowerCase();
-		if (this.WORKSPACE_COLORS[key]) return this.WORKSPACE_COLORS[key];
-		// Partial match
-		for (const [k, v] of Object.entries(this.WORKSPACE_COLORS)) {
-			if (key.includes(k) || k.includes(key)) return v;
-		}
-		// Deterministic fallback from label hash
-		const palette = ["#3B82F6","#10B981","#F59E0B","#EF4444","#8B5CF6","#06B6D4","#EC4899","#F97316","#14B8A6"];
-		let hash = 0;
-		for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) & 0xffffffff;
-		return palette[Math.abs(hash) % palette.length];
-	},
-
 	build_workspace_rail() {
-		try {
 		if (this.rail_built) return;
 
 		const workspaces = this.get_workspaces();
@@ -114,11 +56,9 @@ saas_theme.sidebar = {
 		workspaces.forEach((ws) => {
 			const icon_content = this.get_icon_for_workspace(ws);
 			const escaped_label = frappe.utils.escape_html(ws.label);
-			const color = this.get_workspace_color(ws.label);
 			icons_html += `
 				<div class="st-rail-item"
-					data-workspace="${escaped_label}"
-					data-color="${color}">
+					data-workspace="${escaped_label}">
 					<div class="st-rail-icon">
 						${icon_content}
 					</div>
@@ -131,34 +71,15 @@ saas_theme.sidebar = {
 				<div class="st-rail-top">
 					${icons_html}
 				</div>
-				<div class="st-rail-bottom">
-					<div class="st-rail-item st-theme-toggle" title="">
-						<div class="st-rail-icon st-theme-icon"></div>
-						<span class="st-rail-tooltip">${__("Toggle theme")}</span>
-					</div>
-				</div>
 			</div>
 		`);
 
 		$(".body-sidebar-container").before(this.$rail);
 
-		// Apply icon colors
-		this.$rail.find(".st-rail-item[data-color]").each(function () {
-			const color = $(this).data("color");
-			$(this).find("svg, .icon").css({ color, stroke: color });
-			$(this).find(".st-rail-initials").css({ color });
-		});
-
-		// Workspace click handler
-		this.$rail.find(".st-rail-item:not(.st-theme-toggle)").on("click", function () {
+		// Click handler
+		this.$rail.find(".st-rail-item").on("click", function () {
 			const ws_name = $(this).data("workspace");
 			saas_theme.sidebar.switch_workspace(ws_name);
-		});
-
-		// Theme toggle
-		this.render_theme_icon();
-		this.$rail.find(".st-theme-toggle").on("click", () => {
-			saas_theme.sidebar.toggle_theme();
 		});
 
 		// Tooltips — move to body and position with JS
@@ -184,9 +105,6 @@ saas_theme.sidebar = {
 
 		this.rail_built = true;
 		this.update_rail_active();
-		} catch(e) {
-			console.warn("saas_theme: build_workspace_rail error:", e);
-		}
 	},
 
 	get_workspaces() {
@@ -194,7 +112,6 @@ saas_theme.sidebar = {
 		const sidebar_items = frappe.boot.workspace_sidebar_item || {};
 
 		return icons.filter((icon) => {
-			if (!icon || !icon.label) return false;
 			return (
 				icon.hidden !== 1 &&
 				icon.link_type === "Workspace Sidebar" &&
@@ -203,31 +120,8 @@ saas_theme.sidebar = {
 		});
 	},
 
-	render_theme_icon() {
-		const is_dark = document.documentElement.getAttribute("data-theme") === "dark";
-		const icon_html = is_dark
-			? `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`
-			: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
-		this.$rail.find(".st-theme-icon").html(icon_html);
-	},
-
-	toggle_theme() {
-		const current = document.documentElement.getAttribute("data-theme");
-		const next = current === "dark" ? "light" : "dark";
-		if (frappe.ui && frappe.ui.set_theme) {
-			frappe.ui.set_theme(next);
-		} else {
-			document.documentElement.setAttribute("data-theme", next);
-			localStorage.setItem("app_theme", next);
-		}
-		setTimeout(() => this.render_theme_icon(), 50);
-	},
-
 	get_icon_for_workspace(ws) {
-		if (!ws || !ws.label) return `<span class="st-rail-initials">?</span>`;
-
-		const sidebar_items = frappe.boot.workspace_sidebar_item || {};
-		const sidebar_data = sidebar_items[ws.label.toLowerCase()];
+		const sidebar_data = frappe.boot.workspace_sidebar_item[ws.label.toLowerCase()];
 		if (sidebar_data && sidebar_data.header_icon) {
 			return frappe.utils.icon(sidebar_data.header_icon, "md", "", "", "", true);
 		}
@@ -238,37 +132,18 @@ saas_theme.sidebar = {
 
 	switch_workspace(workspace_name) {
 		if (!workspace_name) return;
-		if (!frappe.app?.sidebar?.setup) return;
-		try {
-			frappe.app.sidebar.setup(workspace_name);
-			this.update_rail_active();
-		} catch(e) {
-			console.warn("saas_theme: switch_workspace error:", e);
-		}
+		frappe.app.sidebar.setup(workspace_name);
+		this.update_rail_active();
 	},
 
 	update_rail_active() {
-		const current = ((frappe.app?.sidebar?.sidebar_title) || "").toLowerCase();
+		const current = (frappe.app.sidebar.sidebar_title || "").toLowerCase();
 
-		$(".st-rail-item").removeClass("active").css({
-			"background": "",
-			"box-shadow": "",
-		});
-		// reset active indicator color
-		$(".st-rail-item::before").css("background", "");
-
+		$(".st-rail-item").removeClass("active");
 		$(".st-rail-item").each(function () {
 			const ws = $(this).data("workspace");
 			if (ws && ws.toLowerCase() === current) {
-				const color = $(this).data("color") || "#3B82F6";
 				$(this).addClass("active");
-				// colored tint background + glow
-				$(this).css({
-					"background": `${color}22`,
-					"box-shadow": `0 0 0 1px ${color}33`,
-				});
-				// colored left indicator via CSS variable
-				$(this).css("--st-active-color", color);
 			}
 		});
 	},
@@ -400,6 +275,8 @@ saas_theme.sidebar = {
 		const menu_items = [
 			{ label: __("Integrations"), icon: "folder", href: "/app/installed-applications" },
 			{ label: __("History"), icon: "clock", href: "/app/activity-log" },
+			{ label: __("Upgrade to Pro"), star: true, action: "upgrade" },
+			{ highlight: true, label: __("Update App"), action: "update" },
 			{ divider: true },
 			{ label: __("Logout"), icon: "logout", action: "logout" },
 		];
@@ -568,189 +445,5 @@ saas_theme.attachments = {
 		// Observe entire body for attachment rows appearing
 		const observer = new MutationObserver(debounced);
 		observer.observe(document.body, { childList: true, subtree: true });
-	},
-};
-
-/* ============================================
-   RESIZABLE LIST COLUMNS
-   ============================================ */
-
-frappe.provide("saas_theme.columns");
-
-saas_theme.columns = {
-	_observers: [],
-
-	STORAGE_PREFIX: "st_col_w__",
-	MIN_WIDTH: 60,
-	HANDLE_WIDTH: 6,
-
-	init() {
-		if (this._listeners_bound) return;
-		this._listeners_bound = true;
-
-		// Fire on page navigation — list renders async, so wait longer
-		$(document).on("page-change", () => {
-			setTimeout(() => this.try_attach(), 500);
-			setTimeout(() => this.try_attach(), 1200);
-		});
-
-		// Fire after list data refresh (filters, sorting, pagination)
-		$(document).on("list-update render-complete", () => {
-			setTimeout(() => this.try_attach(), 300);
-		});
-
-		// Frappe router hook — catches SPA navigation
-		if (frappe.router) {
-			frappe.router.on("change", () => {
-				setTimeout(() => this.try_attach(), 600);
-				setTimeout(() => this.try_attach(), 1500);
-			});
-		}
-
-		// Initial attach — in case we're already on a list page
-		setTimeout(() => this.try_attach(), 800);
-		setTimeout(() => this.try_attach(), 2000);
-	},
-
-	get_doctype() {
-		const route = frappe.get_route();
-		if (route && route[0] === "List" && route[1]) {
-			return route[1];
-		}
-		return null;
-	},
-
-	storage_key(doctype) {
-		return this.STORAGE_PREFIX + doctype.replace(/\s+/g, "_");
-	},
-
-	load(doctype) {
-		try {
-			return JSON.parse(
-				localStorage.getItem(this.storage_key(doctype)) || "{}"
-			);
-		} catch (e) {
-			return {};
-		}
-	},
-
-	save(doctype, widths) {
-		try {
-			localStorage.setItem(
-				this.storage_key(doctype),
-				JSON.stringify(widths)
-			);
-		} catch (e) {}
-	},
-
-	try_attach() {
-		const doctype = this.get_doctype();
-		if (!doctype) return;
-
-		// Frappe ListView: header cols are .list-row-col inside .list-row-head
-		const $head = $(".list-row-head .list-header-subject");
-		const $cols = $head.length
-			? $head.find(".list-row-col")
-			: $(".list-row-head .list-row-col");
-
-		if (!$cols.length) return;
-
-		// Already attached
-		if ($cols.first().find(".st-col-resizer").length) return;
-
-		const saved = this.load(doctype);
-		$cols.each((i, col) => {
-			const $col = $(col);
-			const key = this._col_key($col, i);
-
-			if (saved[key]) {
-				$col.css({ "width": saved[key] + "px", "min-width": saved[key] + "px", "flex": "none" });
-				// Apply same width to all data rows for this column index
-				$(`.frappe-list .list-row .list-row-col:nth-child(${i + 1})`).css({
-					"width": saved[key] + "px", "min-width": saved[key] + "px", "flex": "none"
-				});
-			}
-
-			$col.css("position", "relative");
-			$col.append('<div class="st-col-resizer" aria-hidden="true"></div>');
-			this._bind_drag($col, i, doctype);
-		});
-	},
-
-	_col_key($col, index) {
-		// Try to find fieldname from classes (Frappe adds fieldname as a class)
-		const classes = ($col.attr("class") || "").split(/\s+/);
-		const skip = ["list-row-col", "ellipsis", "hidden-xs", "text-right", "list-subject", "level", "tag-col", "hide"];
-		const fieldname = classes.find(c => c && !skip.includes(c) && !c.startsWith("st-"));
-		return fieldname || "col_" + index;
-	},
-
-	_bind_drag($th, index, doctype) {
-		const handle = $th.find(".st-col-resizer")[0];
-		if (!handle || handle._st_bound) return;
-		handle._st_bound = true;
-
-		let startX, startW;
-
-		const apply_width = (newW) => {
-			const w = newW + "px";
-			$th.css({ width: w, "min-width": w, flex: "none" });
-			// Sync all data rows at same column index
-			$(`.frappe-list .list-row .list-row-col:nth-child(${index + 1})`).css({
-				width: w, "min-width": w, flex: "none"
-			});
-		};
-
-		handle.addEventListener("mousedown", (e) => {
-			e.preventDefault();
-			e.stopPropagation();
-
-			startX = e.clientX;
-			startW = $th.outerWidth();
-			$th.addClass("st-col-resizing");
-			$("body").addClass("st-col-resizing-body");
-
-			const onMove = (e) => {
-				apply_width(Math.max(this.MIN_WIDTH, startW + e.clientX - startX));
-			};
-
-			const onUp = () => {
-				$th.removeClass("st-col-resizing");
-				$("body").removeClass("st-col-resizing-body");
-
-				const saved = this.load(doctype);
-				saved[this._col_key($th, index)] = $th.outerWidth();
-				this.save(doctype, saved);
-
-				document.removeEventListener("mousemove", onMove);
-				document.removeEventListener("mouseup", onUp);
-			};
-
-			document.addEventListener("mousemove", onMove);
-			document.addEventListener("mouseup", onUp);
-		});
-
-		handle.addEventListener("touchstart", (e) => {
-			const touch = e.touches[0];
-			startX = touch.clientX;
-			startW = $th.outerWidth();
-
-			const onMove = (e) => {
-				const t = e.touches[0];
-				apply_width(Math.max(this.MIN_WIDTH, startW + t.clientX - startX));
-			};
-
-			const onEnd = () => {
-				const saved = this.load(doctype);
-				saved[this._col_key($th, index)] = $th.outerWidth();
-				this.save(doctype, saved);
-
-				handle.removeEventListener("touchmove", onMove);
-				handle.removeEventListener("touchend", onEnd);
-			};
-
-			handle.addEventListener("touchmove", onMove, { passive: true });
-			handle.addEventListener("touchend", onEnd);
-		}, { passive: true });
 	},
 };
