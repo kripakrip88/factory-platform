@@ -275,8 +275,6 @@ saas_theme.sidebar = {
 		const menu_items = [
 			{ label: __("Integrations"), icon: "folder", href: "/app/installed-applications" },
 			{ label: __("History"), icon: "clock", href: "/app/activity-log" },
-			{ label: __("Upgrade to Pro"), star: true, action: "upgrade" },
-			{ highlight: true, label: __("Update App"), action: "update" },
 			{ divider: true },
 			{ label: __("Logout"), icon: "logout", action: "logout" },
 		];
