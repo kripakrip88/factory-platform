@@ -15,6 +15,7 @@ $(document).ready(function () {
 	frappe.after_ajax(function () {
 		saas_theme.sidebar.init();
 		saas_theme.attachments.init();
+		saas_theme.columns.init();
 	});
 
 	// Re-init on sidebar_setup in case frappe.after_ajax fired too early
@@ -554,5 +555,173 @@ saas_theme.attachments = {
 		// Observe entire body for attachment rows appearing
 		const observer = new MutationObserver(debounced);
 		observer.observe(document.body, { childList: true, subtree: true });
+	},
+};
+
+/* ============================================
+   RESIZABLE LIST COLUMNS
+   ============================================ */
+
+frappe.provide("saas_theme.columns");
+
+saas_theme.columns = {
+	_observers: [],
+
+	STORAGE_PREFIX: "st_col_w__",
+	MIN_WIDTH: 60,
+	HANDLE_WIDTH: 6,
+
+	init() {
+		if (this._listeners_bound) return;
+		this._listeners_bound = true;
+
+		$(document).on("page-change", () => {
+			setTimeout(() => this.try_attach(), 300);
+		});
+
+		$(document).on("list-update", () => {
+			setTimeout(() => this.try_attach(), 150);
+		});
+
+		const observer = new MutationObserver(
+			frappe.utils.debounce(() => this.try_attach(), 200)
+		);
+		observer.observe(document.body, { childList: true, subtree: true });
+		this._observers.push(observer);
+	},
+
+	get_doctype() {
+		const route = frappe.get_route();
+		if (route && route[0] === "List" && route[1]) {
+			return route[1];
+		}
+		return null;
+	},
+
+	storage_key(doctype) {
+		return this.STORAGE_PREFIX + doctype.replace(/\s+/g, "_");
+	},
+
+	load(doctype) {
+		try {
+			return JSON.parse(
+				localStorage.getItem(this.storage_key(doctype)) || "{}"
+			);
+		} catch (e) {
+			return {};
+		}
+	},
+
+	save(doctype, widths) {
+		try {
+			localStorage.setItem(
+				this.storage_key(doctype),
+				JSON.stringify(widths)
+			);
+		} catch (e) {}
+	},
+
+	try_attach() {
+		const doctype = this.get_doctype();
+		if (!doctype) return;
+
+		const $table = $(".list-row-head, .dt-header, .datatable .dt-head");
+		const $ths = $table.find(".list-header-subject, .dt-cell--header, th");
+		const $thead = $("table.list-table thead th, .list-logical-row th");
+		const $headers = $ths.length ? $ths : $thead;
+		if (!$headers.length) return;
+
+		if ($headers.first().find(".st-col-resizer").length) return;
+
+		const saved = this.load(doctype);
+		$headers.each((i, th) => {
+			const $th = $(th);
+			const key = this._col_key($th, i);
+
+			if (saved[key]) {
+				$th.css("width", saved[key] + "px");
+				$th.css("min-width", saved[key] + "px");
+			}
+
+			if (!$th.find(".st-col-resizer").length) {
+				$th.css("position", "relative");
+				$th.append('<div class="st-col-resizer" aria-hidden="true"></div>');
+			}
+
+			this._bind_drag($th, i, doctype);
+		});
+	},
+
+	_col_key($th, index) {
+		return (
+			$th.attr("data-fieldname") ||
+			$th.attr("data-col") ||
+			$th.find("[data-fieldname]").attr("data-fieldname") ||
+			"col_" + index
+		);
+	},
+
+	_bind_drag($th, index, doctype) {
+		const handle = $th.find(".st-col-resizer")[0];
+		if (!handle || handle._st_bound) return;
+		handle._st_bound = true;
+
+		let startX, startW;
+
+		handle.addEventListener("mousedown", (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+
+			startX = e.clientX;
+			startW = $th.outerWidth();
+			$th.addClass("st-col-resizing");
+			$("body").addClass("st-col-resizing-body");
+
+			const onMove = (e) => {
+				const newW = Math.max(this.MIN_WIDTH, startW + e.clientX - startX);
+				$th.css({ width: newW + "px", "min-width": newW + "px" });
+			};
+
+			const onUp = () => {
+				$th.removeClass("st-col-resizing");
+				$("body").removeClass("st-col-resizing-body");
+
+				const saved = this.load(doctype);
+				const key = this._col_key($th, index);
+				saved[key] = $th.outerWidth();
+				this.save(doctype, saved);
+
+				document.removeEventListener("mousemove", onMove);
+				document.removeEventListener("mouseup", onUp);
+			};
+
+			document.addEventListener("mousemove", onMove);
+			document.addEventListener("mouseup", onUp);
+		});
+
+		handle.addEventListener("touchstart", (e) => {
+			const touch = e.touches[0];
+			startX = touch.clientX;
+			startW = $th.outerWidth();
+
+			const onMove = (e) => {
+				const t = e.touches[0];
+				const newW = Math.max(this.MIN_WIDTH, startW + t.clientX - startX);
+				$th.css({ width: newW + "px", "min-width": newW + "px" });
+			};
+
+			const onEnd = () => {
+				const saved = this.load(doctype);
+				const key = this._col_key($th, index);
+				saved[key] = $th.outerWidth();
+				this.save(doctype, saved);
+
+				handle.removeEventListener("touchmove", onMove);
+				handle.removeEventListener("touchend", onEnd);
+			};
+
+			handle.addEventListener("touchmove", onMove, { passive: true });
+			handle.addEventListener("touchend", onEnd);
+		}, { passive: true });
 	},
 };

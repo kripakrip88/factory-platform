@@ -1738,6 +1738,79 @@ body.st-dual-sidebar .body-sidebar-container:not(.expanded) .dropdown-notificati
 }
 
 /* ============================================
+   26. RESIZABLE COLUMNS
+   ============================================ */
+
+.st-col-resizer {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 6px;
+    cursor: col-resize;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    z-index: 2;
+    touch-action: none;
+}
+
+.st-col-resizer::after {
+    content: "";
+    display: block;
+    width: 2px;
+    height: 55%;
+    background: var(--border-color);
+    border-radius: 1px;
+    transition: background 0.15s ease, height 0.15s ease;
+}
+
+th:hover .st-col-resizer,
+.list-header-subject:hover .st-col-resizer,
+.dt-cell--header:hover .st-col-resizer {
+    opacity: 1;
+}
+
+.st-col-resizing .st-col-resizer {
+    opacity: 1;
+}
+
+.st-col-resizing .st-col-resizer::after {
+    background: var(--primary);
+    height: 70%;
+}
+
+.st-col-resizing-body,
+.st-col-resizing-body * {
+    user-select: none !important;
+    cursor: col-resize !important;
+}
+
+[data-theme="dark"] .st-col-resizer::after {
+    background: var(--border-color);
+}
+
+[data-theme="dark"] .st-col-resizing .st-col-resizer::after {
+    background: var(--primary);
+}
+
+.list-row-head,
+table.list-table,
+.datatable table {
+    table-layout: fixed;
+}
+
+.list-row-head .list-header-subject,
+table.list-table th,
+table.list-table td {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ============================================
    19. RESPONSIVE
    ============================================ */
 
