@@ -1,16 +1,20 @@
 """
 Настройка формы Lead для завода металлоконструкций.
 
-Запуск через bench execute:
-    docker compose -f services/erp/docker-compose.yml cp \
-      services/erp/setup/lead_form_setup.py backend:/tmp/lead_form_setup.py
-    docker compose -f services/erp/docker-compose.yml exec backend \
-      bench --site frontend execute /tmp/lead_form_setup.py
+Запуск:
+    # 1. Скопировать файл в контейнер
+    docker cp services/erp/setup/lead_form_setup.py erp-backend-1:/tmp/lead_form_setup.py
 
-Или через bench console:
-    docker compose -f services/erp/docker-compose.yml exec backend \
-      bench --site frontend console
-    >>> exec(open('/tmp/lead_form_setup.py').read()); execute()
+    # 2. Выполнить
+    docker exec erp-backend-1 bash -c '
+      cd /home/frappe/frappe-bench/sites && source ../env/bin/activate && python3 -c "
+        import frappe
+        frappe.init(site=\"erp.localhost\", sites_path=\".\")
+        frappe.connect()
+        exec(open(\"/tmp/lead_form_setup.py\").read())
+        execute()
+        frappe.destroy()
+      "'
 """
 
 import frappe
