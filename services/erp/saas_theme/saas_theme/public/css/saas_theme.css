@@ -2036,15 +2036,17 @@ body.st-dual-sidebar .main-section {
 }
 
 /* ===== Active Rail Item ===== */
+/* Active state — background tint set via JS (data-color based) */
 .st-rail-item.active {
-	background: rgba(255, 255, 255, 0.12);
+	border-radius: 10px;
+	transition: background 0.15s ease, box-shadow 0.15s ease;
 }
 
 .st-rail-item.active:hover {
-	background: rgba(255, 255, 255, 0.15);
+	filter: brightness(1.1);
 }
 
-/* Active indicator — left bar */
+/* Active indicator — left bar, color from JS CSS variable */
 .st-rail-item.active::before {
 	content: "";
 	position: absolute;
@@ -2052,7 +2054,7 @@ body.st-dual-sidebar .main-section {
 	top: 8px;
 	bottom: 8px;
 	width: 3px;
-	background: #3B82F6;
+	background: var(--st-active-color, #3B82F6);
 	border-radius: 0 3px 3px 0;
 }
 
@@ -2083,11 +2085,11 @@ body.st-dual-sidebar .main-section {
 	stroke: rgba(255, 255, 255, 0.8) !important;
 }
 
-/* Active — full white */
+/* Active — icon keeps its color but brighter (set by JS inline style) */
 .st-rail-item.active .st-rail-icon svg,
 .st-rail-item.active .st-rail-icon .icon {
-	color: #FFFFFF !important;
-	stroke: #FFFFFF !important;
+	opacity: 1 !important;
+	filter: brightness(1.25) saturate(1.2);
 }
 
 /* Initials fallback */

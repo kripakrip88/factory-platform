@@ -46,6 +46,62 @@ saas_theme.sidebar = {
 	   WORKSPACE RAIL
 	   ============================================ */
 
+	/* Color palette for workspace modules — keyed by lowercase label */
+	WORKSPACE_COLORS: {
+		// Core
+		"home":            "#64748B",
+		"desk":            "#64748B",
+		// CRM & Sales
+		"crm":             "#3B82F6",
+		"selling":         "#3B82F6",
+		"sales":           "#3B82F6",
+		// Buying & Procurement
+		"buying":          "#F59E0B",
+		"purchase":        "#F59E0B",
+		"procurement":     "#F59E0B",
+		// Stock & Warehouse
+		"stock":           "#10B981",
+		"warehouse":       "#10B981",
+		"inventory":       "#10B981",
+		// Manufacturing
+		"manufacturing":   "#EF4444",
+		"production":      "#EF4444",
+		// HR & Payroll
+		"hr":              "#8B5CF6",
+		"human resources": "#8B5CF6",
+		"payroll":         "#8B5CF6",
+		// Projects
+		"projects":        "#06B6D4",
+		"project":         "#06B6D4",
+		// Accounting
+		"accounting":      "#EC4899",
+		"accounts":        "#EC4899",
+		"finance":         "#EC4899",
+		// Assets
+		"assets":          "#F97316",
+		// Support
+		"support":         "#14B8A6",
+		"helpdesk":        "#14B8A6",
+		// Settings / Tools
+		"settings":        "#94A3B8",
+		"tools":           "#94A3B8",
+		"integrations":    "#94A3B8",
+	},
+
+	get_workspace_color(label) {
+		const key = (label || "").toLowerCase();
+		if (this.WORKSPACE_COLORS[key]) return this.WORKSPACE_COLORS[key];
+		// Partial match
+		for (const [k, v] of Object.entries(this.WORKSPACE_COLORS)) {
+			if (key.includes(k) || k.includes(key)) return v;
+		}
+		// Deterministic fallback from label hash
+		const palette = ["#3B82F6","#10B981","#F59E0B","#EF4444","#8B5CF6","#06B6D4","#EC4899","#F97316","#14B8A6"];
+		let hash = 0;
+		for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) & 0xffffffff;
+		return palette[Math.abs(hash) % palette.length];
+	},
+
 	build_workspace_rail() {
 		if (this.rail_built) return;
 
@@ -56,9 +112,11 @@ saas_theme.sidebar = {
 		workspaces.forEach((ws) => {
 			const icon_content = this.get_icon_for_workspace(ws);
 			const escaped_label = frappe.utils.escape_html(ws.label);
+			const color = this.get_workspace_color(ws.label);
 			icons_html += `
 				<div class="st-rail-item"
-					data-workspace="${escaped_label}">
+					data-workspace="${escaped_label}"
+					data-color="${color}">
 					<div class="st-rail-icon">
 						${icon_content}
 					</div>
@@ -81,6 +139,13 @@ saas_theme.sidebar = {
 		`);
 
 		$(".body-sidebar-container").before(this.$rail);
+
+		// Apply icon colors
+		this.$rail.find(".st-rail-item[data-color]").each(function () {
+			const color = $(this).data("color");
+			$(this).find("svg, .icon").css({ color, stroke: color });
+			$(this).find(".st-rail-initials").css({ color });
+		});
 
 		// Workspace click handler
 		this.$rail.find(".st-rail-item:not(.st-theme-toggle)").on("click", function () {
@@ -171,11 +236,25 @@ saas_theme.sidebar = {
 	update_rail_active() {
 		const current = (frappe.app.sidebar.sidebar_title || "").toLowerCase();
 
-		$(".st-rail-item").removeClass("active");
+		$(".st-rail-item").removeClass("active").css({
+			"background": "",
+			"box-shadow": "",
+		});
+		// reset active indicator color
+		$(".st-rail-item::before").css("background", "");
+
 		$(".st-rail-item").each(function () {
 			const ws = $(this).data("workspace");
 			if (ws && ws.toLowerCase() === current) {
+				const color = $(this).data("color") || "#3B82F6";
 				$(this).addClass("active");
+				// colored tint background + glow
+				$(this).css({
+					"background": `${color}22`,
+					"box-shadow": `0 0 0 1px ${color}33`,
+				});
+				// colored left indicator via CSS variable
+				$(this).css("--st-active-color", color);
 			}
 		});
 	},
