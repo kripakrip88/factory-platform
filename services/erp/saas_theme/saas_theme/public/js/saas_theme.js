@@ -52,7 +52,7 @@ saas_theme.sidebar = {
 		"home":            "#64748B",
 		"desk":            "#64748B",
 		// CRM & Sales
-		"crm":             "#3B82F6",
+		"crm":             "#6366F1",
 		"selling":         "#3B82F6",
 		"sales":           "#3B82F6",
 		// Buying & Procurement
