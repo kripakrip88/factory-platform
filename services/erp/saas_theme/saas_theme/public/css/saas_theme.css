@@ -1990,6 +1990,66 @@ body.st-dual-sidebar .sidebar-header .drop-icon {
 	display: none !important;
 }
 
+/* ===== Rail Bottom (search, notifications, theme toggle) ===== */
+.st-rail-bottom {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 4px;
+	width: 100%;
+	padding: 8px 8px 4px;
+	border-top: 1px solid rgba(255, 255, 255, 0.06);
+	margin-top: 4px;
+}
+
+/* Theme toggle icon color based on active theme */
+[data-theme="dark"] .st-theme-toggle .st-rail-icon svg,
+[data-theme="dark"] .st-theme-toggle .st-rail-icon .icon {
+	color: #FFD700;
+	stroke: #FFD700;
+}
+
+/* Generic bottom-rail icon (injected by Client Script for search/notifications) */
+.fp-rail-icon {
+	width: 44px;
+	height: 44px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 10px;
+	cursor: pointer;
+	transition: background 0.15s ease;
+	color: rgba(255, 255, 255, 0.45);
+}
+
+.fp-rail-icon:hover {
+	background: rgba(255, 255, 255, 0.08);
+	color: rgba(255, 255, 255, 0.85);
+}
+
+.fp-rail-icon svg,
+.fp-rail-icon .icon {
+	color: inherit;
+	stroke: currentColor;
+}
+
+/* ===== Dark theme: list row hover fix ===== */
+[data-theme="dark"] {
+	--list-hover-color: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="dark"] .list-row:hover,
+[data-theme="dark"] .list-row-container:hover .list-row {
+	background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+[data-theme="dark"] .list-row:hover .level-item,
+[data-theme="dark"] .list-row:hover .list-subject,
+[data-theme="dark"] .list-row:hover a,
+[data-theme="dark"] .list-row:hover span {
+	color: var(--text-color) !important;
+}
+
 /* Rail scrollbar */
 .st-workspace-rail::-webkit-scrollbar {
 	width: 2px;

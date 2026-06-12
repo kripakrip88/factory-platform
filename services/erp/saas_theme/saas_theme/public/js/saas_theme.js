@@ -6,8 +6,14 @@
  *
  * The rail shows workspace icons from frappe.boot.desktop_icons.
  * Clicking an icon switches the sidebar panel to that workspace.
- * Rail only shows when the sidebar panel is also visible.
+ * Rail bottom: search, notifications, theme toggle.
  */
+
+// Apply persisted theme immediately — prevents flash on page reload
+(function () {
+	var t = localStorage.getItem("st_theme");
+	if (t) document.documentElement.setAttribute("data-theme", t);
+})();
 
 $(document).ready(function () {
 	if (!frappe.boot.setup_complete) return;
@@ -41,13 +47,13 @@ saas_theme.sidebar = {
 			this._listeners_bound = true;
 		}
 		this.toggle_rail_visibility();
+		this.hide_sidebar_duplicates();
 	},
 
 	/* ============================================
 	   WORKSPACE RAIL
 	   ============================================ */
 
-	// Цвета по названию workspace (частичное совпадение)
 	WORKSPACE_COLORS: {
 		"crm":            "#6366F1",
 		"selling":        "#3B82F6",
@@ -69,7 +75,6 @@ saas_theme.sidebar = {
 		for (const [word, color] of Object.entries(this.WORKSPACE_COLORS)) {
 			if (key.includes(word)) return color;
 		}
-		// Детерминированный fallback по первой букве
 		const palette = ["#6366F1","#3B82F6","#10B981","#F59E0B","#EF4444","#8B5CF6","#06B6D4","#EC4899"];
 		return palette[key.charCodeAt(0) % palette.length];
 	},
@@ -101,36 +106,41 @@ saas_theme.sidebar = {
 				<div class="st-rail-top">
 					${icons_html}
 				</div>
+				<div class="st-rail-bottom">
+					<div class="st-rail-item st-theme-toggle" title="Сменить тему">
+						<div class="st-rail-icon"></div>
+					</div>
+				</div>
 			</div>
 		`);
 
 		$(".body-sidebar-container").before(this.$rail);
 
-		// Применяем цвета иконкам
+		// Цвета иконок
 		this.$rail.find(".st-rail-item[data-color]").each(function () {
 			const color = $(this).data("color");
 			$(this).find("svg, .icon").css({ color, stroke: color });
 			$(this).find(".st-rail-initials").css({ color });
 		});
 
-		// Click handler
-		this.$rail.find(".st-rail-item").on("click", function () {
+		// Клик — переключение workspace
+		this.$rail.find(".st-rail-item[data-workspace]").on("click", function () {
 			const ws_name = $(this).data("workspace");
 			saas_theme.sidebar.switch_workspace(ws_name);
 		});
 
-		// Tooltips — move to body and position with JS
+		// Тултипы
 		this.$rail.find(".st-rail-tooltip").each(function () {
 			$(this).appendTo("body");
 		});
 
 		this.$rail.find(".st-rail-item").on("mouseenter", function () {
 			const label = $(this).data("workspace");
+			if (!label) return;
 			const $tip = $("body > .st-rail-tooltip").filter(function () {
 				return $(this).text().trim() === label;
 			});
 			if (!$tip.length) return;
-
 			const rect = this.getBoundingClientRect();
 			$tip.css({
 				top: rect.top + rect.height / 2 - $tip.outerHeight() / 2,
@@ -140,8 +150,30 @@ saas_theme.sidebar = {
 			$("body > .st-rail-tooltip").removeClass("visible");
 		});
 
+		// Кнопка темы
+		this._update_theme_icon();
+		this.$rail.find(".st-theme-toggle").on("click", () => this.toggle_theme());
+
 		this.rail_built = true;
 		this.update_rail_active();
+		this.inject_rail_bottom_icons();
+	},
+
+	toggle_theme() {
+		const current = document.documentElement.getAttribute("data-theme") || "light";
+		const next = current === "dark" ? "light" : "dark";
+		document.documentElement.setAttribute("data-theme", next);
+		localStorage.setItem("st_theme", next);
+		this._update_theme_icon();
+	},
+
+	_update_theme_icon() {
+		const theme = document.documentElement.getAttribute("data-theme") || "light";
+		const $btn = this.$rail && this.$rail.find(".st-theme-toggle .st-rail-icon");
+		if (!$btn || !$btn.length) return;
+		// sun = светлая тема сейчас (нажать → тёмная), moon = тёмная сейчас (нажать → светлая)
+		const icon_name = theme === "dark" ? "sun" : "moon";
+		$btn.html(frappe.utils.icon(icon_name, "md", "", "", "", true));
 	},
 
 	get_workspaces() {
@@ -162,7 +194,6 @@ saas_theme.sidebar = {
 		if (sidebar_data && sidebar_data.header_icon) {
 			return frappe.utils.icon(sidebar_data.header_icon, "md", "", "", "", true);
 		}
-
 		const letter = ws.label.charAt(0).toUpperCase();
 		return `<span class="st-rail-initials">${letter}</span>`;
 	},
@@ -176,9 +207,9 @@ saas_theme.sidebar = {
 	update_rail_active() {
 		const current = (frappe.app.sidebar.sidebar_title || "").toLowerCase();
 
-		$(".st-rail-item").removeClass("active").css({ background: "", "box-shadow": "" });
+		$(".st-rail-item[data-workspace]").removeClass("active").css({ background: "", "box-shadow": "" });
 
-		$(".st-rail-item").each(function () {
+		$(".st-rail-item[data-workspace]").each(function () {
 			const ws = $(this).data("workspace");
 			if (!ws || ws.toLowerCase() !== current) return;
 
@@ -187,7 +218,6 @@ saas_theme.sidebar = {
 				background: color + "22",
 				"box-shadow": `inset 3px 0 0 ${color}`,
 			});
-			// Иконка активного модуля ярче
 			$(this).find("svg, .icon").css({ color, stroke: color, opacity: 1 });
 			$(this).find(".st-rail-initials").css({ color });
 		});
@@ -210,21 +240,18 @@ saas_theme.sidebar = {
 	},
 
 	ensure_sidebar_content() {
-		// If sidebar panel is visible but has no items, force a re-setup
 		const $top = $(".body-sidebar .body-sidebar-top");
 		if (!$top.length) return;
 
 		const has_items = $top.find(".standard-sidebar-item").length > 0;
 		if (has_items) return;
 
-		// Try to find the right workspace for the current route
 		const route = frappe.get_route();
 		if (!route || !route.length) return;
 
 		const entity = route.length >= 2 ? route[1] : route[0];
 		if (!entity || !frappe.app.sidebar) return;
 
-		// Check if entity maps to a workspace
 		const sidebars = frappe.app.sidebar.get_workspace_sidebars
 			? frappe.app.sidebar.get_workspace_sidebars(entity)
 			: [];
@@ -232,8 +259,64 @@ saas_theme.sidebar = {
 		if (sidebars.length) {
 			frappe.app.sidebar.setup(sidebars[0]);
 		} else if (frappe.app.sidebar.sidebar_title) {
-			// Re-setup current sidebar to force re-render
 			frappe.app.sidebar.setup(frappe.app.sidebar.sidebar_title);
+		}
+	},
+
+	/* ============================================
+	   HIDE SIDEBAR DUPLICATES (Search / Notifications)
+	   These are already accessible via rail icons and topbar.
+	   ============================================ */
+
+	hide_sidebar_duplicates() {
+		const HIDE_LABELS = ["Поиск", "Уведомление", "Search", "Notifications", "Notification"];
+		$(".body-sidebar .sidebar-item-container").each(function () {
+			const label = $(this).find(".sidebar-item-label, .item-anchor").text().trim();
+			if (HIDE_LABELS.some((h) => label.includes(h))) {
+				$(this).hide();
+			}
+		});
+	},
+
+	/* ============================================
+	   RAIL BOTTOM ICONS (Search + Notifications)
+	   Injected into .st-rail-bottom by saas_theme.js itself.
+	   ============================================ */
+
+	inject_rail_bottom_icons() {
+		if (!this.$rail) return;
+		const $bottom = this.$rail.find(".st-rail-bottom");
+		if (!$bottom.length || $bottom.find(".fp-rail-search").length) return;
+
+		const $theme = $bottom.find(".st-theme-toggle");
+
+		const $search = $(`
+			<div class="fp-rail-icon fp-rail-search st-rail-item" title="Поиск">
+				<div class="st-rail-icon">${frappe.utils.icon("search", "md", "", "", "", true)}</div>
+			</div>
+		`);
+		$search.on("click", () => {
+			if (frappe.ui?.toolbar?.search?.show) {
+				frappe.ui.toolbar.search.show();
+			} else {
+				$("header .search-bar input, .navbar .search input").first().focus();
+			}
+		});
+
+		const $notif = $(`
+			<div class="fp-rail-icon fp-rail-notifications st-rail-item" title="Уведомления">
+				<div class="st-rail-icon">${frappe.utils.icon("notification-bell", "md", "", "", "", true)}</div>
+			</div>
+		`);
+		$notif.on("click", () => {
+			$(".navbar .notifications-icon, .navbar [title='Notifications']").first().trigger("click");
+		});
+
+		if ($theme.length) {
+			$search.insertBefore($theme);
+			$notif.insertBefore($theme);
+		} else {
+			$bottom.append($search).append($notif);
 		}
 	},
 
@@ -244,6 +327,7 @@ saas_theme.sidebar = {
 			setTimeout(() => {
 				me.update_rail_active();
 				me.toggle_rail_visibility();
+				me.hide_sidebar_duplicates();
 			}, 50);
 		});
 
@@ -252,6 +336,7 @@ saas_theme.sidebar = {
 				me.update_rail_active();
 				me.toggle_rail_visibility();
 				me.ensure_sidebar_content();
+				me.hide_sidebar_duplicates();
 			}, 100);
 		});
 
@@ -464,7 +549,6 @@ saas_theme.attachments = {
 		const escaped_name = frappe.utils.escape_html(filename);
 		const escaped_url = frappe.utils.escape_html(file_url);
 
-		// Replace entire pill content with clean structure
 		$pill.empty().addClass("st-attach-card").append(`
 			<div class="st-file-icon ${file_info.cls}">${file_info.label}</div>
 			<div class="st-attach-details">
@@ -483,11 +567,9 @@ saas_theme.attachments = {
 		const me = this;
 		const debounced = frappe.utils.debounce(() => me.enhance_all(), 150);
 
-		// Catch form loads
 		$(document).on("form-refresh", () => setTimeout(debounced, 300));
 		$(document).on("page-change", () => setTimeout(debounced, 500));
 
-		// Observe entire body for attachment rows appearing
 		const observer = new MutationObserver(debounced);
 		observer.observe(document.body, { childList: true, subtree: true });
 	},
@@ -502,30 +584,27 @@ frappe.provide("saas_theme.columns");
 
 saas_theme.columns = {
 	init() {
-		// Try immediately, then retry after route changes
-		setTimeout(() => this.try_attach(), 800);
-		setTimeout(() => this.try_attach(), 2000);
+		this._attach_with_retries();
 
-		$(document).on("page-change", () => {
-			setTimeout(() => this.try_attach(), 600);
-			setTimeout(() => this.try_attach(), 1500);
-		});
+		$(document).on("page-change", () => this._attach_with_retries());
+		frappe.router.on("change", () => this._attach_with_retries());
+	},
 
-		frappe.router.on("change", () => {
-			setTimeout(() => this.try_attach(), 600);
-			setTimeout(() => this.try_attach(), 1500);
+	_attach_with_retries() {
+		// Multiple retries — ListView renders asynchronously
+		[300, 800, 1500, 3000, 5000].forEach((delay) => {
+			setTimeout(() => this.try_attach(), delay);
 		});
 	},
 
 	try_attach() {
-		// Frappe ListView uses flex divs, not <table>
 		const $header = $(".list-row-head .list-header-subject");
 		if (!$header.length) return;
 
 		const $cols = $header.find(".list-row-col");
 		if (!$cols.length) return;
 
-		// Already attached
+		// Already attached — skip unless header was re-rendered
 		if ($header.find(".st-col-resizer").length) return;
 
 		const doctype = frappe.get_route && frappe.get_route()[1];
@@ -547,14 +626,12 @@ saas_theme.columns = {
 			const w = saved[i];
 			if (!w) return;
 			$(col).css({ flex: "none", width: w + "px", "min-width": w + "px" });
-			// Sync data rows for this column index
 			$(`.list-row .list-row-col:nth-child(${i + 1})`)
 				.css({ flex: "none", width: w + "px", "min-width": w + "px" });
 		});
 	},
 
 	_bind_drag($col, index, doctype) {
-		// Add visible drag handle
 		const $handle = $('<div class="st-col-resizer"></div>');
 		$col.css("position", "relative").append($handle);
 

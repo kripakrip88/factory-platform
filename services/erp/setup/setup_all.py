@@ -23,9 +23,14 @@ def execute():
     crm()
 
     # 2. UX: кнопка «Отмена» на новых документах
-    print("\n[2/2] Client Scripts...")
+    print("\n[2/3] Client Scripts — Cancel button...")
     from client_scripts.cancel_button import execute as cancel_btn
     cancel_btn()
+
+    # 3. UX: поиск + уведомления в рейле, скрыть из сайдбара
+    print("\n[3/3] Client Scripts — Rail icons...")
+    from client_scripts.rail_icons import execute as rail_icons
+    rail_icons()
 
     print("\n=== Setup complete ===")
 
