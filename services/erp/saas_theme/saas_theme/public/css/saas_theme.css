@@ -173,7 +173,7 @@
    2. DARK MODE
    ============================================ */
 
-[data-theme="dark"] {
+html[data-theme="dark"] {
 	--primary: #4D94FF;
 	--primary-color: #4D94FF;
 	--brand-color: #4D94FF;
@@ -293,7 +293,7 @@
 	--st-radius-sm: 4px;
 }
 
-[data-theme="dark"] {
+html[data-theme="dark"] {
 	--st-sidebar-bg: #0D1117;
 	--st-sidebar-border: #21262D;
 	--st-item-hover: rgba(255, 255, 255, 0.05);
