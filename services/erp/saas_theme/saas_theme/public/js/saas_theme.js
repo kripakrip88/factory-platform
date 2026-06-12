@@ -9,10 +9,14 @@
  * Rail bottom: search, notifications, theme toggle.
  */
 
-// Apply persisted theme immediately — prevents flash on page reload
+// Apply persisted theme-mode immediately — prevents flash on page reload.
+// Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
 (function () {
-	var t = localStorage.getItem("st_theme");
-	if (t) document.documentElement.setAttribute("data-theme", t);
+	var t = localStorage.getItem("st_theme_mode");
+	if (t) {
+		document.documentElement.setAttribute("data-theme-mode", t);
+		document.documentElement.setAttribute("data-theme", t);
+	}
 })();
 
 $(document).ready(function () {
@@ -163,10 +167,16 @@ saas_theme.sidebar = {
 	},
 
 	toggle_theme() {
-		const current = document.documentElement.getAttribute("data-theme") || "light";
+		const current = document.documentElement.getAttribute("data-theme-mode") || "light";
 		const next = current === "dark" ? "light" : "dark";
+		// Set both attributes — Frappe reads data-theme-mode to derive data-theme
+		document.documentElement.setAttribute("data-theme-mode", next);
 		document.documentElement.setAttribute("data-theme", next);
-		localStorage.setItem("st_theme", next);
+		localStorage.setItem("st_theme_mode", next);
+		// Persist to Frappe user profile so it survives across sessions
+		frappe.xcall("frappe.core.doctype.user.user.switch_theme", {
+			theme: next.charAt(0).toUpperCase() + next.slice(1),
+		});
 	},
 
 	get_workspaces() {
@@ -258,17 +268,15 @@ saas_theme.sidebar = {
 
 	/* ============================================
 	   HIDE SIDEBAR DUPLICATES (Search / Notifications)
-	   These are already accessible via rail icons and topbar.
+	   Frappe renders search as .navbar-search-bar and
+	   notifications as .sidebar-notification inside .standard-items-sections.
 	   ============================================ */
 
 	hide_sidebar_duplicates() {
-		const HIDE_LABELS = ["Поиск", "Уведомление", "Search", "Notifications", "Notification"];
-		$(".body-sidebar .sidebar-item-container").each(function () {
-			const label = $(this).find(".sidebar-item-label, .item-anchor").text().trim();
-			if (HIDE_LABELS.some((h) => label.includes(h))) {
-				$(this).hide();
-			}
-		});
+		// Hide search item — Frappe adds class "navbar-search-bar" to it
+		$(".body-sidebar .navbar-search-bar").closest("li, .standard-sidebar-item").hide();
+		// Hide notifications item — Frappe wraps it in .sidebar-notification
+		$(".body-sidebar .sidebar-notification").hide();
 	},
 
 	/* ============================================
@@ -284,15 +292,16 @@ saas_theme.sidebar = {
 		const $theme = $bottom.find(".st-theme-toggle");
 
 		const $search = $(`
-			<div class="fp-rail-icon fp-rail-search st-rail-item" title="Поиск">
+			<div class="fp-rail-icon fp-rail-search st-rail-item" title="Поиск (Ctrl+K)">
 				<div class="st-rail-icon">${frappe.utils.icon("es-line-search", "md", "", "", "", true)}</div>
 			</div>
 		`);
 		$search.on("click", () => {
+			// frappe.ui.toolbar.search — SearchDialog instance created in toolbar.js
 			if (frappe.ui?.toolbar?.search?.show) {
 				frappe.ui.toolbar.search.show();
 			} else {
-				$("header .search-bar input, .navbar .search input").first().focus();
+				$("#navbar-modal-search").click();
 			}
 		});
 
@@ -302,7 +311,8 @@ saas_theme.sidebar = {
 			</div>
 		`);
 		$notif.on("click", () => {
-			$(".navbar .notifications-icon, .navbar [title='Notifications']").first().trigger("click");
+			// Trigger click on the hidden sidebar notification icon — Frappe handles the rest
+			$(".standard-items-sections .notifications-icon").first().trigger("click");
 		});
 
 		if ($theme.length) {
