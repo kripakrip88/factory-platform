@@ -9,10 +9,13 @@ RUN cd /home/frappe/frappe-bench && \
     uv pip install --quiet -e apps/saas_theme --python env/bin/python && \
     bench build --app saas_theme
 
-# Отключаем кэш для динамических страниц (HTML/boot info).
-# CSS/JS с хэшами в именах браузер кэширует вечно — это правильно.
-# Главная страница /desk должна всегда запрашиваться заново, иначе
-# при следующем деплое браузер будет запрашивать старые bundle хэши.
+# Скрипт синхронизации assets.json запускается при старте backend контейнера.
+# Решает проблему рассинхрона: volume хранит старый assets.json со старыми
+# хэшами, а новый image содержит пересобранные CSS/JS с новыми хэшами.
+COPY --chown=frappe:frappe fix_assets.py /home/frappe/fix_assets.py
+
+# Отключаем кэш HTML в nginx чтобы браузер всегда получал свежий boot info
+# с актуальными хэшами бандлов после каждого деплоя.
 USER root
 RUN sed -i \
     '/location @webserver {/a\\tadd_header Cache-Control "no-cache, must-revalidate" always;' \
