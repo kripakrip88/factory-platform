@@ -32,7 +32,7 @@ jobs:
             docker compose -f services/erp/docker-compose.yml build --no-cache
 
             echo "🔄 Перезапуск контейнеров..."
-            docker compose -f services/erp/docker-compose.yml up -d
+            docker compose -f services/erp/docker-compose.yml up -d --force-recreate
 
             echo "⏳ Ожидание готовности backend (60 сек)..."
             sleep 60
