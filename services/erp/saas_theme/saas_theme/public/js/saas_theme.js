@@ -169,13 +169,13 @@ saas_theme.sidebar = {
 	toggle_theme() {
 		const current = document.documentElement.getAttribute("data-theme-mode") || "light";
 		const next = current === "dark" ? "light" : "dark";
-		// Set both attributes — Frappe reads data-theme-mode to derive data-theme
 		document.documentElement.setAttribute("data-theme-mode", next);
-		document.documentElement.setAttribute("data-theme", next);
+		// Let Frappe derive and apply data-theme from data-theme-mode
+		frappe.ui.set_theme();
 		localStorage.setItem("st_theme_mode", next);
-		// Persist to Frappe user profile so it survives across sessions
+		// Persist to user profile — survives page reload
 		frappe.xcall("frappe.core.doctype.user.user.switch_theme", {
-			theme: next.charAt(0).toUpperCase() + next.slice(1),
+			theme: next === "dark" ? "Dark" : "Light",
 		});
 	},
 
@@ -311,8 +311,8 @@ saas_theme.sidebar = {
 			</div>
 		`);
 		$notif.on("click", () => {
-			// Trigger click on the hidden sidebar notification icon — Frappe handles the rest
-			$(".standard-items-sections .notifications-icon").first().trigger("click");
+			// sidebar-notification is hidden via CSS but still in DOM — jQuery trigger works on hidden elements
+			$(".sidebar-notification .item-anchor").first().trigger("click");
 		});
 
 		if ($theme.length) {

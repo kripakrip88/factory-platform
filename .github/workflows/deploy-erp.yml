@@ -37,4 +37,7 @@ jobs:
             echo "⏳ Ожидание готовности backend (60 сек)..."
             sleep 60
 
+            echo "🧹 Сброс кэша Frappe (boot info)..."
+            docker exec erp-backend-1 bash -c "cd /home/frappe/frappe-bench && bench --site erp.localhost clear-cache" || true
+
             echo "✅ ERP обновлён"
