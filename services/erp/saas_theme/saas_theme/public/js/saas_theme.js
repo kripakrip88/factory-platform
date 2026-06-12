@@ -310,9 +310,12 @@ saas_theme.sidebar = {
 				<div class="st-rail-icon">${frappe.utils.icon("es-line-notifications", "md", "", "", "", true)}</div>
 			</div>
 		`);
-		$notif.on("click", () => {
-			// sidebar-notification is hidden via CSS but still in DOM — jQuery trigger works on hidden elements
-			$(".sidebar-notification .item-anchor").first().trigger("click");
+		$notif.on("click", (e) => {
+			// stopPropagation prevents Frappe's document click handler from closing the dropdown immediately
+			e.stopPropagation();
+			setTimeout(() => {
+				$(".sidebar-notification .item-anchor").first().trigger("click");
+			}, 10);
 		});
 
 		if ($theme.length) {
