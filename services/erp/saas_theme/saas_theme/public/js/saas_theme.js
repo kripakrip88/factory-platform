@@ -47,6 +47,33 @@ saas_theme.sidebar = {
 	   WORKSPACE RAIL
 	   ============================================ */
 
+	// Цвета по названию workspace (частичное совпадение)
+	WORKSPACE_COLORS: {
+		"crm":            "#6366F1",
+		"selling":        "#3B82F6",
+		"buying":         "#F59E0B",
+		"stock":          "#10B981",
+		"manufacturing":  "#EF4444",
+		"hr":             "#8B5CF6",
+		"human":          "#8B5CF6",
+		"projects":       "#06B6D4",
+		"accounting":     "#EC4899",
+		"assets":         "#F97316",
+		"support":        "#14B8A6",
+		"retail":         "#F43F5E",
+		"quality":        "#84CC16",
+	},
+
+	get_workspace_color(label) {
+		const key = (label || "").toLowerCase();
+		for (const [word, color] of Object.entries(this.WORKSPACE_COLORS)) {
+			if (key.includes(word)) return color;
+		}
+		// Детерминированный fallback по первой букве
+		const palette = ["#6366F1","#3B82F6","#10B981","#F59E0B","#EF4444","#8B5CF6","#06B6D4","#EC4899"];
+		return palette[key.charCodeAt(0) % palette.length];
+	},
+
 	build_workspace_rail() {
 		if (this.rail_built) return;
 
@@ -57,9 +84,11 @@ saas_theme.sidebar = {
 		workspaces.forEach((ws) => {
 			const icon_content = this.get_icon_for_workspace(ws);
 			const escaped_label = frappe.utils.escape_html(ws.label);
+			const color = this.get_workspace_color(ws.label);
 			icons_html += `
 				<div class="st-rail-item"
-					data-workspace="${escaped_label}">
+					data-workspace="${escaped_label}"
+					data-color="${color}">
 					<div class="st-rail-icon">
 						${icon_content}
 					</div>
@@ -76,6 +105,13 @@ saas_theme.sidebar = {
 		`);
 
 		$(".body-sidebar-container").before(this.$rail);
+
+		// Применяем цвета иконкам
+		this.$rail.find(".st-rail-item[data-color]").each(function () {
+			const color = $(this).data("color");
+			$(this).find("svg, .icon").css({ color, stroke: color });
+			$(this).find(".st-rail-initials").css({ color });
+		});
 
 		// Click handler
 		this.$rail.find(".st-rail-item").on("click", function () {
@@ -140,12 +176,20 @@ saas_theme.sidebar = {
 	update_rail_active() {
 		const current = (frappe.app.sidebar.sidebar_title || "").toLowerCase();
 
-		$(".st-rail-item").removeClass("active");
+		$(".st-rail-item").removeClass("active").css({ background: "", "box-shadow": "" });
+
 		$(".st-rail-item").each(function () {
 			const ws = $(this).data("workspace");
-			if (ws && ws.toLowerCase() === current) {
-				$(this).addClass("active");
-			}
+			if (!ws || ws.toLowerCase() !== current) return;
+
+			const color = $(this).data("color") || "#3B82F6";
+			$(this).addClass("active").css({
+				background: color + "22",
+				"box-shadow": `inset 3px 0 0 ${color}`,
+			});
+			// Иконка активного модуля ярче
+			$(this).find("svg, .icon").css({ color, stroke: color, opacity: 1 });
+			$(this).find(".st-rail-initials").css({ color });
 		});
 	},
 
