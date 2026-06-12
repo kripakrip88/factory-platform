@@ -2801,3 +2801,32 @@ body.st-dual-sidebar .onb-panel {
 	background: rgba(255, 255, 255, 0.03) !important;
 	border-color: var(--gray-700) !important;
 }
+
+/* ── Resizable list columns ── */
+.st-col-resizer {
+	position: absolute;
+	right: 0;
+	top: 0;
+	width: 6px;
+	height: 100%;
+	cursor: col-resize;
+	z-index: 10;
+}
+
+.st-col-resizer::after {
+	content: "";
+	position: absolute;
+	right: 2px;
+	top: 20%;
+	height: 60%;
+	width: 2px;
+	background: var(--border-color, #e2e8f0);
+	border-radius: 2px;
+	opacity: 0;
+	transition: opacity 0.15s ease;
+}
+
+.list-row-col:hover .st-col-resizer::after,
+.st-col-resizer:hover::after {
+	opacity: 1;
+}

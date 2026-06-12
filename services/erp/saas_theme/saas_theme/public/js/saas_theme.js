@@ -15,6 +15,7 @@ $(document).ready(function () {
 	frappe.after_ajax(function () {
 		saas_theme.sidebar.init();
 		saas_theme.attachments.init();
+		saas_theme.columns.init();
 	});
 
 	// Re-init on sidebar_setup in case frappe.after_ajax fired too early
@@ -445,5 +446,109 @@ saas_theme.attachments = {
 		// Observe entire body for attachment rows appearing
 		const observer = new MutationObserver(debounced);
 		observer.observe(document.body, { childList: true, subtree: true });
+	},
+};
+
+/* ============================================================
+   RESIZABLE LIST COLUMNS
+   Drag the handle on column headers to resize.
+   Widths are saved to localStorage per DocType.
+   ============================================================ */
+frappe.provide("saas_theme.columns");
+
+saas_theme.columns = {
+	init() {
+		// Try immediately, then retry after route changes
+		setTimeout(() => this.try_attach(), 800);
+		setTimeout(() => this.try_attach(), 2000);
+
+		$(document).on("page-change", () => {
+			setTimeout(() => this.try_attach(), 600);
+			setTimeout(() => this.try_attach(), 1500);
+		});
+
+		frappe.router.on("change", () => {
+			setTimeout(() => this.try_attach(), 600);
+			setTimeout(() => this.try_attach(), 1500);
+		});
+	},
+
+	try_attach() {
+		// Frappe ListView uses flex divs, not <table>
+		const $header = $(".list-row-head .list-header-subject");
+		if (!$header.length) return;
+
+		const $cols = $header.find(".list-row-col");
+		if (!$cols.length) return;
+
+		// Already attached
+		if ($header.find(".st-col-resizer").length) return;
+
+		const doctype = frappe.get_route && frappe.get_route()[1];
+		if (!doctype) return;
+
+		this._restore_widths($cols, doctype);
+		$cols.each((i, col) => this._bind_drag($(col), i, doctype));
+	},
+
+	_storage_key(doctype) {
+		return `st_col_w__${doctype}`;
+	},
+
+	_restore_widths($cols, doctype) {
+		const saved = this._load(doctype);
+		if (!saved) return;
+
+		$cols.each((i, col) => {
+			const w = saved[i];
+			if (!w) return;
+			$(col).css({ flex: "none", width: w + "px", "min-width": w + "px" });
+			// Sync data rows for this column index
+			$(`.list-row .list-row-col:nth-child(${i + 1})`)
+				.css({ flex: "none", width: w + "px", "min-width": w + "px" });
+		});
+	},
+
+	_bind_drag($col, index, doctype) {
+		// Add visible drag handle
+		const $handle = $('<div class="st-col-resizer"></div>');
+		$col.css("position", "relative").append($handle);
+
+		let startX, startW;
+
+		$handle.on("mousedown", (e) => {
+			e.preventDefault();
+			startX = e.clientX;
+			startW = $col.outerWidth();
+
+			$(document).on("mousemove.st_col", (e) => {
+				const w = Math.max(60, startW + e.clientX - startX);
+				$col.css({ flex: "none", width: w + "px", "min-width": w + "px" });
+				$(`.list-row .list-row-col:nth-child(${index + 1})`)
+					.css({ flex: "none", width: w + "px", "min-width": w + "px" });
+			});
+
+			$(document).on("mouseup.st_col", () => {
+				$(document).off("mousemove.st_col mouseup.st_col");
+				this._save_widths(doctype);
+			});
+		});
+	},
+
+	_save_widths(doctype) {
+		const $cols = $(".list-row-head .list-header-subject .list-row-col");
+		const widths = {};
+		$cols.each((i, col) => {
+			widths[i] = Math.round($(col).outerWidth());
+		});
+		localStorage.setItem(this._storage_key(doctype), JSON.stringify(widths));
+	},
+
+	_load(doctype) {
+		try {
+			return JSON.parse(localStorage.getItem(this._storage_key(doctype)));
+		} catch (e) {
+			return null;
+		}
 	},
 };
