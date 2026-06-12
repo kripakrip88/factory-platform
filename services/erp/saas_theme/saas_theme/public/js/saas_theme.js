@@ -47,7 +47,9 @@ saas_theme.sidebar = {
 			this._listeners_bound = true;
 		}
 		this.toggle_rail_visibility();
-		this.hide_sidebar_duplicates();
+		// Сайдбар рендерится асинхронно — ждём
+		setTimeout(() => this.hide_sidebar_duplicates(), 400);
+		setTimeout(() => this.hide_sidebar_duplicates(), 1200);
 	},
 
 	/* ============================================
@@ -151,7 +153,8 @@ saas_theme.sidebar = {
 		});
 
 		// Кнопка темы
-		this._update_theme_icon();
+		const theme_icon = frappe.utils.icon("es-line-darkmode", "md", "", "", "", true);
+		this.$rail.find(".st-theme-toggle .st-rail-icon").html(theme_icon);
 		this.$rail.find(".st-theme-toggle").on("click", () => this.toggle_theme());
 
 		this.rail_built = true;
@@ -164,16 +167,6 @@ saas_theme.sidebar = {
 		const next = current === "dark" ? "light" : "dark";
 		document.documentElement.setAttribute("data-theme", next);
 		localStorage.setItem("st_theme", next);
-		this._update_theme_icon();
-	},
-
-	_update_theme_icon() {
-		const theme = document.documentElement.getAttribute("data-theme") || "light";
-		const $btn = this.$rail && this.$rail.find(".st-theme-toggle .st-rail-icon");
-		if (!$btn || !$btn.length) return;
-		// sun = светлая тема сейчас (нажать → тёмная), moon = тёмная сейчас (нажать → светлая)
-		const icon_name = theme === "dark" ? "sun" : "moon";
-		$btn.html(frappe.utils.icon(icon_name, "md", "", "", "", true));
 	},
 
 	get_workspaces() {
@@ -292,7 +285,7 @@ saas_theme.sidebar = {
 
 		const $search = $(`
 			<div class="fp-rail-icon fp-rail-search st-rail-item" title="Поиск">
-				<div class="st-rail-icon">${frappe.utils.icon("search", "md", "", "", "", true)}</div>
+				<div class="st-rail-icon">${frappe.utils.icon("es-line-search", "md", "", "", "", true)}</div>
 			</div>
 		`);
 		$search.on("click", () => {
@@ -305,7 +298,7 @@ saas_theme.sidebar = {
 
 		const $notif = $(`
 			<div class="fp-rail-icon fp-rail-notifications st-rail-item" title="Уведомления">
-				<div class="st-rail-icon">${frappe.utils.icon("notification-bell", "md", "", "", "", true)}</div>
+				<div class="st-rail-icon">${frappe.utils.icon("es-line-notifications", "md", "", "", "", true)}</div>
 			</div>
 		`);
 		$notif.on("click", () => {
