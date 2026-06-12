@@ -2033,6 +2033,12 @@ body.st-dual-sidebar .sidebar-header .drop-icon {
 	stroke: currentColor;
 }
 
+/* Hide Search and Notifications from sidebar — both moved to rail bottom */
+.body-sidebar .navbar-search-bar,
+.body-sidebar .sidebar-notification {
+    display: none !important;
+}
+
 /* ===== Dark theme: list row hover fix ===== */
 [data-theme="dark"] {
 	--list-hover-color: rgba(255, 255, 255, 0.05);
