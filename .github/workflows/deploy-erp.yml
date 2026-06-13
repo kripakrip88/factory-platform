@@ -46,6 +46,14 @@ jobs:
             echo "🧹 Сброс кэша Frappe (boot info)..."
             docker exec erp-backend-1 bash -c "cd /home/frappe/frappe-bench && bench --site erp.localhost clear-cache" || true
 
+            # Флаш redis-кэша: при сборке образа Redis недоступен, поэтому кэш
+            # assets_json остаётся со СТАРЫМИ хэшами бандлов → boot ссылается на
+            # несуществующие desk.bundle.<hash>.css (404, ломается вся стилизация
+            # форм). Флаш заставляет frappe перечитать assets.json с актуальными
+            # хэшами. redis_cache — чистый кэш, флашить безопасно.
+            echo "🧹 Флаш redis_cache (устранить устаревший assets_json)..."
+            docker exec erp-redis-cache-1 redis-cli FLUSHALL || true
+
             echo "🔢 Проверка версий frappe/erpnext против versions.lock..."
             EXP_FRAPPE=$(grep '^frappe=' services/erp/versions.lock | cut -d= -f2)
             EXP_ERPNEXT=$(grep '^erpnext=' services/erp/versions.lock | cut -d= -f2)
