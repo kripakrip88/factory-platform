@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v109";
+const SAAS_THEME_BUILD = "v110";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -114,6 +114,21 @@ saas_theme.reshape_mail = function (frm) {
 	// 5. Приглушить кнопку «Переподключить» (правка письма не нужна; Save
 	//    оставляем для сохранения оценки)
 	frm.page.wrapper.find(".btn:contains('Переподключить'), .btn:contains('Reconnect')").addClass("st-mail-hide");
+
+	// 6. Длинные письма (рассылки из вложенных таблиц на тысячи px) — кламп
+	//    высоты + кнопка «Показать полностью», чтобы не скроллить простыни.
+	const $bodyWrap = frm.fields_dict.content.$wrapper;
+	const ed = $bodyWrap.find(".ql-editor.read-mode")[0];
+	if (ed && ed.scrollHeight > 760 && !$bodyWrap.next(".st-mail-expand").length) {
+		$bodyWrap.addClass("st-mail-clampable st-mail-clamped");
+		const $btn = $('<button type="button" class="btn btn-default btn-sm st-mail-expand">Показать письмо полностью ▾</button>');
+		$btn.on("click", function () {
+			$bodyWrap.toggleClass("st-mail-clamped");
+			const clamped = $bodyWrap.hasClass("st-mail-clamped");
+			$btn.html(clamped ? "Показать письмо полностью ▾" : "Свернуть письмо ▴");
+		});
+		$bodyWrap.after($btn);
+	}
 };
 
 frappe.provide("saas_theme.sidebar");

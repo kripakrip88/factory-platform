@@ -3542,3 +3542,27 @@ html[data-theme="dark"] .st-mail-body .ql-editor.read-mode a * {
     border: none !important;
     padding: 0 !important;
 }
+
+/* Кламп длинных писем: показываем верх, остальное — по кнопке «Показать полностью».
+   Решает бесконечный скролл рассылок из вложенных таблиц. */
+.st-mail-clampable { position: relative; }
+.st-mail-clampable.st-mail-clamped .ql-editor.read-mode {
+    max-height: 680px !important;
+    overflow: hidden !important;
+}
+/* плавное затухание у нижнего края клампа */
+.st-mail-clampable.st-mail-clamped::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 90px;
+    background: linear-gradient(rgba(255, 255, 255, 0), #ffffff);
+    pointer-events: none;
+    border-radius: 0 0 8px 8px;
+}
+html[data-theme="dark"] .st-mail-clampable.st-mail-clamped::after {
+    background: linear-gradient(rgba(15, 20, 27, 0), #0F141B);
+}
+.st-mail-expand {
+    margin-top: 8px;
+}
