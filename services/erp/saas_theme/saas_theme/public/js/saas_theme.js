@@ -1,13 +1,16 @@
 /*
- * SaaS Theme - Dual Sidebar + User Menu
+ * SaaS Theme - Horizontal Navigation
  *
  * Architecture:
- *   [Workspace Rail 56px] [Sidebar Panel ~220px] [Main Content]
+ *   [Module Bar — top, dark] [Submenu Bar — sections] [Main Content — full width]
  *
- * The rail shows workspace icons from frappe.boot.desktop_icons.
- * Clicking an icon switches the sidebar panel to that workspace.
- * Rail bottom: search, notifications, theme toggle.
+ * Module bar: workspace icons from frappe.boot.desktop_icons.
+ * Clicking a module switches the submenu bar to that workspace's items.
+ * Original build_workspace_rail() preserved but not called — easy rollback.
  */
+
+// Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
+const SAAS_THEME_BUILD = "v87";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -30,7 +33,7 @@ $(document).ready(function () {
 
 	// Re-init on sidebar_setup in case frappe.after_ajax fired too early
 	$(document).on("sidebar_setup", function () {
-		if (!saas_theme.sidebar.rail_built) {
+		if (!saas_theme.sidebar.module_bar_built) {
 			saas_theme.sidebar.init();
 		}
 		saas_theme.sidebar.setup_user_menu();
@@ -42,22 +45,275 @@ frappe.provide("saas_theme.attachments");
 
 saas_theme.sidebar = {
 	rail_built: false,
+	module_bar_built: false,
 
 	init() {
-		this.build_workspace_rail();
+		this.build_module_bar();
 		this.setup_user_menu();
 		if (!this._listeners_bound) {
 			this.listen_for_changes();
 			this._listeners_bound = true;
 		}
-		this.toggle_rail_visibility();
-		// Сайдбар рендерится асинхронно — ждём
-		setTimeout(() => this.hide_sidebar_duplicates(), 400);
-		setTimeout(() => this.hide_sidebar_duplicates(), 1200);
+		this.toggle_module_bar_visibility();
+		// Frappe may re-render the header after load and drop our bar — rebuild
+		[500, 1500, 3000].forEach((delay) => {
+			setTimeout(() => this.build_module_bar(), delay);
+		});
 	},
 
 	/* ============================================
-	   WORKSPACE RAIL
+	   HORIZONTAL MODULE BAR
+	   ============================================ */
+
+	build_module_bar() {
+		// Frappe may re-render the header and remove our bar — check DOM, not just the flag
+		if ($('.fp-module-bar').length) return;
+		this.module_bar_built = false;
+
+		// Insertion point: .main-section (body is a flex row — .navbar doesn't exist on desk pages)
+		const $main = $('.main-section');
+		if (!$main.length) return;
+
+		const workspaces = this.get_workspaces();
+		if (!workspaces.length) return;
+
+		const items_html = workspaces.map(ws => {
+			const icon = this.get_icon_for_workspace(ws);
+			const label = frappe.utils.escape_html(__(ws.label));
+			return `<div class="fp-module-item" data-workspace="${frappe.utils.escape_html(ws.label)}" title="${label}">
+				<div class="st-rail-icon">${icon}</div>
+				<span class="fp-module-label">${label}</span>
+			</div>`;
+		}).join('');
+
+		const search_icon = frappe.utils.icon('es-line-search', 'sm', '', '', '', true);
+		const notif_icon = frappe.utils.icon('es-line-notifications', 'sm', '', '', '', true);
+
+		this.$module_bar = $(`
+			<div class="fp-module-bar">
+				<div class="fp-module-items">${items_html}</div>
+				<div class="fp-module-bar-actions">
+					<div class="fp-bar-action-icon fp-bar-search" title="Поиск">
+						${search_icon}
+					</div>
+					<div class="fp-bar-action-icon fp-bar-notifications" title="Уведомления">
+						${notif_icon}
+					</div>
+					<div class="fp-bar-action-icon fp-bar-theme" title="Сменить тему"></div>
+				</div>
+			</div>
+		`);
+		$main.prepend(this.$module_bar);
+		this.update_theme_icon();
+
+		const me = this;
+		this.$module_bar.find('.fp-module-item').on('click', function() {
+			const ws_name = $(this).data('workspace');
+			me.switch_workspace(ws_name);
+			me.update_module_bar_active();
+			me.show_submenu(ws_name);
+		});
+
+		this.$module_bar.find('.fp-bar-search').on('click', (e) => {
+			e.stopPropagation();
+			if (frappe.ui?.toolbar?.search?.show) {
+				frappe.ui.toolbar.search.show();
+			} else {
+				$('#navbar-modal-search').trigger('click');
+			}
+		});
+
+		this.$module_bar.find('.fp-bar-notifications').on('click', (e) => {
+			e.stopPropagation();
+			setTimeout(() => {
+				$('.sidebar-notification .item-anchor').first().trigger('click');
+				// The dropdown lives inside the hidden sidebar — move it to body so it's visible
+				const $dd = $('.body-sidebar-container .dropdown-notifications').first();
+				if ($dd.length) {
+					$dd.addClass('fp-notifications-dropdown').appendTo('body');
+				}
+			}, 10);
+		});
+
+		this.$module_bar.find('.fp-bar-theme').on('click', (e) => {
+			e.stopPropagation();
+			this.toggle_theme();
+			this.update_theme_icon();
+		});
+
+		// Flag only after the bar is actually in the DOM
+		this.module_bar_built = $('.fp-module-bar').length > 0;
+		this.update_module_bar_active();
+
+		const current_ws = frappe.app.sidebar?.sidebar_title;
+		if (current_ws && current_ws !== 'Desk') this.show_submenu(current_ws);
+	},
+
+	update_theme_icon() {
+		const is_dark = document.documentElement.getAttribute("data-theme-mode") === "dark";
+		// moon = switch to dark (shown in light theme), sun = switch to light
+		const icon = frappe.utils.icon(is_dark ? "sun" : "moon", "sm", "", "", "", true);
+		$(".fp-bar-theme").html(icon);
+	},
+
+	update_module_bar_active() {
+		const current = (frappe.app.sidebar?.sidebar_title || '').toLowerCase();
+		$('.fp-module-item').each(function() {
+			const ws = ($(this).data('workspace') || '').toLowerCase();
+			$(this).toggleClass('active', ws === current);
+		});
+	},
+
+	toggle_module_bar_visibility() {
+		if (!this.$module_bar) return;
+		const page = frappe.container?.page?.page;
+		if (page?.hide_sidebar) {
+			this.$module_bar.hide();
+			$('.fp-submenu-bar').hide();
+		} else {
+			this.$module_bar.show();
+			$('.fp-submenu-bar').show();
+		}
+	},
+
+	get_route_for_item(item) {
+		if (!item.link_to && !item.url) return null;
+		switch (item.link_type) {
+			case 'DocType': return ['List', item.link_to];
+			case 'Workspace': return [item.link_to];
+			case 'Page': return [item.link_to];
+			case 'Dashboard': return ['dashboard-view', item.link_to];
+			case 'Report': return ['query-report', item.link_to];
+			default: return item.link_to ? [item.link_to] : null;
+		}
+	},
+
+	get_sidebar_items_for(workspace_name) {
+		// Structure: wsi[label.toLowerCase()].items — flat array.
+		// child: 0 = top-level link or section header (link_to may be null)
+		// child: 1 = child of preceding section header
+		const wsi = frappe.boot.workspace_sidebar_item || {};
+		const key = (workspace_name || '').toLowerCase();
+		const ws_data = wsi[key] || {};
+		const raw = ws_data.items || [];
+
+		const result = [];
+		let current_section = null;
+
+		for (const item of raw) {
+			if (item.type === 'Card Break' || item.type === 'Section Break') continue;
+			if (item.child === 1) {
+				// Sub-item — attach to current section
+				if (current_section) {
+					current_section.children.push(item);
+				}
+			} else {
+				// Top-level
+				if (!item.link_to && item.link_type !== 'URL') {
+					// Section header with children
+					current_section = { ...item, children: [] };
+					result.push(current_section);
+				} else {
+					current_section = null;
+					result.push(item);
+				}
+			}
+		}
+		// Filter out section headers with no children and no link
+		return result.filter(i => i.link_to || i.url || (i.children && i.children.length));
+	},
+
+	show_submenu(workspace_name) {
+		$('.fp-submenu-bar').remove();
+		$('.fp-submenu-dropdown').remove();
+
+		const items = this.get_sidebar_items_for(workspace_name);
+		if (!items.length) return;
+
+		const me = this;
+		const items_html = items.map((item, idx) => {
+			const label = frappe.utils.escape_html(__(item.label || ''));
+			if (item.children && item.children.length) {
+				return `<span class="fp-submenu-item fp-has-dropdown" data-idx="${idx}">${label} <span class="fp-submenu-arrow">▾</span></span>`;
+			}
+			// Items without a buildable route are not rendered at all
+			const route = me.get_route_for_item(item);
+			if (!route) return '';
+			const route_str = frappe.utils.escape_html(route.join('/'));
+			return `<a class="fp-submenu-item" data-idx="${idx}" data-route="${route_str}" href="#">${label}</a>`;
+		}).join('');
+
+		const $submenu = $(`<div class="fp-submenu-bar">${items_html}</div>`);
+		this.$module_bar.after($submenu);
+
+		$submenu.find('.fp-submenu-item:not(.fp-has-dropdown)').on('click', function(e) {
+			e.preventDefault();
+			const item = items[$(this).data('idx')];
+			const route = me.get_route_for_item(item);
+			if (route) frappe.set_route(...route);
+		});
+
+		$submenu.find('.fp-has-dropdown').on('click', function(e) {
+			e.stopPropagation();
+			const idx = $(this).data('idx');
+			me.toggle_submenu_dropdown($(this), items[idx].children);
+		});
+
+		if (!this._dropdown_close_bound) {
+			$(document).on('click.fp_dropdown', () => $('.fp-submenu-dropdown').remove());
+			this._dropdown_close_bound = true;
+		}
+
+		this.update_submenu_active();
+	},
+
+	toggle_submenu_dropdown($trigger, children) {
+		const existing = $('.fp-submenu-dropdown');
+		const was_open = parseInt(existing.data('trigger-idx')) === parseInt($trigger.data('idx'));
+		existing.remove();
+		if (was_open) return;
+
+		const me = this;
+		// Only routable children
+		children = children.filter(c => me.get_route_for_item(c));
+		if (!children.length) return;
+		const items_html = children.map(child => {
+			const label = frappe.utils.escape_html(__(child.label || ''));
+			return `<a class="fp-dropdown-item" href="#">${label}</a>`;
+		}).join('');
+
+		const $dropdown = $(`<div class="fp-submenu-dropdown" data-trigger-idx="${$trigger.data('idx')}">${items_html}</div>`);
+		$('body').append($dropdown);
+
+		const rect = $trigger[0].getBoundingClientRect();
+		$dropdown.css({ top: rect.bottom + 2, left: rect.left });
+
+		$dropdown.find('.fp-dropdown-item').each(function(i) {
+			$(this).on('click', function(e) {
+				e.preventDefault();
+				const route = me.get_route_for_item(children[i]);
+				if (route) frappe.set_route(...route);
+				$dropdown.remove();
+			});
+		});
+	},
+
+	update_submenu_active() {
+		// Exact match or prefix match only — includes() gives false positives
+		// ("lead" is inside "lead-source") and matches everything for empty routes
+		const current = frappe.get_route_str() || '';
+		$('.fp-submenu-item').each(function() {
+			const route = String($(this).attr('data-route') || '');
+			const is_active = route.length > 0 && (
+				current === route ||
+				current.startsWith(route + '/')
+			);
+			$(this).toggleClass('active', is_active);
+		});
+	},
+
+	/* ============================================
+	   WORKSPACE RAIL (preserved for easy rollback — not called)
 	   ============================================ */
 
 	WORKSPACE_COLORS: {
@@ -204,7 +460,7 @@ saas_theme.sidebar = {
 	switch_workspace(workspace_name) {
 		if (!workspace_name) return;
 		frappe.app.sidebar.setup(workspace_name);
-		this.update_rail_active();
+		this.update_module_bar_active();
 	},
 
 	update_rail_active() {
@@ -331,25 +587,27 @@ saas_theme.sidebar = {
 
 		$(document).on("sidebar_setup", () => {
 			setTimeout(() => {
-				me.update_rail_active();
-				me.toggle_rail_visibility();
-				me.hide_sidebar_duplicates();
+				me.build_module_bar();
+				me.update_module_bar_active();
+				me.toggle_module_bar_visibility();
+				const ws = frappe.app?.sidebar?.sidebar_title;
+				if (ws && ws !== 'Desk') me.show_submenu(ws);
 			}, 50);
 		});
 
 		$(document).on("page-change", () => {
 			setTimeout(() => {
-				me.update_rail_active();
-				me.toggle_rail_visibility();
-				me.ensure_sidebar_content();
-				me.hide_sidebar_duplicates();
+				me.build_module_bar();
+				me.update_module_bar_active();
+				me.toggle_module_bar_visibility();
+				me.update_submenu_active();
+				$('.fp-submenu-dropdown').remove();
 			}, 100);
 		});
 
 		$(document).on("form-refresh", () => {
 			setTimeout(() => {
-				me.toggle_rail_visibility();
-				me.ensure_sidebar_content();
+				me.toggle_module_bar_visibility();
 			}, 200);
 		});
 	},

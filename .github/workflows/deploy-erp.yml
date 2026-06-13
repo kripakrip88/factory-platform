@@ -32,12 +32,21 @@ jobs:
             docker compose -f services/erp/docker-compose.yml build --no-cache
 
             echo "🔄 Перезапуск контейнеров..."
-            docker compose -f services/erp/docker-compose.yml up -d
+            docker compose -f services/erp/docker-compose.yml up -d --force-recreate
 
             echo "⏳ Ожидание готовности backend (60 сек)..."
             sleep 60
 
             echo "🧹 Сброс кэша Frappe (boot info)..."
             docker exec erp-backend-1 bash -c "cd /home/frappe/frappe-bench && bench --site erp.localhost clear-cache" || true
+
+            echo "🔍 Smoke-тест: ассеты доехали до nginx?"
+            EXPECTED=$(grep -o 'SAAS_THEME_BUILD = "[^"]*"' services/erp/saas_theme/saas_theme/public/js/saas_theme.js | head -1)
+            DEPLOYED=$(curl -s "http://localhost:8080/assets/saas_theme/js/saas_theme.js" | grep -o 'SAAS_THEME_BUILD = "[^"]*"' | head -1)
+            if [ "$EXPECTED" != "$DEPLOYED" ]; then
+              echo "❌ DEPLOY FAILED: сервер отдаёт старый saas_theme.js (ожидали: $EXPECTED, получили: $DEPLOYED)"
+              exit 1
+            fi
+            echo "✅ Assets доехали: $DEPLOYED"
 
             echo "✅ ERP обновлён"

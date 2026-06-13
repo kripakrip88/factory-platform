@@ -2896,3 +2896,286 @@ body.st-dual-sidebar .onb-panel {
 .st-col-resizer:hover::after {
 	opacity: 1;
 }
+
+/* ============================================
+   HORIZONTAL NAVIGATION (feature/ux-horizontal-nav)
+   Replaces dual sidebar with module bar + submenu bar.
+   ============================================ */
+
+/* Hide vertical rail and sidebar in horizontal nav mode */
+.st-workspace-rail {
+    display: none !important;
+}
+.body-sidebar-container,
+.body-sidebar-placeholder {
+    display: none !important;
+}
+body.st-dual-sidebar .main-section,
+.main-section {
+    margin-left: 0 !important;
+    display: flex;
+    flex-direction: column;
+}
+
+.fp-module-bar,
+.fp-submenu-bar {
+    flex-shrink: 0;
+    width: 100%;
+}
+
+/* ===== MODULE BAR ===== */
+:root {
+    --fp-module-bar-height: 44px;
+    --fp-submenu-bar-height: 40px;
+}
+
+.fp-module-bar {
+    height: var(--fp-module-bar-height);
+    background: #0B1120;
+    border-bottom: 1px solid #1A2332;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    position: sticky;
+    top: 0;
+    z-index: 1020;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+html[data-theme="dark"] .fp-module-bar {
+    background: #070B14;
+    border-bottom-color: #141C28;
+}
+
+.fp-module-items {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex: 1;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.fp-module-items::-webkit-scrollbar { display: none; }
+
+.fp-module-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 10px;
+    height: 34px;
+    border-radius: 10px;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: background 0.15s ease, color 0.15s ease;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.fp-module-item .st-rail-icon {
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.fp-module-item .st-rail-icon svg,
+.fp-module-item .st-rail-icon .icon {
+    color: inherit;
+    stroke: currentColor;
+}
+
+.fp-module-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.fp-module-item.active {
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+}
+
+.fp-module-item.active::after {
+    content: "";
+    position: absolute;
+    bottom: -5px;
+    left: 12px;
+    right: 12px;
+    height: 3px;
+    background: var(--primary, #0052FF);
+    border-radius: 3px 3px 0 0;
+}
+
+html[data-theme="dark"] .fp-module-item.active::after {
+    background: var(--primary, #4D94FF);
+}
+
+.fp-module-bar-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+.fp-bar-action-icon {
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.55);
+    position: relative;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.fp-bar-action-icon:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.fp-bar-action-icon svg,
+.fp-bar-action-icon .icon {
+    color: inherit;
+    stroke: currentColor;
+}
+
+/* ===== SUBMENU BAR ===== */
+
+.fp-submenu-bar {
+    height: var(--fp-submenu-bar-height);
+    background: var(--fg-color);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    position: sticky;
+    top: var(--fp-module-bar-height);
+    z-index: 1019;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.fp-submenu-bar::-webkit-scrollbar { display: none; }
+
+.fp-submenu-item {
+    display: flex;
+    align-items: center;
+    height: var(--fp-submenu-bar-height);
+    padding: 0 14px;
+    font-size: 13.5px;
+    font-weight: 480;
+    color: var(--text-muted);
+    text-decoration: none !important;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: color 0.15s ease, border-color 0.15s ease;
+    flex-shrink: 0;
+}
+
+.fp-submenu-item:hover {
+    color: var(--text-color);
+    text-decoration: none !important;
+}
+
+.fp-submenu-item.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+    font-weight: 600;
+}
+
+.fp-submenu-arrow {
+    font-size: 10px;
+    margin-left: 3px;
+    opacity: 0.6;
+}
+
+/* ===== DROPDOWN ===== */
+
+.fp-submenu-dropdown {
+    position: fixed;
+    background: var(--popover-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: var(--shadow-lg);
+    padding: 6px;
+    z-index: 1030;
+    min-width: 200px;
+    display: flex;
+    flex-direction: column;
+}
+
+.fp-dropdown-item {
+    padding: 8px 10px;
+    border-radius: 4px;
+    font-size: 13.5px;
+    color: var(--text-color) !important;
+    text-decoration: none !important;
+    transition: background 0.12s ease;
+}
+
+.fp-dropdown-item:hover {
+    background: var(--fg-hover-color);
+    text-decoration: none !important;
+}
+
+/* ===== MOBILE ≤768px ===== */
+@media (max-width: 768px) {
+    .fp-module-item .fp-module-label {
+        display: none;
+    }
+    .fp-module-item {
+        padding: 0 8px;
+    }
+    .fp-module-bar {
+        padding: 0 8px;
+    }
+    .fp-submenu-bar {
+        padding: 0 8px;
+    }
+    .fp-submenu-item {
+        padding: 0 10px;
+        font-size: 13px;
+    }
+}
+
+/* ===== Notifications dropdown — re-parented to body (sidebar is hidden) ===== */
+.fp-notifications-dropdown {
+    position: fixed !important;
+    top: calc(var(--fp-module-bar-height) + 6px) !important;
+    right: 12px !important;
+    left: auto !important;
+    bottom: auto !important;
+    z-index: 1040;
+    width: 380px;
+    max-width: calc(100vw - 24px);
+}
+
+.fp-notifications-dropdown .notifications-list {
+    position: static !important;
+    width: 100%;
+    max-height: 70vh;
+    overflow-y: auto;
+    background: var(--popover-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: var(--shadow-lg);
+}
+
+/* ===== Dark theme: dashboard widget titles readability ===== */
+/* .widget-title computes to #30363D (--gray-600) — unreadable on dark bg */
+html[data-theme="dark"] .widget .widget-title,
+html[data-theme="dark"] .widget-head .widget-title {
+    color: var(--text-color) !important;
+}
+
+/* Slightly stronger separation between module bar and content in dark theme */
+html[data-theme="dark"] .fp-module-bar {
+    border-bottom: 1px solid #1F2937;
+}
