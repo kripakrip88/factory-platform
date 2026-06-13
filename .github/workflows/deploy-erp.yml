@@ -24,9 +24,12 @@ jobs:
             set -e
             cd /opt/factory-platform
 
+            # fetch + reset --hard вместо pull: на сервере локальная ветка может
+            # разойтись (старые деплои оставляли локальные коммиты) → git pull падал
+            # с "divergent branches". reset --hard всегда приводит к origin.
             git fetch origin ${{ github.ref_name }}
-            git checkout ${{ github.ref_name }}
-            git pull origin ${{ github.ref_name }}
+            git checkout -f ${{ github.ref_name }}
+            git reset --hard origin/${{ github.ref_name }}
 
             echo "🔨 Сборка образа с saas_theme..."
             docker compose -f services/erp/docker-compose.yml build --no-cache
