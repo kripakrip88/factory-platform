@@ -27,8 +27,8 @@ categories = ["Customization", "UI/UX"]
 # ------------------
 
 # include js, css files in header of desk.html
-app_include_css = "/assets/saas_theme/css/saas_theme.css?v=98"
-app_include_js = "/assets/saas_theme/js/saas_theme.js?v=98"
+app_include_css = "/assets/saas_theme/css/saas_theme.css?v=99"
+app_include_js = "/assets/saas_theme/js/saas_theme.js?v=99"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/saas_theme/css/login.css"
@@ -59,7 +59,8 @@ app_include_js = "/assets/saas_theme/js/saas_theme.js?v=98"
 # ----------
 
 # application home page (will override Website Settings)
-# home_page = "login"
+# "/" редиректит на /desk — иначе пользователь попадает на старый лаунчер модулей
+home_page = "desk"
 
 # website user home page (by Role)
 # role_home_page = {

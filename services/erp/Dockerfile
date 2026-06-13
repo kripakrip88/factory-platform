@@ -32,4 +32,12 @@ RUN for f in \
         echo "Patched nginx template: $f"; \
     fi; \
 done; exit 0
+
+# Редирект корня на /desk: "/" для залогиненных отдаёт легаси-лаунчер модулей,
+# hooks home_page его не перекрывает (Desk-страница рендерится в обход website-роутов).
+RUN if [ -f /templates/nginx/frappe.conf.template ]; then \
+        sed -i '/root \/home\/frappe\/frappe-bench\/sites;/a\\n\tlocation = / {\n\t\treturn 302 /desk;\n\t}' \
+            /templates/nginx/frappe.conf.template && \
+        echo "Patched: / -> /desk redirect"; \
+    fi
 USER frappe
