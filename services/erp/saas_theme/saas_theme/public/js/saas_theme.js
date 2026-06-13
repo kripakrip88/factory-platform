@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v104";
+const SAAS_THEME_BUILD = "v105";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -67,7 +67,58 @@ $(document).ready(function () {
 			}
 		}, 50);
 	});
+
+	// Карточка письма для чтения: переоформляет родную форму Communication
+	// (классификация наверх, тема-заголовок, обуздание тела, скрытие шума).
+	$(document).on("form-refresh", function (e, frm) {
+		if (!frm || frm.doctype !== "Communication") return;
+		setTimeout(function () {
+			saas_theme.reshape_mail(frm);
+		}, 60);
+	});
 });
+
+frappe.provide("saas_theme");
+
+saas_theme.reshape_mail = function (frm) {
+	if (!frm.fields_dict || !frm.fields_dict.content) return;
+	const sec_of = (fn) =>
+		frm.fields_dict[fn] && frm.fields_dict[fn].$wrapper
+			? frm.fields_dict[fn].$wrapper.closest(".form-section")
+			: $();
+
+	// 1. Тема — read-only заголовок (без звёздочки обязательности)
+	if (frm.fields_dict.subject) {
+		frm.set_df_property("subject", "reqd", 0);
+		frm.set_df_property("subject", "read_only", 1);
+		sec_of("subject").addClass("st-mail-subject");
+	}
+
+	// 2. Тело письма — обуздать ширину/картинки/пустоту (CSS по .st-mail-body)
+	frm.fields_dict.content.$wrapper.addClass("st-mail-body");
+
+	// 3. Скрыть служебные секции (НЕ удаляя поля): Статус, Доп. информация,
+	//    Связи шкалы времени, Входящие эл. почты. «Ссылка» оставляем —
+	//    через неё привязка письма к лиду.
+	["text_content", "communication_date", "timeline_links", "message_id"].forEach((fn) => {
+		sec_of(fn).addClass("st-mail-hide");
+	});
+
+	// 4. Блок классификации — наверх формы, оформить карточкой
+	const cls = frm.fields_dict.custom_claude_classification;
+	if (cls) {
+		const $sec = cls.$wrapper.closest(".form-section");
+		$sec.addClass("st-mail-classify");
+		const $page = $sec.closest(".form-page");
+		if ($page.length && $page.children(".form-section").first()[0] !== $sec[0]) {
+			$sec.prependTo($page);
+		}
+	}
+
+	// 5. Приглушить кнопку «Переподключить» (правка письма не нужна; Save
+	//    оставляем для сохранения оценки)
+	frm.page.wrapper.find(".btn:contains('Переподключить'), .btn:contains('Reconnect')").addClass("st-mail-hide");
+};
 
 frappe.provide("saas_theme.sidebar");
 frappe.provide("saas_theme.attachments");
