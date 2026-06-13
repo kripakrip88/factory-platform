@@ -3378,3 +3378,44 @@ html[data-theme="dark"] .fp-module-bar {
     align-items: center;
     margin-right: 2px;
 }
+
+/* ===== Быстрый фильтр по полкам классификации (Communication inbox) ===== */
+.st-shelf-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px 16px 4px;
+}
+
+.st-shelf-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 28px;
+    padding: 0 12px;
+    font-size: 13px;
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+
+.st-shelf-chip:hover {
+    color: var(--text-color);
+    border-color: var(--dark-border-color, var(--border-color));
+}
+
+.st-shelf-chip.active {
+    background: var(--subtle-fg, var(--fg-hover-color));
+    color: var(--text-color);
+    border-color: var(--primary-color);
+}
+
+.st-shelf-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}

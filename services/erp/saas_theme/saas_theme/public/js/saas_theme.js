@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v101";
+const SAAS_THEME_BUILD = "v102";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -851,6 +851,48 @@ saas_theme.list_controls = {
 		this.setup_filter_button(lv);
 		this.setup_sort_button(lv);
 		this.compact_header_buttons();
+		this.setup_shelf_filter(lv);
+	},
+
+	/* ----- Быстрый фильтр по полкам классификации (только Communication) ----- */
+
+	SHELVES: [
+		{ label: "Все",             value: "",                 color: "" },
+		{ label: "Новая заявка",    value: "Новая заявка",     color: "#10B981" },
+		{ label: "Вопрос по заказу", value: "Вопрос по заказу", color: "#3B82F6" },
+		{ label: "Поставщик",       value: "Поставщик",        color: "#F59E0B" },
+		{ label: "Спам",            value: "Спам",             color: "#EF4444" },
+		{ label: "Прочее",          value: "Прочее",           color: "#8B949E" },
+	],
+
+	setup_shelf_filter(lv) {
+		if (lv.doctype !== "Communication") return;
+		// поле классификации существует?
+		const has_field = frappe.meta.has_field("Communication", "custom_claude_classification");
+		if (!has_field) return;
+		if (lv.$filter_section.closest(".page-form").find(".st-shelf-filter").length) return;
+
+		const me = this;
+		const chips = this.SHELVES.map((s) => {
+			const dot = s.color ? `<span class="st-shelf-dot" style="background:${s.color}"></span>` : "";
+			return `<button type="button" class="st-shelf-chip" data-shelf="${frappe.utils.escape_html(s.value)}">${dot}${frappe.utils.escape_html(s.label)}</button>`;
+		}).join("");
+		const $bar = $(`<div class="st-shelf-filter">${chips}</div>`);
+		lv.$filter_section.closest(".page-form").after($bar);
+
+		$bar.find(".st-shelf-chip").on("click", function () {
+			const shelf = $(this).data("shelf");
+			$bar.find(".st-shelf-chip").removeClass("active");
+			$(this).addClass("active");
+			lv.filter_area.remove("custom_claude_classification");
+			if (shelf) {
+				lv.filter_area.add([["Communication", "custom_claude_classification", "=", shelf]]);
+			} else {
+				lv.refresh();
+			}
+		});
+		// «Все» активна по умолчанию
+		$bar.find('.st-shelf-chip[data-shelf=""]').addClass("active");
 	},
 
 	/* ----- Compact secondary header buttons to icons ----- */
