@@ -32,9 +32,35 @@ jobs:
             docker compose -f services/erp/docker-compose.yml build --no-cache
 
             echo "🔄 Перезапуск контейнеров..."
-            docker compose -f services/erp/docker-compose.yml up -d
+            docker compose -f services/erp/docker-compose.yml up -d --force-recreate
 
             echo "⏳ Ожидание готовности backend (60 сек)..."
             sleep 60
+
+            echo "🗄️ Миграция схемы БД (патчи apps)..."
+            docker exec erp-backend-1 bash -c "cd /home/frappe/frappe-bench && bench --site erp.localhost migrate"
+
+            echo "🧹 Сброс кэша Frappe (boot info)..."
+            docker exec erp-backend-1 bash -c "cd /home/frappe/frappe-bench && bench --site erp.localhost clear-cache" || true
+
+            echo "🔢 Проверка версий frappe/erpnext против versions.lock..."
+            EXP_FRAPPE=$(grep '^frappe=' services/erp/versions.lock | cut -d= -f2)
+            EXP_ERPNEXT=$(grep '^erpnext=' services/erp/versions.lock | cut -d= -f2)
+            GOT_FRAPPE=$(docker exec erp-backend-1 bash -c "grep -o '16[0-9.]*' /home/frappe/frappe-bench/apps/frappe/frappe/__init__.py | head -1")
+            GOT_ERPNEXT=$(docker exec erp-backend-1 bash -c "grep -o '16[0-9.]*' /home/frappe/frappe-bench/apps/erpnext/erpnext/__init__.py | head -1")
+            if [ "$EXP_FRAPPE" != "$GOT_FRAPPE" ] || [ "$EXP_ERPNEXT" != "$GOT_ERPNEXT" ]; then
+              echo "❌ DEPLOY FAILED: version skew. ожидали frappe=$EXP_FRAPPE erpnext=$EXP_ERPNEXT, получили frappe=$GOT_FRAPPE erpnext=$GOT_ERPNEXT"
+              exit 1
+            fi
+            echo "✅ Версии совпадают: frappe=$GOT_FRAPPE erpnext=$GOT_ERPNEXT"
+
+            echo "🔍 Smoke-тест: ассеты доехали до nginx?"
+            EXPECTED=$(grep -o 'SAAS_THEME_BUILD = "[^"]*"' services/erp/saas_theme/saas_theme/public/js/saas_theme.js | head -1)
+            DEPLOYED=$(curl -s "http://localhost:8080/assets/saas_theme/js/saas_theme.js" | grep -o 'SAAS_THEME_BUILD = "[^"]*"' | head -1)
+            if [ "$EXPECTED" != "$DEPLOYED" ]; then
+              echo "❌ DEPLOY FAILED: сервер отдаёт старый saas_theme.js (ожидали: $EXPECTED, получили: $DEPLOYED)"
+              exit 1
+            fi
+            echo "✅ Assets доехали: $DEPLOYED"
 
             echo "✅ ERP обновлён"

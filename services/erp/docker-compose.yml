@@ -68,6 +68,9 @@ services:
       options:
         max-size: "50m"
         max-file: "3"
+    # Синхронизируем assets.json перед стартом gunicorn.
+    # Это исправляет рассинхрон хэшей между volume и новым image.
+    command: sh -c "python3 /home/frappe/fix_assets.py && start.sh"
     environment:
       - DB_HOST=db
       - DB_PORT=3306

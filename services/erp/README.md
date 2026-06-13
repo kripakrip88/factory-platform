@@ -149,10 +149,28 @@ docker compose -f services/erp/docker-compose.yml exec backend \
 | Приложение | Репозиторий | Ветка | Описание |
 |------------|-------------|-------|----------|
 | erpnext | frappe/erpnext | v16 | Core ERP — продажи, закупки, производство, склад |
+| saas_theme | monorepo: `services/erp/saas_theme/` | — | Кастомная UI-тема (см. ниже) |
 
 CRM: используется встроенный CRM ERPNext (модуль CRM в основном приложении).
 
-## История версий
+## SaaS Theme
+
+Кастомная UI-тема хранится локально в `services/erp/saas_theme/` и копируется в Docker-образ при сборке.
+
+Подробная документация: [`docs/saas-theme.md`](../../docs/saas-theme.md)
+
+Текущая версия: **v76**
+
+### Обновить тему
+
+Все изменения вносятся в:
+- `saas_theme/public/js/saas_theme.js` — логика
+- `saas_theme/public/css/saas_theme.css` — стили
+- `saas_theme/hooks.py` — версия (`?v=N`, инкрементить при каждом изменении)
+
+После изменений — пуш в `develop`, CI/CD пересобирает образ автоматически.
+
+## История версий ERPNext
 
 | Версия | Дата | Изменения |
 |--------|------|-----------|
