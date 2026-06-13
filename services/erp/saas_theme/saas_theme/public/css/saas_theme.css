@@ -3534,3 +3534,11 @@ html[data-theme="dark"] .st-mail-body .ql-editor.read-mode a,
 html[data-theme="dark"] .st-mail-body .ql-editor.read-mode a * {
     color: #6EAAFF !important;
 }
+
+/* Обёртка read-only поля (.like-disabled-input) имеет свой светлый фон —
+   просвечивает белой рамкой вокруг тёмного тела письма. Обнуляем в обеих темах. */
+.st-mail-body .like-disabled-input {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+}
