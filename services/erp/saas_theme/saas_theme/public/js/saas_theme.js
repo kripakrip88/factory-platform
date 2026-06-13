@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v105";
+const SAAS_THEME_BUILD = "v106";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -68,13 +68,13 @@ $(document).ready(function () {
 		}, 50);
 	});
 
-	// Карточка письма для чтения: переоформляет родную форму Communication
-	// (классификация наверх, тема-заголовок, обуздание тела, скрытие шума).
+	// Карточка письма для чтения: переоформляет родную форму Communication.
+	// Классы слетают при перерисовке формы — переприменяем с ретраями.
 	$(document).on("form-refresh", function (e, frm) {
 		if (!frm || frm.doctype !== "Communication") return;
-		setTimeout(function () {
-			saas_theme.reshape_mail(frm);
-		}, 60);
+		[60, 300, 900].forEach(function (d) {
+			setTimeout(function () { saas_theme.reshape_mail(frm); }, d);
+		});
 	});
 });
 
@@ -104,15 +104,11 @@ saas_theme.reshape_mail = function (frm) {
 		sec_of(fn).addClass("st-mail-hide");
 	});
 
-	// 4. Блок классификации — наверх формы, оформить карточкой
+	// 4. Блок классификации — оформить карточкой (позиция «после темы» задана
+	//    порядком полей в доктайпе: custom_classifier_sb insert_after subject)
 	const cls = frm.fields_dict.custom_claude_classification;
 	if (cls) {
-		const $sec = cls.$wrapper.closest(".form-section");
-		$sec.addClass("st-mail-classify");
-		const $page = $sec.closest(".form-page");
-		if ($page.length && $page.children(".form-section").first()[0] !== $sec[0]) {
-			$sec.prependTo($page);
-		}
+		cls.$wrapper.closest(".form-section").addClass("st-mail-classify");
 	}
 
 	// 5. Приглушить кнопку «Переподключить» (правка письма не нужна; Save

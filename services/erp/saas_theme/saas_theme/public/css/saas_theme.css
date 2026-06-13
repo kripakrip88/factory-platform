@@ -3458,20 +3458,41 @@ html[data-theme="dark"] .fp-module-bar {
     margin-bottom: 6px !important;
 }
 
-/* Тело письма — читаемая колонка, без раздувания */
+/* Тело письма — читаемая колонка на белой «бумаге» (как в почтовом клиенте).
+   Письма приходят с тёмным текстом под белый фон → рендерим на белом всегда,
+   в т.ч. в тёмной теме, и форсируем читаемый контраст поверх бледного серого. */
 .st-mail-body {
-    max-width: 800px;
+    max-width: 820px;
 }
 .st-mail-body .ql-container,
 .st-mail-body .ql-editor.read-mode {
     border: none !important;
-    background: transparent !important;
-    padding: 0 !important;
     min-height: 0 !important;
     height: auto !important;
     max-height: none !important;
 }
-/* обуздать чужой HTML письма: ничто не распирает контейнер */
+.st-mail-body .ql-editor.read-mode {
+    background: #ffffff !important;
+    color: #1f2733 !important;
+    padding: 18px 22px !important;
+    border-radius: 8px !important;
+    border: 1px solid var(--border-color) !important;
+}
+/* читаемый текст поверх бледно-серых инлайнов писем */
+.st-mail-body .ql-editor.read-mode,
+.st-mail-body .ql-editor.read-mode p,
+.st-mail-body .ql-editor.read-mode span,
+.st-mail-body .ql-editor.read-mode div,
+.st-mail-body .ql-editor.read-mode td,
+.st-mail-body .ql-editor.read-mode li {
+    color: #1f2733 !important;
+}
+/* ссылки — синим, поверх форса текста */
+.st-mail-body .ql-editor.read-mode a,
+.st-mail-body .ql-editor.read-mode a * {
+    color: #0052ff !important;
+}
+/* обуздать чужой HTML: ничто не распирает контейнер, картинки по ширине */
 .st-mail-body .ql-editor.read-mode * {
     max-width: 100% !important;
     box-sizing: border-box;
