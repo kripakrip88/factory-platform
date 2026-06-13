@@ -2913,6 +2913,14 @@ body.st-dual-sidebar .onb-panel {
 body.st-dual-sidebar .main-section,
 .main-section {
     margin-left: 0 !important;
+    display: flex;
+    flex-direction: column;
+}
+
+.fp-module-bar,
+.fp-submenu-bar {
+    flex-shrink: 0;
+    width: 100%;
 }
 
 /* ===== MODULE BAR ===== */

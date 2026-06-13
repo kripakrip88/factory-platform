@@ -9,6 +9,9 @@
  * Original build_workspace_rail() preserved but not called — easy rollback.
  */
 
+// Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
+const SAAS_THEME_BUILD = "v85";
+
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
 (function () {
@@ -52,6 +55,10 @@ saas_theme.sidebar = {
 			this._listeners_bound = true;
 		}
 		this.toggle_module_bar_visibility();
+		// Frappe may re-render the header after load and drop our bar — rebuild
+		[500, 1500, 3000].forEach((delay) => {
+			setTimeout(() => this.build_module_bar(), delay);
+		});
 	},
 
 	/* ============================================
@@ -59,7 +66,13 @@ saas_theme.sidebar = {
 	   ============================================ */
 
 	build_module_bar() {
-		if (this.module_bar_built) return;
+		// Frappe may re-render the header and remove our bar — check DOM, not just the flag
+		if ($('.fp-module-bar').length) return;
+		this.module_bar_built = false;
+
+		// Insertion point: .main-section (body is a flex row — .navbar doesn't exist on desk pages)
+		const $main = $('.main-section');
+		if (!$main.length) return;
 
 		const workspaces = this.get_workspaces();
 		if (!workspaces.length) return;
@@ -90,7 +103,7 @@ saas_theme.sidebar = {
 			</div>
 		`);
 
-		$('.navbar, .navbar-container').first().after(this.$module_bar);
+		$main.prepend(this.$module_bar);
 
 		const me = this;
 		this.$module_bar.find('.fp-module-item').on('click', function() {
@@ -116,7 +129,8 @@ saas_theme.sidebar = {
 			}, 10);
 		});
 
-		this.module_bar_built = true;
+		// Flag only after the bar is actually in the DOM
+		this.module_bar_built = $('.fp-module-bar').length > 0;
 		this.update_module_bar_active();
 
 		const current_ws = frappe.app.sidebar?.sidebar_title;
@@ -553,6 +567,7 @@ saas_theme.sidebar = {
 
 		$(document).on("sidebar_setup", () => {
 			setTimeout(() => {
+				me.build_module_bar();
 				me.update_module_bar_active();
 				me.toggle_module_bar_visibility();
 				const ws = frappe.app?.sidebar?.sidebar_title;
@@ -562,6 +577,7 @@ saas_theme.sidebar = {
 
 		$(document).on("page-change", () => {
 			setTimeout(() => {
+				me.build_module_bar();
 				me.update_module_bar_active();
 				me.toggle_module_bar_visibility();
 				me.update_submenu_active();
