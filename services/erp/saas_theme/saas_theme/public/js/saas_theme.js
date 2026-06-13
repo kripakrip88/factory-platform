@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v86";
+const SAAS_THEME_BUILD = "v87";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -103,9 +103,8 @@ saas_theme.sidebar = {
 				</div>
 			</div>
 		`);
-		this.update_theme_icon();
-
 		$main.prepend(this.$module_bar);
+		this.update_theme_icon();
 
 		const me = this;
 		this.$module_bar.find('.fp-module-item').on('click', function() {
