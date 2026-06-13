@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v88";
+const SAAS_THEME_BUILD = "v89";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -895,17 +895,15 @@ saas_theme.list_controls = {
 			</a>`;
 		}).join("");
 
-		const asc_active = ss.sort_order === "asc" ? " active" : "";
-		const desc_active = ss.sort_order === "desc" ? " active" : "";
+		const dir_arrow = ss.sort_order === "asc" ? "↑" : "↓";
+		const dir_title = ss.sort_order === "asc" ? "По возрастанию — нажмите для убывания" : "По убыванию — нажмите для возрастания";
 		const $menu = $(`
 			<div class="st-sort-menu">
-				<div class="st-sort-menu-title">Сортировать по:</div>
-				${options_html}
-				<div class="st-sort-divider"></div>
-				<div class="st-sort-dir">
-					<button type="button" class="st-sort-dir-btn${asc_active}" data-dir="asc">↑ Возрастание</button>
-					<button type="button" class="st-sort-dir-btn${desc_active}" data-dir="desc">↓ Убывание</button>
+				<div class="st-sort-menu-title">
+					<span>Сортировать по:</span>
+					<button type="button" class="st-sort-dir-toggle" title="${dir_title}">${dir_arrow}</button>
 				</div>
+				${options_html}
 			</div>
 		`);
 		$("body").append($menu);
@@ -921,9 +919,12 @@ saas_theme.list_controls = {
 			$menu.remove();
 		});
 
-		$menu.find(".st-sort-dir-btn").on("click", function () {
-			me.apply_sort(lv, lv.sort_selector.sort_by, $(this).data("dir"));
-			$menu.remove();
+		// Direction toggle: flips order, keeps the menu open, updates its own arrow
+		$menu.find(".st-sort-dir-toggle").on("click", function (e) {
+			e.stopPropagation();
+			const next = lv.sort_selector.sort_order === "asc" ? "desc" : "asc";
+			me.apply_sort(lv, lv.sort_selector.sort_by, next);
+			$(this).text(next === "asc" ? "↑" : "↓");
 		});
 	},
 };
