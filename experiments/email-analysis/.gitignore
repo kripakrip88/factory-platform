@@ -13,3 +13,8 @@ raw/
 venv/
 __pycache__/
 *.pyc
+
+# Чекпоинт классификации и логи прогона (не коммитить)
+classif_cache.json
+progress.log
+REPORT.md.tmp

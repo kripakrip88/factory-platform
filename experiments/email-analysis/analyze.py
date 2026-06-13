@@ -350,46 +350,81 @@ def main():
     log(f"Загружено для анализа: {len(emails)}")
 
     # --- Блок 2: классификация через Anthropic (батчами) ---
-    log("Классификация через Anthropic...")
-    batch, BSZ = [], 8
+    # Чекпоинт: уже классифицированное кэшируется на диск (classif_cache.json,
+    # в .gitignore). Повторный запуск резюмирует с места обрыва — кредиты не
+    # тратятся заново. При терминальной ошибке API (кончились кредиты и т.п.)
+    # рендерим ЧАСТИЧНЫЙ отчёт тем, что успели, без падения.
+    cache_path = os.path.join(os.path.dirname(__file__), "classif_cache.json")
     classif = {}
-    for i, em in enumerate(emails):
-        batch.append((i, em["body"]))
-        if len(batch) == BSZ:
+    if os.path.exists(cache_path):
+        try:
+            classif = {int(k): v for k, v in json.load(open(cache_path)).items()}
+            log(f"Загружен кэш классификации: {len(classif)} писем")
+        except Exception:
+            classif = {}
+
+    def save_cache():
+        try:
+            json.dump({str(k): v for k, v in classif.items()}, open(cache_path, "w"))
+        except Exception as ex:
+            log(f"  не удалось сохранить кэш: {ex}")
+
+    log("Классификация через Anthropic...")
+    todo = [(i, em["body"]) for i, em in enumerate(emails) if i not in classif]
+    log(f"  к классификации: {len(todo)} (в кэше {len(classif)})")
+    BSZ = 8
+    api_failed = False
+    for start in range(0, len(todo), BSZ):
+        batch = todo[start:start + BSZ]
+        try:
             classif.update(classify_batch(cfg, batch))
-            batch = []
-            log(f"  классифицировано {len(classif)}/{len(emails)}")
-    if batch:
-        classif.update(classify_batch(cfg, batch))
+        except Exception as ex:
+            log(f"  КЛАССИФИКАЦИЯ ОСТАНОВЛЕНА (API): {str(ex)[:120]}")
+            api_failed = True
+            break
+        save_cache()
+        log(f"  классифицировано {len(classif)}/{len(emails)}")
+    save_cache()
+
     for i, em in enumerate(emails):
-        c = classif.get(i, {"cat": "other", "body_has_request": False})
-        em["cat"] = c["cat"]
-        em["body_has_request"] = c["body_has_request"]
+        c = classif.get(i)
+        em["classified"] = c is not None
+        em["cat"] = c["cat"] if c else "other"
+        em["body_has_request"] = c["body_has_request"] if c else False
+
+    classified_n = sum(1 for em in emails if em.get("classified"))
 
     # --- Блок 4: качество извлечения на выборке заявок ---
-    requests = [em for em in emails if em["cat"] == "request"]
-    sample = requests[:20]
-    log(f"Проверка извлечения на {len(sample)} заявках...")
+    requests = [em for em in emails if em.get("classified") and em["cat"] == "request"]
     quality = []
-    for n, em in enumerate(sample, 1):
-        try:
-            quality.append(extract_quality(cfg, em["body"]))
-        except Exception as ex:
-            log(f"  извлечение {n}: {ex}")
-        if n % 5 == 0:
-            log(f"  проверено {n}/{len(sample)}")
+    if not api_failed:
+        sample = requests[:20]
+        log(f"Проверка извлечения на {len(sample)} заявках...")
+        for n, em in enumerate(sample, 1):
+            try:
+                quality.append(extract_quality(cfg, em["body"]))
+            except Exception as ex:
+                log(f"  извлечение остановлено (API): {str(ex)[:120]}")
+                break
+            if n % 5 == 0:
+                log(f"  проверено {n}/{len(sample)}")
+    else:
+        log("Блок 4 пропущен — классификация не завершена (API).")
 
-    render_report(cfg, total_inbox, emails, requests, quality)
+    render_report(cfg, total_inbox, emails, requests, quality, classified_n, api_failed)
 
 
 def att_kinds(em):
     return {a["kind"] for a in em["attachments"]}
 
 
-def render_report(cfg, total_inbox, emails, requests, quality):
+def render_report(cfg, total_inbox, emails, requests, quality, classified_n=None, api_failed=False):
     N = len(emails)
+    if classified_n is None:
+        classified_n = N
+    base = classified_n or 1  # доли Блока 2 считаем от классифицированных
     def pct(x):
-        return f"{100*x/N:.0f}%" if N else "—"
+        return f"{100*x/base:.0f}%"
 
     # Блок 1
     by_day = Counter(em["date"] for em in emails if em["date"])
@@ -398,8 +433,8 @@ def render_report(cfg, total_inbox, emails, requests, quality):
     uniq_senders = len(domains)
     peak_day = max(by_day.values()) if by_day else 0
 
-    # Блок 2
-    cats = Counter(em["cat"] for em in emails)
+    # Блок 2 — считаем только реально классифицированные письма
+    cats = Counter(em["cat"] for em in emails if em.get("classified", True))
 
     # Блок 3 — где живёт заявка
     loc = Counter()
@@ -452,6 +487,13 @@ def render_report(cfg, total_inbox, emails, requests, quality):
     P("> Отчёт содержит только агрегированную статистику. Тела писем, имена, "
       "телефоны и реквизиты не выгружались и в отчёт не попали.")
     P("")
+    if api_failed or classified_n < N:
+        P(f"> ⚠️ **Частичный результат:** классифицировано {classified_n} из {N} "
+          f"писем (классификация прервана — вероятно кончились кредиты Anthropic). "
+          f"Доли Блока 2 считаются от {classified_n} классифицированных. Блоки 1/5 "
+          f"(объём, вложения) — полные. Кэш сохранён: повторный запуск продолжит "
+          f"с места обрыва.")
+        P("")
     P("## Блок 1 — Объём и поток")
     P(f"- Писем в окне: **{N}** (из {total_inbox} во Входящих)")
     P(f"- Дней в окне: {days} → в среднем **{N/days:.1f} писем/день**, пик **{peak_day}**/день")
