@@ -3001,15 +3001,9 @@ html[data-theme="dark"] .fp-module-bar {
 }
 
 .fp-module-item.active {
-    /* Colored highlight — primary-tinted (4D94FF) instead of flat white */
-    background: rgba(77, 148, 255, 0.18) !important;
+    /* Per-module colour — background tint + icon colour set inline by
+       update_module_bar_active(); underline uses --fp-active-color below. */
     color: #ffffff;
-}
-
-.fp-module-item.active .st-rail-icon svg,
-.fp-module-item.active .st-rail-icon .icon {
-    color: #6EAAFF !important;
-    stroke: #6EAAFF !important;
 }
 
 .fp-module-item.active::after {
@@ -3019,12 +3013,8 @@ html[data-theme="dark"] .fp-module-bar {
     left: 12px;
     right: 12px;
     height: 3px;
-    background: var(--primary, #0052FF);
+    background: var(--fp-active-color, var(--primary, #0052FF));
     border-radius: 3px 3px 0 0;
-}
-
-html[data-theme="dark"] .fp-module-item.active::after {
-    background: var(--primary, #4D94FF);
 }
 
 .fp-module-bar-actions {

@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v99";
+const SAAS_THEME_BUILD = "v100";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -187,9 +187,23 @@ saas_theme.sidebar = {
 
 	update_module_bar_active() {
 		const current = (frappe.app.sidebar?.sidebar_title || '').toLowerCase();
-		$('.fp-module-item').each(function() {
-			const ws = ($(this).data('workspace') || '').toLowerCase();
-			$(this).toggleClass('active', ws === current);
+		const me = this;
+		$('.fp-module-item').each(function () {
+			const label = $(this).data('workspace') || '';
+			const isActive = label.toLowerCase() === current;
+			$(this).toggleClass('active', isActive);
+			const $icon = $(this).find('.st-rail-icon svg, .st-rail-icon .icon');
+			if (isActive) {
+				// Per-module colour (same palette as the old left rail)
+				const color = me.get_workspace_color(label);
+				this.style.setProperty('background', color + '2e', 'important'); // ~18% tint
+				this.style.setProperty('--fp-active-color', color); // used by ::after underline
+				$icon.css({ color: color, stroke: color });
+			} else {
+				this.style.removeProperty('background');
+				this.style.removeProperty('--fp-active-color');
+				$icon.css({ color: '', stroke: '' });
+			}
 		});
 	},
 
