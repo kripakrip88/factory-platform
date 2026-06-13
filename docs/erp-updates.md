@@ -1,20 +1,31 @@
 # Обновление ERPNext
 
+> **Источник правил пиннинга версий — `CLAUDE.md` → блок «Версии frappe/erpnext».**
+> Здесь только процедура. Главное правило: **frappe и erpnext обновляются ТОЛЬКО
+> парой, точными версиями.** Образ не пуллится — он **собирается** из
+> `services/erp/Dockerfile`.
+
 ## Патч-обновление (v16.X → v16.Y)
 
-1. Изменить тег образа в `services/erp/docker-compose.yml`:
-   ```yaml
-   image: frappe/erpnext:v16.X.Y
-   ```
-2. Подтянуть новые образы:
+1. Выбрать совместимую пару версий (тег образа `frappe/erpnext:vX.Y.Z` бандлит
+   конкретные frappe+erpnext — сверить, что erpnext не вызывает методов, которых
+   нет в его frappe; см. прецедент в CLAUDE.md).
+2. Изменить **одновременно** в двух местах:
+   - тег в `services/erp/Dockerfile`:
+     ```dockerfile
+     FROM frappe/erpnext:v16.Y.Z
+     ```
+   - значения в `services/erp/versions.lock` (пара frappe+erpnext):
+     ```
+     frappe=16.A.B
+     erpnext=16.Y.Z
+     ```
+3. Пересобрать образы (НЕ pull — версия запечена в Dockerfile-сборку):
    ```bash
-   docker compose -f services/erp/docker-compose.yml pull
+   docker compose -f services/erp/docker-compose.yml build --no-cache
+   docker compose -f services/erp/docker-compose.yml up -d --force-recreate
    ```
-3. Перезапустить:
-   ```bash
-   docker compose -f services/erp/docker-compose.yml up -d
-   ```
-4. Применить миграции БД:
+4. Применить миграции БД (обязательно):
    ```bash
    docker compose -f services/erp/docker-compose.yml exec backend \
      bench --site erp.localhost migrate
@@ -24,6 +35,12 @@
    docker compose -f services/erp/docker-compose.yml exec backend \
      bench --site erp.localhost clear-cache
    ```
+6. Проверить версии в браузере (`frappe.boot.versions`) — обе из одной волны —
+   и прогнать регрессию ключевых форм (Lead, Quotation, Work Order и т.д.).
+
+При деплое через CI всё это делает `.github/workflows/deploy-erp.yml`: он сам
+сверяет версии в контейнере с `versions.lock` и **падает при дрейфе**. Если
+поменял Dockerfile, но забыл `versions.lock` (или наоборот) — CI не пропустит.
 
 Данные сохраняются. Настройки сохраняются. Переводы сохраняются.
 
@@ -39,12 +56,13 @@
 4. Тестовое развёртывание на копии данных (отдельный Docker Compose)
 5. Только после успешного теста — обновлять production:
    ```bash
-   # Остановить, удалить volumes, пересоздать с новым образом
+   # Сменить тег в services/erp/Dockerfile → FROM frappe/erpnext:v17.X.Y
+   # и обновить services/erp/versions.lock (пара frappe+erpnext) одновременно.
+   # Остановить, удалить volumes сайта, пересобрать образ с новым тегом:
    docker compose -f services/erp/docker-compose.yml down
    docker volume rm erp_sites erp_logs
-   # Обновить образ в docker-compose.yml → v17
-   docker compose -f services/erp/docker-compose.yml pull
-   docker compose -f services/erp/docker-compose.yml up -d
+   docker compose -f services/erp/docker-compose.yml build --no-cache
+   docker compose -f services/erp/docker-compose.yml up -d --force-recreate
    bash services/erp/init-site.sh  # пересоздаёт сайт
    ```
 6. Перегенерировать переводы — строки интерфейса меняются при мажорном обновлении:
@@ -63,6 +81,11 @@
 - Не обновляться в первый месяц после мажорного релиза
 - Не делать ручные правки внутри контейнера — они теряются при пересоздании
 - Не пропускать шаг `bench migrate` после обновления образа
+- Не обновлять версию через `docker compose pull` — образ собирается из
+  `Dockerfile`, pull подтянет не тот тег и разойдётся с `versions.lock`
+- Не менять только `Dockerfile` или только `versions.lock` — они меняются парой,
+  иначе CI завалит деплой на проверке версий
+- Не обновлять frappe и erpnext по отдельности — только согласованной парой
 
 ## Установленные приложения и их репозитории
 
