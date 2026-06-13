@@ -2040,10 +2040,15 @@ body.st-dual-sidebar .sidebar-header .drop-icon {
 }
 
 /* ===== Dark theme: list row hover fix ===== */
-[data-theme="dark"] {
+/* Frappe colors .list-row-container:hover with var(--highlight-color), which is
+   #F6F9FC (light) and not overridden in dark — that's the blinding white row. */
+html[data-theme="dark"] {
 	--list-hover-color: rgba(255, 255, 255, 0.05);
+	--highlight-color: rgba(255, 255, 255, 0.05);
 }
 
+[data-theme="dark"] .list-row-container:hover,
+[data-theme="dark"] .list-row-container:hover .level-right,
 [data-theme="dark"] .list-row:hover,
 [data-theme="dark"] .list-row-container:hover .list-row {
 	background-color: rgba(255, 255, 255, 0.05) !important;
@@ -2996,8 +3001,15 @@ html[data-theme="dark"] .fp-module-bar {
 }
 
 .fp-module-item.active {
-    background: rgba(255, 255, 255, 0.12);
+    /* Colored highlight — primary-tinted (4D94FF) instead of flat white */
+    background: rgba(77, 148, 255, 0.18);
     color: #ffffff;
+}
+
+.fp-module-item.active .st-rail-icon svg,
+.fp-module-item.active .st-rail-icon .icon {
+    color: #6EAAFF;
+    stroke: #6EAAFF;
 }
 
 .fp-module-item.active::after {
@@ -3292,6 +3304,44 @@ html[data-theme="dark"] .fp-module-bar {
     display: inline-flex;
     align-items: center;
     white-space: nowrap;
+}
+
+/* Neutral, less attention-grabbing borders on list-header controls
+   (filter/sort buttons + compacted icon buttons) — the default #E3E8EE reads
+   too bright. Match the muted tone of the filter input fields. */
+.filter-section.st-lc-filters .filter-button,
+.sort-selector.st-lc-sort .st-sort-button,
+.btn.ellipsis.st-lc-iconbtn {
+    border-color: var(--border-color);
+    color: var(--text-muted);
+    box-shadow: none;
+}
+
+.filter-section.st-lc-filters .filter-button:hover,
+.sort-selector.st-lc-sort .st-sort-button:hover,
+.btn.ellipsis.st-lc-iconbtn:hover {
+    border-color: var(--dark-border-color, var(--border-color));
+    color: var(--text-color);
+}
+
+/* Match button height to the filter input fields (≈28px) */
+.filter-section.st-lc-filters .filter-button,
+.sort-selector.st-lc-sort .st-sort-button,
+.btn.ellipsis.st-lc-iconbtn {
+    height: 28px;
+    min-height: 28px;
+    padding-top: 0;
+    padding-bottom: 0;
+    line-height: 1;
+}
+
+/* Submenu bar: wrap items to next line instead of pushing them off-screen */
+.fp-submenu-bar {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: var(--fp-submenu-bar-height);
+    overflow-x: visible;
+    row-gap: 0;
 }
 
 /* Mobile ≤768px: compress to icon/arrow only */
