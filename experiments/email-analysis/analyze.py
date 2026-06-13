@@ -187,7 +187,29 @@ def parse_email(raw):
 
 # ----------------------------- Anthropic API -----------------------------
 
+# Пейсер: держим суммарные input-токены под лимитом организации (50k/мин).
+# Скользящее окно 60с, потолок с запасом.
+_TOKEN_BUDGET_PER_MIN = 42000
+_token_log = []  # list of (timestamp, tokens)
+
+
+def _pace(est_tokens):
+    now = time.time()
+    # выкинуть всё старше 60с
+    while _token_log and now - _token_log[0][0] > 60:
+        _token_log.pop(0)
+    used = sum(t for _, t in _token_log)
+    if used + est_tokens > _TOKEN_BUDGET_PER_MIN and _token_log:
+        wait = 60 - (now - _token_log[0][0]) + 1
+        if wait > 0:
+            log(f"  [пейсер] {used} ток./мин — пауза {wait:.0f}с")
+            time.sleep(wait)
+    _token_log.append((time.time(), est_tokens))
+
+
 def call_anthropic(cfg, system, user, max_tokens=1024):
+    est = (len(system) + len(user)) // 4 + max_tokens  # грубая оценка input+output
+    _pace(est)
     body = json.dumps({
         "model": cfg["model"],
         "max_tokens": max_tokens,
@@ -203,19 +225,25 @@ def call_anthropic(cfg, system, user, max_tokens=1024):
             "content-type": "application/json",
         },
     )
-    for attempt in range(4):
+    for attempt in range(6):
         try:
-            with urllib.request.urlopen(req, timeout=90) as r:
+            with urllib.request.urlopen(req, timeout=120) as r:
                 data = json.loads(r.read())
                 return "".join(b.get("text", "") for b in data.get("content", []))
         except urllib.error.HTTPError as e:
-            if e.code in (429, 529, 500, 503) and attempt < 3:
+            if e.code == 429 and attempt < 5:
+                # лимит per-minute — ждём полную минуту и сбрасываем окно
+                log(f"  [429] rate limit — пауза 60с (попытка {attempt+1})")
+                _token_log.clear()
+                time.sleep(62)
+                continue
+            if e.code in (529, 500, 503) and attempt < 5:
                 time.sleep(2 ** attempt * 3)
                 continue
             log(f"Anthropic HTTP {e.code}: {e.read()[:200]}")
             raise
         except Exception as ex:
-            if attempt < 3:
+            if attempt < 5:
                 time.sleep(2 ** attempt * 3)
                 continue
             raise
@@ -249,7 +277,7 @@ def classify_batch(cfg, batch):
     """batch: list of (idx, body). Возвращает {idx: {'cat':..., 'body_has_request':bool}}."""
     parts = []
     for idx, body in batch:
-        snippet = (body or "")[:1500].replace("\n", " ")
+        snippet = (body or "")[:900].replace("\n", " ")
         parts.append(f"[Письмо {idx}]\n{snippet}")
     user = "Классифицируй письма:\n\n" + "\n\n".join(parts)
     text = call_anthropic(cfg, CLASSIFY_SYSTEM, user, max_tokens=1500)
@@ -280,7 +308,7 @@ EXTRACT_SYSTEM = (
 
 
 def extract_quality(cfg, body):
-    snippet = (body or "")[:3000]
+    snippet = (body or "")[:2000]
     text = call_anthropic(cfg, EXTRACT_SYSTEM, "Текст письма:\n\n" + snippet, max_tokens=400)
     o = extract_json(text) or {}
     return {
