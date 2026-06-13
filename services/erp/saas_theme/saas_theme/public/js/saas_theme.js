@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v87";
+const SAAS_THEME_BUILD = "v88";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -29,6 +29,7 @@ $(document).ready(function () {
 		saas_theme.sidebar.init();
 		saas_theme.attachments.init();
 		saas_theme.columns.init();
+		saas_theme.list_controls.init();
 	});
 
 	// Re-init on sidebar_setup in case frappe.after_ajax fired too early
@@ -744,6 +745,188 @@ saas_theme.sidebar = {
 /* ============================================
    ATTACHMENT ENHANCEMENTS
    ============================================ */
+
+/* ============================================
+   LIST CONTROLS — unified Filters and Sort buttons (МойСклад style)
+
+   Recon (Frappe v16, live server, /desk/work-order):
+   - cur_list.view_name === 'List'
+   - filter_area: .get() → [[doctype, field, op, value]], .filter_button ($),
+     .filter_x_button ($). Native popover (.filter-popover) already contains
+     per-filter remove, "+ Add a Filter" and "Clear Filters" — we keep it as
+     the panel and only relabel the button + hide the dangerous X.
+   - sort_selector: .args.options [{fieldname, label}], .sort_by, .sort_order,
+     .set_value(by, order) updates state WITHOUT refreshing; .onchange(by, order)
+     triggers the list refresh. Native DOM: .sort-selector > .btn-group
+     (.btn-order + .sort-selector-button).
+   Source of truth stays in Frappe — this layer only changes presentation.
+   ============================================ */
+
+frappe.provide("saas_theme.list_controls");
+
+saas_theme.list_controls = {
+	init() {
+		if (this._bound) return;
+		this._bound = true;
+		const me = this;
+		$(document).on("page-change", () => {
+			[200, 600, 1500].forEach((d) => setTimeout(() => me.try_render(), d));
+		});
+		$(document).on("click.st_sort_menu", (e) => {
+			if (!$(e.target).closest(".st-sort-menu, .st-sort-button").length) {
+				$(".st-sort-menu").remove();
+			}
+		});
+		[300, 900, 2000].forEach((d) => setTimeout(() => me.try_render(), d));
+	},
+
+	get_list_view() {
+		const lv = window.cur_list;
+		// Only standard lists — not reports/kanban/calendar/etc.
+		if (!lv || lv.view_name !== "List") return null;
+		if (!lv.$filter_section || !lv.$filter_section.length) return null;
+		return lv;
+	},
+
+	try_render() {
+		const lv = this.get_list_view();
+		if (!lv) return;
+		this.setup_filter_button(lv);
+		this.setup_sort_button(lv);
+	},
+
+	/* ----- Filters: relabel native button, hide only the X ----- */
+
+	setup_filter_button(lv) {
+		const fa = lv.filter_area;
+		if (!fa || !fa.filter_button || !fa.filter_button.length) return;
+
+		this.update_filter_label(lv);
+
+		const btn = fa.filter_button[0];
+		if (!btn._st_observed) {
+			btn._st_observed = true;
+			// Frappe rewrites the label on filter changes — re-apply ours
+			const mo = new MutationObserver(() => this.update_filter_label(lv));
+			mo.observe(btn, { childList: true, characterData: true, subtree: true });
+		}
+
+		// Hide the dangerous clear-all X only after our label is in place
+		// (clear-all stays available inside the native popover)
+		lv.$filter_section.addClass("st-lc-filters");
+	},
+
+	update_filter_label(lv) {
+		const fa = lv.filter_area;
+		const $label = fa.filter_button.find(".button-label");
+		if (!$label.length) return;
+		const n = (fa.get() || []).length;
+		const text = n ? `Фильтры • ${n}` : "Фильтры";
+		// Guard against MutationObserver loops — only touch DOM on change
+		if ($label.text() !== text) $label.text(text);
+		if (!fa.filter_button.find(".st-lc-caret").length) {
+			fa.filter_button.append('<span class="st-lc-caret">▾</span>');
+		}
+	},
+
+	/* ----- Sort: one combined button with custom menu ----- */
+
+	setup_sort_button(lv) {
+		const ss = lv.sort_selector;
+		if (!ss || !ss.wrapper || !ss.wrapper.length) return;
+		if (ss.wrapper.find(".st-sort-button").length) {
+			this.update_sort_label(lv);
+			return;
+		}
+
+		const $btn = $('<button type="button" class="btn btn-default btn-sm st-sort-button"></button>');
+		ss.wrapper.append($btn);
+		const me = this;
+		$btn.on("click", (e) => {
+			e.stopPropagation();
+			me.toggle_sort_menu(lv, $btn);
+		});
+
+		this.update_sort_label(lv);
+		// Graceful fallback: hide native pair only after ours rendered
+		if (ss.wrapper.find(".st-sort-button").length) {
+			ss.wrapper.addClass("st-lc-sort");
+		}
+	},
+
+	get_sort_label(lv) {
+		const ss = lv.sort_selector;
+		const opt = (ss.args.options || []).find((o) => o.fieldname === ss.sort_by);
+		return opt ? __(opt.label) : ss.sort_by;
+	},
+
+	update_sort_label(lv) {
+		const ss = lv.sort_selector;
+		const $btn = ss.wrapper.find(".st-sort-button");
+		if (!$btn.length) return;
+		const arrow = ss.sort_order === "asc" ? "↑" : "↓";
+		$btn.html(
+			`<span class="st-sort-field">${frappe.utils.escape_html(this.get_sort_label(lv))}</span>` +
+			` <span class="st-sort-arrow">${arrow}</span><span class="st-lc-caret">▾</span>`
+		);
+	},
+
+	apply_sort(lv, sort_by, sort_order) {
+		const ss = lv.sort_selector;
+		ss.set_value(sort_by, sort_order);
+		// set_value updates state only — onchange triggers the actual refresh
+		if (typeof ss.onchange === "function") ss.onchange(sort_by, sort_order);
+		this.update_sort_label(lv);
+	},
+
+	toggle_sort_menu(lv, $btn) {
+		const existing = $(".st-sort-menu");
+		if (existing.length) {
+			existing.remove();
+			return;
+		}
+
+		const ss = lv.sort_selector;
+		const me = this;
+		const options_html = (ss.args.options || []).map((o) => {
+			const check = o.fieldname === ss.sort_by ? '<span class="st-sort-check">✓</span>' : "";
+			return `<a class="st-sort-item" data-field="${frappe.utils.escape_html(o.fieldname)}" href="#">
+				${frappe.utils.escape_html(__(o.label))}${check}
+			</a>`;
+		}).join("");
+
+		const asc_active = ss.sort_order === "asc" ? " active" : "";
+		const desc_active = ss.sort_order === "desc" ? " active" : "";
+		const $menu = $(`
+			<div class="st-sort-menu">
+				<div class="st-sort-menu-title">Сортировать по:</div>
+				${options_html}
+				<div class="st-sort-divider"></div>
+				<div class="st-sort-dir">
+					<button type="button" class="st-sort-dir-btn${asc_active}" data-dir="asc">↑ Возрастание</button>
+					<button type="button" class="st-sort-dir-btn${desc_active}" data-dir="desc">↓ Убывание</button>
+				</div>
+			</div>
+		`);
+		$("body").append($menu);
+
+		const rect = $btn[0].getBoundingClientRect();
+		const menu_w = $menu.outerWidth() || 220;
+		const left = Math.max(8, Math.min(rect.left, window.innerWidth - menu_w - 8));
+		$menu.css({ top: rect.bottom + 4, left });
+
+		$menu.find(".st-sort-item").on("click", function (e) {
+			e.preventDefault();
+			me.apply_sort(lv, $(this).data("field"), lv.sort_selector.sort_order);
+			$menu.remove();
+		});
+
+		$menu.find(".st-sort-dir-btn").on("click", function () {
+			me.apply_sort(lv, lv.sort_selector.sort_by, $(this).data("dir"));
+			$menu.remove();
+		});
+	},
+};
 
 saas_theme.attachments = {
 	ext_map: {

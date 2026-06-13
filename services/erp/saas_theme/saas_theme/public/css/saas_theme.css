@@ -3179,3 +3179,122 @@ html[data-theme="dark"] .widget-head .widget-title {
 html[data-theme="dark"] .fp-module-bar {
     border-bottom: 1px solid #1F2937;
 }
+
+/* ============================================
+   LIST CONTROLS — unified Filters / Sort buttons
+   (classes added by JS only after our layer rendered — graceful fallback)
+   ============================================ */
+
+/* Hide the dangerous clear-all X — clear-all stays inside the filter popover */
+.st-lc-filters .filter-x-button {
+    display: none !important;
+}
+
+/* Hide native sort pair only when our combined button is in place */
+.sort-selector.st-lc-sort > .btn-group {
+    display: none !important;
+}
+
+.st-lc-caret {
+    font-size: 10px;
+    margin-left: 4px;
+    opacity: 0.6;
+}
+
+.st-sort-button .st-sort-arrow {
+    margin-left: 4px;
+    opacity: 0.8;
+}
+
+/* Sort menu — same patterns as .fp-submenu-dropdown */
+.st-sort-menu {
+    position: fixed;
+    background: var(--popover-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: var(--shadow-lg);
+    padding: 6px;
+    z-index: 1030;
+    min-width: 220px;
+    display: flex;
+    flex-direction: column;
+}
+
+.st-sort-menu-title {
+    padding: 6px 10px 4px;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.st-sort-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 4px;
+    font-size: 13.5px;
+    color: var(--text-color) !important;
+    text-decoration: none !important;
+    transition: background 0.12s ease;
+}
+
+.st-sort-item:hover {
+    background: var(--fg-hover-color);
+    text-decoration: none !important;
+}
+
+.st-sort-check {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.st-sort-divider {
+    height: 1px;
+    background: var(--border-color);
+    margin: 6px 4px;
+}
+
+.st-sort-dir {
+    display: flex;
+    gap: 4px;
+    padding: 2px 4px 4px;
+}
+
+.st-sort-dir-btn {
+    flex: 1;
+    padding: 6px 8px;
+    font-size: 12.5px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease;
+}
+
+.st-sort-dir-btn:hover {
+    background: var(--fg-hover-color);
+    color: var(--text-color);
+}
+
+.st-sort-dir-btn.active {
+    background: var(--subtle-fg, var(--fg-hover-color));
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* Mobile ≤768px: compress to icon/arrow only */
+@media (max-width: 768px) {
+    .st-lc-filters .filter-button .button-label {
+        display: none;
+    }
+    .st-sort-button .st-sort-field {
+        display: none;
+    }
+    .st-sort-menu {
+        left: 8px !important;
+        right: 8px;
+        min-width: 0;
+    }
+}
