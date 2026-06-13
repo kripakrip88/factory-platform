@@ -3307,11 +3307,15 @@ html[data-theme="dark"] .fp-module-bar {
 }
 
 /* Neutral, less attention-grabbing borders on list-header controls
-   (filter/sort buttons + compacted icon buttons) — the default #E3E8EE reads
-   too bright. Match the muted tone of the filter input fields. */
+   (filter/sort buttons, compacted icon buttons, the ≈ operator toggles, and
+   the refresh / "…" actions) — the default #E3E8EE reads too bright and isn't
+   adapted to dark. Match the muted tone of the filter input fields. */
 .filter-section.st-lc-filters .filter-button,
 .sort-selector.st-lc-sort .st-sort-button,
-.btn.ellipsis.st-lc-iconbtn {
+.btn.ellipsis.st-lc-iconbtn,
+.page-form .match-type-dropdown-btn,
+.page-actions .icon-btn,
+.page-actions .menu-more-button {
     border-color: var(--border-color);
     color: var(--text-muted);
     box-shadow: none;
@@ -3319,7 +3323,10 @@ html[data-theme="dark"] .fp-module-bar {
 
 .filter-section.st-lc-filters .filter-button:hover,
 .sort-selector.st-lc-sort .st-sort-button:hover,
-.btn.ellipsis.st-lc-iconbtn:hover {
+.btn.ellipsis.st-lc-iconbtn:hover,
+.page-form .match-type-dropdown-btn:hover,
+.page-actions .icon-btn:hover,
+.page-actions .menu-more-button:hover {
     border-color: var(--dark-border-color, var(--border-color));
     color: var(--text-color);
 }
