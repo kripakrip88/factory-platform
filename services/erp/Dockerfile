@@ -1,4 +1,9 @@
-FROM frappe/erpnext:v16
+# ТОЧНЫЙ пин версии (не плавающий :v16). Линейка :v16 на 2026-06 несёт битую пару
+# erpnext 16.22.0 + frappe 16.20.0: erpnext вызывает grid.set_column_disp_in_list_view,
+# которого нет ни в одном релизе frappe 16 → форма Work Order не рендерится.
+# v16.21.1 — последняя согласованная пара (erpnext 16.21.1 + frappe 16.20.0).
+# frappe и erpnext обновляются ТОЛЬКО парой; менять этот тег осознанно, с migrate.
+FROM frappe/erpnext:v16.21.1
 
 USER frappe
 
@@ -27,4 +32,12 @@ RUN for f in \
         echo "Patched nginx template: $f"; \
     fi; \
 done; exit 0
+
+# Редирект корня на /desk: "/" для залогиненных отдаёт легаси-лаунчер модулей,
+# hooks home_page его не перекрывает (Desk-страница рендерится в обход website-роутов).
+RUN if [ -f /templates/nginx/frappe.conf.template ]; then \
+        sed -i '/root \/home\/frappe\/frappe-bench\/sites;/a\\n\tlocation = / {\n\t\treturn 302 /desk;\n\t}' \
+            /templates/nginx/frappe.conf.template && \
+        echo "Patched: / -> /desk redirect"; \
+    fi
 USER frappe
