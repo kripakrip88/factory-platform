@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v90";
+const SAAS_THEME_BUILD = "v91";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -794,6 +794,39 @@ saas_theme.list_controls = {
 		if (!lv) return;
 		this.setup_filter_button(lv);
 		this.setup_sort_button(lv);
+		this.compact_header_buttons();
+	},
+
+	/* ----- Compact secondary header buttons to icons ----- */
+
+	compact_header_buttons() {
+		// "Представление списка" — text lives in .custom-btn-group-label, hide via CSS.
+		// Just tag the button and add a tooltip.
+		$(".btn.ellipsis").each(function () {
+			const $btn = $(this);
+			const $label = $btn.find(".custom-btn-group-label");
+			if ($label.length && !$btn.hasClass("st-lc-iconbtn")) {
+				$btn.addClass("st-lc-iconbtn").attr("title", $label.text().trim());
+			}
+		});
+
+		// "Сохранённые фильтры" — text is a bare text node, no icon. Wrap text in a
+		// hideable span and prepend a bookmark icon (once).
+		$(".btn.ellipsis").each(function () {
+			const $btn = $(this);
+			if ($btn.find(".custom-btn-group-label").length) return; // that's the list-view btn
+			if ($btn.hasClass("st-lc-saved")) return;
+			// Find the bare text node holding the label
+			const node = Array.from(this.childNodes).find(
+				(n) => n.nodeType === 3 && n.textContent.trim().length
+			);
+			if (!node) return;
+			const text = node.textContent.trim();
+			$(node).replaceWith(`<span class="st-lc-saved-label">${frappe.utils.escape_html(text)}</span>`);
+			const icon = frappe.utils.icon("bookmark", "sm", "", "", "", true);
+			$btn.prepend(`<span class="st-lc-saved-icon">${icon}</span>`);
+			$btn.addClass("st-lc-iconbtn st-lc-saved").attr("title", text);
+		});
 	},
 
 	/* ----- Filters: relabel native button, hide only the X ----- */

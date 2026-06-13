@@ -3305,3 +3305,21 @@ html[data-theme="dark"] .fp-module-bar {
         min-width: 0;
     }
 }
+
+/* ===== Compact secondary header buttons to icons ===== */
+/* "Представление списка": hide text label, keep view icon + caret */
+.btn.ellipsis.st-lc-iconbtn .custom-btn-group-label,
+.btn.ellipsis.st-lc-saved .st-lc-saved-label {
+    display: none !important;
+}
+
+.btn.ellipsis.st-lc-iconbtn {
+    padding-left: 8px;
+    padding-right: 8px;
+}
+
+.btn.ellipsis.st-lc-saved .st-lc-saved-icon {
+    display: inline-flex;
+    align-items: center;
+    margin-right: 2px;
+}
