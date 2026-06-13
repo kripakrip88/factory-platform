@@ -1,0 +1,15 @@
+# Креды и любые данные ящика — НИКОГДА в git
+.env
+*.env
+secrets*
+# Скачанные/временные письма и вложения
+tmp/
+emails/
+attachments/
+*.eml
+*.mbox
+raw/
+# Питон-окружение
+venv/
+__pycache__/
+*.pyc

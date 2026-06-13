@@ -1,0 +1,3 @@
+# Минимум зависимостей. IMAP/email/HTTP — на stdlib.
+# pdfminer.six — только для определения текстового слоя в PDF (Блок 3).
+pdfminer.six==20240706
