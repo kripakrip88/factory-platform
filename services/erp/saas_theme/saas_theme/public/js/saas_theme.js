@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v103";
+const SAAS_THEME_BUILD = "v104";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -174,7 +174,7 @@ saas_theme.sidebar = {
 		this.module_bar_built = $('.fp-module-bar').length > 0;
 		this.update_module_bar_active();
 
-		const current_ws = frappe.app.sidebar?.sidebar_title;
+		const current_ws = this.resolve_workspace(frappe.app.sidebar?.sidebar_title);
 		if (current_ws && current_ws !== 'Desk') this.show_submenu(current_ws);
 	},
 
@@ -185,8 +185,20 @@ saas_theme.sidebar = {
 		$(".fp-bar-theme").html(icon);
 	},
 
+	// Инбокс Communication мы поместили в подменю CRM — значит на его маршруте
+	// держим контекст CRM, а не воркспейс «Email», который подставляет Frappe.
+	is_email_inbox_route() {
+		const r = frappe.get_route() || [];
+		return r[0] === 'List' && r[1] === 'Communication';
+	},
+
+	resolve_workspace(ws) {
+		if (this.is_email_inbox_route()) return 'CRM';
+		return ws;
+	},
+
 	update_module_bar_active() {
-		const current = (frappe.app.sidebar?.sidebar_title || '').toLowerCase();
+		const current = (this.resolve_workspace(frappe.app.sidebar?.sidebar_title) || '').toLowerCase();
 		const me = this;
 		$('.fp-module-item').each(function () {
 			const label = $(this).data('workspace') || '';
@@ -648,7 +660,7 @@ saas_theme.sidebar = {
 				me.build_module_bar();
 				me.update_module_bar_active();
 				me.toggle_module_bar_visibility();
-				const ws = frappe.app?.sidebar?.sidebar_title;
+				const ws = me.resolve_workspace(frappe.app?.sidebar?.sidebar_title);
 				if (ws && ws !== 'Desk') me.show_submenu(ws);
 			}, 50);
 		});
@@ -658,6 +670,11 @@ saas_theme.sidebar = {
 				me.build_module_bar();
 				me.update_module_bar_active();
 				me.toggle_module_bar_visibility();
+				// На маршруте инбокса Frappe мог подставить подменю «Email» —
+				// принудительно держим CRM-контекст.
+				if (me.is_email_inbox_route()) {
+					me.show_submenu('CRM');
+				}
 				me.update_submenu_active();
 				$('.fp-submenu-dropdown').remove();
 			}, 100);
