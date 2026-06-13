@@ -3506,3 +3506,31 @@ html[data-theme="dark"] .fp-module-bar {
     width: auto !important;
     table-layout: auto !important;
 }
+
+/* Тёмная тема: письмо на тёмной поверхности со светлым текстом.
+   Инлайн-фоны письма (часто белые) обнуляем, чтобы не было светлых островов
+   с невидимым текстом; фоновые КАРТИНКИ (баннеры) сохраняем. */
+html[data-theme="dark"] .st-mail-body .ql-editor.read-mode {
+    background: #0F141B !important;
+    color: #C9D1D9 !important;
+    border-color: #30363D !important;
+}
+html[data-theme="dark"] .st-mail-body .ql-editor.read-mode,
+html[data-theme="dark"] .st-mail-body .ql-editor.read-mode p,
+html[data-theme="dark"] .st-mail-body .ql-editor.read-mode span,
+html[data-theme="dark"] .st-mail-body .ql-editor.read-mode div,
+html[data-theme="dark"] .st-mail-body .ql-editor.read-mode td,
+html[data-theme="dark"] .st-mail-body .ql-editor.read-mode li,
+html[data-theme="dark"] .st-mail-body .ql-editor.read-mode h1,
+html[data-theme="dark"] .st-mail-body .ql-editor.read-mode h2,
+html[data-theme="dark"] .st-mail-body .ql-editor.read-mode h3 {
+    color: #C9D1D9 !important;
+}
+/* обнулить сплошные инлайн-фоны (белые коробки писем), картинки оставить */
+html[data-theme="dark"] .st-mail-body .ql-editor.read-mode * {
+    background-color: transparent !important;
+}
+html[data-theme="dark"] .st-mail-body .ql-editor.read-mode a,
+html[data-theme="dark"] .st-mail-body .ql-editor.read-mode a * {
+    color: #6EAAFF !important;
+}
