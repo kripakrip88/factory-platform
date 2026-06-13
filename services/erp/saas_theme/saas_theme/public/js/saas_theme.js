@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v85";
+const SAAS_THEME_BUILD = "v86";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -99,9 +99,11 @@ saas_theme.sidebar = {
 					<div class="fp-bar-action-icon fp-bar-notifications" title="Уведомления">
 						${notif_icon}
 					</div>
+					<div class="fp-bar-action-icon fp-bar-theme" title="Сменить тему"></div>
 				</div>
 			</div>
 		`);
+		this.update_theme_icon();
 
 		$main.prepend(this.$module_bar);
 
@@ -126,7 +128,18 @@ saas_theme.sidebar = {
 			e.stopPropagation();
 			setTimeout(() => {
 				$('.sidebar-notification .item-anchor').first().trigger('click');
+				// The dropdown lives inside the hidden sidebar — move it to body so it's visible
+				const $dd = $('.body-sidebar-container .dropdown-notifications').first();
+				if ($dd.length) {
+					$dd.addClass('fp-notifications-dropdown').appendTo('body');
+				}
 			}, 10);
+		});
+
+		this.$module_bar.find('.fp-bar-theme').on('click', (e) => {
+			e.stopPropagation();
+			this.toggle_theme();
+			this.update_theme_icon();
 		});
 
 		// Flag only after the bar is actually in the DOM
@@ -135,6 +148,13 @@ saas_theme.sidebar = {
 
 		const current_ws = frappe.app.sidebar?.sidebar_title;
 		if (current_ws && current_ws !== 'Desk') this.show_submenu(current_ws);
+	},
+
+	update_theme_icon() {
+		const is_dark = document.documentElement.getAttribute("data-theme-mode") === "dark";
+		// moon = switch to dark (shown in light theme), sun = switch to light
+		const icon = frappe.utils.icon(is_dark ? "sun" : "moon", "sm", "", "", "", true);
+		$(".fp-bar-theme").html(icon);
 	},
 
 	update_module_bar_active() {
@@ -217,7 +237,11 @@ saas_theme.sidebar = {
 			if (item.children && item.children.length) {
 				return `<span class="fp-submenu-item fp-has-dropdown" data-idx="${idx}">${label} <span class="fp-submenu-arrow">▾</span></span>`;
 			}
-			return `<a class="fp-submenu-item" data-idx="${idx}" href="#">${label}</a>`;
+			// Items without a buildable route are not rendered at all
+			const route = me.get_route_for_item(item);
+			if (!route) return '';
+			const route_str = frappe.utils.escape_html(route.join('/'));
+			return `<a class="fp-submenu-item" data-idx="${idx}" data-route="${route_str}" href="#">${label}</a>`;
 		}).join('');
 
 		const $submenu = $(`<div class="fp-submenu-bar">${items_html}</div>`);
@@ -225,12 +249,9 @@ saas_theme.sidebar = {
 
 		$submenu.find('.fp-submenu-item:not(.fp-has-dropdown)').on('click', function(e) {
 			e.preventDefault();
-			const idx = $(this).data('idx');
-			const item = items[idx];
+			const item = items[$(this).data('idx')];
 			const route = me.get_route_for_item(item);
 			if (route) frappe.set_route(...route);
-			$('.fp-submenu-item').removeClass('active');
-			$(this).addClass('active');
 		});
 
 		$submenu.find('.fp-has-dropdown').on('click', function(e) {
@@ -254,6 +275,9 @@ saas_theme.sidebar = {
 		if (was_open) return;
 
 		const me = this;
+		// Only routable children
+		children = children.filter(c => me.get_route_for_item(c));
+		if (!children.length) return;
 		const items_html = children.map(child => {
 			const label = frappe.utils.escape_html(__(child.label || ''));
 			return `<a class="fp-dropdown-item" href="#">${label}</a>`;
@@ -276,19 +300,16 @@ saas_theme.sidebar = {
 	},
 
 	update_submenu_active() {
-		const route = frappe.get_route() || [];
-		const current_doctype = route[1] || '';
+		// Exact match or prefix match only — includes() gives false positives
+		// ("lead" is inside "lead-source") and matches everything for empty routes
+		const current = frappe.get_route_str() || '';
 		$('.fp-submenu-item').each(function() {
-			const idx = $(this).data('idx');
-			$(this).toggleClass('active', false);
-		});
-		// Match by link_to against current route
-		$('.fp-submenu-item[data-idx]').each(function() {
-			const label = $(this).text().trim();
-			// Simple heuristic: active if route contains the doctype name
-			if (current_doctype && label && route.join('/').toLowerCase().includes((current_doctype || '').toLowerCase())) {
-				$(this).addClass('active');
-			}
+			const route = String($(this).attr('data-route') || '');
+			const is_active = route.length > 0 && (
+				current === route ||
+				current.startsWith(route + '/')
+			);
+			$(this).toggleClass('active', is_active);
 		});
 	},
 

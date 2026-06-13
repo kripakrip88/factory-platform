@@ -3144,3 +3144,38 @@ html[data-theme="dark"] .fp-module-item.active::after {
         font-size: 13px;
     }
 }
+
+/* ===== Notifications dropdown — re-parented to body (sidebar is hidden) ===== */
+.fp-notifications-dropdown {
+    position: fixed !important;
+    top: calc(var(--fp-module-bar-height) + 6px) !important;
+    right: 12px !important;
+    left: auto !important;
+    bottom: auto !important;
+    z-index: 1040;
+    width: 380px;
+    max-width: calc(100vw - 24px);
+}
+
+.fp-notifications-dropdown .notifications-list {
+    position: static !important;
+    width: 100%;
+    max-height: 70vh;
+    overflow-y: auto;
+    background: var(--popover-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: var(--shadow-lg);
+}
+
+/* ===== Dark theme: dashboard widget titles readability ===== */
+/* .widget-title computes to #30363D (--gray-600) — unreadable on dark bg */
+html[data-theme="dark"] .widget .widget-title,
+html[data-theme="dark"] .widget-head .widget-title {
+    color: var(--text-color) !important;
+}
+
+/* Slightly stronger separation between module bar and content in dark theme */
+html[data-theme="dark"] .fp-module-bar {
+    border-bottom: 1px solid #1F2937;
+}
