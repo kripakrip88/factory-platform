@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v102";
+const SAAS_THEME_BUILD = "v103";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -847,11 +847,13 @@ saas_theme.list_controls = {
 
 	try_render() {
 		const lv = this.get_list_view();
-		if (!lv) return;
-		this.setup_filter_button(lv);
-		this.setup_sort_button(lv);
-		this.compact_header_buttons();
-		this.setup_shelf_filter(lv);
+		if (lv) {
+			this.setup_filter_button(lv);
+			this.setup_sort_button(lv);
+			this.compact_header_buttons();
+		}
+		// Фильтр по полкам нужен и на инбоксе (view_name === 'Inbox', не 'List')
+		this.setup_shelf_filter(window.cur_list);
 	},
 
 	/* ----- Быстрый фильтр по полкам классификации (только Communication) ----- */
@@ -866,11 +868,13 @@ saas_theme.list_controls = {
 	],
 
 	setup_shelf_filter(lv) {
-		if (lv.doctype !== "Communication") return;
+		if (!lv || lv.doctype !== "Communication") return;
+		if (!lv.$filter_section || !lv.$filter_section.length || !lv.filter_area) return;
 		// поле классификации существует?
 		const has_field = frappe.meta.has_field("Communication", "custom_claude_classification");
 		if (!has_field) return;
-		if (lv.$filter_section.closest(".page-form").find(".st-shelf-filter").length) return;
+		const $pf = lv.$filter_section.closest(".page-form");
+		if ($pf.next(".st-shelf-filter").length) return;
 
 		const me = this;
 		const chips = this.SHELVES.map((s) => {
