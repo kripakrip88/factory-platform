@@ -3273,9 +3273,12 @@ html[data-theme="dark"] .fp-module-bar {
     font-weight: 600;
 }
 
-/* Align Filters and Sort buttons on one line */
+/* Align Filters and Sort buttons on one line, pinned to the top row of fields.
+   Standard filter fields can wrap to two rows — without flex-start the buttons
+   sink to the vertical middle of that two-row block. */
 .filter-section.st-lc-filters {
     align-items: center;
+    align-self: flex-start;
     gap: 8px;
 }
 
