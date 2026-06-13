@@ -3179,3 +3179,8 @@ html[data-theme="dark"] .widget-head .widget-title {
 html[data-theme="dark"] .fp-module-bar {
     border-bottom: 1px solid #1F2937;
 }
+
+/* Global "Отмена" button next to Save on new-document forms */
+.standard-actions .st-cancel-btn {
+    margin-right: 6px;
+}

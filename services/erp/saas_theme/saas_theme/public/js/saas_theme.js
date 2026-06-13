@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v97";
+const SAAS_THEME_BUILD = "v98";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -41,26 +41,28 @@ $(document).ready(function () {
 
 	// Global "Отмена" button on every NEW document form — replaces the per-doctype
 	// Client Scripts (previously only Lead/Opportunity). form-refresh fires with frm.
-	// Deferred: Frappe hides btn_secondary later in the same refresh cycle, so we
-	// set + force-show AFTER its header render settles.
+	// We use our OWN button next to Save (.st-cancel-btn) rather than the page's
+	// secondary action: heavier forms (Quotation/BOM/PO) hide btn_secondary in a
+	// later refresh cycle, but our standalone button persists. Deferred 50ms so it
+	// lands after Frappe's header render.
 	$(document).on("form-refresh", function (e, frm) {
-		if (!frm || !frm.page) return;
+		if (!frm || !frm.page || !frm.page.btn_primary) return;
 		setTimeout(function () {
-			const $sec = frm.page.btn_secondary;
-			const label = __("Отмена");
-			const cur = $sec ? $sec.text().trim() : "";
+			const $primary = frm.page.btn_primary;
+			if (!$primary || !$primary.length) return;
+			const $actions = $primary.parent();
+			const $existing = $actions.find(".st-cancel-btn");
 			if (frm.is_new()) {
-				// Set ours if no secondary action, or refresh ours if it got hidden —
-				// never clobber a doctype's own (cur != '' && cur != label).
-				if (!cur || cur === label) {
-					frm.page.set_secondary_action(label, function () {
+				if (!$existing.length) {
+					const $btn = $('<button class="btn btn-secondary btn-default btn-sm st-cancel-btn">' + frappe.utils.escape_html(__("Отмена")) + "</button>");
+					$btn.on("click", function () {
 						frappe.set_route("List", frm.doctype);
 					});
-					frm.page.btn_secondary.show();
+					$primary.before($btn);
 				}
-			} else if ($sec && cur === label) {
-				// Saved → remove our button (only ours, matched by label)
-				frm.page.clear_secondary_action();
+			} else {
+				// Saved or existing doc → remove ours
+				$existing.remove();
 			}
 		}, 50);
 	});
