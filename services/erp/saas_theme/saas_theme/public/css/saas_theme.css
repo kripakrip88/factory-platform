@@ -3002,14 +3002,14 @@ html[data-theme="dark"] .fp-module-bar {
 
 .fp-module-item.active {
     /* Colored highlight — primary-tinted (4D94FF) instead of flat white */
-    background: rgba(77, 148, 255, 0.18);
+    background: rgba(77, 148, 255, 0.18) !important;
     color: #ffffff;
 }
 
 .fp-module-item.active .st-rail-icon svg,
 .fp-module-item.active .st-rail-icon .icon {
-    color: #6EAAFF;
-    stroke: #6EAAFF;
+    color: #6EAAFF !important;
+    stroke: #6EAAFF !important;
 }
 
 .fp-module-item.active::after {
