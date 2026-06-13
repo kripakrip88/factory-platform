@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v100";
+const SAAS_THEME_BUILD = "v101";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -220,6 +220,8 @@ saas_theme.sidebar = {
 	},
 
 	get_route_for_item(item) {
+		// Синтетические пункты (например «Электронная почта») несут готовый маршрут
+		if (item.custom_route) return item.custom_route;
 		if (!item.link_to && !item.url) return null;
 		switch (item.link_type) {
 			case 'DocType': return ['List', item.link_to];
@@ -264,7 +266,19 @@ saas_theme.sidebar = {
 			}
 		}
 		// Filter out section headers with no children and no link
-		return result.filter(i => i.link_to || i.url || (i.children && i.children.length));
+		const filtered = result.filter(i => i.link_to || i.url || (i.children && i.children.length));
+
+		// Внедряем «Электронная почта» в CRM — между «Главная» (idx 0) и остальными,
+		// маршрут на штатный инбокс Communication.
+		if (key === 'crm') {
+			const email_item = {
+				label: 'Электронная почта',
+				custom_route: ['List', 'Communication', 'Inbox'],
+			};
+			const pos = filtered.length ? 1 : 0; // после «Главная», если она есть
+			filtered.splice(pos, 0, email_item);
+		}
+		return filtered;
 	},
 
 	show_submenu(workspace_name) {
