@@ -22,13 +22,11 @@ def execute():
     from crm_setup import execute as crm
     crm()
 
-    # 2. UX: кнопка «Отмена» на новых документах
-    print("\n[2/3] Client Scripts — Cancel button...")
-    from client_scripts.cancel_button import execute as cancel_btn
-    cancel_btn()
+    # Кнопка «Отмена» теперь глобальная — в saas_theme.js (form-refresh hook),
+    # покрывает ВСЕ DocType. Per-doctype Client Scripts удалены.
 
-    # 3. UX: поиск + уведомления в рейле, скрыть из сайдбара
-    print("\n[3/3] Client Scripts — Rail icons...")
+    # 2. UX: поиск + уведомления в рейле, скрыть из сайдбара
+    print("\n[2/2] Client Scripts — Rail icons...")
     from client_scripts.rail_icons import execute as rail_icons
     rail_icons()
 

@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v87";
+const SAAS_THEME_BUILD = "v96";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -37,6 +37,24 @@ $(document).ready(function () {
 			saas_theme.sidebar.init();
 		}
 		saas_theme.sidebar.setup_user_menu();
+	});
+
+	// Global "Отмена" button on every NEW document form — replaces the per-doctype
+	// Client Scripts (previously only Lead/Opportunity). form-refresh fires with frm.
+	$(document).on("form-refresh", function (e, frm) {
+		if (!frm || !frm.page) return;
+		const $sec = frm.page.btn_secondary;
+		if (frm.is_new()) {
+			// Only set if no secondary action exists — don't clobber a doctype's own
+			if (!$sec || !$sec.text().trim()) {
+				frm.page.set_secondary_action(__("Отмена"), function () {
+					frappe.set_route("List", frm.doctype);
+				});
+			}
+		} else if ($sec && $sec.text().trim() === __("Отмена")) {
+			// Saved → remove our button (only ours, matched by label)
+			frm.page.clear_secondary_action();
+		}
 	});
 });
 
