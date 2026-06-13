@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v89";
+const SAAS_THEME_BUILD = "v90";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -181,7 +181,8 @@ saas_theme.sidebar = {
 		if (!item.link_to && !item.url) return null;
 		switch (item.link_type) {
 			case 'DocType': return ['List', item.link_to];
-			case 'Workspace': return [item.link_to];
+			// Workspace pages live at slugified routes: "Frappe CRM" → /desk/frappe-crm
+			case 'Workspace': return [frappe.router.slug(item.link_to)];
 			case 'Page': return [item.link_to];
 			case 'Dashboard': return ['dashboard-view', item.link_to];
 			case 'Report': return ['query-report', item.link_to];
