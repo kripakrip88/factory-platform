@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v107";
+const SAAS_THEME_BUILD = "v108";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -232,11 +232,12 @@ saas_theme.sidebar = {
 		$(".fp-bar-theme").html(icon);
 	},
 
-	// Инбокс Communication мы поместили в подменю CRM — значит на его маршруте
-	// держим контекст CRM, а не воркспейс «Email», который подставляет Frappe.
+	// Communication (инбокс List/Communication И форма письма Form/Communication)
+	// держим в контексте CRM — там пункт «Электронная почта»; подменю CRM не
+	// должно пропадать/подменяться воркспейсом «Email».
 	is_email_inbox_route() {
 		const r = frappe.get_route() || [];
-		return r[0] === 'List' && r[1] === 'Communication';
+		return r[1] === 'Communication';
 	},
 
 	resolve_workspace(ws) {
