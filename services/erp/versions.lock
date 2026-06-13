@@ -1,0 +1,5 @@
+# Точные версии frappe и erpnext, согласованная пара (образ frappe/erpnext:v16.21.1).
+# frappe и erpnext обновляются ТОЛЬКО парой. Менять вместе с тегом в services/erp/Dockerfile
+# и прогонять bench migrate. CI сверяет эти значения с тем, что реально в контейнере.
+frappe=16.20.0
+erpnext=16.21.1
