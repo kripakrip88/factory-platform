@@ -1,0 +1,40 @@
+[
+ {
+  "doctype": "Workspace",
+  "name": "Калькуляторы",
+  "label": "Калькуляторы",
+  "title": "Калькуляторы",
+  "module": "Metal Calculator",
+  "public": 1,
+  "is_hidden": 0,
+  "icon": "calculator",
+  "indicator_color": null,
+  "for_user": "",
+  "sequence_id": 100.0,
+  "content": "[{\"id\":\"hdr_calc\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Калькуляторы</b></span>\",\"col\":12}},{\"id\":\"sc_metal\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Калькулятор металла\",\"col\":4}},{\"id\":\"sc_nesting\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Раскрой металла\",\"col\":4}},{\"id\":\"sc_addons\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Доборные элементы\",\"col\":4}}]",
+  "links": [],
+  "shortcuts": [
+   {
+    "type": "Page",
+    "label": "Калькулятор металла",
+    "link_to": "metal_calculator",
+    "color": "Blue",
+    "doc_view": ""
+   },
+   {
+    "type": "Page",
+    "label": "Раскрой металла",
+    "link_to": "module_in_progress",
+    "color": "Grey",
+    "doc_view": ""
+   },
+   {
+    "type": "Page",
+    "label": "Доборные элементы",
+    "link_to": "module_in_progress",
+    "color": "Grey",
+    "doc_view": ""
+   }
+  ]
+ }
+]

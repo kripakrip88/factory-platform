@@ -1,0 +1,19 @@
+{
+ "content": null,
+ "creation": "2026-06-14 12:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Page",
+ "icon": "calculator",
+ "idx": 0,
+ "modified": "2026-06-14 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Metal Calculator",
+ "name": "metal_calculator",
+ "owner": "Administrator",
+ "page_name": "metal_calculator",
+ "roles": [],
+ "script": null,
+ "standard": "Yes",
+ "system_page": 0,
+ "title": "Калькулятор металла"
+}
