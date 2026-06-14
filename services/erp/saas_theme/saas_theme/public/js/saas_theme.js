@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v126";
+const SAAS_THEME_BUILD = "v127";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -36,6 +36,11 @@ const SAAS_THEME_BUILD = "v126";
 		let h = 0;
 		for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360;
 		return "hsl(" + h + ", 52%, 45%)"; // алгоритмический цвет, не новый hex
+	};
+	// "2026-06-13 11:05:29" → "13.06 11:05" (компактная абсолютная дата/время)
+	saas_theme.short_datetime = function (s) {
+		const m = String(s).match(/(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/);
+		return m ? m[3] + "." + m[2] + " " + m[4] + ":" + m[5] : String(s || "");
 	};
 
 	// add_fields — чтобы seen/sender/communication_date попали в cur_list.data.
@@ -184,6 +189,17 @@ saas_theme.reshape_mail = function (frm) {
 	frm.page.wrapper.find(".page-actions .btn").filter(function () {
 		return $(this).text().trim() === "Ответить" || $(this).text().trim() === "Reply";
 	}).addClass("st-mail-reply");
+
+	// 1d. Отметить письмо прочитанным (seen=1) при открытии — чтобы в списке оно
+	//     стало обычным (не жирным). Пишем в обход валидации (битые адреса).
+	if (frm.doc && frm.doc.name && !frm.doc.seen && !frm._st_seen_marked) {
+		frm._st_seen_marked = true;
+		frappe.call({
+			method: "saas_theme.api.mark_seen",
+			args: { name: frm.doc.name },
+			callback: function () { frm.doc.seen = 1; },
+		});
+	}
 
 	// 2. Тело письма — обуздать ширину/картинки/пустоту (CSS по .st-mail-body)
 	frm.fields_dict.content.$wrapper.addClass("st-mail-body");
@@ -1038,6 +1054,11 @@ saas_theme.list_controls = {
 		//   скрытие крестика доезжают и до доски сделок (единый вид с лидом).
 		if (!lv || !["List", "Inbox", "Kanban"].includes(lv.view_name)) return null;
 		if (!lv.$filter_section || !lv.$filter_section.length) return null;
+		// КРИТИЧНО: на форме cur_list остаётся стале-списком (не очищается). Без
+		// этой проверки list_controls (особенно compact_header_buttons) протекал
+		// на форму письма и превращал кнопки «Ответить/Действия/Создать» в
+		// иконки-закладки. Работаем только когда активная страница — список.
+		if (!frappe.get_route || frappe.get_route()[0] !== "List") return null;
 		return lv;
 	},
 
@@ -1046,7 +1067,7 @@ saas_theme.list_controls = {
 		if (lv) {
 			this.setup_filter_button(lv);
 			this.setup_sort_button(lv);
-			this.compact_header_buttons();
+			this.compact_header_buttons(lv);
 		}
 		// Инбокс: чинить плохой дефолт сортировки (по классификации → дата письма)
 		this.fix_inbox_sort(window.cur_list);
@@ -1127,9 +1148,15 @@ saas_theme.list_controls = {
 
 			if (!doc.seen) $subj.addClass("st-mail-unseen");
 
-			if (doc.communication_date) {
-				const dt = frappe.datetime.str_to_user(doc.communication_date);
-				$subj.append('<span class="st-mail-rowdate">' + frappe.utils.escape_html(dt) + "</span>");
+			// Дата — отдельный правый столбец: нативный .frappe-timestamp («1 д»
+			// относительный) делаем абсолютным коротким (13.06 11:05) и снимаем
+			// класс, чтобы Frappe не перекрашивал обратно в относительный.
+			const $ts = $r.find(".frappe-timestamp");
+			if ($ts.length) {
+				const raw = $ts.attr("data-timestamp") || doc.communication_date;
+				if (raw) {
+					$ts.text(saas_theme.short_datetime(raw)).removeClass("frappe-timestamp").addClass("st-mail-rowdate");
+				}
 			}
 		});
 
@@ -1278,10 +1305,14 @@ saas_theme.list_controls = {
 
 	/* ----- Compact secondary header buttons to icons ----- */
 
-	compact_header_buttons() {
+	compact_header_buttons(lv) {
+		// Скоуп — страница активного списка (lv.page.wrapper). Глобальный
+		// $(".btn.ellipsis") калечил кнопки формы письма (Ответить/Действия/
+		// Создать тоже .btn.ellipsis) — оборачивал текст и вешал закладку-иконку.
+		const $scope = lv && lv.page && lv.page.wrapper ? $(lv.page.wrapper) : $(document);
 		// "Представление списка" — text lives in .custom-btn-group-label, hide via CSS.
 		// Just tag the button and add a tooltip.
-		$(".btn.ellipsis").each(function () {
+		$scope.find(".btn.ellipsis").each(function () {
 			const $btn = $(this);
 			const $label = $btn.find(".custom-btn-group-label");
 			if ($label.length && !$btn.hasClass("st-lc-iconbtn")) {
@@ -1291,7 +1322,7 @@ saas_theme.list_controls = {
 
 		// "Сохранённые фильтры" — text is a bare text node, no icon. Wrap text in a
 		// hideable span and prepend a bookmark icon (once).
-		$(".btn.ellipsis").each(function () {
+		$scope.find(".btn.ellipsis").each(function () {
 			const $btn = $(this);
 			if ($btn.find(".custom-btn-group-label").length) return; // that's the list-view btn
 			if ($btn.hasClass("st-lc-saved")) return;
