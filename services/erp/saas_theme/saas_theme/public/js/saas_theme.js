@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v111";
+const SAAS_THEME_BUILD = "v112";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -94,6 +94,10 @@ saas_theme.CRM_HIDDEN_TABS = ["activities_tab", "notes_tab", "dashboard_tab"];
 
 saas_theme.reshape_crm_card = function (frm) {
 	const $w = frm.$wrapper;
+
+	// Маркер карточки CRM — для scoped-CSS (читаемость тёмной темы: подписи/лента).
+	// Только лид/сделка, не задевает другие формы и Покупателя.
+	$w.addClass("fp-crm-card");
 
 	// 1. Лента истории: родной .new-timeline лежит внутри вкладки «Операции»
 	//    (#<dt>-activities_tab). Переносим её узел в всегда-видимый блок под
