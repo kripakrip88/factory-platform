@@ -15,7 +15,11 @@ import json
 import frappe
 
 KANBAN_BOARD = "Продажи"
-CARD_FIELDS = ["mw_product_categories", "mw_estimated_volume", "opportunity_amount", "modified"]
+# Категория (mw_product_categories) — Table MultiSelect; Frappe-канбан НЕ выводит
+# значение child-таблицы на карточке (показывал пустой ярлык). Ограничение
+# движка → на карточке не выводим. Заголовок = организация (customer_name),
+# поля = объём + сумма + дата касания.
+CARD_FIELDS = ["mw_estimated_volume", "opportunity_amount", "modified"]
 
 
 def set_title_field():
