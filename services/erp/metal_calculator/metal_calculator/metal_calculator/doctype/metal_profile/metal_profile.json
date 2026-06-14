@@ -1,0 +1,89 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:{profile_type}-{size_label}",
+ "creation": "2026-06-14 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "profile_type",
+  "size_label",
+  "gost",
+  "mass_per_meter"
+ ],
+ "fields": [
+  {
+   "fieldname": "profile_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Тип сортамента",
+   "options": "Арматура\nДвутавр\nШвеллер\nУголок равнополочный\nУголок неравнополочный\nТруба круглая\nТруба профильная\nКруг\nКвадрат\nШестигранник",
+   "reqd": 1
+  },
+  {
+   "fieldname": "size_label",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Типоразмер (как в ГОСТ)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "gost",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "ГОСТ"
+  },
+  {
+   "fieldname": "mass_per_meter",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Масса 1 м, кг",
+   "precision": "3",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-06-14 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Metal Calculator",
+ "name": "Metal Profile",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Sales User"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
