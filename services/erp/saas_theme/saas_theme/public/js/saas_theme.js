@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v113";
+const SAAS_THEME_BUILD = "v114";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -260,6 +260,9 @@ saas_theme.sidebar = {
 			me.switch_workspace(ws_name);
 			me.update_module_bar_active();
 			me.show_submenu(ws_name);
+			// Навигация на сам воркспейс (дашборд модуля) — клик по модулю должен
+			// вести в раздел, а не только переключать строку подменю.
+			if (ws_name) frappe.set_route('Workspaces', ws_name);
 		});
 
 		this.$module_bar.find('.fp-bar-search').on('click', (e) => {
