@@ -130,13 +130,13 @@
     },
     {
       "parameters": {
-        "method": "PUT",
-        "url": "=http://155.212.143.179:8080/api/resource/Communication/{{ $json.name }}",
+        "method": "POST",
+        "url": "=http://155.212.143.179:8080/api/method/saas_theme.api.set_classification",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ custom_claude_classification: $json.shelf, custom_claude_reason: $json.reason }) }}",
+        "jsonBody": "={{ JSON.stringify({ name: $json.name, classification: $json.shelf, reason: $json.reason }) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",

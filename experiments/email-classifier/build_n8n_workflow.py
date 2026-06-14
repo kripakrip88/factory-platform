@@ -117,12 +117,16 @@ nodes = [
      "type": "n8n-nodes-base.code", "typeVersion": 2,
      "name": "Разобрать ответ", "position": [1200, 300], "id": "n6"},
 
+    # Запись через whitelisted-метод saas_theme.api.set_classification —
+    # пишет custom-поля в обход валидации Communication. REST PUT делал полное
+    # сохранение документа → падал с InvalidEmailAddressError (HTTP 417) на
+    # письмах с кривым адресом отправителя, и такие письма не классифицировались.
     {"parameters": {
-        "method": "PUT",
-        "url": "=" + ERP + "/api/resource/Communication/{{ $json.name }}",
+        "method": "POST",
+        "url": "=" + ERP + "/api/method/saas_theme.api.set_classification",
         "authentication": "genericCredentialType", "genericAuthType": "httpHeaderAuth",
         "sendBody": True, "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ custom_claude_classification: $json.shelf, custom_claude_reason: $json.reason }) }}",
+        "jsonBody": "={{ JSON.stringify({ name: $json.name, classification: $json.shelf, reason: $json.reason }) }}",
         "options": {}},
      "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2,
      "name": "Записать классификацию в ERP", "position": [1440, 300], "id": "n7"},
