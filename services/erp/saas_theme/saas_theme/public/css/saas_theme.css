@@ -3736,10 +3736,14 @@ html[data-theme="dark"] .fp-crm-card .fp-crm-feed .timeline-content {
    КАНБАН-КАРТОЧКА СДЕЛКИ: перенос длинных значений + подсветка данных
    ============================================ */
 
-/* Контейнер полей родной .kanban-card-doc имеет height:42px + overflow:hidden →
-   при переносе значений (категория в 2 строки) обрезал объём/сумму/дату.
-   Снимаем ограничение высоты — показываем все строки. */
+/* Контейнер полей родной .kanban-card-doc зажат `-webkit-line-clamp: 2`
+   (display:-webkit-box) → высота 2 строки (~42px), при переносе значений
+   объём/сумма/дата обрезались/накладывались. Снимаем clamp и фиксируем block —
+   контейнер растёт под все строки, карточка тоже. */
 .kanban-card-doc {
+    display: block !important;
+    -webkit-line-clamp: unset !important;
+    -webkit-box-orient: horizontal !important;
     height: auto !important;
     max-height: none !important;
     overflow: visible !important;
