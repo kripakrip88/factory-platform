@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v117";
+const SAAS_THEME_BUILD = "v118";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -985,8 +985,11 @@ saas_theme.list_controls = {
 
 	get_list_view() {
 		const lv = window.cur_list;
-		// Only standard lists — not reports/kanban/calendar/etc.
-		if (!lv || lv.view_name !== "List") return null;
+		// Standard lists И инбокс почты (Inbox — подкласс ListView с
+		// filter_area/sort_selector/$filter_section). НЕ reports/kanban/calendar.
+		// Раньше гейт был только "List" → причёсанные контролы (фильтры/сортировка
+		// + скрытие крестика) не доезжали до инбокса (разнобой с лидом).
+		if (!lv || (lv.view_name !== "List" && lv.view_name !== "Inbox")) return null;
 		if (!lv.$filter_section || !lv.$filter_section.length) return null;
 		return lv;
 	},
@@ -1000,8 +1003,67 @@ saas_theme.list_controls = {
 		}
 		// Фильтр по полкам нужен и на инбоксе (view_name === 'Inbox', не 'List')
 		this.setup_shelf_filter(window.cur_list);
+		// Папки-вкладки Входящие/Отправленные (только инбокс Communication)
+		this.setup_folder_tabs(window.cur_list);
+		// Скрыть лишние стандартные фильтры-строки (per-doctype)
+		this.hide_standard_filters(window.cur_list);
 		// Скрыть глючное «Представление отчёта» из меню (CRM-списки)
 		this.hide_report_view(window.cur_list);
+	},
+
+	/* ----- Скрыть лишние стандартные фильтры-строки (per-doctype) -----
+	   Шум: ID, тип/медиум коммуникации, и т.п. Оставляем только осмысленные
+	   (KEEP). Скрываем из UI (display:none), фильтрация не ломается. Полки
+	   классификации и папки — отдельные бары, их не трогаем.                  */
+	STANDARD_FILTER_KEEP: {
+		Lead: ["status", "company_name"],
+		Opportunity: ["status", "party_name"],
+		Communication: ["subject"],
+	},
+
+	hide_standard_filters(lv) {
+		if (!lv || !lv.$filter_section || !lv.$filter_section.length) return;
+		const keep = this.STANDARD_FILTER_KEEP[lv.doctype];
+		if (!keep) return;
+		lv.$filter_section.find(".standard-filter-section [data-fieldname]").each(function () {
+			const fn = $(this).attr("data-fieldname");
+			if (fn && keep.indexOf(fn) === -1) {
+				$(this).closest(".frappe-control, .form-group").addClass("st-hide-std-filter");
+			}
+		});
+	},
+
+	/* ----- Папки-вкладки Входящие/Отправленные (инбокс Communication) -----
+	   Фильтруют по sent_or_received. Полка «Спам» (классификация) не дублируется
+	   папкой. Корзина (email_status/Trash) — отдельной задачей, не городим здесь.
+	   Папки (откуда) и полки (что это) — независимые фильтры, сосуществуют.     */
+	FOLDERS: [
+		{ label: "Входящие",     value: "Received" },
+		{ label: "Отправленные", value: "Sent" },
+	],
+
+	setup_folder_tabs(lv) {
+		if (!lv || lv.doctype !== "Communication") return;
+		if (!lv.$filter_section || !lv.$filter_section.length || !lv.filter_area) return;
+		const $pf = lv.$filter_section.closest(".page-form");
+		if ($pf.prev(".st-folder-tabs").length) return; // уже есть
+
+		const me = this;
+		const tabs = this.FOLDERS.map((f) =>
+			`<button type="button" class="st-folder-tab" data-folder="${frappe.utils.escape_html(f.value)}">${frappe.utils.escape_html(f.label)}</button>`
+		).join("");
+		const $bar = $(`<div class="st-folder-tabs">${tabs}</div>`);
+		$pf.before($bar);
+
+		$bar.find(".st-folder-tab").on("click", function () {
+			const folder = $(this).data("folder");
+			$bar.find(".st-folder-tab").removeClass("active");
+			$(this).addClass("active");
+			lv.filter_area.remove("sent_or_received");
+			lv.filter_area.add([["Communication", "sent_or_received", "=", folder]]);
+		});
+		// Входящие активны по умолчанию
+		$bar.find('.st-folder-tab[data-folder="Received"]').addClass("active");
 	},
 
 	/* ----- Скрыть пункт «Представление отчёта» из меню «...» -----
