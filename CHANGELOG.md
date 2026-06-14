@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-06-14
+
+### services/erp — новый app `metal_calculator`
+- [feat] калькулятор веса металлопроката (конструкционная сталь), изолированная frappe-аппа
+- [feat] DocTypes `Metal Profile`, `Metal Sheet Grade`, `Steel Grade` (без Link на стандартные DocType ERP)
+- [feat] seed справочников строго из ГОСТ (118 профилей, 15 толщин листа, 8 марок), идемпотентно
+- [feat] `api.calculate` — расчёт с явной конвертацией мм→м, валидация, без геометрии
+- [feat] Workspace «Калькуляторы» (fixture) + 3 раздела (калькулятор + 2 заглушки)
+- [feat] Page `metal_calculator` (UI, рус.) + Page `module_in_progress` (заглушка)
+- [test] юнит-тесты: якоря 1278/85.2/282.6 кг + контроль конвертации мм→м
+- [build] `Dockerfile`: вшивание аппы в образ; `scripts/install-metal-calculator.sh`
+
 ## 2026-06-11 (3)
 
 ### services/erp-translations

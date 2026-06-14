@@ -14,6 +14,15 @@ RUN cd /home/frappe/frappe-bench && \
     uv pip install --quiet -e apps/saas_theme --python env/bin/python && \
     bench build --app saas_theme
 
+# Копируем metal_calculator (калькулятор веса металлопроката) из монорепозитория.
+# Изолированная аппа: справочники ГОСТ + расчёт + воркспейс «Калькуляторы».
+# Установка на сайт (install-app) — отдельным шагом через scripts/install-metal-calculator.sh.
+COPY --chown=frappe:frappe metal_calculator /home/frappe/frappe-bench/apps/metal_calculator
+
+RUN cd /home/frappe/frappe-bench && \
+    uv pip install --quiet -e apps/metal_calculator --python env/bin/python && \
+    bench build --app metal_calculator
+
 # Скрипт синхронизации assets.json запускается при старте backend контейнера.
 # Решает проблему рассинхрона: volume хранит старый assets.json со старыми
 # хэшами, а новый image содержит пересобранные CSS/JS с новыми хэшами.
