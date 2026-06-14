@@ -3695,3 +3695,39 @@ html[data-theme="dark"] .fp-crm-card .fp-crm-feed .timeline-content {
     outline: none !important;
     box-shadow: 0 0 0 2px var(--outline-gray-4) !important;
 }
+
+/* ============================================
+   ИНБОКС: папки-вкладки + скрытие лишних стандартных фильтров
+   ============================================ */
+
+/* Папки-вкладки Входящие/Отправленные — стиль как полки классификации */
+.st-folder-tabs {
+    display: flex;
+    gap: 6px;
+    padding: 8px 16px 0;
+}
+.st-folder-tab {
+    height: 28px;
+    padding: 0 14px;
+    font-size: 13px;
+    font-weight: 500;
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+.st-folder-tab:hover {
+    color: var(--text-color);
+}
+.st-folder-tab.active {
+    background: var(--subtle-fg, var(--fg-hover-color));
+    color: var(--text-color);
+    border-color: var(--primary-color);
+}
+
+/* Скрытые лишние стандартные фильтры-строки (B1/C) — данные доступны, скрыт вид */
+.st-hide-std-filter {
+    display: none !important;
+}
