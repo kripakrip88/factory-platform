@@ -7,14 +7,14 @@
           "interval": [
             {
               "field": "minutes",
-              "minutesInterval": 15
+              "minutesInterval": 1
             }
           ]
         }
       },
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "name": "Каждые 15 минут",
+      "name": "Каждую минуту",
       "position": [
         0,
         300
@@ -150,7 +150,7 @@
     }
   ],
   "connections": {
-    "Каждые 15 минут": {
+    "Каждую минуту": {
       "main": [
         [
           {

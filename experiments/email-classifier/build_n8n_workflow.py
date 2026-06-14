@@ -79,9 +79,9 @@ FILTERS = json.dumps([
 FIELDS = json.dumps(["name", "subject", "content"], ensure_ascii=False)
 
 nodes = [
-    {"parameters": {"rule": {"interval": [{"field": "minutes", "minutesInterval": 15}]}},
+    {"parameters": {"rule": {"interval": [{"field": "minutes", "minutesInterval": 1}]}},
      "type": "n8n-nodes-base.scheduleTrigger", "typeVersion": 1.2,
-     "name": "Каждые 15 минут", "position": [0, 300], "id": "n1"},
+     "name": "Каждую минуту", "position": [0, 300], "id": "n1"},
 
     {"parameters": {
         "method": "GET", "url": f"{ERP}/api/resource/Communication",
@@ -133,7 +133,7 @@ nodes = [
 ]
 
 connections = {
-    "Каждые 15 минут": {"main": [[{"node": "Новые письма из ERP", "type": "main", "index": 0}]]},
+    "Каждую минуту": {"main": [[{"node": "Новые письма из ERP", "type": "main", "index": 0}]]},
     "Новые письма из ERP": {"main": [[{"node": "По письмам", "type": "main", "index": 0}]]},
     "По письмам": {"main": [[{"node": "Подготовить текст", "type": "main", "index": 0}]]},
     "Подготовить текст": {"main": [[{"node": "Claude классификация (v2)", "type": "main", "index": 0}]]},
