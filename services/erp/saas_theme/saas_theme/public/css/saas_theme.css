@@ -3631,3 +3631,18 @@ html[data-theme="dark"] .st-mail-clampable.st-mail-clamped::after {
 .link-field .awesomplete > ul > [role="option"]:hover {
     background: var(--highlight-color) !important;
 }
+
+/* ============================================
+   ЧИТАЕМОСТЬ ТЁМНОЙ ТЕМЫ — карточка лида/сделки (.fp-crm-card)
+   Диагностика (live, dark): фон/значения/заголовки секций читаемы (#C9D1D9),
+   а ПОДПИСИ полей и текст ленты были --text-muted (#8B949E, контраст ~3.6:1 на
+   #0D1117 — ниже комфортного). Поднимаем тусклый текст до --text-color. Палитра
+   и фон НЕ тронуты; scope только CRM-карточка (другие экраны и Покупатель — как
+   были). Светлая тема не затрагивается (правило только под html[data-theme=dark]).
+   ============================================ */
+html[data-theme="dark"] .fp-crm-card .control-label {
+    color: var(--text-color);
+}
+html[data-theme="dark"] .fp-crm-card .fp-crm-feed .timeline-content {
+    color: var(--text-color);
+}
