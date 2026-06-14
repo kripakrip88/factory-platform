@@ -1,0 +1,287 @@
+[
+  {
+    "updatedAt": "2026-06-14T03:21:34.592Z",
+    "createdAt": "2026-06-14T02:08:15.351Z",
+    "id": "kyOWFTcrKsTYVI9Y",
+    "name": "Автоклассификация писем (v2, смотровой режим)",
+    "description": null,
+    "active": true,
+    "isArchived": false,
+    "nodes": [
+      {
+        "id": "n1",
+        "name": "Каждые 15 минут",
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "position": [
+          0,
+          300
+        ],
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "field": "minutes",
+                "minutesInterval": 1
+              }
+            ]
+          }
+        },
+        "typeVersion": 1.2
+      },
+      {
+        "id": "n2",
+        "name": "Новые письма из ERP",
+        "type": "n8n-nodes-base.httpRequest",
+        "position": [
+          240,
+          300
+        ],
+        "parameters": {
+          "url": "http://155.212.143.179:8080/api/resource/Communication",
+          "method": "GET",
+          "options": {},
+          "sendQuery": true,
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "queryParameters": {
+            "parameters": [
+              {
+                "name": "filters",
+                "value": "[[\"custom_claude_classification\", \"in\", [\"\", null]], [\"email_account\", \"=\", \"PMK Park входящие (тест)\"], [\"sent_or_received\", \"=\", \"Received\"], [\"communication_type\", \"=\", \"Communication\"]]"
+              },
+              {
+                "name": "fields",
+                "value": "[\"name\", \"subject\", \"content\"]"
+              },
+              {
+                "name": "limit_page_length",
+                "value": "20"
+              }
+            ]
+          }
+        },
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "pMDPaRiYDqpPl0sY",
+            "name": "ERPNext API (PMK)"
+          }
+        },
+        "typeVersion": 4.2
+      },
+      {
+        "id": "n3",
+        "name": "По письмам",
+        "type": "n8n-nodes-base.splitOut",
+        "position": [
+          480,
+          300
+        ],
+        "parameters": {
+          "options": {},
+          "fieldToSplitOut": "data"
+        },
+        "typeVersion": 1
+      },
+      {
+        "id": "n4",
+        "name": "Подготовить текст",
+        "type": "n8n-nodes-base.code",
+        "position": [
+          720,
+          300
+        ],
+        "parameters": {
+          "jsCode": "const SYSTEM = \"Ты классифицируешь входящие письма завода металлоконструкций (изготовление на заказ: просчёт → счёт → производство). Сначала определи РОЛЬ отправителя: это КЛИЕНТ (хочет, чтобы МЫ изготовили) или ПОСТАВЩИК/сторонний (предлагает НАМ товар/услугу)? Разложи письмо строго в ОДНУ из 5 полок.\\n\\n1. Новая заявка — КЛИЕНТ просит просчитать/выставить счёт/спрашивает о возможности изготовления (запрос КП, цены, позиции на просчёт).\\n2. Вопрос по заказу — КЛИЕНТ про СВОЙ уже идущий заказ у нас («когда готово», ссылка на свой счёт/спецификацию). Только от клиента про его заказ.\\n3. Поставщик — письмо ОТ поставщика: предлагает НАМ металл/трубы/прокат/метизы/комплектующие/услуги для производства («наличие», «прайс», «остатки», приглашение присылать ЕМУ заявки на закупку).\\n4. Спам — массовая реклама/рассылки НЕ по нашему производству (реклама, SEO, банки, обучение, маркетинг, маркетплейсы), нерелевантные предложения.\\n5. Прочее — служебное, ответы в переписке не про заявки, бухгалтерия, неопределённое.\\n\\nЖёсткие разграничения:\\n- Поставщик vs Вопрос по заказу: письмо ОТ поставщика (наличие/прайс, приглашает присылать ему заявки) — это Поставщик, даже если есть слово «заявка»/«заказ». «Вопрос по заказу» — только клиент про СВОЙ заказ у нас.\\n- Поставщик vs Спам: Поставщик — только профильный (металл/трубы/прокат/метизы/услуги для металлопроизводства). Нерелевантная реклама — Спам.\\n- Игнорируй рекламные вставки внутри тела, если суть — реальный запрос клиента. Вложения ты НЕ видишь; классифицируй по теме+тексту. Если не уверен — «Прочее».\\n\\nОтвет строго JSON: {\\\"shelf\\\":\\\"<одна из 5 точь-в-точь>\\\",\\\"reason\\\":\\\"<1-2 фразы, укажи роль>\\\"}\";\nconst it = $input.item.json;\nconst strip = (h) => String(h||'').replace(/<[^>]+>/g,' ').replace(/\\s+/g,' ').trim();\nconst body = strip(it.content).slice(0,2500);\nreturn { json: { name: it.name, userText: 'Тема: ' + (it.subject||'') + '\\n\\nТекст:\\n' + body, system: SYSTEM } };"
+        },
+        "typeVersion": 2
+      },
+      {
+        "id": "n5",
+        "name": "Claude классификация (v2)",
+        "type": "n8n-nodes-base.httpRequest",
+        "position": [
+          960,
+          300
+        ],
+        "parameters": {
+          "url": "https://api.anthropic.com/v1/messages",
+          "method": "POST",
+          "options": {},
+          "jsonBody": "={{ JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 300, system: $json.system, messages: [{ role: 'user', content: $json.userText }] }) }}",
+          "sendBody": true,
+          "sendHeaders": true,
+          "specifyBody": "json",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "anthropic-version",
+                "value": "2023-06-01"
+              },
+              {
+                "name": "content-type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "BtL7ZOdrlMiPfgK2",
+            "name": "Anthropic API"
+          }
+        },
+        "typeVersion": 4.2
+      },
+      {
+        "id": "n6",
+        "name": "Разобрать ответ",
+        "type": "n8n-nodes-base.code",
+        "position": [
+          1200,
+          300
+        ],
+        "parameters": {
+          "jsCode": "const resp = $json;\nconst text = (resp.content && resp.content[0] && resp.content[0].text) || '';\nconst m = text.match(/\\{[\\s\\S]*\\}/);\nconst SH = ['Новая заявка','Вопрос по заказу','Поставщик','Спам','Прочее'];\nlet shelf='Прочее', reason='не распарсилось';\nif (m) { try { const o = JSON.parse(m[0]); shelf = SH.includes(o.shelf) ? o.shelf : (SH.find(s=>String(o.shelf||'').toLowerCase().includes(s.toLowerCase()))||'Прочее'); reason = String(o.reason||'').slice(0,500); } catch(e){} }\nconst name = $('Подготовить текст').item.json.name;\nreturn { json: { name, shelf, reason } };"
+        },
+        "typeVersion": 2
+      },
+      {
+        "id": "n7",
+        "name": "Записать классификацию в ERP",
+        "type": "n8n-nodes-base.httpRequest",
+        "position": [
+          1440,
+          300
+        ],
+        "parameters": {
+          "url": "=http://155.212.143.179:8080/api/method/saas_theme.api.set_classification",
+          "method": "POST",
+          "options": {},
+          "jsonBody": "={{ JSON.stringify({ name: $json.name, classification: $json.shelf, reason: $json.reason }) }}",
+          "sendBody": true,
+          "specifyBody": "json",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth"
+        },
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "pMDPaRiYDqpPl0sY",
+            "name": "ERPNext API (PMK)"
+          }
+        },
+        "typeVersion": 4.2
+      }
+    ],
+    "connections": {
+      "Каждые 15 минут": {
+        "main": [
+          [
+            {
+              "node": "Новые письма из ERP",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Новые письма из ERP": {
+        "main": [
+          [
+            {
+              "node": "По письмам",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "По письмам": {
+        "main": [
+          [
+            {
+              "node": "Подготовить текст",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Подготовить текст": {
+        "main": [
+          [
+            {
+              "node": "Claude классификация (v2)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Claude классификация (v2)": {
+        "main": [
+          [
+            {
+              "node": "Разобрать ответ",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Разобрать ответ": {
+        "main": [
+          [
+            {
+              "node": "Записать классификацию в ERP",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "settings": {
+      "executionOrder": "v1"
+    },
+    "staticData": {
+      "node:Каждые 15 минут": {
+        "recurrenceRules": []
+      }
+    },
+    "meta": null,
+    "nodeGroups": [],
+    "pinData": null,
+    "versionId": "50639ef1-452f-4714-8431-d90e5d2eeaab",
+    "activeVersionId": "50639ef1-452f-4714-8431-d90e5d2eeaab",
+    "versionCounter": 7,
+    "triggerCount": 1,
+    "sourceWorkflowId": null,
+    "tags": [],
+    "shared": [
+      {
+        "updatedAt": "2026-06-14T02:08:15.351Z",
+        "createdAt": "2026-06-14T02:08:15.351Z",
+        "role": "workflow:owner",
+        "workflowId": "kyOWFTcrKsTYVI9Y",
+        "projectId": "54LKM7bdeWjjixV9",
+        "project": {
+          "updatedAt": "2026-06-09T10:39:53.771Z",
+          "createdAt": "2026-06-09T07:36:42.363Z",
+          "id": "54LKM7bdeWjjixV9",
+          "name": "Anton Karneev <t9141699923@bk.ru>",
+          "type": "personal",
+          "icon": null,
+          "description": null,
+          "customTelemetryTags": [],
+          "creatorId": "256acfdc-0927-40b6-ae0a-877fbfe5a3ab"
+        }
+      }
+    ],
+    "versionMetadata": {
+      "name": null,
+      "description": null
+    }
+  }
+]
