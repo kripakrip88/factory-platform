@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v119";
+const SAAS_THEME_BUILD = "v120";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -1022,13 +1022,16 @@ saas_theme.list_controls = {
 	},
 
 	hide_standard_filters(lv) {
-		if (!lv) return;
+		if (!lv || !lv.page || !lv.page.wrapper) return;
+		// Скоуп — обёртка АКТИВНОГО списка (lv.page.wrapper). В SPA DOM неактивных
+		// списков остаётся (напр. фильтры инбокса при переходе на лид) — глобальный
+		// поиск цеплял чужие поля и скрывал нужные. Плюс сбрасываем прошлые
+		// пометки перед применением — иначе при смене доктайпа поля не возвращались.
+		const $scope = $(lv.page.wrapper);
+		$scope.find(".st-hide-std-filter").removeClass("st-hide-std-filter");
 		const keep = this.STANDARD_FILTER_KEEP[lv.doctype];
 		if (!keep) return;
-		// Стандартные фильтры лежат в .page-form > .standard-filter-section
-		// (НЕ внутри lv.$filter_section — это соседний .filter-section). Ищем
-		// глобально: на странице один активный список.
-		$(".standard-filter-section .form-group.frappe-control[data-fieldname]").each(function () {
+		$scope.find(".standard-filter-section .form-group.frappe-control[data-fieldname]").each(function () {
 			const fn = $(this).attr("data-fieldname");
 			if (fn && keep.indexOf(fn) === -1) {
 				$(this).addClass("st-hide-std-filter");
