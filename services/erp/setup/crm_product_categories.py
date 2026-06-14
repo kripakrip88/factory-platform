@@ -10,11 +10,14 @@ CRM, часть 1/3: справочник «Категория изделий» 
      (mw_estimated_volume / mw_desired_delivery_date / mw_drawing_status),
      чтобы get_mapped_doc переносил их штатно при создании сделки из лида.
 
-Перенос данных лид→сделка:
+Перенос данных лид→сделка (полностью штатным get_mapped_doc, без кода):
   - Скалярные поля (объём/дата/чертежи) — get_mapped_doc копирует поля с
-    одинаковым fieldname АВТОМАТИЧЕСКИ, отдельный код не нужен.
-  - Табличное поле категорий — копирует override_whitelisted_methods
-    make_opportunity в приложении saas_theme (см. saas_theme/crm.py).
+    одинаковым fieldname автоматически.
+  - Табличное поле категорий — get_mapped_doc копирует child-таблицу
+    автоматически, т.к. на лиде и сделке ОДИН и тот же fieldname
+    (mw_product_categories) и ОДИН child-доктайп (MW Product Category Item),
+    без no_copy (frappe/model/mapper.py, авто-маппинг таблиц по fieldname+options).
+  Поэтому одинаковые fieldname на обоих доктайпах — намеренное условие переноса.
 
 Запуск:
     docker cp services/erp/setup/crm_product_categories.py \

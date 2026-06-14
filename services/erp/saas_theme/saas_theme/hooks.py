@@ -180,12 +180,6 @@ home_page = "desk"
 # Overriding Methods
 # ------------------------------
 #
-# Лид → Сделка: переносим заводское табличное поле «Категория изделий»
-# (get_mapped_doc копирует только скаляры). См. saas_theme/crm.py.
-override_whitelisted_methods = {
-	"erpnext.crm.doctype.lead.lead.make_opportunity": "saas_theme.crm.make_opportunity"
-}
-#
 # override_whitelisted_methods = {
 # 	"frappe.desk.doctype.event.event.get_events": "saas_theme.event.get_events"
 # }
