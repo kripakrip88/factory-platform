@@ -27,8 +27,8 @@ categories = ["Customization", "UI/UX"]
 # ------------------
 
 # include js, css files in header of desk.html
-app_include_css = "/assets/saas_theme/css/saas_theme.css?v=112"
-app_include_js = "/assets/saas_theme/js/saas_theme.js?v=112"
+app_include_css = "/assets/saas_theme/css/saas_theme.css?v=113"
+app_include_js = "/assets/saas_theme/js/saas_theme.js?v=113"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/saas_theme/css/login.css"
@@ -179,6 +179,12 @@ home_page = "desk"
 
 # Overriding Methods
 # ------------------------------
+#
+# Лид из письма: после штатного создания лида переносим File-вложения письма
+# на лид (копируем привязку). См. saas_theme/crm.py.
+override_whitelisted_methods = {
+	"erpnext.crm.doctype.lead.lead.make_lead_from_communication": "saas_theme.crm.make_lead_from_communication"
+}
 #
 # override_whitelisted_methods = {
 # 	"frappe.desk.doctype.event.event.get_events": "saas_theme.event.get_events"

@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v112";
+const SAAS_THEME_BUILD = "v113";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -161,6 +161,16 @@ saas_theme.reshape_mail = function (frm) {
 	// 5. Приглушить кнопку «Переподключить» (правка письма не нужна; Save
 	//    оставляем для сохранения оценки)
 	frm.page.wrapper.find(".btn:contains('Переподключить'), .btn:contains('Reconnect')").addClass("st-mail-hide");
+
+	// 5b. Скрыть кнопку «Закрыть» (Close-действие Open→Closed): читается как
+	//    «закрыть карточку», менеджер случайно меняет статус письма. Для нашего
+	//    процесса (чтение + оценка) смена статуса не нужна. Точное совпадение
+	//    текста, чтобы не зацепить другие кнопки. «Ответить»/«Действия»/«Создать»/
+	//    «Сохранить» остаются.
+	frm.page.wrapper.find(".custom-actions .btn, .page-actions .btn").filter(function () {
+		const t = $(this).text().trim();
+		return t === "Закрыть" || t === "Close";
+	}).addClass("st-mail-hide");
 
 	// 6. Длинные письма (рассылки из вложенных таблиц на тысячи px) — кламп
 	//    высоты + кнопка «Показать полностью», чтобы не скроллить простыни.
