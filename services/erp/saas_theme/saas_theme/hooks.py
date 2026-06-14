@@ -27,8 +27,8 @@ categories = ["Customization", "UI/UX"]
 # ------------------
 
 # include js, css files in header of desk.html
-app_include_css = "/assets/saas_theme/css/saas_theme.css?v=120"
-app_include_js = "/assets/saas_theme/js/saas_theme.js?v=120"
+app_include_css = "/assets/saas_theme/css/saas_theme.css?v=121"
+app_include_js = "/assets/saas_theme/js/saas_theme.js?v=121"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/saas_theme/css/login.css"
@@ -134,6 +134,13 @@ home_page = "desk"
 # Document Events
 # ---------------
 # Hook on document methods and events
+
+# Зеркалить «Категория изделий» (Table MultiSelect) в текстовое поле для канбана.
+doc_events = {
+	"Opportunity": {
+		"validate": "saas_theme.crm.sync_categories_display",
+	},
+}
 
 # doc_events = {
 # 	"*": {
