@@ -31,6 +31,17 @@ jobs:
             git checkout -f ${{ github.ref_name }}
             git reset --hard origin/${{ github.ref_name }}
 
+            # ── ПУТЬ ОТХОДА: бэкап БД ДО любой пересборки. Нет бэкапа → нет деплоя.
+            # Восстановление: bench --site erp.localhost restore <последний дамп из private/backups>.
+            echo "🔒 Бэкап БД (точка отката перед сборкой)..."
+            if docker ps --format '{{.Names}}' | grep -qw erp-backend-1; then
+              docker exec erp-backend-1 bash -c "cd /home/frappe/frappe-bench && bench --site erp.localhost backup" \
+                || { echo '❌ DEPLOY ABORTED: бэкап не удался — рабочую среду не трогаем'; exit 1; }
+              echo "✅ Бэкап создан (sites/erp.localhost/private/backups)"
+            else
+              echo "ℹ️ backend ещё не запущен (первый деплой) — бэкап пропущен"
+            fi
+
             echo "🔨 Сборка образа с saas_theme..."
             docker compose -f services/erp/docker-compose.yml build --no-cache
 
