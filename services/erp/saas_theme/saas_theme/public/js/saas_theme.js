@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v118";
+const SAAS_THEME_BUILD = "v119";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -1022,13 +1022,16 @@ saas_theme.list_controls = {
 	},
 
 	hide_standard_filters(lv) {
-		if (!lv || !lv.$filter_section || !lv.$filter_section.length) return;
+		if (!lv) return;
 		const keep = this.STANDARD_FILTER_KEEP[lv.doctype];
 		if (!keep) return;
-		lv.$filter_section.find(".standard-filter-section [data-fieldname]").each(function () {
+		// Стандартные фильтры лежат в .page-form > .standard-filter-section
+		// (НЕ внутри lv.$filter_section — это соседний .filter-section). Ищем
+		// глобально: на странице один активный список.
+		$(".standard-filter-section .form-group.frappe-control[data-fieldname]").each(function () {
 			const fn = $(this).attr("data-fieldname");
 			if (fn && keep.indexOf(fn) === -1) {
-				$(this).closest(".frappe-control, .form-group").addClass("st-hide-std-filter");
+				$(this).addClass("st-hide-std-filter");
 			}
 		});
 	},
