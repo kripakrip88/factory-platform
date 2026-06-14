@@ -1,2 +1,4 @@
-[metal_calculator]
+[pre_model_sync]
+
+[post_model_sync]
 metal_calculator.patches.seed_gost_reference
