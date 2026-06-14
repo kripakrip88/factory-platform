@@ -3765,3 +3765,65 @@ html[data-theme="dark"] .fp-crm-card .fp-crm-feed .timeline-content {
 .kanban-card-doc .text-truncate:last-child {
     margin-bottom: 0;
 }
+
+/* ============================================
+   ПОЧТА: аватары/прочитано/дата в списке, мета и акцент в карточке, чистка
+   Только переменные темы + алгоритмические HSL-аватары. Ноль новых hex.
+   ============================================ */
+
+/* Ячейка темы письма в списке: аватар + тема + дата */
+.st-mail-subjcell {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 100%;
+}
+.st-mail-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    color: #fff; /* белый текст на цветном кружке — не тема, не новый бренд-hex */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    flex-shrink: 0;
+    line-height: 1;
+}
+.st-mail-subjtext {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+/* Непрочитанные — жирным (как в почтовике) */
+.st-mail-unseen .st-mail-subjtext {
+    font-weight: 600;
+    color: var(--text-color);
+}
+.st-mail-date {
+    color: var(--text-muted);
+    font-size: 11px;
+    white-space: nowrap;
+    margin-left: 6px;
+}
+
+/* Карточка письма: мета «от кого · когда» под темой */
+.st-mail-meta {
+    margin: 4px 0 0 15px;
+    color: var(--text-muted);
+    font-size: 12px;
+}
+.st-mail-meta-from { color: var(--text-color); }
+
+/* Акцент на кнопку «Ответить» — основное действие (outline в цвет темы) */
+.st-mail-reply {
+    border-color: var(--primary) !important;
+    color: var(--primary) !important;
+    font-weight: 600;
+}
+
+/* Скрытые лишние кнопки инбокса (Задача 6) */
+.st-hide-inbox-btn {
+    display: none !important;
+}

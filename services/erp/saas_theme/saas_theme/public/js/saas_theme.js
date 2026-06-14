@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v124";
+const SAAS_THEME_BUILD = "v125";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -20,6 +20,47 @@ const SAAS_THEME_BUILD = "v124";
 		document.documentElement.setAttribute("data-theme-mode", t);
 		document.documentElement.setAttribute("data-theme", t);
 	}
+})();
+
+/* ============================================
+   ПОЧТОВЫЙ СПИСОК (Communication) — аватары, прочитано, дата
+   Через нативный frappe.listview_settings (форматтер темы письма). Один
+   отправитель → стабильный цвет (HSL из адреса, не хардкод-hex). Непрочитанные
+   жирным. Дата письма в строке. Задаём на загрузке скрипта (до рендера списка).
+   ============================================ */
+(function () {
+	if (typeof frappe === "undefined" || !frappe.provide) return;
+	frappe.provide("saas_theme");
+	saas_theme.mail_avatar_color = function (s) {
+		s = (s || "?").toLowerCase();
+		let h = 0;
+		for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360;
+		return "hsl(" + h + ", 52%, 45%)"; // алгоритмический цвет, не новый hex
+	};
+
+	frappe.listview_settings = frappe.listview_settings || {};
+	const prev = frappe.listview_settings["Communication"] || {};
+	frappe.listview_settings["Communication"] = Object.assign({}, prev, {
+		add_fields: ["seen", "sender", "sender_full_name", "communication_date"],
+		formatters: Object.assign({}, prev.formatters, {
+			subject(value, df, doc) {
+				const sender = (doc.sender || "").trim();
+				const name = (doc.sender_full_name || sender || "?").trim();
+				const initial = (name.replace(/[^\p{L}\p{N}]/u, "")[0] || name[0] || "?").toUpperCase();
+				const color = saas_theme.mail_avatar_color(sender);
+				const esc = frappe.utils.escape_html;
+				const avatar = '<span class="st-mail-avatar" style="background:' + color + '" title="' + esc(sender) + '">' + esc(initial) + "</span>";
+				const subj = esc(value || "(без темы)");
+				let date = "";
+				if (doc.communication_date) {
+					date = '<span class="st-mail-date">' + esc(frappe.datetime.str_to_user(doc.communication_date)) + "</span>";
+				}
+				const unseen = doc.seen ? "" : " st-mail-unseen";
+				return '<span class="st-mail-subjcell' + unseen + '">' + avatar +
+					'<span class="st-mail-subjtext">' + subj + "</span>" + date + "</span>";
+			},
+		}),
+	});
 })();
 
 $(document).ready(function () {
@@ -140,6 +181,25 @@ saas_theme.reshape_mail = function (frm) {
 		frm.set_df_property("subject", "read_only", 1);
 		sec_of("subject").addClass("st-mail-subject");
 	}
+
+	// 1b. Мета «от кого, когда» под темой (как в обычном почтовике)
+	const $subjSec = sec_of("subject");
+	if ($subjSec.length && !$subjSec.find(".st-mail-meta").length) {
+		const sender = frm.doc.sender_full_name || frm.doc.sender || "";
+		const when = frm.doc.communication_date ? frappe.datetime.str_to_user(frm.doc.communication_date) : "";
+		if (sender || when) {
+			const esc = frappe.utils.escape_html;
+			const parts = [];
+			if (sender) parts.push('<span class="st-mail-meta-from">' + esc(sender) + "</span>");
+			if (when) parts.push('<span class="st-mail-meta-when">' + esc(when) + "</span>");
+			$subjSec.append('<div class="st-mail-meta">' + parts.join(' · ') + "</div>");
+		}
+	}
+
+	// 1c. Акцент на кнопку «Ответить» (основное действие в карточке письма)
+	frm.page.wrapper.find(".page-actions .btn").filter(function () {
+		return $(this).text().trim() === "Ответить" || $(this).text().trim() === "Reply";
+	}).addClass("st-mail-reply");
 
 	// 2. Тело письма — обуздать ширину/картинки/пустоту (CSS по .st-mail-body)
 	frm.fields_dict.content.$wrapper.addClass("st-mail-body");
@@ -1010,6 +1070,9 @@ saas_theme.list_controls = {
 		this.setup_shelf_filter(window.cur_list);
 		// Папки-вкладки Входящие/Отправленные (только инбокс Communication)
 		this.setup_folder_tabs(window.cur_list);
+		// Чистка лишних кнопок инбокса (переключатель представлений, родная
+		// выпадашка папок, закладка сохранения фильтра)
+		this.cleanup_inbox_buttons(window.cur_list);
 		// Скрыть лишние стандартные фильтры-строки (per-doctype)
 		this.hide_standard_filters(window.cur_list);
 		// Скрыть глючное «Представление отчёта» из меню (CRM-списки)
@@ -1040,6 +1103,26 @@ saas_theme.list_controls = {
 			const fn = $(this).attr("data-fieldname");
 			if (fn && keep.indexOf(fn) === -1) {
 				$(this).addClass("st-hide-std-filter");
+			}
+		});
+	},
+
+	/* ----- Чистка лишних кнопок инбокса (Задача 6) -----
+	   Переключатель представлений (не нужен в инбоксе), родная выпадашка папок
+	   (её заменяют наши вкладки-папки), закладка «Сохранённые фильтры» (для
+	   фильтра есть кнопка «Фильтры»). Скрываем из UI, механику не трогаем.
+	   Полки классификации и наши папки-вкладки НЕ затрагиваются.               */
+	cleanup_inbox_buttons(lv) {
+		if (!lv || lv.doctype !== "Communication" || lv.view_name !== "Inbox") return;
+		if (!lv.page || !lv.page.wrapper) return;
+		const $pa = $(lv.page.wrapper).find(".page-actions");
+		// Переключатель представлений — имеет .custom-btn-group-label (иконки списка)
+		$pa.find(".btn.ellipsis").has(".custom-btn-group-label").addClass("st-hide-inbox-btn");
+		// Выпадашка папок и «Сохранённые фильтры» — по тексту
+		$pa.find(".btn.ellipsis").each(function () {
+			const t = $(this).text().trim();
+			if (/Сохранённые фильтр|Saved Filter|Выберите|Select Inbox|Новый почтовый/.test(t)) {
+				$(this).addClass("st-hide-inbox-btn");
 			}
 		});
 	},
