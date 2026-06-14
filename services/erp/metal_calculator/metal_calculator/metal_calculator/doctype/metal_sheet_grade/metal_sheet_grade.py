@@ -3,10 +3,17 @@
 
 import frappe
 from frappe.model.document import Document
+from frappe.utils import flt
 
 
 class MetalSheetGrade(Document):
 	"""Лист: масса 1 м² по толщине — строго из ГОСТ (толщина × 7.85)."""
+
+	def autoname(self):
+		# format:Лист-{thickness}мм НЕ работает: Frappe-формат подставляет Data,
+		# но не Float-поля → имя выходило «Лист-мм» (пустое) → дубликаты при сиде.
+		# Контроллерный autoname надёжен: %g даёт «2.5» и «3» (без хвостового .0).
+		self.name = "Лист-%gмм" % flt(self.thickness)
 
 	def validate(self):
 		if self.thickness is None or self.thickness <= 0:
