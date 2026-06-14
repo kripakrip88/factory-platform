@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v123";
+const SAAS_THEME_BUILD = "v124";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -989,7 +989,10 @@ saas_theme.list_controls = {
 		// filter_area/sort_selector/$filter_section). НЕ reports/kanban/calendar.
 		// Раньше гейт был только "List" → причёсанные контролы (фильтры/сортировка
 		// + скрытие крестика) не доезжали до инбокса (разнобой с лидом).
-		if (!lv || (lv.view_name !== "List" && lv.view_name !== "Inbox")) return null;
+		// + Kanban: у него есть filter_area/$filter_section (но нет sort_selector —
+		//   setup_sort_button безопасно выходит). Так кнопка «Фильтры • N» и
+		//   скрытие крестика доезжают и до доски сделок (единый вид с лидом).
+		if (!lv || !["List", "Inbox", "Kanban"].includes(lv.view_name)) return null;
 		if (!lv.$filter_section || !lv.$filter_section.length) return null;
 		return lv;
 	},
@@ -1001,6 +1004,8 @@ saas_theme.list_controls = {
 			this.setup_sort_button(lv);
 			this.compact_header_buttons();
 		}
+		// Инбокс: чинить плохой дефолт сортировки (по классификации → дата письма)
+		this.fix_inbox_sort(window.cur_list);
 		// Фильтр по полкам нужен и на инбоксе (view_name === 'Inbox', не 'List')
 		this.setup_shelf_filter(window.cur_list);
 		// Папки-вкладки Входящие/Отправленные (только инбокс Communication)
@@ -1239,10 +1244,32 @@ saas_theme.list_controls = {
 		}
 	},
 
+	// Понятные подписи для полей, которых нет в дропдауне сортировки
+	SORT_LABELS: { communication_date: "Дата письма" },
+
 	get_sort_label(lv) {
 		const ss = lv.sort_selector;
+		if (this.SORT_LABELS[ss.sort_by]) return this.SORT_LABELS[ss.sort_by];
 		const opt = (ss.args.options || []).find((o) => o.fieldname === ss.sort_by);
 		return opt ? __(opt.label) : ss.sort_by;
+	},
+
+	/* ----- Инбокс: дефолт сортировки по дате письма (новые сверху) -----
+	   Дефолт «съехал» на custom_claude_classification (группировал по классам) —
+	   менеджеру нужна хроника: новые письма сверху. communication_date нет в
+	   дропдауне, но сортировать по нему можно. Чиним только этот плохой случай
+	   (другие сортировки пользователя не трогаем). apply_sort персистит выбор.   */
+	// Технические дефолты сортировки — для них принудительно дата письма.
+	// «Контентные» поля (subject/sender/status…) пользователь выбирает сам — не трогаем.
+	INBOX_SORT_DEFAULTS: ["custom_claude_classification", "creation", "modified", "name", "idx"],
+
+	fix_inbox_sort(lv) {
+		if (!lv || lv.doctype !== "Communication" || lv.view_name !== "Inbox") return;
+		const ss = lv.sort_selector;
+		if (!ss) return;
+		if (this.INBOX_SORT_DEFAULTS.includes(ss.sort_by)) {
+			this.apply_sort(lv, "communication_date", "desc");
+		}
 	},
 
 	update_sort_label(lv) {
