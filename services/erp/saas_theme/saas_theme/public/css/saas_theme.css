@@ -3646,3 +3646,22 @@ html[data-theme="dark"] .fp-crm-card .control-label {
 html[data-theme="dark"] .fp-crm-card .fp-crm-feed .timeline-content {
     color: var(--text-color);
 }
+
+/* ============================================
+   КРОШКИ В ШАПКЕ — читаемость (карточка письма и др.)
+   Каждый <li.ellipsis> в навбар-крошках обрезался поштучно («Электронная
+   почта» → «Элек…», «Коммуникация» → «Ком…»), т.к. flex сжимал их все.
+   Разрешаем не-последним крошкам показываться полностью; обрезается только
+   последняя (длинная тема письма/имя записи). Без новых цветов.
+   ============================================ */
+.navbar-breadcrumbs > li.ellipsis {
+    max-width: none;
+    flex-shrink: 0;
+}
+.navbar-breadcrumbs > li.ellipsis:last-child {
+    flex-shrink: 1;
+    min-width: 0;
+    max-width: 38ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
