@@ -7,9 +7,20 @@ set -e
 COMPOSE="docker compose -f /opt/factory-platform/services/erp/docker-compose.yml"
 SITE="--site erp.localhost"
 
+APPS_TXT="/home/frappe/frappe-bench/sites/apps.txt"
+
 echo "🔎 Предусловие: код metal_calculator в контейнере?"
 $COMPOSE exec -T backend bash -c "test -d /home/frappe/frappe-bench/apps/metal_calculator" \
   || { echo "❌ ABORT: apps/metal_calculator нет в контейнере. Сначала пересобери образ."; exit 1; }
+
+# Регистрация аппы в реестре бенча. sites/apps.txt лежит в ТОМЕ (sites:), который
+# перекрывает папку из образа и переживает пересборку — поэтому регистрируем тут,
+# в рантайме (правка в Dockerfile была бы скрыта томом). bench install-app иначе
+# отказывает: "App metal_calculator not in apps.txt". Идемпотентно.
+echo "📒 Регистрация metal_calculator в sites/apps.txt (том, durable)..."
+$COMPOSE exec -T backend bash -c "grep -qxF metal_calculator $APPS_TXT || echo metal_calculator >> $APPS_TXT"
+$COMPOSE exec -T backend bash -c "grep -qxF metal_calculator $APPS_TXT" \
+  || { echo "❌ ABORT: не удалось зарегистрировать metal_calculator в apps.txt"; exit 1; }
 
 echo "🔒 ПУТЬ ОТХОДА: бэкап БД + файлов до установки..."
 $COMPOSE exec -T backend bench $SITE backup --with-files \

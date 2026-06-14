@@ -36,6 +36,11 @@ jobs:
               exit 1
             fi
 
+            # Регистрация в sites/apps.txt (том, durable; правка в Dockerfile скрыта томом).
+            # Иначе install-app: "App metal_calculator not in apps.txt". Идемпотентно.
+            echo "📒 Регистрация metal_calculator в sites/apps.txt..."
+            docker exec erp-backend-1 bash -c "grep -qxF metal_calculator /home/frappe/frappe-bench/sites/apps.txt || echo metal_calculator >> /home/frappe/frappe-bench/sites/apps.txt"
+
             echo "🔒 ПУТЬ ОТХОДА: бэкап БД + файлов до установки..."
             docker exec erp-backend-1 bash -c "$B backup --with-files" \
               || { echo '❌ ABORT: бэкап не удался — ничего не ставим'; exit 1; }
