@@ -3731,3 +3731,24 @@ html[data-theme="dark"] .fp-crm-card .fp-crm-feed .timeline-content {
 .st-hide-std-filter {
     display: none !important;
 }
+
+/* ============================================
+   КАНБАН-КАРТОЧКА СДЕЛКИ: перенос длинных значений + подсветка данных
+   ============================================ */
+
+/* Строки данных (Категория/Объём/Сумма/Дата) — переносятся, не уплывают за
+   рамку (родной .text-truncate обрезал nowrap), + аккуратная ненавязчивая
+   подсветка каждого значения чипом из переменной темы. Ноль новых hex. */
+.kanban-card-doc .text-truncate {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    background: var(--subtle-fg, var(--control-bg));
+    border-radius: 4px;
+    padding: 2px 7px;
+    margin-bottom: 4px;
+    line-height: 1.35;
+}
+.kanban-card-doc .text-truncate:last-child {
+    margin-bottom: 0;
+}

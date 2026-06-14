@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v120";
+const SAAS_THEME_BUILD = "v121";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -1039,37 +1039,52 @@ saas_theme.list_controls = {
 		});
 	},
 
-	/* ----- Папки-вкладки Входящие/Отправленные (инбокс Communication) -----
-	   Фильтруют по sent_or_received. Полка «Спам» (классификация) не дублируется
-	   папкой. Корзина (email_status/Trash) — отдельной задачей, не городим здесь.
-	   Папки (откуда) и полки (что это) — независимые фильтры, сосуществуют.     */
+	/* ----- Папки-вкладки инбокса (нативный механизм Frappe) -----
+	   Папка инбокса = route[3] (email_account / "Sent" / "Spam" / "Trash");
+	   фильтры (sent_or_received / email_status) Frappe печёт сам в
+	   get_inbox_filters(). Поэтому переключаем папки РОУТИНГОМ, а не своим
+	   фильтром поверх (раньше так Отправленные не работали — родной фильтр
+	   "Received" перебивал). «Черновиков» у Communication нет — пропускаем.
+	   Полки классификации (что это) — отдельный бар, сосуществуют.            */
 	FOLDERS: [
-		{ label: "Входящие",     value: "Received" },
-		{ label: "Отправленные", value: "Sent" },
+		{ label: "Входящие",     folder: "__account__" },
+		{ label: "Отправленные", folder: "Sent" },
+		{ label: "Спам",         folder: "Spam" },
+		{ label: "Корзина",      folder: "Trash" },
 	],
 
-	setup_folder_tabs(lv) {
-		if (!lv || lv.doctype !== "Communication") return;
-		if (!lv.$filter_section || !lv.$filter_section.length || !lv.filter_area) return;
-		const $pf = lv.$filter_section.closest(".page-form");
-		if ($pf.prev(".st-folder-tabs").length) return; // уже есть
+	get_inbox_account() {
+		// Реальный почтовый ящик (а не виртуальные Sent/Spam/Trash/All Accounts)
+		const acc = (frappe.boot.email_accounts || []).find((a) => a.email_id !== "All Accounts");
+		return acc ? acc.email_account : "All Accounts";
+	},
 
-		const me = this;
-		const tabs = this.FOLDERS.map((f) =>
-			`<button type="button" class="st-folder-tab" data-folder="${frappe.utils.escape_html(f.value)}">${frappe.utils.escape_html(f.label)}</button>`
-		).join("");
+	setup_folder_tabs(lv) {
+		if (!lv || lv.doctype !== "Communication" || lv.view_name !== "Inbox") return;
+		if (!lv.$filter_section || !lv.$filter_section.length) return;
+		const $pf = lv.$filter_section.closest(".page-form");
+		if (!$pf.length || $pf.prev(".st-folder-tabs").length) return;
+
+		const account = this.get_inbox_account();
+		const current = frappe.get_route()[3]; // текущая папка
+		const resolve = (f) => (f === "__account__" ? account : f);
+
+		const tabs = this.FOLDERS.map((f) => {
+			const target = resolve(f.folder);
+			return `<button type="button" class="st-folder-tab" data-folder="${frappe.utils.escape_html(target)}">${frappe.utils.escape_html(f.label)}</button>`;
+		}).join("");
 		const $bar = $(`<div class="st-folder-tabs">${tabs}</div>`);
 		$pf.before($bar);
 
 		$bar.find(".st-folder-tab").on("click", function () {
 			const folder = $(this).data("folder");
-			$bar.find(".st-folder-tab").removeClass("active");
-			$(this).addClass("active");
-			lv.filter_area.remove("sent_or_received");
-			lv.filter_area.add([["Communication", "sent_or_received", "=", folder]]);
+			frappe.set_route("List", "Communication", "Inbox", folder);
 		});
-		// Входящие активны по умолчанию
-		$bar.find('.st-folder-tab[data-folder="Received"]').addClass("active");
+
+		// Активная папка = текущий route[3] (любой реальный аккаунт ⇒ Входящие)
+		const isFolder = ["Sent", "Spam", "Trash"].includes(current);
+		const activeTarget = isFolder ? current : account;
+		$bar.find(`.st-folder-tab[data-folder="${activeTarget}"]`).addClass("active");
 	},
 
 	/* ----- Скрыть пункт «Представление отчёта» из меню «...» -----

@@ -4,6 +4,18 @@ from erpnext.crm.doctype.lead.lead import (
 )
 
 
+def sync_categories_display(doc, method=None):
+	"""Зеркалить Table MultiSelect «Категория изделий» в текстовое поле для канбана.
+
+	Frappe-канбан не выводит значение child-таблицы (Table MultiSelect) на
+	карточке. Поэтому держим denormalized-поле mw_categories_display (Small Text,
+	read-only) с именами категорий через запятую — его и кладём в поля карточки
+	канбана. Обновляется на validate Opportunity (см. doc_events в hooks.py).
+	"""
+	cats = [r.product_category for r in (doc.get("mw_product_categories") or []) if r.product_category]
+	doc.mw_categories_display = ", ".join(cats)
+
+
 @frappe.whitelist()
 def make_lead_from_communication(communication, ignore_communication_links=False):
 	"""Создать лид из письма + перенести вложения письма в лид.

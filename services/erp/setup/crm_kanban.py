@@ -1,11 +1,14 @@
 """
 CRM: карточка канбана сделок — осмысленные данные.
 
-Было: заголовок = title (иногда email), поля = modified/owner/status/amount
-(три из пяти бесполезны). Стало:
-  - заголовок карточки = организация/клиент (customer_name, а не email в title);
-  - поля карточки = Категория изделий, Объём (тонн), Сумма сделки, Дата касания.
-  - убраны «Создано» (owner) и «Статус» (дублирует колонку канбана).
+Заголовок карточки = организация/клиент (customer_name, не email в title).
+Поля карточки = Категория изделий (текст), Объём (тонн), Сумма сделки, Дата касания.
+Убраны «Создано» (owner) и «Статус» (дублирует колонку канбана).
+
+Категория (mw_product_categories) — Table MultiSelect; Frappe-канбан НЕ выводит
+значение child-таблицы. Поэтому зеркалим её в текстовое поле mw_categories_display
+(Small Text, read-only, hidden на форме) — его и кладём в поля карточки. Синк —
+на validate Opportunity (saas_theme.crm.sync_categories_display, doc_events).
 
 Идемпотентно. Запуск (bench console):
   import runpy; runpy.run_path('/tmp/crm_kanban.py')['execute']()
@@ -13,13 +16,41 @@ CRM: карточка канбана сделок — осмысленные д�
 
 import json
 import frappe
+from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 
 KANBAN_BOARD = "Продажи"
-# Категория (mw_product_categories) — Table MultiSelect; Frappe-канбан НЕ выводит
-# значение child-таблицы на карточке (показывал пустой ярлык). Ограничение
-# движка → на карточке не выводим. Заголовок = организация (customer_name),
-# поля = объём + сумма + дата касания.
-CARD_FIELDS = ["mw_estimated_volume", "opportunity_amount", "modified"]
+CARD_FIELDS = ["mw_categories_display", "mw_estimated_volume", "opportunity_amount", "modified"]
+
+
+def setup_display_field():
+    """Текстовое зеркало категорий для канбана (Table MultiSelect не рендерится)."""
+    create_custom_fields({
+        "Opportunity": [
+            {
+                "fieldname": "mw_categories_display",
+                "label": "Категория изделий",
+                "fieldtype": "Small Text",
+                "read_only": 1,
+                "hidden": 1,
+                "no_copy": 0,
+                "insert_after": "mw_product_categories",
+            },
+        ],
+    }, ignore_validate=True)
+
+
+def backfill_categories_display():
+    """Заполнить mw_categories_display у существующих сделок (без триггера save)."""
+    n = 0
+    for name in frappe.get_all("Opportunity", pluck="name"):
+        rows = frappe.get_all(
+            "MW Product Category Item",
+            filters={"parent": name, "parenttype": "Opportunity", "parentfield": "mw_product_categories"},
+            pluck="product_category",
+        )
+        frappe.db.set_value("Opportunity", name, "mw_categories_display", ", ".join(rows), update_modified=False)
+        n += 1
+    return n
 
 
 def set_title_field():
@@ -47,11 +78,14 @@ def set_kanban_fields():
 
 
 def execute():
+    setup_display_field()
+    backfilled = backfill_categories_display()
     t = set_title_field()
     k = set_kanban_fields()
     frappe.clear_cache(doctype="Opportunity")
     frappe.db.commit()
     print("=== CRM: карточка канбана ===")
+    print(f"Поле mw_categories_display создано; бэкфилл сделок: {backfilled}")
     print(f"title_field Opportunity → customer_name: {t}")
     print(f"Поля карточки канбана: {k}")
     print("Готово.")
