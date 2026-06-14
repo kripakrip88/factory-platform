@@ -36,3 +36,44 @@ API (требование задачи), в git/лог не пишутся.
 - Тела писем/ПД в git и отчёты не выносятся.
 - Прогон только на сервере. Прод-стек не трогается (только Custom Fields + запись
   в карточки писем).
+
+---
+
+## n8n-труба автоклассификации (смотровой режим, промпт v2)
+
+**Что делает:** каждые 15 мин берёт из ERPNext новые Communication без
+классификации → Claude (промпт v2) → пишет `Классификация Claude` + `Обоснование`
+обратно в карточку. НЕ создаёт лидов, оценку менеджера не трогает, идемпотентна.
+
+Файлы:
+- `build_n8n_workflow.py` — генератор воркфлоу (промпт v2 встроен).
+- `n8n-classifier-workflow.json` — готовый воркфлоу (создан в n8n, id в истории).
+
+Воркфлоу уже создан в n8n (выключен). Осталось подключить 2 credential и включить.
+
+### Шаг 1 — ERPNext API credential
+Ключ/секрет уже сгенерированы и лежат на сервере (вне git):
+```bash
+cat /opt/factory-platform/.erpnext-api-creds   # api_key=... api_secret=...
+```
+В n8n: **Credentials → New → Header Auth**:
+- Name: `ERPNext API (PMK)`
+- Header Name: `Authorization`
+- Header Value: `token <api_key>:<api_secret>` (из файла выше, через двоеточие)
+
+### Шаг 2 — Anthropic API credential
+В n8n: **Credentials → New → Header Auth**:
+- Name: `Anthropic API`
+- Header Name: `x-api-key`
+- Header Value: `<твой Claude API key>`
+
+### Шаг 3 — привязать credential к узлам и включить
+Открыть воркфлоу «Автоклассификация писем (v2, смотровой режим)»:
+- узлам **«Новые письма из ERP»** и **«Записать классификацию в ERP»** → credential `ERPNext API (PMK)`
+- узлу **«Claude классификация (v2)»** → credential `Anthropic API`
+- нажать **Active** (включить).
+
+### Проверка
+Очистить классификацию у 2-3 писем (для теста) и нажать **Execute Workflow** —
+у писем должна появиться `Классификация Claude` + обоснование, лиды НЕ создаются,
+`Оценка менеджера` остаётся пустой.

@@ -1,0 +1,223 @@
+{
+  "name": "Автоклассификация писем (v2, смотровой режим)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "name": "Каждые 15 минут",
+      "position": [
+        0,
+        300
+      ],
+      "id": "n1"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://155.212.143.179:8080/api/resource/Communication",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "filters",
+              "value": "[[\"custom_claude_classification\", \"in\", [\"\", null]], [\"email_account\", \"=\", \"PMK Park входящие (тест)\"], [\"sent_or_received\", \"=\", \"Received\"], [\"communication_type\", \"=\", \"Communication\"]]"
+            },
+            {
+              "name": "fields",
+              "value": "[\"name\", \"subject\", \"content\"]"
+            },
+            {
+              "name": "limit_page_length",
+              "value": "20"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "name": "Новые письма из ERP",
+      "position": [
+        240,
+        300
+      ],
+      "id": "n2"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "name": "По письмам",
+      "position": [
+        480,
+        300
+      ],
+      "id": "n3"
+    },
+    {
+      "parameters": {
+        "jsCode": "const SYSTEM = \"Ты классифицируешь входящие письма завода металлоконструкций (изготовление на заказ: просчёт → счёт → производство). Сначала определи РОЛЬ отправителя: это КЛИЕНТ (хочет, чтобы МЫ изготовили) или ПОСТАВЩИК/сторонний (предлагает НАМ товар/услугу)? Разложи письмо строго в ОДНУ из 5 полок.\\n\\n1. Новая заявка — КЛИЕНТ просит просчитать/выставить счёт/спрашивает о возможности изготовления (запрос КП, цены, позиции на просчёт).\\n2. Вопрос по заказу — КЛИЕНТ про СВОЙ уже идущий заказ у нас («когда готово», ссылка на свой счёт/спецификацию). Только от клиента про его заказ.\\n3. Поставщик — письмо ОТ поставщика: предлагает НАМ металл/трубы/прокат/метизы/комплектующие/услуги для производства («наличие», «прайс», «остатки», приглашение присылать ЕМУ заявки на закупку).\\n4. Спам — массовая реклама/рассылки НЕ по нашему производству (реклама, SEO, банки, обучение, маркетинг, маркетплейсы), нерелевантные предложения.\\n5. Прочее — служебное, ответы в переписке не про заявки, бухгалтерия, неопределённое.\\n\\nЖёсткие разграничения:\\n- Поставщик vs Вопрос по заказу: письмо ОТ поставщика (наличие/прайс, приглашает присылать ему заявки) — это Поставщик, даже если есть слово «заявка»/«заказ». «Вопрос по заказу» — только клиент про СВОЙ заказ у нас.\\n- Поставщик vs Спам: Поставщик — только профильный (металл/трубы/прокат/метизы/услуги для металлопроизводства). Нерелевантная реклама — Спам.\\n- Игнорируй рекламные вставки внутри тела, если суть — реальный запрос клиента. Вложения ты НЕ видишь; классифицируй по теме+тексту. Если не уверен — «Прочее».\\n\\nОтвет строго JSON: {\\\"shelf\\\":\\\"<одна из 5 точь-в-точь>\\\",\\\"reason\\\":\\\"<1-2 фразы, укажи роль>\\\"}\";\nconst it = $input.item.json;\nconst strip = (h) => String(h||'').replace(/<[^>]+>/g,' ').replace(/\\s+/g,' ').trim();\nconst body = strip(it.content).slice(0,2500);\nreturn { json: { name: it.name, userText: 'Тема: ' + (it.subject||'') + '\\n\\nТекст:\\n' + body, system: SYSTEM } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Подготовить текст",
+      "position": [
+        720,
+        300
+      ],
+      "id": "n4"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 300, system: $json.system, messages: [{ role: 'user', content: $json.userText }] }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "name": "Claude классификация (v2)",
+      "position": [
+        960,
+        300
+      ],
+      "id": "n5"
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $json;\nconst text = (resp.content && resp.content[0] && resp.content[0].text) || '';\nconst m = text.match(/\\{[\\s\\S]*\\}/);\nconst SH = ['Новая заявка','Вопрос по заказу','Поставщик','Спам','Прочее'];\nlet shelf='Прочее', reason='не распарсилось';\nif (m) { try { const o = JSON.parse(m[0]); shelf = SH.includes(o.shelf) ? o.shelf : (SH.find(s=>String(o.shelf||'').toLowerCase().includes(s.toLowerCase()))||'Прочее'); reason = String(o.reason||'').slice(0,500); } catch(e){} }\nconst name = $('Подготовить текст').item.json.name;\nreturn { json: { name, shelf, reason } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Разобрать ответ",
+      "position": [
+        1200,
+        300
+      ],
+      "id": "n6"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=http://155.212.143.179:8080/api/resource/Communication/{{ $json.name }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ custom_claude_classification: $json.shelf, custom_claude_reason: $json.reason }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "name": "Записать классификацию в ERP",
+      "position": [
+        1440,
+        300
+      ],
+      "id": "n7"
+    }
+  ],
+  "connections": {
+    "Каждые 15 минут": {
+      "main": [
+        [
+          {
+            "node": "Новые письма из ERP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Новые письма из ERP": {
+      "main": [
+        [
+          {
+            "node": "По письмам",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "По письмам": {
+      "main": [
+        [
+          {
+            "node": "Подготовить текст",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Подготовить текст": {
+      "main": [
+        [
+          {
+            "node": "Claude классификация (v2)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude классификация (v2)": {
+      "main": [
+        [
+          {
+            "node": "Разобрать ответ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Разобрать ответ": {
+      "main": [
+        [
+          {
+            "node": "Записать классификацию в ERP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
