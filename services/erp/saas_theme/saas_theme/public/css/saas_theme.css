@@ -3566,3 +3566,68 @@ html[data-theme="dark"] .st-mail-clampable.st-mail-clamped::after {
 .st-mail-expand {
     margin-top: 8px;
 }
+
+/* ============================================
+   CRM-КАРТОЧКА (часть 2/3): лента истории, скрытие вкладок/меню, мультиселект
+   Только переменные темы — ноль новых hex. Светлая/тёмная — через var(--...).
+   ============================================ */
+
+/* Скрытие технических вкладок (Операции/Примечания/Соединения) и пункта
+   «Представление отчёта» — из UI, не из данных. */
+.fp-hidden-tab,
+.fp-hidden-menu-item {
+    display: none !important;
+}
+
+/* Лента истории (timeline вынесен из вкладки «Операции») — всегда видна под формой */
+.fp-crm-feed {
+    margin-top: 8px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+}
+.fp-crm-feed-title {
+    font-weight: 600;
+    font-size: var(--text-md);
+    color: var(--text-color);
+    margin: 0 0 8px 15px;
+}
+/* timeline внутри ленты — убрать двойные отступы родного .after-save */
+.fp-crm-feed .new-timeline {
+    margin-top: 0;
+}
+
+/* --- Мультиселект «Категория изделий»: высота и выпадашка --- */
+
+/* Наложение: контейнер и обёртка имели фикс. height:38px → при переносе тегов
+   на 2-ю строку плашки вылезали на поля снизу. Высота auto — поле растёт и
+   толкает соседние поля вниз. */
+[data-fieldtype="Table MultiSelect"] .control-input-wrapper,
+.control-input.form-control.table-multiselect {
+    height: auto !important;
+    min-height: 32px;
+}
+.control-input.form-control.table-multiselect {
+    align-items: flex-start;
+    gap: 4px 0;
+    padding-top: 3px;
+    padding-bottom: 3px;
+}
+
+/* Зебра: в выпадашке awesomplete невыбранные пункты получали светлый фон
+   (в тёмной теме читались как наведённые). Делаем фон по умолчанию прозрачным,
+   подсветка — только у активного/наведённого пункта, через тему. */
+.table-multiselect .awesomplete > ul > [role="option"],
+.link-field .awesomplete > ul > [role="option"] {
+    background: transparent !important;
+}
+.table-multiselect .awesomplete > ul > [role="option"] mark,
+.link-field .awesomplete > ul > [role="option"] mark {
+    background: transparent !important;
+    color: inherit !important;
+}
+.table-multiselect .awesomplete > ul > [role="option"][aria-selected="true"],
+.table-multiselect .awesomplete > ul > [role="option"]:hover,
+.link-field .awesomplete > ul > [role="option"][aria-selected="true"],
+.link-field .awesomplete > ul > [role="option"]:hover {
+    background: var(--highlight-color) !important;
+}
