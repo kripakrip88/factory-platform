@@ -3674,14 +3674,21 @@ html[data-theme="dark"] .fp-crm-card .fp-crm-feed .timeline-content {
      (:focus-visible), из переменной темы; мышиный клик — без кольца.
    Только переменные темы, ноль новых hex. Светлая/тёмная — через var(--...).
    ============================================ */
+/* Ядро Frappe рисует кольцо через box-shadow (rgba(124,124,124,.25) 2px) на
+   .btn:focus — оно остаётся видимым и после мышиного клика. Глушим box-shadow
+   и outline на ВСЕХ кнопках; приглушённое кольцо возвращаем только для
+   клавиатуры (:focus-visible) ниже. */
 .btn:focus,
-.btn:focus-visible,
 .btn:active:focus,
 .btn.active:focus {
     outline: none !important;
+    box-shadow: none !important;
 }
 
-/* Клавиатурный фокус — единое приглушённое кольцо (видно в обеих темах) */
+/* Клавиатурный фокус — единое приглушённое кольцо из переменной темы.
+   :focus-visible матчит только навигацию с клавиатуры → мышиный клик кольца
+   не даёт, доступность сохранена. */
 .btn:focus-visible {
+    outline: none !important;
     box-shadow: 0 0 0 2px var(--outline-gray-4) !important;
 }
