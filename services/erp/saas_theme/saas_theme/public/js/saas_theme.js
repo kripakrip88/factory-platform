@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v110";
+const SAAS_THEME_BUILD = "v111";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -76,9 +76,52 @@ $(document).ready(function () {
 			setTimeout(function () { saas_theme.reshape_mail(frm); }, d);
 		});
 	});
+
+	// Карточка сделки/лида: лента истории на видном месте + скрытие техн. вкладок.
+	$(document).on("form-refresh", function (e, frm) {
+		if (!frm || (frm.doctype !== "Opportunity" && frm.doctype !== "Lead")) return;
+		[80, 350, 900].forEach(function (d) {
+			setTimeout(function () { saas_theme.reshape_crm_card(frm); }, d);
+		});
+	});
 });
 
 frappe.provide("saas_theme");
+
+// Карточка сделки/лида в стиле amo: лента истории (timeline) вынесена из вкладки
+// «Операции» в всегда-видимый блок под формой; технические вкладки скрыты.
+saas_theme.CRM_HIDDEN_TABS = ["activities_tab", "notes_tab", "dashboard_tab"];
+
+saas_theme.reshape_crm_card = function (frm) {
+	const $w = frm.$wrapper;
+
+	// 1. Лента истории: родной .new-timeline лежит внутри вкладки «Операции»
+	//    (#<dt>-activities_tab). Переносим её узел в всегда-видимый блок под
+	//    формой (.form-layout), чтобы менеджер видел хронику, не проваливаясь
+	//    во вкладку. Перенос узла сохраняет обработчики timeline.
+	const $timeline = $w.find(".new-timeline").first();
+	const $layout = $w.find(".form-layout").first();
+	if ($timeline.length && $layout.length) {
+		let $feed = $layout.children(".fp-crm-feed").first();
+		if (!$feed.length) {
+			$feed = $('<div class="fp-crm-feed"><div class="fp-crm-feed-title">История по сделке</div></div>');
+			$layout.append($feed);
+		}
+		if (!$feed[0].contains($timeline[0])) {
+			$feed.append($timeline);
+		}
+		if (frm.doctype === "Lead") {
+			$feed.find(".fp-crm-feed-title").text("История по лиду");
+		}
+	}
+
+	// 2. Технические вкладки (Операции/Примечания/Соединения) — скрыть из UI
+	//    (НЕ удаляя): шум для менеджера. Контакты и Реквизиты оставляем.
+	//    Ленту уже вынесли выше, поэтому скрытие «Операции» её не прячет.
+	saas_theme.CRM_HIDDEN_TABS.forEach(function (fn) {
+		$w.find('.form-tabs .nav-item').has('[data-fieldname="' + fn + '"]').addClass("fp-hidden-tab");
+	});
+};
 
 saas_theme.reshape_mail = function (frm) {
 	if (!frm.fields_dict || !frm.fields_dict.content) return;
@@ -299,7 +342,13 @@ saas_theme.sidebar = {
 		if (item.custom_route) return item.custom_route;
 		if (!item.link_to && !item.url) return null;
 		switch (item.link_type) {
-			case 'DocType': return ['List', item.link_to];
+			// Сделка открывается канбаном по умолчанию (доска «Продажи» по этапам).
+			// Список остаётся доступен переключателем представлений на самой доске.
+			case 'DocType':
+				if (item.link_to === 'Opportunity') {
+					return ['List', 'Opportunity', 'Kanban', 'Продажи'];
+				}
+				return ['List', item.link_to];
 			// Workspace pages live at slugified routes: "Frappe CRM" → /desk/frappe-crm
 			case 'Workspace': return [frappe.router.slug(item.link_to)];
 			case 'Page': return [item.link_to];
@@ -934,6 +983,26 @@ saas_theme.list_controls = {
 		}
 		// Фильтр по полкам нужен и на инбоксе (view_name === 'Inbox', не 'List')
 		this.setup_shelf_filter(window.cur_list);
+		// Скрыть глючное «Представление отчёта» из меню (CRM-списки)
+		this.hide_report_view(window.cur_list);
+	},
+
+	/* ----- Скрыть пункт «Представление отчёта» из меню «...» -----
+	   На отчётном представлении ломается возврат/маршрут (как было с «Главной»);
+	   менеджеру оно не нужно. Скрываем из UI только на CRM-списках. Пункт меню
+	   не имеет data-атрибута — матчим по тексту (перевод проекта стабилен).     */
+	REPORT_VIEW_LABELS: ["Представление отчёта", "Report View"],
+
+	hide_report_view(lv) {
+		if (!lv || (lv.doctype !== "Opportunity" && lv.doctype !== "Lead")) return;
+		const labels = this.REPORT_VIEW_LABELS;
+		$(".menu-btn-group .dropdown-menu a.dropdown-item, .page-actions .dropdown-menu a.dropdown-item").each(function () {
+			const t = $(this).text().trim();
+			if (labels.indexOf(t) !== -1) {
+				$(this).closest("li, .dropdown-item").addClass("fp-hidden-menu-item");
+				$(this).addClass("fp-hidden-menu-item");
+			}
+		});
 	},
 
 	/* ----- Быстрый фильтр по полкам классификации (только Communication) ----- */
