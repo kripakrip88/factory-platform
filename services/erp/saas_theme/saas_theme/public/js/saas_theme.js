@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v125";
+const SAAS_THEME_BUILD = "v126";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -38,29 +38,13 @@ const SAAS_THEME_BUILD = "v125";
 		return "hsl(" + h + ", 52%, 45%)"; // алгоритмический цвет, не новый hex
 	};
 
+	// add_fields — чтобы seen/sender/communication_date попали в cur_list.data.
+	// Визуал (аватар/жирный/дата) делаем JS-декорацией строк: инбокс НЕ применяет
+	// formatters темы для своей колонки.
 	frappe.listview_settings = frappe.listview_settings || {};
 	const prev = frappe.listview_settings["Communication"] || {};
-	frappe.listview_settings["Communication"] = Object.assign({}, prev, {
-		add_fields: ["seen", "sender", "sender_full_name", "communication_date"],
-		formatters: Object.assign({}, prev.formatters, {
-			subject(value, df, doc) {
-				const sender = (doc.sender || "").trim();
-				const name = (doc.sender_full_name || sender || "?").trim();
-				const initial = (name.replace(/[^\p{L}\p{N}]/u, "")[0] || name[0] || "?").toUpperCase();
-				const color = saas_theme.mail_avatar_color(sender);
-				const esc = frappe.utils.escape_html;
-				const avatar = '<span class="st-mail-avatar" style="background:' + color + '" title="' + esc(sender) + '">' + esc(initial) + "</span>";
-				const subj = esc(value || "(без темы)");
-				let date = "";
-				if (doc.communication_date) {
-					date = '<span class="st-mail-date">' + esc(frappe.datetime.str_to_user(doc.communication_date)) + "</span>";
-				}
-				const unseen = doc.seen ? "" : " st-mail-unseen";
-				return '<span class="st-mail-subjcell' + unseen + '">' + avatar +
-					'<span class="st-mail-subjtext">' + subj + "</span>" + date + "</span>";
-			},
-		}),
-	});
+	const add = new Set([...(prev.add_fields || []), "seen", "sender", "sender_full_name", "communication_date"]);
+	frappe.listview_settings["Communication"] = Object.assign({}, prev, { add_fields: [...add] });
 })();
 
 $(document).ready(function () {
@@ -1073,6 +1057,8 @@ saas_theme.list_controls = {
 		// Чистка лишних кнопок инбокса (переключатель представлений, родная
 		// выпадашка папок, закладка сохранения фильтра)
 		this.cleanup_inbox_buttons(window.cur_list);
+		// Аватары/прочитано/дата в строках инбокса (JS-декорация + наблюдатель)
+		this.decorate_inbox_rows(window.cur_list);
 		// Скрыть лишние стандартные фильтры-строки (per-doctype)
 		this.hide_standard_filters(window.cur_list);
 		// Скрыть глючное «Представление отчёта» из меню (CRM-списки)
@@ -1105,6 +1091,60 @@ saas_theme.list_controls = {
 				$(this).addClass("st-hide-std-filter");
 			}
 		});
+	},
+
+	/* ----- Аватары / прочитано / дата в строках инбокса (Задачи 3-5) -----
+	   Инбокс не применяет formatters темы, поэтому декорируем строки в DOM:
+	   буквенный аватар (HSL из адреса), непрочитанные жирным (seen), дата письма.
+	   MutationObserver переисполняет декор при перерисовке строк (фильтр/скролл). */
+	decorate_inbox_rows(lv) {
+		if (!lv || lv.doctype !== "Communication" || lv.view_name !== "Inbox") return;
+		if (!lv.page || !lv.page.wrapper) return;
+		const me = this;
+		const byName = {};
+		(lv.data || []).forEach((d) => (byName[d.name] = d));
+
+		$(lv.page.wrapper).find(".list-row-container").each(function () {
+			const $r = $(this);
+			if ($r.find(".list-row-head").length) return; // шапка списка
+			const $subj = $r.find(".list-subject");
+			if (!$subj.length || $subj.find(".st-mail-avatar").length) return; // уже декорирована
+			const name = $r.find("[data-name]").attr("data-name");
+			const doc = byName[name];
+			if (!doc) return;
+
+			const sender = (doc.sender || "").trim();
+			const fullname = (doc.sender_full_name || sender || "?").trim();
+			const initial = (fullname.replace(/[^\p{L}\p{N}]/u, "")[0] || fullname[0] || "?").toUpperCase();
+			const $av = $('<span class="st-mail-avatar"></span>')
+				.css("background", saas_theme.mail_avatar_color(sender))
+				.text(initial)
+				.attr("title", sender);
+			// аватар — после чекбокса/«звезды», перед текстом темы
+			const $anchor = $subj.find(".level-item").first();
+			if ($anchor.length) $anchor.after($av);
+			else $subj.prepend($av);
+
+			if (!doc.seen) $subj.addClass("st-mail-unseen");
+
+			if (doc.communication_date) {
+				const dt = frappe.datetime.str_to_user(doc.communication_date);
+				$subj.append('<span class="st-mail-rowdate">' + frappe.utils.escape_html(dt) + "</span>");
+			}
+		});
+
+		// Наблюдатель — переисполнить декор после перерисовки строк (один раз на список)
+		if (!lv._st_rows_observed) {
+			const target = lv.$result && lv.$result.length ? lv.$result[0] : null;
+			if (target) {
+				lv._st_rows_observed = true;
+				const obs = new MutationObserver(() => {
+					clearTimeout(lv._st_rows_t);
+					lv._st_rows_t = setTimeout(() => me.decorate_inbox_rows(lv), 150);
+				});
+				obs.observe(target, { childList: true, subtree: true });
+			}
+		}
 	},
 
 	/* ----- Чистка лишних кнопок инбокса (Задача 6) -----

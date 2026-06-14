@@ -3791,21 +3791,23 @@ html[data-theme="dark"] .fp-crm-card .fp-crm-feed .timeline-content {
     flex-shrink: 0;
     line-height: 1;
 }
-.st-mail-subjtext {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+/* Аватар в строке инбокса — выравнивание по тексту темы */
+.list-subject .st-mail-avatar {
+    margin-right: 8px;
+    vertical-align: middle;
 }
-/* Непрочитанные — жирным (как в почтовике) */
-.st-mail-unseen .st-mail-subjtext {
-    font-weight: 600;
-    color: var(--text-color);
+/* Непрочитанные — жирным (seen=0) */
+.list-subject.st-mail-unseen a,
+.list-subject.st-mail-unseen .ellipsis {
+    font-weight: 600 !important;
+    color: var(--text-color) !important;
 }
-.st-mail-date {
+/* Дата письма в строке (абсолютная, читаемая) */
+.st-mail-rowdate {
     color: var(--text-muted);
     font-size: 11px;
     white-space: nowrap;
-    margin-left: 6px;
+    margin-left: 8px;
 }
 
 /* Карточка письма: мета «от кого · когда» под темой */
