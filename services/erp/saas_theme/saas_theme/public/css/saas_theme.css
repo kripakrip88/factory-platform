@@ -337,12 +337,8 @@ html[data-theme="dark"] {
 	box-shadow: 0 2px 6px rgba(0, 82, 255, 0.2);
 }
 
-.btn-primary:focus,
-.btn-primary:focus-visible,
-.btn-primary-dark:focus,
-.btn-primary-dark:focus-visible {
-	box-shadow: 0 0 0 2px rgba(0, 82, 255, 0.3) !important;
-}
+/* Фокус primary-кнопок задаётся ЕДИНЫМ правилом обводки в конце файла
+   (см. «ЕДИНОЕ ПРАВИЛО ОБВОДКИ КНОПОК») — здесь точечный ring убран. */
 
 .btn-default {
 	border: 1px solid #E3E8EE;
@@ -3664,4 +3660,28 @@ html[data-theme="dark"] .fp-crm-card .fp-crm-feed .timeline-content {
     max-width: 38ch;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+/* ============================================
+   ЕДИНОЕ ПРАВИЛО ОБВОДКИ КНОПОК (фокус) — один источник вместо точечных
+   Проблема: ядро Frappe рисует яркую обводку при фокусе (у primary-кнопок
+   outline-color белый → кричащее белое кольцо, особенно на синей кнопке в
+   тёмной теме). Раньше глушили по экранам точечно → разнобой.
+
+   Единое поведение для ВСЕХ кнопок:
+   - убрать дефолтную белую/яркую обводку ядра;
+   - доступность: видимое, но приглушённое кольцо ТОЛЬКО для клавиатуры
+     (:focus-visible), из переменной темы; мышиный клик — без кольца.
+   Только переменные темы, ноль новых hex. Светлая/тёмная — через var(--...).
+   ============================================ */
+.btn:focus,
+.btn:focus-visible,
+.btn:active:focus,
+.btn.active:focus {
+    outline: none !important;
+}
+
+/* Клавиатурный фокус — единое приглушённое кольцо (видно в обеих темах) */
+.btn:focus-visible {
+    box-shadow: 0 0 0 2px var(--outline-gray-4) !important;
 }
