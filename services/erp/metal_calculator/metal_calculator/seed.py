@@ -39,15 +39,20 @@ def _seed_profiles():
 
 def _seed_sheets():
 	n = 0
-	for thickness, gost, mass in SHEETS:
-		# Имя формируется по format:Лист-{thickness}мм — проверяем по полю,
-		# чтобы не зависеть от форматирования float в имени.
-		if frappe.db.exists("Metal Sheet Grade", {"thickness": thickness}):
+	for sheet_type, thickness, size_label, gost, mass in SHEETS:
+		# Идемпотентность по (тип, толщина, типоразмер) — имя формирует контроллер
+		# autoname по этим же полям, поэтому проверяем по ним, а не по имени.
+		if frappe.db.exists(
+			"Metal Sheet Grade",
+			{"sheet_type": sheet_type, "thickness": thickness, "size_label": size_label or ""},
+		):
 			continue
 		frappe.get_doc(
 			{
 				"doctype": "Metal Sheet Grade",
+				"sheet_type": sheet_type,
 				"thickness": thickness,
+				"size_label": size_label,
 				"gost": gost,
 				"mass_per_sqm": mass,
 			}

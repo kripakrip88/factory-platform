@@ -21,7 +21,10 @@ class TestCalculate(_BaseTestCase):
 		seed_all()
 
 	def _sheet_name(self, thickness):
-		return frappe.db.get_value("Metal Sheet Grade", {"thickness": thickness}, "name")
+		# Толщина теперь не уникальна (гладкий/рифлёный/ПВЛ) — берём гладкий.
+		return frappe.db.get_value(
+			"Metal Sheet Grade", {"thickness": thickness, "sheet_type": "Гладкий"}, "name"
+		)
 
 	# --- Якоря из ТЗ ---
 
@@ -42,6 +45,37 @@ class TestCalculate(_BaseTestCase):
 		self.assertIsNotNone(ref, "Лист 4 мм должен быть в справочнике")
 		res = calculate(mode="sheet", ref=ref, qty=1, a_mm=1500, b_mm=6000)
 		self.assertAlmostEqual(res["weight_total_kg"], 282.6, places=1)
+
+	def test_truba_profilnaya_split(self):
+		"""Трубы профильные разделены: квадратная и прямоугольная — разные группы."""
+		sq = frappe.db.get_value(
+			"Metal Profile",
+			{"profile_type": "Труба профильная квадратная", "size_label": "40x40x3"},
+			"name",
+		)
+		rect = frappe.db.get_value(
+			"Metal Profile",
+			{"profile_type": "Труба профильная прямоугольная", "size_label": "60x40x2"},
+			"name",
+		)
+		self.assertEqual(sq, "Труба профильная квадратная-40x40x3")
+		self.assertEqual(rect, "Труба профильная прямоугольная-60x40x2")
+		res = calculate(mode="linear", ref=sq, qty=1, length_mm=6000)
+		self.assertAlmostEqual(res["weight_total_kg"], 20.16, places=2)  # 3.36×6
+
+	def test_sheet_types_distinct(self):
+		"""Гладкий/рифлёный/ПВЛ с толщиной 4 — разные записи, разные имена."""
+		flat = frappe.db.get_value(
+			"Metal Sheet Grade", {"thickness": 4, "sheet_type": "Гладкий"}, "name"
+		)
+		pvl = frappe.db.get_value(
+			"Metal Sheet Grade", {"sheet_type": "Просечно-вытяжной", "size_label": "406"}, "name"
+		)
+		self.assertEqual(flat, "Лист-4мм")
+		self.assertEqual(pvl, "ПВЛ-406")
+		# ПВЛ 406 = 15.7 кг/м², лист 1×1 м → 15.7 кг
+		res = calculate(mode="sheet", ref=pvl, qty=1, a_mm=1000, b_mm=1000)
+		self.assertAlmostEqual(res["weight_total_kg"], 15.7, places=2)
 
 	# --- Контроль конвертации мм→м ---
 
