@@ -8,13 +8,10 @@ frappe_version = ">=16.0.0 <17.0.0"
 
 # Fixtures
 # --------
-# Воркспейс «Калькуляторы» ставится вместе с аппой (не зависит от ручной настройки в UI).
-fixtures = [
-	{
-		"doctype": "Workspace",
-		"filters": [["name", "in", ["Калькуляторы"]]],
-	},
-]
+# Воркспейс «Калькуляторы» создаётся в after_install обычным get_doc().insert()
+# (см. install.py). Через fixtures НЕ грузим: force-импортёр Frappe v16 терял
+# обязательное поле `type` у дочернего Workspace Shortcut → MandatoryError.
+fixtures = []
 
 # Installation
 # ------------
