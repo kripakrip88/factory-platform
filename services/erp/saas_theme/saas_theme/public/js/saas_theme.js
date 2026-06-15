@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v127";
+const SAAS_THEME_BUILD = "v128";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -1141,12 +1141,19 @@ saas_theme.list_controls = {
 				.css("background", saas_theme.mail_avatar_color(sender))
 				.text(initial)
 				.attr("title", sender);
-			// аватар — после чекбокса/«звезды», перед текстом темы
+			// имя отправителя — отдельный «столбец» текста (не только аватар)
+			const $from = $('<span class="st-mail-sender"></span>').text(fullname).attr("title", sender);
+			// блок: [точка непрочитано] аватар  имя отправителя
+			const $block = $('<span class="st-mail-rowhead"></span>');
+			if (!doc.seen) $block.append('<span class="st-mail-dot" title="Непрочитано"></span>');
+			$block.append($av).append($from);
+			// после чекбокса/«звезды», перед текстом темы
 			const $anchor = $subj.find(".level-item").first();
-			if ($anchor.length) $anchor.after($av);
-			else $subj.prepend($av);
+			if ($anchor.length) $anchor.after($block);
+			else $subj.prepend($block);
 
 			if (!doc.seen) $subj.addClass("st-mail-unseen");
+			else $subj.addClass("st-mail-seen");
 
 			// Дата — отдельный правый столбец: нативный .frappe-timestamp («1 д»
 			// относительный) делаем абсолютным коротким (13.06 11:05) и снимаем

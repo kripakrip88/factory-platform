@@ -3796,11 +3796,48 @@ html[data-theme="dark"] .fp-crm-card .fp-crm-feed .timeline-content {
     margin-right: 8px;
     vertical-align: middle;
 }
-/* Непрочитанные — жирным (seen=0) */
+/* Блок «отправитель» в строке инбокса: [точка] аватар имя — как столбец */
+.st-mail-rowhead {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-right: 10px;
+    flex-shrink: 0;
+}
+.st-mail-sender {
+    display: inline-block;
+    width: 160px;
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
+    color: var(--text-color);
+}
+/* Точка-индикатор непрочитанного письма */
+.st-mail-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--primary, #2563eb);
+    flex-shrink: 0;
+}
+/* Непрочитанные — жирно + насыщенный текст; имя отправителя тоже жирным */
 .list-subject.st-mail-unseen a,
-.list-subject.st-mail-unseen .ellipsis {
-    font-weight: 600 !important;
+.list-subject.st-mail-unseen .ellipsis,
+.list-subject.st-mail-unseen .st-mail-sender {
+    font-weight: 700 !important;
     color: var(--text-color) !important;
+}
+/* Прочитанные — приглушённые и обычным весом (явный контраст с непрочитанными) */
+.list-subject.st-mail-seen a,
+.list-subject.st-mail-seen .ellipsis {
+    font-weight: 400 !important;
+    color: var(--text-muted) !important;
+}
+.list-subject.st-mail-seen .st-mail-sender {
+    font-weight: 400;
+    color: var(--text-muted);
 }
 /* Дата письма в строке (абсолютная, читаемая) */
 .st-mail-rowdate {
