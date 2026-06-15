@@ -29,11 +29,11 @@
     "doc_view": "List"
    },
    {
-    "type": "Page",
+    "type": "DocType",
     "label": "Раскрой металла",
-    "link_to": "module_in_progress",
-    "color": "Grey",
-    "doc_view": ""
+    "link_to": "Cutting Plan",
+    "color": "Orange",
+    "doc_view": "List"
    },
    {
     "type": "Page",
