@@ -55,18 +55,48 @@ function piece_label(p) {
 }
 
 function render_linear(meta, result, kerf) {
-	let out = `<div class="cut-summary">${__("Хлыстов")}: <b>${result.total_stock}</b> · ${__("Отход")}: <b>${result.waste_percent}%</b> · ${__("хлыст")} ${g(meta.stock_length)} ${__("мм")}, ${__("рез")} ${g(kerf)} ${__("мм")}</div>`;
+	const stock = meta.stock_length;
+	let out = `<div class="cut-summary">${__("Хлыстов")}: <b>${result.total_stock}</b> · ${__("Польза")}: <b>${g(100 - result.waste_percent)}%</b> · ${__("Отход")}: <b>${result.waste_percent}%</b> · ${__("хлыст")} ${g(stock)} ${__("мм")}, ${__("рез")} ${g(kerf)} ${__("мм")}</div>`;
+	let n = 0;
 	for (const grp of result.groups) {
 		const title = `${grp.profile_type || ""} ${grp.size_label || ""}`.trim();
 		if (grp.error) { out += `<div class="cut-group cut-error"><b>${E(title)}</b>: ⚠️ ${E(grp.error)}</div>`; continue; }
-		let rows = "";
+		out += `<div class="cut-group"><div class="cut-gtitle">${E(title)} — ${grp.stock_count} ${__("хлыст(ов)")}, ${__("отход")} ${grp.waste_percent}%</div>`;
 		for (const p of grp.patterns) {
-			const pieces = p.pieces.map(piece_label).join(" + ");
-			rows += `<div class="cut-pat">[${pieces} <span class="cut-w">+ ${g(p.waste)} ${__("отход")}</span>] ×${p.count}</div>`;
+			n += 1;
+			const cnt = p.count > 1 ? ` <b>× ${p.count} ${__("шт")}</b>` : "";
+			out += `<div class="cut-sheet-no">${__("Хлыст")} №${n}${cnt} · ${p.pieces.length} ${__("отрезков")}</div>`;
+			out += bar_linear(stock, p);
 		}
-		out += `<div class="cut-group"><div class="cut-gtitle">${E(title)} — ${grp.stock_count} ${__("хлыст(ов)")}, ${__("отход")} ${grp.waste_percent}%</div>${rows}</div>`;
+		out += `</div>`;
 	}
 	return out;
+}
+
+// Горизонтальная полоса хлыста: сегменты деталей + линейка реза + отход (как карта на производство).
+function bar_linear(stock, pattern, max_w = 680) {
+	const scale = stock ? max_w / stock : 1;
+	const W = stock * scale, H = 34, AX = 22; // AX — высота линейки под полосой
+	let x = 0;
+	let segs = "";
+	let ticks = `<line x1="0" y1="${H}" x2="${W.toFixed(1)}" y2="${H}" stroke="#9ca3af" stroke-width="1"/>`;
+	pattern.pieces.forEach((p, i) => {
+		const w = p.length * scale;
+		const color = CUT_PALETTE[i % CUT_PALETTE.length];
+		const txt = p.label ? p.label : g(p.length);
+		segs += `<rect x="${x.toFixed(1)}" y="0" width="${w.toFixed(1)}" height="${H}" fill="${color}" fill-opacity="0.5" stroke="#1f2937" stroke-width="0.7"/>`;
+		if (w > 26) segs += `<text x="${(x + w / 2).toFixed(1)}" y="${(H / 2 + 4)}" text-anchor="middle" font-size="11" fill="var(--text-color,#111)">${E(txt)}</text>`;
+		x += w;
+		// риска реза + накопительный размер от нуля
+		ticks += `<line x1="${x.toFixed(1)}" y1="${H}" x2="${x.toFixed(1)}" y2="${H + 6}" stroke="#6b7280" stroke-width="1"/>`;
+		ticks += `<text x="${Math.min(x, W - 1).toFixed(1)}" y="${H + 16}" text-anchor="middle" font-size="9.5" fill="var(--text-muted,#666)">${g(x / scale)}</text>`;
+	});
+	if (pattern.waste > 0.01) {
+		const w = pattern.waste * scale;
+		segs += `<rect x="${x.toFixed(1)}" y="0" width="${w.toFixed(1)}" height="${H}" fill="#e5e7eb" stroke="#9ca3af" stroke-width="0.7"/>`;
+		if (w > 40) segs += `<text x="${(x + w / 2).toFixed(1)}" y="${(H / 2 + 4)}" text-anchor="middle" font-size="10" fill="#6b7280">${__("отход")} ${g(pattern.waste)}</text>`;
+	}
+	return `<svg viewBox="0 0 ${W.toFixed(1)} ${H + AX}" width="${W.toFixed(1)}" height="${H + AX}" style="max-width:100%;height:auto;margin:4px 0 10px">${segs}${ticks}</svg>`;
 }
 
 function render_sheet(meta, result, kerf) {
