@@ -10,19 +10,20 @@ frappe.pages["metal_calculator"].on_page_load = function (wrapper) {
 const SHEET_TYPE = "Лист";
 
 // Группы сортамента: [полное имя, короткая подпись плитки, ключ иконки]
+// [полное имя, короткая подпись, ключ иконки, цвет подсветки]
 const TILES = [
-	["Арматура", "Арматура", "armatura"],
-	["Двутавр", "Двутавр", "ibeam"],
-	["Швеллер", "Швеллер", "channel"],
-	["Уголок равнополочный", "Уголок равноп.", "angle"],
-	["Уголок неравнополочный", "Уголок неравноп.", "angle"],
-	["Труба круглая", "Труба круглая", "pipe"],
-	["Труба профильная квадратная", "Профтруба кв.", "sqpipe"],
-	["Труба профильная прямоугольная", "Профтруба прям.", "rectpipe"],
-	["Круг", "Круг", "circle"],
-	["Квадрат", "Квадрат", "square"],
-	["Шестигранник", "Шестигранник", "hex"],
-	[SHEET_TYPE, "Лист", "sheet"],
+	["Арматура", "Арматура", "armatura", "#E2683C"],
+	["Двутавр", "Двутавр", "ibeam", "#3B82F6"],
+	["Швеллер", "Швеллер", "channel", "#8B5CF6"],
+	["Уголок равнополочный", "Уголок равноп.", "angle", "#10B981"],
+	["Уголок неравнополочный", "Уголок неравноп.", "angle", "#14B8A6"],
+	["Труба круглая", "Труба круглая", "pipe", "#0EA5E9"],
+	["Труба профильная квадратная", "Профтруба кв.", "sqpipe", "#6366F1"],
+	["Труба профильная прямоугольная", "Профтруба прям.", "rectpipe", "#A855F7"],
+	["Круг", "Круг", "circle", "#F59E0B"],
+	["Квадрат", "Квадрат", "square", "#EF4444"],
+	["Шестигранник", "Шестигранник", "hex", "#EC4899"],
+	[SHEET_TYPE, "Лист", "sheet", "#64748B"],
 ];
 
 const ICONS = {
@@ -60,15 +61,17 @@ class MetalCalculator {
 	inject_styles() {
 		if (document.getElementById("mc-styles")) return;
 		const css = `
-		.mc-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px;margin-bottom:20px}
-		.mc-tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
-			padding:12px 6px;border:1px solid var(--border-color);border-radius:10px;cursor:pointer;
-			background:var(--card-bg);transition:all .12s;text-align:center;min-height:84px}
-		.mc-tile:hover{border-color:var(--primary);transform:translateY(-1px)}
-		.mc-tile.active{border-color:var(--primary);background:var(--primary);color:#fff}
-		.mc-tile.active svg{color:#fff}.mc-tile.active span{color:#fff}
-		.mc-tile svg{width:34px;height:34px;color:var(--text-muted)}
-		.mc-tile span{font-size:.72rem;line-height:1.05;color:var(--text-color)}
+		.mc-wrap{padding:18px 16px 0}
+		.mc-tiles{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:0 0 24px;max-width:760px}
+		.mc-tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+			padding:9px 4px;border:1px solid var(--border-color);border-radius:9px;cursor:pointer;
+			background:var(--card-bg);transition:all .12s;text-align:center;min-height:66px}
+		.mc-tile:hover{border-color:var(--tile-color);transform:translateY(-1px)}
+		.mc-tile.active{border-color:var(--tile-color);background:color-mix(in srgb, var(--tile-color) 14%, transparent);
+			box-shadow:inset 0 0 0 1px var(--tile-color)}
+		.mc-tile svg{width:26px;height:26px;color:var(--tile-color)}
+		.mc-tile span{font-size:.7rem;line-height:1.05;color:var(--text-color)}
+		.mc-tile.active span{color:var(--tile-color);font-weight:600}
 		.mc-picker{margin-bottom:14px}
 		.mc-search{width:100%;margin-bottom:8px}
 		.mc-cascade{display:flex;gap:10px;flex-wrap:wrap}
@@ -137,8 +140,8 @@ class MetalCalculator {
 		`);
 
 		const $tiles = this.page.body.find(".mc-tiles");
-		TILES.forEach(([full, short, icon]) => {
-			const $t = $(`<div class="mc-tile" data-type="${frappe.utils.escape_html(full)}" title="${frappe.utils.escape_html(full)}">${ICONS[icon] || ""}<span>${frappe.utils.escape_html(short)}</span></div>`);
+		TILES.forEach(([full, short, icon, color]) => {
+			const $t = $(`<div class="mc-tile" data-type="${frappe.utils.escape_html(full)}" style="--tile-color:${color}" title="${frappe.utils.escape_html(full)}">${ICONS[icon] || ""}<span>${frappe.utils.escape_html(short)}</span></div>`);
 			$t.on("click", () => this.select_type(full));
 			$tiles.append($t);
 		});
