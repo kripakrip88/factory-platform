@@ -4,6 +4,7 @@
   "name": "Калькуляторы",
   "label": "Калькуляторы",
   "title": "Калькуляторы",
+  "app": "metal_calculator",
   "public": 1,
   "is_hidden": 0,
   "icon": "calculator",

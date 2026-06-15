@@ -19,13 +19,15 @@ def _ensure_workspace():
 	ДО after_install. Поэтому workspace.json вынесен из fixtures/ в data/, а тут мы
 	строим воркспейс сами с гарантией type у каждого shortcut. Идемпотентно.
 
-	КРИТИЧНО №2: воркспейс создаётся БЕЗ `module` (как пользовательский/custom).
-	`bench migrate` после install-app зовёт remove_orphan_entities(): любой public
-	воркспейс с заданными module+app, у которого НЕТ стандартного файла
-	`<app>/**/workspace/**/*.json`, удаляется как «орфан» (это и стирало наш
-	воркспейс после установки). Положить файл в workspace/ нельзя — migrate тогда
-	прогонит его через тот же баговый import_file_by_path. Поэтому делаем воркспейс
-	module-less: фильтр орфанов (module is set И app is set) его не трогает.
+	КРИТИЧНО №2: воркспейс БЕЗ `module`, но С `app="metal_calculator"`.
+	Тонкий баланс двух механизмов Frappe v16:
+	- remove_orphan_entities() на migrate удаляет public-воркспейс ТОЛЬКО если
+	  заданы И module, И app (и нет стандартного файла). Оставляем module пустым →
+	  фильтр не срабатывает, воркспейс переживает migrate.
+	- get_workspace_sidebar_items() (desktop.py) показывает воркспейс в левой
+	  навигации, группируя по `app`. Без app (и module) он выпадает из меню.
+	  Поэтому ставим `app` напрямую. ВАЖНО: НЕ ставить `module` — иначе
+	  Workspace.validate() сам выведет app из module → сработает фильтр орфанов.
 	"""
 	# Пересоздаём (delete+rebuild), а НЕ пропускаем если существует: воркспейс
 	# module-less (см. КРИТИЧНО №2) → uninstall-app его не удаляет, он переживает
@@ -42,9 +44,10 @@ def _ensure_workspace():
 	# type у каждого. (Через get_doc(rec)/fixtures Frappe v16 терял обязательное
 	# поле type у дочернего Workspace Shortcut → MandatoryError.)
 	# `module` НЕ копируем намеренно (см. КРИТИЧНО №2) — иначе migrate удалит орфан.
+	# `app` копируем — нужен для показа в навигации (группировка сайдбара по app).
 	ws = frappe.new_doc("Workspace")
 	for key in (
-		"name", "label", "title", "public", "is_hidden",
+		"name", "label", "title", "app", "public", "is_hidden",
 		"icon", "indicator_color", "sequence_id", "content",
 	):
 		if rec.get(key) is not None:
