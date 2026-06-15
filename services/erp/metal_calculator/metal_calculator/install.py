@@ -23,7 +23,28 @@ def _ensure_workspace():
 	with open(path, encoding="utf-8") as f:
 		data = json.load(f)
 	rec = (data if isinstance(data, list) else [data])[0]
-	frappe.get_doc(rec).insert(ignore_permissions=True)
+
+	# Строим воркспейс ЯВНО: shortcut'ы добавляем через append с гарантированным
+	# type у каждого. (Через get_doc(rec)/fixtures Frappe v16 терял обязательное
+	# поле type у дочернего Workspace Shortcut → MandatoryError.)
+	ws = frappe.new_doc("Workspace")
+	for key in (
+		"name", "label", "title", "module", "public", "is_hidden",
+		"icon", "indicator_color", "sequence_id", "content",
+	):
+		if rec.get(key) is not None:
+			ws.set(key, rec[key])
+	for s in rec.get("shortcuts", []):
+		ws.append("shortcuts", {
+			"type": s.get("type") or "Page",
+			"label": s.get("label"),
+			"link_to": s.get("link_to"),
+			"color": s.get("color"),
+			"doc_view": s.get("doc_view", ""),
+		})
+	for link in rec.get("links", []):
+		ws.append("links", link)
+	ws.insert(ignore_permissions=True)
 
 
 def after_install():
