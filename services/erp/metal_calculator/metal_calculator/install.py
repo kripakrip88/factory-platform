@@ -27,8 +27,12 @@ def _ensure_workspace():
 	прогонит его через тот же баговый import_file_by_path. Поэтому делаем воркспейс
 	module-less: фильтр орфанов (module is set И app is set) его не трогает.
 	"""
+	# Пересоздаём (delete+rebuild), а НЕ пропускаем если существует: воркспейс
+	# module-less (см. КРИТИЧНО №2) → uninstall-app его не удаляет, он переживает
+	# переустановку со старым набором shortcut'ов. Чтобы определение всегда
+	# совпадало с data/workspace.json (новые ярлыки и т.п.) — сносим и строим заново.
 	if frappe.db.exists("Workspace", "Калькуляторы"):
-		return
+		frappe.delete_doc("Workspace", "Калькуляторы", force=True, ignore_permissions=True)
 	path = os.path.join(os.path.dirname(__file__), "data", "workspace.json")
 	with open(path, encoding="utf-8") as f:
 		data = json.load(f)
