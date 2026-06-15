@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v128";
+const SAAS_THEME_BUILD = "v129";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -1143,10 +1143,12 @@ saas_theme.list_controls = {
 				.attr("title", sender);
 			// имя отправителя — отдельный «столбец» текста (не только аватар)
 			const $from = $('<span class="st-mail-sender"></span>').text(fullname).attr("title", sender);
-			// блок: [точка непрочитано] аватар  имя отправителя
+			// блок: [точка] аватар  имя отправителя. Точка ВСЕГДА занимает место
+			// (у прочитанных прозрачная) — чтобы столбцы не съезжали по строкам.
 			const $block = $('<span class="st-mail-rowhead"></span>');
-			if (!doc.seen) $block.append('<span class="st-mail-dot" title="Непрочитано"></span>');
-			$block.append($av).append($from);
+			const $dot = $('<span class="st-mail-dot"></span>');
+			if (!doc.seen) $dot.addClass("st-mail-dot-on").attr("title", "Непрочитано");
+			$block.append($dot).append($av).append($from);
 			// после чекбокса/«звезды», перед текстом темы
 			const $anchor = $subj.find(".level-item").first();
 			if ($anchor.length) $anchor.after($block);

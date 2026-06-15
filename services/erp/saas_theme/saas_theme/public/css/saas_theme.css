@@ -3814,13 +3814,17 @@ html[data-theme="dark"] .fp-crm-card .fp-crm-feed .timeline-content {
     vertical-align: middle;
     color: var(--text-color);
 }
-/* Точка-индикатор непрочитанного письма */
+/* Точка-индикатор непрочитанного. Место занимает ВСЕГДА (прозрачная у прочитанных),
+   чтобы аватар/имя/тема были выровнены по всем строкам. */
 .st-mail-dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: var(--primary, #2563eb);
+    background: transparent;
     flex-shrink: 0;
+}
+.st-mail-dot.st-mail-dot-on {
+    background: var(--primary, #2563eb);
 }
 /* Непрочитанные — жирно + насыщенный текст; имя отправителя тоже жирным */
 .list-subject.st-mail-unseen a,
