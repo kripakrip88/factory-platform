@@ -12,14 +12,16 @@ from metal_calculator.seed import seed_all
 def _ensure_workspace():
 	"""Создать воркспейс «Калькуляторы» обычным insert (НЕ через fixtures).
 
-	force-импортёр Frappe v16 (import_file_by_path) терял обязательное поле `type`
-	у дочернего Workspace Shortcut → MandatoryError. Обычный get_doc().insert()
-	сохраняет дочерние поля корректно. Идемпотентно. Источник данных — тот же
-	файл fixtures/workspace.json (единый источник).
+	КРИТИЧНО: файл лежит в data/, а НЕ в fixtures/. Frappe v16 при install-app
+	сам сканирует папку fixtures/ ПО ИМЕНАМ ФАЙЛОВ (игнорируя hooks `fixtures=[]`)
+	и грузит их force-импортёром import_file_by_path → doc.insert(), который терял
+	обязательное поле `type` у дочернего Workspace Shortcut → MandatoryError ещё
+	ДО after_install. Поэтому workspace.json вынесен из fixtures/ в data/, а тут мы
+	строим воркспейс сами с гарантией type у каждого shortcut. Идемпотентно.
 	"""
 	if frappe.db.exists("Workspace", "Калькуляторы"):
 		return
-	path = os.path.join(os.path.dirname(__file__), "fixtures", "workspace.json")
+	path = os.path.join(os.path.dirname(__file__), "data", "workspace.json")
 	with open(path, encoding="utf-8") as f:
 		data = json.load(f)
 	rec = (data if isinstance(data, list) else [data])[0]
