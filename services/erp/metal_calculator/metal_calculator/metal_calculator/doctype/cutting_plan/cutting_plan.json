@@ -1,0 +1,138 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "CUT-.#####",
+ "creation": "2026-06-15 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "plan_title",
+  "cut_type",
+  "kerf",
+  "col_break_stock",
+  "stock_length",
+  "sheet_length",
+  "sheet_width",
+  "sec_items",
+  "items",
+  "sec_result",
+  "total_stock",
+  "waste_percent",
+  "result_display",
+  "result_html"
+ ],
+ "fields": [
+  {
+   "fieldname": "plan_title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Название"
+  },
+  {
+   "fieldname": "cut_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Тип раскроя",
+   "options": "Линейный\nЛистовой",
+   "reqd": 1,
+   "default": "Линейный"
+  },
+  {
+   "fieldname": "kerf",
+   "fieldtype": "Float",
+   "label": "Ширина реза (kerf), мм",
+   "reqd": 1,
+   "default": "3"
+  },
+  {
+   "fieldname": "col_break_stock",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "stock_length",
+   "fieldtype": "Float",
+   "label": "Длина хлыста, мм (линейный)",
+   "depends_on": "eval:doc.cut_type=='Линейный'"
+  },
+  {
+   "fieldname": "sheet_length",
+   "fieldtype": "Float",
+   "label": "Длина листа, мм (листовой)",
+   "depends_on": "eval:doc.cut_type=='Листовой'"
+  },
+  {
+   "fieldname": "sheet_width",
+   "fieldtype": "Float",
+   "label": "Ширина листа, мм (листовой)",
+   "depends_on": "eval:doc.cut_type=='Листовой'"
+  },
+  {
+   "fieldname": "sec_items",
+   "fieldtype": "Section Break",
+   "label": "Детали"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Детали",
+   "options": "Cutting Plan Item"
+  },
+  {
+   "fieldname": "sec_result",
+   "fieldtype": "Section Break",
+   "label": "Результат"
+  },
+  {
+   "fieldname": "total_stock",
+   "fieldtype": "Int",
+   "label": "Хлыстов / листов всего",
+   "read_only": 1
+  },
+  {
+   "fieldname": "waste_percent",
+   "fieldtype": "Float",
+   "label": "Отход, %",
+   "read_only": 1,
+   "precision": "2"
+  },
+  {
+   "fieldname": "result_display",
+   "fieldtype": "HTML",
+   "label": "Карты раскроя"
+  },
+  {
+   "fieldname": "result_html",
+   "fieldtype": "Long Text",
+   "label": "Карты раскроя (HTML, сырьё)",
+   "read_only": 1,
+   "hidden": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-06-15 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Metal Calculator",
+ "name": "Cutting Plan",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1,
+   "report": 1, "role": "System Manager", "share": 1, "write": 1
+  },
+  {
+   "create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1,
+   "report": 1, "role": "Sales Manager", "share": 1, "write": 1
+  },
+  {
+   "create": 1, "email": 1, "print": 1, "read": 1, "report": 1,
+   "role": "Sales User", "share": 1, "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "plan_title",
+ "track_changes": 1
+}
