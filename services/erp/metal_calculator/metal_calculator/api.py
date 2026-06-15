@@ -8,6 +8,8 @@
 Марка стали в арифметике не участвует — только прокидывается в ответ как атрибут.
 """
 
+import json
+
 import frappe
 from frappe import _
 
@@ -74,3 +76,41 @@ def calculate(mode, ref, qty, length_mm=None, a_mm=None, b_mm=None, steel_grade=
 		"steel_grade": grade,
 		"unit": "кг",
 	}
+
+
+@frappe.whitelist()
+def save_spec(items, customer=None, spec_name=None):
+	"""Сохранить спецификацию (накопленные позиции расчёта) как Metal Spec.
+
+	items — JSON-строка со списком позиций (из калькулятора). Каждая позиция:
+	  {form, item_ref, size_label, steel_grade, dims, qty, weight_one_kg, weight_total_kg}
+	Возвращает name созданного документа. Если передан spec_name — дописывает
+	позиции в существующую спецификацию (append), иначе создаёт новую.
+	"""
+	if isinstance(items, str):
+		items = json.loads(items)
+	if not items:
+		frappe.throw(_("Спецификация пустая — нечего сохранять"))
+
+	if spec_name and frappe.db.exists("Metal Spec", spec_name):
+		doc = frappe.get_doc("Metal Spec", spec_name)
+	else:
+		doc = frappe.new_doc("Metal Spec")
+		if customer:
+			doc.customer = customer
+
+	for it in items:
+		doc.append("items", {
+			"form": it.get("form"),
+			"item_ref": it.get("item_ref"),
+			"size_label": it.get("size_label"),
+			"steel_grade": it.get("steel_grade"),
+			"dims": it.get("dims"),
+			"qty": it.get("qty"),
+			"weight_one_kg": it.get("weight_one_kg"),
+			"weight_total_kg": it.get("weight_total_kg"),
+		})
+
+	doc.save(ignore_permissions=False)
+	frappe.db.commit()
+	return {"name": doc.name, "total_weight_kg": doc.total_weight_kg, "positions": doc.total_positions}

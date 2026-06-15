@@ -8,6 +8,9 @@
  "field_order": [
   "profile_type",
   "size_label",
+  "height_mm",
+  "width_mm",
+  "wall_mm",
   "gost",
   "mass_per_meter"
  ],
@@ -27,6 +30,29 @@
    "in_list_view": 1,
    "label": "Типоразмер (как в ГОСТ)",
    "reqd": 1
+  },
+  {
+   "fieldname": "height_mm",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Высота / диаметр, мм",
+   "precision": "2"
+  },
+  {
+   "fieldname": "width_mm",
+   "fieldtype": "Float",
+   "in_standard_filter": 1,
+   "label": "Ширина, мм",
+   "precision": "2"
+  },
+  {
+   "fieldname": "wall_mm",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Стенка / толщина, мм",
+   "precision": "2"
   },
   {
    "fieldname": "gost",
