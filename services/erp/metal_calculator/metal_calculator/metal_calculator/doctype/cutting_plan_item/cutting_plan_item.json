@@ -6,6 +6,7 @@
  "engine": "InnoDB",
  "istable": 1,
  "field_order": [
+  "detail_name",
   "profile_type",
   "size_label",
   "piece_length",
@@ -13,6 +14,13 @@
   "qty"
  ],
  "fields": [
+  {
+   "fieldname": "detail_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Наименование / № детали",
+   "columns": 2
+  },
   {
    "fieldname": "profile_type",
    "fieldtype": "Data",

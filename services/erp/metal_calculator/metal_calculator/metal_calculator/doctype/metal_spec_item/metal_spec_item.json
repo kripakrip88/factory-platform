@@ -6,6 +6,7 @@
  "engine": "InnoDB",
  "istable": 1,
  "field_order": [
+  "detail_name",
   "form",
   "item_ref",
   "size_label",
@@ -17,11 +18,18 @@
  ],
  "fields": [
   {
+   "fieldname": "detail_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Наименование / № детали",
+   "columns": 2
+  },
+  {
    "fieldname": "form",
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Форма",
-   "columns": 2
+   "columns": 1
   },
   {
    "fieldname": "item_ref",
