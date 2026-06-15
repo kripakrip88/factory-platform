@@ -74,6 +74,14 @@ class MetalCalculator {
 		.mc-tile.active span{color:var(--tile-color);font-weight:600}
 		.mc-picker{margin-bottom:14px}
 		.mc-search{width:100%;margin-bottom:8px}
+		/* Заметная рамка/фон у всех полей калькулятора (фикс светлой темы — без рамок поля сливались) */
+		.mc-form .form-control, .mc-form select, .mc-form input, .mc-cascade select, .mc-search{
+			border:1px solid color-mix(in srgb, var(--text-color) 22%, transparent) !important;
+			background:color-mix(in srgb, var(--text-color) 4%, transparent);
+			border-radius:7px;}
+		.mc-form .form-control:focus, .mc-form select:focus, .mc-form input:focus, .mc-cascade select:focus, .mc-search:focus{
+			border-color:var(--primary) !important;
+			box-shadow:0 0 0 2px color-mix(in srgb, var(--primary) 22%, transparent);}
 		.mc-cascade{display:flex;gap:10px;flex-wrap:wrap}
 		.mc-cascade > div{flex:1;min-width:150px}
 		.mc-cascade label{font-size:.78rem;color:var(--text-muted);display:block;margin-bottom:3px}
