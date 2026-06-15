@@ -133,8 +133,9 @@ class MetalCalculator {
 					</div>
 					<div class="mc-field" data-field="qty"></div>
 					<div class="mc-field" data-field="steel_grade"></div>
-					<div style="margin-top:16px;">
+					<div style="margin-top:16px; display:flex; gap:8px;">
 						<button class="btn btn-primary mc-add">${__("Посчитать и добавить")}</button>
+						<button class="btn btn-default mc-cut">${__("Добавить в раскрой")}</button>
 					</div>
 				</div>
 				<div class="mc-spec" style="margin-top:30px;">
@@ -160,6 +161,7 @@ class MetalCalculator {
 
 		this.page.body.find(".mc-search").on("input", (e) => this.on_search(e.target.value));
 		this.page.body.find(".mc-add").on("click", () => this.add_position());
+		this.page.body.find(".mc-cut").on("click", () => this.add_to_cutting());
 		this.page.body.find(".mc-clear").on("click", () => this.clear_spec());
 		this.page.body.find(".mc-export").on("click", () => this.export_csv());
 		this.page.body.find(".mc-save").on("click", () => this.save_spec());
@@ -396,6 +398,44 @@ class MetalCalculator {
 					weight_total_kg: res.weight_total_kg,
 				});
 				this.render_spec();
+			},
+		});
+	}
+
+	add_to_cutting() {
+		const sheet = this.is_sheet();
+		const qty = this.controls.qty.get_value();
+		const args = { cut_type: sheet ? "Листовой" : "Линейный", qty };
+		if (sheet) {
+			const ref = this.controls.ref_sheet.get_value();
+			if (!ref) return frappe.msgprint(__("Выберите лист"));
+			args.profile_type = "Лист";
+			args.size_label = ref;
+			args.piece_length = this.controls.a_mm.get_value();
+			args.piece_width = this.controls.b_mm.get_value();
+		} else {
+			if (!this.selected_ref) return frappe.msgprint(__("Выберите типоразмер"));
+			const rec = this.profiles.find((r) => r.name === this.selected_ref);
+			args.profile_type = this.current_type;
+			args.size_label = rec ? rec.size_label : this.selected_ref;
+			args.piece_length = this.controls.length_mm.get_value();
+		}
+		frappe.call({
+			method: "metal_calculator.cutting.api.add_to_plan",
+			args,
+			freeze: true,
+			freeze_message: __("Добавляем в раскрой..."),
+			callback: (r) => {
+				if (!r.message) return;
+				const name = r.message.name;
+				frappe.show_alert({
+					message: __("В раскрой {0} (позиций: {1})", [name, r.message.items]),
+					indicator: "green",
+				});
+				frappe.msgprint({
+					title: __("Добавлено в раскрой"),
+					message: `<a href="/app/cutting-plan/${encodeURIComponent(name)}" target="_blank">${frappe.utils.escape_html(name)}</a> — ${__("открыть план раскроя")}`,
+				});
 			},
 		});
 	}
