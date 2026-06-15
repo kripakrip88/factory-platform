@@ -85,10 +85,14 @@ class MetalCalculator {
 		.mc-picked{margin-top:8px;font-size:.9rem;color:var(--text-color)}
 		.mc-picked b{color:var(--primary)}
 		.mc-spec-table{width:100%;border-collapse:collapse;margin-top:8px;font-size:.86rem}
-		.mc-spec-table th,.mc-spec-table td{padding:7px 9px;border-bottom:1px solid var(--border-color);text-align:left}
-		.mc-spec-table th{color:var(--text-muted);font-weight:600;white-space:nowrap}
+		.mc-spec-table th,.mc-spec-table td{padding:8px 10px;text-align:left;
+			border-bottom:1px solid color-mix(in srgb, var(--text-color) 12%, transparent)}
+		.mc-spec-table th{color:var(--text-muted);font-weight:600;white-space:nowrap;
+			border-bottom:2px solid color-mix(in srgb, var(--text-color) 22%, transparent)}
+		.mc-spec-table tbody tr:nth-child(even){background:color-mix(in srgb, var(--text-color) 5%, transparent)}
+		.mc-spec-table tbody tr:hover{background:color-mix(in srgb, var(--text-color) 10%, transparent)}
 		.mc-spec-table td.num,.mc-spec-table th.num{text-align:right;white-space:nowrap}
-		.mc-spec-total td{font-weight:700}
+		.mc-spec-total td{font-weight:700;border-top:2px solid color-mix(in srgb, var(--text-color) 22%, transparent)}
 		.mc-del{cursor:pointer;color:var(--text-muted);border:none;background:none;font-size:1rem}
 		.mc-del:hover{color:var(--red,#e24c4c)}
 		.mc-empty{color:var(--text-muted);padding:16px 0;text-align:center}
