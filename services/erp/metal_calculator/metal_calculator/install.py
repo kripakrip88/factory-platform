@@ -12,12 +12,20 @@ from metal_calculator.seed import seed_all
 def _ensure_workspace():
 	"""Создать воркспейс «Калькуляторы» обычным insert (НЕ через fixtures).
 
-	КРИТИЧНО: файл лежит в data/, а НЕ в fixtures/. Frappe v16 при install-app
+	КРИТИЧНО №1: файл лежит в data/, а НЕ в fixtures/. Frappe v16 при install-app
 	сам сканирует папку fixtures/ ПО ИМЕНАМ ФАЙЛОВ (игнорируя hooks `fixtures=[]`)
 	и грузит их force-импортёром import_file_by_path → doc.insert(), который терял
 	обязательное поле `type` у дочернего Workspace Shortcut → MandatoryError ещё
 	ДО after_install. Поэтому workspace.json вынесен из fixtures/ в data/, а тут мы
 	строим воркспейс сами с гарантией type у каждого shortcut. Идемпотентно.
+
+	КРИТИЧНО №2: воркспейс создаётся БЕЗ `module` (как пользовательский/custom).
+	`bench migrate` после install-app зовёт remove_orphan_entities(): любой public
+	воркспейс с заданными module+app, у которого НЕТ стандартного файла
+	`<app>/**/workspace/**/*.json`, удаляется как «орфан» (это и стирало наш
+	воркспейс после установки). Положить файл в workspace/ нельзя — migrate тогда
+	прогонит его через тот же баговый import_file_by_path. Поэтому делаем воркспейс
+	module-less: фильтр орфанов (module is set И app is set) его не трогает.
 	"""
 	if frappe.db.exists("Workspace", "Калькуляторы"):
 		return
@@ -29,9 +37,10 @@ def _ensure_workspace():
 	# Строим воркспейс ЯВНО: shortcut'ы добавляем через append с гарантированным
 	# type у каждого. (Через get_doc(rec)/fixtures Frappe v16 терял обязательное
 	# поле type у дочернего Workspace Shortcut → MandatoryError.)
+	# `module` НЕ копируем намеренно (см. КРИТИЧНО №2) — иначе migrate удалит орфан.
 	ws = frappe.new_doc("Workspace")
 	for key in (
-		"name", "label", "title", "module", "public", "is_hidden",
+		"name", "label", "title", "public", "is_hidden",
 		"icon", "indicator_color", "sequence_id", "content",
 	):
 		if rec.get(key) is not None:

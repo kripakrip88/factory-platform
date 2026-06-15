@@ -4,7 +4,6 @@
   "name": "Калькуляторы",
   "label": "Калькуляторы",
   "title": "Калькуляторы",
-  "module": "Metal Calculator",
   "public": 1,
   "is_hidden": 0,
   "icon": "calculator",
