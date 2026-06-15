@@ -117,9 +117,23 @@ def plan_sheet(sheet_l, sheet_w, kerf, items):
 		cap = sheet_count * sheet_area
 		waste_pct = ((cap - part_area) / cap * 100) if cap else 0.0
 
+		# Сгруппировать ОДИНАКОВЫЕ листы (одинаковая раскладка) → один эскиз + count.
+		sig_map = {}
+		sig_order = []
+		for s in sheets:
+			sig = tuple(sorted(
+				(round(p["x"], 2), round(p["y"], 2), round(p["w"], 2), round(p["h"], 2), p["rot"])
+				for p in s["placements"]
+			))
+			if sig not in sig_map:
+				sig_map[sig] = {"placements": s["placements"], "count": 0}
+				sig_order.append(sig)
+			sig_map[sig]["count"] += 1
+		unique_sheets = [sig_map[sig] for sig in sig_order]
+
 		groups_out.append({
 			"size_label": key, "error": None, "sheet_count": sheet_count,
-			"sheets": [s["placements"] for s in sheets],
+			"sheets": unique_sheets,  # [{placements, count}] — одинаковые сгруппированы
 			"waste_percent": round(waste_pct, 2),
 		})
 		total_stock += sheet_count
