@@ -65,8 +65,61 @@ def _ensure_workspace():
 	ws.insert(ignore_permissions=True)
 
 
+WORKSPACE = "Калькуляторы"
+
+
+def _ensure_sidebar_and_icon():
+	"""Создать Workspace Sidebar + Desktop Icon для показа в ВЕРХНЕМ меню saas_theme.
+
+	КРИТИЧНО №3 (самое важное для навигации): тема saas_theme рисует ГОРИЗОНТАЛЬНОЕ
+	верхнее меню, а НЕ стандартный левый сайдбар Frappe. Её get_workspaces()
+	(saas_theme.js) берёт пункты из `frappe.boot.desktop_icons`, фильтр:
+	  hidden != 1  И  link_type == "Workspace Sidebar"  И  есть workspace_sidebar_item[label].
+	Значит для появления в меню нужны ДВЕ записи (создаёт обычно
+	auto_generate_icons_and_sidebar, но она бежит ДО нашего after_install, когда
+	воркспейса ещё нет — поэтому делаем сами):
+	  1) Workspace Sidebar (секция меню) — module-less (виден всем),
+	     standard=0 (migrate не удалит как орфан), items из shortcut'ов воркспейса.
+	  2) Desktop Icon — link_type="Workspace Sidebar", link_to=секция, hidden=0,
+	     standard=0. ИМЕННО его берёт верхнее меню.
+	"""
+	ws_doc = frappe.get_doc("Workspace", WORKSPACE)
+
+	# --- Workspace Sidebar (секция) ---
+	if frappe.db.exists("Workspace Sidebar", WORKSPACE):
+		frappe.delete_doc("Workspace Sidebar", WORKSPACE, force=True, ignore_permissions=True)
+	sidebar = frappe.new_doc("Workspace Sidebar")
+	sidebar.title = WORKSPACE
+	sidebar.header_icon = ws_doc.icon or "calculator"
+	sidebar.standard = 0  # не модульная → видна всем, не удаляется migrate как орфан
+	# первый пункт — сам воркспейс («Главная»), далее shortcut'ы
+	sidebar.append("items", {"label": "Главная", "link_to": WORKSPACE, "link_type": "Workspace", "type": "Link", "idx": 0})
+	for i, s in enumerate(ws_doc.shortcuts, start=1):
+		sidebar.append("items", {"label": s.label, "link_to": s.link_to, "link_type": s.type, "type": "Link", "idx": i})
+	sidebar.insert(ignore_permissions=True)
+
+	# --- Desktop Icon (его берёт верхнее меню saas_theme) ---
+	if frappe.db.exists("Desktop Icon", WORKSPACE):
+		frappe.delete_doc("Desktop Icon", WORKSPACE, force=True, ignore_permissions=True)
+	icon = frappe.new_doc("Desktop Icon")
+	icon.update({
+		"label": WORKSPACE,
+		"link_to": WORKSPACE,
+		"link_type": "Workspace Sidebar",
+		"icon_type": "Link",
+		"icon": ws_doc.icon or "calculator",
+		"hidden": 0,
+		"standard": 0,  # не удаляется migrate как орфан (фильтр орфанов — standard:True)
+		"parent_icon": "ERPNext",
+		"app": "metal_calculator",
+		"idx": 1,
+	})
+	icon.insert(ignore_permissions=True)
+
+
 def after_install():
-	"""Заливаем справочники ГОСТ + создаём воркспейс сразу после установки аппы."""
+	"""Заливаем справочники ГОСТ + воркспейс + секцию/иконку верхнего меню."""
 	created = seed_all()
 	_ensure_workspace()
-	frappe.logger().info(f"metal_calculator: seeded {created}, workspace ensured")
+	_ensure_sidebar_and_icon()
+	frappe.logger().info(f"metal_calculator: seeded {created}, workspace+sidebar+icon ensured")
