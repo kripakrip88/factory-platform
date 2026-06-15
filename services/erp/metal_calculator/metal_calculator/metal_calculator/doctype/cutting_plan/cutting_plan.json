@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "plan_title",
+  "metal_spec",
   "cut_type",
   "kerf",
   "col_break_stock",
@@ -29,14 +30,22 @@
    "label": "Название"
   },
   {
+   "fieldname": "metal_spec",
+   "fieldtype": "Link",
+   "options": "Metal Spec",
+   "label": "Спецификация",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
    "fieldname": "cut_type",
    "fieldtype": "Select",
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Тип раскроя",
-   "options": "Линейный\nЛистовой",
-   "reqd": 1,
-   "default": "Линейный"
+   "options": "Линейный\nЛистовой\nСмешанный",
+   "default": "Смешанный"
   },
   {
    "fieldname": "kerf",
@@ -52,20 +61,17 @@
   {
    "fieldname": "stock_length",
    "fieldtype": "Float",
-   "label": "Длина хлыста, мм (линейный)",
-   "depends_on": "eval:doc.cut_type=='Линейный'"
+   "label": "Длина хлыста, мм (линейный)"
   },
   {
    "fieldname": "sheet_length",
    "fieldtype": "Float",
-   "label": "Длина листа, мм (листовой)",
-   "depends_on": "eval:doc.cut_type=='Листовой'"
+   "label": "Длина листа, мм (листовой)"
   },
   {
    "fieldname": "sheet_width",
    "fieldtype": "Float",
-   "label": "Ширина листа, мм (листовой)",
-   "depends_on": "eval:doc.cut_type=='Листовой'"
+   "label": "Ширина листа, мм (листовой)"
   },
   {
    "fieldname": "sec_items",

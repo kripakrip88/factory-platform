@@ -101,6 +101,7 @@ def save_spec(items, customer=None, spec_name=None):
 
 	for it in items:
 		doc.append("items", {
+			"detail_name": it.get("detail_name"),
 			"form": it.get("form"),
 			"item_ref": it.get("item_ref"),
 			"size_label": it.get("size_label"),

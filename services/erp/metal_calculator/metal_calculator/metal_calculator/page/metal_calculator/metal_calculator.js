@@ -131,6 +131,7 @@ class MetalCalculator {
 						<div class="mc-field" data-field="a_mm" style="flex:1;"></div>
 						<div class="mc-field" data-field="b_mm" style="flex:1;"></div>
 					</div>
+					<div class="mc-field" data-field="detail_name"></div>
 					<div class="mc-field" data-field="qty"></div>
 					<div class="mc-field" data-field="steel_grade"></div>
 					<div style="margin-top:16px; display:flex; gap:8px;">
@@ -193,6 +194,7 @@ class MetalCalculator {
 		this.controls.length_mm.set_value(6000);
 		this._mount("a_mm", { fieldname: "a_mm", label: __("Сторона a, мм"), fieldtype: "Float", default: 1500 });
 		this._mount("b_mm", { fieldname: "b_mm", label: __("Сторона b, мм"), fieldtype: "Float", default: 6000 });
+		this._mount("detail_name", { fieldname: "detail_name", label: __("Наименование / № детали (необязательно)"), fieldtype: "Data" });
 		this._mount("qty", { fieldname: "qty", label: __("Количество, шт"), fieldtype: "Int", default: 1 });
 		this.controls.qty.set_value(1);
 		this._mount("steel_grade", { fieldname: "steel_grade", label: __("Марка стали"), fieldtype: "Link", options: "Steel Grade" });
@@ -358,25 +360,29 @@ class MetalCalculator {
 		const sheet = this.is_sheet();
 		const qty = this.controls.qty.get_value();
 		const grade = this.controls.steel_grade.get_value();
+		const detail = (this.controls.detail_name.get_value() || "").trim();
 		const args = { mode: sheet ? "sheet" : "linear", qty, steel_grade: grade };
-		let ref, dims, label;
+		let ref, dims, size_clean, piece_length, piece_width = null;
 
 		if (sheet) {
 			ref = this.controls.ref_sheet.get_value();
 			if (!ref) return frappe.msgprint(__("Выберите лист"));
 			args.ref = ref;
-			args.a_mm = this.controls.a_mm.get_value();
-			args.b_mm = this.controls.b_mm.get_value();
-			dims = `${args.a_mm}×${args.b_mm} мм`;
-			label = ref;
+			piece_length = this.controls.a_mm.get_value();
+			piece_width = this.controls.b_mm.get_value();
+			args.a_mm = piece_length;
+			args.b_mm = piece_width;
+			dims = `${piece_length}×${piece_width} мм`;
+			size_clean = ref;
 		} else {
 			ref = this.selected_ref;
 			if (!ref) return frappe.msgprint(__("Выберите типоразмер"));
 			args.ref = ref;
-			args.length_mm = this.controls.length_mm.get_value();
-			dims = `L=${args.length_mm} мм`;
+			piece_length = this.controls.length_mm.get_value();
+			args.length_mm = piece_length;
+			dims = `L=${piece_length} мм`;
 			const rec = this.profiles.find((r) => r.name === ref);
-			label = rec ? rec.size_label : ref;
+			size_clean = rec ? rec.size_label : ref;
 		}
 
 		frappe.call({
@@ -388,56 +394,48 @@ class MetalCalculator {
 				if (!r.message) return;
 				const res = r.message;
 				this.spec.push({
+					detail_name: detail,
 					form: this.current_type,
-					item_ref: label,
-					size_label: ref,
+					item_ref: ref,
+					size_label: size_clean,
 					steel_grade: res.steel_grade || grade || "",
 					dims,
+					piece_length,
+					piece_width,
 					qty: res.qty,
 					weight_one_kg: res.weight_one_kg,
 					weight_total_kg: res.weight_total_kg,
 				});
+				this.controls.detail_name.set_value("");
 				this.render_spec();
 			},
 		});
 	}
 
 	add_to_cutting() {
-		const sheet = this.is_sheet();
-		const qty = this.controls.qty.get_value();
-		const args = { cut_type: sheet ? "Листовой" : "Линейный", qty };
-		if (sheet) {
-			const ref = this.controls.ref_sheet.get_value();
-			if (!ref) return frappe.msgprint(__("Выберите лист"));
-			args.profile_type = "Лист";
-			args.size_label = ref;
-			args.piece_length = this.controls.a_mm.get_value();
-			args.piece_width = this.controls.b_mm.get_value();
-		} else {
-			if (!this.selected_ref) return frappe.msgprint(__("Выберите типоразмер"));
-			const rec = this.profiles.find((r) => r.name === this.selected_ref);
-			args.profile_type = this.current_type;
-			args.size_label = rec ? rec.size_label : this.selected_ref;
-			args.piece_length = this.controls.length_mm.get_value();
-		}
-		frappe.call({
-			method: "metal_calculator.cutting.api.add_to_plan",
-			args,
-			freeze: true,
-			freeze_message: __("Добавляем в раскрой..."),
-			callback: (r) => {
-				if (!r.message) return;
-				const name = r.message.name;
-				frappe.show_alert({
-					message: __("В раскрой {0} (позиций: {1})", [name, r.message.items]),
-					indicator: "green",
-				});
-				frappe.msgprint({
-					title: __("Добавлено в раскрой"),
-					message: `<a href="/app/cutting-plan/${encodeURIComponent(name)}" target="_blank">${frappe.utils.escape_html(name)}</a> — ${__("открыть план раскроя")}`,
+		if (!this.spec.length) return frappe.msgprint(__("Спецификация пустая — добавьте позиции («Посчитать и добавить»)"));
+		frappe.prompt(
+			[{ fieldname: "customer", label: __("Клиент / изделие (необязательно)"), fieldtype: "Data" }],
+			(values) => {
+				frappe.call({
+					method: "metal_calculator.cutting.api.create_cutting_from_spec",
+					args: { items: JSON.stringify(this.spec), customer: values.customer || null },
+					freeze: true,
+					freeze_message: __("Сохраняем спецификацию и создаём раскрой..."),
+					callback: (r) => {
+						if (!r.message) return;
+						frappe.show_alert({
+							message: __("Спецификация {0} → раскрой {1}", [r.message.spec, r.message.plan]),
+							indicator: "green",
+						});
+						// единое окно: открываем план раскроя (в нём связь со спецификацией)
+						frappe.set_route("Form", "Cutting Plan", r.message.plan);
+					},
 				});
 			},
-		});
+			__("Сохранить спецификацию и открыть раскрой"),
+			__("Создать раскрой")
+		);
 	}
 
 	render_spec() {
@@ -452,7 +450,7 @@ class MetalCalculator {
 		let rows = "";
 		this.spec.forEach((r, i) => {
 			rows += `<tr>
-				<td>${i + 1}</td><td>${esc(r.form)}</td><td>${esc(r.item_ref)}</td><td>${esc(r.steel_grade || "—")}</td>
+				<td>${i + 1}</td><td>${esc(r.detail_name || "—")}</td><td>${esc(r.form)}</td><td>${esc(r.item_ref)}</td><td>${esc(r.steel_grade || "—")}</td>
 				<td>${esc(r.dims)}</td><td class="num">${r.qty}</td>
 				<td class="num">${fmt(r.weight_one_kg)}</td><td class="num">${fmt(r.weight_total_kg)}</td>
 				<td><button class="mc-del" data-i="${i}" title="${__("Удалить")}">✕</button></td>
@@ -461,12 +459,12 @@ class MetalCalculator {
 		$body.html(`
 			<table class="mc-spec-table">
 				<thead><tr>
-					<th>#</th><th>${__("Форма")}</th><th>${__("Типоразмер")}</th><th>${__("Марка")}</th>
+					<th>#</th><th>${__("Деталь")}</th><th>${__("Форма")}</th><th>${__("Типоразмер")}</th><th>${__("Марка")}</th>
 					<th>${__("Размеры")}</th><th class="num">${__("Кол-во")}</th>
 					<th class="num">${__("Вес 1 шт, кг")}</th><th class="num">${__("Вес всего, кг")}</th><th></th>
 				</tr></thead>
 				<tbody>${rows}</tbody>
-				<tfoot><tr class="mc-spec-total"><td colspan="7" class="num">${__("Итого")}:</td><td class="num">${fmt(total)}</td><td></td></tr></tfoot>
+				<tfoot><tr class="mc-spec-total"><td colspan="8" class="num">${__("Итого")}:</td><td class="num">${fmt(total)}</td><td></td></tr></tfoot>
 			</table>
 		`);
 		$body.find(".mc-del").on("click", (e) => { this.spec.splice(parseInt($(e.currentTarget).data("i"), 10), 1); this.render_spec(); });
@@ -479,11 +477,11 @@ class MetalCalculator {
 
 	export_csv() {
 		if (!this.spec.length) return frappe.msgprint(__("Спецификация пустая"));
-		const head = ["#", "Форма", "Типоразмер", "Марка", "Размеры", "Кол-во", "Вес 1 шт, кг", "Вес всего, кг"];
+		const head = ["#", "Деталь", "Форма", "Типоразмер", "Марка", "Размеры", "Кол-во", "Вес 1 шт, кг", "Вес всего, кг"];
 		const lines = [head.join(";")];
-		this.spec.forEach((r, i) => lines.push([i + 1, r.form, r.item_ref, r.steel_grade || "", r.dims, r.qty, r.weight_one_kg, r.weight_total_kg].join(";")));
+		this.spec.forEach((r, i) => lines.push([i + 1, r.detail_name || "", r.form, r.item_ref, r.steel_grade || "", r.dims, r.qty, r.weight_one_kg, r.weight_total_kg].join(";")));
 		const total = this.spec.reduce((s, r) => s + (r.weight_total_kg || 0), 0);
-		lines.push(["", "", "", "", "", "", "Итого", total.toFixed(3)].join(";"));
+		lines.push(["", "", "", "", "", "", "", "Итого", total.toFixed(3)].join(";"));
 		const blob = new Blob(["﻿" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement("a");
