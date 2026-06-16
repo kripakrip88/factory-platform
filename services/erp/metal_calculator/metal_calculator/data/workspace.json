@@ -38,8 +38,8 @@
    {
     "type": "Page",
     "label": "Доборные элементы",
-    "link_to": "module_in_progress",
-    "color": "Grey",
+    "link_to": "dobor_builder",
+    "color": "Purple",
     "doc_view": ""
    }
   ]

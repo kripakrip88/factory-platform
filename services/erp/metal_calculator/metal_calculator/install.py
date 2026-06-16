@@ -118,8 +118,13 @@ def _ensure_sidebar_and_icon():
 
 
 def after_install():
-	"""Заливаем справочники ГОСТ + воркспейс + секцию/иконку верхнего меню."""
+	"""Заливаем справочники ГОСТ + покрытия доборки + воркспейс + секцию/иконку меню."""
 	created = seed_all()
+	try:
+		from metal_calculator.dobor.seed import seed_coatings
+		created["Dobor Coating"] = seed_coatings()
+	except Exception:
+		frappe.logger().warning("metal_calculator: seed_coatings пропущен")
 	_ensure_workspace()
 	_ensure_sidebar_and_icon()
 	frappe.logger().info(f"metal_calculator: seeded {created}, workspace+sidebar+icon ensured")
