@@ -1,0 +1,50 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:profile_name",
+ "creation": "2026-06-16 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "profile_name",
+  "flanges_json",
+  "col_break_hem",
+  "hem_left",
+  "hem_right",
+  "hem_left_dir",
+  "hem_right_dir",
+  "hem_len",
+  "lock",
+  "paint_side"
+ ],
+ "fields": [
+  {"fieldname": "profile_name", "fieldtype": "Data", "in_list_view": 1, "label": "Название профиля", "reqd": 1, "unique": 1},
+  {"fieldname": "flanges_json", "fieldtype": "Long Text", "label": "Полки (JSON [{len,dir}])"},
+  {"fieldname": "col_break_hem", "fieldtype": "Column Break"},
+  {"fieldname": "hem_left", "fieldtype": "Check", "label": "Завальцовка слева"},
+  {"fieldname": "hem_right", "fieldtype": "Check", "label": "Завальцовка справа"},
+  {"fieldname": "hem_left_dir", "fieldtype": "Int", "label": "Сторона левой (+1/-1)", "default": "1"},
+  {"fieldname": "hem_right_dir", "fieldtype": "Int", "label": "Сторона правой (+1/-1)", "default": "-1"},
+  {"fieldname": "hem_len", "fieldtype": "Float", "label": "Длина завальцовки, мм", "default": "15"},
+  {"fieldname": "lock", "fieldtype": "Check", "label": "Замок"},
+  {"fieldname": "paint_side", "fieldtype": "Int", "label": "Сторона окраски", "default": "1"}
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-06-16 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Metal Calculator",
+ "name": "Dobor Profile",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1},
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Sales Manager", "share": 1, "write": 1},
+  {"create": 1, "read": 1, "report": 1, "role": "Sales User", "share": 1, "write": 1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "profile_name",
+ "track_changes": 1
+}
