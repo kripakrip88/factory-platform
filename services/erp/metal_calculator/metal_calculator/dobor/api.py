@@ -81,3 +81,93 @@ def calc(profile):
 		profile.get("flanges") or [], bool(profile.get("hem_left")), bool(profile.get("hem_right")),
 		hem_len, mass_per_sqm(thickness), plank_length, qty, coil,
 	)
+
+
+# ---------------- Справочники для UI ----------------
+
+@frappe.whitelist()
+def list_coatings():
+	"""Покрытия для выпадашки цвета."""
+	return frappe.get_all("Dobor Coating", fields=["name", "coating_name", "ral_code", "hex"],
+	                      order_by="coating_name asc")
+
+
+@frappe.whitelist()
+def list_templates():
+	"""Библиотека профилей (шаблоны сечения)."""
+	return frappe.get_all("Dobor Profile", fields=[
+		"name", "profile_name", "flanges_json", "hem_left", "hem_right",
+		"hem_left_dir", "hem_right_dir", "hem_len", "lock", "paint_side",
+	], order_by="profile_name asc")
+
+
+@frappe.whitelist()
+def save_template(profile_name, snapshot):
+	"""Сохранить текущий профиль в библиотеку шаблонов (Dobor Profile)."""
+	if isinstance(snapshot, str):
+		snapshot = json.loads(snapshot)
+	flanges = snapshot.get("segs") or snapshot.get("flanges") or []
+	doc = frappe.new_doc("Dobor Profile")
+	doc.profile_name = (profile_name or "").strip() or "Профиль"
+	doc.flanges_json = json.dumps(flanges, ensure_ascii=False)
+	doc.hem_left = 1 if snapshot.get("hemLeft") else 0
+	doc.hem_right = 1 if snapshot.get("hemRight") else 0
+	doc.hem_left_dir = int(snapshot.get("hemLeftDir") or 1)
+	doc.hem_right_dir = int(snapshot.get("hemRightDir") or -1)
+	doc.hem_len = float(snapshot.get("hemLen") or 15)
+	doc.lock = 1 if snapshot.get("lockOn") else 0
+	doc.paint_side = int(snapshot.get("paintSide") or 1)
+	doc.insert(ignore_permissions=False)
+	frappe.db.commit()
+	return {"name": doc.name}
+
+
+@frappe.whitelist()
+def delete_template(name):
+	frappe.delete_doc("Dobor Profile", name, ignore_permissions=False)
+	frappe.db.commit()
+	return {"ok": True}
+
+
+# ---------------- Доборки в заказе ----------------
+
+@frappe.whitelist()
+def save_order_item(snapshot, thickness, plank_length, qty, coating=None, title=None):
+	"""Сохранить доборку в заказ (Dobor Order Item) с серверным расчётом."""
+	if isinstance(snapshot, str):
+		snapshot = json.loads(snapshot)
+	thickness = _pos_float(thickness, "Толщина, мм")
+	plank_length = _pos_float(plank_length, "Длина планки, мм")
+	qty = _pos_int(qty, "Количество, шт")
+	flanges = snapshot.get("segs") or snapshot.get("flanges") or []
+	hem_len = float(snapshot.get("hemLen") or 0)
+	res = compute(flanges, bool(snapshot.get("hemLeft")), bool(snapshot.get("hemRight")),
+	              hem_len, mass_per_sqm(thickness), plank_length, qty)
+	doc = frappe.new_doc("Dobor Order Item")
+	doc.title = (title or "").strip() or f"Доборка {res['developed_width']:g}мм"
+	doc.coating = coating or None
+	doc.thickness = thickness
+	doc.plank_length = plank_length
+	doc.qty = qty
+	doc.developed_width = res["developed_width"]
+	doc.weight_total = res["weight_total"]
+	doc.profile_snapshot_json = json.dumps(snapshot, ensure_ascii=False)
+	doc.insert(ignore_permissions=False)
+	frappe.db.commit()
+	return {"name": doc.name, "developed_width": res["developed_width"], "weight_total": res["weight_total"]}
+
+
+@frappe.whitelist()
+def list_order_items():
+	"""Доборки в заказе текущего пользователя (последние)."""
+	return frappe.get_all("Dobor Order Item", filters={"owner": frappe.session.user},
+	                      fields=["name", "title", "coating", "thickness", "plank_length", "qty",
+	                              "developed_width", "weight_total", "profile_snapshot_json"],
+	                      order_by="creation desc", limit=50)
+
+
+@frappe.whitelist()
+def delete_order_item(name):
+	frappe.delete_doc("Dobor Order Item", name, ignore_permissions=False)
+	frappe.db.commit()
+	return {"ok": True}
