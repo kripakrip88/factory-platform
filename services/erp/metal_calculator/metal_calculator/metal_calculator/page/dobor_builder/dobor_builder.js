@@ -123,7 +123,7 @@ function init_dobor(page) {
 	const SVGNS = "http://www.w3.org/2000/svg";
 	const G = (id) => document.getElementById(id);
 	const svg = G("dcanvas");
-	const canvasWrap = page.body.querySelector(".canvas-wrap");
+	const canvasWrap = document.querySelector(".dobor-wrap .canvas-wrap");
 
 	let start = { x: 180, y: 300 }, segs = [], started = false;
 	let hemLeft = false, hemRight = false, hemLeftDir = 1, hemRightDir = -1, hemLen = 15;
