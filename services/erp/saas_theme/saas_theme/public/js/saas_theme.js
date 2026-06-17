@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v136";
+const SAAS_THEME_BUILD = "v137";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -1475,6 +1475,12 @@ saas_theme.list_controls = {
 		if (c.type === "Subject") return __("Название");
 		return (c.df && c.df.label) || (c.df && c.df.fieldname) || c.type || "";
 	},
+	// Ключ колонки «Название» (она держит чекбокс строки). У Subject есть df.fieldname (обычно "title")
+	subject_key(lv) {
+		const cols = lv.columns || [];
+		const i = cols.findIndex((c) => c.type === "Subject");
+		return i >= 0 ? this.col_key(cols[i], i) : "_subject";
+	},
 
 	// Вешаем класс st-k-<key> на каждую ячейку (шапка + строки) — чтобы личный слой
 	// мог таргетить ЛЮБУЮ колонку, включая «Статус»/«Тег»/«Название» (у них нет класса с именем поля)
@@ -1499,10 +1505,11 @@ saas_theme.list_controls = {
 		const safe = (f) => /^[a-z0-9_]+$/i.test(f);
 		const hidden = (pc.hidden || []).filter(safe);
 		const order = (pc.order || []).filter(safe);
+		const sk = this.subject_key(lv);
 		const css = hidden.map((k) => `.st-lc-${dt} .list-row-col.st-k-${k}{display:none !important}`);
 		// колонка «Название» держит чекбокс строки — всегда крайняя слева, из перестановки исключена
-		css.push(`.st-lc-${dt} .list-row-col.st-k-_subject{order:0 !important}`);
-		order.filter((k) => k !== "_subject").forEach((k, i) => css.push(`.st-lc-${dt} .list-row-col.st-k-${k}{order:${i + 10}}`));
+		css.push(`.st-lc-${dt} .list-row-col.st-k-${sk}{order:0 !important}`);
+		order.filter((k) => k !== sk).forEach((k, i) => css.push(`.st-lc-${dt} .list-row-col.st-k-${k}{order:${i + 10}}`));
 		const sid = "st-cols-" + dt;
 		let st = document.getElementById(sid);
 		if (!st) { st = document.createElement("style"); st.id = sid; document.head.appendChild(st); }
@@ -1516,34 +1523,34 @@ saas_theme.list_controls = {
 		const hidden = new Set(pc.hidden || []);
 		const ord = pc.order || [];
 		// ВСЕ видимые колонки (включая Статус/Тег/Название/ID) — личный слой их покрывает
+		const sk = this.subject_key(lv);
 		let cols = (lv.columns || []).map((c, i) => ({ fn: this.col_key(c, i), label: this.col_label(c) }));
 		if (!cols.length) { $box.html(`<div class="text-muted">${__("Нет настраиваемых колонок")}</div>`); return; }
 		// «Название» закреплено первым (держит чекбокс строки), порядок — личный, затем остальные
-		const rank = (fn) => fn === "_subject" ? -1 : (ord.indexOf(fn) < 0 ? 999 : ord.indexOf(fn));
+		const rank = (fn) => fn === sk ? -1 : (ord.indexOf(fn) < 0 ? 999 : ord.indexOf(fn));
 		cols.sort((a, b) => rank(a.fn) - rank(b.fn));
-		const curOrder = cols.map((c) => c.fn);
-		// границы зоны перестановки: «Название» (индекс 0) неподвижно
-		const firstMov = curOrder[0] === "_subject" ? 1 : 0;
-		$box.html(cols.map((c, i) => {
-			const pinned = c.fn === "_subject";
-			const upDis = pinned || i <= firstMov ? "disabled" : "";
-			const dnDis = pinned || i === cols.length - 1 ? "disabled" : "";
-			return `<div class="st-ts-col"><input type="checkbox" data-fn="${esc(c.fn)}" ${hidden.has(c.fn) ? "" : "checked"}>` +
-				`<span class="st-ts-col-l">${esc(__(c.label))}</span>` +
-				`<button class="st-ts-mv st-ts-up" data-fn="${esc(c.fn)}" title="${__("Выше")}" ${upDis}>↑</button>` +
-				`<button class="st-ts-mv st-ts-dn" data-fn="${esc(c.fn)}" title="${__("Ниже")}" ${dnDis}>↓</button></div>`;
+		$box.html(cols.map((c) => {
+			const pinned = c.fn === sk;
+			return `<div class="st-ts-col${pinned ? " st-ts-pin" : ""}" data-fn="${esc(c.fn)}">` +
+				`<span class="st-ts-grip" title="${pinned ? __("Закреплено слева") : __("Перетащите")}">${pinned ? "🔒" : "⋮⋮"}</span>` +
+				`<input type="checkbox" data-fn="${esc(c.fn)}" ${hidden.has(c.fn) ? "" : "checked"}>` +
+				`<span class="st-ts-col-l">${esc(__(c.label))}</span></div>`;
 		}).join(""));
-		$box.find("input[type=checkbox]").on("change", (e) => me.toggle_column_vis(lv, e.currentTarget.dataset.fn, e.currentTarget.checked, $box));
-		$box.find(".st-ts-mv").on("click", (e) => {
-			const fn = e.currentTarget.dataset.fn;
-			const dir = e.currentTarget.classList.contains("st-ts-up") ? -1 : 1;
-			const arr = curOrder.slice();
-			const idx = arr.indexOf(fn), j = idx + dir;
-			if (idx < 0 || j < 0 || j >= arr.length) return;
-			arr.splice(idx, 1); arr.splice(j, 0, fn);
-			const obj = me.personal_cols(lv.doctype); obj.order = arr; me.save_personal_cols(lv.doctype, obj);
-			me.apply_personal_columns(lv); me.load_columns_checklist(lv, $box);
-		});
+		// чекбокс видимости (не пересобираем список, чтобы не рвать Sortable)
+		$box.find("input[type=checkbox]").on("change", (e) => me.toggle_column_vis(lv, e.currentTarget.dataset.fn, e.currentTarget.checked));
+		// drag-n-drop порядка (Sortable из Frappe); «Название» зафиксировано
+		if (window.Sortable) {
+			if ($box[0]._st_sortable) { try { $box[0]._st_sortable.destroy(); } catch (e) {} }
+			$box[0]._st_sortable = new window.Sortable($box[0], {
+				handle: ".st-ts-grip", filter: ".st-ts-pin", draggable: ".st-ts-col", animation: 150,
+				onMove: (e) => !$(e.related).hasClass("st-ts-pin"),
+				onEnd: () => {
+					const arr = $box.find(".st-ts-col").toArray().map((el) => el.dataset.fn);
+					const obj = me.personal_cols(lv.doctype); obj.order = arr; me.save_personal_cols(lv.doctype, obj);
+					me.apply_personal_columns(lv);
+				},
+			});
+		}
 	},
 
 	toggle_column_vis(lv, fieldname, visible, $box) {

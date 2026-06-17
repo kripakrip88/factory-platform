@@ -3840,17 +3840,27 @@ html[data-theme="dark"] .fp-crm-card .fp-crm-feed .timeline-content {
 .st-ts-col:hover { background: color-mix(in srgb, var(--text-color) 6%, transparent); }
 .st-ts-col input { margin: 0; flex: 0 0 auto; }
 .st-ts-col .st-ts-col-l { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.st-ts-mv { flex: 0 0 auto; width: 24px; height: 24px; line-height: 1; border: 1px solid color-mix(in srgb, var(--text-color) 14%, transparent); background: transparent; border-radius: 6px; color: var(--text-color); cursor: pointer; padding: 0; }
-.st-ts-mv:hover:not([disabled]) { background: color-mix(in srgb, var(--text-color) 10%, transparent); }
-.st-ts-mv[disabled] { opacity: .35; cursor: default; }
+.st-ts-grip { flex: 0 0 auto; width: 18px; text-align: center; color: color-mix(in srgb, var(--text-color) 45%, transparent); cursor: grab; user-select: none; font-size: 12px; letter-spacing: -2px; }
+.st-ts-grip:active { cursor: grabbing; }
+.st-ts-pin .st-ts-grip { cursor: default; letter-spacing: 0; }
+.st-ts-col.sortable-ghost { opacity: .4; }
+.st-ts-col.sortable-chosen { background: color-mix(in srgb, var(--text-color) 8%, transparent); }
+/* Видимые ползунки прокрутки на всех страницах */
+* { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--text-color) 32%, transparent) transparent; }
+::-webkit-scrollbar { width: 12px; height: 12px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--text-color) 32%, transparent); border-radius: 8px; border: 3px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--text-color) 52%, transparent); background-clip: padding-box; }
 /* Перенос текста в ячейках списка вместо горизонтальной прокрутки */
 .st-wrap-cols .list-row-col { white-space: normal; min-width: 0; overflow-wrap: anywhere; }
 .st-wrap-cols .list-row-col .ellipsis,
 .st-wrap-cols .list-row-col .level-item .ellipsis { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; word-break: break-word; }
+/* Все ячейки выровнены по верху — подписи не «гуляют» */
 .st-wrap-cols .list-row { align-items: flex-start; }
+.st-wrap-cols .list-row-col { align-self: flex-start; }
 /* Шапка списка: авто-высота под 2-строчные заголовки, текст не вылезает за рамку */
-.st-wrap-cols .list-row-head { height: auto !important; min-height: 40px; padding-top: 6px; padding-bottom: 6px; align-items: center; }
-.st-wrap-cols .list-row-head .list-row-col { align-self: center; line-height: 1.25; }
+.st-wrap-cols .list-row-head { height: auto !important; min-height: 40px; padding-top: 8px; padding-bottom: 8px; align-items: flex-start; }
+.st-wrap-cols .list-row-head .list-row-col { align-self: flex-start; line-height: 1.25; }
 /* Непрочитанные — жирно + насыщенный текст; имя отправителя тоже жирным */
 .list-subject.st-mail-unseen a,
 .list-subject.st-mail-unseen .ellipsis,
