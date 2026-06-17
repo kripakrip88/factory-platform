@@ -3838,7 +3838,16 @@ html[data-theme="dark"] .fp-crm-card .fp-crm-feed .timeline-content {
 .st-ts-cols-box { display: flex; flex-direction: column; gap: 4px; max-height: 240px; overflow-y: auto; }
 .st-ts-col { display: flex; align-items: center; gap: 8px; padding: 4px 6px; border-radius: 6px; cursor: pointer; font-weight: 400; margin: 0; }
 .st-ts-col:hover { background: color-mix(in srgb, var(--text-color) 6%, transparent); }
-.st-ts-col input { margin: 0; }
+.st-ts-col input { margin: 0; flex: 0 0 auto; }
+.st-ts-col .st-ts-col-l { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.st-ts-mv { flex: 0 0 auto; width: 24px; height: 24px; line-height: 1; border: 1px solid color-mix(in srgb, var(--text-color) 14%, transparent); background: transparent; border-radius: 6px; color: var(--text-color); cursor: pointer; padding: 0; }
+.st-ts-mv:hover:not([disabled]) { background: color-mix(in srgb, var(--text-color) 10%, transparent); }
+.st-ts-mv[disabled] { opacity: .35; cursor: default; }
+/* Перенос текста в ячейках списка вместо горизонтальной прокрутки */
+.st-wrap-cols .list-row-col { white-space: normal; }
+.st-wrap-cols .list-row-col .ellipsis,
+.st-wrap-cols .list-row-col .level-item .ellipsis { white-space: normal; overflow: visible; text-overflow: clip; word-break: break-word; }
+.st-wrap-cols .list-row { align-items: flex-start; }
 /* Непрочитанные — жирно + насыщенный текст; имя отправителя тоже жирным */
 .list-subject.st-mail-unseen a,
 .list-subject.st-mail-unseen .ellipsis,

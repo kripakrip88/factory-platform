@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v133";
+const SAAS_THEME_BUILD = "v134";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -1070,8 +1070,8 @@ saas_theme.list_controls = {
 			this.compact_header_buttons(lv);
 			// Единая кнопка «Настройка таблицы» (фильтры+колонки). Этап 2: только Лиды.
 			if (lv.doctype === "Lead") this.setup_table_settings_button(lv);
-			// Персональное скрытие колонок (CSS по fieldname) — держим при каждой перерисовке
-			this.apply_hidden_columns(lv);
+			// Персональные колонки (скрытие+порядок CSS по fieldname) — держим при каждой перерисовке
+			this.apply_personal_columns(lv);
 			// Тултип на заголовках колонок (полная подпись при усечении)
 			this.decorate_list_headers(lv);
 		}
@@ -1454,43 +1454,69 @@ saas_theme.list_controls = {
 	   (.list-row-col.<fieldname>), состояние в localStorage. Frappe-данные/схему НЕ
 	   трогаем → апгрейд-безопасно, обратимо, работает для ЛЮБОЙ колонки вкл. ID.
 	   Добавление/порядок полей — родной picker (это уже общая настройка доктайпа). */
-	hidden_cols(doctype) {
-		try { return JSON.parse(localStorage.getItem("st_hidden_cols_" + doctype) || "[]"); } catch (e) { return []; }
+	personal_cols(doctype) {
+		try { return JSON.parse(localStorage.getItem("st_cols_" + doctype) || "{}"); } catch (e) { return {}; }
+	},
+	save_personal_cols(doctype, obj) {
+		localStorage.setItem("st_cols_" + doctype, JSON.stringify(obj));
 	},
 
-	apply_hidden_columns(lv) {
+	apply_personal_columns(lv) {
 		if (!lv || !lv.page || !lv.page.wrapper) return;
 		const dt = frappe.scrub(lv.doctype);
-		$(lv.page.wrapper).addClass("st-lc-" + dt); // скоуп per-doctype
-		const hidden = this.hidden_cols(lv.doctype).filter((f) => /^[a-z0-9_]+$/i.test(f));
-		const sid = "st-hidden-cols-" + dt;
+		$(lv.page.wrapper).addClass("st-lc-" + dt + " st-wrap-cols"); // скоуп + перенос текста
+		const pc = this.personal_cols(lv.doctype);
+		const safe = (f) => /^[a-z0-9_]+$/i.test(f);
+		const hidden = (pc.hidden || []).filter(safe);
+		const order = (pc.order || []).filter(safe);
+		const css = hidden.map((fn) => `.st-lc-${dt} .list-row-col.${fn}{display:none !important}`);
+		order.forEach((fn, i) => css.push(`.st-lc-${dt} .list-row-col.${fn}{order:${i + 10}}`));
+		const sid = "st-cols-" + dt;
 		let st = document.getElementById(sid);
 		if (!st) { st = document.createElement("style"); st.id = sid; document.head.appendChild(st); }
-		st.textContent = hidden.map((fn) => `.st-lc-${dt} .list-row-col.${fn}{display:none !important}`).join("\n");
+		st.textContent = css.join("\n");
 	},
 
 	load_columns_checklist(lv, $box) {
 		const me = this;
 		const esc = frappe.utils.escape_html;
-		const hidden = new Set(this.hidden_cols(lv.doctype));
+		const pc = this.personal_cols(lv.doctype);
+		const hidden = new Set(pc.hidden || []);
+		const ord = pc.order || [];
 		// только реальные колонки-поля (Subject/Status/Tag — ядро, не трогаем)
-		const cols = (lv.columns || []).filter((c) => c.type === "Field" && c.df && c.df.fieldname)
-			.map((c) => ({ fieldname: c.df.fieldname, label: c.df.label || c.df.fieldname }));
+		let cols = (lv.columns || []).filter((c) => c.type === "Field" && c.df && c.df.fieldname)
+			.map((c) => ({ fn: c.df.fieldname, label: c.df.label || c.df.fieldname }));
 		if (!cols.length) { $box.html(`<div class="text-muted">${__("Нет настраиваемых колонок")}</div>`); return; }
-		$box.html(cols.map((c) =>
-			`<label class="st-ts-col"><input type="checkbox" data-fn="${esc(c.fieldname)}" ${hidden.has(c.fieldname) ? "" : "checked"}> ${esc(__(c.label))}</label>`
+		// порядок чек-листа = личный порядок, затем остальные
+		cols.sort((a, b) => { const ia = ord.indexOf(a.fn), ib = ord.indexOf(b.fn); return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib); });
+		const curOrder = cols.map((c) => c.fn);
+		$box.html(cols.map((c, i) =>
+			`<div class="st-ts-col"><input type="checkbox" data-fn="${esc(c.fn)}" ${hidden.has(c.fn) ? "" : "checked"}>` +
+			`<span class="st-ts-col-l">${esc(__(c.label))}</span>` +
+			`<button class="st-ts-mv st-ts-up" data-fn="${esc(c.fn)}" title="${__("Выше")}" ${i === 0 ? "disabled" : ""}>↑</button>` +
+			`<button class="st-ts-mv st-ts-dn" data-fn="${esc(c.fn)}" title="${__("Ниже")}" ${i === cols.length - 1 ? "disabled" : ""}>↓</button></div>`
 		).join(""));
-		$box.find("input[type=checkbox]").on("change", (e) => {
-			const t = e.currentTarget;
-			me.toggle_column_vis(lv, t.dataset.fn, t.checked);
+		$box.find("input[type=checkbox]").on("change", (e) => me.toggle_column_vis(lv, e.currentTarget.dataset.fn, e.currentTarget.checked, $box));
+		$box.find(".st-ts-mv").on("click", (e) => {
+			const fn = e.currentTarget.dataset.fn;
+			const dir = e.currentTarget.classList.contains("st-ts-up") ? -1 : 1;
+			const arr = curOrder.slice();
+			const idx = arr.indexOf(fn), j = idx + dir;
+			if (idx < 0 || j < 0 || j >= arr.length) return;
+			arr.splice(idx, 1); arr.splice(j, 0, fn);
+			const obj = me.personal_cols(lv.doctype); obj.order = arr; me.save_personal_cols(lv.doctype, obj);
+			me.apply_personal_columns(lv); me.load_columns_checklist(lv, $box);
 		});
 	},
 
-	toggle_column_vis(lv, fieldname, visible) {
-		let hidden = this.hidden_cols(lv.doctype).filter((f) => f !== fieldname);
+	toggle_column_vis(lv, fieldname, visible, $box) {
+		const obj = this.personal_cols(lv.doctype);
+		let hidden = (obj.hidden || []).filter((f) => f !== fieldname);
 		if (!visible) hidden.push(fieldname);
-		localStorage.setItem("st_hidden_cols_" + lv.doctype, JSON.stringify(hidden));
-		this.apply_hidden_columns(lv);
+		obj.hidden = hidden;
+		this.save_personal_cols(lv.doctype, obj);
+		this.apply_personal_columns(lv);
+		if ($box) this.load_columns_checklist(lv, $box);
 	},
 
 	// Тултип на заголовках колонок списка — полная подпись по наведению (когда усечена).
