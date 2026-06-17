@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v131";
+const SAAS_THEME_BUILD = "v132";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -1070,6 +1070,8 @@ saas_theme.list_controls = {
 			this.compact_header_buttons(lv);
 			// Единая кнопка «Настройка таблицы» (фильтры+колонки). Этап 2: только Лиды.
 			if (lv.doctype === "Lead") this.setup_table_settings_button(lv);
+			// Тултип на заголовках колонок (полная подпись при усечении)
+			this.decorate_list_headers(lv);
 		}
 		// Инбокс: чинить плохой дефолт сортировки (по классификации → дата письма)
 		this.fix_inbox_sort(window.cur_list);
@@ -1426,8 +1428,8 @@ saas_theme.list_controls = {
 					</div>
 					<div class="st-ts-sec">
 						<div class="st-ts-h">${__("Колонки таблицы")}</div>
-						<button class="btn btn-sm st-ts-cols">${__("Настроить колонки (видимость / порядок)")}</button>
-						<div class="text-muted" style="margin-top:6px;font-size:.85rem">${__("Открывается штатный конструктор колонок — добавить, убрать, переставить.")}</div>
+						<div class="st-ts-cols-box"><div class="text-muted">${__("Загрузка колонок…")}</div></div>
+						<button class="btn btn-xs st-ts-cols-adv" style="margin-top:8px">${__("Порядок и добавление полей →")}</button>
 					</div>
 				</div>`);
 			$w.find(".st-ts-rm").on("click", (e) => {
@@ -1437,10 +1439,68 @@ saas_theme.list_controls = {
 			});
 			$w.find(".st-ts-clear").on("click", () => { try { fa.clear(); } catch (e) {} setTimeout(paint, 200); });
 			$w.find(".st-ts-edit").on("click", () => { d.hide(); try { fa.filter_button && fa.filter_button[0] && fa.filter_button[0].click(); } catch (e) {} });
-			$w.find(".st-ts-cols").on("click", () => { d.hide(); try { lv.show_list_settings(); } catch (e) {} });
+			$w.find(".st-ts-cols-adv").on("click", () => { d.hide(); try { lv.show_list_settings(); } catch (e) {} });
+			this.load_columns_checklist(lv, $w.find(".st-ts-cols-box"));
 		};
 		paint();
 		d.show();
+	},
+
+	// Чек-лист колонок: вкл/выкл через ТОТ ЖЕ штатный путь, что и родной picker
+	// (save_listview_settings + removed_listview_fields + refresh_columns). Не своя логика хранения.
+	load_columns_checklist(lv, $box) {
+		const me = this;
+		const eligible = ["Data", "Select", "Link", "Int", "Float", "Currency", "Percent", "Date", "Datetime", "Check", "Small Text", "Read Only"];
+		frappe.call({ method: "frappe.desk.listview.get_list_settings", args: { doctype: lv.doctype }, callback: (r) => {
+			const settings = r.message || {};
+			let fields = [];
+			try { fields = JSON.parse(settings.fields || "[]"); } catch (e) { fields = []; }
+			const meta = frappe.get_meta(lv.doctype);
+			const shown = (lv.columns || []).filter((c) => c.type === "Field" && c.df && c.df.fieldname)
+				.map((c) => ({ fieldname: c.df.fieldname, label: c.df.label || c.df.fieldname, in_list_view: c.df.in_list_view ? 1 : 0 }));
+			const shownSet = new Set(shown.map((s) => s.fieldname));
+			const candidates = (meta.fields || [])
+				.filter((f) => eligible.includes(f.fieldtype) && !f.hidden && f.label && !shownSet.has(f.fieldname))
+				.map((f) => ({ fieldname: f.fieldname, label: f.label, in_list_view: f.in_list_view ? 1 : 0 }));
+			const esc = frappe.utils.escape_html;
+			const row = (c, checked) => `<label class="st-ts-col"><input type="checkbox" data-fn="${esc(c.fieldname)}" data-label="${esc(c.label)}" data-ilv="${c.in_list_view}" ${checked ? "checked" : ""}> ${esc(__(c.label))}</label>`;
+			$box.html(shown.map((c) => row(c, true)).join("") + candidates.map((c) => row(c, false)).join(""));
+			$box.find("input[type=checkbox]").on("change", (e) => {
+				const t = e.currentTarget;
+				me.toggle_column(lv, settings, fields, t.dataset.fn, t.dataset.label, t.checked, t.dataset.ilv === "1", $box);
+			});
+		} });
+	},
+
+	toggle_column(lv, settings, fields, fieldname, label, checked, in_list_view, $box) {
+		const me = this;
+		let newFields = fields.filter((f) => f.fieldname !== fieldname);
+		const removed = [];
+		if (checked) {
+			newFields.push({ fieldname, label });
+		} else if (in_list_view) {
+			removed.push(fieldname); // снять in_list_view, иначе ядро вернёт колонку
+		}
+		const listview_settings = Object.assign({}, settings, { fields: JSON.stringify(newFields) });
+		frappe.call({
+			method: "frappe.desk.doctype.list_view_settings.list_view_settings.save_listview_settings",
+			args: { doctype: lv.doctype, listview_settings, removed_listview_fields: removed },
+			callback: (r) => {
+				try { lv.refresh_columns(r.message.meta, r.message.listview_settings); } catch (e) { lv.refresh && lv.refresh(); }
+				if ($box) me.load_columns_checklist(lv, $box); // перечитать актуальное состояние
+				me.decorate_list_headers(lv);
+			},
+		});
+	},
+
+	// Тултип на заголовках колонок списка — полная подпись по наведению (когда усечена).
+	decorate_list_headers(lv) {
+		if (!lv.page || !lv.page.wrapper) return;
+		$(lv.page.wrapper).find(".list-row-head .list-row-col").each(function () {
+			const $c = $(this);
+			const txt = $c.text().trim();
+			if (txt && !$c.attr("title")) $c.attr("title", txt);
+		});
 	},
 
 	/* ----- Sort: one combined button with custom menu ----- */
