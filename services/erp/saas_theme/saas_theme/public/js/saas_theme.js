@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v135";
+const SAAS_THEME_BUILD = "v136";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -1500,7 +1500,9 @@ saas_theme.list_controls = {
 		const hidden = (pc.hidden || []).filter(safe);
 		const order = (pc.order || []).filter(safe);
 		const css = hidden.map((k) => `.st-lc-${dt} .list-row-col.st-k-${k}{display:none !important}`);
-		order.forEach((k, i) => css.push(`.st-lc-${dt} .list-row-col.st-k-${k}{order:${i + 10}}`));
+		// колонка «Название» держит чекбокс строки — всегда крайняя слева, из перестановки исключена
+		css.push(`.st-lc-${dt} .list-row-col.st-k-_subject{order:0 !important}`);
+		order.filter((k) => k !== "_subject").forEach((k, i) => css.push(`.st-lc-${dt} .list-row-col.st-k-${k}{order:${i + 10}}`));
 		const sid = "st-cols-" + dt;
 		let st = document.getElementById(sid);
 		if (!st) { st = document.createElement("style"); st.id = sid; document.head.appendChild(st); }
@@ -1516,15 +1518,21 @@ saas_theme.list_controls = {
 		// ВСЕ видимые колонки (включая Статус/Тег/Название/ID) — личный слой их покрывает
 		let cols = (lv.columns || []).map((c, i) => ({ fn: this.col_key(c, i), label: this.col_label(c) }));
 		if (!cols.length) { $box.html(`<div class="text-muted">${__("Нет настраиваемых колонок")}</div>`); return; }
-		// порядок чек-листа = личный порядок, затем остальные
-		cols.sort((a, b) => { const ia = ord.indexOf(a.fn), ib = ord.indexOf(b.fn); return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib); });
+		// «Название» закреплено первым (держит чекбокс строки), порядок — личный, затем остальные
+		const rank = (fn) => fn === "_subject" ? -1 : (ord.indexOf(fn) < 0 ? 999 : ord.indexOf(fn));
+		cols.sort((a, b) => rank(a.fn) - rank(b.fn));
 		const curOrder = cols.map((c) => c.fn);
-		$box.html(cols.map((c, i) =>
-			`<div class="st-ts-col"><input type="checkbox" data-fn="${esc(c.fn)}" ${hidden.has(c.fn) ? "" : "checked"}>` +
-			`<span class="st-ts-col-l">${esc(__(c.label))}</span>` +
-			`<button class="st-ts-mv st-ts-up" data-fn="${esc(c.fn)}" title="${__("Выше")}" ${i === 0 ? "disabled" : ""}>↑</button>` +
-			`<button class="st-ts-mv st-ts-dn" data-fn="${esc(c.fn)}" title="${__("Ниже")}" ${i === cols.length - 1 ? "disabled" : ""}>↓</button></div>`
-		).join(""));
+		// границы зоны перестановки: «Название» (индекс 0) неподвижно
+		const firstMov = curOrder[0] === "_subject" ? 1 : 0;
+		$box.html(cols.map((c, i) => {
+			const pinned = c.fn === "_subject";
+			const upDis = pinned || i <= firstMov ? "disabled" : "";
+			const dnDis = pinned || i === cols.length - 1 ? "disabled" : "";
+			return `<div class="st-ts-col"><input type="checkbox" data-fn="${esc(c.fn)}" ${hidden.has(c.fn) ? "" : "checked"}>` +
+				`<span class="st-ts-col-l">${esc(__(c.label))}</span>` +
+				`<button class="st-ts-mv st-ts-up" data-fn="${esc(c.fn)}" title="${__("Выше")}" ${upDis}>↑</button>` +
+				`<button class="st-ts-mv st-ts-dn" data-fn="${esc(c.fn)}" title="${__("Ниже")}" ${dnDis}>↓</button></div>`;
+		}).join(""));
 		$box.find("input[type=checkbox]").on("change", (e) => me.toggle_column_vis(lv, e.currentTarget.dataset.fn, e.currentTarget.checked, $box));
 		$box.find(".st-ts-mv").on("click", (e) => {
 			const fn = e.currentTarget.dataset.fn;

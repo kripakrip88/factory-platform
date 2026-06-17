@@ -3848,6 +3848,9 @@ html[data-theme="dark"] .fp-crm-card .fp-crm-feed .timeline-content {
 .st-wrap-cols .list-row-col .ellipsis,
 .st-wrap-cols .list-row-col .level-item .ellipsis { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; word-break: break-word; }
 .st-wrap-cols .list-row { align-items: flex-start; }
+/* Шапка списка: авто-высота под 2-строчные заголовки, текст не вылезает за рамку */
+.st-wrap-cols .list-row-head { height: auto !important; min-height: 40px; padding-top: 6px; padding-bottom: 6px; align-items: center; }
+.st-wrap-cols .list-row-head .list-row-col { align-self: center; line-height: 1.25; }
 /* Непрочитанные — жирно + насыщенный текст; имя отправителя тоже жирным */
 .list-subject.st-mail-unseen a,
 .list-subject.st-mail-unseen .ellipsis,
