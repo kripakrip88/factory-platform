@@ -3826,6 +3826,15 @@ html[data-theme="dark"] .fp-crm-card .fp-crm-feed .timeline-content {
 .st-mail-dot.st-mail-dot-on {
     background: var(--primary, #2563eb);
 }
+
+/* Единая панель «Настройка таблицы» (фильтры + колонки) */
+.st-ts-sec { padding: 2px 0 14px; }
+.st-ts-sec + .st-ts-sec { border-top: 1px solid var(--border-color); padding-top: 12px; }
+.st-ts-h { font-weight: 600; text-transform: uppercase; letter-spacing: .04em; font-size: .78rem; color: var(--text-muted); margin-bottom: 8px; }
+.st-ts-filters { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.st-ts-frow { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 5px 9px; border: 1px solid var(--border-color); border-radius: 6px; }
+.st-ts-frow i { color: var(--text-muted); font-style: normal; }
+.st-ts-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 /* Непрочитанные — жирно + насыщенный текст; имя отправителя тоже жирным */
 .list-subject.st-mail-unseen a,
 .list-subject.st-mail-unseen .ellipsis,
