@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v130";
+const SAAS_THEME_BUILD = "v131";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -1397,7 +1397,10 @@ saas_theme.list_controls = {
 	open_table_panel(lv) {
 		const esc = frappe.utils.escape_html;
 		const fa = lv.filter_area;
-		const d = new frappe.ui.Dialog({ title: __("Настройка таблицы"), fields: [{ fieldtype: "HTML", fieldname: "body" }] });
+		// Кэшируем один диалог на список — иначе каждое открытие плодит скрытые модалки в DOM.
+		const d = lv._st_ts_dialog || (lv._st_ts_dialog = new frappe.ui.Dialog({
+			title: __("Настройка таблицы"), fields: [{ fieldtype: "HTML", fieldname: "body" }],
+		}));
 
 		const render_filters = () => {
 			let filters = [];
