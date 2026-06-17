@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v137";
+const SAAS_THEME_BUILD = "v129";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -1068,12 +1068,6 @@ saas_theme.list_controls = {
 			this.setup_filter_button(lv);
 			this.setup_sort_button(lv);
 			this.compact_header_buttons(lv);
-			// Единая кнопка «Настройка таблицы» (фильтры+колонки). Этап 2: только Лиды.
-			if (lv.doctype === "Lead") this.setup_table_settings_button(lv);
-			// Персональные колонки (скрытие+порядок CSS по fieldname) — держим при каждой перерисовке
-			this.apply_personal_columns(lv);
-			// Тултип на заголовках колонок (полная подпись при усечении)
-			this.decorate_list_headers(lv);
 		}
 		// Инбокс: чинить плохой дефолт сортировки (по классификации → дата письма)
 		this.fix_inbox_sort(window.cur_list);
@@ -1386,191 +1380,6 @@ saas_theme.list_controls = {
 		if (!fa.filter_button.find(".st-lc-caret").length) {
 			fa.filter_button.append('<span class="st-lc-caret">▾</span>');
 		}
-	},
-
-	/* ----- Единая кнопка «Настройка таблицы»: фильтры + колонки (слой поверх штатных API) -----
-	   БЕЗОПАСНОСТЬ: только ВЫЗЫВАЕМ штатные методы Frappe (filter_area, show_list_settings),
-	   ничего не патчим и не храним сами. Кнопка добавляется штатным add_inner_button. */
-	setup_table_settings_button(lv) {
-		if (!lv.page || !lv.page.add_inner_button) return;
-		if (lv.page.wrapper.find(".st-table-settings").length) return; // уже добавлена в этот рендер
-		const $btn = lv.page.add_inner_button(__("Настройка таблицы"), () => this.open_table_panel(lv));
-		if ($btn) $btn.addClass("st-table-settings");
-	},
-
-	open_table_panel(lv) {
-		const esc = frappe.utils.escape_html;
-		const fa = lv.filter_area;
-		// Кэшируем один диалог на список — иначе каждое открытие плодит скрытые модалки в DOM.
-		const d = lv._st_ts_dialog || (lv._st_ts_dialog = new frappe.ui.Dialog({
-			title: __("Настройка таблицы"), fields: [{ fieldtype: "HTML", fieldname: "body" }],
-		}));
-
-		const render_filters = () => {
-			let filters = [];
-			try { filters = (fa && fa.get && fa.get()) || []; } catch (e) { filters = []; }
-			if (!filters.length) return `<div class="text-muted">${__("Активных фильтров нет")}</div>`;
-			return filters.map((f, i) => {
-				const val = Array.isArray(f[3]) ? f[3].join(", ") : f[3];
-				return `<div class="st-ts-frow"><span>${esc(f[1])} <i>${esc(f[2])}</i> ${esc(String(val))}</span><button class="btn btn-xs st-ts-rm" data-i="${i}" title="${__("Убрать")}">✕</button></div>`;
-			}).join("");
-		};
-
-		const paint = () => {
-			const $w = d.fields_dict.body.$wrapper;
-			$w.html(`
-				<div class="st-ts">
-					<div class="st-ts-sec">
-						<div class="st-ts-h">${__("Фильтры")}</div>
-						<div class="st-ts-filters">${render_filters()}</div>
-						<div class="st-ts-actions">
-							<button class="btn btn-sm st-ts-edit">${__("Добавить / изменить фильтр")}</button>
-							<button class="btn btn-sm st-ts-clear">${__("Очистить все")}</button>
-						</div>
-					</div>
-					<div class="st-ts-sec">
-						<div class="st-ts-h">${__("Колонки таблицы")}</div>
-						<div class="st-ts-cols-box"><div class="text-muted">${__("Загрузка колонок…")}</div></div>
-						<button class="btn btn-xs st-ts-cols-adv" style="margin-top:8px">${__("Порядок и добавление полей →")}</button>
-					</div>
-				</div>`);
-			$w.find(".st-ts-rm").on("click", (e) => {
-				const i = parseInt($(e.currentTarget).data("i"), 10);
-				try { const fl = fa.filter_list && fa.filter_list.get_filters(); if (fl && fl[i]) fl[i].remove(); } catch (err) {}
-				setTimeout(paint, 200);
-			});
-			$w.find(".st-ts-clear").on("click", () => { try { fa.clear(); } catch (e) {} setTimeout(paint, 200); });
-			$w.find(".st-ts-edit").on("click", () => { d.hide(); try { fa.filter_button && fa.filter_button[0] && fa.filter_button[0].click(); } catch (e) {} });
-			$w.find(".st-ts-cols-adv").on("click", () => { d.hide(); try { lv.show_list_settings(); } catch (e) {} });
-			this.load_columns_checklist(lv, $w.find(".st-ts-cols-box"));
-		};
-		paint();
-		d.show();
-	},
-
-	/* Чек-лист колонок — ПЕРСОНАЛЬНОЕ CSS-скрытие по fieldname. Решение (docs/list-controls.md):
-	   штатное хранилище колонок ОБЩЕЕ на доктайп, не убирает ID и меняет схему
-	   (Property Setter). Поэтому видимость — персональным CSS-слоем по имени поля
-	   (.list-row-col.<fieldname>), состояние в localStorage. Frappe-данные/схему НЕ
-	   трогаем → апгрейд-безопасно, обратимо, работает для ЛЮБОЙ колонки вкл. ID.
-	   Добавление/порядок полей — родной picker (это уже общая настройка доктайпа). */
-	personal_cols(doctype) {
-		try { return JSON.parse(localStorage.getItem("st_cols_" + doctype) || "{}"); } catch (e) { return {}; }
-	},
-	save_personal_cols(doctype, obj) {
-		localStorage.setItem("st_cols_" + doctype, JSON.stringify(obj));
-	},
-
-	// Стабильный ключ колонки (fieldname для полей; синтетический для спец-колонок без имени поля)
-	col_key(c, i) {
-		if (c.df && c.df.fieldname) return c.df.fieldname;
-		if (c.type === "Status") return "_status";
-		if (c.type === "Tag") return "_tag";
-		if (c.type === "Subject") return "_subject";
-		return "_c" + i;
-	},
-	col_label(c) {
-		if (c.type === "Status") return __("Статус");
-		if (c.type === "Tag") return __("Тег");
-		if (c.type === "Subject") return __("Название");
-		return (c.df && c.df.label) || (c.df && c.df.fieldname) || c.type || "";
-	},
-	// Ключ колонки «Название» (она держит чекбокс строки). У Subject есть df.fieldname (обычно "title")
-	subject_key(lv) {
-		const cols = lv.columns || [];
-		const i = cols.findIndex((c) => c.type === "Subject");
-		return i >= 0 ? this.col_key(cols[i], i) : "_subject";
-	},
-
-	// Вешаем класс st-k-<key> на каждую ячейку (шапка + строки) — чтобы личный слой
-	// мог таргетить ЛЮБУЮ колонку, включая «Статус»/«Тег»/«Название» (у них нет класса с именем поля)
-	tag_columns(lv) {
-		const keys = (lv.columns || []).map((c, i) => this.col_key(c, i));
-		const $w = $(lv.page.wrapper);
-		const rows = [$w.find(".list-row-head")[0]].concat($w.find(".list-row-container .list-row").toArray());
-		rows.forEach((r) => {
-			if (!r) return;
-			const cols = r.querySelectorAll(".list-row-col");
-			cols.forEach((el, i) => { if (keys[i]) el.classList.add("st-k-" + keys[i]); });
-		});
-		return keys;
-	},
-
-	apply_personal_columns(lv) {
-		if (!lv || !lv.page || !lv.page.wrapper) return;
-		const dt = frappe.scrub(lv.doctype);
-		$(lv.page.wrapper).addClass("st-lc-" + dt + " st-wrap-cols"); // скоуп + перенос текста
-		this.tag_columns(lv);
-		const pc = this.personal_cols(lv.doctype);
-		const safe = (f) => /^[a-z0-9_]+$/i.test(f);
-		const hidden = (pc.hidden || []).filter(safe);
-		const order = (pc.order || []).filter(safe);
-		const sk = this.subject_key(lv);
-		const css = hidden.map((k) => `.st-lc-${dt} .list-row-col.st-k-${k}{display:none !important}`);
-		// колонка «Название» держит чекбокс строки — всегда крайняя слева, из перестановки исключена
-		css.push(`.st-lc-${dt} .list-row-col.st-k-${sk}{order:0 !important}`);
-		order.filter((k) => k !== sk).forEach((k, i) => css.push(`.st-lc-${dt} .list-row-col.st-k-${k}{order:${i + 10}}`));
-		const sid = "st-cols-" + dt;
-		let st = document.getElementById(sid);
-		if (!st) { st = document.createElement("style"); st.id = sid; document.head.appendChild(st); }
-		st.textContent = css.join("\n");
-	},
-
-	load_columns_checklist(lv, $box) {
-		const me = this;
-		const esc = frappe.utils.escape_html;
-		const pc = this.personal_cols(lv.doctype);
-		const hidden = new Set(pc.hidden || []);
-		const ord = pc.order || [];
-		// ВСЕ видимые колонки (включая Статус/Тег/Название/ID) — личный слой их покрывает
-		const sk = this.subject_key(lv);
-		let cols = (lv.columns || []).map((c, i) => ({ fn: this.col_key(c, i), label: this.col_label(c) }));
-		if (!cols.length) { $box.html(`<div class="text-muted">${__("Нет настраиваемых колонок")}</div>`); return; }
-		// «Название» закреплено первым (держит чекбокс строки), порядок — личный, затем остальные
-		const rank = (fn) => fn === sk ? -1 : (ord.indexOf(fn) < 0 ? 999 : ord.indexOf(fn));
-		cols.sort((a, b) => rank(a.fn) - rank(b.fn));
-		$box.html(cols.map((c) => {
-			const pinned = c.fn === sk;
-			return `<div class="st-ts-col${pinned ? " st-ts-pin" : ""}" data-fn="${esc(c.fn)}">` +
-				`<span class="st-ts-grip" title="${pinned ? __("Закреплено слева") : __("Перетащите")}">${pinned ? "🔒" : "⋮⋮"}</span>` +
-				`<input type="checkbox" data-fn="${esc(c.fn)}" ${hidden.has(c.fn) ? "" : "checked"}>` +
-				`<span class="st-ts-col-l">${esc(__(c.label))}</span></div>`;
-		}).join(""));
-		// чекбокс видимости (не пересобираем список, чтобы не рвать Sortable)
-		$box.find("input[type=checkbox]").on("change", (e) => me.toggle_column_vis(lv, e.currentTarget.dataset.fn, e.currentTarget.checked));
-		// drag-n-drop порядка (Sortable из Frappe); «Название» зафиксировано
-		if (window.Sortable) {
-			if ($box[0]._st_sortable) { try { $box[0]._st_sortable.destroy(); } catch (e) {} }
-			$box[0]._st_sortable = new window.Sortable($box[0], {
-				handle: ".st-ts-grip", filter: ".st-ts-pin", draggable: ".st-ts-col", animation: 150,
-				onMove: (e) => !$(e.related).hasClass("st-ts-pin"),
-				onEnd: () => {
-					const arr = $box.find(".st-ts-col").toArray().map((el) => el.dataset.fn);
-					const obj = me.personal_cols(lv.doctype); obj.order = arr; me.save_personal_cols(lv.doctype, obj);
-					me.apply_personal_columns(lv);
-				},
-			});
-		}
-	},
-
-	toggle_column_vis(lv, fieldname, visible, $box) {
-		const obj = this.personal_cols(lv.doctype);
-		let hidden = (obj.hidden || []).filter((f) => f !== fieldname);
-		if (!visible) hidden.push(fieldname);
-		obj.hidden = hidden;
-		this.save_personal_cols(lv.doctype, obj);
-		this.apply_personal_columns(lv);
-		if ($box) this.load_columns_checklist(lv, $box);
-	},
-
-	// Тултип на заголовках колонок списка — полная подпись по наведению (когда усечена).
-	decorate_list_headers(lv) {
-		if (!lv.page || !lv.page.wrapper) return;
-		$(lv.page.wrapper).find(".list-row-head .list-row-col").each(function () {
-			const $c = $(this);
-			const txt = $c.text().trim();
-			if (txt && !$c.attr("title")) $c.attr("title", txt);
-		});
 	},
 
 	/* ----- Sort: one combined button with custom menu ----- */
