@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v129";
+const SAAS_THEME_BUILD = "v130";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -1068,6 +1068,8 @@ saas_theme.list_controls = {
 			this.setup_filter_button(lv);
 			this.setup_sort_button(lv);
 			this.compact_header_buttons(lv);
+			// Единая кнопка «Настройка таблицы» (фильтры+колонки). Этап 2: только Лиды.
+			if (lv.doctype === "Lead") this.setup_table_settings_button(lv);
 		}
 		// Инбокс: чинить плохой дефолт сортировки (по классификации → дата письма)
 		this.fix_inbox_sort(window.cur_list);
@@ -1380,6 +1382,62 @@ saas_theme.list_controls = {
 		if (!fa.filter_button.find(".st-lc-caret").length) {
 			fa.filter_button.append('<span class="st-lc-caret">▾</span>');
 		}
+	},
+
+	/* ----- Единая кнопка «Настройка таблицы»: фильтры + колонки (слой поверх штатных API) -----
+	   БЕЗОПАСНОСТЬ: только ВЫЗЫВАЕМ штатные методы Frappe (filter_area, show_list_settings),
+	   ничего не патчим и не храним сами. Кнопка добавляется штатным add_inner_button. */
+	setup_table_settings_button(lv) {
+		if (!lv.page || !lv.page.add_inner_button) return;
+		if (lv.page.wrapper.find(".st-table-settings").length) return; // уже добавлена в этот рендер
+		const $btn = lv.page.add_inner_button(__("Настройка таблицы"), () => this.open_table_panel(lv));
+		if ($btn) $btn.addClass("st-table-settings");
+	},
+
+	open_table_panel(lv) {
+		const esc = frappe.utils.escape_html;
+		const fa = lv.filter_area;
+		const d = new frappe.ui.Dialog({ title: __("Настройка таблицы"), fields: [{ fieldtype: "HTML", fieldname: "body" }] });
+
+		const render_filters = () => {
+			let filters = [];
+			try { filters = (fa && fa.get && fa.get()) || []; } catch (e) { filters = []; }
+			if (!filters.length) return `<div class="text-muted">${__("Активных фильтров нет")}</div>`;
+			return filters.map((f, i) => {
+				const val = Array.isArray(f[3]) ? f[3].join(", ") : f[3];
+				return `<div class="st-ts-frow"><span>${esc(f[1])} <i>${esc(f[2])}</i> ${esc(String(val))}</span><button class="btn btn-xs st-ts-rm" data-i="${i}" title="${__("Убрать")}">✕</button></div>`;
+			}).join("");
+		};
+
+		const paint = () => {
+			const $w = d.fields_dict.body.$wrapper;
+			$w.html(`
+				<div class="st-ts">
+					<div class="st-ts-sec">
+						<div class="st-ts-h">${__("Фильтры")}</div>
+						<div class="st-ts-filters">${render_filters()}</div>
+						<div class="st-ts-actions">
+							<button class="btn btn-sm st-ts-edit">${__("Добавить / изменить фильтр")}</button>
+							<button class="btn btn-sm st-ts-clear">${__("Очистить все")}</button>
+						</div>
+					</div>
+					<div class="st-ts-sec">
+						<div class="st-ts-h">${__("Колонки таблицы")}</div>
+						<button class="btn btn-sm st-ts-cols">${__("Настроить колонки (видимость / порядок)")}</button>
+						<div class="text-muted" style="margin-top:6px;font-size:.85rem">${__("Открывается штатный конструктор колонок — добавить, убрать, переставить.")}</div>
+					</div>
+				</div>`);
+			$w.find(".st-ts-rm").on("click", (e) => {
+				const i = parseInt($(e.currentTarget).data("i"), 10);
+				try { const fl = fa.filter_list && fa.filter_list.get_filters(); if (fl && fl[i]) fl[i].remove(); } catch (err) {}
+				setTimeout(paint, 200);
+			});
+			$w.find(".st-ts-clear").on("click", () => { try { fa.clear(); } catch (e) {} setTimeout(paint, 200); });
+			$w.find(".st-ts-edit").on("click", () => { d.hide(); try { fa.filter_button && fa.filter_button[0] && fa.filter_button[0].click(); } catch (e) {} });
+			$w.find(".st-ts-cols").on("click", () => { d.hide(); try { lv.show_list_settings(); } catch (e) {} });
+		};
+		paint();
+		d.show();
 	},
 
 	/* ----- Sort: one combined button with custom menu ----- */
