@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v134";
+const SAAS_THEME_BUILD = "v135";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -1461,16 +1461,46 @@ saas_theme.list_controls = {
 		localStorage.setItem("st_cols_" + doctype, JSON.stringify(obj));
 	},
 
+	// Стабильный ключ колонки (fieldname для полей; синтетический для спец-колонок без имени поля)
+	col_key(c, i) {
+		if (c.df && c.df.fieldname) return c.df.fieldname;
+		if (c.type === "Status") return "_status";
+		if (c.type === "Tag") return "_tag";
+		if (c.type === "Subject") return "_subject";
+		return "_c" + i;
+	},
+	col_label(c) {
+		if (c.type === "Status") return __("Статус");
+		if (c.type === "Tag") return __("Тег");
+		if (c.type === "Subject") return __("Название");
+		return (c.df && c.df.label) || (c.df && c.df.fieldname) || c.type || "";
+	},
+
+	// Вешаем класс st-k-<key> на каждую ячейку (шапка + строки) — чтобы личный слой
+	// мог таргетить ЛЮБУЮ колонку, включая «Статус»/«Тег»/«Название» (у них нет класса с именем поля)
+	tag_columns(lv) {
+		const keys = (lv.columns || []).map((c, i) => this.col_key(c, i));
+		const $w = $(lv.page.wrapper);
+		const rows = [$w.find(".list-row-head")[0]].concat($w.find(".list-row-container .list-row").toArray());
+		rows.forEach((r) => {
+			if (!r) return;
+			const cols = r.querySelectorAll(".list-row-col");
+			cols.forEach((el, i) => { if (keys[i]) el.classList.add("st-k-" + keys[i]); });
+		});
+		return keys;
+	},
+
 	apply_personal_columns(lv) {
 		if (!lv || !lv.page || !lv.page.wrapper) return;
 		const dt = frappe.scrub(lv.doctype);
 		$(lv.page.wrapper).addClass("st-lc-" + dt + " st-wrap-cols"); // скоуп + перенос текста
+		this.tag_columns(lv);
 		const pc = this.personal_cols(lv.doctype);
 		const safe = (f) => /^[a-z0-9_]+$/i.test(f);
 		const hidden = (pc.hidden || []).filter(safe);
 		const order = (pc.order || []).filter(safe);
-		const css = hidden.map((fn) => `.st-lc-${dt} .list-row-col.${fn}{display:none !important}`);
-		order.forEach((fn, i) => css.push(`.st-lc-${dt} .list-row-col.${fn}{order:${i + 10}}`));
+		const css = hidden.map((k) => `.st-lc-${dt} .list-row-col.st-k-${k}{display:none !important}`);
+		order.forEach((k, i) => css.push(`.st-lc-${dt} .list-row-col.st-k-${k}{order:${i + 10}}`));
 		const sid = "st-cols-" + dt;
 		let st = document.getElementById(sid);
 		if (!st) { st = document.createElement("style"); st.id = sid; document.head.appendChild(st); }
@@ -1483,9 +1513,8 @@ saas_theme.list_controls = {
 		const pc = this.personal_cols(lv.doctype);
 		const hidden = new Set(pc.hidden || []);
 		const ord = pc.order || [];
-		// только реальные колонки-поля (Subject/Status/Tag — ядро, не трогаем)
-		let cols = (lv.columns || []).filter((c) => c.type === "Field" && c.df && c.df.fieldname)
-			.map((c) => ({ fn: c.df.fieldname, label: c.df.label || c.df.fieldname }));
+		// ВСЕ видимые колонки (включая Статус/Тег/Название/ID) — личный слой их покрывает
+		let cols = (lv.columns || []).map((c, i) => ({ fn: this.col_key(c, i), label: this.col_label(c) }));
 		if (!cols.length) { $box.html(`<div class="text-muted">${__("Нет настраиваемых колонок")}</div>`); return; }
 		// порядок чек-листа = личный порядок, затем остальные
 		cols.sort((a, b) => { const ia = ord.indexOf(a.fn), ib = ord.indexOf(b.fn); return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib); });

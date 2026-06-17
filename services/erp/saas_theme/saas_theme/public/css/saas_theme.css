@@ -3844,9 +3844,9 @@ html[data-theme="dark"] .fp-crm-card .fp-crm-feed .timeline-content {
 .st-ts-mv:hover:not([disabled]) { background: color-mix(in srgb, var(--text-color) 10%, transparent); }
 .st-ts-mv[disabled] { opacity: .35; cursor: default; }
 /* Перенос текста в ячейках списка вместо горизонтальной прокрутки */
-.st-wrap-cols .list-row-col { white-space: normal; }
+.st-wrap-cols .list-row-col { white-space: normal; min-width: 0; overflow-wrap: anywhere; }
 .st-wrap-cols .list-row-col .ellipsis,
-.st-wrap-cols .list-row-col .level-item .ellipsis { white-space: normal; overflow: visible; text-overflow: clip; word-break: break-word; }
+.st-wrap-cols .list-row-col .level-item .ellipsis { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; word-break: break-word; }
 .st-wrap-cols .list-row { align-items: flex-start; }
 /* Непрочитанные — жирно + насыщенный текст; имя отправителя тоже жирным */
 .list-subject.st-mail-unseen a,
