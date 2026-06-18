@@ -2,3 +2,4 @@
 
 [post_model_sync]
 metal_calculator.patches.seed_gost_reference
+metal_calculator.patches.dobor_order_v2
