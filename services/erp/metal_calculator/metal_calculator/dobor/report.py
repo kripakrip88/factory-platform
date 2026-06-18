@@ -102,10 +102,23 @@ def sketch_svg(snapshot):
 			pl.append(f'{_n(d[i]["x"] + nx / l * 9 * paint_side)},{_n(d[i]["y"] + ny / l * 9 * paint_side)}')
 		parts.append(f'<polyline points="{" ".join(pl)}" fill="none" stroke="#888" stroke-width="2" stroke-dasharray="5 4" stroke-linejoin="round"/>')
 
-	# контур
+	# контур: подгиб 180° — параллельная линия со смещением + разворот «U» наружу
+	GAP = 8
+	isfold = lambda s: 1 <= s < len(segs) and abs(_bend(segs, s)) > 170
 	path = "M " + _n(d[0]["x"]) + " " + _n(d[0]["y"])
-	for i in range(1, len(d)):
-		path += f' L {_n(d[i]["x"])} {_n(d[i]["y"])}'
+	for s in range(len(segs)):
+		a, b = d[s], d[s + 1]
+		if isfold(s):
+			uin = unit(d[s - 1], a); dr = unit(a, b); n = {"x": -dr["y"], "y": dr["x"]}
+			side = -1 if _bend(segs, s) > 0 else 1
+			ox, oy = n["x"] * side * GAP, n["y"] * side * GAP
+			aoff = {"x": a["x"] + ox, "y": a["y"] + oy}
+			boff = {"x": b["x"] + ox, "y": b["y"] + oy}
+			cross = (aoff["x"] - a["x"]) * uin["y"] - (aoff["y"] - a["y"]) * uin["x"]
+			sweep = 0 if cross > 0 else 1
+			path += f' A {GAP / 2} {GAP / 2} 0 0 {sweep} {_n(aoff["x"])} {_n(aoff["y"])} L {_n(boff["x"])} {_n(boff["y"])}'
+		else:
+			path += f' L {_n(b["x"])} {_n(b["y"])}'
 	parts.append(f'<path d="{path}" fill="none" stroke="#111" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>')
 
 	# завальцовки (полукруг)

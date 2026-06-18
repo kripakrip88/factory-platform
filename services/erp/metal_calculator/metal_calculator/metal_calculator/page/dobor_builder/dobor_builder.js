@@ -277,26 +277,25 @@ function init_dobor(page) {
 				svg.appendChild(mk("polyline", { points: off, fill: "none", stroke: paintDark, "stroke-width": "1.8", "stroke-dasharray": "4 3", "stroke-linejoin": "round" }));
 			}
 
-			const FOLDGAP = 7, norms = [], dirs = [];
-			for (let i = 0; i < segs.length; i++) { const a = v[i], b = v[i + 1]; let dx = b.x - a.x, dy = b.y - a.y; const l = Math.hypot(dx, dy) || 1; norms.push({ x: -dy / l, y: dx / l }); dirs.push({ x: dx / l, y: dy / l }); }
-			const isFold = (i) => i >= 1 && i < segs.length && Math.abs(bendAngle(i)) > 170; // загиб 180° = угол между полками <10° (не путать с острым углом ~24°)
+			const GAP = 8; // зазор подгиба (имитация толщины), px
+			const unitv = (a, b) => { const dx = b.x - a.x, dy = b.y - a.y, l = Math.hypot(dx, dy) || 1; return { x: dx / l, y: dy / l }; };
+			const isFold = (s) => s >= 1 && s < segs.length && Math.abs(bendAngle(s)) > 170; // загиб 180° = угол между полками <10°
 
-			// контур: монохром, одна линия; на загибе 180° — округлая петля наружу
+			// контур: подгиб 180° — параллельная линия со смещением + разворот «U» наружу
 			let dPath = "M " + v[0].x + " " + v[0].y;
-			for (let i = 1; i < v.length; i++) {
-				if (i < segs.length && isFold(i)) {
-					const n = norms[i - 1], tipx = v[i].x + dirs[i - 1].x * FOLDGAP, tipy = v[i].y + dirs[i - 1].y * FOLDGAP;
-					const a = { x: tipx + n.x * FOLDGAP * 0.7, y: tipy + n.y * FOLDGAP * 0.7 }, b = { x: tipx - n.x * FOLDGAP * 0.7, y: tipy - n.y * FOLDGAP * 0.7 };
-					dPath += ` L ${a.x} ${a.y} Q ${tipx + dirs[i - 1].x * FOLDGAP} ${tipy + dirs[i - 1].y * FOLDGAP} ${b.x} ${b.y} L ${v[i].x} ${v[i].y}`;
-				} else dPath += ` L ${v[i].x} ${v[i].y}`;
+			for (let s = 0; s < segs.length; s++) {
+				const a = v[s], b = v[s + 1];
+				if (isFold(s)) {
+					const uin = unitv(v[s - 1], a), dir = unitv(a, b), n = { x: -dir.y, y: dir.x };
+					const side = bendAngle(s) > 0 ? -1 : 1;
+					const ox = n.x * side * GAP, oy = n.y * side * GAP;
+					const aOff = { x: a.x + ox, y: a.y + oy }, bOff = { x: b.x + ox, y: b.y + oy };
+					const cross = (aOff.x - a.x) * uin.y - (aOff.y - a.y) * uin.x;
+					const sweep = cross > 0 ? 0 : 1;
+					dPath += ` A ${GAP / 2} ${GAP / 2} 0 0 ${sweep} ${aOff.x} ${aOff.y} L ${bOff.x} ${bOff.y}`;
+				} else dPath += ` L ${b.x} ${b.y}`;
 			}
 			svg.appendChild(mk("path", { d: dPath, fill: "none", stroke: INK, "stroke-width": "3.2", "stroke-linejoin": "round", "stroke-linecap": "round" }));
-
-			// метка загиба 180°
-			for (let i = 1; i < segs.length; i++) {
-				if (!isFold(i)) continue; const tipx = v[i].x + dirs[i - 1].x * FOLDGAP, tipy = v[i].y + dirs[i - 1].y * FOLDGAP;
-				const lt = mk("text", { x: tipx + dirs[i - 1].x * 13, y: tipy + dirs[i - 1].y * 13 + 3, "text-anchor": "middle", "font-size": "9", "font-weight": "700", fill: "#3ea0c9" }); lt.textContent = "подгиб 180°"; svg.appendChild(lt);
-			}
 
 			// завальцовка — чистый полукруг в цвет контура
 			function drawHem(edgeV, u, flip) {
