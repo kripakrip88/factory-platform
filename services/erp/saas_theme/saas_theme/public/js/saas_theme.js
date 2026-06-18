@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v130";
+const SAAS_THEME_BUILD = "v131";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -1139,6 +1139,24 @@ saas_theme.list_controls = {
 		const me = this;
 		const byName = {};
 		(lv.data || []).forEach((d) => (byName[d.name] = d));
+
+		// Инбокс грузит свой набор полей без sender_full_name — подтягиваем его одним
+		// запросом, иначе имя всегда падает в fallback (локальная часть адреса).
+		const need = (lv.data || []).filter((d) => d.sender_full_name === undefined).map((d) => d.name);
+		if (need.length && !lv._st_names_loading) {
+			lv._st_names_loading = true;
+			frappe.call({
+				method: "frappe.client.get_list",
+				args: { doctype: "Communication", filters: [["name", "in", need]], fields: ["name", "sender_full_name"], limit_page_length: 0 },
+				callback: (r) => {
+					lv._st_names_loading = false;
+					const m = {};
+					(r.message || []).forEach((x) => (m[x.name] = x.sender_full_name || ""));
+					(lv.data || []).forEach((d) => { if (d.sender_full_name === undefined) d.sender_full_name = m[d.name] || ""; });
+					me.decorate_inbox_rows(lv);
+				},
+			});
+		}
 
 		$(lv.page.wrapper).find(".list-row-container").each(function () {
 			const $r = $(this);
