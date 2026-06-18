@@ -169,18 +169,19 @@ body{margin:0;font-family:"DejaVu Sans",Arial,sans-serif;color:#111;font-size:12
 .subhead span{color:#111;font-weight:600}
 .grid{display:flex;flex-wrap:wrap;gap:10px}
 .card{border:1px solid #999;border-radius:8px;overflow:hidden;width:48%;break-inside:avoid;page-break-inside:avoid}
-.card-head{display:flex;align-items:center;gap:8px;background:#f0f0f0;border-bottom:1px solid #999;padding:6px 9px}
-.pos-num{width:21px;height:21px;border-radius:6px;background:#111;color:#fff;font-weight:700;font-size:11px;display:flex;align-items:center;justify-content:center}
+.card-head{display:flex;align-items:center;gap:6px;background:#f0f0f0;border-bottom:1px solid #999;padding:6px 9px}
 .card-head .name{font-weight:700;font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card-head .lock{font-size:10px;font-weight:700;color:#111;border:1px solid #111;border-radius:4px;padding:0 4px}
 .card-body{display:flex;gap:8px;padding:8px 9px}
 .sketch-box{width:170px;flex-shrink:0;border:1px solid #ddd;border-radius:6px;background:#fff;display:flex;align-items:center;justify-content:center}
 .specs{flex:1;font-size:10.5px}
 .specs table{width:100%;border-collapse:collapse}
-.specs td{padding:1px 0;vertical-align:top}
+.specs td{padding:2.5px 0;vertical-align:top;border-bottom:1px solid #e6e6e6}
+.specs tr:last-child td{border-bottom:none}
 .specs td.k{color:#555;white-space:nowrap;padding-right:6px}
 .specs td.v{color:#111;font-weight:600;text-align:right}
 .specs .dev{font-weight:800;font-size:12px}
-.specs .strong td{border-top:1px dashed #999;padding-top:3px}
+.specs .strong td{border-top:1px solid #999}
 .totals{margin-top:14px;border-top:2px solid #111;padding-top:9px;display:flex;justify-content:space-between;font-size:12px}
 .totals .tcell{color:#555}
 .totals .tcell b{color:#111;font-size:13.5px;display:block;margin-top:2px}
@@ -214,7 +215,7 @@ def _card_html(idx, item):
 	svg = sketch_svg(snap) if snap.get("segs") else '<div style="color:#999;font-size:10px;padding:20px">нет эскиза</div>'
 	coating = escape(str(item.get("coating") or "—"))
 	name = escape(str(item.get("title") or "Доборка"))
-	lock = " 🤝" if snap.get("lockOn") else ""
+	lock = '<span class="lock">ЗАМОК</span>' if snap.get("lockOn") else ""
 	hem_len = snap.get("hemLen") or 15
 	hem = f"{hem_len:g} мм" if (snap.get("hemLeft") or snap.get("hemRight")) else "—"
 	if r:
@@ -226,7 +227,7 @@ def _card_html(idx, item):
 	else:
 		dev, nflange, nbend, w1, wall = "—", "—", "—", "—", "—"
 	return f"""<div class="card">
-	<div class="card-head"><span class="pos-num">{idx}</span><span class="name">{name}{lock}</span></div>
+	<div class="card-head"><span class="name">{idx}. {name}</span>{lock}</div>
 	<div class="card-body">
 		<div class="sketch-box">{svg}</div>
 		<div class="specs"><table>

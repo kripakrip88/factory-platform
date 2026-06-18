@@ -125,7 +125,7 @@ const DOBOR_HTML = `
     <div class="panel">
       <div class="panel-head">Параметры доборки</div>
       <div class="inputs">
-        <div class="field"><label>Толщина, мм</label><select id="db_thick"><option>0.45</option><option selected>0.5</option><option>0.55</option><option>0.7</option><option>1</option></select></div>
+        <div class="field"><label>Толщина, мм</label><select id="db_thick"><option selected>0.45</option><option>0.5</option><option>0.55</option><option>0.7</option><option>1</option></select></div>
         <div class="field"><label>Цвет / покрытие</label><select id="db_color"></select></div>
         <div class="field"><label>Длина планки, мм</label><input id="db_len" type="number" value="2500" min="1"></div>
         <div class="field"><label>Количество, шт</label><input id="db_qty" type="number" value="1" min="1"></div>
@@ -427,6 +427,9 @@ function init_dobor(page) {
 	frappe.call({ method: "metal_calculator.dobor.api.list_coatings", callback: (r) => {
 		const opts = (r.message || []).map((c) => `<option value="${esc(c.coating_name)}|${esc(c.hex || "#b9c2cc")}">${esc(c.coating_name)}</option>`).join("");
 		G("db_color").innerHTML = opts || '<option value="Цинк|#b9c2cc">Цинк</option>';
+		// по умолчанию — Цинк
+		const zinc = Array.from(G("db_color").options).find((o) => /цинк/i.test(o.textContent));
+		if (zinc) G("db_color").value = zinc.value;
 		drawCanvas();
 	} });
 
