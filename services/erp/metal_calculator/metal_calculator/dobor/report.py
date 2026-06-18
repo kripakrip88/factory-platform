@@ -23,17 +23,6 @@ SHEET_L_MM = 2500
 SHEET_AREA = (SHEET_W_MM / 1000.0) * (SHEET_L_MM / 1000.0)  # м²
 
 
-def _logo_svg():
-	"""Логотип ПМК Парк — 6 полосок, сходящихся к центру (как на лого). Высота ≤44px."""
-	cx, cy, R = 20, 20, 16
-	arms = []
-	for ang in range(0, 360, 60):
-		r = math.radians(ang)
-		arms.append(f'<line x1="{cx}" y1="{cy}" x2="{cx + R * math.cos(r):.1f}" y2="{cy + R * math.sin(r):.1f}"/>')
-	return ('<svg viewBox="0 0 40 40" width="44" height="44" xmlns="http://www.w3.org/2000/svg">'
-	        f'<g stroke="#111" stroke-width="3.4" stroke-linecap="round">{"".join(arms)}</g></svg>')
-
-
 # ---------------- геометрия (порт прототипа) ----------------
 
 def _verts(start, segs):
@@ -217,7 +206,7 @@ _CSS = """
 *{box-sizing:border-box}
 body{margin:0;font-family:"DejaVu Sans",Arial,sans-serif;color:#111;font-size:12px;line-height:1.4}
 .head{width:100%;border-collapse:collapse;border-bottom:2px solid #111;table-layout:fixed}
-.logo{width:46px;height:46px;border-radius:9px;background:#f3f3f3;border:1px solid #ccc;color:#666;text-align:center;font-weight:800;font-size:12px;line-height:1.05}
+.logo{width:46px;height:46px;border-radius:9px;background:#111;color:#fff;text-align:center;font-weight:800;font-size:12px;line-height:1.05}
 .h1{font-size:15px;font-weight:700;line-height:1.2;white-space:nowrap}
 .co{font-size:11px;color:#444;margin-top:2px}
 .meta{text-align:right;font-size:11.5px;color:#444;line-height:1.7}
@@ -366,7 +355,7 @@ def order_html(order):
 	return f"""<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><style>{_CSS}</style></head><body>
 	<table class="head"><tr>
 		<td style="width:70%;vertical-align:middle;padding-bottom:12px"><table><tr>
-			<td style="width:50px;vertical-align:middle">{_logo_svg()}</td>
+			<td style="width:50px;vertical-align:middle"><div class="logo"><span style="display:inline-block;line-height:46px"><span style="display:inline-block;line-height:1.05;vertical-align:middle">ПМК<br>ПАРК</span></span></div></td>
 			<td style="padding-left:12px;vertical-align:middle"><div class="h1">Производственный лист на доборные элементы</div><div class="co">ООО «ПМК Парк» · завод металлоконструкций · <a href="https://pmkpark.ru/" style="color:#111;text-decoration:underline">pmkpark.ru</a></div></td>
 		</tr></table></td>
 		<td style="width:30%;vertical-align:top;padding-bottom:12px"><table style="margin-left:auto;border-collapse:collapse;font-size:11.5px;color:#444;white-space:nowrap">
