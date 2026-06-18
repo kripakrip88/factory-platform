@@ -73,7 +73,7 @@ def sketch_svg(snapshot):
 	mxy = max(p["y"] for p in v)
 	cx, cy = (mnx + mxx) / 2, (mny + mxy) / 2
 	bw, bh = max(1, mxx - mnx), max(1, mxy - mny)
-	pad = 124  # больше поля под отодвинутые подписи
+	pad = 86  # поле под подписи (меньше — эскиз крупнее, заполняет карточку)
 	k = min((W - pad) / bw, (H - pad) / bh)
 
 	def D(p):
@@ -245,8 +245,8 @@ def _card_html(idx, item):
 		<td style="padding:6px 9px 6px 0"><span class="cname">{name}</span>{lock}</td>
 	</tr></table>
 	<table class="cb"><tr>
-		<td style="width:66%;padding:8px 4px 8px 9px;vertical-align:middle">{svg}</td>
-		<td style="width:34%;padding:8px 10px 8px 4px;vertical-align:top">
+		<td style="width:68%;padding:6px 2px 6px 6px;vertical-align:middle">{svg}</td>
+		<td style="width:32%;padding:8px 9px 8px 4px;vertical-align:top">
 		<table class="specs">
 			<tr><td class="k">Развёртка</td><td class="v dev">{dev} мм</td></tr>
 			<tr><td class="k">Полок / гибов</td><td class="v">{nflange} / {nbend}</td></tr>
