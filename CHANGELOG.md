@@ -3,6 +3,18 @@
 С v1.0.0 версии тегаются по semver `vMAJOR.MINOR.PATCH` (см. CLAUDE.md). Каждый
 деплой в develop = тег + запись здесь. Откат: `git checkout vX.Y.Z` → деплой.
 
+## v1.0.1 — 2026-06-18
+Почта (прод, с бэкапом `20260618_143752`):
+- [fix] отправленные mail.ru: имя папки `Sent`→**«Отправленные»** + приём папки
+  «Отправленные» (IMAP Folder pull) — письма с телефона/веба подтягиваются как Sent,
+  дедуп по Message-ID; sync=ALL, From=аккаунт.
+- [fix] имя отправителя: `frappe.parse_addr` теряет display-name из From
+  (`=?utf-8?B?...?= <email>`) → sender_full_name=email. Чиним без патча ядра —
+  `saas_theme.email_names`: сверка имён из IMAP правильным парсером. Бэкфилл
+  загруженных писем + планировщик `hourly_long` (go-forward).
+- Логика консолидирована в `saas_theme/email_names.py` (удалён дублирующий
+  `setup/email_delivery.py`). saas_theme `?v=130` (без правок ассетов).
+
 ## v1.0.0 — 2026-06-18
 Базовый тег (снимок текущего develop: ERPNext v16 + saas_theme + калькулятор
 металла + раскрой + доборка с конструктором, заказами и PDF-листом + почта).
