@@ -73,7 +73,7 @@ def sketch_svg(snapshot):
 	mxy = max(p["y"] for p in v)
 	cx, cy = (mnx + mxx) / 2, (mny + mxy) / 2
 	bw, bh = max(1, mxx - mnx), max(1, mxy - mny)
-	pad = 104
+	pad = 124  # больше поля под отодвинутые подписи
 	k = min((W - pad) / bw, (H - pad) / bh)
 
 	def D(p):
@@ -128,7 +128,7 @@ def sketch_svg(snapshot):
 		mx, my = (a["x"] + b["x"]) / 2, (a["y"] + b["y"]) / 2
 		nx, ny = -(b["y"] - a["y"]), (b["x"] - a["x"])
 		nl = math.hypot(nx, ny) or 1
-		tx, ty = mx + nx / nl * 16, my + ny / nl * 16 + 6
+		tx, ty = mx + nx / nl * 25, my + ny / nl * 25 + 6  # дальше от контура, чтобы не наплывало
 		parts.append(f'<text x="{_n(tx)}" y="{_n(ty)}" text-anchor="middle" font-size="19" font-weight="700" fill="#111">{int(round(segs[i]["len"]))}</text>')
 
 	# углы между полками (наружу по биссектрисе)
