@@ -40,15 +40,15 @@ def mass_per_sqm(thickness):
 	return float(val) if val else thickness * 7.85
 
 
-def compute(flanges, hem_left, hem_right, hem_len, mps, plank_length, qty, coil_width=0):
+def compute(flanges, hem_left, hem_right, hem_len, mps, plank_length, qty, coil_width=0, lock=False):
 	"""ЧИСТЫЙ расчёт (без frappe) — для тестов. mps — масса 1 м² (кг)."""
 	flange_sum = sum(float(f.get("len") or 0) for f in (flanges or []))
 	hem_count = (1 if hem_left else 0) + (1 if hem_right else 0)
 	developed = flange_sum + hem_count * hem_len
 	area_one = (developed / 1000.0) * (plank_length / 1000.0)  # м²
 	weight_one = area_one * mps
-	# каждая завальцовка считается как гиб (подгиб 180°)
-	bends = max(0, len(flanges or []) - 1) + hem_count
+	# каждая завальцовка = гиб (подгиб 180°); замок (спец-соединение) добавляет 2 гиба
+	bends = max(0, len(flanges or []) - 1) + hem_count + (2 if lock else 0)
 	strips = int(coil_width // developed) if (developed > 0 and coil_width > 0) else 0
 	strip_waste = (coil_width - strips * developed) if strips else (coil_width if coil_width > 0 else 0)
 	return {
@@ -80,6 +80,7 @@ def calc(profile):
 	return compute(
 		profile.get("flanges") or [], bool(profile.get("hem_left")), bool(profile.get("hem_right")),
 		hem_len, mass_per_sqm(thickness), plank_length, qty, coil,
+		lock=bool(profile.get("lock") or profile.get("lockOn")),
 	)
 
 

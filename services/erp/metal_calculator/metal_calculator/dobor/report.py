@@ -77,7 +77,8 @@ def sketch_svg(snapshot):
 	k = min((W - pad) / bw, (H - pad) / bh)
 
 	def D(p):
-		return {"x": (p["x"] - cx) * k + W / 2, "y": (cy - p["y"]) * k + H / 2}
+		# та же ориентация, что в конструкторе (без вертикального зеркала)
+		return {"x": (p["x"] - cx) * k + W / 2, "y": (p["y"] - cy) * k + H / 2}
 
 	d = [D(p) for p in v]
 
@@ -148,7 +149,7 @@ def sketch_svg(snapshot):
 			ox, oy = -t2y, t2x
 		else:
 			ox, oy = -bx / bl, -by / bl
-		lx, ly = p["x"] + ox * 20, p["y"] + oy * 20 + 6
+		lx, ly = p["x"] + ox * 24, p["y"] + oy * 24 + 6
 		parts.append(f'<text x="{_n(lx)}" y="{_n(ly)}" text-anchor="middle" font-size="16" font-weight="700" fill="#111">{int(round(_flange(segs, i)))}°</text>')
 
 	parts.append("</svg>")
@@ -162,7 +163,8 @@ def item_numbers(snapshot, thickness, plank_length, qty):
 	segs = snapshot.get("segs") or snapshot.get("flanges") or []
 	hem_len = float(snapshot.get("hemLen") or 0)
 	res = compute(segs, bool(snapshot.get("hemLeft")), bool(snapshot.get("hemRight")),
-	              hem_len, mass_per_sqm(thickness), plank_length, qty or 1)
+	              hem_len, mass_per_sqm(thickness), plank_length, qty or 1,
+	              lock=bool(snapshot.get("lockOn")))
 	res["flanges_count"] = len(segs)
 	return res
 
@@ -242,8 +244,8 @@ def _card_html(idx, item):
 		<td style="padding:6px 9px 6px 0"><span class="cname">{name}</span>{lock}</td>
 	</tr></table>
 	<table class="cb"><tr>
-		<td style="width:58%;padding:8px 6px 8px 9px;vertical-align:middle">{svg}</td>
-		<td style="width:42%;padding:8px 10px 8px 6px;vertical-align:top">
+		<td style="width:66%;padding:8px 4px 8px 9px;vertical-align:middle">{svg}</td>
+		<td style="width:34%;padding:8px 10px 8px 4px;vertical-align:top">
 		<table class="specs">
 			<tr><td class="k">Развёртка</td><td class="v dev">{dev} мм</td></tr>
 			<tr><td class="k">Полок / гибов</td><td class="v">{nflange} / {nbend}</td></tr>

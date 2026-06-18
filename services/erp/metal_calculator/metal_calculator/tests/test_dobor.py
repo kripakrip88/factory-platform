@@ -47,3 +47,10 @@ class TestDobor(_Base):
 		r = compute(_f(50, 40, 50), True, False, 15, MPS_05, 2500, 1, coil_width=1250)
 		self.assertEqual(r["strips"], 8)
 		self.assertEqual(r["strip_waste"], 10)
+
+	def test_lock_adds_two_bends(self):
+		"""Замок добавляет 2 гиба: 3 полки + 1 завальцовка + замок → гибов = 2+1+2 = 5."""
+		r = compute(_f(50, 40, 50), True, False, 15, MPS_05, 2500, 1, lock=True)
+		self.assertEqual(r["bends"], 5)
+		# без замка тот же профиль — 3 гиба
+		self.assertEqual(compute(_f(50, 40, 50), True, False, 15, MPS_05, 2500, 1)["bends"], 3)

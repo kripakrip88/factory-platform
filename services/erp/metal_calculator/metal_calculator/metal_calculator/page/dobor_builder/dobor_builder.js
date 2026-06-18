@@ -366,7 +366,7 @@ function init_dobor(page) {
 		const thick = parseFloat(G("db_thick").value), len = parseFloat(G("db_len").value) || 0, qty = parseInt(G("db_qty").value) || 0, coil = parseFloat(G("db_coil").value) || 0;
 		G("db_dev").textContent = dev > 0 ? dev + " мм" : "— мм";
 		G("db_devNote").textContent = hem > 0 ? `(полки ${polki} + завальцовка ${hem})` : "";
-		G("db_count").textContent = segs.length + " / " + (Math.max(0, segs.length - 1) + hemCount); // завальцовка = гиб
+		G("db_count").textContent = segs.length + " / " + (Math.max(0, segs.length - 1) + hemCount + (lockOn ? 2 : 0)); // завальцовка = гиб; замок = +2 гиба
 		if (dev > 0 && len > 0) { const area = (dev / 1000) * (len / 1000), w1 = area * massPerSqm(thick); G("db_area").textContent = area.toFixed(3) + " м²"; G("db_w1").textContent = w1.toFixed(2) + " кг"; G("db_wall").textContent = (w1 * qty).toFixed(2) + " кг"; }
 		else { G("db_area").textContent = "— м²"; G("db_w1").textContent = "— кг"; G("db_wall").textContent = "— кг"; }
 		G("db_coilEcho").textContent = coil;
