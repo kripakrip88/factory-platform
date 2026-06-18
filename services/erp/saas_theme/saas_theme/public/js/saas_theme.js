@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v129";
+const SAAS_THEME_BUILD = "v130";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -1118,6 +1118,21 @@ saas_theme.list_controls = {
 	   Инбокс не применяет formatters темы, поэтому декорируем строки в DOM:
 	   буквенный аватар (HSL из адреса), непрочитанные жирным (seen), дата письма.
 	   MutationObserver переисполняет декор при перерисовке строк (фильтр/скролл). */
+	// Переименовать заголовок колонки списка, сохранив иконку сортировки
+	set_col_header($head, colClass, label) {
+		const $c = $head.find(".list-row-col." + colClass).first();
+		if (!$c.length || $c.attr("data-st-relabel") === label) return;
+		let done = false;
+		$c.contents().each(function () {
+			if (this.nodeType === 3 && this.textContent.trim()) { this.textContent = label; done = true; return false; }
+		});
+		if (!done) {
+			const $sp = $c.find("span").filter(function () { return $(this).text().trim(); }).first();
+			if ($sp.length) $sp.text(label); else $c.text(label);
+		}
+		$c.attr("data-st-relabel", label);
+	},
+
 	decorate_inbox_rows(lv) {
 		if (!lv || lv.doctype !== "Communication" || lv.view_name !== "Inbox") return;
 		if (!lv.page || !lv.page.wrapper) return;
@@ -1135,7 +1150,13 @@ saas_theme.list_controls = {
 			if (!doc) return;
 
 			const sender = (doc.sender || "").trim();
-			const fullname = (doc.sender_full_name || sender || "?").trim();
+			// ИМЯ отправителя: sender_full_name; если его нет (или = email) — локальная
+			// часть адреса как имя (а НЕ весь email — иначе дубль с колонкой «Почта»).
+			let fullname = (doc.sender_full_name || "").trim();
+			if (!fullname || fullname.toLowerCase() === sender.toLowerCase()) {
+				const lp = (sender.split("@")[0] || sender || "?").replace(/[._\-]+/g, " ").trim();
+				fullname = lp ? lp.charAt(0).toUpperCase() + lp.slice(1) : "?";
+			}
 			const initial = (fullname.replace(/[^\p{L}\p{N}]/u, "")[0] || fullname[0] || "?").toUpperCase();
 			const $av = $('<span class="st-mail-avatar"></span>')
 				.css("background", saas_theme.mail_avatar_color(sender))
@@ -1168,6 +1189,11 @@ saas_theme.list_controls = {
 				}
 			}
 		});
+
+		// Заголовки колонок под содержимое: «Тема»→«Отправитель / тема», «С»→«Почта»
+		const $head = $(lv.page.wrapper).find(".list-row-head");
+		this.set_col_header($head, "list-subject", __("Отправитель / тема"));
+		this.set_col_header($head, "sender", __("Почта"));
 
 		// Наблюдатель — переисполнить декор после перерисовки строк (один раз на список)
 		if (!lv._st_rows_observed) {
