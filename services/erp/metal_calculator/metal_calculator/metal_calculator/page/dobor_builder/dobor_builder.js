@@ -132,10 +132,12 @@ const DOBOR_HTML = `
 
 function init_dobor(page) {
 	const SVGNS = "http://www.w3.org/2000/svg";
-	const root = page.body.querySelector(".dobor-wrap");
-	const G = (id) => page.body.querySelector("#" + id);
+	// page.body во Frappe — jQuery-объект; берём DOM-ноду для querySelector
+	const body = (page.body && page.body.jquery) ? page.body[0] : (page.body[0] || page.body);
+	const root = body.querySelector(".dobor-wrap");
+	const G = (id) => body.querySelector("#" + id);
 	const svg = G("db_canvas");
-	const canvasWrap = page.body.querySelector(".dobor-wrap .canvas-wrap");
+	const canvasWrap = body.querySelector(".dobor-wrap .canvas-wrap");
 	const esc = frappe.utils.escape_html;
 
 	// состояние профиля
