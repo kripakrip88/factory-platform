@@ -104,8 +104,16 @@ const DOBOR_HTML = `
       </div>
     </div>
     <div class="panel" style="margin-top:14px">
-      <div class="panel-head"><span>Доборки в заказе</span><span id="db_savedCount" style="color:#ff9a4d">0</span></div>
-      <div id="db_savedList" style="padding:8px 14px 12px"><div class="empty" style="padding:14px 0">Пока пусто — собери профиль и нажми «Сохранить в заказ»</div></div>
+      <div class="panel-head"><span>Заказ доборок</span><span id="db_savedCount" style="color:#ff9a4d">0</span></div>
+      <div class="preset-bar" style="border-top:none">
+        <span style="font-size:11px;color:var(--muted)">Заказ:</span>
+        <select id="db_orderSel" style="border:1px solid var(--line2);background:var(--bg2);color:var(--ink);border-radius:7px;padding:5px 8px;min-width:170px"><option value="">— новый заказ —</option></select>
+        <input id="db_customer" type="text" placeholder="клиент / изделие" style="border:1px solid var(--line2);background:var(--bg2);color:var(--ink);border-radius:7px;padding:5px 8px;width:160px">
+        <button id="db_orderSave" style="border-color:#2f9e6e;color:#5fe0a8;font-weight:600">💾 Сохранить заказ</button>
+        <button id="db_orderNew" class="ghost" title="Очистить заказ">🗑 Новый</button>
+      </div>
+      <div id="db_savedList" style="padding:8px 14px 12px"><div class="empty" style="padding:14px 0">Пусто — собери профиль и нажми «В заказ»</div></div>
+      <div class="res-row" style="border-top:1px solid var(--line)"><span class="k">Итого: планок / вес</span><span class="v"><span id="db_ordQty">0</span> шт / <span id="db_ordW">0</span> кг</span></div>
     </div>
   </div>
   <div>
@@ -123,8 +131,8 @@ const DOBOR_HTML = `
         <div class="field"><label>Ширина рулона/листа, мм</label><input id="db_coil" type="number" value="1250" min="1"></div>
       </div>
       <div style="padding:10px 14px;background:var(--bg2);display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line)">
-        <button id="db_save" style="border-color:#2f9e6e;color:#5fe0a8;font-weight:600">💾 Сохранить в заказ</button>
-        <button id="db_new" style="border-color:#2f9e6e;color:#5fe0a8;font-weight:600">＋ Новая доборка</button>
+        <button id="db_save" style="border-color:#2f9e6e;color:#5fe0a8;font-weight:600">＋ В заказ</button>
+        <button id="db_new" style="border-color:#2f9e6e;color:#5fe0a8;font-weight:600">Новая доборка</button>
       </div>
     </div>
   </div>
@@ -443,39 +451,97 @@ function init_dobor(page) {
 	};
 	G("db_tplDel").onclick = () => { const i = G("db_tplSel").value; if (i === "") return; frappe.call({ method: "metal_calculator.dobor.api.delete_template", args: { name: templates[+i].name }, callback: () => refreshTemplates() }); };
 
-	// ── доборки в заказе (Dobor Order Item) ──
-	let saved = [];
-	function renderSaved() {
-		G("db_savedCount").textContent = saved.length;
-		const box = G("db_savedList");
-		if (!saved.length) { box.innerHTML = '<div class="empty" style="padding:14px 0">Пока пусто — собери профиль и нажми «Сохранить в заказ»</div>'; return; }
-		box.innerHTML = saved.map((s, i) => {
-			let snp = {}; try { snp = JSON.parse(s.profile_snapshot_json || "{}"); } catch (e) {}
-			const hex = (snp.colorRaw || "|#b9c2cc").split("|")[1] || "#b9c2cc";
-			return `<div style="border:1px solid #c9701e;background:rgba(201,112,30,.08);border-radius:8px;padding:8px 11px;margin-bottom:7px;display:flex;align-items:center;gap:10px">
-				<div style="width:22px;height:22px;border-radius:6px;background:#c9701e;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i + 1}</div>
-				<div style="flex:1;min-width:0">
-					<div style="font-size:12.5px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:6px"><span style="width:11px;height:11px;border-radius:3px;flex-shrink:0;border:1px solid rgba(127,127,127,.35);background:${hex}"></span>${esc(s.title || "Доборка")}${snp.lockOn ? " · 🤝" : ""}</div>
-					<div style="font-size:11px;color:var(--muted)">${esc(s.coating || "Цинк")} · ${s.thickness}мм · развёртка ${s.developed_width} · ${s.plank_length}мм · ${s.qty}шт · ${(s.weight_total || 0).toFixed(1)}кг${snp.hemLeft || snp.hemRight ? " · завальц." : ""}</div>
-				</div>
-				<button data-load="${i}" title="Открыть" style="padding:3px 8px;font-size:11px">✎</button>
-				<button data-rem="${i}" title="Удалить" style="padding:3px 8px;font-size:11px;border-color:#7a3030;color:#ff8a8a;background:transparent">×</button>
-			</div>`;
-		}).join("");
+	// ── заказ доборок (Dobor Order): позиции копятся в памяти, сохраняются целиком ──
+	let order = [];          // позиции текущего заказа (в памяти)
+	let orderName = "";      // имя редактируемого Dobor Order ("" = новый)
+
+	// расчёт чисел позиции на клиенте (тот же, что серверный compute — для превью)
+	function itemCalc(snp, thick, plank, qty) {
+		const polki = (snp.segs || []).reduce((s, x) => s + x.len, 0);
+		const hemCount = (snp.hemLeft ? 1 : 0) + (snp.hemRight ? 1 : 0);
+		const dev = polki + hemCount * (snp.hemLen || 0);
+		const w1 = (dev / 1000) * (plank / 1000) * massPerSqm(thick);
+		return { dev, w1, weight_total: w1 * qty };
 	}
-	function refreshSaved() { frappe.call({ method: "metal_calculator.dobor.api.list_order_items", callback: (r) => { saved = r.message || []; renderSaved(); } }); }
-	refreshSaved();
+
+	function renderOrder() {
+		G("db_savedCount").textContent = order.length;
+		let qtySum = 0, wSum = 0;
+		const box = G("db_savedList");
+		if (!order.length) { box.innerHTML = '<div class="empty" style="padding:14px 0">Пусто — собери профиль и нажми «В заказ»</div>'; }
+		else {
+			box.innerHTML = order.map((s, i) => {
+				const snp = s.snapshot || {};
+				qtySum += s.qty; wSum += s.weight_total || 0;
+				return `<div style="border:1px solid var(--line);background:rgba(127,127,127,.06);border-radius:8px;padding:8px 11px;margin-bottom:7px;display:flex;align-items:center;gap:10px">
+					<div style="width:22px;height:22px;border-radius:6px;background:#c9701e;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i + 1}</div>
+					<div style="flex:1;min-width:0">
+						<div style="font-size:12.5px;font-weight:600;color:var(--ink)">${esc(s.title || "Доборка")}${snp.lockOn ? " · 🤝" : ""}</div>
+						<div style="font-size:11px;color:var(--muted)">${esc(s.coating || "Цинк")} · ${s.thickness}мм · развёртка ${Math.round(s.developed_width)} · ${s.plank_length}мм · ${s.qty}шт · ${(s.weight_total || 0).toFixed(1)}кг${snp.hemLeft || snp.hemRight ? " · завальц." : ""}</div>
+					</div>
+					<button data-load="${i}" title="Открыть в конструкторе" style="padding:3px 8px;font-size:11px">✎</button>
+					<button data-rem="${i}" title="Убрать из заказа" style="padding:3px 8px;font-size:11px;border-color:#7a3030;color:#ff8a8a;background:transparent">×</button>
+				</div>`;
+			}).join("");
+		}
+		G("db_ordQty").textContent = qtySum;
+		G("db_ordW").textContent = wSum.toFixed(1);
+	}
+
+	// список существующих заказов
+	let orders = [];
+	function refreshOrders(sel) {
+		frappe.call({ method: "metal_calculator.dobor.api.list_orders", callback: (r) => {
+			orders = r.message || [];
+			G("db_orderSel").innerHTML = '<option value="">— новый заказ —</option>' + orders.map((o) => `<option value="${esc(o.name)}">${esc(o.name)} · ${esc(o.customer || "без клиента")} (${o.total_positions || 0})</option>`).join("");
+			if (sel != null) G("db_orderSel").value = sel;
+		} });
+	}
+	refreshOrders();
+
+	// «В заказ» — добавить текущую доборку в список (в памяти)
 	G("db_save").onclick = () => {
-		if (segs.length < 1) return;
-		const coatingName = (G("db_color").value || "").split("|")[0];
-		frappe.call({ method: "metal_calculator.dobor.api.save_order_item", args: { snapshot: JSON.stringify(snapshot()), thickness: G("db_thick").value, plank_length: G("db_len").value, qty: G("db_qty").value, coating: coatingName }, callback: (r) => { if (r.message) { frappe.show_alert({ message: __("В заказ: {0} ({1} кг)", [r.message.name, r.message.weight_total]), indicator: "green" }); refreshSaved(); } } });
+		if (segs.length < 1) { frappe.show_alert({ message: __("Сначала нарисуй профиль"), indicator: "orange" }); return; }
+		const snp = snapshot();
+		const thick = parseFloat(G("db_thick").value), plank = parseFloat(G("db_len").value) || 2500, qty = parseInt(G("db_qty").value) || 1;
+		const c = itemCalc(snp, thick, plank, qty);
+		order.push({ title: (G("db_color").value || "").split("|")[0] + " доборка", coating: (G("db_color").value || "").split("|")[0], thickness: thick, plank_length: plank, qty, snapshot: snp, developed_width: c.dev, weight_total: c.weight_total });
+		renderOrder();
+		frappe.show_alert({ message: __("Добавлено в заказ"), indicator: "green" });
 	};
+	// «Новая доборка» — очистить холст (заказ не трогаем)
 	G("db_new").onclick = () => { segs = []; start = { x: 180, y: 300 }; started = false; hoverIdx = -1; hemLeft = hemRight = lockOn = false; hemLeftDir = 1; hemRightDir = -1; G("db_hemL").classList.remove("on"); G("db_hemR").classList.remove("on"); G("db_lock").classList.remove("on"); render(); };
+
+	// убрать позицию / открыть в конструкторе
 	G("db_savedList").addEventListener("click", (e) => {
 		const t = e.target;
-		if (t.dataset.rem != null) { frappe.call({ method: "metal_calculator.dobor.api.delete_order_item", args: { name: saved[+t.dataset.rem].name }, callback: () => refreshSaved() }); }
-		if (t.dataset.load != null) { let snp = {}; try { snp = JSON.parse(saved[+t.dataset.load].profile_snapshot_json || "{}"); } catch (e2) {} if (snp.segs) loadSnap(snp); }
+		if (t.dataset.rem != null) { order.splice(+t.dataset.rem, 1); renderOrder(); }
+		if (t.dataset.load != null) { const it = order[+t.dataset.load]; if (it && it.snapshot && it.snapshot.segs) { loadSnap(it.snapshot); G("db_thick").value = it.thickness; G("db_len").value = it.plank_length; G("db_qty").value = it.qty; updateResults(); } }
 	});
 
+	// «Сохранить заказ» — записать весь Dobor Order
+	G("db_orderSave").onclick = () => {
+		if (!order.length) { frappe.show_alert({ message: __("Заказ пуст"), indicator: "orange" }); return; }
+		const items = order.map((s) => ({ title: s.title, coating: s.coating, thickness: s.thickness, plank_length: s.plank_length, qty: s.qty, snapshot: JSON.stringify(s.snapshot) }));
+		frappe.call({ method: "metal_calculator.dobor.api.save_order", args: { items: JSON.stringify(items), customer: G("db_customer").value || null, order_name: orderName || null }, callback: (r) => {
+			if (r.message) { orderName = r.message.name; frappe.show_alert({ message: __("Заказ {0} сохранён ({1} кг)", [r.message.name, (r.message.total_weight || 0).toFixed(1)]), indicator: "green" }); refreshOrders(orderName); }
+		} });
+	};
+	// «Новый» — очистить заказ
+	G("db_orderNew").onclick = () => { order = []; orderName = ""; G("db_customer").value = ""; G("db_orderSel").value = ""; renderOrder(); };
+
+	// выбор существующего заказа → загрузить позиции
+	G("db_orderSel").addEventListener("change", () => {
+		const name = G("db_orderSel").value;
+		if (!name) { G("db_orderNew").onclick(); return; }
+		frappe.call({ method: "metal_calculator.dobor.api.get_order", args: { name }, callback: (r) => {
+			const o = r.message; if (!o) return;
+			orderName = o.name; G("db_customer").value = o.customer || "";
+			order = (o.items || []).map((it) => { let snp = {}; try { snp = JSON.parse(it.profile_snapshot_json || "{}"); } catch (e) {} return { title: it.title, coating: it.coating, thickness: it.thickness, plank_length: it.plank_length, qty: it.qty, snapshot: snp, developed_width: it.developed_width, weight_total: it.weight_total }; });
+			renderOrder();
+		} });
+	});
+
+	renderOrder();
 	render();
 }
