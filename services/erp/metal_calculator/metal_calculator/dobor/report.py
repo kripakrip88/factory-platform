@@ -118,7 +118,7 @@ def sketch_svg(snapshot):
 		a = sh(s)  # вход в вершину s
 		if isfold(s):
 			dr = unit(d[s], d[s + 1]); n = {"x": -dr["y"], "y": dr["x"]}
-			side = -1 if _bend(segs, s) > 0 else 1
+			side = (-1 if _bend(segs, s) > 0 else 1) * (-1 if segs[s].get("foldFlip") else 1)
 			shift = {"x": shift["x"] + n["x"] * side * GAP, "y": shift["y"] + n["y"] * side * GAP}
 			aoff = sh(s)  # выход из вершины s (после сдвига)
 			uin = unit(d[s - 1], d[s])
