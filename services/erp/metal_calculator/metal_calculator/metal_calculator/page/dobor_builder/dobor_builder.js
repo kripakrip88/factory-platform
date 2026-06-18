@@ -29,6 +29,10 @@ function inject_dobor_styles() {
 	.dobor-wrap button.on{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 	.dobor-wrap button[disabled]{opacity:.38;cursor:default;border-color:var(--line)}
 	.dobor-wrap button[disabled]:hover{border-color:var(--line)}
+	.dobor-wrap .seg-group{display:inline-flex}
+	.dobor-wrap .seg-group button{border-radius:0;margin:0}
+	.dobor-wrap .seg-group button:first-child{border-top-left-radius:7px;border-bottom-left-radius:7px}
+	.dobor-wrap .seg-group button:last-child{border-top-right-radius:7px;border-bottom-right-radius:7px;border-left:none;padding-left:8px;padding-right:8px}
 	.dobor-wrap button.ghost{color:var(--muted);background:transparent}
 	.dobor-wrap button.danger:hover{border-color:#ff5a6e;color:#ff5a6e}
 	.dobor-wrap .hint{font-size:11.5px;color:var(--muted);padding:8px 14px;background:var(--bg2);border-top:1px solid var(--line)}
@@ -80,13 +84,12 @@ const DOBOR_HTML = `
     <div class="hint">Кликай по полю — добавляется полка. Поворот ⟳ (клик 5°, зажми — свободно), выравнивание ▭, переворот ⥯, направление наращивания ⤙/⤚ — кнопки в углу холста.</div>
     <div class="preset-bar">
       <span style="font-size:11px;color:var(--muted);margin-right:2px">Завальцовка:</span>
-      <button id="db_hemL">◧ Слева</button><button id="db_hemLflip" title="Перевернуть левую">⮃</button>
-      <button id="db_hemR">◨ Справа</button><button id="db_hemRflip" title="Перевернуть правую">⮃</button>
+      <span class="seg-group"><button id="db_hemL">◧ Слева</button><button id="db_hemLflip" title="Сторона завальцовки">⮃</button></span>
+      <span class="seg-group"><button id="db_hemR">◨ Справа</button><button id="db_hemRflip" title="Сторона завальцовки">⮃</button></span>
       <input id="db_hemLen" type="number" value="15" min="1" title="Длина завальцовки, мм" style="width:50px;border:1px solid var(--line);border-radius:6px;padding:4px 6px;background:var(--bg2);color:var(--ink)">
       <span style="font-size:11px;color:var(--muted)">мм</span>
       <span class="bar-div"></span>
-      <span style="font-size:11px;color:var(--muted);margin-right:2px">Краска:</span>
-      <button id="db_paintToggle">🎨 выкл</button><button id="db_paintSide" title="Сторона окраски">↔ Сторона</button>
+      <span class="seg-group"><button id="db_paintToggle">🎨 Краска: выкл</button><button id="db_paintSide" title="Сторона окраски">↔ Сторона</button></span>
       <span class="bar-div"></span>
       <button id="db_lock">🤝 Замок</button>
     </div>
@@ -135,6 +138,7 @@ const DOBOR_HTML = `
         <div class="field"><label>Длина планки, мм</label><input id="db_len" type="number" value="2500" min="1"></div>
         <div class="field"><label>Количество, шт</label><input id="db_qty" type="number" value="1" min="1"></div>
         <div class="field"><label>Ширина рулона/листа, мм</label><input id="db_coil" type="number" value="1250" min="1"></div>
+        <div class="field" style="grid-column:1 / -1"><label>Комментарий (в печатный лист)</label><input id="db_comment" type="text" placeholder="напр. подгиб лицевой стороной внутрь"></div>
       </div>
       <div style="padding:10px 14px;background:var(--bg2);display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line)">
         <button id="db_save" style="border-color:#2f9e6e;color:#5fe0a8;font-weight:600">＋ В заказ</button>
@@ -433,19 +437,20 @@ function init_dobor(page) {
 	G("db_hemLflip").onclick = () => { if (!hemLeft) return; hemLeftDir *= -1; render(); };
 	G("db_hemRflip").onclick = () => { if (!hemRight) return; hemRightDir *= -1; render(); };
 	G("db_paintSide").onclick = () => { if (!paintOn) return; paintSide *= -1; render(); };
-	paintToggle.onclick = () => { paintOn = !paintOn; paintToggle.classList.toggle("on", paintOn); paintToggle.textContent = paintOn ? "🎨 вкл" : "🎨 выкл"; syncHelpers(); render(); };
+	paintToggle.onclick = () => { paintOn = !paintOn; paintToggle.classList.toggle("on", paintOn); paintToggle.textContent = paintOn ? "🎨 Краска: вкл" : "🎨 Краска: выкл"; syncHelpers(); render(); };
 	syncHelpers();
 	G("db_lock").onclick = () => { lockOn = !lockOn; G("db_lock").classList.toggle("on", lockOn); render(); };
 	G("db_hemLen").addEventListener("input", (e) => { hemLen = Math.max(1, parseFloat(e.target.value) || 0); render(); });
 
-	function snapshot() { return { start: { ...start }, segs: segs.map((s) => ({ ...s })), hemLeft, hemRight, hemLeftDir, hemRightDir, hemLen, lockOn, paintSide, paintOn, colorRaw: G("db_color").value }; }
+	function snapshot() { return { start: { ...start }, segs: segs.map((s) => ({ ...s })), hemLeft, hemRight, hemLeftDir, hemRightDir, hemLen, lockOn, paintSide, paintOn, colorRaw: G("db_color").value, comment: (G("db_comment").value || "").trim() }; }
 	function loadSnap(s) {
 		start = { ...s.start }; segs = s.segs.map((x) => ({ ...x })); started = true;
 		hemLeft = !!s.hemLeft; hemRight = !!s.hemRight; hemLeftDir = s.hemLeftDir || 1; hemRightDir = s.hemRightDir || -1; hemLen = s.hemLen || 15; lockOn = !!s.lockOn; paintSide = s.paintSide || 1; paintOn = !!s.paintOn;
 		if (s.colorRaw) G("db_color").value = s.colorRaw;
 		G("db_hemL").classList.toggle("on", hemLeft); G("db_hemR").classList.toggle("on", hemRight); G("db_lock").classList.toggle("on", lockOn);
-		paintToggle.classList.toggle("on", paintOn); paintToggle.textContent = paintOn ? "🎨 вкл" : "🎨 выкл";
+		paintToggle.classList.toggle("on", paintOn); paintToggle.textContent = paintOn ? "🎨 Краска: вкл" : "🎨 Краска: выкл";
 		G("db_hemLen").value = hemLen;
+		G("db_comment").value = s.comment || "";
 		syncHelpers();
 		render();
 	}
@@ -541,7 +546,7 @@ function init_dobor(page) {
 		frappe.show_alert({ message: __("Добавлено в заказ"), indicator: "green" });
 	};
 	// «Новая доборка» — очистить холст (заказ не трогаем)
-	G("db_new").onclick = () => { segs = []; start = { x: 180, y: 300 }; started = false; hoverIdx = -1; hemLeft = hemRight = lockOn = false; hemLeftDir = 1; hemRightDir = -1; G("db_hemL").classList.remove("on"); G("db_hemR").classList.remove("on"); G("db_lock").classList.remove("on"); render(); };
+	G("db_new").onclick = () => { segs = []; start = { x: 180, y: 300 }; started = false; hoverIdx = -1; hemLeft = hemRight = lockOn = false; hemLeftDir = 1; hemRightDir = -1; G("db_hemL").classList.remove("on"); G("db_hemR").classList.remove("on"); G("db_lock").classList.remove("on"); G("db_comment").value = ""; render(); };
 
 	// убрать позицию / открыть в конструкторе
 	G("db_savedList").addEventListener("click", (e) => {

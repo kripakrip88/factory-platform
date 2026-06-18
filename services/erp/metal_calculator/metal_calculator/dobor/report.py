@@ -230,6 +230,7 @@ body{margin:0;font-family:"DejaVu Sans",Arial,sans-serif;color:#111;font-size:12
 .pos-num{width:20px;height:20px;border:1px solid #aaa;border-radius:5px;color:#555;font-weight:700;font-size:11px;text-align:center;line-height:20px}
 .chk{width:13px;height:13px;border:1.5px solid #888;border-radius:3px}
 .cname{font-weight:700;font-size:12.5px}
+.ccomment{font-size:11px;color:#333;font-style:italic;padding:5px 10px;border-bottom:1px solid #e6e6e6;background:#fafafa}
 .lock{font-size:9.5px;font-weight:700;color:#111;border:1px solid #111;border-radius:4px;padding:1px 5px;margin-left:6px}
 .cb{width:100%;border-collapse:collapse}
 .specs{width:100%;border-collapse:collapse;font-size:11.5px}
@@ -279,12 +280,15 @@ def _card_html(idx, item):
 		w1, wall = f'{r["weight_one"]:.2f}', f'{r["weight_total"]:.1f}'
 	else:
 		dev, nflange, nbend, w1, wall = "—", "—", "—", "—", "—"
+	comment = (snap.get("comment") or "").strip()
+	comment_bar = f'<div class="ccomment">{escape(comment)}</div>' if comment else ""
 	return f"""<div class="card">
 	<table class="ch"><tr>
 		<td style="width:24px;padding:6px 0 6px 9px"><div class="pos-num">{idx}</div></td>
 		<td style="width:18px;padding:6px 6px"><div class="chk"></div></td>
 		<td style="padding:6px 9px 6px 0"><span class="cname">{name}</span>{lock}</td>
 	</tr></table>
+	{comment_bar}
 	<table class="cb"><tr>
 		<td style="width:68%;padding:6px 2px 6px 6px;vertical-align:middle">{svg}</td>
 		<td style="width:32%;padding:8px 9px 8px 4px;vertical-align:top">
