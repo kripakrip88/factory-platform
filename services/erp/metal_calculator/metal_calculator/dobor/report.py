@@ -23,6 +23,23 @@ SHEET_L_MM = 2500
 SHEET_AREA = (SHEET_W_MM / 1000.0) * (SHEET_L_MM / 1000.0)  # м²
 
 
+def _logo_svg():
+	"""Логотип ПМК Парк инлайн-SVG (снежинка + «ПАРК»), высота ≤40px — шапку не растит."""
+	cx, cy, R = 20, 20, 15
+	arms = []
+	for ang in range(0, 360, 60):
+		r = math.radians(ang)
+		ex, ey = cx + R * math.cos(r), cy + R * math.sin(r)
+		arms.append(f'<line x1="{cx}" y1="{cy}" x2="{ex:.1f}" y2="{ey:.1f}"/>')
+		bx, by = cx + R * 0.6 * math.cos(r), cy + R * 0.6 * math.sin(r)  # основание веток
+		for da in (-42, 42):
+			r2 = math.radians(ang + da)
+			arms.append(f'<line x1="{bx:.1f}" y1="{by:.1f}" x2="{bx + 6 * math.cos(r2):.1f}" y2="{by + 6 * math.sin(r2):.1f}"/>')
+	return ('<svg viewBox="0 0 132 40" width="132" height="40" xmlns="http://www.w3.org/2000/svg">'
+	        f'<g stroke="#111" stroke-width="2.4" stroke-linecap="round">{"".join(arms)}</g>'
+	        '<text x="46" y="30" font-family="Arial,sans-serif" font-size="27" font-weight="800" fill="#111">ПАРК</text></svg>')
+
+
 # ---------------- геометрия (порт прототипа) ----------------
 
 def _verts(start, segs):
@@ -89,44 +106,55 @@ def sketch_svg(snapshot):
 
 	parts = [f'<svg viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg" width="100%" style="display:block">']
 
-	# пунктир стороны покрытия — только если краска включена в конструкторе (paintOn)
-	if snapshot.get("paintOn"):
-		pl = []
-		for i in range(len(d)):
-			nx = ny = 0.0
-			if i < len(d) - 1:
-				u = unit(d[i], d[i + 1]); nx += -u["y"]; ny += u["x"]
-			if i > 0:
-				u2 = unit(d[i - 1], d[i]); nx += -u2["y"]; ny += u2["x"]
-			l = math.hypot(nx, ny) or 1
-			pl.append(f'{_n(d[i]["x"] + nx / l * 9 * paint_side)},{_n(d[i]["y"] + ny / l * 9 * paint_side)}')
-		parts.append(f'<polyline points="{" ".join(pl)}" fill="none" stroke="#888" stroke-width="2" stroke-dasharray="5 4" stroke-linejoin="round"/>')
-
-	# контур: подгиб 180° — параллельная линия + разворот «U». Смещение НАКОПИТЕЛЬНОЕ
-	# (переносится дальше по контуру), чтобы при нескольких загибах подряд не рвалась
-	# непрерывность и не пропадали полки.
+	# контур: подгиб 180° — параллельная линия + разворот «U». Смещение НАКОПИТЕЛЬНОЕ.
+	# Все построения (контур, краска, подписи) — по СМЕЩЁННОМУ контуру (drawn), чтобы
+	# при загибах подписи не «заплывали» и пунктир не вставал криво.
 	GAP = 8
 	isfold = lambda s: 1 <= s < len(segs) and abs(_bend(segs, s)) > 170
 	shift = {"x": 0.0, "y": 0.0}
-	path = "M " + _n(d[0]["x"]) + " " + _n(d[0]["y"])
+
+	def sh(i):
+		return {"x": d[i]["x"] + shift["x"], "y": d[i]["y"] + shift["y"]}
+
+	dpts = [sh(0)]            # точки смещённого контура (для краски)
+	seglab = []               # (a, b) смещённые концы каждой полки — для подписей длин
+	vout = [sh(0)]            # позиция вершины (исходящая) — для подписей углов
+	path = "M " + _n(dpts[0]["x"]) + " " + _n(dpts[0]["y"])
 	for s in range(len(segs)):
+		a = sh(s)  # вход в вершину s
 		if isfold(s):
-			a = {"x": d[s]["x"] + shift["x"], "y": d[s]["y"] + shift["y"]}  # текущая позиция пера
 			dr = unit(d[s], d[s + 1]); n = {"x": -dr["y"], "y": dr["x"]}
 			side = -1 if _bend(segs, s) > 0 else 1
 			shift = {"x": shift["x"] + n["x"] * side * GAP, "y": shift["y"] + n["y"] * side * GAP}
-			aoff = {"x": d[s]["x"] + shift["x"], "y": d[s]["y"] + shift["y"]}
-			uin = unit(d[s - 1], d[s])  # входящее направление
+			aoff = sh(s)  # выход из вершины s (после сдвига)
+			uin = unit(d[s - 1], d[s])
 			cross = (aoff["x"] - a["x"]) * uin["y"] - (aoff["y"] - a["y"]) * uin["x"]
 			sweep = 0 if cross > 0 else 1
-			b = {"x": d[s + 1]["x"] + shift["x"], "y": d[s + 1]["y"] + shift["y"]}
+			b = sh(s + 1)
 			path += f' A {GAP / 2} {GAP / 2} 0 0 {sweep} {_n(aoff["x"])} {_n(aoff["y"])} L {_n(b["x"])} {_n(b["y"])}'
+			dpts.append(aoff); dpts.append(b)
+			seglab.append((aoff, b)); vout[s] = aoff
 		else:
-			b = {"x": d[s + 1]["x"] + shift["x"], "y": d[s + 1]["y"] + shift["y"]}
+			b = sh(s + 1)
 			path += f' L {_n(b["x"])} {_n(b["y"])}'
+			dpts.append(b); seglab.append((a, b)); vout[s] = a
+		vout.append(b)
 	parts.append(f'<path d="{path}" fill="none" stroke="#111" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>')
 
-	# завальцовки (полукруг)
+	# пунктир стороны покрытия (если включено) — по смещённому контуру
+	if snapshot.get("paintOn"):
+		pl = []
+		for i in range(len(dpts)):
+			nx = ny = 0.0
+			if i < len(dpts) - 1:
+				u = unit(dpts[i], dpts[i + 1]); nx += -u["y"]; ny += u["x"]
+			if i > 0:
+				u2 = unit(dpts[i - 1], dpts[i]); nx += -u2["y"]; ny += u2["x"]
+			l = math.hypot(nx, ny) or 1
+			pl.append(f'{_n(dpts[i]["x"] + nx / l * 7 * paint_side)},{_n(dpts[i]["y"] + ny / l * 7 * paint_side)}')
+		parts.append(f'<polyline points="{" ".join(pl)}" fill="none" stroke="#888" stroke-width="2" stroke-dasharray="5 4" stroke-linejoin="round"/>')
+
+	# завальцовки (полукруг) — по смещённым краям
 	def hem(edge, u, flip):
 		nx, ny = -u["y"] * flip, u["x"] * flip
 		r, L = 5, 15
@@ -137,26 +165,26 @@ def sketch_svg(snapshot):
 		dd = f'M {_n(sx)} {_n(sy)} C {_n(sx - u["x"] * kk)} {_n(sy - u["y"] * kk)} {_n(bx - u["x"] * kk)} {_n(by - u["y"] * kk)} {_n(bx)} {_n(by)} L {_n(ex)} {_n(ey)}'
 		parts.append(f'<path d="{dd}" fill="none" stroke="#111" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>')
 
-	if hem_left and len(d) >= 2:
-		hem(d[0], unit(d[0], d[1]), hem_l_dir)
-	if hem_right and len(d) >= 2:
-		hem(d[-1], unit(d[-1], d[-2]), hem_r_dir)
+	if hem_left and len(segs) >= 1:
+		hem(vout[0], unit(vout[0], vout[1]), hem_l_dir)
+	if hem_right and len(segs) >= 1:
+		hem(vout[len(segs)], unit(vout[len(segs)], vout[len(segs) - 1]), hem_r_dir)
 
-	# подписи длин полок (крупно)
+	# подписи длин полок — по смещённому контуру
 	for i in range(len(segs)):
-		a, b = d[i], d[i + 1]
+		a, b = seglab[i]
 		mx, my = (a["x"] + b["x"]) / 2, (a["y"] + b["y"]) / 2
 		nx, ny = -(b["y"] - a["y"]), (b["x"] - a["x"])
 		nl = math.hypot(nx, ny) or 1
-		tx, ty = mx + nx / nl * 25, my + ny / nl * 25 + 6  # дальше от контура, чтобы не наплывало
-		parts.append(f'<text x="{_n(tx)}" y="{_n(ty)}" text-anchor="middle" font-size="19" font-weight="700" fill="#111">{int(round(segs[i]["len"]))}</text>')
+		tx, ty = mx + nx / nl * 22, my + ny / nl * 22 + 5
+		parts.append(f'<text x="{_n(tx)}" y="{_n(ty)}" text-anchor="middle" font-size="18" font-weight="700" fill="#111">{int(round(segs[i]["len"]))}</text>')
 
 	# углы между полками (наружу по биссектрисе); на загибе 180° угол не подписываем
 	for i in range(1, len(segs)):
 		ba = abs(_bend(segs, i))
 		if ba < 1 or ba > 170:
 			continue
-		p, a, b = d[i], d[i - 1], d[i + 1]
+		p, a, b = vout[i], vout[i - 1], vout[i + 1]
 		t1x, t1y = a["x"] - p["x"], a["y"] - p["y"]
 		l1 = math.hypot(t1x, t1y) or 1
 		t1x, t1y = t1x / l1, t1y / l1
@@ -169,7 +197,7 @@ def sketch_svg(snapshot):
 			ox, oy = -t2y, t2x
 		else:
 			ox, oy = -bx / bl, -by / bl
-		lx, ly = p["x"] + ox * 24, p["y"] + oy * 24 + 6
+		lx, ly = p["x"] + ox * 22, p["y"] + oy * 22 + 5
 		parts.append(f'<text x="{_n(lx)}" y="{_n(ly)}" text-anchor="middle" font-size="16" font-weight="700" fill="#111">{int(round(_flange(segs, i)))}°</text>')
 
 	parts.append("</svg>")
@@ -340,10 +368,14 @@ def order_html(order):
 	return f"""<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><style>{_CSS}</style></head><body>
 	<table class="head"><tr>
 		<td style="vertical-align:middle;padding-bottom:12px"><table><tr>
-			<td style="width:48px;vertical-align:middle"><div class="logo"><span style="display:inline-block;line-height:46px"><span style="display:inline-block;line-height:1.05;vertical-align:middle">ПМК<br>ПАРК</span></span></div></td>
-			<td style="padding-left:12px;vertical-align:middle"><div class="h1">Производственный лист — доборные элементы</div><div class="co">ООО «ПМК Парк» · завод металлоконструкций</div></td>
+			<td style="width:138px;vertical-align:middle">{_logo_svg()}</td>
+			<td style="padding-left:12px;vertical-align:middle"><div class="h1">Производственный лист на доборные элементы</div><div class="co">ООО «ПМК Парк» · завод металлоконструкций · <a href="https://pmkpark.ru/" style="color:#111;text-decoration:underline">pmkpark.ru</a></div></td>
 		</tr></table></td>
-		<td class="meta" style="vertical-align:top;padding-bottom:12px">Заказ <span class="order-tag">{escape(name)}</span><br>Дата: <b>{escape(order_date)}</b><br>Позиций: <b>{len(items)}</b></td>
+		<td style="vertical-align:top;padding-bottom:12px"><table style="margin-left:auto;border-collapse:collapse;font-size:11.5px;color:#444">
+			<tr><td style="text-align:right;padding:0 6px 3px 0">Заказ</td><td style="text-align:right;padding-bottom:3px"><span class="order-tag">{escape(name)}</span></td></tr>
+			<tr><td style="text-align:right;padding-right:6px">Дата</td><td style="text-align:right"><b style="color:#111">{escape(order_date)}</b></td></tr>
+			<tr><td style="text-align:right;padding-right:6px">Позиций</td><td style="text-align:right"><b style="color:#111">{len(items)}</b></td></tr>
+		</table></td>
 	</tr></table>
 	<table class="subhead"><tr>
 		<td>Заказчик: <b>{escape(str(customer))}</b></td>
