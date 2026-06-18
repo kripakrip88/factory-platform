@@ -110,6 +110,7 @@ const DOBOR_HTML = `
         <select id="db_orderSel" style="border:1px solid var(--line2);background:var(--bg2);color:var(--ink);border-radius:7px;padding:5px 8px;min-width:170px"><option value="">— новый заказ —</option></select>
         <input id="db_customer" type="text" placeholder="клиент / изделие" style="border:1px solid var(--line2);background:var(--bg2);color:var(--ink);border-radius:7px;padding:5px 8px;width:160px">
         <button id="db_orderSave" style="border-color:#2f9e6e;color:#5fe0a8;font-weight:600">💾 Сохранить заказ</button>
+        <button id="db_orderPrint" title="Производственный лист PDF">🖨 Печать листа</button>
         <button id="db_orderNew" class="ghost" title="Очистить заказ">🗑 Новый</button>
       </div>
       <div id="db_savedList" style="padding:8px 14px 12px"><div class="empty" style="padding:14px 0">Пусто — собери профиль и нажми «В заказ»</div></div>
@@ -526,6 +527,11 @@ function init_dobor(page) {
 		frappe.call({ method: "metal_calculator.dobor.api.save_order", args: { items: JSON.stringify(items), customer: G("db_customer").value || null, order_name: orderName || null }, callback: (r) => {
 			if (r.message) { orderName = r.message.name; frappe.show_alert({ message: __("Заказ {0} сохранён ({1} кг)", [r.message.name, (r.message.total_weight || 0).toFixed(1)]), indicator: "green" }); refreshOrders(orderName); }
 		} });
+	};
+	// «Печать листа» — производственный лист PDF по сохранённому заказу
+	G("db_orderPrint").onclick = () => {
+		if (!orderName) { frappe.show_alert({ message: __("Сначала сохрани заказ"), indicator: "orange" }); return; }
+		window.open("/api/method/metal_calculator.dobor.report.render_pdf?order_name=" + encodeURIComponent(orderName), "_blank");
 	};
 	// «Новый» — очистить заказ
 	G("db_orderNew").onclick = () => { order = []; orderName = ""; G("db_customer").value = ""; G("db_orderSel").value = ""; renderOrder(); };
