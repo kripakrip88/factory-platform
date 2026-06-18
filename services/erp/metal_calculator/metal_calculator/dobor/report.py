@@ -69,7 +69,7 @@ def sketch_svg(snapshot):
 	mxy = max(p["y"] for p in v)
 	cx, cy = (mnx + mxx) / 2, (mny + mxy) / 2
 	bw, bh = max(1, mxx - mnx), max(1, mxy - mny)
-	pad = 66
+	pad = 92  # больше поля под крупные подписи
 	k = min((W - pad) / bw, (H - pad) / bh)
 
 	def D(p):
@@ -113,8 +113,8 @@ def sketch_svg(snapshot):
 		mx, my = (a["x"] + b["x"]) / 2, (a["y"] + b["y"]) / 2
 		nx, ny = -(b["y"] - a["y"]), (b["x"] - a["x"])
 		nl = math.hypot(nx, ny) or 1
-		tx, ty = mx + nx / nl * 12, my + ny / nl * 12 + 3.5
-		parts.append(f'<text x="{_fnum(tx)}" y="{_fnum(ty)}" text-anchor="middle" font-size="11" font-weight="700" fill="#111">{int(round(segs[i]["len"]))}</text>')
+		tx, ty = mx + nx / nl * 15, my + ny / nl * 15 + 5
+		parts.append(f'<text x="{_fnum(tx)}" y="{_fnum(ty)}" text-anchor="middle" font-size="17" font-weight="700" fill="#111">{int(round(segs[i]["len"]))}</text>')
 
 	# углы между полками (выносим наружу по биссектрисе)
 	for i in range(1, len(segs)):
@@ -133,8 +133,8 @@ def sketch_svg(snapshot):
 			ox, oy = -t2y, t2x
 		else:
 			ox, oy = -bx / bl, -by / bl
-		lx, ly = p["x"] + ox * 16, p["y"] + oy * 16 + 3.5
-		parts.append(f'<text x="{_fnum(lx)}" y="{_fnum(ly)}" text-anchor="middle" font-size="9.5" font-weight="700" fill="#111">{int(round(_flange(segs, i)))}°</text>')
+		lx, ly = p["x"] + ox * 19, p["y"] + oy * 19 + 5
+		parts.append(f'<text x="{_fnum(lx)}" y="{_fnum(ly)}" text-anchor="middle" font-size="15" font-weight="700" fill="#111">{int(round(_flange(segs, i)))}°</text>')
 
 	parts.append("</svg>")
 	return "".join(parts)
@@ -159,7 +159,7 @@ _CSS = """
 body{margin:0;font-family:"DejaVu Sans",Arial,sans-serif;color:#111;font-size:12px}
 .head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #111;padding-bottom:12px;margin-bottom:8px}
 .brand{display:flex;align-items:center;gap:12px}
-.logo{width:46px;height:46px;border-radius:9px;background:#111;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;text-align:center;line-height:1.05}
+.logo{width:46px;height:46px;border-radius:9px;background:#f3f3f3;border:1px solid #ccc;color:#666;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;text-align:center;line-height:1.05}
 .brand h1{margin:0;font-size:16px}
 .brand .co{font-size:11px;color:#444;margin-top:2px}
 .head .meta{text-align:right;font-size:11.5px;color:#444;line-height:1.7}
@@ -169,9 +169,11 @@ body{margin:0;font-family:"DejaVu Sans",Arial,sans-serif;color:#111;font-size:12
 .subhead span{color:#111;font-weight:600}
 .grid{display:flex;flex-wrap:wrap;gap:10px}
 .card{border:1px solid #999;border-radius:8px;overflow:hidden;width:48%;break-inside:avoid;page-break-inside:avoid}
-.card-head{display:flex;align-items:center;gap:6px;background:#f0f0f0;border-bottom:1px solid #999;padding:6px 9px}
+.card-head{display:flex;align-items:center;gap:7px;background:#f0f0f0;border-bottom:1px solid #999;padding:6px 9px}
+.pos-num{width:20px;height:20px;border:1px solid #aaa;border-radius:5px;color:#555;font-weight:700;font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.chk{width:13px;height:13px;border:1.5px solid #888;border-radius:3px;flex-shrink:0}
 .card-head .name{font-weight:700;font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.card-head .lock{font-size:10px;font-weight:700;color:#111;border:1px solid #111;border-radius:4px;padding:0 4px}
+.card-head .lock{font-size:9.5px;font-weight:700;color:#111;border:1px solid #111;border-radius:4px;padding:0 4px;flex-shrink:0}
 .card-body{display:flex;gap:8px;padding:8px 9px}
 .sketch-box{width:170px;flex-shrink:0;border:1px solid #ddd;border-radius:6px;background:#fff;display:flex;align-items:center;justify-content:center}
 .specs{flex:1;font-size:10.5px}
@@ -227,13 +229,12 @@ def _card_html(idx, item):
 	else:
 		dev, nflange, nbend, w1, wall = "—", "—", "—", "—", "—"
 	return f"""<div class="card">
-	<div class="card-head"><span class="name">{idx}. {name}</span>{lock}</div>
+	<div class="card-head"><span class="pos-num">{idx}</span><span class="chk"></span><span class="name">{name}</span>{lock}</div>
 	<div class="card-body">
 		<div class="sketch-box">{svg}</div>
 		<div class="specs"><table>
 			<tr><td class="k">Развёртка</td><td class="v dev">{dev} мм</td></tr>
-			<tr><td class="k">Полок</td><td class="v">{nflange}</td></tr>
-			<tr><td class="k">Гибов</td><td class="v">{nbend}</td></tr>
+			<tr><td class="k">Полок / гибов</td><td class="v">{nflange} / {nbend}</td></tr>
 			<tr><td class="k">Толщина</td><td class="v">{thickness:g} мм</td></tr>
 			<tr><td class="k">Покрытие</td><td class="v">{coating}</td></tr>
 			<tr><td class="k">Длина планки</td><td class="v">{plank:g} мм</td></tr>
@@ -265,7 +266,8 @@ def order_html(order):
 	cards = "".join(_card_html(i + 1, it) for i, it in enumerate(items))
 
 	# итоги + группировка расхода металла
-	sum_qty = sum_area = sum_weight = 0.0
+	sum_qty = sum_area = sum_weight = sum_len = 0.0
+	sum_bends = 0
 	groups = {}
 	for it in items:
 		snap = {}
@@ -277,10 +279,13 @@ def order_html(order):
 			continue
 		thickness = float(it.get("thickness") or 0)
 		qty = int(it.get("qty") or 0)
-		r = item_numbers(snap, thickness, float(it.get("plank_length") or 2500), qty)
+		plank = float(it.get("plank_length") or 2500)
+		r = item_numbers(snap, thickness, plank, qty)
 		sum_qty += qty
 		sum_area += r["area_one"] * qty
 		sum_weight += r["weight_total"]
+		sum_len += plank * qty / 1000.0
+		sum_bends += r["bends"] * qty  # всего гибов по заказу (на все планки)
 		gk = (thickness, str(it.get("coating") or "—"))
 		groups[gk] = groups.get(gk, 0.0) + r["area_one"] * qty
 
@@ -305,7 +310,9 @@ def order_html(order):
 	<div class="grid">{cards}</div>
 	<div class="totals">
 		<div class="tcell">Позиций<b>{len(items)}</b></div>
+		<div class="tcell">Гибов всего<b>{sum_bends}</b></div>
 		<div class="tcell">Всего планок, шт<b>{int(sum_qty)}</b></div>
+		<div class="tcell">Суммарная длина, м<b>{sum_len:.1f}</b></div>
 		<div class="tcell">Площадь металла, м²<b>{sum_area:.2f}</b></div>
 		<div class="tcell">Общий вес, кг<b>{sum_weight:.1f}</b></div>
 	</div>

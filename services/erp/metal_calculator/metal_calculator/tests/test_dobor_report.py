@@ -30,8 +30,8 @@ class TestDoborReport(_Base):
 		svg = sketch_svg(SNAP)
 		self.assertTrue(svg.startswith("<svg"))
 		self.assertIn("</svg>", svg)
-		# по подписи на каждую полку
-		self.assertEqual(svg.count('font-size="11"'), 3)
+		# по подписи на каждую полку (крупный шрифт для печати)
+		self.assertEqual(svg.count('font-size="17"'), 3)
 		# угол между полками (домик из П → у среднего гиба тупой угол)
 		self.assertIn("°", svg)
 
