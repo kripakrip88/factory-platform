@@ -129,45 +129,81 @@ def delete_template(name):
 	return {"ok": True}
 
 
-# ---------------- Доборки в заказе ----------------
+# ---------------- Заказы доборок (Dobor Order + позиции) ----------------
+
+def _coating_or_none(value):
+	"""Покрытие — Link на Dobor Coating; ставим только если такое есть."""
+	if value and frappe.db.exists("Dobor Coating", value):
+		return value
+	return None
+
 
 @frappe.whitelist()
-def save_order_item(snapshot, thickness, plank_length, qty, coating=None, title=None):
-	"""Сохранить доборку в заказ (Dobor Order Item) с серверным расчётом."""
-	if isinstance(snapshot, str):
-		snapshot = json.loads(snapshot)
-	thickness = _pos_float(thickness, "Толщина, мм")
-	plank_length = _pos_float(plank_length, "Длина планки, мм")
-	qty = _pos_int(qty, "Количество, шт")
-	flanges = snapshot.get("segs") or snapshot.get("flanges") or []
-	hem_len = float(snapshot.get("hemLen") or 0)
-	res = compute(flanges, bool(snapshot.get("hemLeft")), bool(snapshot.get("hemRight")),
-	              hem_len, mass_per_sqm(thickness), plank_length, qty)
-	doc = frappe.new_doc("Dobor Order Item")
-	doc.title = (title or "").strip() or f"Доборка {res['developed_width']:g}мм"
-	doc.coating = coating or None
-	doc.thickness = thickness
-	doc.plank_length = plank_length
-	doc.qty = qty
-	doc.developed_width = res["developed_width"]
-	doc.weight_total = res["weight_total"]
-	doc.profile_snapshot_json = json.dumps(snapshot, ensure_ascii=False)
-	doc.insert(ignore_permissions=False)
+def save_order(items, customer=None, order_date=None, order_name=None, status=None):
+	"""Создать/обновить заказ доборок (Dobor Order) с позициями-снимками.
+
+	items — JSON список [{snapshot, thickness, plank_length, qty, coating, title}].
+	Если order_name задан — перезаписывает позиции существующего заказа.
+	Числа считает validate() парента из снимка (единый источник истины с calc).
+	"""
+	if isinstance(items, str):
+		items = json.loads(items)
+	if order_name and frappe.db.exists("Dobor Order", order_name):
+		doc = frappe.get_doc("Dobor Order", order_name)
+		doc.set("items", [])
+	else:
+		doc = frappe.new_doc("Dobor Order")
+	if customer is not None:
+		doc.customer = customer
+	if order_date:
+		doc.order_date = order_date
+	if status:
+		doc.status = status
+	for it in (items or []):
+		snap = it.get("snapshot")
+		snap_str = snap if isinstance(snap, str) else json.dumps(snap or {}, ensure_ascii=False)
+		doc.append("items", {
+			"title": (it.get("title") or "").strip() or "Доборка",
+			"coating": _coating_or_none(it.get("coating")),
+			"thickness": _pos_float(it.get("thickness"), "Толщина, мм"),
+			"plank_length": _pos_float(it.get("plank_length"), "Длина планки, мм"),
+			"qty": _pos_int(it.get("qty"), "Количество, шт"),
+			"profile_snapshot_json": snap_str,
+		})
+	doc.save(ignore_permissions=False)
 	frappe.db.commit()
-	return {"name": doc.name, "developed_width": res["developed_width"], "weight_total": res["weight_total"]}
+	return {"name": doc.name, "total_weight": doc.total_weight,
+	        "total_positions": doc.total_positions, "total_qty": doc.total_qty}
 
 
 @frappe.whitelist()
-def list_order_items():
-	"""Доборки в заказе текущего пользователя (последние)."""
-	return frappe.get_all("Dobor Order Item", filters={"owner": frappe.session.user},
-	                      fields=["name", "title", "coating", "thickness", "plank_length", "qty",
-	                              "developed_width", "weight_total", "profile_snapshot_json"],
-	                      order_by="creation desc", limit=50)
+def list_orders():
+	"""Список заказов доборок (общий, не по owner — как спецификации металла)."""
+	return frappe.get_all("Dobor Order", fields=[
+		"name", "customer", "order_date", "status",
+		"total_positions", "total_qty", "total_area", "total_weight",
+	], order_by="modified desc", limit=50)
 
 
 @frappe.whitelist()
-def delete_order_item(name):
-	frappe.delete_doc("Dobor Order Item", name, ignore_permissions=False)
+def get_order(name):
+	"""Полный заказ с позициями — для загрузки обратно в конструктор."""
+	doc = frappe.get_doc("Dobor Order", name)
+	return {
+		"name": doc.name, "customer": doc.customer, "order_date": str(doc.order_date or ""),
+		"status": doc.status, "total_positions": doc.total_positions, "total_qty": doc.total_qty,
+		"total_area": doc.total_area, "total_weight": doc.total_weight,
+		"items": [{
+			"title": it.title, "coating": it.coating, "thickness": it.thickness,
+			"plank_length": it.plank_length, "qty": it.qty, "developed_width": it.developed_width,
+			"area_total": it.area_total, "weight_total": it.weight_total,
+			"profile_snapshot_json": it.profile_snapshot_json,
+		} for it in doc.items],
+	}
+
+
+@frappe.whitelist()
+def delete_order(name):
+	frappe.delete_doc("Dobor Order", name, ignore_permissions=False)
 	frappe.db.commit()
 	return {"ok": True}
