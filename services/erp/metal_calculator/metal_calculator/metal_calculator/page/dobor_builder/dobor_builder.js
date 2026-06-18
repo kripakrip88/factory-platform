@@ -89,7 +89,7 @@ const DOBOR_HTML = `
       <input id="db_hemLen" type="number" value="15" min="1" title="Длина завальцовки, мм" style="width:50px;border:1px solid var(--line);border-radius:6px;padding:4px 6px;background:var(--bg2);color:var(--ink)">
       <span style="font-size:11px;color:var(--muted)">мм</span>
       <span class="bar-div"></span>
-      <span class="seg-group"><button id="db_paintToggle">🎨 Краска: выкл</button><button id="db_paintSide" title="Сторона окраски">↔ Сторона</button></span>
+      <span class="seg-group"><button id="db_paintToggle">🎨 Краска: выкл</button><button id="db_paintSide" title="Сторона окраски">↔</button></span>
       <span class="bar-div"></span>
       <button id="db_lock">🤝 Замок</button>
     </div>
@@ -371,9 +371,8 @@ function init_dobor(page) {
 		if (segs.length === 0) { list.innerHTML = '<div class="empty">Профиль пуст — нарисуй его на холсте слева</div>'; return; }
 		let html = "";
 		for (let i = 0; i < segs.length; i++) {
-			// кнопка стороны подгиба — только у полки-подгиба (угол с предыдущей <10°)
-			const isFoldSeg = i >= 1 && Math.abs(bendAngle(i)) > 170;
-			const flipBtn = isFoldSeg ? `<button class="dirflip${segs[i].foldFlip ? " on" : ""}" data-flip="${i}" title="Подгиб над / под предыдущей полкой">⮃</button>` : "";
+			// кнопка стороны подгиба (над/под предыдущей полки) — у каждой полки
+			const flipBtn = `<button class="dirflip${segs[i].foldFlip ? " on" : ""}" data-flip="${i}" title="Сторона подгиба: над / под предыдущей полкой">⮃</button>`;
 			html += `<div class="seg"><div class="seg-tag">${i + 1}</div><div><label>Длина полки, мм</label><input type="number" data-len="${i}" value="${segs[i].len}"></div><div><label>Направление, °</label><div style="display:flex;gap:4px"><input type="number" data-dir="${i}" value="${Math.round(segs[i].dir)}">${flipBtn}</div></div><button class="del" data-del="${i}" title="Удалить полку">×</button></div>`;
 			if (i < segs.length - 1) html += `<div class="angle-row">↳ гиб ${i + 1}: <input type="number" data-bend="${i + 1}" value="${Math.round(flangeAngle(i + 1))}"> ° <span style="color:var(--muted)">(угол между полками)</span></div>`;
 		}
