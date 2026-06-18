@@ -31,9 +31,11 @@ class TestDoborReport(_Base):
 		self.assertTrue(svg.startswith("<svg"))
 		self.assertIn("</svg>", svg)
 		# по подписи на каждую полку (крупный шрифт для печати)
-		self.assertEqual(svg.count('font-size="17"'), 3)
+		self.assertEqual(svg.count('font-size="19"'), 3)
 		# угол между полками (домик из П → у среднего гиба тупой угол)
 		self.assertIn("°", svg)
+		# пунктир стороны покрытия
+		self.assertIn("stroke-dasharray", svg)
 
 	def test_sketch_empty_safe(self):
 		"""Пустой профиль не падает."""
