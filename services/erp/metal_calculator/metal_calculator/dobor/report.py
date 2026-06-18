@@ -35,9 +35,8 @@ def _logo_svg():
 		for da in (-42, 42):
 			r2 = math.radians(ang + da)
 			arms.append(f'<line x1="{bx:.1f}" y1="{by:.1f}" x2="{bx + 6 * math.cos(r2):.1f}" y2="{by + 6 * math.sin(r2):.1f}"/>')
-	return ('<svg viewBox="0 0 132 40" width="132" height="40" xmlns="http://www.w3.org/2000/svg">'
-	        f'<g stroke="#111" stroke-width="2.4" stroke-linecap="round">{"".join(arms)}</g>'
-	        '<text x="46" y="30" font-family="Arial,sans-serif" font-size="27" font-weight="800" fill="#111">ПАРК</text></svg>')
+	return ('<svg viewBox="0 0 40 40" width="44" height="44" xmlns="http://www.w3.org/2000/svg">'
+	        f'<g stroke="#111" stroke-width="2.4" stroke-linecap="round">{"".join(arms)}</g></svg>')
 
 
 # ---------------- геометрия (порт прототипа) ----------------
@@ -368,7 +367,7 @@ def order_html(order):
 	return f"""<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><style>{_CSS}</style></head><body>
 	<table class="head"><tr>
 		<td style="vertical-align:middle;padding-bottom:12px"><table><tr>
-			<td style="width:138px;vertical-align:middle">{_logo_svg()}</td>
+			<td style="width:50px;vertical-align:middle">{_logo_svg()}</td>
 			<td style="padding-left:12px;vertical-align:middle"><div class="h1">Производственный лист на доборные элементы</div><div class="co">ООО «ПМК Парк» · завод металлоконструкций · <a href="https://pmkpark.ru/" style="color:#111;text-decoration:underline">pmkpark.ru</a></div></td>
 		</tr></table></td>
 		<td style="vertical-align:top;padding-bottom:12px"><table style="margin-left:auto;border-collapse:collapse;font-size:11.5px;color:#444">
