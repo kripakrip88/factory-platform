@@ -223,7 +223,7 @@ _CSS = """
 body{margin:0;font-family:"DejaVu Sans",Arial,sans-serif;color:#111;font-size:12px;line-height:1.4}
 .head{width:100%;border-collapse:collapse;border-bottom:2px solid #111}
 .logo{width:46px;height:46px;border-radius:9px;background:#f3f3f3;border:1px solid #ccc;color:#666;text-align:center;font-weight:800;font-size:12px;line-height:1.05}
-.h1{font-size:16px;font-weight:700}
+.h1{font-size:15px;font-weight:700;line-height:1.2}
 .co{font-size:11px;color:#444;margin-top:2px}
 .meta{text-align:right;font-size:11.5px;color:#444;line-height:1.7}
 .meta b{color:#111}
@@ -370,7 +370,7 @@ def order_html(order):
 			<td style="width:50px;vertical-align:middle">{_logo_svg()}</td>
 			<td style="padding-left:12px;vertical-align:middle"><div class="h1">Производственный лист на доборные элементы</div><div class="co">ООО «ПМК Парк» · завод металлоконструкций · <a href="https://pmkpark.ru/" style="color:#111;text-decoration:underline">pmkpark.ru</a></div></td>
 		</tr></table></td>
-		<td style="vertical-align:top;padding-bottom:12px"><table style="margin-left:auto;border-collapse:collapse;font-size:11.5px;color:#444">
+		<td style="width:160px;vertical-align:top;padding-bottom:12px"><table style="margin-left:auto;border-collapse:collapse;font-size:11.5px;color:#444">
 			<tr><td style="text-align:right;padding:0 6px 3px 0">Заказ</td><td style="text-align:right;padding-bottom:3px"><span class="order-tag">{escape(name)}</span></td></tr>
 			<tr><td style="text-align:right;padding-right:6px">Дата</td><td style="text-align:right"><b style="color:#111">{escape(order_date)}</b></td></tr>
 			<tr><td style="text-align:right;padding-right:6px">Позиций</td><td style="text-align:right"><b style="color:#111">{len(items)}</b></td></tr>
