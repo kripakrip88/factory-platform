@@ -20,23 +20,50 @@ decode_email при этом отрабатывает правильно. Ядр
 
 import email
 import imaplib
+import re
 from email.header import decode_header, make_header
 from email.utils import parseaddr
 
 import frappe
 
 ACCOUNT = "PMK Park входящие (тест)"
-SENT_FOLDER = "Отправленные"  # реальное имя папки \Sent на mail.ru (выверено IMAP LIST)
+
+
+def _imap_connect(acc):
+	M = imaplib.IMAP4_SSL(acc.email_server or "imap.mail.ru", 993)
+	M.login(acc.email_id, acc.get_password("password"))
+	return M
+
+
+def find_sent_folder(acc):
+	"""Имя папки \\Sent в IMAP-кодировке (modified UTF-7, ascii) — берём с сервера.
+	НЕЛЬЗЯ хардкодить «Отправленные» (Unicode): imaplib шлёт имя как ASCII → падает."""
+	try:
+		M = _imap_connect(acc)
+		typ, data = M.list()
+		M.logout()
+		for d in data:
+			line = d.decode("utf-8", "replace") if isinstance(d, bytes) else str(d)
+			if "\\Sent" in line:
+				q = re.findall(r'"([^"]*)"', line)
+				if q:
+					return q[-1]
+	except Exception as e:
+		frappe.log_error(f"find_sent_folder: {e}", "email_names")
+	return None
 
 
 # ---------------- Задача 1: настройка Email Account ----------------
 
 @frappe.whitelist()
-def fix_email_account(account: str = ACCOUNT, sent_folder: str = SENT_FOLDER):
+def fix_email_account(account: str = ACCOUNT):
 	"""Идемпотентно: приём всех писем, отправка от аккаунта, копия и приём «Отправленных»."""
 	if not frappe.db.exists("Email Account", account):
 		return f"Email Account «{account}» не найден"
 	doc = frappe.get_doc("Email Account", account)
+	sent_folder = find_sent_folder(doc)
+	if not sent_folder:
+		return "Не нашёл папку \\Sent на сервере — пропускаю настройку Sent"
 	desired = {
 		"email_sync_option": "ALL",
 		"always_use_account_email_id_as_sender": 1,
@@ -126,7 +153,7 @@ def reconcile_sender_names(limit: int = 2000):
 	for an in accounts:
 		acc = frappe.get_doc("Email Account", an)
 		folders = ["INBOX"]
-		sf = acc.get("sent_folder_name") or SENT_FOLDER
+		sf = acc.get("sent_folder_name") or find_sent_folder(acc)
 		if sf and sf not in folders:
 			folders.append(sf)
 		name_map = _imap_name_map(acc, folders)
