@@ -319,11 +319,16 @@ function init_dobor(page) {
 			const t = mk("text", { x: mx + nx / nl * 16, y: my + ny / nl * 16 + 4, "text-anchor": "middle", "font-size": "12", "font-weight": "600", fill: isLight ? "#222" : "#cdd7e3" }); t.style.cursor = "text"; t.textContent = segs[i].len;
 			t.addEventListener("pointerdown", (e) => { e.preventDefault(); e.stopPropagation(); const sp = labelScreenPos(t); openEdit("len", i, sp.x, sp.y, segs[i].len); }); svg.appendChild(t);
 		}
-		// углы между полками — кликабельные
+		// углы между полками — кликабельные; подпись выносится НАРУЖУ по биссектрисе (не наезжает на профиль)
 		for (let i = 1; i < segs.length; i++) {
-			if (Math.abs(bendAngle(i)) < 1) continue; const p = v[i];
+			if (Math.abs(bendAngle(i)) < 1) continue; const p = v[i], a = v[i - 1], b = v[i + 1];
+			let t1x = a.x - p.x, t1y = a.y - p.y; const l1 = Math.hypot(t1x, t1y) || 1; t1x /= l1; t1y /= l1;
+			let t2x = b.x - p.x, t2y = b.y - p.y; const l2 = Math.hypot(t2x, t2y) || 1; t2x /= l2; t2y /= l2;
+			let bx = t1x + t2x, by = t1y + t2y; const bl = Math.hypot(bx, by);
+			let ox, oy; if (bl < 0.15) { ox = -t2y; oy = t2x; } else { ox = -bx / bl; oy = -by / bl; } // наружу от внутренней биссектрисы
+			const lx = p.x + ox * 20, ly = p.y + oy * 20 + 3.5;
 			svg.appendChild(mk("circle", { cx: p.x, cy: p.y, r: "11", fill: "#3ed0b8", opacity: "0.14" }));
-			const t = mk("text", { x: p.x, y: p.y - 15, "text-anchor": "middle", "font-size": "10.5", "font-weight": "700", fill: "#3ed0b8" }); t.style.cursor = "text"; t.textContent = Math.round(flangeAngle(i)) + "°";
+			const t = mk("text", { x: lx, y: ly, "text-anchor": "middle", "font-size": "10.5", "font-weight": "700", fill: "#3ed0b8" }); t.style.cursor = "text"; t.textContent = Math.round(flangeAngle(i)) + "°";
 			t.addEventListener("pointerdown", (e) => { e.preventDefault(); e.stopPropagation(); const sp = labelScreenPos(t); openEdit("bend", i, sp.x, sp.y, Math.round(flangeAngle(i))); }); svg.appendChild(t);
 		}
 		// вершины
