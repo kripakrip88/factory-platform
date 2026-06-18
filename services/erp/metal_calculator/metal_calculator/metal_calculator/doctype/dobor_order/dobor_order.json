@@ -87,7 +87,7 @@
    "fieldname": "items",
    "fieldtype": "Table",
    "label": "Доборки",
-   "options": "Dobor Order Item"
+   "options": "Dobor Order Line"
   }
  ],
  "index_web_pages_for_search": 1,
