@@ -12,8 +12,12 @@
   (`=?utf-8?B?...?= <email>`) → sender_full_name=email. Чиним без патча ядра —
   `saas_theme.email_names`: сверка имён из IMAP правильным парсером. Бэкфилл
   загруженных писем + планировщик `hourly_long` (go-forward).
-- Логика консолидирована в `saas_theme/email_names.py` (удалён дублирующий
-  `setup/email_delivery.py`). saas_theme `?v=130` (без правок ассетов).
+- [fix] инбокс грузил свой набор полей без `sender_full_name` → имена всегда падали
+  в fallback. Подтягиваем поле одним запросом + обновляем имя на повторном декоре.
+- Имя папки `\Sent` берём с сервера (modified UTF-7) — `«Отправленные»` (Unicode)
+  роняет imaplib. Логика консолидирована в `saas_theme/email_names.py` (удалён
+  `setup/email_delivery.py`). saas_theme `?v=132`. Бэкфилл вживую: 183 письма,
+  kev.unit → «Евгений Кругликов».
 
 ## v1.0.0 — 2026-06-18
 Базовый тег (снимок текущего develop: ERPNext v16 + saas_theme + калькулятор
