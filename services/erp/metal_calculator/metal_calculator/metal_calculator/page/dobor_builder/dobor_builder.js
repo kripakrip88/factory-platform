@@ -27,6 +27,8 @@ function inject_dobor_styles() {
 	.dobor-wrap button{font-family:inherit;font-size:12.5px;border:1px solid var(--line2);background:var(--panel2);color:var(--ink);padding:6px 12px;border-radius:7px;cursor:pointer;font-weight:550;transition:all .12s}
 	.dobor-wrap button:hover{border-color:var(--accent)}
 	.dobor-wrap button.on{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+	.dobor-wrap button[disabled]{opacity:.38;cursor:default;border-color:var(--line)}
+	.dobor-wrap button[disabled]:hover{border-color:var(--line)}
 	.dobor-wrap button.ghost{color:var(--muted);background:transparent}
 	.dobor-wrap button.danger:hover{border-color:#ff5a6e;color:#ff5a6e}
 	.dobor-wrap .hint{font-size:11.5px;color:var(--muted);padding:8px 14px;background:var(--bg2);border-top:1px solid var(--line)}
@@ -330,7 +332,8 @@ function init_dobor(page) {
 		}
 		// углы между полками — кликабельные; подпись выносится НАРУЖУ по биссектрисе (не наезжает на профиль)
 		for (let i = 1; i < segs.length; i++) {
-			if (Math.abs(bendAngle(i)) < 1 || isFold(i)) continue; // на загибе 180° — метка «подгиб», не угол
+			const ba = Math.abs(bendAngle(i));
+			if (ba < 1 || ba > 170) continue; // на загибе 180° — метка «подгиб», не угол
 			const p = v[i], a = v[i - 1], b = v[i + 1];
 			let t1x = a.x - p.x, t1y = a.y - p.y; const l1 = Math.hypot(t1x, t1y) || 1; t1x /= l1; t1y /= l1;
 			let t2x = b.x - p.x, t2y = b.y - p.y; const l2 = Math.hypot(t2x, t2y) || 1; t2x /= l2; t2y /= l2;
@@ -403,13 +406,20 @@ function init_dobor(page) {
 	// ── кнопки ──
 	G("db_undo").onclick = () => { segs.pop(); render(); };
 	G("db_clear").onclick = () => { segs = []; start = { x: 180, y: 300 }; started = false; hoverIdx = -1; render(); };
-	G("db_hemL").onclick = () => { hemLeft = !hemLeft; G("db_hemL").classList.toggle("on", hemLeft); render(); };
-	G("db_hemR").onclick = () => { hemRight = !hemRight; G("db_hemR").classList.toggle("on", hemRight); render(); };
-	G("db_hemLflip").onclick = () => { hemLeftDir *= -1; render(); };
-	G("db_hemRflip").onclick = () => { hemRightDir *= -1; render(); };
-	G("db_paintSide").onclick = () => { paintSide *= -1; render(); };
 	const paintToggle = G("db_paintToggle");
-	paintToggle.onclick = () => { paintOn = !paintOn; paintToggle.classList.toggle("on", paintOn); paintToggle.textContent = paintOn ? "🎨 вкл" : "🎨 выкл"; render(); };
+	// помощники (перевороты завальцовки, сторона краски) активны только при включённой основе
+	function syncHelpers() {
+		G("db_hemLflip").disabled = !hemLeft;
+		G("db_hemRflip").disabled = !hemRight;
+		G("db_paintSide").disabled = !paintOn;
+	}
+	G("db_hemL").onclick = () => { hemLeft = !hemLeft; G("db_hemL").classList.toggle("on", hemLeft); syncHelpers(); render(); };
+	G("db_hemR").onclick = () => { hemRight = !hemRight; G("db_hemR").classList.toggle("on", hemRight); syncHelpers(); render(); };
+	G("db_hemLflip").onclick = () => { if (!hemLeft) return; hemLeftDir *= -1; render(); };
+	G("db_hemRflip").onclick = () => { if (!hemRight) return; hemRightDir *= -1; render(); };
+	G("db_paintSide").onclick = () => { if (!paintOn) return; paintSide *= -1; render(); };
+	paintToggle.onclick = () => { paintOn = !paintOn; paintToggle.classList.toggle("on", paintOn); paintToggle.textContent = paintOn ? "🎨 вкл" : "🎨 выкл"; syncHelpers(); render(); };
+	syncHelpers();
 	G("db_lock").onclick = () => { lockOn = !lockOn; G("db_lock").classList.toggle("on", lockOn); render(); };
 	G("db_hemLen").addEventListener("input", (e) => { hemLen = Math.max(1, parseFloat(e.target.value) || 0); render(); });
 
@@ -421,6 +431,7 @@ function init_dobor(page) {
 		G("db_hemL").classList.toggle("on", hemLeft); G("db_hemR").classList.toggle("on", hemRight); G("db_lock").classList.toggle("on", lockOn);
 		paintToggle.classList.toggle("on", paintOn); paintToggle.textContent = paintOn ? "🎨 вкл" : "🎨 выкл";
 		G("db_hemLen").value = hemLen;
+		syncHelpers();
 		render();
 	}
 
