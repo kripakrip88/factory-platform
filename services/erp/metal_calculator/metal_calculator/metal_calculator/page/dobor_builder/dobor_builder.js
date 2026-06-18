@@ -277,7 +277,7 @@ function init_dobor(page) {
 
 			const FOLDGAP = 7, norms = [], dirs = [];
 			for (let i = 0; i < segs.length; i++) { const a = v[i], b = v[i + 1]; let dx = b.x - a.x, dy = b.y - a.y; const l = Math.hypot(dx, dy) || 1; norms.push({ x: -dy / l, y: dx / l }); dirs.push({ x: dx / l, y: dy / l }); }
-			const isFold = (i) => i >= 1 && i < segs.length && Math.abs(bendAngle(i)) > 150;
+			const isFold = (i) => i >= 1 && i < segs.length && Math.abs(bendAngle(i)) > 170; // загиб 180° = угол между полками <10° (не путать с острым углом ~24°)
 
 			// контур: монохром, одна линия; на загибе 180° — округлая петля наружу
 			let dPath = "M " + v[0].x + " " + v[0].y;
@@ -330,7 +330,8 @@ function init_dobor(page) {
 		}
 		// углы между полками — кликабельные; подпись выносится НАРУЖУ по биссектрисе (не наезжает на профиль)
 		for (let i = 1; i < segs.length; i++) {
-			if (Math.abs(bendAngle(i)) < 1) continue; const p = v[i], a = v[i - 1], b = v[i + 1];
+			if (Math.abs(bendAngle(i)) < 1 || isFold(i)) continue; // на загибе 180° — метка «подгиб», не угол
+			const p = v[i], a = v[i - 1], b = v[i + 1];
 			let t1x = a.x - p.x, t1y = a.y - p.y; const l1 = Math.hypot(t1x, t1y) || 1; t1x /= l1; t1y /= l1;
 			let t2x = b.x - p.x, t2y = b.y - p.y; const l2 = Math.hypot(t2x, t2y) || 1; t2x /= l2; t2y /= l2;
 			let bx = t1x + t2x, by = t1y + t2y; const bl = Math.hypot(bx, by);
