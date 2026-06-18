@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v131";
+const SAAS_THEME_BUILD = "v132";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -1118,6 +1118,18 @@ saas_theme.list_controls = {
 	   Инбокс не применяет formatters темы, поэтому декорируем строки в DOM:
 	   буквенный аватар (HSL из адреса), непрочитанные жирным (seen), дата письма.
 	   MutationObserver переисполняет декор при перерисовке строк (фильтр/скролл). */
+	// Имя отправителя: sender_full_name; если нет/=email — локальная часть адреса
+	// (а НЕ весь email — иначе дубль с колонкой «Почта»).
+	mail_display_name(sender, full) {
+		sender = (sender || "").trim();
+		let nm = (full || "").trim();
+		if (!nm || nm.toLowerCase() === sender.toLowerCase()) {
+			const lp = (sender.split("@")[0] || sender || "?").replace(/[._\-]+/g, " ").trim();
+			nm = lp ? lp.charAt(0).toUpperCase() + lp.slice(1) : "?";
+		}
+		return nm;
+	},
+
 	// Переименовать заголовок колонки списка, сохранив иконку сортировки
 	set_col_header($head, colClass, label) {
 		const $c = $head.find(".list-row-col." + colClass).first();
@@ -1162,18 +1174,16 @@ saas_theme.list_controls = {
 			const $r = $(this);
 			if ($r.find(".list-row-head").length) return; // шапка списка
 			const $subj = $r.find(".list-subject");
-			if (!$subj.length || $subj.find(".st-mail-avatar").length) return; // уже декорирована
+			if (!$subj.length) return;
 			const name = $r.find("[data-name]").attr("data-name");
 			const doc = byName[name];
 			if (!doc) return;
-
 			const sender = (doc.sender || "").trim();
-			// ИМЯ отправителя: sender_full_name; если его нет (или = email) — локальная
-			// часть адреса как имя (а НЕ весь email — иначе дубль с колонкой «Почта»).
-			let fullname = (doc.sender_full_name || "").trim();
-			if (!fullname || fullname.toLowerCase() === sender.toLowerCase()) {
-				const lp = (sender.split("@")[0] || sender || "?").replace(/[._\-]+/g, " ").trim();
-				fullname = lp ? lp.charAt(0).toUpperCase() + lp.slice(1) : "?";
+			const fullname = me.mail_display_name(sender, doc.sender_full_name);
+			// уже декорирована — обновим только имя (после подгрузки sender_full_name)
+			if ($subj.find(".st-mail-avatar").length) {
+				$subj.find(".st-mail-sender").text(fullname).attr("title", sender);
+				return;
 			}
 			const initial = (fullname.replace(/[^\p{L}\p{N}]/u, "")[0] || fullname[0] || "?").toUpperCase();
 			const $av = $('<span class="st-mail-avatar"></span>')
