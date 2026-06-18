@@ -38,6 +38,8 @@ function inject_dobor_styles() {
 	.dobor-wrap .seg-tag{width:22px;height:22px;border-radius:6px;background:var(--accent);color:#fff;font-size:11px;font-weight:650;display:flex;align-items:center;justify-content:center}
 	.dobor-wrap .seg label{font-size:10px;color:var(--muted);display:block;margin-bottom:1px;text-transform:uppercase}
 	.dobor-wrap .seg input{width:100%;font-family:inherit;font-size:12.5px;border:1px solid var(--line2);background:var(--bg2);border-radius:5px;padding:3px 6px;color:var(--ink)}
+	.dobor-wrap .seg .dirflip{flex:0 0 auto;width:26px;border:1px solid var(--line2);background:var(--panel2);color:var(--ink);border-radius:5px;cursor:pointer;font-size:13px;padding:0;line-height:1}
+	.dobor-wrap .seg .dirflip:hover{border-color:var(--accent);color:var(--accent)}
 	.dobor-wrap .seg input:focus{outline:none;border-color:var(--accent)}
 	.dobor-wrap .seg .del{background:none;border:none;color:var(--faint);cursor:pointer;font-size:15px;padding:0}
 	.dobor-wrap .angle-row{padding:6px 14px;font-size:12px;color:var(--bend);display:flex;align-items:center;gap:8px;background:rgba(62,208,184,.08)}
@@ -364,7 +366,7 @@ function init_dobor(page) {
 		if (segs.length === 0) { list.innerHTML = '<div class="empty">Профиль пуст — нарисуй его на холсте слева</div>'; return; }
 		let html = "";
 		for (let i = 0; i < segs.length; i++) {
-			html += `<div class="seg"><div class="seg-tag">${i + 1}</div><div><label>Длина полки, мм</label><input type="number" data-len="${i}" value="${segs[i].len}"></div><div><label>Направление, °</label><input type="number" data-dir="${i}" value="${Math.round(segs[i].dir)}"></div><button class="del" data-del="${i}" title="Удалить полку">×</button></div>`;
+			html += `<div class="seg"><div class="seg-tag">${i + 1}</div><div><label>Длина полки, мм</label><input type="number" data-len="${i}" value="${segs[i].len}"></div><div><label>Направление, °</label><div style="display:flex;gap:4px"><input type="number" data-dir="${i}" value="${Math.round(segs[i].dir)}"><button class="dirflip" data-flip="${i}" title="Развернуть полку в обратную сторону (180°)">⮃</button></div></div><button class="del" data-del="${i}" title="Удалить полку">×</button></div>`;
 			if (i < segs.length - 1) html += `<div class="angle-row">↳ гиб ${i + 1}: <input type="number" data-bend="${i + 1}" value="${Math.round(flangeAngle(i + 1))}"> ° <span style="color:var(--muted)">(угол между полками)</span></div>`;
 		}
 		list.innerHTML = html;
@@ -391,7 +393,10 @@ function init_dobor(page) {
 		else if (t.dataset.bend != null) { applyFlangeAngle(+t.dataset.bend, parseFloat(t.value) || 0); renderLight(); }
 	});
 	G("db_segList").addEventListener("change", () => render());
-	G("db_segList").addEventListener("click", (e) => { if (e.target.dataset.del != null) { segs.splice(+e.target.dataset.del, 1); render(); } });
+	G("db_segList").addEventListener("click", (e) => {
+		if (e.target.dataset.del != null) { segs.splice(+e.target.dataset.del, 1); render(); }
+		else if (e.target.dataset.flip != null) { const i = +e.target.dataset.flip; segs[i].dir = ((segs[i].dir + 180 + 180) % 360) - 180; render(); } // развернуть полку на 180°
+	});
 	["db_thick", "db_len", "db_qty", "db_coil"].forEach((id) => G(id).addEventListener("input", updateResults));
 	G("db_thick").addEventListener("change", drawCanvas);
 	G("db_color").addEventListener("change", () => { drawCanvas(); updateResults(); });

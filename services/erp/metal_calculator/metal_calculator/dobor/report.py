@@ -24,19 +24,14 @@ SHEET_AREA = (SHEET_W_MM / 1000.0) * (SHEET_L_MM / 1000.0)  # м²
 
 
 def _logo_svg():
-	"""Логотип ПМК Парк инлайн-SVG (снежинка + «ПАРК»), высота ≤40px — шапку не растит."""
-	cx, cy, R = 20, 20, 15
+	"""Логотип ПМК Парк — 6 полосок, сходящихся к центру (как на лого). Высота ≤44px."""
+	cx, cy, R = 20, 20, 16
 	arms = []
 	for ang in range(0, 360, 60):
 		r = math.radians(ang)
-		ex, ey = cx + R * math.cos(r), cy + R * math.sin(r)
-		arms.append(f'<line x1="{cx}" y1="{cy}" x2="{ex:.1f}" y2="{ey:.1f}"/>')
-		bx, by = cx + R * 0.6 * math.cos(r), cy + R * 0.6 * math.sin(r)  # основание веток
-		for da in (-42, 42):
-			r2 = math.radians(ang + da)
-			arms.append(f'<line x1="{bx:.1f}" y1="{by:.1f}" x2="{bx + 6 * math.cos(r2):.1f}" y2="{by + 6 * math.sin(r2):.1f}"/>')
+		arms.append(f'<line x1="{cx}" y1="{cy}" x2="{cx + R * math.cos(r):.1f}" y2="{cy + R * math.sin(r):.1f}"/>')
 	return ('<svg viewBox="0 0 40 40" width="44" height="44" xmlns="http://www.w3.org/2000/svg">'
-	        f'<g stroke="#111" stroke-width="2.4" stroke-linecap="round">{"".join(arms)}</g></svg>')
+	        f'<g stroke="#111" stroke-width="3.4" stroke-linecap="round">{"".join(arms)}</g></svg>')
 
 
 # ---------------- геометрия (порт прототипа) ----------------
@@ -221,9 +216,9 @@ def item_numbers(snapshot, thickness, plank_length, qty):
 _CSS = """
 *{box-sizing:border-box}
 body{margin:0;font-family:"DejaVu Sans",Arial,sans-serif;color:#111;font-size:12px;line-height:1.4}
-.head{width:100%;border-collapse:collapse;border-bottom:2px solid #111}
+.head{width:100%;border-collapse:collapse;border-bottom:2px solid #111;table-layout:fixed}
 .logo{width:46px;height:46px;border-radius:9px;background:#f3f3f3;border:1px solid #ccc;color:#666;text-align:center;font-weight:800;font-size:12px;line-height:1.05}
-.h1{font-size:15px;font-weight:700;line-height:1.2}
+.h1{font-size:15px;font-weight:700;line-height:1.2;white-space:nowrap}
 .co{font-size:11px;color:#444;margin-top:2px}
 .meta{text-align:right;font-size:11.5px;color:#444;line-height:1.7}
 .meta b{color:#111}
@@ -366,11 +361,11 @@ def order_html(order):
 
 	return f"""<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><style>{_CSS}</style></head><body>
 	<table class="head"><tr>
-		<td style="vertical-align:middle;padding-bottom:12px"><table><tr>
+		<td style="width:70%;vertical-align:middle;padding-bottom:12px"><table><tr>
 			<td style="width:50px;vertical-align:middle">{_logo_svg()}</td>
 			<td style="padding-left:12px;vertical-align:middle"><div class="h1">Производственный лист на доборные элементы</div><div class="co">ООО «ПМК Парк» · завод металлоконструкций · <a href="https://pmkpark.ru/" style="color:#111;text-decoration:underline">pmkpark.ru</a></div></td>
 		</tr></table></td>
-		<td style="width:160px;vertical-align:top;padding-bottom:12px"><table style="margin-left:auto;border-collapse:collapse;font-size:11.5px;color:#444">
+		<td style="width:30%;vertical-align:top;padding-bottom:12px"><table style="margin-left:auto;border-collapse:collapse;font-size:11.5px;color:#444;white-space:nowrap">
 			<tr><td style="text-align:right;padding:0 6px 3px 0">Заказ</td><td style="text-align:right;padding-bottom:3px"><span class="order-tag">{escape(name)}</span></td></tr>
 			<tr><td style="text-align:right;padding-right:6px">Дата</td><td style="text-align:right"><b style="color:#111">{escape(order_date)}</b></td></tr>
 			<tr><td style="text-align:right;padding-right:6px">Позиций</td><td style="text-align:right"><b style="color:#111">{len(items)}</b></td></tr>
