@@ -153,6 +153,14 @@ doc_events = {
 # Scheduled Tasks
 # ---------------
 
+# Восстановление имён отправителей: frappe.parse_addr теряет display-name из From
+# (sender_full_name = email). Раз в час сверяем имена из IMAP правильным парсером.
+scheduler_events = {
+	"hourly_long": [
+		"saas_theme.email_names.reconcile_sender_names",
+	],
+}
+
 # scheduler_events = {
 # 	"all": [
 # 		"saas_theme.tasks.all"

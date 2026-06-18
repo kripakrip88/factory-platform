@@ -5,10 +5,14 @@
 
 ## Применение (прод, осознанно, после бэкапа)
 ```
-bench --site erp.localhost execute setup.email_delivery.execute
+bench --site erp.localhost backup                                              # точка отката
+bench --site erp.localhost execute saas_theme.email_names.fix_email_account    # Задача 1
+bench --site erp.localhost execute saas_theme.email_names.reconcile_sender_names  # Задача 2 (бэкфилл имён)
 ```
-Идемпотентно. Меняет Email Account «PMK Park входящие (тест)»:
+`fix_email_account` (идемпотентно): Email Account «PMK Park входящие (тест)» —
 sync=ALL, From=аккаунт, append в «Отправленные», + IMAP Folder «Отправленные» (pull).
+`reconcile_sender_names`: проставляет sender_full_name из заголовка From (где имя=email);
+дальше держится автоматически (планировщик hourly_long).
 
 ## Задача 2 — отправленные подтягиваются (главное)
 - [ ] 1. Ответить/написать с ДРУГОГО устройства через веб-mail.ru или телефон
