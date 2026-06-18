@@ -281,19 +281,26 @@ function init_dobor(page) {
 			const unitv = (a, b) => { const dx = b.x - a.x, dy = b.y - a.y, l = Math.hypot(dx, dy) || 1; return { x: dx / l, y: dy / l }; };
 			const isFold = (s) => s >= 1 && s < segs.length && Math.abs(bendAngle(s)) > 170; // загиб 180° = угол между полками <10°
 
-			// контур: подгиб 180° — параллельная линия со смещением + разворот «U» наружу
+			// контур: подгиб 180° — параллельная линия + разворот «U». Смещение НАКОПИТЕЛЬНОЕ
+			// (переносится по контуру) — иначе при нескольких загибах подряд пропадают полки.
+			let shift = { x: 0, y: 0 };
 			let dPath = "M " + v[0].x + " " + v[0].y;
 			for (let s = 0; s < segs.length; s++) {
-				const a = v[s], b = v[s + 1];
 				if (isFold(s)) {
-					const uin = unitv(v[s - 1], a), dir = unitv(a, b), n = { x: -dir.y, y: dir.x };
+					const a = { x: v[s].x + shift.x, y: v[s].y + shift.y };
+					const dir = unitv(v[s], v[s + 1]), n = { x: -dir.y, y: dir.x };
 					const side = bendAngle(s) > 0 ? -1 : 1;
-					const ox = n.x * side * GAP, oy = n.y * side * GAP;
-					const aOff = { x: a.x + ox, y: a.y + oy }, bOff = { x: b.x + ox, y: b.y + oy };
+					shift = { x: shift.x + n.x * side * GAP, y: shift.y + n.y * side * GAP };
+					const aOff = { x: v[s].x + shift.x, y: v[s].y + shift.y };
+					const uin = unitv(v[s - 1], v[s]);
 					const cross = (aOff.x - a.x) * uin.y - (aOff.y - a.y) * uin.x;
 					const sweep = cross > 0 ? 0 : 1;
-					dPath += ` A ${GAP / 2} ${GAP / 2} 0 0 ${sweep} ${aOff.x} ${aOff.y} L ${bOff.x} ${bOff.y}`;
-				} else dPath += ` L ${b.x} ${b.y}`;
+					const b = { x: v[s + 1].x + shift.x, y: v[s + 1].y + shift.y };
+					dPath += ` A ${GAP / 2} ${GAP / 2} 0 0 ${sweep} ${aOff.x} ${aOff.y} L ${b.x} ${b.y}`;
+				} else {
+					const b = { x: v[s + 1].x + shift.x, y: v[s + 1].y + shift.y };
+					dPath += ` L ${b.x} ${b.y}`;
+				}
 			}
 			svg.appendChild(mk("path", { d: dPath, fill: "none", stroke: INK, "stroke-width": "3.2", "stroke-linejoin": "round", "stroke-linecap": "round" }));
 
