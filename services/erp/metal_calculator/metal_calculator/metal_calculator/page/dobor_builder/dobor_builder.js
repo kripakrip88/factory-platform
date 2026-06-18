@@ -246,7 +246,7 @@ function init_dobor(page) {
 	// 3) переворот по вертикали (зеркало верх↔низ)
 	const flipBtn = mkKnob(108, "⥯", "Перевернуть эскиз по вертикали"); flipBtn.style.cursor = "pointer";
 	flipBtn.addEventListener("pointerdown", (e) => { e.preventDefault(); e.stopPropagation(); });
-	flipBtn.addEventListener("click", (e) => { e.stopPropagation(); if (segs.length < 1) return; for (const s of segs) s.dir = -s.dir; render(); });
+	flipBtn.addEventListener("click", (e) => { e.stopPropagation(); if (segs.length < 1) return; for (const s of segs) s.dir = -s.dir; hemLeftDir *= -1; hemRightDir *= -1; paintSide *= -1; render(); }); // зеркало: завальцовка и краска тоже меняют сторону
 	// 4) направление наращивания (в конец/в начало)
 	const growKnob = mkKnob(158, "⤙", ""); growKnob.style.cursor = "pointer"; growKnob.style.fontSize = "16px"; growKnob.style.fontWeight = "700";
 	function updateGrowKnob() { growKnob.title = growEnd ? "Полки добавляются в КОНЕЦ (нажми — в начало)" : "Полки добавляются в НАЧАЛО (нажми — в конец)"; growKnob.textContent = growEnd ? "⤙" : "⤚"; growKnob.style.borderColor = growEnd ? "var(--line2)" : "var(--accent)"; growKnob.style.color = growEnd ? "var(--ink)" : "var(--accent)"; }

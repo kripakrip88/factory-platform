@@ -89,17 +89,18 @@ def sketch_svg(snapshot):
 
 	parts = [f'<svg viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg" width="100%" style="display:block">']
 
-	# пунктир стороны покрытия (смещение по нормали)
-	pl = []
-	for i in range(len(d)):
-		nx = ny = 0.0
-		if i < len(d) - 1:
-			u = unit(d[i], d[i + 1]); nx += -u["y"]; ny += u["x"]
-		if i > 0:
-			u2 = unit(d[i - 1], d[i]); nx += -u2["y"]; ny += u2["x"]
-		l = math.hypot(nx, ny) or 1
-		pl.append(f'{_n(d[i]["x"] + nx / l * 9 * paint_side)},{_n(d[i]["y"] + ny / l * 9 * paint_side)}')
-	parts.append(f'<polyline points="{" ".join(pl)}" fill="none" stroke="#888" stroke-width="2" stroke-dasharray="5 4" stroke-linejoin="round"/>')
+	# пунктир стороны покрытия — только если краска включена в конструкторе (paintOn)
+	if snapshot.get("paintOn"):
+		pl = []
+		for i in range(len(d)):
+			nx = ny = 0.0
+			if i < len(d) - 1:
+				u = unit(d[i], d[i + 1]); nx += -u["y"]; ny += u["x"]
+			if i > 0:
+				u2 = unit(d[i - 1], d[i]); nx += -u2["y"]; ny += u2["x"]
+			l = math.hypot(nx, ny) or 1
+			pl.append(f'{_n(d[i]["x"] + nx / l * 9 * paint_side)},{_n(d[i]["y"] + ny / l * 9 * paint_side)}')
+		parts.append(f'<polyline points="{" ".join(pl)}" fill="none" stroke="#888" stroke-width="2" stroke-dasharray="5 4" stroke-linejoin="round"/>')
 
 	# контур
 	path = "M " + _n(d[0]["x"]) + " " + _n(d[0]["y"])
