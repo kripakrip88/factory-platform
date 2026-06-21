@@ -1,0 +1,50 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "DOBOR-.#####",
+ "creation": "2026-06-16 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "coating",
+  "thickness",
+  "plank_length",
+  "qty",
+  "col_break_calc",
+  "developed_width",
+  "weight_total",
+  "sec_snap",
+  "profile_snapshot_json"
+ ],
+ "fields": [
+  {"fieldname": "title", "fieldtype": "Data", "in_list_view": 1, "label": "Название доборки"},
+  {"fieldname": "coating", "fieldtype": "Link", "options": "Dobor Coating", "in_list_view": 1, "label": "Цвет / покрытие"},
+  {"fieldname": "thickness", "fieldtype": "Float", "in_list_view": 1, "label": "Толщина, мм"},
+  {"fieldname": "plank_length", "fieldtype": "Float", "label": "Длина планки, мм", "default": "2500"},
+  {"fieldname": "qty", "fieldtype": "Int", "in_list_view": 1, "label": "Количество, шт"},
+  {"fieldname": "col_break_calc", "fieldtype": "Column Break"},
+  {"fieldname": "developed_width", "fieldtype": "Float", "label": "Развёртка, мм", "read_only": 1, "in_list_view": 1},
+  {"fieldname": "weight_total", "fieldtype": "Float", "label": "Вес всего, кг", "read_only": 1, "precision": "3"},
+  {"fieldname": "sec_snap", "fieldtype": "Section Break", "label": "Снимок профиля"},
+  {"fieldname": "profile_snapshot_json", "fieldtype": "Long Text", "label": "Снимок профиля (JSON)"}
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-06-16 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Metal Calculator",
+ "name": "Dobor Order Item",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1},
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Sales Manager", "share": 1, "write": 1},
+  {"create": 1, "delete": 1, "read": 1, "report": 1, "role": "Sales User", "share": 1, "write": 1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "title",
+ "track_changes": 1
+}

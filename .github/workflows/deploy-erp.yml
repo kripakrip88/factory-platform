@@ -7,6 +7,11 @@ on:
       - 'services/erp/**'
   workflow_dispatch:
 
+# Ветка → среда (один сервер, разные порты/проекты/тома):
+#   main    → PROD    (проект erp,         compose docker-compose.yml,         порт 8080)
+#   develop → STAGING (проект erp-staging, compose docker-compose.staging.yml, порт 8081)
+# Среды полностью изолированы (отдельные контейнеры/тома/БД/redis/сеть).
+# Пуш в develop НЕ может задеть prod: другой проект → другие контейнеры erp-staging-*.
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -24,46 +29,67 @@ jobs:
             set -e
             cd /opt/factory-platform
 
-            # fetch + reset --hard вместо pull: на сервере локальная ветка может
-            # разойтись (старые деплои оставляли локальные коммиты) → git pull падал
-            # с "divergent branches". reset --hard всегда приводит к origin.
-            git fetch origin ${{ github.ref_name }}
-            git checkout -f ${{ github.ref_name }}
-            git reset --hard origin/${{ github.ref_name }}
+            BRANCH="${{ github.ref_name }}"
+            if [ "$BRANCH" = "main" ]; then
+              ENV=prod;    PROJECT=erp;         COMPOSE=services/erp/docker-compose.yml;         PORT=8080
+              BACKEND=erp-backend-1;         REDIS=erp-redis-cache-1
+            else
+              ENV=staging; PROJECT=erp-staging; COMPOSE=services/erp/docker-compose.staging.yml; PORT=8081
+              BACKEND=erp-staging-backend-1; REDIS=erp-staging-redis-cache-1
+            fi
+            echo "🌍 Деплой → $ENV (branch=$BRANCH, project=$PROJECT, compose=$COMPOSE, port=$PORT)"
 
-            echo "🔨 Сборка образа с saas_theme..."
-            docker compose -f services/erp/docker-compose.yml build --no-cache
+            # fetch + reset --hard вместо pull: локальная ветка на сервере может разойтись.
+            git fetch origin "$BRANCH"
+            git checkout -f "$BRANCH"
+            git reset --hard origin/"$BRANCH"
 
-            echo "🔄 Перезапуск контейнеров..."
-            docker compose -f services/erp/docker-compose.yml up -d --force-recreate
+            # ── ПУТЬ ОТХОДА: бэкап БД ДО пересборки. Нет бэкапа → нет деплоя.
+            echo "🔒 Бэкап БД $ENV (точка отката)..."
+            if docker ps --format '{{.Names}}' | grep -qw "$BACKEND"; then
+              docker exec "$BACKEND" bash -c "cd /home/frappe/frappe-bench && bench --site erp.localhost backup" \
+                || { echo "❌ DEPLOY ABORTED: бэкап $ENV не удался — среду не трогаем"; exit 1; }
+              echo "✅ Бэкап создан"
+            else
+              echo "ℹ️ $BACKEND ещё не запущен (первый деплой $ENV) — бэкап пропущен"
+            fi
+
+            echo "🔨 Сборка образа ($PROJECT)..."
+            docker compose -p "$PROJECT" -f "$COMPOSE" build --no-cache
+
+            echo "🔄 Перезапуск контейнеров ($PROJECT)..."
+            docker compose -p "$PROJECT" -f "$COMPOSE" up -d --force-recreate
 
             echo "⏳ Ожидание готовности backend (60 сек)..."
             sleep 60
 
-            echo "🗄️ Миграция схемы БД (патчи apps)..."
-            docker exec erp-backend-1 bash -c "cd /home/frappe/frappe-bench && bench --site erp.localhost migrate"
+            echo "🗄️ Миграция схемы БД ($ENV)..."
+            docker exec "$BACKEND" bash -c "cd /home/frappe/frappe-bench && bench --site erp.localhost migrate"
 
-            echo "🧹 Сброс кэша Frappe (boot info)..."
-            docker exec erp-backend-1 bash -c "cd /home/frappe/frappe-bench && bench --site erp.localhost clear-cache" || true
+            echo "🧹 Сброс кэша Frappe ($ENV)..."
+            docker exec "$BACKEND" bash -c "cd /home/frappe/frappe-bench && bench --site erp.localhost clear-cache" || true
+
+            echo "🧹 Флаш $REDIS (устранить устаревший assets_json)..."
+            docker exec "$REDIS" redis-cli FLUSHALL || true
 
             echo "🔢 Проверка версий frappe/erpnext против versions.lock..."
             EXP_FRAPPE=$(grep '^frappe=' services/erp/versions.lock | cut -d= -f2)
             EXP_ERPNEXT=$(grep '^erpnext=' services/erp/versions.lock | cut -d= -f2)
-            GOT_FRAPPE=$(docker exec erp-backend-1 bash -c "grep -o '16[0-9.]*' /home/frappe/frappe-bench/apps/frappe/frappe/__init__.py | head -1")
-            GOT_ERPNEXT=$(docker exec erp-backend-1 bash -c "grep -o '16[0-9.]*' /home/frappe/frappe-bench/apps/erpnext/erpnext/__init__.py | head -1")
+            GOT_FRAPPE=$(docker exec "$BACKEND" bash -c "grep -o '16[0-9.]*' /home/frappe/frappe-bench/apps/frappe/frappe/__init__.py | head -1")
+            GOT_ERPNEXT=$(docker exec "$BACKEND" bash -c "grep -o '16[0-9.]*' /home/frappe/frappe-bench/apps/erpnext/erpnext/__init__.py | head -1")
             if [ "$EXP_FRAPPE" != "$GOT_FRAPPE" ] || [ "$EXP_ERPNEXT" != "$GOT_ERPNEXT" ]; then
               echo "❌ DEPLOY FAILED: version skew. ожидали frappe=$EXP_FRAPPE erpnext=$EXP_ERPNEXT, получили frappe=$GOT_FRAPPE erpnext=$GOT_ERPNEXT"
               exit 1
             fi
             echo "✅ Версии совпадают: frappe=$GOT_FRAPPE erpnext=$GOT_ERPNEXT"
 
-            echo "🔍 Smoke-тест: ассеты доехали до nginx?"
+            echo "🔍 Smoke-тест: ассеты доехали до nginx ($ENV :$PORT)?"
             EXPECTED=$(grep -o 'SAAS_THEME_BUILD = "[^"]*"' services/erp/saas_theme/saas_theme/public/js/saas_theme.js | head -1)
-            DEPLOYED=$(curl -s "http://localhost:8080/assets/saas_theme/js/saas_theme.js" | grep -o 'SAAS_THEME_BUILD = "[^"]*"' | head -1)
+            DEPLOYED=$(curl -s "http://localhost:$PORT/assets/saas_theme/js/saas_theme.js" | grep -o 'SAAS_THEME_BUILD = "[^"]*"' | head -1)
             if [ "$EXPECTED" != "$DEPLOYED" ]; then
-              echo "❌ DEPLOY FAILED: сервер отдаёт старый saas_theme.js (ожидали: $EXPECTED, получили: $DEPLOYED)"
+              echo "❌ DEPLOY FAILED: сервер ($ENV) отдаёт старый saas_theme.js (ожидали: $EXPECTED, получили: $DEPLOYED)"
               exit 1
             fi
-            echo "✅ Assets доехали: $DEPLOYED"
+            echo "✅ Assets доехали ($ENV): $DEPLOYED"
 
-            echo "✅ ERP обновлён"
+            echo "✅ ERP $ENV обновлён"

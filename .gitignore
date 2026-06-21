@@ -41,3 +41,6 @@ data/
 *.pem
 *.key
 *.crt
+
+# n8n Public API key (живёт только на сервере, не коммитить)
+.n8n-api-key

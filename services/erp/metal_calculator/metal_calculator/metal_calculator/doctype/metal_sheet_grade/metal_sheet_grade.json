@@ -1,0 +1,98 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "",
+ "creation": "2026-06-14 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "sheet_type",
+  "thickness",
+  "size_label",
+  "gost",
+  "mass_per_sqm"
+ ],
+ "fields": [
+  {
+   "fieldname": "sheet_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Тип листа",
+   "options": "Гладкий\nРифлёный\nПросечно-вытяжной",
+   "default": "Гладкий",
+   "reqd": 1
+  },
+  {
+   "fieldname": "thickness",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Толщина листа, мм",
+   "precision": "2",
+   "reqd": 1
+  },
+  {
+   "fieldname": "size_label",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Типоразмер (рифление / № ПВЛ)"
+  },
+  {
+   "fieldname": "gost",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "ГОСТ"
+  },
+  {
+   "fieldname": "mass_per_sqm",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Масса 1 м², кг",
+   "precision": "3",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-06-14 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Metal Calculator",
+ "name": "Metal Sheet Grade",
+ "naming_rule": "",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Sales User"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

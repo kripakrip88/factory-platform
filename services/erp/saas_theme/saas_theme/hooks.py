@@ -27,8 +27,8 @@ categories = ["Customization", "UI/UX"]
 # ------------------
 
 # include js, css files in header of desk.html
-app_include_css = "/assets/saas_theme/css/saas_theme.css?v=100"
-app_include_js = "/assets/saas_theme/js/saas_theme.js?v=100"
+app_include_css = "/assets/saas_theme/css/saas_theme.css?v=133"
+app_include_js = "/assets/saas_theme/js/saas_theme.js?v=133"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/saas_theme/css/login.css"
@@ -135,6 +135,18 @@ home_page = "desk"
 # ---------------
 # Hook on document methods and events
 
+# Зеркалить «Категория изделий» (Table MultiSelect) в текстовое поле для канбана.
+doc_events = {
+	"Opportunity": {
+		"validate": "saas_theme.crm.sync_categories_display",
+	},
+	# Письмо от нашего ящика = Sent (а не Received) — иначе отправленные из mail.ru
+	# попадают во «Входящие» и смешиваются с письмами клиентов.
+	"Communication": {
+		"before_insert": "saas_theme.email_names.fix_direction",
+	},
+}
+
 # doc_events = {
 # 	"*": {
 # 		"on_update": "method",
@@ -145,6 +157,14 @@ home_page = "desk"
 
 # Scheduled Tasks
 # ---------------
+
+# Восстановление имён отправителей: frappe.parse_addr теряет display-name из From
+# (sender_full_name = email). Раз в час сверяем имена из IMAP правильным парсером.
+scheduler_events = {
+	"hourly_long": [
+		"saas_theme.email_names.reconcile_sender_names",
+	],
+}
 
 # scheduler_events = {
 # 	"all": [
@@ -179,6 +199,12 @@ home_page = "desk"
 
 # Overriding Methods
 # ------------------------------
+#
+# Лид из письма: после штатного создания лида переносим File-вложения письма
+# на лид (копируем привязку). См. saas_theme/crm.py.
+override_whitelisted_methods = {
+	"erpnext.crm.doctype.lead.lead.make_lead_from_communication": "saas_theme.crm.make_lead_from_communication"
+}
 #
 # override_whitelisted_methods = {
 # 	"frappe.desk.doctype.event.event.get_events": "saas_theme.event.get_events"

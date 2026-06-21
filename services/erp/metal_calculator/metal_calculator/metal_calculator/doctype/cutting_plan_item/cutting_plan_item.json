@@ -1,0 +1,73 @@
+{
+ "actions": [],
+ "creation": "2026-06-15 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "istable": 1,
+ "field_order": [
+  "detail_name",
+  "profile_type",
+  "size_label",
+  "piece_length",
+  "piece_width",
+  "qty"
+ ],
+ "fields": [
+  {
+   "fieldname": "detail_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Наименование / № детали",
+   "columns": 2
+  },
+  {
+   "fieldname": "profile_type",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Сортамент / Лист",
+   "columns": 2
+  },
+  {
+   "fieldname": "size_label",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Типоразмер / толщина",
+   "columns": 2
+  },
+  {
+   "fieldname": "piece_length",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Длина детали, мм",
+   "reqd": 1,
+   "columns": 2
+  },
+  {
+   "fieldname": "piece_width",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Ширина детали, мм (лист)",
+   "columns": 2
+  },
+  {
+   "fieldname": "qty",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Кол-во",
+   "reqd": 1,
+   "columns": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-06-15 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Metal Calculator",
+ "name": "Cutting Plan Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

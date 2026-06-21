@@ -337,15 +337,14 @@ html[data-theme="dark"] {
 	box-shadow: 0 2px 6px rgba(0, 82, 255, 0.2);
 }
 
-.btn-primary:focus,
-.btn-primary:focus-visible,
-.btn-primary-dark:focus,
-.btn-primary-dark:focus-visible {
-	box-shadow: 0 0 0 2px rgba(0, 82, 255, 0.3) !important;
-}
+/* Фокус primary-кнопок задаётся ЕДИНЫМ правилом обводки в конце файла
+   (см. «ЕДИНОЕ ПРАВИЛО ОБВОДКИ КНОПОК») — здесь точечный ring убран. */
 
 .btn-default {
-	border: 1px solid #E3E8EE;
+	/* Бордер из переменной темы, НЕ хардкод #E3E8EE: в тёмной теме светлый
+	   хардкод читался как яркая белая рамка (Ответить/Действия/Создать,
+	   контролы списка). В светлой остаётся #E3E8EE (значение --border-color). */
+	border: 1px solid var(--border-color);
 	font-weight: 500;
 }
 
@@ -3377,4 +3376,497 @@ html[data-theme="dark"] .fp-module-bar {
     display: inline-flex;
     align-items: center;
     margin-right: 2px;
+}
+
+/* ===== Быстрый фильтр по полкам классификации (Communication inbox) ===== */
+.st-shelf-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px 16px 4px;
+}
+
+.st-shelf-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 28px;
+    padding: 0 12px;
+    font-size: 13px;
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+
+.st-shelf-chip:hover {
+    color: var(--text-color);
+    border-color: var(--dark-border-color, var(--border-color));
+}
+
+.st-shelf-chip.active {
+    background: var(--subtle-fg, var(--fg-hover-color));
+    color: var(--text-color);
+    border-color: var(--primary-color);
+}
+
+.st-shelf-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* ============================================
+   КАРТОЧКА ПИСЬМА (Communication) — режим чтения + оценки
+   ============================================ */
+
+/* Скрытые служебные секции/кнопки (данные сохранены, скрыт только вид) */
+.st-mail-hide { display: none !important; }
+
+/* Тема — крупный заголовок, не поле ввода */
+.st-mail-subject .section-head,
+.st-mail-subject .control-label { display: none !important; }
+.st-mail-subject [data-fieldname="subject"] .control-input,
+.st-mail-subject [data-fieldname="subject"] textarea,
+.st-mail-subject [data-fieldname="subject"] .control-value {
+    font-size: 20px !important;
+    font-weight: 600 !important;
+    line-height: 1.3 !important;
+    border: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    resize: none !important;
+    color: var(--heading-color) !important;
+    min-height: auto !important;
+}
+
+/* Блок классификации наверху — компактная карточка */
+.st-mail-classify {
+    background: var(--subtle-accent, var(--control-bg)) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 8px !important;
+    padding: 10px 14px !important;
+    margin-bottom: 14px !important;
+}
+.st-mail-classify .section-head {
+    font-size: 12px !important;
+    color: var(--text-muted) !important;
+    margin-bottom: 6px !important;
+}
+
+/* Тело письма — читаемая колонка на белой «бумаге» (как в почтовом клиенте).
+   Письма приходят с тёмным текстом под белый фон → рендерим на белом всегда,
+   в т.ч. в тёмной теме, и форсируем читаемый контраст поверх бледного серого. */
+.st-mail-body {
+    max-width: 820px;
+}
+.st-mail-body .ql-container,
+.st-mail-body .ql-editor.read-mode {
+    border: none !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+}
+.st-mail-body .ql-editor.read-mode {
+    background: #ffffff !important;
+    color: #1f2733 !important;
+    padding: 18px 22px !important;
+    border-radius: 8px !important;
+    border: 1px solid var(--border-color) !important;
+}
+/* читаемый текст поверх бледно-серых инлайнов писем */
+.st-mail-body .ql-editor.read-mode,
+.st-mail-body .ql-editor.read-mode p,
+.st-mail-body .ql-editor.read-mode span,
+.st-mail-body .ql-editor.read-mode div,
+.st-mail-body .ql-editor.read-mode td,
+.st-mail-body .ql-editor.read-mode li {
+    color: #1f2733 !important;
+}
+/* ссылки — синим, поверх форса текста */
+.st-mail-body .ql-editor.read-mode a,
+.st-mail-body .ql-editor.read-mode a * {
+    color: #0052ff !important;
+}
+/* обуздать чужой HTML: ничто не распирает контейнер, картинки по ширине */
+.st-mail-body .ql-editor.read-mode * {
+    max-width: 100% !important;
+    box-sizing: border-box;
+}
+.st-mail-body .ql-editor.read-mode img {
+    max-width: 100% !important;
+    height: auto !important;
+}
+.st-mail-body .ql-editor.read-mode table {
+    max-width: 100% !important;
+    width: auto !important;
+    table-layout: auto !important;
+}
+
+/* Тёмная тема: письмо на тёмной поверхности со светлым текстом.
+   Инлайн-фоны письма (часто белые) обнуляем, чтобы не было светлых островов
+   с невидимым текстом; фоновые КАРТИНКИ (баннеры) сохраняем. */
+html[data-theme="dark"] .st-mail-body .ql-editor.read-mode {
+    background: #0F141B !important;
+    color: #C9D1D9 !important;
+    border-color: #30363D !important;
+}
+html[data-theme="dark"] .st-mail-body .ql-editor.read-mode,
+html[data-theme="dark"] .st-mail-body .ql-editor.read-mode p,
+html[data-theme="dark"] .st-mail-body .ql-editor.read-mode span,
+html[data-theme="dark"] .st-mail-body .ql-editor.read-mode div,
+html[data-theme="dark"] .st-mail-body .ql-editor.read-mode td,
+html[data-theme="dark"] .st-mail-body .ql-editor.read-mode li,
+html[data-theme="dark"] .st-mail-body .ql-editor.read-mode h1,
+html[data-theme="dark"] .st-mail-body .ql-editor.read-mode h2,
+html[data-theme="dark"] .st-mail-body .ql-editor.read-mode h3 {
+    color: #C9D1D9 !important;
+}
+/* обнулить сплошные инлайн-фоны (белые коробки писем), картинки оставить */
+html[data-theme="dark"] .st-mail-body .ql-editor.read-mode * {
+    background-color: transparent !important;
+}
+html[data-theme="dark"] .st-mail-body .ql-editor.read-mode a,
+html[data-theme="dark"] .st-mail-body .ql-editor.read-mode a * {
+    color: #6EAAFF !important;
+}
+
+/* Обёртка read-only поля (.like-disabled-input) имеет свой светлый фон —
+   просвечивает белой рамкой вокруг тёмного тела письма. Обнуляем в обеих темах. */
+.st-mail-body .like-disabled-input {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+}
+
+/* Кламп длинных писем: показываем верх, остальное — по кнопке «Показать полностью».
+   Решает бесконечный скролл рассылок из вложенных таблиц. */
+.st-mail-clampable { position: relative; }
+.st-mail-clampable.st-mail-clamped .ql-editor.read-mode {
+    max-height: 680px !important;
+    overflow: hidden !important;
+}
+/* плавное затухание у нижнего края клампа */
+.st-mail-clampable.st-mail-clamped::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 90px;
+    background: linear-gradient(rgba(255, 255, 255, 0), #ffffff);
+    pointer-events: none;
+    border-radius: 0 0 8px 8px;
+}
+html[data-theme="dark"] .st-mail-clampable.st-mail-clamped::after {
+    background: linear-gradient(rgba(15, 20, 27, 0), #0F141B);
+}
+.st-mail-expand {
+    margin-top: 8px;
+}
+
+/* ============================================
+   CRM-КАРТОЧКА (часть 2/3): лента истории, скрытие вкладок/меню, мультиселект
+   Только переменные темы — ноль новых hex. Светлая/тёмная — через var(--...).
+   ============================================ */
+
+/* Скрытие технических вкладок (Операции/Примечания/Соединения) и пункта
+   «Представление отчёта» — из UI, не из данных. */
+.fp-hidden-tab,
+.fp-hidden-menu-item {
+    display: none !important;
+}
+
+/* Лента истории (timeline вынесен из вкладки «Операции») — всегда видна под формой */
+.fp-crm-feed {
+    margin-top: 8px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+}
+.fp-crm-feed-title {
+    font-weight: 600;
+    font-size: var(--text-md);
+    color: var(--text-color);
+    margin: 0 0 8px 15px;
+}
+/* timeline внутри ленты — убрать двойные отступы родного .after-save */
+.fp-crm-feed .new-timeline {
+    margin-top: 0;
+}
+
+/* --- Мультиселект «Категория изделий»: высота и выпадашка --- */
+
+/* Наложение: контейнер и обёртка имели фикс. height:38px → при переносе тегов
+   на 2-ю строку плашки вылезали на поля снизу. Высота auto — поле растёт и
+   толкает соседние поля вниз. */
+[data-fieldtype="Table MultiSelect"] .control-input-wrapper,
+.control-input.form-control.table-multiselect {
+    height: auto !important;
+    min-height: 32px;
+}
+.control-input.form-control.table-multiselect {
+    align-items: flex-start;
+    gap: 4px 0;
+    padding-top: 3px;
+    padding-bottom: 3px;
+}
+
+/* Зебра: в выпадашке awesomplete невыбранные пункты получали светлый фон
+   (в тёмной теме читались как наведённые). Делаем фон по умолчанию прозрачным,
+   подсветка — только у активного/наведённого пункта, через тему. */
+.table-multiselect .awesomplete > ul > [role="option"],
+.link-field .awesomplete > ul > [role="option"] {
+    background: transparent !important;
+}
+.table-multiselect .awesomplete > ul > [role="option"] mark,
+.link-field .awesomplete > ul > [role="option"] mark {
+    background: transparent !important;
+    color: inherit !important;
+}
+.table-multiselect .awesomplete > ul > [role="option"][aria-selected="true"],
+.table-multiselect .awesomplete > ul > [role="option"]:hover,
+.link-field .awesomplete > ul > [role="option"][aria-selected="true"],
+.link-field .awesomplete > ul > [role="option"]:hover {
+    background: var(--highlight-color) !important;
+}
+
+/* ============================================
+   ЧИТАЕМОСТЬ ТЁМНОЙ ТЕМЫ — карточка лида/сделки (.fp-crm-card)
+   Диагностика (live, dark): фон/значения/заголовки секций читаемы (#C9D1D9),
+   а ПОДПИСИ полей и текст ленты были --text-muted (#8B949E, контраст ~3.6:1 на
+   #0D1117 — ниже комфортного). Поднимаем тусклый текст до --text-color. Палитра
+   и фон НЕ тронуты; scope только CRM-карточка (другие экраны и Покупатель — как
+   были). Светлая тема не затрагивается (правило только под html[data-theme=dark]).
+   ============================================ */
+html[data-theme="dark"] .fp-crm-card .control-label {
+    color: var(--text-color);
+}
+html[data-theme="dark"] .fp-crm-card .fp-crm-feed .timeline-content {
+    color: var(--text-color);
+}
+
+/* ============================================
+   КРОШКИ В ШАПКЕ — читаемость (карточка письма и др.)
+   Каждый <li.ellipsis> в навбар-крошках обрезался поштучно («Электронная
+   почта» → «Элек…», «Коммуникация» → «Ком…»), т.к. flex сжимал их все.
+   Разрешаем не-последним крошкам показываться полностью; обрезается только
+   последняя (длинная тема письма/имя записи). Без новых цветов.
+   ============================================ */
+.navbar-breadcrumbs > li.ellipsis {
+    max-width: none;
+    flex-shrink: 0;
+}
+.navbar-breadcrumbs > li.ellipsis:last-child {
+    flex-shrink: 1;
+    min-width: 0;
+    max-width: 38ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ============================================
+   ЕДИНОЕ ПРАВИЛО ОБВОДКИ КНОПОК (фокус) — один источник вместо точечных
+   Проблема: ядро Frappe рисует яркую обводку при фокусе (у primary-кнопок
+   outline-color белый → кричащее белое кольцо, особенно на синей кнопке в
+   тёмной теме). Раньше глушили по экранам точечно → разнобой.
+
+   Единое поведение для ВСЕХ кнопок:
+   - убрать дефолтную белую/яркую обводку ядра;
+   - доступность: видимое, но приглушённое кольцо ТОЛЬКО для клавиатуры
+     (:focus-visible), из переменной темы; мышиный клик — без кольца.
+   Только переменные темы, ноль новых hex. Светлая/тёмная — через var(--...).
+   ============================================ */
+/* Ядро Frappe рисует кольцо через box-shadow (rgba(124,124,124,.25) 2px) на
+   .btn:focus — оно остаётся видимым и после мышиного клика. Глушим box-shadow
+   и outline на ВСЕХ кнопках; приглушённое кольцо возвращаем только для
+   клавиатуры (:focus-visible) ниже. */
+.btn:focus,
+.btn:active:focus,
+.btn.active:focus {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* Клавиатурный фокус — единое приглушённое кольцо из переменной темы.
+   :focus-visible матчит только навигацию с клавиатуры → мышиный клик кольца
+   не даёт, доступность сохранена. */
+.btn:focus-visible {
+    outline: none !important;
+    box-shadow: 0 0 0 2px var(--outline-gray-4) !important;
+}
+
+/* ============================================
+   ИНБОКС: папки-вкладки + скрытие лишних стандартных фильтров
+   ============================================ */
+
+/* Папки-вкладки Входящие/Отправленные — стиль как полки классификации */
+.st-folder-tabs {
+    display: flex;
+    gap: 6px;
+    padding: 8px 16px 0;
+}
+.st-folder-tab {
+    height: 28px;
+    padding: 0 14px;
+    font-size: 13px;
+    font-weight: 500;
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+.st-folder-tab:hover {
+    color: var(--text-color);
+}
+.st-folder-tab.active {
+    background: var(--subtle-fg, var(--fg-hover-color));
+    color: var(--text-color);
+    border-color: var(--primary-color);
+}
+
+/* Скрытые лишние стандартные фильтры-строки (B1/C) — данные доступны, скрыт вид */
+.st-hide-std-filter {
+    display: none !important;
+}
+
+/* ============================================
+   КАНБАН-КАРТОЧКА СДЕЛКИ: перенос длинных значений + подсветка данных
+   ============================================ */
+
+/* Контейнер полей родной .kanban-card-doc зажат `-webkit-line-clamp: 2`
+   (display:-webkit-box) → высота 2 строки (~42px), при переносе значений
+   объём/сумма/дата обрезались/накладывались. Снимаем clamp и фиксируем block —
+   контейнер растёт под все строки, карточка тоже. */
+.kanban-card-doc {
+    display: block !important;
+    -webkit-line-clamp: unset !important;
+    -webkit-box-orient: horizontal !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+}
+
+/* Строки данных (Категория/Объём/Сумма/Дата) — переносятся, не уплывают за
+   рамку (родной .text-truncate обрезал nowrap), + аккуратная ненавязчивая
+   подсветка каждого значения чипом из переменной темы. Ноль новых hex. */
+.kanban-card-doc .text-truncate {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    background: var(--subtle-fg, var(--control-bg));
+    border-radius: 4px;
+    padding: 2px 7px;
+    margin-bottom: 4px;
+    line-height: 1.35;
+}
+.kanban-card-doc .text-truncate:last-child {
+    margin-bottom: 0;
+}
+
+/* ============================================
+   ПОЧТА: аватары/прочитано/дата в списке, мета и акцент в карточке, чистка
+   Только переменные темы + алгоритмические HSL-аватары. Ноль новых hex.
+   ============================================ */
+
+/* Ячейка темы письма в списке: аватар + тема + дата */
+.st-mail-subjcell {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 100%;
+}
+.st-mail-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    color: #fff; /* белый текст на цветном кружке — не тема, не новый бренд-hex */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    flex-shrink: 0;
+    line-height: 1;
+}
+/* Аватар в строке инбокса — выравнивание по тексту темы */
+.list-subject .st-mail-avatar {
+    margin-right: 8px;
+    vertical-align: middle;
+}
+/* Блок «отправитель» в строке инбокса: [точка] аватар имя — как столбец */
+.st-mail-rowhead {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-right: 10px;
+    flex-shrink: 0;
+}
+.st-mail-sender {
+    display: inline-block;
+    width: 160px;
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
+    color: var(--text-color);
+}
+/* Точка-индикатор непрочитанного. Место занимает ВСЕГДА (прозрачная у прочитанных),
+   чтобы аватар/имя/тема были выровнены по всем строкам. */
+.st-mail-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: transparent;
+    flex-shrink: 0;
+}
+.st-mail-dot.st-mail-dot-on {
+    background: var(--primary, #2563eb);
+}
+/* Непрочитанные — жирно + насыщенный текст; имя отправителя тоже жирным */
+.list-subject.st-mail-unseen a,
+.list-subject.st-mail-unseen .ellipsis,
+.list-subject.st-mail-unseen .st-mail-sender {
+    font-weight: 700 !important;
+    color: var(--text-color) !important;
+}
+/* Прочитанные — приглушённые и обычным весом (явный контраст с непрочитанными) */
+.list-subject.st-mail-seen a,
+.list-subject.st-mail-seen .ellipsis {
+    font-weight: 400 !important;
+    color: var(--text-muted) !important;
+}
+.list-subject.st-mail-seen .st-mail-sender {
+    font-weight: 400;
+    color: var(--text-muted);
+}
+/* Дата письма в строке (абсолютная, читаемая) */
+.st-mail-rowdate {
+    color: var(--text-muted);
+    font-size: 11px;
+    white-space: nowrap;
+    margin-left: 8px;
+}
+
+/* Карточка письма: мета «от кого · когда» под темой */
+.st-mail-meta {
+    margin: 4px 0 0 15px;
+    color: var(--text-muted);
+    font-size: 12px;
+}
+.st-mail-meta-from { color: var(--text-color); }
+
+/* Акцент на кнопку «Ответить» — основное действие (outline в цвет темы) */
+.st-mail-reply {
+    border-color: var(--primary) !important;
+    color: var(--primary) !important;
+    font-weight: 600;
+}
+
+/* Скрытые лишние кнопки инбокса (Задача 6) */
+.st-hide-inbox-btn {
+    display: none !important;
 }

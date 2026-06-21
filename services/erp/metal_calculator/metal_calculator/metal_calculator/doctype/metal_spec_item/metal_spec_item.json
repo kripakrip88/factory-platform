@@ -1,0 +1,93 @@
+{
+ "actions": [],
+ "creation": "2026-06-15 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "istable": 1,
+ "field_order": [
+  "detail_name",
+  "form",
+  "item_ref",
+  "size_label",
+  "steel_grade",
+  "dims",
+  "qty",
+  "weight_one_kg",
+  "weight_total_kg"
+ ],
+ "fields": [
+  {
+   "fieldname": "detail_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Наименование / № детали",
+   "columns": 2
+  },
+  {
+   "fieldname": "form",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Форма",
+   "columns": 1
+  },
+  {
+   "fieldname": "item_ref",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Типоразмер",
+   "columns": 2
+  },
+  {
+   "fieldname": "size_label",
+   "fieldtype": "Data",
+   "label": "Размер ГОСТ"
+  },
+  {
+   "fieldname": "steel_grade",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Марка",
+   "columns": 1
+  },
+  {
+   "fieldname": "dims",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Размеры заготовки",
+   "columns": 2
+  },
+  {
+   "fieldname": "qty",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Кол-во",
+   "columns": 1
+  },
+  {
+   "fieldname": "weight_one_kg",
+   "fieldtype": "Float",
+   "label": "Вес 1 шт, кг",
+   "precision": "3"
+  },
+  {
+   "fieldname": "weight_total_kg",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Вес всего, кг",
+   "precision": "3",
+   "columns": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-06-15 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Metal Calculator",
+ "name": "Metal Spec Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

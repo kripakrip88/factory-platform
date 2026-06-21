@@ -1,0 +1,126 @@
+services:
+  db:
+    image: mariadb:10.6
+    restart: unless-stopped
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --skip-character-set-client-handshake
+      - --skip-innodb-read-only-compressed
+    environment:
+      MYSQL_ROOT_PASSWORD: admin
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "--password=admin"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis-cache:
+    image: redis:7-alpine
+
+  redis-queue:
+    image: redis:7-alpine
+
+  redis-socketio:
+    image: redis:7-alpine
+
+  backend:
+    build: .
+    restart: unless-stopped
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - REDIS_CACHE=redis-cache:6379
+      - REDIS_QUEUE=redis-queue:6379
+      - REDIS_SOCKETIO=redis-socketio:6379
+      - SOCKETIO_PORT=9000
+    volumes:
+      - sites:/home/frappe/frappe-bench/sites
+      - assets:/home/frappe/frappe-bench/assets
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build: .
+    restart: unless-stopped
+    command: nginx-entrypoint.sh
+    environment:
+      - BACKEND=backend:8000
+      - SOCKETIO=websocket:9000
+      - FRAPPE_SITE_NAME_HEADER=test.localhost
+      - UPSTREAM_REAL_IP_ADDRESS=127.0.0.1
+      - UPSTREAM_REAL_IP_HEADER=X-Forwarded-For
+      - UPSTREAM_REAL_IP_RECURSIVE=off
+      - PROXY_READ_TIMEOUT=120
+      - CLIENT_MAX_BODY_SIZE=50m
+    volumes:
+      - sites:/home/frappe/frappe-bench/sites
+      - assets:/home/frappe/frappe-bench/assets
+    ports:
+      - "8090:8080"
+    depends_on:
+      - backend
+      - websocket
+
+  websocket:
+    build: .
+    restart: unless-stopped
+    command: node /home/frappe/frappe-bench/apps/frappe/socketio.js
+    environment:
+      - REDIS_SOCKETIO=redis-socketio:6379
+    volumes:
+      - sites:/home/frappe/frappe-bench/sites
+    depends_on:
+      - redis-socketio
+
+  queue-short:
+    build: .
+    restart: unless-stopped
+    command: bench worker --queue short
+    volumes:
+      - sites:/home/frappe/frappe-bench/sites
+    depends_on:
+      - redis-queue
+
+  queue-default:
+    build: .
+    restart: unless-stopped
+    command: bench worker --queue default
+    volumes:
+      - sites:/home/frappe/frappe-bench/sites
+    depends_on:
+      - redis-queue
+
+  scheduler:
+    build: .
+    restart: unless-stopped
+    command: bench schedule
+    volumes:
+      - sites:/home/frappe/frappe-bench/sites
+    depends_on:
+      - redis-queue
+
+  # Одноразовый контейнер для создания сайта и установки темы
+  create-site:
+    build: .
+    command: bash -c "wait-for-it db:3306 --timeout=60 && bench new-site test.localhost --mariadb-root-password admin --admin-password admin --install-app erpnext --install-app saas_theme && bench --site test.localhost set-config developer_mode 1 && bench build --app saas_theme"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - REDIS_CACHE=redis-cache:6379
+      - REDIS_QUEUE=redis-queue:6379
+      - REDIS_SOCKETIO=redis-socketio:6379
+    volumes:
+      - sites:/home/frappe/frappe-bench/sites
+      - assets:/home/frappe/frappe-bench/assets
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db_data:
+  sites:
+  assets:
