@@ -3,6 +3,23 @@
 С v1.0.0 версии тегаются по semver `vMAJOR.MINOR.PATCH` (см. CLAUDE.md). Каждый
 деплой в develop = тег + запись здесь. Откат: `git checkout vX.Y.Z` → деплой.
 
+## v1.1.0 — 2026-06-21
+Инфраструктура — разделение PROD / STAGING (изоляция сред):
+- [infra] две среды на одном сервере: **PROD** (ветка `main`, порт `:8080`, проект `erp`) и
+  **STAGING** (ветка `develop`, порт `:8081`, проект `erp-staging`). Раздельные тома/БД/redis/сеть.
+- [infra] новый `services/erp/docker-compose.staging.yml` (стек erp-staging, :8081, свои тома).
+- [ci] `deploy-erp.yml` теперь ветка-зависимый: `main`→prod, `develop`→staging; пуш в develop
+  не может задеть prod (другой проект/контейнеры/тома/порт).
+- [infra] staging поднят как клон prod (restore боевого дампа), боевой ящик `pmkpark@mail.ru`
+  в staging ВЫКЛЮЧЕН — staging физически не лезет в боевую почту.
+- [ops] `services/erp/scripts/clone-prod-to-staging.sh` — разовый клон prod→staging для отладки
+  (backup→restore→выравнивание site-юзера→выключение ящика).
+- [docs] `docs/environments.md` (схема сред, деплой, откат, политика почты); раздел «Деплой и
+  среды» в CLAUDE.md.
+- [ops] перед разделением: тег `v1.0.13-pre-split`, бэкап `/opt/backups/presplit-*.tgz` + bench
+  `20260621_124440`. Освобождено ~11 ГБ диска (build cache + неиспользуемые образы).
+- Изоляция доказана: маркер-Note из staging в prod-БД = 0; тома/контейнеры/ящики раздельны.
+
 ## v1.0.12 — 2026-06-21
 Почта — направление писем (Sent vs Received) + часовой пояс + карточка письма (saas_theme `?v=133`):
 - [fix] хук `Communication.before_insert` → `fix_direction`: письмо от нашего ящика
