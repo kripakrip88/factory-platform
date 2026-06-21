@@ -3,6 +3,24 @@
 С v1.0.0 версии тегаются по semver `vMAJOR.MINOR.PATCH` (см. CLAUDE.md). Каждый
 деплой в develop = тег + запись здесь. Откат: `git checkout vX.Y.Z` → деплой.
 
+## v1.2.0 — 2026-06-21
+Роль «Менеджер по продажам» + первый пользователь (CRM + Калькуляторы):
+- [feat] роль `Менеджер по продажам`: read+create+write (delete=0, if_owner=0) на
+  Lead/Opportunity/Customer/Communication/Contact/Address + калькуляторы (Dobor Order,
+  Dobor Profile, Cutting Plan, Metal Spec); справочники проката (Metal Profile/Steel Grade/
+  Metal Sheet Grade/Stock Length/Dobor Coating) — read-only; страницы калькуляторов.
+- [feat] видимость воркспейсов: менеджер видит только CRM + Калькуляторы (гейт остальных
+  public-воркспейсов ролью System Manager через Has Role; Frappe сам прячет модули без прав).
+- [feat] track_changes (история изменений) включён на Lead/Opportunity (Customer/Communication
+  уже были).
+- [feat] `saas_theme/sales_manager_role.py` (воспроизводимо): `execute` (роль+права+воркспейсы),
+  `create_user` (только роль менеджера, без System Manager, активация welcome-email — пароль
+  не в коде), `check_access` (проверка под юзером через set_user).
+- [ops] обкатано на STAGING (тест-юзер, проверка движком прав), затем PROD (бэкап
+  `20260621_173255`). Заведён 1 реальный юзер `t9141699923@bk.ru`, welcome-email отправлен (Sent).
+- Проверка под юзером: роли только менеджер, воркспейсы CRM+Калькуляторы, Lead read/create/write
+  delete=false, Purchase Order/Stock Entry/Work Order/Sales Invoice/Payment Entry read=false.
+
 ## v1.1.0 — 2026-06-21
 Инфраструктура — разделение PROD / STAGING (изоляция сред):
 - [infra] две среды на одном сервере: **PROD** (ветка `main`, порт `:8080`, проект `erp`) и
