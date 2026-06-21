@@ -144,6 +144,76 @@ def _imap_name_map(acc, folders, per_folder=1000):
 	return out
 
 
+# ---------------- Задача 1/2/3: направление писем (Sent vs Received) ----------------
+
+def _account_emails():
+	"""Наши собственные адреса (email_id входящих ящиков), lower-case."""
+	vals = frappe.get_all("Email Account", filters={"enable_incoming": 1}, pluck="email_id")
+	return {v.lower() for v in vals if v}
+
+
+def fix_direction(doc, method=None):
+	"""Go-forward (before_insert): письмо от НАШЕГО ящика = Sent (а не Received).
+	Письма из папки «Отправленные» mail.ru имеют From=наш адрес → раньше падали как
+	Received и смешивались с входящими. Признак «sender = наш ящик» надёжен:
+	у настоящих входящих From чужой (клиент)."""
+	if (getattr(doc, "communication_medium", "") or "").lower() != "email":
+		return
+	sender = (getattr(doc, "sender", "") or "").strip().lower()
+	if sender and sender in _account_emails() and doc.sent_or_received != "Sent":
+		doc.sent_or_received = "Sent"
+
+
+@frappe.whitelist()
+def backfill_sent_direction(apply=0):
+	"""Бэкфилл (Задача 2): наши отправленные, помеченные Received, перемечаем в Sent.
+	Критерий — sender = наш ящик (НЕ трогает реальные входящие, у них From чужой).
+	apply=0 — только посчитать; apply=1 — применить."""
+	emails = _account_emails()
+	if not emails:
+		return {"error": "нет email-аккаунтов с приёмом"}
+	ph = ", ".join(["%s"] * len(emails))
+	params = list(emails)
+	cnt = frappe.db.sql(
+		f"""SELECT count(*) FROM `tabCommunication`
+		    WHERE LOWER(communication_medium)='email' AND sent_or_received='Received'
+		    AND LOWER(sender) IN ({ph})""", params)[0][0]
+	# контроль: сколько настоящих входящих (sender НЕ наш) — их не трогаем
+	others = frappe.db.sql(
+		f"""SELECT count(*) FROM `tabCommunication`
+		    WHERE LOWER(communication_medium)='email' AND sent_or_received='Received'
+		    AND LOWER(sender) NOT IN ({ph})""", params)[0][0]
+	if not int(apply):
+		return {"would_update_to_sent": int(cnt), "real_received_untouched": int(others), "applied": False}
+	frappe.db.sql(
+		f"""UPDATE `tabCommunication` SET sent_or_received='Sent'
+		    WHERE LOWER(communication_medium)='email' AND sent_or_received='Received'
+		    AND LOWER(sender) IN ({ph})""", params)
+	frappe.db.commit()
+	return {"updated_to_sent": int(cnt), "real_received_untouched": int(others), "applied": True}
+
+
+@frappe.whitelist()
+def dedup_by_message_id(apply=0):
+	"""Дедуп (Задача 3): одно физическое письмо = одна Communication (по Message-ID).
+	Оставляем самую раннюю запись, остальные дубли удаляем. apply=0 — только посчитать."""
+	dups = frappe.db.sql(
+		"""SELECT message_id, count(*) c FROM `tabCommunication`
+		   WHERE LOWER(communication_medium)='email' AND message_id IS NOT NULL AND message_id!=''
+		   GROUP BY message_id HAVING c > 1""", as_dict=True)
+	to_delete = []
+	for d in dups:
+		rows = frappe.get_all("Communication", filters={"message_id": d.message_id},
+		                      fields=["name"], order_by="creation asc")
+		to_delete += [r.name for r in rows[1:]]
+	if not int(apply):
+		return {"dup_message_ids": len(dups), "would_delete": len(to_delete), "applied": False}
+	for name in to_delete:
+		frappe.delete_doc("Communication", name, ignore_permissions=True, force=True)
+	frappe.db.commit()
+	return {"deleted": len(to_delete), "applied": True}
+
+
 @frappe.whitelist()
 def reconcile_sender_names(limit: int = 2000):
 	"""Проставить sender_full_name по From с сервера там, где имя пустое или = email.

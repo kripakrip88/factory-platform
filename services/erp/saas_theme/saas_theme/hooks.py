@@ -27,8 +27,8 @@ categories = ["Customization", "UI/UX"]
 # ------------------
 
 # include js, css files in header of desk.html
-app_include_css = "/assets/saas_theme/css/saas_theme.css?v=132"
-app_include_js = "/assets/saas_theme/js/saas_theme.js?v=132"
+app_include_css = "/assets/saas_theme/css/saas_theme.css?v=133"
+app_include_js = "/assets/saas_theme/js/saas_theme.js?v=133"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/saas_theme/css/login.css"
@@ -139,6 +139,11 @@ home_page = "desk"
 doc_events = {
 	"Opportunity": {
 		"validate": "saas_theme.crm.sync_categories_display",
+	},
+	# Письмо от нашего ящика = Sent (а не Received) — иначе отправленные из mail.ru
+	# попадают во «Входящие» и смешиваются с письмами клиентов.
+	"Communication": {
+		"before_insert": "saas_theme.email_names.fix_direction",
 	},
 }
 

@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v132";
+const SAAS_THEME_BUILD = "v133";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -171,9 +171,12 @@ saas_theme.reshape_mail = function (frm) {
 		sec_of("subject").addClass("st-mail-subject");
 	}
 
-	// 1b. Мета «от кого, когда» под темой (как в обычном почтовике)
+	// 1b. Мета «от кого, когда» под темой (как в обычном почтовике).
+	// ВАЖНО: форма переиспользуется между письмами — старую мету убираем и ставим
+	// заново из ТЕКУЩЕГО frm.doc, иначе показывается отправитель/дата прошлого письма.
 	const $subjSec = sec_of("subject");
-	if ($subjSec.length && !$subjSec.find(".st-mail-meta").length) {
+	if ($subjSec.length) {
+		$subjSec.find(".st-mail-meta").remove();
 		const sender = frm.doc.sender_full_name || frm.doc.sender || "";
 		const when = frm.doc.communication_date ? frappe.datetime.str_to_user(frm.doc.communication_date) : "";
 		if (sender || when) {
