@@ -121,12 +121,23 @@ services/ai-assistant/
 | Деплой | Docker Compose + GitHub Actions |
 | Сервер | Бегет VPS, Ubuntu 24.04, IP: 155.212.143.179 |
 
-## Деплой
+## Деплой и среды
 
-- `develop` → staging
-- `main` → production
-- Деплой через SSH: `appleboy/ssh-action`
-- Путь на сервере: `/opt/factory-platform`
+Две изолированные среды на одном сервере (подробно — `docs/environments.md`):
+
+| Среда | Ветка | Порт | Проект docker | Контейнеры | Compose |
+|-------|-------|------|---------------|-----------|---------|
+| **PROD** (боевая, сотрудники) | `main` | `:8080` | `erp` | `erp-*` | `docker-compose.yml` |
+| **STAGING** (тесты Claude/Антона) | `develop` | `:8081` | `erp-staging` | `erp-staging-*` | `docker-compose.staging.yml` |
+
+- Раздельные тома/БД/redis/сеть → эксперименты staging НЕ трогают данные prod.
+- Пуш в `develop` → автодеплой **staging** (не может задеть prod). Пуш в `main` →
+  деплой **prod**, ТОЛЬКО по явному подтверждению Антона.
+- ⚠️ Боевой ящик `pmkpark@mail.ru` — ТОЛЬКО prod. Staging НИКОГДА не подключается к нему;
+  после клона ящик в staging автоматически выключается. Тест-почта staging — отдельный ящик.
+- Копировать prod→staging для отладки: `bash services/erp/scripts/clone-prod-to-staging.sh`.
+- Деплой через SSH (`appleboy/ssh-action`), `.github/workflows/deploy-erp.yml` (ветка-зависимый).
+- Путь на сервере: `/opt/factory-platform`. Доступ Claude по ключу (`ssh factory`).
 
 ## Версии frappe/erpnext (критично)
 
