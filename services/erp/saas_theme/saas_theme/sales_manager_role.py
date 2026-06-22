@@ -23,6 +23,8 @@ import frappe
 from frappe.permissions import add_permission, update_permission_property
 
 ROLE = "Менеджер по продажам"
+SHARED_MAILBOX = "PMK Park входящие (тест)"   # общий ящик отдела продаж
+USER_LANG = "ru"
 
 # read + create + write (delete=0, if_owner=0) — работа с записями всех менеджеров
 WRITE_DOCTYPES = [
@@ -164,13 +166,43 @@ def create_user(email, first_name="Менеджер", last_name="", send_welcome
         created = True
     if ROLE not in {r.role for r in u.roles}:
         u.add_roles(ROLE)
+    # язык = ru → применяются кастомные переводы (сборник в Translation DocType под кодом ru)
+    u.language = USER_LANG
+    # общий ящик отдела продаж → вкладка «Электронная почта» (иначе ошибка inbox)
+    _link_mailbox(u)
+    u.save(ignore_permissions=True)
     # подстраховка: убедиться, что НЕТ привилегированных ролей
     forbidden = {"System Manager", "Accounts Manager", "Accounts User", "Stock Manager",
                  "Stock User", "Manufacturing Manager", "Manufacturing User", "Purchase Manager"}
     has_forbidden = forbidden & {r.role for r in frappe.get_doc("User", email).roles}
     frappe.db.commit()
-    return {"user": email, "created": created, "roles": [r.role for r in frappe.get_doc("User", email).roles],
+    return {"user": email, "created": created, "language": USER_LANG,
+            "roles": [r.role for r in frappe.get_doc("User", email).roles],
             "forbidden_present": list(has_forbidden)}
+
+
+def _link_mailbox(user_doc):
+    """Привязать общий ящик к User Email (если есть аккаунт и ещё не привязан)."""
+    if not frappe.db.exists("Email Account", SHARED_MAILBOX):
+        return False
+    have = {r.email_account for r in (user_doc.user_emails or [])}
+    if SHARED_MAILBOX not in have:
+        user_doc.append("user_emails", {"email_account": SHARED_MAILBOX})
+        return True
+    return False
+
+
+@frappe.whitelist()
+def fix_manager_account(email):
+    """Доустановить существующему менеджеру: язык ru + привязка общего ящика + сброс кэша."""
+    u = frappe.get_doc("User", email)
+    u.language = USER_LANG
+    linked = _link_mailbox(u)
+    u.save(ignore_permissions=True)
+    frappe.db.commit()
+    frappe.clear_cache(user=email)
+    return {"user": email, "language": USER_LANG, "mailbox_linked": linked,
+            "mailboxes": [r.email_account for r in frappe.get_doc("User", email).user_emails]}
 
 
 @frappe.whitelist()
