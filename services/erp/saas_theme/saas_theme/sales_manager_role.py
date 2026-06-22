@@ -137,15 +137,40 @@ def restrict_workspaces():
     frappe.db.commit()
 
 
-def _add_has_role(workspace, role):
-    """Прямая вставка строки Has Role для воркспейса (в обход хрупкой валидации Shortcut)."""
-    if frappe.db.exists("Has Role", {"parenttype": "Workspace", "parent": workspace,
+def _add_has_role(parent, role, parenttype="Workspace"):
+    """Прямая SQL-вставка строки Has Role. Через ORM нельзя: Has Role.before_insert
+    проверяет дубли по parent+role БЕЗ учёта parenttype → ложно падает, если такой
+    parent+role уже есть у другого типа (напр. одноимённый Workspace)."""
+    if frappe.db.exists("Has Role", {"parenttype": parenttype, "parent": parent,
                                      "parentfield": "roles", "role": role}):
         return
-    frappe.get_doc({
-        "doctype": "Has Role", "parenttype": "Workspace", "parent": workspace,
-        "parentfield": "roles", "role": role,
-    }).insert(ignore_permissions=True)
+    frappe.db.sql(
+        """INSERT INTO `tabHas Role`
+           (name, parent, parenttype, parentfield, role, creation, modified, owner, modified_by)
+           VALUES (%s, %s, %s, 'roles', %s, now(), now(), 'Administrator', 'Administrator')""",
+        (frappe.generate_hash(length=12), parent, parenttype, role))
+
+
+def gate_desktop_icons():
+    """Верхнее меню темы (saas_theme.js) строится из frappe.boot.desktop_icons, а их
+    видимость решает Desktop Icon.is_permitted → роли на самой ИКОНКЕ (не на воркспейсе).
+    Поэтому нежелательные модули (напр. Selling — не скрыт, т.к. Customer в его модуле)
+    гейтим ролью на Desktop Icon. CRM/Калькуляторы оставляем открытыми."""
+    icons = frappe.get_all("Desktop Icon",
+                           filters={"link_type": "Workspace Sidebar"},
+                           fields=["name", "label", "hidden"])
+    for ic in icons:
+        if ic.label in ALLOWED_WORKSPACES:
+            continue
+        roles_now = set(frappe.get_all(
+            "Has Role", filters={"parenttype": "Desktop Icon", "parent": ic.name}, pluck="role"))
+        if not roles_now:
+            _add_has_role(ic.name, GATE_ROLE, parenttype="Desktop Icon")
+            print(f"  ✓ иконка меню {ic.label}: гейт {GATE_ROLE} (скрыта от менеджера)")
+        else:
+            print(f"  = иконка меню {ic.label}: уже ограничена ({roles_now})")
+    frappe.db.commit()
+    frappe.clear_cache()  # сбросить кэш desktop_icons, чтобы гейт подхватился
 
 
 @frappe.whitelist()
@@ -224,6 +249,23 @@ def reset_link(email):
 
 
 @frappe.whitelist()
+def boot_nav(user):
+    """Диагностика верхнего меню темы: что в desktop_icons (Workspace Sidebar) и
+    workspace_sidebar_item под пользователем (ровно то, что фильтрует saas_theme.js)."""
+    frappe.set_user(user)
+    try:
+        from frappe.boot import get_bootinfo
+        b = get_bootinfo()
+        di = b.get("desktop_icons") or []
+        icons = [{"label": i.get("label"), "hidden": i.get("hidden")}
+                 for i in di if i.get("link_type") == "Workspace Sidebar"]
+        wsi = b.get("workspace_sidebar_item") or {}
+        return {"sidebar_icons": icons, "wsi_keys": sorted(wsi.keys())}
+    finally:
+        frappe.set_user("Administrator")
+
+
+@frappe.whitelist()
 def check_access(user):
     """Проверка ПОД пользователем (set_user): роли, права (delete должен быть 0),
     видимые воркспейсы. Тестирует движок прав без логина/пароля."""
@@ -263,6 +305,8 @@ def execute():
     enable_track_changes()
     print("— видимость воркспейсов (менеджер видит только CRM + Калькуляторы) —")
     restrict_workspaces()
+    print("— гейт иконок верхнего меню темы (Desktop Icon) —")
+    gate_desktop_icons()
     frappe.db.commit()
     frappe.clear_cache()  # без сброса кэша новые roles воркспейсов не подхватятся
     print("=== Готово ===")
