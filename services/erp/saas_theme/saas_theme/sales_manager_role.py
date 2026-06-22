@@ -174,6 +174,24 @@ def create_user(email, first_name="Менеджер", last_name="", send_welcome
 
 
 @frappe.whitelist()
+def reset_link(email):
+    """Свежая прямая ссылка задания пароля (без почты) — отдать админу.
+    Очищает старый ключ/new_password, ставит новый ключ, строит /update-password URL."""
+    from frappe.utils import now_datetime, get_url
+    from frappe.utils.data import sha256_hash
+    # Frappe хранит SHA256-хеш ключа (user.py), в URL — плейн-текст. Иначе update_password = 410.
+    key = frappe.generate_hash()
+    frappe.db.set_value("User", email, {
+        "reset_password_key": sha256_hash(key),
+        "last_reset_password_key_generated_on": now_datetime(),
+        "new_password": None,
+        "enabled": 1,
+    }, update_modified=False)
+    frappe.db.commit()
+    return {"user": email, "url": get_url(f"/update-password?key={key}")}
+
+
+@frappe.whitelist()
 def check_access(user):
     """Проверка ПОД пользователем (set_user): роли, права (delete должен быть 0),
     видимые воркспейсы. Тестирует движок прав без логина/пароля."""

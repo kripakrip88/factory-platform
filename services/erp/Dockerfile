@@ -44,9 +44,12 @@ done; exit 0
 
 # Редирект корня на /desk: "/" для залогиненных отдаёт легаси-лаунчер модулей,
 # hooks home_page его не перекрывает (Desk-страница рендерится в обход website-роутов).
+# ВАЖНО: редиректим ТОЛЬКО GET. Иначе POST / (легаси frappe.call с cmd, который шлёт
+# страница /update-password и др. web-формы) ловит 302 → форма не работает. POST/прочее
+# уходит на backend (@webserver).
 RUN if [ -f /templates/nginx/frappe.conf.template ]; then \
-        sed -i '/root \/home\/frappe\/frappe-bench\/sites;/a\\n\tlocation = / {\n\t\treturn 302 /desk;\n\t}' \
+        sed -i '/root \/home\/frappe\/frappe-bench\/sites;/a\\n\tlocation = / {\n\t\tif ($request_method = GET) { return 302 /desk; }\n\t\ttry_files /nonexistent @webserver;\n\t}' \
             /templates/nginx/frappe.conf.template && \
-        echo "Patched: / -> /desk redirect"; \
+        echo "Patched: / -> /desk redirect (GET only)"; \
     fi
 USER frappe
