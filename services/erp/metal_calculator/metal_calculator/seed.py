@@ -6,7 +6,22 @@ import re
 
 import frappe
 
-from metal_calculator.seed_data import GRADES, PROFILES, SHEETS
+from metal_calculator.seed_data import GRADES, PROFILES, SHEETS, VGP
+
+# Вид круглой трубы по ГОСТ: для подвыбора в калькуляторе.
+_PIPE_KIND_BY_GOST = {
+	"ГОСТ 8732-78": "Бесшовная",
+	"ГОСТ 8734-75": "Бесшовная",
+	"ГОСТ 10704-91": "Электросварная",
+	"ГОСТ 10705-80": "Электросварная",
+	"ГОСТ 3262-75": "ВГП",
+}
+
+
+def _pipe_kind(profile_type, gost):
+	if profile_type != "Труба круглая":
+		return None
+	return _PIPE_KIND_BY_GOST.get((gost or "").strip())
 
 # Разделители размеров в типоразмере: латинская x, кириллическая х, ×
 _DIM_SPLIT = re.compile(r"[x×х]", re.IGNORECASE)
@@ -51,6 +66,8 @@ def seed_all():
 	"""Залить все справочники. Возвращает счётчики созданного."""
 	created = {
 		"Metal Profile": _seed_profiles(),
+		"Metal Profile (ВГП)": _seed_vgp(),
+		"pipe_kind backfill": _backfill_pipe_kind(),
 		"Metal Sheet Grade": _seed_sheets(),
 		"Steel Grade": _seed_grades(),
 	}
@@ -69,6 +86,7 @@ def _seed_profiles():
 			{
 				"doctype": "Metal Profile",
 				"profile_type": profile_type,
+				"pipe_kind": _pipe_kind(profile_type, gost),
 				"gost": gost,
 				"size_label": size_label,
 				"mass_per_meter": mass,
@@ -79,6 +97,51 @@ def _seed_profiles():
 		).insert(ignore_permissions=True)
 		n += 1
 	return n
+
+
+def _seed_vgp():
+	"""ВГП (ГОСТ 3262): наружный фиксирован для Ду, серии по стенке. size_label с Ду."""
+	n = 0
+	for du, outer, wall, mass in VGP:
+		size_label = f"Ду{du} ({fmtnum(outer)}×{fmtnum(wall)})"
+		name = f"Труба круглая-{size_label}"
+		if frappe.db.exists("Metal Profile", name):
+			continue
+		frappe.get_doc(
+			{
+				"doctype": "Metal Profile",
+				"profile_type": "Труба круглая",
+				"pipe_kind": "ВГП",
+				"gost": "ГОСТ 3262-75",
+				"size_label": size_label,
+				"mass_per_meter": mass,
+				"wall_mm": wall,
+				"height_mm": outer,   # наружный
+				"width_mm": None,
+			}
+		).insert(ignore_permissions=True)
+		n += 1
+	return n
+
+
+def _backfill_pipe_kind():
+	"""Проставить pipe_kind существующим круглым трубам по ГОСТу (бесшовная/эл.сварная)."""
+	n = 0
+	for gost, kind in _PIPE_KIND_BY_GOST.items():
+		if kind == "ВГП":
+			continue
+		n += frappe.db.sql(
+			"""UPDATE `tabMetal Profile` SET pipe_kind=%s
+			   WHERE profile_type='Труба круглая' AND gost=%s
+			   AND (pipe_kind IS NULL OR pipe_kind='')""",
+			(kind, gost),
+		)
+	return n
+
+
+def fmtnum(v):
+	"""21.0→'21', 21.3→'21.3' (для аккуратного size_label)."""
+	return str(int(v)) if float(v).is_integer() else str(v)
 
 
 def _seed_sheets():

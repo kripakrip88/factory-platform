@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "profile_type",
+  "pipe_kind",
   "size_label",
   "height_mm",
   "width_mm",
@@ -23,6 +24,14 @@
    "label": "Тип сортамента",
    "options": "Арматура\nДвутавр\nШвеллер\nУголок равнополочный\nУголок неравнополочный\nТруба круглая\nТруба профильная квадратная\nТруба профильная прямоугольная\nКруг\nКвадрат\nШестигранник",
    "reqd": 1
+  },
+  {
+   "fieldname": "pipe_kind",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Вид трубы (круглые)",
+   "options": "\nБесшовная\nЭлектросварная\nВГП"
   },
   {
    "fieldname": "size_label",

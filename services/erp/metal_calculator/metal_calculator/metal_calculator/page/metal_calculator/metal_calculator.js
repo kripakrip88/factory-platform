@@ -51,6 +51,7 @@ class MetalCalculator {
 		this.spec = [];
 		this.current_type = "Двутавр";
 		this.profiles = [];
+		this.pipe_kind = "Электросварная"; // вид круглой трубы по умолчанию
 		this.selected_ref = null;
 		this.inject_styles();
 		this.render();
@@ -232,19 +233,37 @@ class MetalCalculator {
 		frappe.db
 			.get_list("Metal Profile", {
 				filters: { profile_type: type },
-				fields: ["name", "size_label", "height_mm", "width_mm", "wall_mm", "mass_per_meter"],
+				fields: ["name", "size_label", "height_mm", "width_mm", "wall_mm", "mass_per_meter", "pipe_kind"],
 				limit: 0,
 				order_by: "height_mm asc, width_mm asc, wall_mm asc",
 			})
 			.then((rows) => {
 				if (this.current_type !== type) return; // успели переключить
 				this.profiles = rows || [];
+				// дефолтный вид круглой трубы (Бесшовная/Электросварная/ВГП)
+				const kinds = this._pipe_kinds();
+				if (kinds.length && !kinds.includes(this.pipe_kind)) {
+					this.pipe_kind = kinds.includes("Электросварная") ? "Электросварная" : kinds[0];
+				}
 				this.build_cascade();
 			});
 	}
 
+	_pipe_kinds() {
+		// уникальные виды трубы (Бесшовная/Электросварная/ВГП) в порядке предпочтения
+		const have = new Set(this.profiles.map((p) => p.pipe_kind).filter(Boolean));
+		return ["Бесшовная", "Электросварная", "ВГП"].filter((k) => have.has(k));
+	}
+
+	_display_profiles() {
+		// для круглой трубы — только выбранный вид; иначе все записи типа
+		const kinds = this._pipe_kinds();
+		if (kinds.length) return this.profiles.filter((p) => (p.pipe_kind || "") === this.pipe_kind);
+		return this.profiles;
+	}
+
 	_mode() {
-		const r = this.profiles;
+		const r = this._display_profiles();
 		const anyWall = r.some((x) => x.wall_mm);
 		const anyWidth = r.some((x) => x.width_mm);
 		const anyHeight = r.some((x) => x.height_mm);
@@ -263,9 +282,12 @@ class MetalCalculator {
 			if (!map.has(key)) { map.set(key, { key, label, records: [] }); order.push(key); }
 			map.get(key).records.push(rec);
 		};
-		this.profiles.forEach((rec) => {
+		this._display_profiles().forEach((rec) => {
 			if (mode === "section_wall") add(`${rec.height_mm}x${rec.width_mm}`, `${fmtN(rec.height_mm)}×${fmtN(rec.width_mm)}`, rec);
-			else if (mode === "dia_wall") add(String(rec.height_mm), `⌀${fmtN(rec.height_mm)}`, rec);
+			else if (mode === "dia_wall") {
+				const du = rec.pipe_kind === "ВГП" ? (String(rec.size_label).match(/Ду\d+/) || [])[0] : null;
+				add(String(rec.height_mm), du ? `${du} (⌀${fmtN(rec.height_mm)})` : `⌀${fmtN(rec.height_mm)}`, rec);
+			}
 			else if (mode === "numseries") { const m = (rec.size_label || "").match(NUM_RE); const num = m ? m[1] : rec.size_label; add(num, num, rec); }
 			else add(rec.name, rec.size_label, rec); // single: каждая запись — своя
 		});
@@ -277,8 +299,8 @@ class MetalCalculator {
 
 	_leaf_label(mode, rec) {
 		// Подпись второго уровня (конкретная запись внутри группы).
-		const bes = (rec.size_label || "").includes("бесш") ? " (бесш)" : "";
-		if (mode === "section_wall" || mode === "dia_wall") return `${fmtN(rec.wall_mm)} мм${bes}`;
+		// Вид трубы теперь отдельным подвыбором → суффикс «бесш» не нужен.
+		if (mode === "section_wall" || mode === "dia_wall") return `${fmtN(rec.wall_mm)} мм`;
 		if (mode === "numseries") { const m = (rec.size_label || "").match(NUM_RE); return (m && m[2]) || rec.size_label; }
 		return rec.size_label;
 	}
@@ -290,15 +312,43 @@ class MetalCalculator {
 		return rec.name;
 	}
 
+	_kind_selector_html() {
+		// Подвыбор вида круглой трубы (Бесшовная/Электросварная/ВГП). "" если не трубы.
+		const kinds = this._pipe_kinds();
+		if (!kinds.length) return "";
+		const btns = kinds.map((k) =>
+			`<button type="button" class="btn btn-sm mc-kind ${k === this.pipe_kind ? "btn-primary" : "btn-default"}" data-kind="${frappe.utils.escape_html(k)}">${frappe.utils.escape_html(k)}</button>`
+		).join(" ");
+		return `<div class="mc-kind-row" style="flex:0 0 100%"><label>${__("Вид трубы")}</label><div style="display:flex;gap:6px;flex-wrap:wrap">${btns}</div></div>`;
+	}
+
+	_bind_kind_selector() {
+		const me = this;
+		this.page.body.find(".mc-kind").off("click").on("click", function () {
+			const k = $(this).data("kind");
+			if (k === me.pipe_kind) return;
+			me.pipe_kind = k;
+			me.selected_ref = null;
+			me.build_cascade();
+		});
+	}
+
 	build_cascade(preselect) {
+		// при редактировании — выставить вид трубы по выбранной записи
+		if (preselect) {
+			const pr = this.profiles.find((r) => r.name === preselect);
+			if (pr && pr.pipe_kind) this.pipe_kind = pr.pipe_kind;
+		}
 		const { mode, groups } = this._groups();
 		const $c = this.page.body.find(".mc-cascade");
-		if (!groups.length) { $c.html(`<div class="text-muted">${__("Нет данных")}</div>`); this.render_picked(); return; }
+		const kindHtml = this._kind_selector_html();
+		if (!groups.length) { $c.html(`${kindHtml}<div class="text-muted">${__("Нет данных")}</div>`); this._bind_kind_selector(); this.render_picked(); return; }
 		const preRec = preselect && this.profiles.find((r) => r.name === preselect);
 
 		if (mode === "single") {
 			const opts = groups.map((g) => `<option value="${frappe.utils.escape_html(g.records[0].name)}">${frappe.utils.escape_html(g.label)}</option>`).join("");
-			$c.html(`<div><label>${__("Типоразмер")}</label><select class="form-control mc-c1">${opts}</select></div>`);
+			$c.html(`${kindHtml}<div><label>${__("Типоразмер")}</label><select class="form-control mc-c1">${opts}</select></div>`);
+			this._bind_kind_selector();
 			const $c1 = $c.find(".mc-c1");
 			if (preRec) $c1.val(preRec.name);
 			const pick = () => { this.selected_ref = $c1.val(); this.render_picked(); };
@@ -310,9 +360,11 @@ class MetalCalculator {
 		const lvl2 = mode === "numseries" ? __("Серия") : __("Стенка / толщина");
 		const o1 = groups.map((g) => `<option value="${frappe.utils.escape_html(g.key)}">${frappe.utils.escape_html(g.label)}</option>`).join("");
 		$c.html(`
+			${kindHtml}
 			<div><label>${lvl1}</label><select class="form-control mc-c1">${o1}</select></div>
 			<div><label>${lvl2}</label><select class="form-control mc-c2"></select></div>
 		`);
+		this._bind_kind_selector();
 		const $c1 = $c.find(".mc-c1"), $c2 = $c.find(".mc-c2");
 		const byKey = {}; groups.forEach((g) => (byKey[g.key] = g));
 		if (preRec) $c1.val(this._group_key_of(mode, preRec));
@@ -333,7 +385,8 @@ class MetalCalculator {
 		const rec = this.profiles.find((r) => r.name === this.selected_ref);
 		const $p = this.page.body.find(".mc-picked");
 		if (!rec) { $p.empty(); return; }
-		$p.html(`${__("Выбрано")}: <b>${frappe.utils.escape_html(rec.size_label)}</b> — ${fmtN(rec.mass_per_meter)} ${__("кг/м")} <span class="text-muted">(${frappe.utils.escape_html(rec.name)})</span>`);
+		const label = (rec.size_label || "").replace(" бесш", "");
+		$p.html(`${__("Выбрано")}: <b>${frappe.utils.escape_html(label)}</b> — ${fmtN(rec.mass_per_meter)} ${__("кг/м")} <span class="text-muted">(${frappe.utils.escape_html(rec.name)})</span>`);
 	}
 
 	on_search(q) {
