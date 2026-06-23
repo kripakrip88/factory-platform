@@ -130,12 +130,15 @@ def _backfill_pipe_kind():
 	for gost, kind in _PIPE_KIND_BY_GOST.items():
 		if kind == "ВГП":
 			continue
-		n += frappe.db.sql(
-			"""UPDATE `tabMetal Profile` SET pipe_kind=%s
+		names = frappe.db.sql(
+			"""SELECT name FROM `tabMetal Profile`
 			   WHERE profile_type='Труба круглая' AND gost=%s
 			   AND (pipe_kind IS NULL OR pipe_kind='')""",
-			(kind, gost),
+			(gost,),
 		)
+		for (nm,) in names:
+			frappe.db.set_value("Metal Profile", nm, "pipe_kind", kind, update_modified=False)
+			n += 1
 	return n
 
 
