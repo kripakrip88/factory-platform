@@ -222,11 +222,14 @@ function init_dobor(page) {
 	inlineEdit.type = "number";
 	inlineEdit.style.cssText = "position:absolute;display:none;width:62px;font-size:12px;padding:3px 5px;border:1.5px solid #5b8def;border-radius:6px;background:#1a1f29;color:#e6ebf2;z-index:20;box-shadow:0 4px 12px rgba(0,0,0,.4)";
 	canvasWrap.appendChild(inlineEdit);
-	function openEdit(kind, idx, sx, sy, val) { editKind = kind; editIdx = idx; inlineEdit.value = val; inlineEdit.style.left = (sx - 31) + "px"; inlineEdit.style.top = (sy - 12) + "px"; inlineEdit.style.display = "block"; setTimeout(() => { inlineEdit.focus(); inlineEdit.select(); }, 0); }
+	function openEdit(kind, idx, sx, sy, val) { if (editKind != null) applyEdit(); editKind = kind; editIdx = idx; inlineEdit.value = val; inlineEdit.style.left = (sx - 31) + "px"; inlineEdit.style.top = (sy - 12) + "px"; inlineEdit.style.display = "block"; setTimeout(() => { inlineEdit.focus(); inlineEdit.select(); }, 0); }
 	function applyEdit() { if (editKind == null) return; if (editKind === "len") { segs[editIdx].len = Math.max(1, parseFloat(inlineEdit.value) || segs[editIdx].len); } else if (editKind === "bend") { applyFlangeAngle(editIdx, parseFloat(inlineEdit.value) || 0); } inlineEdit.style.display = "none"; editKind = null; render(); }
 	inlineEdit.addEventListener("keydown", (e) => { if (e.key === "Enter") applyEdit(); if (e.key === "Escape") { inlineEdit.style.display = "none"; editKind = null; } });
 	inlineEdit.addEventListener("blur", applyEdit);
 	function labelScreenPos(el) { const r = el.getBoundingClientRect(), wr = canvasWrap.getBoundingClientRect(); return { x: r.left - wr.left + r.width / 2, y: r.top - wr.top + r.height / 2 }; }
+	// Дожать незакоммиченную правку перед сохранением: открытый инлайн-редактор + активное поле
+	// (чтобы значение применилось даже если пользователь не нажал Enter).
+	function flushPendingEdits() { if (editKind != null) applyEdit(); const a = document.activeElement; if (a && a.tagName === "INPUT" && a !== inlineEdit) a.blur(); }
 
 	// ── 4 круглые кнопки в углу холста ──
 	function mkKnob(top, txt, title) { const k = document.createElement("div"); k.className = "knob"; k.style.top = top + "px"; k.style.right = "8px"; k.style.fontSize = "17px"; k.textContent = txt; k.title = title; canvasWrap.appendChild(k); return k; }
@@ -481,7 +484,7 @@ function init_dobor(page) {
 		alignMinBox();
 	});
 	G("db_tplAdd").onclick = () => {
-		if (segs.length < 1) return; const name = (G("db_tplName").value || "").trim() || ("Шаблон " + (templates.length + 1));
+		if (segs.length < 1) return; flushPendingEdits(); const name = (G("db_tplName").value || "").trim() || ("Шаблон " + (templates.length + 1));
 		frappe.call({ method: "metal_calculator.dobor.api.save_template", args: { profile_name: name, snapshot: JSON.stringify(snapshot()) }, callback: () => { G("db_tplName").value = ""; refreshTemplates(); frappe.show_alert({ message: __("Шаблон сохранён"), indicator: "green" }); } });
 	};
 	G("db_tplDel").onclick = () => { const i = G("db_tplSel").value; if (i === "") return; frappe.call({ method: "metal_calculator.dobor.api.delete_template", args: { name: templates[+i].name }, callback: () => refreshTemplates() }); };
@@ -489,6 +492,13 @@ function init_dobor(page) {
 	// ── заказ доборок (Dobor Order): позиции копятся в памяти, сохраняются целиком ──
 	let order = [];          // позиции текущего заказа (в памяти)
 	let orderName = "";      // имя редактируемого Dobor Order ("" = новый)
+	let editingIndex = -1;   // какая позиция заказа открыта на редактирование (-1 = новая)
+	// Кнопка «В заказ» переключается: добавить новую ↔ обновить открытую позицию.
+	function setSaveMode() {
+		const b = G("db_save"); if (!b) return;
+		if (editingIndex >= 0) { b.textContent = "💾 Обновить позицию " + (editingIndex + 1); b.style.borderColor = "#c9701e"; b.style.color = "#ffb066"; }
+		else { b.textContent = "＋ В заказ"; b.style.borderColor = "#2f9e6e"; b.style.color = "#5fe0a8"; }
+	}
 
 	// расчёт чисел позиции на клиенте (тот же, что серверный compute — для превью)
 	function itemCalc(snp, thick, plank, qty) {
@@ -537,21 +547,27 @@ function init_dobor(page) {
 	// «В заказ» — добавить текущую доборку в список (в памяти)
 	G("db_save").onclick = () => {
 		if (segs.length < 1) { frappe.show_alert({ message: __("Сначала нарисуй профиль"), indicator: "orange" }); return; }
+		flushPendingEdits();
 		const snp = snapshot();
 		const thick = parseFloat(G("db_thick").value), plank = parseFloat(G("db_len").value) || 2500, qty = parseInt(G("db_qty").value) || 1;
 		const c = itemCalc(snp, thick, plank, qty);
-		order.push({ title: (G("db_color").value || "").split("|")[0] + " доборка", coating: (G("db_color").value || "").split("|")[0], thickness: thick, plank_length: plank, qty, snapshot: snp, developed_width: c.dev, weight_total: c.weight_total });
-		renderOrder();
-		frappe.show_alert({ message: __("Добавлено в заказ"), indicator: "green" });
+		const item = { title: (G("db_color").value || "").split("|")[0] + " доборка", coating: (G("db_color").value || "").split("|")[0], thickness: thick, plank_length: plank, qty, snapshot: snp, developed_width: c.dev, weight_total: c.weight_total };
+		if (editingIndex >= 0 && editingIndex < order.length) {
+			order[editingIndex] = item; renderOrder();
+			frappe.show_alert({ message: __("Позиция {0} обновлена", [editingIndex + 1]), indicator: "green" });
+		} else {
+			order.push(item); renderOrder();
+			frappe.show_alert({ message: __("Добавлено в заказ"), indicator: "green" });
+		}
 	};
 	// «Новая доборка» — очистить холст (заказ не трогаем)
-	G("db_new").onclick = () => { segs = []; start = { x: 180, y: 300 }; started = false; hoverIdx = -1; hemLeft = hemRight = lockOn = false; hemLeftDir = 1; hemRightDir = -1; G("db_hemL").classList.remove("on"); G("db_hemR").classList.remove("on"); G("db_lock").classList.remove("on"); G("db_comment").value = ""; render(); };
+	G("db_new").onclick = () => { segs = []; start = { x: 180, y: 300 }; started = false; hoverIdx = -1; hemLeft = hemRight = lockOn = false; hemLeftDir = 1; hemRightDir = -1; G("db_hemL").classList.remove("on"); G("db_hemR").classList.remove("on"); G("db_lock").classList.remove("on"); G("db_comment").value = ""; editingIndex = -1; setSaveMode(); render(); };
 
 	// убрать позицию / открыть в конструкторе
 	G("db_savedList").addEventListener("click", (e) => {
 		const t = e.target;
-		if (t.dataset.rem != null) { order.splice(+t.dataset.rem, 1); renderOrder(); }
-		if (t.dataset.load != null) { const it = order[+t.dataset.load]; if (it && it.snapshot && it.snapshot.segs) { loadSnap(it.snapshot); G("db_thick").value = it.thickness; G("db_len").value = it.plank_length; G("db_qty").value = it.qty; updateResults(); } }
+		if (t.dataset.rem != null) { order.splice(+t.dataset.rem, 1); editingIndex = -1; setSaveMode(); renderOrder(); }
+		if (t.dataset.load != null) { const it = order[+t.dataset.load]; if (it && it.snapshot && it.snapshot.segs) { loadSnap(it.snapshot); G("db_thick").value = it.thickness; G("db_len").value = it.plank_length; G("db_qty").value = it.qty; editingIndex = +t.dataset.load; setSaveMode(); updateResults(); frappe.show_alert({ message: __("Позиция {0} открыта — правь и жми «Обновить»", [editingIndex + 1]), indicator: "blue" }); } }
 	});
 
 	// «Сохранить заказ» — записать весь Dobor Order
@@ -568,7 +584,7 @@ function init_dobor(page) {
 		window.open("/api/method/metal_calculator.dobor.report.render_pdf?order_name=" + encodeURIComponent(orderName), "_blank");
 	};
 	// «Новый» — очистить заказ
-	G("db_orderNew").onclick = () => { order = []; orderName = ""; G("db_customer").value = ""; G("db_orderSel").value = ""; renderOrder(); };
+	G("db_orderNew").onclick = () => { order = []; orderName = ""; editingIndex = -1; setSaveMode(); G("db_customer").value = ""; G("db_orderSel").value = ""; renderOrder(); };
 
 	// выбор существующего заказа → загрузить позиции
 	G("db_orderSel").addEventListener("change", () => {
@@ -578,7 +594,7 @@ function init_dobor(page) {
 			const o = r.message; if (!o) return;
 			orderName = o.name; G("db_customer").value = o.customer || "";
 			order = (o.items || []).map((it) => { let snp = {}; try { snp = JSON.parse(it.profile_snapshot_json || "{}"); } catch (e) {} return { title: it.title, coating: it.coating, thickness: it.thickness, plank_length: it.plank_length, qty: it.qty, snapshot: snp, developed_width: it.developed_width, weight_total: it.weight_total }; });
-			renderOrder();
+			editingIndex = -1; setSaveMode(); renderOrder();
 		} });
 	});
 
