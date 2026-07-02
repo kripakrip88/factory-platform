@@ -35,6 +35,17 @@ jobs:
             # и прерывать up ДО пересоздания nginx — поэтому не блокируем (|| true)…
             docker compose -f infra/docker-compose.yml --env-file .env up -d --no-build \
               || echo "⚠️ up -d частично (напр. telegram-bot без образа) — продолжаем"
+            # ГЕЙТ: валидируем новый nginx.conf (с сертами) в одноразовом контейнере
+            # ДО пересоздания живого nginx — битый конфиг не должен уронить n8n/прод.
+            VOLC=$(docker volume ls --format '{{.Name}}' | grep -E 'certbot_conf$' | head -1 || true)
+            VOLW=$(docker volume ls --format '{{.Name}}' | grep -E 'certbot_www$' | head -1 || true)
+            docker run --rm \
+              -v "$(pwd)/infra/nginx/nginx.conf":/etc/nginx/nginx.conf:ro \
+              ${VOLC:+-v $VOLC:/etc/letsencrypt:ro} \
+              ${VOLW:+-v $VOLW:/var/www/certbot:ro} \
+              nginx:alpine nginx -t \
+              || { echo "❌ nginx -t FAILED — конфиг битый, живой nginx НЕ трогаем (n8n/прод целы)"; exit 1; }
+
             # …и ЯВНО форс-пересоздаём nginx, чтобы он гарантированно подхватил
             # актуальный nginx.conf (иначе serve старый конфиг → ACME 404 → серты не выпустятся).
             docker compose -f infra/docker-compose.yml --env-file .env up -d --no-build --force-recreate nginx
