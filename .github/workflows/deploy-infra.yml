@@ -25,4 +25,15 @@ jobs:
             git pull origin ${{ github.ref_name }}
             grep -q '^N8N_SECURE_COOKIE=' .env || echo 'N8N_SECURE_COOKIE=false' >> .env
             docker compose -f infra/docker-compose.yml --env-file .env up -d --no-build
+            sleep 5
+
+            # Выпуск/обновление Let's Encrypt сертов (идемпотентно, НЕ фейлит деплой).
+            # Требует: nginx уже отдаёт /.well-known/acme-challenge/ (Фаза A) и DNS
+            # доменов резолвится на этот сервер. При проблеме — просто предупреждение,
+            # nginx продолжает работать по HTTP, серты выпустим повторным запуском.
+            if [ -f infra/scripts/issue-certs.sh ]; then
+              bash infra/scripts/issue-certs.sh \
+                || echo "⚠️ issue-certs не прошёл (нефатально) — проверь DNS/ACME, повтори деплой/dispatch"
+            fi
+
             curl -f http://localhost/health || exit 1

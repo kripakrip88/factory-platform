@@ -10,8 +10,8 @@ EMAIL="kripakrip88@gmail.com"
 DOMAINS=(erppark.ru www.erppark.ru d.erppark.ru n8n.erppark.ru)
 
 # Реальные имена томов (проект compose может быть не "infra").
-VOL_CONF=$(docker volume ls --format '{{.Name}}' | grep -E 'certbot_conf$' | head -1)
-VOL_WWW=$(docker volume ls --format '{{.Name}}' | grep -E 'certbot_www$' | head -1)
+VOL_CONF=$(docker volume ls --format '{{.Name}}' | grep -E 'certbot_conf$' | head -1 || true)
+VOL_WWW=$(docker volume ls --format '{{.Name}}' | grep -E 'certbot_www$' | head -1 || true)
 [ -n "$VOL_CONF" ] && [ -n "$VOL_WWW" ] || { echo "❌ ABORT: тома certbot_conf/certbot_www не найдены — сначала задеплой Фазу A."; exit 1; }
 echo "📦 Тома: conf=$VOL_CONF www=$VOL_WWW"
 
