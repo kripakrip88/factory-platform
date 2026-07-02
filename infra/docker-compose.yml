@@ -106,14 +106,25 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    # host-gateway → nginx достаёт ERP prod/staging по опубликованным портам хоста
+    # (host.docker.internal:8080 / :8081); n8n — по имени сервиса внутри сети.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./ssl:/etc/nginx/ssl:ro
+      - certbot_conf:/etc/letsencrypt:ro          # серты Let's Encrypt (Фаза B)
+      - certbot_www:/var/www/certbot:ro            # webroot для ACME http-01
     depends_on:
       - n8n
+
+  # Certbot-сервис (автопродление) добавляется Фазой B — вместе с включением TLS.
+  # Первичный выпуск сертов — scripts/issue-certs.sh (docker run --rm), Фаза 2.
 
 volumes:
   postgres_data:
   redis_data:
   n8n_data:
   ai_uploads:
+  certbot_conf:
+  certbot_www:
