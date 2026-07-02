@@ -22,7 +22,14 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             cd /opt/factory-platform
-            git pull origin ${{ github.ref_name }}
+
+            # fetch + reset --hard (как в deploy-erp): устойчиво к расхождению
+            # локального develop с origin. Прежний `git pull` падал на divergent
+            # branches и тихо оставлял старый код (Фаза A не применялась).
+            git fetch origin ${{ github.ref_name }}
+            git checkout -f ${{ github.ref_name }}
+            git reset --hard origin/${{ github.ref_name }}
+
             grep -q '^N8N_SECURE_COOKIE=' .env || echo 'N8N_SECURE_COOKIE=false' >> .env
             docker compose -f infra/docker-compose.yml --env-file .env up -d --no-build
             sleep 5
