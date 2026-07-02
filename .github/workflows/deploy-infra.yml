@@ -31,7 +31,13 @@ jobs:
             git reset --hard origin/${{ github.ref_name }}
 
             grep -q '^N8N_SECURE_COOKIE=' .env || echo 'N8N_SECURE_COOKIE=false' >> .env
-            docker compose -f infra/docker-compose.yml --env-file .env up -d --no-build
+            # Общий up. telegram-bot без собранного образа (--no-build) может падать
+            # и прерывать up ДО пересоздания nginx — поэтому не блокируем (|| true)…
+            docker compose -f infra/docker-compose.yml --env-file .env up -d --no-build \
+              || echo "⚠️ up -d частично (напр. telegram-bot без образа) — продолжаем"
+            # …и ЯВНО форс-пересоздаём nginx, чтобы он гарантированно подхватил
+            # актуальный nginx.conf (иначе serve старый конфиг → ACME 404 → серты не выпустятся).
+            docker compose -f infra/docker-compose.yml --env-file .env up -d --no-build --force-recreate nginx
             sleep 5
 
             # Выпуск/обновление Let's Encrypt сертов (идемпотентно, НЕ фейлит деплой).
