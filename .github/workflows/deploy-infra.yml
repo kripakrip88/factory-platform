@@ -39,14 +39,11 @@ jobs:
             # ДО пересоздания живого nginx — битый конфиг не должен уронить n8n/прод.
             VOLC=$(docker volume ls --format '{{.Name}}' | grep -E 'certbot_conf$' | head -1 || true)
             VOLW=$(docker volume ls --format '{{.Name}}' | grep -E 'certbot_www$' | head -1 || true)
-            # Валидатор должен быть в сети infra (резолв upstream n8n) и иметь
-            # host-gateway (резолв host.docker.internal для ERP-апстримов) —
-            # иначе nginx -t ложно падает на "host not found in upstream".
-            NET=$(docker inspect infra-nginx-1 --format '{{range $k,$v := .NetworkSettings.Networks}}{{$k}} {{end}}' 2>/dev/null | awk '{print $1}')
-            NET=${NET:-infra_default}
+            # n8n резолвится в рантайме (переменный proxy_pass), поэтому -t его не
+            # трогает. Нужно лишь чтобы резолвился host.docker.internal (ERP-апстримы,
+            # статичный proxy_pass) — даём его в /etc/hosts (значение для -t неважно).
             docker run --rm \
-              --network "$NET" \
-              --add-host host.docker.internal:host-gateway \
+              --add-host host.docker.internal:127.0.0.1 \
               -v "$(pwd)/infra/nginx/nginx.conf":/etc/nginx/nginx.conf:ro \
               ${VOLC:+-v $VOLC:/etc/letsencrypt:ro} \
               ${VOLW:+-v $VOLW:/var/www/certbot:ro} \
