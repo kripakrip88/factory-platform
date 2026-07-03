@@ -50,6 +50,18 @@ ALLOWED_WORKSPACES = ["CRM", "Калькуляторы"]
 # Роль-гейт для скрытых воркспейсов: их увидят только эти роли (не менеджер).
 GATE_ROLE = "System Manager"
 
+# Технические/неиспользуемые справочники со стандартным read=All (виден каждому
+# юзеру по прямому URL, напр. /app/salutation). Менеджеру не нужны — снимаем read
+# у роли All (System Manager/Administrator доступ сохраняют).
+# NB: "Module Def" НЕ включён — его read выдаётся на уровне фреймворка (core-метаданные
+# десктопа), Custom DocPerm его не ограничивает, а перезапись core-доктайпа рискованна.
+LOCK_FROM_ALL = [
+    "Salutation", "Gender", "Connected App",
+    "Token Cache", "Video", "Voice Call Settings", "Personal Data Download Request",
+]
+# Salutation/Gender — Link-поля на Контакте: прячем, чтобы пустая выпадашка не мешала.
+HIDE_ON_CONTACT = ["salutation", "gender"]
+
 
 def ensure_role():
     if not frappe.db.exists("Role", ROLE):
@@ -294,6 +306,35 @@ def check_access(user):
     return out
 
 
+def restrict_internal_doctypes():
+    """Снять read у роли All на технических справочниках (LOCK_FROM_ALL), чтобы
+    не-админ не открывал их по прямому URL. Механизм: Custom DocPerm перекрывает
+    стандартные права — копируем их (setup_custom_perms) и удаляем строку роли All.
+    Плюс прячем salutation/gender на Контакте. Идемпотентно."""
+    from frappe.permissions import setup_custom_perms
+    from frappe.custom.doctype.property_setter.property_setter import make_property_setter
+
+    for dt in LOCK_FROM_ALL:
+        if not frappe.db.exists("DocType", dt):
+            print(f"  ⚠ нет доктайпа: {dt}")
+            continue
+        setup_custom_perms(dt)  # копирует стандартные DocPerm в Custom DocPerm (если ещё нет)
+        if frappe.db.count("Custom DocPerm", {"parent": dt, "role": "All"}):
+            frappe.db.delete("Custom DocPerm", {"parent": dt, "role": "All"})
+            print(f"  ✓ {dt}: снят read у роли All")
+        else:
+            print(f"  = {dt}: у роли All прав уже нет")
+        frappe.clear_cache(doctype=dt)
+
+    contact_meta = frappe.get_meta("Contact")
+    for fn in HIDE_ON_CONTACT:
+        if contact_meta.get_field(fn):
+            make_property_setter("Contact", fn, "hidden", 1, "Check",
+                                 validate_fields_for_doctype=False)
+            print(f"  ✓ Contact.{fn}: скрыт")
+    frappe.db.commit()
+
+
 def execute():
     print(f"=== Роль «{ROLE}» ===")
     ensure_role()
@@ -307,6 +348,8 @@ def execute():
     restrict_workspaces()
     print("— гейт иконок верхнего меню темы (Desktop Icon) —")
     gate_desktop_icons()
+    print("— ограничение технических справочников (read=All → только админ) —")
+    restrict_internal_doctypes()
     frappe.db.commit()
     frappe.clear_cache()  # без сброса кэша новые roles воркспейсов не подхватятся
     print("=== Готово ===")
