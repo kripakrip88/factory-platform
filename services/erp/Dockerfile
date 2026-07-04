@@ -70,6 +70,9 @@ FROM node:20-bookworm-slim AS crm-build
 RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 RUN corepack enable || npm i -g yarn
+# Vite-сборка фронта CRM упирается в дефолтный V8-heap (~2G) → OOM (exit 134).
+# Система тянет (8G RAM + swap) — поднимаем лимит heap ноды.
+ENV NODE_OPTIONS=--max-old-space-size=4096
 WORKDIR /opt
 RUN git clone --depth 1 https://github.com/frappe/crm.git
 WORKDIR /opt/crm/frontend
