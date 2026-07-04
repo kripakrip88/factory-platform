@@ -3,7 +3,17 @@
 # которого нет ни в одном релизе frappe 16 → форма Work Order не рендерится.
 # v16.21.1 — последняя согласованная пара (erpnext 16.21.1 + frappe 16.20.0).
 # frappe и erpnext обновляются ТОЛЬКО парой; менять этот тег осознанно, с migrate.
-FROM frappe/erpnext:v16.21.1
+#
+# Multi-stage + build-arg WITH_CRM (по умолчанию nocrm):
+#   прод (docker-compose.yml) собирает БЕЗ CRM — путь тождественен прежнему.
+#   staging (docker-compose.staging.yml, WITH_CRM=crm) добавляет Frappe CRM.
+
+# WITH_CRM — ГЛОБАЛЬНЫЙ build-arg: объявлен ДО первого FROM, иначе не виден в
+# `FROM erp-${WITH_CRM}` ниже (BuildKit: UndefinedArgInFrom → пустое имя стадии).
+ARG WITH_CRM=nocrm
+
+# ─── base: ERP + saas_theme + metal_calculator (прод-путь, без изменений) ────────
+FROM frappe/erpnext:v16.21.1 AS base
 
 USER frappe
 
@@ -53,3 +63,29 @@ RUN if [ -f /templates/nginx/frappe.conf.template ]; then \
         echo "Patched: / -> /desk redirect (GET only)"; \
     fi
 USER frappe
+
+# ─── crm-build: сборка Vue-фронта Frappe CRM (node). Только для стадии erp-crm ──
+# При WITH_CRM=nocrm эта стадия НЕ является зависимостью финала → BuildKit её пропускает.
+FROM node:20-bookworm-slim AS crm-build
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+RUN corepack enable || npm i -g yarn
+WORKDIR /opt
+RUN git clone --depth 1 https://github.com/frappe/crm.git
+WORKDIR /opt/crm/frontend
+RUN yarn install && yarn build
+
+# ─── вариант без CRM (прод) ──────────────────────────────────────────────────────
+FROM base AS erp-nocrm
+
+# ─── вариант с CRM (staging) ─────────────────────────────────────────────────────
+FROM base AS erp-crm
+# Собранный фронт CRM уже внутри /opt/crm (public/frontend) — переносим аппу целиком.
+COPY --from=crm-build --chown=frappe:frappe /opt/crm /home/frappe/frappe-bench/apps/crm
+# Регистрируем как python-пакет (bench build --app НЕ запускаем: в рантайм-образе нет
+# node/esbuild; SPA уже собран yarn'ом на стадии crm-build).
+RUN cd /home/frappe/frappe-bench && \
+    uv pip install --quiet -e apps/crm --python env/bin/python
+
+# ─── финальный выбор по WITH_CRM (nocrm → прод, crm → staging) ───────────────────
+FROM erp-${WITH_CRM} AS final
