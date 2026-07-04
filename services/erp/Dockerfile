@@ -73,12 +73,17 @@ RUN corepack enable || npm i -g yarn
 # Vite-сборка фронта CRM упирается в дефолтный V8-heap (~2G) → OOM (exit 134).
 # Система тянет (8G RAM + swap) — поднимаем лимит heap ноды.
 ENV NODE_OPTIONS=--max-old-space-size=4096
-WORKDIR /opt
+# Собираем в bench-подобном layout: фронт (src/socket.js) импортит
+# ../../../../sites/common_site_config.json — путь резолвится только если crm лежит
+# как apps/crm внутри frappe-bench и рядом есть sites/common_site_config.json.
+WORKDIR /opt/frappe-bench/apps
 # Тег v1.73.0 — последний, где crm импортирует assign_to.`add` (а НЕ `_add`).
 # `_add` появился в frappe ПОСЛЕ 16.20.0; crm v1.74.0+ и v1.73.2 требуют `_add` →
 # несовместимы с нашим запиненным frappe 16.20.0. develop (2.0.0) — слишком новый.
 RUN git clone --depth 1 --branch v1.73.0 https://github.com/frappe/crm.git
-WORKDIR /opt/crm/frontend
+RUN mkdir -p /opt/frappe-bench/sites && \
+    echo '{"socketio_port": 9000}' > /opt/frappe-bench/sites/common_site_config.json
+WORKDIR /opt/frappe-bench/apps/crm/frontend
 RUN yarn install && yarn build
 
 # ─── вариант без CRM (прод) ──────────────────────────────────────────────────────
@@ -87,7 +92,7 @@ FROM base AS erp-nocrm
 # ─── вариант с CRM (staging) ─────────────────────────────────────────────────────
 FROM base AS erp-crm
 # Собранный фронт CRM уже внутри /opt/crm (public/frontend) — переносим аппу целиком.
-COPY --from=crm-build --chown=frappe:frappe /opt/crm /home/frappe/frappe-bench/apps/crm
+COPY --from=crm-build --chown=frappe:frappe /opt/frappe-bench/apps/crm /home/frappe/frappe-bench/apps/crm
 # Регистрируем как python-пакет (bench build --app НЕ запускаем: в рантайм-образе нет
 # node/esbuild; SPA уже собран yarn'ом на стадии crm-build).
 RUN cd /home/frappe/frappe-bench && \
