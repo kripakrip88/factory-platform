@@ -74,7 +74,9 @@ RUN corepack enable || npm i -g yarn
 # Система тянет (8G RAM + swap) — поднимаем лимит heap ноды.
 ENV NODE_OPTIONS=--max-old-space-size=4096
 WORKDIR /opt
-RUN git clone --depth 1 https://github.com/frappe/crm.git
+# Ветка main (frappe >=15 <17) — совместима с нашим frappe 16.20.0. Ветка develop
+# (2.0.0-dev) bleeding-edge и на install даёт ошибку «CRM Lead Status → module Core».
+RUN git clone --depth 1 --branch main https://github.com/frappe/crm.git
 WORKDIR /opt/crm/frontend
 RUN yarn install && yarn build
 
