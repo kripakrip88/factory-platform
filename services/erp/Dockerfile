@@ -74,9 +74,10 @@ RUN corepack enable || npm i -g yarn
 # Система тянет (8G RAM + swap) — поднимаем лимит heap ноды.
 ENV NODE_OPTIONS=--max-old-space-size=4096
 WORKDIR /opt
-# Ветка main (frappe >=15 <17) — совместима с нашим frappe 16.20.0. Ветка develop
-# (2.0.0-dev) bleeding-edge и на install даёт ошибку «CRM Lead Status → module Core».
-RUN git clone --depth 1 --branch main https://github.com/frappe/crm.git
+# Тег v1.73.0 — последний, где crm импортирует assign_to.`add` (а НЕ `_add`).
+# `_add` появился в frappe ПОСЛЕ 16.20.0; crm v1.74.0+ и v1.73.2 требуют `_add` →
+# несовместимы с нашим запиненным frappe 16.20.0. develop (2.0.0) — слишком новый.
+RUN git clone --depth 1 --branch v1.73.0 https://github.com/frappe/crm.git
 WORKDIR /opt/crm/frontend
 RUN yarn install && yarn build
 
