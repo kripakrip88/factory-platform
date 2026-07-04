@@ -75,8 +75,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        WITH_CRM: crm
     restart: unless-stopped
     logging:
       driver: json-file
@@ -104,8 +102,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        WITH_CRM: crm
     restart: unless-stopped
     logging:
       driver: json-file
@@ -136,8 +132,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        WITH_CRM: crm
     restart: unless-stopped
     logging:
       driver: json-file
@@ -157,8 +151,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        WITH_CRM: crm
     restart: unless-stopped
     logging:
       driver: json-file
@@ -176,8 +168,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        WITH_CRM: crm
     restart: unless-stopped
     logging:
       driver: json-file
@@ -195,8 +185,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        WITH_CRM: crm
     restart: unless-stopped
     logging:
       driver: json-file
@@ -215,8 +203,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        WITH_CRM: crm
     restart: unless-stopped
     logging:
       driver: json-file
