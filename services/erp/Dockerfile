@@ -8,6 +8,10 @@
 #   прод (docker-compose.yml) собирает БЕЗ CRM — путь тождественен прежнему.
 #   staging (docker-compose.staging.yml, WITH_CRM=crm) добавляет Frappe CRM.
 
+# WITH_CRM — ГЛОБАЛЬНЫЙ build-arg: объявлен ДО первого FROM, иначе не виден в
+# `FROM erp-${WITH_CRM}` ниже (BuildKit: UndefinedArgInFrom → пустое имя стадии).
+ARG WITH_CRM=nocrm
+
 # ─── base: ERP + saas_theme + metal_calculator (прод-путь, без изменений) ────────
 FROM frappe/erpnext:v16.21.1 AS base
 
@@ -84,5 +88,4 @@ RUN cd /home/frappe/frappe-bench && \
     uv pip install --quiet -e apps/crm --python env/bin/python
 
 # ─── финальный выбор по WITH_CRM (nocrm → прод, crm → staging) ───────────────────
-ARG WITH_CRM=nocrm
 FROM erp-${WITH_CRM} AS final
