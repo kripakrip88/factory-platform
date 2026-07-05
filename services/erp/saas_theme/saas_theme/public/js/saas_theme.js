@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v146";
+const SAAS_THEME_BUILD = "v147";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -113,6 +113,14 @@ $(document).ready(function () {
 		[80, 350, 900].forEach(function (d) {
 			setTimeout(function () { saas_theme.reshape_crm_card(frm); }, d);
 		});
+		// Кнопка входа в «красивую» карточку (Frappe-страница deal_view над этой записью).
+		// add_custom_button дедуплицирует по label → безопасно вызывать каждый refresh.
+		setTimeout(function () {
+			if (!frm.page || frm.is_new()) return;
+			frm.add_custom_button(__("Открыть карточку"), function () {
+				frappe.set_route("deal_view", frm.doctype, frm.doc.name);
+			});
+		}, 120);
 	});
 });
 
