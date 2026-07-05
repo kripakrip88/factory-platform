@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v136";
+const SAAS_THEME_BUILD = "v137";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -1252,6 +1252,7 @@ saas_theme.list_controls = {
 			const $wrapper = $(this);
 			const $card = $wrapper.find(".kanban-card").first();
 			if (!$card.length || $card.hasClass("st-kb-done")) return;
+			try {
 			const $titleArea = $card.find(".kanban-title-area").first();
 			const $doc = $card.find(".kanban-card-doc").first();
 			const $link = $titleArea.find("> a").first();
@@ -1319,6 +1320,9 @@ saas_theme.list_controls = {
 			}
 
 			$card.addClass("st-kb-done");
+			} catch (e) {
+				$card.addClass("st-kb-done"); // при ошибке всё равно показать карточку (не прятать анти-FOUC-ом)
+			}
 		});
 
 		// Наблюдатель — перерисовать декор после ре-рендера канбана (один раз на список).
