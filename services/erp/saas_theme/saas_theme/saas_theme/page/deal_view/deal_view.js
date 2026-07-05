@@ -1,23 +1,42 @@
 // Карточка сделки/лида — «красивая панель на грузовике». Отдельная Frappe-страница
-// поверх РЕАЛЬНЫХ данных ERPNext (Opportunity/Lead + Communication), а не декор формы.
-// Порт утверждённого прототипа. Тред писем = привязанные к записи ПЛЮС по адресу
-// контакта (переписка всплывает, даже если формально не привязана). Цвета — desk-темы.
-// Маркер сборки страницы: DEAL_VIEW_BUILD.
-const DEAL_VIEW_BUILD = "dv1";
+// поверх РЕАЛЬНЫХ данных ERPNext (Opportunity/Lead + Communication/Comment/ToDo/
+// Quotation/Version), а не декор формы. Порт утверждённых прототипов.
+// Вкладки: Активность (единая лента) · Письма (тред) · Задачи · Заметки.
+// Тред/лента писем = привязанные к записи ПЛЮС по адресу контакта.
+// Иконки — инлайн-SVG (без зависимости от шрифта Font Awesome). Цвета — desk-темы.
+const DEAL_VIEW_BUILD = "dv2";
+
+let DV_PAGE = null;
+let DV = null; // {dt, doc, comms, comments, todos, quotations, versions}
 
 frappe.pages["deal_view"].on_page_load = function (wrapper) {
 	const page = frappe.ui.make_app_page({ parent: wrapper, title: __("Карточка сделки"), single_column: true });
-	wrapper.__deal_page = page;
+	DV_PAGE = page;
 	inject_deal_view_styles();
 	deal_view_render(page);
 };
-
-frappe.pages["deal_view"].on_page_show = function (wrapper) {
-	const page = wrapper.__deal_page;
-	if (page) deal_view_render(page);
+frappe.pages["deal_view"].on_page_show = function () {
+	if (DV_PAGE) deal_view_render(DV_PAGE);
 };
 
-// Поля правой панели (как в saas_theme kanban/details). Имена выверены по doctype.
+// ── Инлайн-SVG иконки (stroke, currentColor) ──────────────────────────────
+const DV_ICONS = {
+	send: '<path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/>',
+	mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+	message: '<path d="M21 15a2 2 0 0 1-2 2H8l-4 4V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2z"/>',
+	check: '<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>',
+	phone: '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.6a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.4-1.1a2 2 0 0 1 2.1-.5c.8.3 1.7.5 2.6.6a2 2 0 0 1 1.7 2z"/>',
+	flag: '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/>',
+	file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',
+	plus: '<path d="M12 5v14M5 12h14"/>',
+	pencil: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+	paperclip: '<path d="M21 11l-8.5 8.5a5 5 0 0 1-7-7L14 4a3.5 3.5 0 0 1 5 5l-8.6 8.5a2 2 0 0 1-3-3L15 6"/>',
+};
+function dv_svg(name, size) {
+	size = size || 15;
+	return '<svg viewBox="0 0 24 24" width="' + size + '" height="' + size + '" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (DV_ICONS[name] || "") + "</svg>";
+}
+
 const DEAL_VIEW_FIELDS = {
 	Opportunity: [
 		{ fn: "contact_display", label: "Контакт" },
@@ -43,130 +62,140 @@ const DEAL_VIEW_FIELDS = {
 		{ fn: "territory", label: "Территория" },
 	],
 };
-
 const DEAL_VIEW_STATUS_COLOR = {
 	Open: "#4D94FF", Quotation: "#F5A623", Converted: "#22A06B", Lost: "#E5484D",
 	Replied: "#12A5B0", Closed: "#8B95A5", Lead: "#8B95A5", Interested: "#22A06B",
 	Opportunity: "#4D94FF", "Do Not Contact": "#E5484D",
 };
 
-function deal_view_initials(s) {
+// ── helpers ───────────────────────────────────────────────────────────────
+function dv_esc(t) { return frappe.utils.escape_html(String(t == null ? "" : t)); }
+function dv_initials(s) {
 	s = (s || "").trim();
 	if (!s) return "?";
 	const p = s.split(/[\s@._-]+/).filter(Boolean);
 	return ((p[0] ? p[0][0] : "") + (p[1] ? p[1][0] : "")).toUpperCase() || s[0].toUpperCase();
 }
-function deal_view_color(s) {
+function dv_color(s) {
 	let h = 0;
 	for (let i = 0; i < (s || "").length; i++) h = (h * 31 + s.charCodeAt(i)) % 360;
 	return "hsl(" + h + ",42%,52%)";
 }
-function deal_view_esc(t) {
-	return frappe.utils.escape_html(String(t == null ? "" : t));
+function dv_strip(html) {
+	const d = document.createElement("div");
+	d.innerHTML = html || "";
+	return (d.textContent || "").replace(/\s+/g, " ").trim();
+}
+function dv_snip(html, n) {
+	const t = dv_strip(html);
+	n = n || 170;
+	return t.length > n ? t.slice(0, n) + "…" : t;
+}
+function dv_time(ts) {
+	try { return (frappe.datetime.str_to_user(ts).split(" ")[1] || "").slice(0, 5); } catch (e) { return ""; }
+}
+function dv_day(ts) {
+	try {
+		const d = frappe.datetime.str_to_user(ts).split(" ")[0];
+		const today = frappe.datetime.str_to_user(frappe.datetime.now_datetime()).split(" ")[0];
+		const yst = frappe.datetime.str_to_user(frappe.datetime.add_to_date(frappe.datetime.now_datetime(), { days: -1 })).split(" ")[0];
+		if (d === today) return __("Сегодня");
+		if (d === yst) return __("Вчера");
+		return d;
+	} catch (e) { return ""; }
+}
+function dv_list(doctype, filters, fields, order, limit, or_filters) {
+	const args = { doctype: doctype, filters: filters, fields: fields, order_by: order || "creation desc", limit_page_length: limit || 50 };
+	if (or_filters) args.or_filters = or_filters;
+	return frappe.call({ method: "frappe.client.get_list", args: args }).then(function (r) { return (r && r.message) || []; }, function () { return []; });
 }
 
+// ── загрузка ────────────────────────────────────────────────────────────────
 function deal_view_render(page) {
 	const route = frappe.get_route(); // ['deal_view', <doctype>, <name>]
 	let dt = route[1] || "Opportunity";
 	let name = route[2];
-	// Совместимость: deal_view/<name> без доктайпа → по префиксу
-	if (!name && route[1]) {
-		name = route[1];
-		dt = /LEAD/i.test(name) ? "Lead" : "Opportunity";
-	}
+	if (!name && route[1]) { name = route[1]; dt = /LEAD/i.test(name) ? "Lead" : "Opportunity"; }
 	const $body = $(page.body);
-	if (!name) {
-		$body.html('<div class="dv-empty">' + deal_view_esc(__("Откройте сделку или лид из списка — или из формы кнопкой «Открыть карточку».")) + "</div>");
-		return;
-	}
-	$body.html('<div class="dv-empty">' + deal_view_esc(__("Загрузка…")) + "</div>");
+	if (!name) { $body.html('<div class="dv-empty">' + dv_esc(__("Откройте сделку или лид из формы кнопкой «Открыть карточку».")) + "</div>"); return; }
+	$body.html('<div class="dv-empty">' + dv_esc(__("Загрузка…")) + "</div>");
 
 	frappe.call({ method: "frappe.client.get", args: { doctype: dt, name: name } }).then(function (r) {
 		const doc = r && r.message;
-		if (!doc) {
-			$body.html('<div class="dv-empty">' + deal_view_esc(__("Запись не найдена")) + "</div>");
-			return;
-		}
-		const isLead = dt === "Lead";
-		const email = doc.contact_email || doc.email_id ||
-			(/@/.test(doc.contact_display || "") ? doc.contact_display : "") || "";
+		if (!doc) { $body.html('<div class="dv-empty">' + dv_esc(__("Запись не найдена")) + "</div>"); return; }
+		const email = doc.contact_email || doc.email_id || (/@/.test(doc.contact_display || "") ? doc.contact_display : "") || "";
+		const or_f = [["reference_name", "=", name]];
+		if (email) { or_f.push(["sender", "like", "%" + email + "%"]); or_f.push(["recipients", "like", "%" + email + "%"]); }
 
-		const or_filters = [["reference_name", "=", name]];
-		if (email) {
-			or_filters.push(["sender", "like", "%" + email + "%"]);
-			or_filters.push(["recipients", "like", "%" + email + "%"]);
-		}
-		frappe.call({
-			method: "frappe.client.get_list",
-			args: {
-				doctype: "Communication",
-				filters: { communication_type: "Communication" },
-				or_filters: or_filters,
-				fields: ["name", "sender", "sender_full_name", "recipients", "subject", "content",
-					"communication_date", "sent_or_received", "has_attachment", "creation"],
-				order_by: "communication_date asc, creation asc",
-				limit_page_length: 50,
-			},
-		}).then(function (cr) {
-			deal_view_paint(page, dt, doc, (cr && cr.message) || []);
+		Promise.all([
+			dv_list("Communication", { communication_type: "Communication" },
+				["name", "sender", "sender_full_name", "recipients", "subject", "content", "communication_date", "sent_or_received", "has_attachment", "creation"],
+				"communication_date asc, creation asc", 50, or_f),
+			dv_list("Comment", { reference_doctype: dt, reference_name: name, comment_type: "Comment" },
+				["content", "comment_by", "owner", "creation"], "creation desc", 50),
+			dv_list("ToDo", { reference_type: dt, reference_name: name },
+				["description", "status", "owner", "allocated_to", "date", "creation"], "creation desc", 50),
+			dt === "Opportunity" ? dv_list("Quotation", { opportunity: name },
+				["name", "grand_total", "currency", "status", "owner", "creation"], "creation desc", 20) : Promise.resolve([]),
+			dv_list("Version", { ref_doctype: dt, docname: name }, ["data", "owner", "creation"], "creation desc", 40),
+		]).then(function (res) {
+			DV = { dt: dt, doc: doc, comms: res[0], comments: res[1], todos: res[2], quotations: res[3], versions: res[4] };
+			deal_view_paint(page);
 		});
 	});
 }
 
-function deal_view_paint(page, dt, doc, comms) {
-	const isLead = dt === "Lead";
+// ── отрисовка каркаса ────────────────────────────────────────────────────────
+function deal_view_paint(page) {
+	const dt = DV.dt, doc = DV.doc, isLead = dt === "Lead";
 	const org = isLead ? (doc.company_name || doc.lead_name || doc.name) : (doc.customer_name || doc.party_name || doc.name);
 	const amount = !isLead && doc.opportunity_amount ? format_currency(doc.opportunity_amount, doc.currency) : "";
 	const status = doc.status || "";
 	page.set_title(org);
+	DV.amount = amount;
 
 	const $body = $(page.body).empty();
 	const $wrap = $('<div class="dv-wrap"></div>').appendTo($body);
 
-	// Шапка
+	// шапка
 	const scol = DEAL_VIEW_STATUS_COLOR[status] || "#8B95A5";
 	const $head = $('<div class="dv-head"></div>');
-	$head.append($('<div class="dv-av"></div>').text(deal_view_initials(org)).css("background", deal_view_color(org)));
+	$head.append($('<div class="dv-av"></div>').text(dv_initials(org)).css("background", dv_color(org)));
 	const $hc = $('<div class="dv-head-col"></div>');
-	const $title = $('<div class="dv-title-row"></div>');
-	$title.append($('<span class="dv-org"></span>').text(org));
-	if (status) $title.append($('<span class="dv-pill"></span>').text(__(status)).css({ "background-color": scol + "22", color: scol }));
-	$hc.append($title);
-	$hc.append($('<div class="dv-sub"></div>').text(doc.name + (amount ? " · " + amount : "")));
+	const $tr = $('<div class="dv-title-row"></div>').append($('<span class="dv-org"></span>').text(org));
+	if (status) $tr.append($('<span class="dv-pill"></span>').text(__(status)).css({ "background-color": scol + "22", color: scol }));
+	$hc.append($tr).append($('<div class="dv-sub"></div>').text(doc.name + (amount ? " · " + amount : "")));
 	$head.append($hc);
-	// Действие: Сделка → Создать КП; Лид → Открыть форму
 	if (!isLead) {
-		$head.append($('<button class="btn btn-sm btn-primary dv-btn"></button>').html('<i class="fa fa-file-text-o"></i> ' + __("Создать КП")).on("click", function () {
+		$head.append($('<button class="btn btn-sm btn-primary dv-btn"></button>').html(dv_svg("file", 14) + " " + dv_esc(__("Создать КП"))).on("click", function () {
 			frappe.call({ method: "erpnext.crm.doctype.opportunity.opportunity.make_quotation", args: { source_name: doc.name } })
 				.then(function (r) { if (r.message) { frappe.model.sync(r.message); frappe.set_route("Form", "Quotation", r.message.name); } });
 		}));
 	}
-	$head.append($('<button class="btn btn-sm dv-btn-sec"></button>').html('<i class="fa fa-pencil"></i> ' + __("Форма")).on("click", function () {
+	$head.append($('<button class="btn btn-sm dv-btn-sec"></button>').html(dv_svg("pencil", 14) + " " + dv_esc(__("Форма"))).on("click", function () {
 		frappe.set_route("Form", dt, doc.name);
 	}));
 	$wrap.append($head);
 
-	// Вкладки
+	// вкладки
 	const $tabs = $('<div class="dv-tabs"></div>');
-	[["mail", "Письма"], ["act", "Активность"], ["task", "Задачи"], ["note", "Заметки"]].forEach(function (t, i) {
-		$('<button class="dv-tab' + (i === 0 ? " on" : "") + '"></button>').text(__(t[1])).attr("data-t", t[0]).appendTo($tabs);
+	[["act", "Активность"], ["mail", "Письма"], ["task", "Задачи"], ["note", "Заметки"]].forEach(function (t) {
+		$('<button class="dv-tab"></button>').text(__(t[1])).attr("data-t", t[0]).appendTo($tabs);
 	});
 	$wrap.append($tabs);
 
-	// Тело: две колонки
+	// две колонки
 	const $cols = $('<div class="dv-cols"></div>');
 	const $left = $('<div class="dv-left"></div>');
 	const $right = $('<div class="dv-right"></div>');
 	$cols.append($left).append($right);
 	$wrap.append($cols);
+	DV.$left = $left;
 
-	// Левая — тред писем
-	deal_view_thread($left, dt, doc, comms);
-
-	// Правая — детали
+	// правая — детали
 	$right.append($('<div class="dv-det-title"></div>').text(__("Детали")));
 	const list = DEAL_VIEW_FIELDS[dt] || [];
-	if (amount) deal_view_row($right, "Сумма", amount);
+	if (amount) dv_row($right, "Сумма", amount);
 	list.forEach(function (item) {
 		let v = doc[item.fn];
 		if ((v == null || v === "") && item.alt) v = doc[item.alt];
@@ -174,81 +203,163 @@ function deal_view_paint(page, dt, doc, comms) {
 		let out = String(v);
 		if (item.date) { try { out = frappe.datetime.str_to_user(v); } catch (e) {} }
 		if (item.suffix) out = out + item.suffix;
-		deal_view_row($right, item.label, out);
+		dv_row($right, item.label, out);
 	});
 
-	// Переключение вкладок
-	const saved = $left.html();
-	const stub = {
-		act: "Хроника по сделке — письма, задачи, изменения статуса и комментарии в одной ленте (следующий шаг).",
-		task: "Задачи по сделке (следующий шаг).",
-		note: "Заметки менеджера (следующий шаг).",
-	};
 	$tabs.find(".dv-tab").on("click", function () {
 		$tabs.find(".dv-tab").removeClass("on");
 		$(this).addClass("on");
-		const t = $(this).attr("data-t");
-		if (t === "mail") { $left.html(saved); deal_view_bind_quotes($left); deal_view_bind_reply($left, dt, doc); }
-		else $left.html('<div class="dv-stub">' + deal_view_esc(__(stub[t])) + "</div>");
+		dv_show_tab($(this).attr("data-t"));
 	});
+	$tabs.find('.dv-tab[data-t="act"]').addClass("on");
+	dv_show_tab("act");
 }
 
-function deal_view_row($p, label, val) {
+function dv_row($p, label, val) {
 	$p.append($('<div class="dv-row"></div>')
 		.append($('<div class="dv-l"></div>').text(__(label)))
 		.append($('<div class="dv-v"></div>').text(val).attr("title", val)));
 }
 
-function deal_view_thread($left, dt, doc, comms) {
-	if (!comms.length) {
-		$left.append('<div class="dv-stub">' + deal_view_esc(__("Писем по этой записи пока нет. Напишите первое — оно появится здесь.")) + "</div>");
-	}
+function dv_show_tab(t) {
+	const $left = DV.$left.empty();
+	if (t === "mail") dv_build_thread($left);
+	else if (t === "task") dv_build_tasks($left);
+	else if (t === "note") dv_build_notes($left);
+	else dv_build_activity($left);
+}
+
+// ── Активность (единая лента) ───────────────────────────────────────────────
+function dv_build_activity($left) {
+	const dt = DV.dt, doc = DV.doc, ev = [];
+	DV.comms.forEach(function (c) {
+		const out = c.sent_or_received === "Sent";
+		ev.push({ ts: c.communication_date || c.creation, icon: out ? "send" : "mail",
+			bg: out ? "var(--bg-accent, #E6F1FB)" : "#E1F5EE", col: out ? "var(--primary)" : "#0F6E56",
+			actor: out ? (c.sender_full_name || "Мы") : (c.sender_full_name || c.sender || ""),
+			action: out ? "отправил письмо" : "входящее письмо", snip: dv_snip(c.content) });
+	});
+	DV.comments.forEach(function (c) {
+		ev.push({ ts: c.creation, icon: "message", bg: "#F1EFE8", col: "#444441",
+			actor: c.comment_by || c.owner || "", action: "комментарий", snip: dv_snip(c.content) });
+	});
+	DV.todos.forEach(function (t) {
+		const done = t.status === "Closed" || t.status === "Cancelled";
+		ev.push({ ts: t.creation, icon: "check", bg: done ? "#EAF3DE" : "#F1EFE8", col: done ? "#3B6D11" : "#8A8780",
+			actor: t.allocated_to || t.owner || "", action: (done ? "выполнил задачу «" : "задача «") + dv_strip(t.description).slice(0, 70) + "»" });
+	});
+	(DV.quotations || []).forEach(function (q) {
+		ev.push({ ts: q.creation, icon: "file", bg: "#E6F1FB", col: "#0C447C", actor: q.owner || "",
+			action: "создал КП", link: q.name + (q.grand_total ? " · " + format_currency(q.grand_total, q.currency) : "") });
+	});
+	(DV.versions || []).forEach(function (v) {
+		let data;
+		try { data = JSON.parse(v.data || "{}"); } catch (e) { return; }
+		const ch = (data.changed || []).filter(function (r) { return r[0] === "status"; })[0];
+		if (ch) ev.push({ ts: v.creation, icon: "flag", bg: "#FAEEDA", col: "#633806", statusChange: [ch[1], ch[2]] });
+	});
+	ev.push({ ts: doc.creation, icon: "plus", bg: "#F1EFE8", col: "#444441", action: (dt === "Lead" ? "Лид создан" : "Сделка создана") });
+
+	ev.sort(function (a, b) { return a.ts < b.ts ? 1 : a.ts > b.ts ? -1 : 0; });
+	if (!ev.length) { $left.append('<div class="dv-stub">' + dv_esc(__("Событий по сделке пока нет.")) + "</div>"); return; }
+
+	let day = null;
+	ev.forEach(function (e) {
+		const dl = dv_day(e.ts);
+		if (dl !== day) { day = dl; $left.append($('<div class="dv-day"></div>').text(day)); }
+		const $row = $('<div class="dv-ev"></div>');
+		$row.append($('<div class="dv-ev-rail"></div>').append($('<div class="dv-dot"></div>').css({ background: e.bg, color: e.col }).html(dv_svg(e.icon, 15))));
+		const $b = $('<div class="dv-ev-body"></div>');
+		const $line = $('<div class="dv-ev-line"></div>');
+		if (e.statusChange) {
+			$line.append(document.createTextNode(__("Статус") + ": "));
+			$line.append($('<span style="color:var(--text-muted)"></span>').text(__(e.statusChange[0]) || "—"));
+			$line.append(document.createTextNode(" → "));
+			$line.append($('<span style="font-weight:500"></span>').text(__(e.statusChange[1])));
+		} else {
+			if (e.actor) $line.append($('<span style="font-weight:500"></span>').text(e.actor)).append(document.createTextNode(" "));
+			$line.append(document.createTextNode(e.action || ""));
+			if (e.link) $line.append(document.createTextNode(" ")).append($('<span style="color:var(--primary)"></span>').text(e.link));
+		}
+		$line.append($('<span class="dv-ev-time"></span>').text(dv_time(e.ts)));
+		$b.append($line);
+		if (e.snip) $b.append($('<div class="dv-ev-snip"></div>').text(e.snip));
+		$row.append($b);
+		$left.append($row);
+	});
+}
+
+// ── Письма (тред) ────────────────────────────────────────────────────────────
+function dv_build_thread($left) {
+	const comms = DV.comms;
+	if (!comms.length) $left.append('<div class="dv-stub">' + dv_esc(__("Писем по этой записи пока нет.")) + "</div>");
 	comms.forEach(function (c) {
-		const outgoing = c.sent_or_received === "Sent";
-		const who = outgoing ? (c.sender_full_name || "Мы") : (c.sender_full_name || c.sender || "");
+		const out = c.sent_or_received === "Sent";
+		const who = out ? (c.sender_full_name || "Мы") : (c.sender_full_name || c.sender || "");
 		const $card = $('<div class="dv-mail"></div>');
 		const $mh = $('<div class="dv-mail-head"></div>');
-		$mh.append($('<div class="dv-mav"></div>').text(deal_view_initials(who)).css("background", deal_view_color(who)));
+		$mh.append($('<div class="dv-mav"></div>').text(dv_initials(who)).css("background", dv_color(who)));
 		const $mc = $('<div class="dv-mail-who"></div>');
 		$mc.append($('<div class="dv-mail-name"></div>').text(who));
 		$mc.append($('<div class="dv-mail-addr"></div>').text((c.sender || "") + " → " + (c.recipients || "")).attr("title", (c.sender || "") + " → " + (c.recipients || "")));
 		$mh.append($mc);
-		let when = "";
-		try { when = frappe.datetime.str_to_user(c.communication_date || c.creation); } catch (e) {}
+		let when = ""; try { when = frappe.datetime.str_to_user(c.communication_date || c.creation); } catch (e) {}
 		$mh.append($('<div class="dv-mail-date"></div>').text(when));
 		$card.append($mh);
 		if (c.subject) $card.append($('<div class="dv-mail-subj"></div>').text(c.subject));
-		const $b = $('<div class="dv-body"></div>').html(c.content || "");
-		$card.append($b);
-		if (c.has_attachment) $card.append('<span class="dv-chip"><i class="fa fa-paperclip"></i> ' + deal_view_esc(__("Вложение")) + "</span>");
+		$card.append($('<div class="dv-body"></div>').html(c.content || ""));
+		if (c.has_attachment) $card.append('<span class="dv-chip">' + dv_svg("paperclip", 13) + " " + dv_esc(__("Вложение")) + "</span>");
 		$left.append($card);
 	});
-	// Ответ
 	const $rep = $('<div class="dv-reply"></div>');
 	$rep.append($('<div class="dv-reply-title"></div>').text(__("Ответить")));
-	$rep.append($('<button class="btn btn-sm btn-primary"></button>').html('<i class="fa fa-envelope-o"></i> ' + __("Написать письмо")));
+	$rep.append($('<button class="btn btn-sm btn-primary"></button>').html(dv_svg("mail", 14) + " " + dv_esc(__("Написать письмо"))).on("click", function () {
+		const email = DV.doc.contact_email || DV.doc.email_id || (/@/.test(DV.doc.contact_display || "") ? DV.doc.contact_display : "") || "";
+		new frappe.views.CommunicationComposer({ doctype: DV.dt, name: DV.doc.name, recipients: email });
+	}));
 	$left.append($rep);
-	deal_view_bind_quotes($left);
-	deal_view_bind_reply($left, dt, doc);
+	dv_bind_quotes($left);
 }
-
-// Свернуть цитируемую историю (blockquote / gmail_quote) под «··· цитата»
-function deal_view_bind_quotes($scope) {
+function dv_bind_quotes($scope) {
 	$scope.find(".dv-body").each(function () {
 		const $b = $(this);
 		const $q = $b.find("blockquote, .gmail_quote, .gmail_extra").first();
 		if (!$q.length || $b.data("qbound")) return;
 		$b.data("qbound", 1);
 		$q.nextAll().addBack().hide();
-		const $t = $('<button class="dv-quote-toggle">··· ' + deal_view_esc(__("цитата")) + "</button>");
-		$t.on("click", function () { const on = $q.is(":visible"); $q.nextAll().addBack()[on ? "hide" : "show"](); });
-		$q.before($t);
+		$('<button class="dv-quote-toggle">··· ' + dv_esc(__("цитата")) + "</button>").insertBefore($q).on("click", function () {
+			const on = $q.is(":visible"); $q.nextAll().addBack()[on ? "hide" : "show"]();
+		});
 	});
 }
-function deal_view_bind_reply($scope, dt, doc) {
-	$scope.find(".dv-reply .btn").off("click.dv").on("click.dv", function () {
-		const email = doc.contact_email || doc.email_id || (/@/.test(doc.contact_display || "") ? doc.contact_display : "") || "";
-		new frappe.views.CommunicationComposer({ doctype: dt, name: doc.name, recipients: email });
+
+// ── Задачи ────────────────────────────────────────────────────────────────
+function dv_build_tasks($left) {
+	$left.append($('<button class="btn btn-sm btn-primary" style="margin-bottom:10px"></button>').html(dv_svg("plus", 14) + " " + dv_esc(__("Новая задача"))).on("click", function () {
+		frappe.new_doc("ToDo", { reference_type: DV.dt, reference_name: DV.doc.name });
+	}));
+	if (!DV.todos.length) { $left.append('<div class="dv-stub">' + dv_esc(__("Задач по сделке нет.")) + "</div>"); return; }
+	DV.todos.forEach(function (t) {
+		const done = t.status === "Closed" || t.status === "Cancelled";
+		$left.append($('<div class="dv-task"></div>')
+			.append($('<span class="dv-task-ic"></span>').css("color", done ? "#3B6D11" : "var(--text-muted)").html(dv_svg("check", 16)))
+			.append($('<span class="dv-task-t"></span>').css("text-decoration", done ? "line-through" : "none").text(dv_strip(t.description) || "—")));
+	});
+}
+
+// ── Заметки ──────────────────────────────────────────────────────────────
+function dv_build_notes($left) {
+	$left.append($('<button class="btn btn-sm btn-primary" style="margin-bottom:10px"></button>').html(dv_svg("message", 14) + " " + dv_esc(__("Добавить заметку"))).on("click", function () {
+		frappe.prompt({ fieldname: "c", fieldtype: "Small Text", label: __("Заметка"), reqd: 1 }, function (v) {
+			frappe.call({ method: "frappe.desk.form.utils.add_comment", args: { reference_doctype: DV.dt, reference_name: DV.doc.name, content: v.c, comment_email: frappe.session.user, comment_by: frappe.session.user_fullname || frappe.session.user } })
+				.then(function () { frappe.show_alert({ message: __("Добавлено"), indicator: "green" }); deal_view_render(DV_PAGE); });
+		}, __("Заметка к сделке"), __("Добавить"));
+	}));
+	if (!DV.comments.length) { $left.append('<div class="dv-stub">' + dv_esc(__("Заметок нет.")) + "</div>"); return; }
+	DV.comments.forEach(function (c) {
+		$left.append($('<div class="dv-note"></div>')
+			.append($('<div class="dv-note-h"></div>').text((c.comment_by || c.owner || "") + " · " + dv_time(c.creation)))
+			.append($('<div class="dv-note-b"></div>').text(dv_strip(c.content))));
 	});
 }
 
@@ -264,7 +375,7 @@ function inject_deal_view_styles() {
 .dv-org{font-size:17px;font-weight:600;color:var(--text-color)}
 .dv-pill{display:inline-block;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:600;line-height:1.5}
 .dv-sub{font-size:12px;color:var(--text-muted);margin-top:2px}
-.dv-btn,.dv-btn-sec{white-space:nowrap}
+.dv-btn,.dv-btn-sec{white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
 .dv-tabs{display:flex;gap:18px;border-bottom:1px solid var(--border-color);margin-bottom:14px}
 .dv-tab{padding:8px 2px;font-size:13px;color:var(--text-muted);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer}
 .dv-tab.on{color:var(--text-color);border-bottom-color:var(--text-color)}
@@ -275,6 +386,17 @@ function inject_deal_view_styles() {
 .dv-row{display:grid;grid-template-columns:42% 1fr;gap:10px;align-items:baseline;padding:5px 0}
 .dv-l{font-size:12px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dv-v{font-size:13px;font-weight:500;color:var(--text-color);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dv-day{font-size:12px;color:var(--text-muted);margin:14px 0 8px 40px}
+.dv-ev{display:flex;gap:12px}
+.dv-ev:not(:last-child){padding-bottom:14px}
+.dv-ev-rail{position:relative;width:28px;flex:none;display:flex;justify-content:center}
+.dv-ev-rail:before{content:"";position:absolute;top:28px;bottom:-14px;width:2px;background:var(--border-color)}
+.dv-ev:last-child .dv-ev-rail:before{display:none}
+.dv-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:1}
+.dv-ev-body{flex:1;min-width:0;padding-top:4px}
+.dv-ev-line{font-size:13px;color:var(--text-color);line-height:1.5}
+.dv-ev-time{font-size:12px;color:var(--text-muted);margin-left:6px}
+.dv-ev-snip{font-size:13px;color:var(--text-muted);line-height:1.6;margin-top:5px;background:var(--fg-color);border:1px solid var(--border-color);border-radius:10px;padding:8px 12px}
 .dv-mail{background:var(--fg-color);border:1px solid var(--border-color);border-radius:12px;padding:14px 16px;margin-bottom:12px}
 .dv-mail-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
 .dv-mav{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:12px;flex:none}
@@ -292,6 +414,12 @@ function inject_deal_view_styles() {
 .dv-chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--text-muted);background:var(--control-bg);border:1px solid var(--border-color);border-radius:20px;padding:3px 10px;margin-top:10px}
 .dv-reply{background:var(--fg-color);border:1px solid var(--border-color);border-radius:12px;padding:12px 14px;margin-top:4px}
 .dv-reply-title{font-size:12px;color:var(--text-muted);margin-bottom:8px}
+.dv-task{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border-color)}
+.dv-task-ic{flex:none;display:flex}
+.dv-task-t{font-size:13px;color:var(--text-color)}
+.dv-note{background:var(--fg-color);border:1px solid var(--border-color);border-radius:12px;padding:10px 14px;margin-bottom:10px}
+.dv-note-h{font-size:12px;color:var(--text-muted);margin-bottom:4px}
+.dv-note-b{font-size:13px;color:var(--text-color);line-height:1.6}
 @media(max-width:900px){.dv-cols{flex-direction:column}.dv-right{width:100%;flex-basis:auto;position:static}}
 `;
 	$("<style id='deal-view-styles'></style>").text(css).appendTo(document.head);
