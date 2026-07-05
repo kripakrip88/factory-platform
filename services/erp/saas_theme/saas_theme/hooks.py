@@ -27,8 +27,8 @@ categories = ["Customization", "UI/UX"]
 # ------------------
 
 # include js, css files in header of desk.html
-app_include_css = "/assets/saas_theme/css/saas_theme.css?v=140"
-app_include_js = "/assets/saas_theme/js/saas_theme.js?v=140"
+app_include_css = "/assets/saas_theme/css/saas_theme.css?v=141"
+app_include_js = "/assets/saas_theme/js/saas_theme.js?v=141"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/saas_theme/css/login.css"
