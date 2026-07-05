@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v142";
+const SAAS_THEME_BUILD = "v143";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -122,6 +122,43 @@ frappe.provide("saas_theme");
 // «Операции» в всегда-видимый блок под формой; технические вкладки скрыты.
 saas_theme.CRM_HIDDEN_TABS = ["activities_tab", "notes_tab", "dashboard_tab"];
 
+// Плоский список полей правой панели (как в Frappe CRM) — только чтение из frm.doc.
+// Имена полей выверены: Opportunity — по разведке doctype, Lead — по lead.json.
+saas_theme.CRM_PANEL_FIELDS = {
+	Opportunity: [
+		{ fn: "contact_display", label: "Контакт" },
+		{ fn: "mw_categories_display", label: "Категория" },
+		{ fn: "mw_estimated_volume", label: "Объём", suffix: " т" },
+		{ fn: "mw_desired_delivery_date", label: "Желаемая поставка" },
+		{ fn: "mw_drawing_status", label: "Чертежи" },
+		{ fn: "sales_stage", label: "Этап" },
+		{ fn: "expected_closing", label: "Ожид. закрытие" },
+		{ fn: "utm_source", label: "Источник" },
+		{ fn: "territory", label: "Территория" },
+		{ fn: "opportunity_owner", label: "Ответственный" },
+	],
+	Lead: [
+		{ fn: "lead_name", label: "Контакт" },
+		{ fn: "email_id", label: "Email" },
+		{ fn: "mobile_no", label: "Телефон", alt: "phone" },
+		{ fn: "type", label: "Тип лида" },
+		{ fn: "request_type", label: "Запрос" },
+		{ fn: "industry", label: "Отрасль" },
+		{ fn: "market_segment", label: "Сегмент" },
+		{ fn: "qualification_status", label: "Квалификация" },
+		{ fn: "utm_source", label: "Источник" },
+		{ fn: "territory", label: "Территория" },
+	],
+};
+
+// Цвета статус-пилюли (семантические индикаторы, как в ядре Frappe).
+saas_theme.CRM_STATUS_COLOR = {
+	Open: "#4D94FF", Quotation: "#F5A623", Converted: "#22A06B",
+	Lost: "#E5484D", Replied: "#12A5B0", Closed: "#8B95A5",
+	Lead: "#8B95A5", Interested: "#22A06B", Opportunity: "#4D94FF",
+	"Do Not Contact": "#E5484D",
+};
+
 saas_theme.reshape_crm_card = function (frm) {
 	const $w = frm.$wrapper;
 
@@ -136,7 +173,9 @@ saas_theme.reshape_crm_card = function (frm) {
 	const $timeline = $w.find(".new-timeline").first();
 	const $layout = $w.find(".form-layout").first();
 	if ($timeline.length && $layout.length) {
-		let $feed = $layout.children(".fp-crm-feed").first();
+		// .find (не .children): после переноса в .fp-2pane-center лента становится
+		// внуком .form-layout — иначе создавался бы дубликат ленты каждый проход.
+		let $feed = $layout.find(".fp-crm-feed").first();
 		if (!$feed.length) {
 			$feed = $('<div class="fp-crm-feed"><div class="fp-crm-feed-title">История по сделке</div></div>');
 			$layout.append($feed);
@@ -155,6 +194,109 @@ saas_theme.reshape_crm_card = function (frm) {
 	saas_theme.CRM_HIDDEN_TABS.forEach(function (fn) {
 		$w.find('.form-tabs .nav-item').has('[data-fieldname="' + fn + '"]').addClass("fp-hidden-tab");
 	});
+
+	// 3. Двухпанельная раскладка: .form-layout → две колонки.
+	//    ЦЕНТР (.fp-2pane-center) = форма (.form-page) + лента (.fp-crm-feed);
+	//    ПРАВО (.fp-2pane-right) = панель деталей сделки/лида.
+	//    ТОЛЬКО перемещение узлов (appendTo) — живые контролы полей не пересоздаём
+	//    (иначе Frappe теряет ссылки и поля перестают сохраняться). Идемпотентно
+	//    через contains-проверки. При ошибке всё равно ставим .fp-2pane (раскрыть).
+	try {
+		if ($layout.length) {
+			let $center = $layout.children(".fp-2pane-center").first();
+			let $right = $layout.children(".fp-2pane-right").first();
+			if (!$center.length) {
+				$center = $('<div class="fp-2pane-center"></div>');
+				$right = $('<div class="fp-2pane-right"></div>');
+				$layout.append($center).append($right);
+			}
+			const $page = $layout.children(".form-page").first();
+			if ($page.length && !$center[0].contains($page[0])) $center.append($page);
+			const $feedNode = $layout.children(".fp-crm-feed").first();
+			if ($feedNode.length && !$center[0].contains($feedNode[0])) $center.append($feedNode);
+			$layout.addClass("fp-2pane");
+		}
+		saas_theme.build_crm_panel(frm);
+	} catch (e) {
+		if ($layout.length) $layout.addClass("fp-2pane");
+	}
+
+	// 4. Переживание перерисовок Frappe: один MutationObserver на .form-layout,
+	//    дебаунс 150мс, повторно вызывает идемпотентную сборку. Ретраи [80,350,900]
+	//    из хендлера покрывают старт; observer — поздние refresh_sections. Луп
+	//    невозможен: в покое сборка = no-op (сигнатура панели, contains-проверки).
+	if ($layout.length && $layout[0] && !frm._st_2pane_observed) {
+		frm._st_2pane_observed = true;
+		try {
+			const mo = new MutationObserver(function () {
+				clearTimeout(frm._st_2pane_t);
+				frm._st_2pane_t = setTimeout(function () { saas_theme.reshape_crm_card(frm); }, 150);
+			});
+			mo.observe($layout[0], { childList: true, subtree: true });
+			frm._st_2pane_mo = mo;
+		} catch (e) {}
+	}
+};
+
+// Правая панель CRM: идентити (организация/сумма/статус) + плоский список полей.
+// Только чтение из frm.doc. Ребилд только при смене данных (сигнатура) — иначе
+// MutationObserver зациклился бы (каждый ребилд мутирует поддерево, за которым
+// он наблюдает). Панель — наш узел, живых контролов Frappe в ней нет → empty
+// безопасен.
+saas_theme.build_crm_panel = function (frm) {
+	const $right = frm.$wrapper.find(".fp-2pane-right").first();
+	if (!$right.length) return;
+
+	const isLead = frm.doctype === "Lead";
+	const d = frm.doc || {};
+	const org = isLead ? (d.company_name || d.lead_name || "") : (d.customer_name || d.party_name || "");
+	const amount = !isLead && d.opportunity_amount ? format_currency(d.opportunity_amount, d.currency) : "";
+	const status = d.status || "";
+
+	const list = saas_theme.CRM_PANEL_FIELDS[frm.doctype] || [];
+	const rows = [];
+	list.forEach(function (item) {
+		let v = d[item.fn];
+		if ((v === undefined || v === null || v === "") && item.alt) v = d[item.alt];
+		if (v === undefined || v === null || v === "") return;
+		const df = frm.fields_dict[item.fn] && frm.fields_dict[item.fn].df;
+		const ft = df && df.fieldtype;
+		let out;
+		if (ft === "Currency") { try { out = format_currency(v, d.currency); } catch (e) { out = String(v); } }
+		else if (ft === "Date") { try { out = frappe.datetime.str_to_user(v); } catch (e) { out = String(v); } }
+		else out = String(v);
+		if (item.suffix) out = out + item.suffix;
+		rows.push([item.label, out]);
+	});
+
+	// Сигнатура — если данные не изменились, не трогаем DOM (без этого observer-луп).
+	const sig = JSON.stringify([org, amount, status, rows]);
+	if (frm._st_panel_sig === sig && $right.children().length) return;
+	frm._st_panel_sig = sig;
+
+	$right.empty();
+	const $id = $('<div class="fp-2pane-identity"></div>');
+	if (org) $id.append($('<div class="fp-id-org"></div>').text(org));
+	if (amount) $id.append($('<div class="fp-id-amount"></div>').text(amount));
+	if (status) {
+		const col = saas_theme.CRM_STATUS_COLOR[status] || "#8B95A5";
+		$id.append(
+			$('<span class="fp-id-status"></span>')
+				.text(__(status))
+				.css({ "background-color": col + "22", color: col, border: "1px solid " + col + "55" })
+		);
+	}
+	if ($id.children().length) $right.append($id);
+
+	const $rows = $('<div class="fp-2pane-rows"></div>');
+	rows.forEach(function (r) {
+		$rows.append(
+			$('<div class="fp-2pane-row"></div>')
+				.append($('<div class="fp-row-l"></div>').text(r[0]))
+				.append($('<div class="fp-row-v"></div>').text(r[1]).attr("title", r[1]))
+		);
+	});
+	if (rows.length) $right.append($rows);
 };
 
 saas_theme.reshape_mail = function (frm) {
