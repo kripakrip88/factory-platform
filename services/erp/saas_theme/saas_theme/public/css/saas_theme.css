@@ -3658,6 +3658,54 @@ html[data-theme="dark"] .st-mail-clampable.st-mail-clamped::after {
     line-height: 1.5;
 }
 
+/* ============================================
+   Поля ввода на CRM-форме — «filled» стиль как во Frappe CRM
+   Скруглённые, с мягкой заливкой, без жёсткой рамки в покое; подпись компактная.
+   Scoped .fp-crm-card — остальные формы ERP (Счета/Заказы/Номенклатура) не тронуты.
+   Цвет подписи НЕ переопределяем — работает контраст-фикс тёмной темы (см. ниже).
+   ============================================ */
+/* Подпись — компактнее и с воздухом (цвет оставляем существующим правилам) */
+.fp-crm-card .form-layout .control-label {
+    font-size: 12px;
+    font-weight: 400;
+    margin-bottom: 5px;
+}
+/* Инпут / селект / textarea — заливка + скругление + прозрачная рамка */
+.fp-crm-card .form-layout .form-control,
+.fp-crm-card .form-layout select.form-control {
+    border-radius: 8px !important;
+    background-color: var(--control-bg-on-gray) !important;
+    border: 1px solid transparent !important;
+    box-shadow: none !important;
+    transition: background-color 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+}
+/* Плейсхолдер — приглушённый */
+.fp-crm-card .form-layout .form-control::placeholder {
+    color: var(--text-muted);
+    opacity: 1;
+}
+/* Фокус — рамка и кольцо primary (фон заливки сохраняем — работает в обеих темах) */
+.fp-crm-card .form-layout .form-control:focus,
+.fp-crm-card .form-layout .form-control:focus-visible,
+.fp-crm-card .form-layout select.form-control:focus {
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 2px rgba(77, 148, 255, 0.2) !important;
+}
+/* Кнопки Link-поля (поиск/открыть) — подогнать радиус под 8px */
+.fp-crm-card .form-layout .link-btn {
+    border-radius: 0 8px 8px 0;
+}
+/* Немного воздуха между полями (ритм как во Frappe CRM) */
+.fp-crm-card .form-layout .frappe-control {
+    margin-bottom: 8px;
+}
+/* Заголовок секции — чуть заметнее, с отступом (как «Реквизиты» во Frappe CRM) */
+.fp-crm-card .form-layout .section-head {
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 6px;
+}
+
 /* --- Мультиселект «Категория изделий»: высота и выпадашка --- */
 
 /* Наложение: контейнер и обёртка имели фикс. height:38px → при переносе тегов
