@@ -19,7 +19,7 @@ import frappe
 from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 
 KANBAN_BOARD = "Продажи"
-CARD_FIELDS = ["mw_categories_display", "mw_estimated_volume", "opportunity_amount", "modified"]
+CARD_FIELDS = ["contact_display", "mw_categories_display", "mw_estimated_volume", "opportunity_amount", "modified"]
 
 
 def setup_display_field():

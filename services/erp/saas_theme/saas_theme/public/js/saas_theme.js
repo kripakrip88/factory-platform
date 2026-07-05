@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v137";
+const SAAS_THEME_BUILD = "v138";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -1266,10 +1266,27 @@ saas_theme.list_controls = {
 				.css("background", saas_theme.mail_avatar_color(title))
 				.text(initials);
 
-			// Шапка: [аватар] [название-ссылка] [чип-статуса].
-			const $head = $('<div class="st-kb-head"></div>').append($av);
-			if ($link.length) $head.append($link);
-			else $head.append($('<span class="kanban-card-title"></span>').text(title));
+			// Разбор «Подпись: значение» → чистые значения по типу поля (до шапки —
+			// контакт нужен для подстроки под организацией).
+			const f = {};
+			$doc.find(".text-truncate").each(function () {
+				const raw = ($(this).text() || "").trim();
+				const i = raw.indexOf(":");
+				const label = i >= 0 ? raw.slice(0, i) : "";
+				const val = (i >= 0 ? raw.slice(i + 1) : raw).trim();
+				if (/контакт|contact/i.test(label)) f.contact = val;
+				else if (/категор/i.test(label)) f.category = val;
+				else if (/об[ъь]?[её]м/i.test(label)) f.volume = val;
+				else if (/сумм/i.test(label)) f.amount = val;
+				else if (/дат/i.test(label)) f.date = val;
+			});
+
+			// Шапка: [аватар] [организация + контакт (2 строки)] [чип-статуса].
+			const $namecol = $('<div class="st-kb-namecol"></div>');
+			if ($link.length) $namecol.append($link);
+			else $namecol.append($('<span class="kanban-card-title"></span>').text(title));
+			if (f.contact) $namecol.append($('<div class="st-kb-contact"></div>').text(f.contact).attr("title", f.contact));
+			const $head = $('<div class="st-kb-head"></div>').append($av).append($namecol);
 			const $col = $wrapper.closest(".kanban-column");
 			let status = ($col.attr("data-column-value") || "").trim();
 			if (!status) status = ($col.find("[title]").first().attr("title") || "").trim();
@@ -1278,19 +1295,6 @@ saas_theme.list_controls = {
 				$head.append($('<span class="st-kb-chip"></span>').text(st).attr("title", st));
 			}
 			$titleArea.prepend($head);
-
-			// Разбор «Подпись: значение» → чистые значения по типу поля.
-			const f = {};
-			$doc.find(".text-truncate").each(function () {
-				const raw = ($(this).text() || "").trim();
-				const i = raw.indexOf(":");
-				const label = i >= 0 ? raw.slice(0, i) : "";
-				const val = (i >= 0 ? raw.slice(i + 1) : raw).trim();
-				if (/категор/i.test(label)) f.category = val;
-				else if (/об[ъь]?[её]м/i.test(label)) f.volume = val;
-				else if (/сумм/i.test(label)) f.amount = val;
-				else if (/дат/i.test(label)) f.date = val;
-			});
 
 			// Пересобираем тело: тег категории + метрики (без серых чипов и подписей).
 			$doc.empty();
