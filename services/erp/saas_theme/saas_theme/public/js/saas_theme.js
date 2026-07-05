@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v143";
+const SAAS_THEME_BUILD = "v144";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -173,8 +173,8 @@ saas_theme.reshape_crm_card = function (frm) {
 	const $timeline = $w.find(".new-timeline").first();
 	const $layout = $w.find(".form-layout").first();
 	if ($timeline.length && $layout.length) {
-		// .find (не .children): после переноса в .fp-2pane-center лента становится
-		// внуком .form-layout — иначе создавался бы дубликат ленты каждый проход.
+		// .find (не .children): устойчиво к вложенности — иначе при перерисовке
+		// мог бы создаваться дубликат ленты. Идемпотентно.
 		let $feed = $layout.find(".fp-crm-feed").first();
 		if (!$feed.length) {
 			$feed = $('<div class="fp-crm-feed"><div class="fp-crm-feed-title">История по сделке</div></div>');
@@ -195,57 +195,42 @@ saas_theme.reshape_crm_card = function (frm) {
 		$w.find('.form-tabs .nav-item').has('[data-fieldname="' + fn + '"]').addClass("fp-hidden-tab");
 	});
 
-	// 3. Двухпанельная раскладка: .form-layout → две колонки.
-	//    ЦЕНТР (.fp-2pane-center) = форма (.form-page) + лента (.fp-crm-feed);
-	//    ПРАВО (.fp-2pane-right) = панель деталей сделки/лида.
-	//    ТОЛЬКО перемещение узлов (appendTo) — живые контролы полей не пересоздаём
-	//    (иначе Frappe теряет ссылки и поля перестают сохраняться). Идемпотентно
-	//    через contains-проверки. При ошибке всё равно ставим .fp-2pane (раскрыть).
+	// 3. Детали сделки/лида — врезаем В НАТИВНЫЙ правый сайдбар: одна колонка
+	//    (детали сверху + Назначения/Вложения/Теги ниже), а не третий столбец.
+	//    Форму НЕ делим — центр остаётся нативным. Сайдбар (.layout-side-section)
+	//    очищается на каждый render_form → наш read-only узел (без живых контролов
+	//    Frappe) безопасно до-впрыскиваем идемпотентно каждый проход.
+	const $main = $layout.length ? $layout.closest(".layout-main") : $();
+	$main.addClass("fp-crm-page"); // расширяет правую колонку (--form-sidebar-width)
 	try {
-		if ($layout.length) {
-			let $center = $layout.children(".fp-2pane-center").first();
-			let $right = $layout.children(".fp-2pane-right").first();
-			if (!$center.length) {
-				$center = $('<div class="fp-2pane-center"></div>');
-				$right = $('<div class="fp-2pane-right"></div>');
-				$layout.append($center).append($right);
-			}
-			const $page = $layout.children(".form-page").first();
-			if ($page.length && !$center[0].contains($page[0])) $center.append($page);
-			const $feedNode = $layout.children(".fp-crm-feed").first();
-			if ($feedNode.length && !$center[0].contains($feedNode[0])) $center.append($feedNode);
-			$layout.addClass("fp-2pane");
-		}
-		saas_theme.build_crm_panel(frm);
-	} catch (e) {
-		if ($layout.length) $layout.addClass("fp-2pane");
-	}
+		saas_theme.build_crm_panel(frm, $main);
+	} catch (e) {}
 
-	// 4. Переживание перерисовок Frappe: один MutationObserver на .form-layout,
-	//    дебаунс 150мс, повторно вызывает идемпотентную сборку. Ретраи [80,350,900]
-	//    из хендлера покрывают старт; observer — поздние refresh_sections. Луп
-	//    невозможен: в покое сборка = no-op (сигнатура панели, contains-проверки).
-	if ($layout.length && $layout[0] && !frm._st_2pane_observed) {
-		frm._st_2pane_observed = true;
+	// 4. Переживание перерисовок: один MutationObserver на .layout-main (ловит
+	//    пересборку сайдбара в render_form). Дебаунс 150мс. Луп невозможен: в
+	//    покое сборка = no-op (сигнатура панели + узел уже первым в сайдбаре).
+	if ($main.length && $main[0] && !frm._st_crm_observed) {
+		frm._st_crm_observed = true;
 		try {
 			const mo = new MutationObserver(function () {
-				clearTimeout(frm._st_2pane_t);
-				frm._st_2pane_t = setTimeout(function () { saas_theme.reshape_crm_card(frm); }, 150);
+				clearTimeout(frm._st_crm_t);
+				frm._st_crm_t = setTimeout(function () { saas_theme.reshape_crm_card(frm); }, 150);
 			});
-			mo.observe($layout[0], { childList: true, subtree: true });
-			frm._st_2pane_mo = mo;
+			mo.observe($main[0], { childList: true, subtree: true });
+			frm._st_crm_mo = mo;
 		} catch (e) {}
 	}
 };
 
-// Правая панель CRM: идентити (организация/сумма/статус) + плоский список полей.
-// Только чтение из frm.doc. Ребилд только при смене данных (сигнатура) — иначе
-// MutationObserver зациклился бы (каждый ребилд мутирует поддерево, за которым
-// он наблюдает). Панель — наш узел, живых контролов Frappe в ней нет → empty
-// безопасен.
-saas_theme.build_crm_panel = function (frm) {
-	const $right = frm.$wrapper.find(".fp-2pane-right").first();
-	if (!$right.length) return;
+// Детали CRM в правом сайдбаре: идентити (организация/сумма/статус) + плоский
+// список полей. Только чтение из frm.doc. Наш узел .fp-side-details ставится
+// ПЕРВЫМ в .layout-side-section (над нативными Назначения/Вложения/Теги).
+// Сайдбар очищается на render_form → если узел исчез, пересоздаём. Сигнатура
+// защищает от лишних ребилдов, иначе MutationObserver зациклится.
+saas_theme.build_crm_panel = function (frm, $main) {
+	$main = $main && $main.length ? $main : frm.$wrapper.find(".form-layout").first().closest(".layout-main");
+	const $side = $main.find(".layout-side-section").first();
+	if (!$side.length) return;
 
 	const isLead = frm.doctype === "Lead";
 	const d = frm.doc || {};
@@ -269,34 +254,42 @@ saas_theme.build_crm_panel = function (frm) {
 		rows.push([item.label, out]);
 	});
 
-	// Сигнатура — если данные не изменились, не трогаем DOM (без этого observer-луп).
+	// Узел уже первым в сайдбаре И данные те же → ничего не трогаем (без этого
+	// каждый ребилд мутировал бы .layout-main → observer зациклился бы).
 	const sig = JSON.stringify([org, amount, status, rows]);
-	if (frm._st_panel_sig === sig && $right.children().length) return;
+	let $box = $side.children(".fp-side-details").first();
+	const placed = $box.length && $box.get(0) === $side.children().get(0);
+	if (placed && frm._st_panel_sig === sig) return;
 	frm._st_panel_sig = sig;
 
-	$right.empty();
-	const $id = $('<div class="fp-2pane-identity"></div>');
-	if (org) $id.append($('<div class="fp-id-org"></div>').text(org));
-	if (amount) $id.append($('<div class="fp-id-amount"></div>').text(amount));
+	if (!$box.length) $box = $('<div class="fp-side-details"></div>');
+	$box.empty();
+
+	const $id = $('<div class="fp-side-identity"></div>');
+	if (org) $id.append($('<div class="fp-side-org"></div>').text(org));
+	if (amount) $id.append($('<div class="fp-side-amount"></div>').text(amount));
 	if (status) {
 		const col = saas_theme.CRM_STATUS_COLOR[status] || "#8B95A5";
 		$id.append(
-			$('<span class="fp-id-status"></span>')
+			$('<span class="fp-side-status"></span>')
 				.text(__(status))
 				.css({ "background-color": col + "22", color: col, border: "1px solid " + col + "55" })
 		);
 	}
-	if ($id.children().length) $right.append($id);
+	if ($id.children().length) $box.append($id);
 
-	const $rows = $('<div class="fp-2pane-rows"></div>');
+	const $rows = $('<div class="fp-side-rows"></div>');
 	rows.forEach(function (r) {
 		$rows.append(
-			$('<div class="fp-2pane-row"></div>')
-				.append($('<div class="fp-row-l"></div>').text(r[0]))
-				.append($('<div class="fp-row-v"></div>').text(r[1]).attr("title", r[1]))
+			$('<div class="fp-side-row"></div>')
+				.append($('<div class="fp-side-l"></div>').text(r[0]))
+				.append($('<div class="fp-side-v"></div>').text(r[1]).attr("title", r[1]))
 		);
 	});
-	if (rows.length) $right.append($rows);
+	if (rows.length) $box.append($rows);
+
+	// Ставим/возвращаем первым узлом сайдбара (перед нативным .form-sidebar).
+	if ($box.get(0) !== $side.children().get(0)) $side.prepend($box);
 };
 
 saas_theme.reshape_mail = function (frm) {

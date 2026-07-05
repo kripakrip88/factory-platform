@@ -3596,69 +3596,44 @@ html[data-theme="dark"] .st-mail-clampable.st-mail-clamped::after {
 }
 
 /* ============================================
-   Двухпанельная страница сделки/лида (.fp-2pane)
-   ЦЕНТР = форма + лента истории; ПРАВО = панель деталей (только чтение).
-   Раскладка целиком в CSS; JS лишь переносит узлы и вешает классы.
-   Scoped под .fp-crm-card — другие формы и Покупатель не затронуты.
+   Детали сделки/лида в ПРАВОМ САЙДБАРЕ (одна колонка)
+   Наш блок .fp-side-details ставится первым в .layout-side-section, над
+   нативными секциями (Назначения/Вложения/Теги). Форму не делим — центр
+   нативный. Класс .fp-crm-page на .layout-main расширяет правую колонку.
+   Scoped по уникальным классам — другие формы не затронуты.
    ============================================ */
-.fp-crm-card .form-layout.fp-2pane {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-start;
-    gap: 20px;
+/* Ширина обеих колонок Frappe считает от этой переменной (main = 100% - var,
+   side = var). Дефолт 277px → расширяем правую колонку под детали. */
+.fp-crm-page {
+    --form-sidebar-width: 320px;
 }
-/* Служебная плашка сообщений формы — на всю ширину над колонками */
-.fp-crm-card .form-layout.fp-2pane > .form-message-container {
-    flex: 0 0 100%;
-    order: -1;
-}
-.fp-crm-card .fp-2pane-center {
-    flex: 1 1 0;
-    min-width: 0;
-}
-.fp-crm-card .fp-2pane-right {
-    flex: 0 0 320px;
-    max-width: 320px;
-    align-self: flex-start;
-    position: sticky;
-    top: 12px;
-    background: var(--fg-color);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 16px;
-}
-/* Узкий экран — колонки в стопку, панель на всю ширину */
-@media (max-width: 1100px) {
-    .fp-crm-card .form-layout.fp-2pane {
-        flex-direction: column;
-    }
-    .fp-crm-card .fp-2pane-right {
-        flex-basis: auto;
-        max-width: none;
-        width: 100%;
-        position: static;
-    }
-}
-/* Идентити: организация / сумма / статус-пилюля */
-.fp-crm-card .fp-2pane-identity {
-    padding-bottom: 12px;
-    margin-bottom: 12px;
+
+/* Наш блок деталей — сверху сайдбара */
+.fp-side-details {
+    padding-bottom: 14px;
+    margin-bottom: 6px;
     border-bottom: 1px solid var(--border-color);
 }
-.fp-crm-card .fp-id-org {
+/* Идентити: организация / сумма / статус-пилюля */
+.fp-side-identity {
+    padding-bottom: 12px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+.fp-side-org {
     font-size: 16px;
     font-weight: 600;
     color: var(--text-color);
     line-height: 1.3;
     word-break: break-word;
 }
-.fp-crm-card .fp-id-amount {
+.fp-side-amount {
     font-size: 20px;
     font-weight: 700;
     color: var(--text-color);
     margin-top: 6px;
 }
-.fp-crm-card .fp-id-status {
+.fp-side-status {
     display: inline-block;
     margin-top: 10px;
     padding: 3px 10px;
@@ -3668,24 +3643,24 @@ html[data-theme="dark"] .st-mail-clampable.st-mail-clamped::after {
     line-height: 1.4;
 }
 /* Плоский список деталей: подпись слева, значение справа */
-.fp-crm-card .fp-2pane-row {
+.fp-side-row {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
     gap: 12px;
-    padding: 7px 0;
+    padding: 6px 0;
     border-bottom: 1px solid var(--border-color);
 }
-.fp-crm-card .fp-2pane-row:last-child {
+.fp-side-row:last-child {
     border-bottom: 0;
 }
-.fp-crm-card .fp-row-l {
+.fp-side-l {
     color: var(--text-muted);
     font-size: 12px;
     flex: 0 0 auto;
     white-space: nowrap;
 }
-.fp-crm-card .fp-row-v {
+.fp-side-v {
     color: var(--text-color);
     font-size: 13px;
     font-weight: 500;
