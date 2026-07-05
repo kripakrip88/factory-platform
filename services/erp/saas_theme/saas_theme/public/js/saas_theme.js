@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v141";
+const SAAS_THEME_BUILD = "v142";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -1329,28 +1329,22 @@ saas_theme.list_controls = {
 			if ($meta.length) {
 				$meta.find(".st-kb-date, .st-kb-actions").remove();
 				if (f.date) {
-					// Поле modified иногда приходит HTML-ом frappe-timestamp
-					// (<span data-timestamp="2026-07-05 10:22:00" ...>6 часов назад</span>),
-					// иногда абсолютом «05-07-2026 10:22:50». Приводим к «N назад».
-					let dtxt = String(f.date);
-					const cw = (iso) => {
-						try {
-							return frappe.datetime && frappe.datetime.comment_when ? frappe.datetime.comment_when(iso) : null;
-						} catch (e2) {
-							return null;
-						}
-					};
-					const tsm = dtxt.match(/data-timestamp="([^"]+)"/); // ISO из HTML frappe-timestamp
-					const dm = dtxt.match(/(\d{2})[-.](\d{2})[-.](\d{4})[ T](\d{2}):(\d{2})/); // DD-MM-YYYY абсолют
+					// Поле modified приходит HTML-ом frappe-timestamp
+					// (<span data-timestamp="2026-07-05 12:16:00" ...>5 часов назад</span>).
+					// ВАЖНО: frappe.datetime.comment_when() тоже возвращает этот HTML —
+					// нужен frappe.datetime.prettyDate() (голый относительный текст).
+					// Внутри span уже готовый prettyDate → strip-tags как страховка.
+					const rawd = String(f.date);
+					let dtxt = rawd.replace(/<[^>]+>/g, "").trim();
+					const tsm = rawd.match(/data-timestamp="([^"]+)"/); // ISO из frappe-timestamp
 					if (tsm) {
-						dtxt = cw(tsm[1]) || dtxt.replace(/<[^>]+>/g, "").trim();
-					} else if (dm) {
-						const iso = dm[3] + "-" + dm[2] + "-" + dm[1] + " " + dm[4] + ":" + dm[5] + ":00";
-						dtxt = cw(iso) || dm[1] + "." + dm[2] + " " + dm[4] + ":" + dm[5];
-					} else {
-						dtxt = dtxt.replace(/<[^>]+>/g, "").trim(); // на всякий — снять любые теги
+						try {
+							const pd =
+								frappe.datetime && frappe.datetime.prettyDate ? frappe.datetime.prettyDate(tsm[1]) : "";
+							if (pd) dtxt = pd;
+						} catch (e2) {}
 					}
-					$meta.append($('<span class="st-kb-date"></span>').text(dtxt));
+					if (dtxt) $meta.append($('<span class="st-kb-date"></span>').text(dtxt));
 				}
 				let dealname = "";
 				try { dealname = decodeURIComponent($wrapper.attr("data-name") || ""); } catch (ex) {}
