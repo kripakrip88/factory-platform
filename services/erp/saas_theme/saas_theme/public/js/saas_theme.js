@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v135";
+const SAAS_THEME_BUILD = "v136";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -1272,7 +1272,10 @@ saas_theme.list_controls = {
 			const $col = $wrapper.closest(".kanban-column");
 			let status = ($col.attr("data-column-value") || "").trim();
 			if (!status) status = ($col.find("[title]").first().attr("title") || "").trim();
-			if (status) $head.append($('<span class="st-kb-chip"></span>').text(status).attr("title", status));
+			if (status) {
+				const st = __(status); // перевод статуса (Open→Открыта и т.п.) из залитых переводов
+				$head.append($('<span class="st-kb-chip"></span>').text(st).attr("title", st));
+			}
 			$titleArea.prepend($head);
 
 			// Разбор «Подпись: значение» → чистые значения по типу поля.
