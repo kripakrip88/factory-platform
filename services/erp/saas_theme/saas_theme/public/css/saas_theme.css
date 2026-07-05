@@ -3766,6 +3766,41 @@ html[data-theme="dark"] .fp-crm-card .fp-crm-feed .timeline-content {
     margin-bottom: 0;
 }
 
+/* Итерация 1: оформление самой карточки «как в современном CRM» — скругление,
+   рамка, ховер-подъём, крупный читаемый заголовок, аккуратный подвал.
+   Только переменные темы, ноль новых hex. Аватар/чип-статуса/футер-действия —
+   отдельной JS-итерацией (см. project_crm_strategy). */
+.kanban-card.content {
+    border: 1px solid var(--border-color) !important;
+    border-radius: 12px !important;
+    padding: 12px 14px !important;
+    background: var(--card-bg, var(--fg-color)) !important;
+    box-shadow: none !important;
+    transition: border-color .12s ease, transform .12s ease;
+}
+.kanban-card-wrapper:hover .kanban-card.content {
+    border-color: var(--primary) !important;
+    transform: translateY(-1px);
+}
+/* Заголовок карточки = организация: крупнее/жирнее, читаемый цвет (не text-muted) */
+.kanban-card-title {
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: var(--text-color) !important;
+    line-height: 1.3;
+    margin-bottom: 8px;
+}
+/* Родной <br> между заголовком и полями убираем — отступ задаёт margin выше */
+.kanban-title-area br {
+    display: none;
+}
+/* Подвал карточки (аватары исполнителей / счётчики) — отделён тонкой линией */
+.kanban-card-meta:not(:empty) {
+    border-top: 1px solid var(--border-color);
+    margin-top: 10px;
+    padding-top: 8px;
+}
+
 /* ============================================
    ПОЧТА: аватары/прочитано/дата в списке, мета и акцент в карточке, чистка
    Только переменные темы + алгоритмические HSL-аватары. Ноль новых hex.
