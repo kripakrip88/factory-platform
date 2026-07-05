@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v139";
+const SAAS_THEME_BUILD = "v140";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -1324,18 +1324,40 @@ saas_theme.list_controls = {
 				$doc.append($m);
 			}
 
-			// Подвал: дата + быстрые действия (письмо / задача-напоминание / открыть сделку).
+			// Подвал: дата (относительная) + быстрые действия (письмо / задача / комментарий).
 			const $meta = $card.find(".kanban-card-meta").first();
 			if ($meta.length) {
 				$meta.find(".st-kb-date, .st-kb-actions").remove();
-				if (f.date) $meta.append($('<span class="st-kb-date"></span>').text(f.date));
+				if (f.date) {
+					// "05-07-2026 10:22:50" (DD-MM-YYYY) → относительная «2 дня назад»,
+					// фолбэк «05.07 10:22». Если формат не распознан — оставляем как есть.
+					let dtxt = f.date;
+					const dm = String(f.date).match(/(\d{2})[-.](\d{2})[-.](\d{4})[ T](\d{2}):(\d{2})/);
+					if (dm) {
+						const iso = dm[3] + "-" + dm[2] + "-" + dm[1] + " " + dm[4] + ":" + dm[5] + ":00";
+						const short = dm[1] + "." + dm[2] + " " + dm[4] + ":" + dm[5];
+						try {
+							dtxt = frappe.datetime && frappe.datetime.comment_when ? frappe.datetime.comment_when(iso) : short;
+						} catch (e2) {
+							dtxt = short;
+						}
+					}
+					$meta.append($('<span class="st-kb-date"></span>').text(dtxt));
+				}
 				let dealname = "";
 				try { dealname = decodeURIComponent($wrapper.attr("data-name") || ""); } catch (ex) {}
 				const rcpt = /@/.test(f.contact || "") ? f.contact : "";
-				const mkAct = (icon, label, fn) =>
+				// Инлайн-SVG — не зависим от имён иконок Frappe (в спрайте нет mail/todo/check).
+				const SVG_MAIL =
+					'<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>';
+				const SVG_TASK =
+					'<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-5"/></svg>';
+				const SVG_COMMENT =
+					'<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 15a2 2 0 0 1-2 2H8l-4 4V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z"/></svg>';
+				const mkAct = (svg, label, fn) =>
 					$('<span class="st-kb-act" role="button" tabindex="0"></span>')
 						.attr("title", label)
-						.html(frappe.utils.icon(icon, "sm"))
+						.html(svg)
 						.on("click", function (ev) {
 							ev.stopPropagation();
 							ev.preventDefault();
@@ -1344,16 +1366,37 @@ saas_theme.list_controls = {
 				const $acts = $('<span class="st-kb-actions"></span>');
 				if (dealname) {
 					$acts.append(
-						mkAct("mail", "Написать письмо", () =>
+						mkAct(SVG_MAIL, "Написать письмо", () =>
 							new frappe.views.CommunicationComposer({ doctype: "Opportunity", name: dealname, recipients: rcpt })
 						)
 					);
 					$acts.append(
-						mkAct("todo", "Задача-напоминание", () =>
+						mkAct(SVG_TASK, "Задача-напоминание", () =>
 							frappe.new_doc("ToDo", { reference_type: "Opportunity", reference_name: dealname })
 						)
 					);
-					$acts.append(mkAct("message", "Открыть сделку", () => frappe.set_route("Form", "Opportunity", dealname)));
+					$acts.append(
+						mkAct(SVG_COMMENT, "Добавить комментарий", () =>
+							frappe.prompt(
+								{ fieldname: "c", fieldtype: "Small Text", label: __("Комментарий"), reqd: 1 },
+								(v) =>
+									frappe.call({
+										method: "frappe.desk.form.utils.add_comment",
+										args: {
+											reference_doctype: "Opportunity",
+											reference_name: dealname,
+											content: v.c,
+											comment_email: frappe.session.user,
+											comment_by: frappe.session.user_fullname || frappe.session.user,
+										},
+										callback: () =>
+											frappe.show_alert({ message: __("Комментарий добавлен"), indicator: "green" }),
+									}),
+								__("Комментарий к сделке"),
+								__("Добавить")
+							)
+						)
+					);
 				}
 				$meta.append($acts);
 			}
