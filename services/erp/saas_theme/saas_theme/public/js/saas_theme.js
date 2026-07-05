@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v148";
+const SAAS_THEME_BUILD = "v149";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -442,12 +442,17 @@ saas_theme.sidebar = {
 			</div>`;
 		}).join('');
 
+		// Синтетический пункт «CRM 2.0» — отдельный раздел с красивым CRM-видом
+		// (страница crm2). Роут на страницу, а не на воркспейс (data-page).
+		const crm2_icon = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
+		const crm2_item = `<div class="fp-module-item fp-crm2-item" data-page="crm2" title="CRM 2.0"><div class="st-rail-icon">${crm2_icon}</div><span class="fp-module-label">CRM 2.0</span></div>`;
+
 		const search_icon = frappe.utils.icon('es-line-search', 'sm', '', '', '', true);
 		const notif_icon = frappe.utils.icon('es-line-notifications', 'sm', '', '', '', true);
 
 		this.$module_bar = $(`
 			<div class="fp-module-bar">
-				<div class="fp-module-items">${items_html}</div>
+				<div class="fp-module-items">${items_html}${crm2_item}</div>
 				<div class="fp-module-bar-actions">
 					<div class="fp-bar-action-icon fp-bar-search" title="Поиск">
 						${search_icon}
@@ -464,6 +469,9 @@ saas_theme.sidebar = {
 
 		const me = this;
 		this.$module_bar.find('.fp-module-item').on('click', function() {
+			// Синтетический пункт со своим маршрутом (CRM 2.0 → страница crm2).
+			const page = $(this).data('page');
+			if (page) { frappe.set_route(page); me.update_module_bar_active(); return; }
 			const ws_name = $(this).data('workspace');
 			me.switch_workspace(ws_name);
 			me.update_module_bar_active();
@@ -548,6 +556,18 @@ saas_theme.sidebar = {
 				$icon.css({ color: '', stroke: '' });
 			}
 		});
+		// Пункт CRM 2.0 (страница) — подсветить на маршруте crm2/deal_view.
+		const r0 = (frappe.get_route() || [])[0];
+		const onCrm2 = r0 === 'crm2' || r0 === 'deal_view';
+		const $c = $('.fp-crm2-item');
+		$c.toggleClass('active', onCrm2);
+		const cel = $c[0];
+		if (cel) {
+			const cc = '#4D94FF';
+			const $ci = $c.find('.st-rail-icon svg');
+			if (onCrm2) { cel.style.setProperty('background', cc + '2e', 'important'); cel.style.setProperty('--fp-active-color', cc); $ci.css({ color: cc, stroke: cc }); }
+			else { cel.style.removeProperty('background'); cel.style.removeProperty('--fp-active-color'); $ci.css({ color: '', stroke: '' }); }
+		}
 	},
 
 	toggle_module_bar_visibility() {
@@ -1426,18 +1446,9 @@ saas_theme.list_controls = {
 				else if (/дат/i.test(label)) f.date = val;
 			});
 
-			// Клик по карточке ведёт в КРАСИВУЮ карточку deal_view (страница), а не на
-			// нативную форму — это главная «дверь» в новый CRM-вид. Нативная форма
-			// остаётся доступной из deal_view кнопкой «Форма».
-			let dvname = "";
-			try { dvname = decodeURIComponent($wrapper.attr("data-name") || ""); } catch (ex) {}
-			if ($link.length && dvname) {
-				$link.attr("href", "/app/deal_view/Opportunity/" + encodeURIComponent(dvname))
-					.off("click.dv").on("click.dv", function (ev) {
-						ev.preventDefault();
-						frappe.set_route("deal_view", "Opportunity", dvname);
-					});
-			}
+			// Клик по карточке старого канбана — оставляем нативным (ведёт на форму).
+			// Новый красивый вид (deal_view) живёт в отдельном разделе «CRM 2.0»,
+			// чтобы старый CRM оставался нетронутым для сравнения «как было».
 
 			// Шапка: [аватар] [организация + контакт (2 строки)] [чип-статуса].
 			const $namecol = $('<div class="st-kb-namecol"></div>');

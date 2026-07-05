@@ -4,7 +4,7 @@
 // Вкладки: Активность (единая лента) · Письма (тред) · Задачи · Заметки.
 // Тред/лента писем = привязанные к записи ПЛЮС по адресу контакта.
 // Иконки — инлайн-SVG (без зависимости от шрифта Font Awesome). Цвета — desk-темы.
-const DEAL_VIEW_BUILD = "dv3";
+const DEAL_VIEW_BUILD = "dv4";
 
 let DV_PAGE = null;
 let DV = null; // {dt, doc, comms, comments, todos, quotations, versions}
@@ -166,10 +166,22 @@ function deal_view_paint(page) {
 	if (status) $tr.append($('<span class="dv-pill"></span>').text(__(status)).css({ "background-color": scol + "22", color: scol }));
 	$hc.append($tr).append($('<div class="dv-sub"></div>').text(doc.name + (amount ? " · " + amount : "")));
 	$head.append($hc);
+	// Переход по воронке: зовём штатный make_* (get_mapped_doc) → открываем черновик.
+	const dvConvert = function (method, target) {
+		frappe.call({ method: method, args: { source_name: doc.name } })
+			.then(function (r) { if (r.message) { frappe.model.sync(r.message); frappe.set_route("Form", target, r.message.name); } });
+	};
 	if (!isLead) {
 		$head.append($('<button class="btn btn-sm btn-primary dv-btn"></button>').html(dv_svg("file", 14) + " " + dv_esc(__("Создать КП"))).on("click", function () {
-			frappe.call({ method: "erpnext.crm.doctype.opportunity.opportunity.make_quotation", args: { source_name: doc.name } })
-				.then(function (r) { if (r.message) { frappe.model.sync(r.message); frappe.set_route("Form", "Quotation", r.message.name); } });
+			dvConvert("erpnext.crm.doctype.opportunity.opportunity.make_quotation", "Quotation");
+		}));
+	} else {
+		// Воронка лида: Письмо → Лид → Покупатель → Сделка.
+		$head.append($('<button class="btn btn-sm btn-primary dv-btn"></button>').html(dv_svg("file", 14) + " " + dv_esc(__("Создать сделку"))).on("click", function () {
+			dvConvert("erpnext.crm.doctype.lead.lead.make_opportunity", "Opportunity");
+		}));
+		$head.append($('<button class="btn btn-sm dv-btn-sec"></button>').html(dv_svg("plus", 14) + " " + dv_esc(__("Покупатель"))).on("click", function () {
+			dvConvert("erpnext.crm.doctype.lead.lead.make_customer", "Customer");
 		}));
 	}
 	$head.append($('<button class="btn btn-sm dv-btn-sec"></button>').html(dv_svg("pencil", 14) + " " + dv_esc(__("Форма"))).on("click", function () {
