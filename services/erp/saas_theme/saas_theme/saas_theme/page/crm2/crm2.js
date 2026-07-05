@@ -1,7 +1,7 @@
 // CRM 2.0 — витрина нового CRM-вида. Полированный список сделок и лидов на
 // реальных данных; строка открывает красивую карточку deal_view. Отдельный
 // раздел (изолирован от старого CRM для сравнения). Цвета — desk-темы.
-const CRM2_BUILD = "c1";
+const CRM2_BUILD = "c2";
 
 let CRM2_PAGE = null;
 const CRM2 = { cur: "deal", q: "", deals: null, leads: null };
@@ -82,7 +82,7 @@ function crm2_load() {
 	};
 	Promise.all([
 		gl("Opportunity", ["name", "customer_name", "party_name", "status", "opportunity_amount", "currency", "contact_display", "modified"]),
-		gl("Lead", ["name", "company_name", "lead_name", "status", "email_id", "source", "modified"]),
+		gl("Lead", ["name", "company_name", "lead_name", "status", "email_id", "utm_source", "modified"]),
 	]).then(function (res) { CRM2.deals = res[0]; CRM2.leads = res[1]; crm2_render(); });
 }
 
@@ -103,7 +103,7 @@ function crm2_render() {
 			return { dt: "Opportunity", name: x.name, org: org, sub: sub, status: x.status, date: crm2_date(x.modified) };
 		}
 		const org = x.company_name || x.lead_name || x.name;
-		const sub = [x.email_id, x.source].filter(Boolean).join(" · ");
+		const sub = [x.email_id, x.utm_source].filter(Boolean).join(" · ");
 		return { dt: "Lead", name: x.name, org: org, sub: sub, status: x.status, date: crm2_date(x.modified) };
 	}).filter(function (r) { return !q || (r.org + " " + r.sub).toLowerCase().indexOf(q) >= 0; });
 
