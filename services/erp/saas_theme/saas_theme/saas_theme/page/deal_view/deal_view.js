@@ -4,7 +4,7 @@
 // Вкладки: Активность (единая лента) · Письма (тред) · Задачи · Заметки.
 // Тред/лента писем = привязанные к записи ПЛЮС по адресу контакта.
 // Иконки — инлайн-SVG (без зависимости от шрифта Font Awesome). Цвета — desk-темы.
-const DEAL_VIEW_BUILD = "dv2";
+const DEAL_VIEW_BUILD = "dv3";
 
 let DV_PAGE = null;
 let DV = null; // {dt, doc, comms, comments, todos, quotations, versions}
@@ -134,7 +134,7 @@ function deal_view_render(page) {
 			dv_list("Comment", { reference_doctype: dt, reference_name: name, comment_type: "Comment" },
 				["content", "comment_by", "owner", "creation"], "creation desc", 50),
 			dv_list("ToDo", { reference_type: dt, reference_name: name },
-				["description", "status", "owner", "allocated_to", "date", "creation"], "creation desc", 50),
+				["name", "description", "status", "owner", "allocated_to", "date", "creation"], "creation desc", 100),
 			dt === "Opportunity" ? dv_list("Quotation", { opportunity: name },
 				["name", "grand_total", "currency", "status", "owner", "creation"], "creation desc", 20) : Promise.resolve([]),
 			dv_list("Version", { ref_doctype: dt, docname: name }, ["data", "owner", "creation"], "creation desc", 40),
@@ -333,18 +333,78 @@ function dv_bind_quotes($scope) {
 	});
 }
 
-// ── Задачи ────────────────────────────────────────────────────────────────
+// ── Задачи (реальные ToDo: инлайн-добавление + выполнение галочкой + группы) ──
 function dv_build_tasks($left) {
-	$left.append($('<button class="btn btn-sm btn-primary" style="margin-bottom:10px"></button>').html(dv_svg("plus", 14) + " " + dv_esc(__("Новая задача"))).on("click", function () {
-		frappe.new_doc("ToDo", { reference_type: DV.dt, reference_name: DV.doc.name });
-	}));
-	if (!DV.todos.length) { $left.append('<div class="dv-stub">' + dv_esc(__("Задач по сделке нет.")) + "</div>"); return; }
-	DV.todos.forEach(function (t) {
-		const done = t.status === "Closed" || t.status === "Cancelled";
-		$left.append($('<div class="dv-task"></div>')
-			.append($('<span class="dv-task-ic"></span>').css("color", done ? "#3B6D11" : "var(--text-muted)").html(dv_svg("check", 16)))
-			.append($('<span class="dv-task-t"></span>').css("text-decoration", done ? "line-through" : "none").text(dv_strip(t.description) || "—")));
+	const $bar = $('<div class="dv-task-add"></div>');
+	const $in = $('<input type="text" class="dv-task-in">').attr("placeholder", __("Новая задача — например, «Отправить финальное КП»"));
+	const $btn = $('<button class="btn btn-sm btn-primary dv-task-addbtn"></button>').html(dv_svg("plus", 14) + " " + dv_esc(__("Добавить")));
+	$bar.append($in).append($btn);
+	$left.append($bar);
+	const $list = $('<div class="dv-task-list"></div>');
+	$left.append($list);
+
+	const reload = function () {
+		dv_list("ToDo", { reference_type: DV.dt, reference_name: DV.doc.name },
+			["name", "description", "status", "owner", "allocated_to", "date", "creation"], "creation desc", 100)
+			.then(function (l) { DV.todos = l; dv_paint_tasks($list); });
+	};
+	const add = function () {
+		const v = ($in.val() || "").trim();
+		if (!v) return;
+		$btn.prop("disabled", true);
+		frappe.call({ method: "frappe.client.insert", args: { doc: {
+			doctype: "ToDo", description: v, reference_type: DV.dt, reference_name: DV.doc.name,
+			allocated_to: frappe.session.user, date: frappe.datetime.get_today(),
+		} } }).then(function () { $in.val(""); $btn.prop("disabled", false); reload(); },
+			function () { $btn.prop("disabled", false); });
+	};
+	$btn.on("click", add);
+	$in.on("keydown", function (e) { if (e.key === "Enter") add(); });
+	dv_paint_tasks($list);
+}
+
+function dv_paint_tasks($list) {
+	$list.empty();
+	const todos = DV.todos || [];
+	if (!todos.length) { $list.append('<div class="dv-stub">' + dv_esc(__("Задач по сделке нет. Добавьте первую выше.")) + "</div>"); return; }
+	const today = frappe.datetime.get_today();
+	const g = { over: [], today: [], next: [], done: [] };
+	todos.forEach(function (t) {
+		if (t.status === "Closed" || t.status === "Cancelled") g.done.push(t);
+		else if (!t.date) g.next.push(t);
+		else if (t.date < today) g.over.push(t);
+		else if (t.date === today) g.today.push(t);
+		else g.next.push(t);
 	});
+	[["over", "Просрочено", 1], ["today", "Сегодня", 0], ["next", "Предстоит", 0], ["done", "Выполнено", 0]].forEach(function (grp) {
+		const arr = g[grp[0]];
+		if (!arr.length) return;
+		const $h = $('<div class="dv-grp"></div>').text(__(grp[1]));
+		if (grp[2]) $h.css("color", "#E5484D");
+		$list.append($h);
+		arr.forEach(function (t) { $list.append(dv_task_row(t, $list)); });
+	});
+}
+
+function dv_task_row(t, $list) {
+	const done = t.status === "Closed" || t.status === "Cancelled";
+	const $row = $('<div class="dv-task' + (done ? " done" : "") + '"></div>');
+	const $chk = $('<button class="dv-task-check" aria-label="' + dv_esc(__("Выполнить")) + '"></button>').html(done ? dv_svg("check", 13) : "");
+	if (!done) $chk.on("click", function () {
+		$chk.prop("disabled", true);
+		frappe.call({ method: "frappe.client.set_value", args: { doctype: "ToDo", name: t.name, fieldname: "status", value: "Closed" } })
+			.then(function () { t.status = "Closed"; frappe.show_alert({ message: __("Задача выполнена"), indicator: "green" }); dv_paint_tasks($list); });
+	});
+	$row.append($chk);
+	$row.append($('<span class="dv-task-t"></span>').text(dv_strip(t.description) || "—"));
+	if (t.date && !done) {
+		const over = t.date < frappe.datetime.get_today();
+		let lbl; try { lbl = frappe.datetime.str_to_user(t.date).split(" ")[0]; } catch (e) { lbl = t.date; }
+		$row.append($('<span class="dv-task-due' + (over ? " over" : "") + '"></span>').text(lbl));
+	}
+	const who = t.allocated_to || t.owner || "";
+	if (who) $row.append($('<span class="dv-av dv-task-av"></span>').text(dv_initials(who)).css("background", dv_color(who)).attr("title", who));
+	return $row;
 }
 
 // ── Заметки ──────────────────────────────────────────────────────────────
@@ -414,9 +474,19 @@ function inject_deal_view_styles() {
 .dv-chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--text-muted);background:var(--control-bg);border:1px solid var(--border-color);border-radius:20px;padding:3px 10px;margin-top:10px}
 .dv-reply{background:var(--fg-color);border:1px solid var(--border-color);border-radius:12px;padding:12px 14px;margin-top:4px}
 .dv-reply-title{font-size:12px;color:var(--text-muted);margin-bottom:8px}
-.dv-task{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border-color)}
-.dv-task-ic{flex:none;display:flex}
-.dv-task-t{font-size:13px;color:var(--text-color)}
+.dv-task-add{display:flex;gap:8px;align-items:center;margin-bottom:6px}
+.dv-task-in{flex:1;height:34px;font-size:13px;padding:6px 10px;border-radius:8px;border:1px solid var(--border-color);background:var(--control-bg);color:var(--text-color)}
+.dv-task-in:focus{outline:none;border-color:var(--primary)}
+.dv-task-addbtn{white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
+.dv-grp{font-size:12px;color:var(--text-muted);margin:14px 0 4px}
+.dv-task{display:flex;align-items:center;gap:10px;padding:8px 2px;border-bottom:1px solid var(--border-color)}
+.dv-task-check{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border-color);background:none;cursor:pointer;flex:none;display:flex;align-items:center;justify-content:center;color:#fff;padding:0}
+.dv-task.done .dv-task-check{background:var(--primary);border-color:var(--primary)}
+.dv-task-t{font-size:13px;color:var(--text-color);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dv-task.done .dv-task-t{text-decoration:line-through;color:var(--text-muted)}
+.dv-task-due{font-size:11px;padding:2px 8px;border-radius:20px;background:var(--control-bg);color:var(--text-muted);white-space:nowrap;flex:none}
+.dv-task-due.over{background:#E5484D22;color:#E5484D}
+.dv-task-av{width:22px;height:22px;font-size:10px;flex:none}
 .dv-note{background:var(--fg-color);border:1px solid var(--border-color);border-radius:12px;padding:10px 14px;margin-bottom:10px}
 .dv-note-h{font-size:12px;color:var(--text-muted);margin-bottom:4px}
 .dv-note-b{font-size:13px;color:var(--text-color);line-height:1.6}

@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v147";
+const SAAS_THEME_BUILD = "v148";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -1425,6 +1425,19 @@ saas_theme.list_controls = {
 				else if (/сумм/i.test(label)) f.amount = val;
 				else if (/дат/i.test(label)) f.date = val;
 			});
+
+			// Клик по карточке ведёт в КРАСИВУЮ карточку deal_view (страница), а не на
+			// нативную форму — это главная «дверь» в новый CRM-вид. Нативная форма
+			// остаётся доступной из deal_view кнопкой «Форма».
+			let dvname = "";
+			try { dvname = decodeURIComponent($wrapper.attr("data-name") || ""); } catch (ex) {}
+			if ($link.length && dvname) {
+				$link.attr("href", "/app/deal_view/Opportunity/" + encodeURIComponent(dvname))
+					.off("click.dv").on("click.dv", function (ev) {
+						ev.preventDefault();
+						frappe.set_route("deal_view", "Opportunity", dvname);
+					});
+			}
 
 			// Шапка: [аватар] [организация + контакт (2 строки)] [чип-статуса].
 			const $namecol = $('<div class="st-kb-namecol"></div>');
