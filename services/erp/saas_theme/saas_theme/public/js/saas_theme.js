@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v144";
+const SAAS_THEME_BUILD = "v145";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -222,24 +222,26 @@ saas_theme.reshape_crm_card = function (frm) {
 	}
 };
 
-// Детали CRM в правом сайдбаре: идентити (организация/сумма/статус) + плоский
-// список полей. Только чтение из frm.doc. Наш узел .fp-side-details ставится
-// ПЕРВЫМ в .layout-side-section (над нативными Назначения/Вложения/Теги).
-// Сайдбар очищается на render_form → если узел исчез, пересоздаём. Сигнатура
-// защищает от лишних ребилдов, иначе MutationObserver зациклится.
+// Секция «Детали» в правом сайдбаре — как «Реквизиты» во Frappe CRM: заголовок
+// + сетка «подпись | значение». Врезаем ОТДЕЛЬНОЙ секцией сразу под нативным
+// мета-блоком (.sidebar-meta-details = имя организации + № + иконки), не дублируя
+// идентити. Класс sidebar-section → родной padding 15px (ровно как соседи).
+// Только чтение из frm.doc; .form-sidebar очищается на render_form → до-впрыск
+// идемпотентный (узел без живых контролов Frappe), сигнатура спасает от лупа.
 saas_theme.build_crm_panel = function (frm, $main) {
 	$main = $main && $main.length ? $main : frm.$wrapper.find(".form-layout").first().closest(".layout-main");
-	const $side = $main.find(".layout-side-section").first();
-	if (!$side.length) return;
+	const $fs = $main.find(".layout-side-section .form-sidebar").first();
+	if (!$fs.length) return;
+	const $meta = $fs.find(".sidebar-meta-details").first();
 
 	const isLead = frm.doctype === "Lead";
 	const d = frm.doc || {};
-	const org = isLead ? (d.company_name || d.lead_name || "") : (d.customer_name || d.party_name || "");
 	const amount = !isLead && d.opportunity_amount ? format_currency(d.opportunity_amount, d.currency) : "";
 	const status = d.status || "";
 
 	const list = saas_theme.CRM_PANEL_FIELDS[frm.doctype] || [];
 	const rows = [];
+	if (amount) rows.push(["Сумма", amount, null]);
 	list.forEach(function (item) {
 		let v = d[item.fn];
 		if ((v === undefined || v === null || v === "") && item.alt) v = d[item.alt];
@@ -251,45 +253,45 @@ saas_theme.build_crm_panel = function (frm, $main) {
 		else if (ft === "Date") { try { out = frappe.datetime.str_to_user(v); } catch (e) { out = String(v); } }
 		else out = String(v);
 		if (item.suffix) out = out + item.suffix;
-		rows.push([item.label, out]);
+		rows.push([item.label, out, null]);
 	});
 
-	// Узел уже первым в сайдбаре И данные те же → ничего не трогаем (без этого
-	// каждый ребилд мутировал бы .layout-main → observer зациклился бы).
-	const sig = JSON.stringify([org, amount, status, rows]);
-	let $box = $side.children(".fp-side-details").first();
-	const placed = $box.length && $box.get(0) === $side.children().get(0);
-	if (placed && frm._st_panel_sig === sig) return;
+	// Узел на месте (под мета) И данные те же → ничего не трогаем (иначе каждый
+	// ребилд мутировал бы .layout-main → observer зациклился бы).
+	const sig = JSON.stringify([status, rows]);
+	let $box = $fs.find(".fp-side-details").first();
+	const anchored = $box.length && ($meta.length ? $box.prev().get(0) === $meta.get(0) : $fs.children().get(0) === $box.get(0));
+	if (anchored && frm._st_panel_sig === sig) return;
 	frm._st_panel_sig = sig;
 
-	if (!$box.length) $box = $('<div class="fp-side-details"></div>');
+	if (!$box.length) $box = $('<div class="sidebar-section fp-side-details"></div>');
 	$box.empty();
+	$box.append($('<div class="fp-side-title"></div>').text(__("Детали")));
 
-	const $id = $('<div class="fp-side-identity"></div>');
-	if (org) $id.append($('<div class="fp-side-org"></div>').text(org));
-	if (amount) $id.append($('<div class="fp-side-amount"></div>').text(amount));
+	const mkRow = ($val, label) =>
+		$('<div class="fp-side-row"></div>')
+			.append($('<div class="fp-side-l"></div>').text(label))
+			.append($('<div class="fp-side-v"></div>').append($val));
+
+	// Статус — цветная пилюля отдельной строкой
 	if (status) {
 		const col = saas_theme.CRM_STATUS_COLOR[status] || "#8B95A5";
-		$id.append(
-			$('<span class="fp-side-status"></span>')
-				.text(__(status))
-				.css({ "background-color": col + "22", color: col, border: "1px solid " + col + "55" })
-		);
+		const $pill = $('<span class="fp-side-status-pill"></span>')
+			.text(__(status))
+			.css({ "background-color": col + "22", color: col });
+		$box.append(mkRow($pill, __("Статус")));
 	}
-	if ($id.children().length) $box.append($id);
-
-	const $rows = $('<div class="fp-side-rows"></div>');
+	// Остальные поля — текст, значение слева в своей колонке
 	rows.forEach(function (r) {
-		$rows.append(
-			$('<div class="fp-side-row"></div>')
-				.append($('<div class="fp-side-l"></div>').text(r[0]))
-				.append($('<div class="fp-side-v"></div>').text(r[1]).attr("title", r[1]))
-		);
+		$box.append(mkRow($('<span></span>').text(r[1]).attr("title", r[1]), r[0]));
 	});
-	if (rows.length) $box.append($rows);
 
-	// Ставим/возвращаем первым узлом сайдбара (перед нативным .form-sidebar).
-	if ($box.get(0) !== $side.children().get(0)) $side.prepend($box);
+	// Размещаем секцию сразу под нативным идентити (или первой, если его нет).
+	if ($meta.length) {
+		if ($box.prev().get(0) !== $meta.get(0)) $meta.after($box);
+	} else if ($fs.children().get(0) !== $box.get(0)) {
+		$fs.prepend($box);
+	}
 };
 
 saas_theme.reshape_mail = function (frm) {

@@ -3596,11 +3596,11 @@ html[data-theme="dark"] .st-mail-clampable.st-mail-clamped::after {
 }
 
 /* ============================================
-   Детали сделки/лида в ПРАВОМ САЙДБАРЕ (одна колонка)
-   Наш блок .fp-side-details ставится первым в .layout-side-section, над
-   нативными секциями (Назначения/Вложения/Теги). Форму не делим — центр
-   нативный. Класс .fp-crm-page на .layout-main расширяет правую колонку.
-   Scoped по уникальным классам — другие формы не затронуты.
+   Секция «Детали» в ПРАВОМ САЙДБАРЕ (как «Реквизиты» во Frappe CRM)
+   Врезается отдельной .sidebar-section сразу под нативным идентити
+   (.sidebar-meta-details). Класс sidebar-section даёт родной padding 15px —
+   отступы консистентны с соседними секциями. Заголовок + сетка «подпись|значение».
+   .fp-crm-page на .layout-main расширяет правую колонку. Scoped уникальными классами.
    ============================================ */
 /* Ширина обеих колонок Frappe считает от этой переменной (main = 100% - var,
    side = var). Дефолт 277px → расширяем правую колонку под детали. */
@@ -3608,67 +3608,54 @@ html[data-theme="dark"] .st-mail-clampable.st-mail-clamped::after {
     --form-sidebar-width: 320px;
 }
 
-/* Наш блок деталей — сверху сайдбара */
+/* Секция деталей — родной padding от .sidebar-section, добавляем нижний
+   отступ и разделитель, чтобы отделить от Назначений/Вложений ниже. */
 .fp-side-details {
-    padding-bottom: 14px;
-    margin-bottom: 6px;
+    padding-bottom: var(--padding-md) !important;
     border-bottom: 1px solid var(--border-color);
 }
-/* Идентити: организация / сумма / статус-пилюля */
-.fp-side-identity {
-    padding-bottom: 12px;
+.fp-side-title {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--text-color);
     margin-bottom: 10px;
-    border-bottom: 1px solid var(--border-color);
 }
-.fp-side-org {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--text-color);
-    line-height: 1.3;
-    word-break: break-word;
-}
-.fp-side-amount {
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--text-color);
-    margin-top: 6px;
-}
-.fp-side-status {
-    display: inline-block;
-    margin-top: 10px;
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
-    line-height: 1.4;
-}
-/* Плоский список деталей: подпись слева, значение справа */
+/* Строка: подпись (левая колонка) | значение (левое выравнивание, своя колонка) */
 .fp-side-row {
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: 42% 1fr;
+    gap: 10px;
     align-items: baseline;
-    gap: 12px;
-    padding: 6px 0;
-    border-bottom: 1px solid var(--border-color);
-}
-.fp-side-row:last-child {
-    border-bottom: 0;
+    padding: 4px 0;
 }
 .fp-side-l {
     color: var(--text-muted);
     font-size: 12px;
-    flex: 0 0 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
 }
 .fp-side-v {
     color: var(--text-color);
     font-size: 13px;
     font-weight: 500;
-    text-align: right;
-    max-width: 62%;
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+.fp-side-v > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.fp-side-status-pill {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.5;
 }
 
 /* --- Мультиселект «Категория изделий»: высота и выпадашка --- */
