@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v138";
+const SAAS_THEME_BUILD = "v139";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -1304,23 +1304,58 @@ saas_theme.list_controls = {
 				if (f.volume)
 					$m.append(
 						$('<div class="st-kb-metric"><div class="st-kb-metric-l">Объём</div></div>').append(
-							$('<div class="st-kb-metric-v"></div>').text(f.volume)
+							$('<div class="st-kb-metric-v"></div>').text((f.volume || "0") + " т")
 						)
 					);
 				if (f.amount)
 					$m.append(
 						$('<div class="st-kb-metric"><div class="st-kb-metric-l">Сумма</div></div>').append(
-							$('<div class="st-kb-metric-v"></div>').text(f.amount)
+							$('<div class="st-kb-metric-v"></div>').text(
+								(function (s) {
+									const n = parseFloat((s || "").replace(/[^\d,.-]/g, "").replace(",", "."));
+									if (isNaN(n)) return s;
+									if (n >= 1e6) return (n / 1e6).toFixed(2).replace(".", ",") + " млн ₽";
+									if (n >= 1e3) return Math.round(n / 1e3) + " тыс ₽";
+									return n.toLocaleString("ru-RU") + " ₽";
+								})(f.amount)
+							)
 						)
 					);
 				$doc.append($m);
 			}
 
-			// Дата → в подвал карточки.
-			if (f.date) {
-				const $meta = $card.find(".kanban-card-meta").first();
-				if ($meta.length && !$meta.find(".st-kb-date").length)
-					$meta.prepend($('<span class="st-kb-date"></span>').text(f.date));
+			// Подвал: дата + быстрые действия (письмо / задача-напоминание / открыть сделку).
+			const $meta = $card.find(".kanban-card-meta").first();
+			if ($meta.length) {
+				$meta.find(".st-kb-date, .st-kb-actions").remove();
+				if (f.date) $meta.append($('<span class="st-kb-date"></span>').text(f.date));
+				let dealname = "";
+				try { dealname = decodeURIComponent($wrapper.attr("data-name") || ""); } catch (ex) {}
+				const rcpt = /@/.test(f.contact || "") ? f.contact : "";
+				const mkAct = (icon, label, fn) =>
+					$('<span class="st-kb-act" role="button" tabindex="0"></span>')
+						.attr("title", label)
+						.html(frappe.utils.icon(icon, "sm"))
+						.on("click", function (ev) {
+							ev.stopPropagation();
+							ev.preventDefault();
+							fn();
+						});
+				const $acts = $('<span class="st-kb-actions"></span>');
+				if (dealname) {
+					$acts.append(
+						mkAct("mail", "Написать письмо", () =>
+							new frappe.views.CommunicationComposer({ doctype: "Opportunity", name: dealname, recipients: rcpt })
+						)
+					);
+					$acts.append(
+						mkAct("todo", "Задача-напоминание", () =>
+							frappe.new_doc("ToDo", { reference_type: "Opportunity", reference_name: dealname })
+						)
+					);
+					$acts.append(mkAct("message", "Открыть сделку", () => frappe.set_route("Form", "Opportunity", dealname)));
+				}
+				$meta.append($acts);
 			}
 
 			$card.addClass("st-kb-done");

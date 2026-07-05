@@ -3816,13 +3816,17 @@ html[data-theme="dark"] .fp-crm-card .fp-crm-feed .timeline-content {
 .st-kb-namecol > a {
     text-decoration: none !important;
 }
-/* Контактное лицо — подстрока под организацией (как в макете) */
+/* Контактное лицо — подстрока под организацией (как в макете). В одну строку с
+   многоточием — длинный email не должен ломаться на несколько строк (ядро Frappe
+   ставит word-break на текст карточки → перебиваем). */
 .st-kb-contact {
     font-size: 12px;
     color: var(--text-muted);
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
+    white-space: nowrap !important;
+    word-break: normal !important;
+    overflow-wrap: normal !important;
 }
 .st-kb-head .kanban-card-title {
     margin: 0 !important;
@@ -3896,8 +3900,38 @@ html[data-theme="dark"] .fp-crm-card .fp-crm-feed .timeline-content {
 
 /* Колонки канбана шире — карточки не зажаты (родной ~248px тесен под метрики/суммы) */
 .kanban-column {
-    width: 320px !important;
-    min-width: 320px !important;
+    width: 340px !important;
+    min-width: 340px !important;
+}
+
+/* Подвал-действия: дата слева, кнопки (письмо/задача/открыть) справа. Родные
+   лишние иконки подвала (лайк/счётчики) прячем — чистый ряд как в макете. */
+.kanban-card-meta {
+    display: flex !important;
+    align-items: center;
+    gap: 8px;
+}
+.kanban-card-meta > :not(.st-kb-date):not(.st-kb-actions) {
+    display: none !important;
+}
+.st-kb-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    margin-left: auto;
+}
+.st-kb-act {
+    cursor: pointer;
+    color: var(--text-muted);
+    display: inline-flex;
+    align-items: center;
+}
+.st-kb-act:hover {
+    color: var(--primary);
+}
+.st-kb-act svg {
+    width: 15px;
+    height: 15px;
 }
 
 /* Анти-FOUC: до JS-декорации прячем сырое тело карточки (родные подписи
