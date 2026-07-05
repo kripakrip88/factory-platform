@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v134";
+const SAAS_THEME_BUILD = "v135";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -1083,6 +1083,8 @@ saas_theme.list_controls = {
 		this.cleanup_inbox_buttons(window.cur_list);
 		// Аватары/прочитано/дата в строках инбокса (JS-декорация + наблюдатель)
 		this.decorate_inbox_rows(window.cur_list);
+		// Канбан сделок: аватар/статус-чип/метрики/чистые значения (JS-декорация)
+		this.decorate_kanban_cards(window.cur_list);
 		// Скрыть лишние стандартные фильтры-строки (per-doctype)
 		this.hide_standard_filters(window.cur_list);
 		// Скрыть глючное «Представление отчёта» из меню (CRM-списки)
@@ -1234,6 +1236,96 @@ saas_theme.list_controls = {
 				const obs = new MutationObserver(() => {
 					clearTimeout(lv._st_rows_t);
 					lv._st_rows_t = setTimeout(() => me.decorate_inbox_rows(lv), 150);
+				});
+				obs.observe(target, { childList: true, subtree: true });
+			}
+		}
+	},
+
+	decorate_kanban_cards(lv) {
+		// Только наш канбан сделок (Opportunity/Kanban). Меняем ТОЛЬКО внутренности
+		// карточки — сам draggable-элемент и data-name не трогаем (драг-дроп цел).
+		if (!lv || lv.view_name !== "Kanban" || lv.doctype !== "Opportunity") return;
+		if (!lv.page || !lv.page.wrapper) return;
+		const me = this;
+		$(lv.page.wrapper).find(".kanban-card-wrapper").each(function () {
+			const $wrapper = $(this);
+			const $card = $wrapper.find(".kanban-card").first();
+			if (!$card.length || $card.hasClass("st-kb-done")) return;
+			const $titleArea = $card.find(".kanban-title-area").first();
+			const $doc = $card.find(".kanban-card-doc").first();
+			const $link = $titleArea.find("> a").first();
+			const title = ($card.find(".kanban-card-title").text() || "").trim();
+			if (!title || !$titleArea.length) return;
+
+			// Аватар: инициалы организации (до 2 слов) + стабильный HSL-цвет.
+			const initials =
+				title.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "?";
+			const $av = $('<span class="st-kb-avatar"></span>')
+				.css("background", saas_theme.mail_avatar_color(title))
+				.text(initials);
+
+			// Шапка: [аватар] [название-ссылка] [чип-статуса].
+			const $head = $('<div class="st-kb-head"></div>').append($av);
+			if ($link.length) $head.append($link);
+			else $head.append($('<span class="kanban-card-title"></span>').text(title));
+			const $col = $wrapper.closest(".kanban-column");
+			let status = ($col.attr("data-column-value") || "").trim();
+			if (!status) status = ($col.find("[title]").first().attr("title") || "").trim();
+			if (status) $head.append($('<span class="st-kb-chip"></span>').text(status).attr("title", status));
+			$titleArea.prepend($head);
+
+			// Разбор «Подпись: значение» → чистые значения по типу поля.
+			const f = {};
+			$doc.find(".text-truncate").each(function () {
+				const raw = ($(this).text() || "").trim();
+				const i = raw.indexOf(":");
+				const label = i >= 0 ? raw.slice(0, i) : "";
+				const val = (i >= 0 ? raw.slice(i + 1) : raw).trim();
+				if (/категор/i.test(label)) f.category = val;
+				else if (/об[ъь]?[её]м/i.test(label)) f.volume = val;
+				else if (/сумм/i.test(label)) f.amount = val;
+				else if (/дат/i.test(label)) f.date = val;
+			});
+
+			// Пересобираем тело: тег категории + метрики (без серых чипов и подписей).
+			$doc.empty();
+			if (f.category) $doc.append($('<div class="st-kb-tag"></div>').text(f.category));
+			if (f.volume || f.amount) {
+				const $m = $('<div class="st-kb-metrics"></div>');
+				if (f.volume)
+					$m.append(
+						$('<div class="st-kb-metric"><div class="st-kb-metric-l">Объём</div></div>').append(
+							$('<div class="st-kb-metric-v"></div>').text(f.volume)
+						)
+					);
+				if (f.amount)
+					$m.append(
+						$('<div class="st-kb-metric"><div class="st-kb-metric-l">Сумма</div></div>').append(
+							$('<div class="st-kb-metric-v"></div>').text(f.amount)
+						)
+					);
+				$doc.append($m);
+			}
+
+			// Дата → в подвал карточки.
+			if (f.date) {
+				const $meta = $card.find(".kanban-card-meta").first();
+				if ($meta.length && !$meta.find(".st-kb-date").length)
+					$meta.prepend($('<span class="st-kb-date"></span>').text(f.date));
+			}
+
+			$card.addClass("st-kb-done");
+		});
+
+		// Наблюдатель — перерисовать декор после ре-рендера канбана (один раз на список).
+		if (!lv._st_kb_observed) {
+			const target = lv.$result && lv.$result.length ? lv.$result[0] : null;
+			if (target) {
+				lv._st_kb_observed = true;
+				const obs = new MutationObserver(() => {
+					clearTimeout(lv._st_kb_t);
+					lv._st_kb_t = setTimeout(() => me.decorate_kanban_cards(lv), 150);
 				});
 				obs.observe(target, { childList: true, subtree: true });
 			}

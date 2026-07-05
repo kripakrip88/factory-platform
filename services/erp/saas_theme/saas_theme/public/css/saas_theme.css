@@ -3801,6 +3801,89 @@ html[data-theme="dark"] .fp-crm-card .fp-crm-feed .timeline-content {
     padding-top: 8px;
 }
 
+/* Итерация 2 (JS decorate_kanban_cards): аватар + чистые значения без подписей,
+   тег категории, метрики объём/сумма, чип-статуса, дата в подвал. Ноль новых hex. */
+.st-kb-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+.st-kb-head > a {
+    flex: 1;
+    min-width: 0;
+    text-decoration: none !important;
+}
+.st-kb-head .kanban-card-title {
+    margin: 0 !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.st-kb-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    color: #fff; /* белый на цветном кружке — как у почтовых аватаров, не бренд-hex */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    flex-shrink: 0;
+    line-height: 1;
+}
+.st-kb-chip {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 20px;
+    background: var(--control-bg);
+    color: var(--text-muted);
+    white-space: nowrap;
+    max-width: 42%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.st-kb-tag {
+    display: inline-block;
+    font-size: 12px;
+    padding: 3px 9px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    line-height: 1.35;
+}
+.st-kb-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+.st-kb-metric {
+    background: var(--control-bg);
+    border-radius: 6px;
+    padding: 7px 10px;
+    min-width: 0;
+}
+.st-kb-metric-l {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+.st-kb-metric-v {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-color);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.kanban-card-meta .st-kb-date {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
 /* ============================================
    ПОЧТА: аватары/прочитано/дата в списке, мета и акцент в карточке, чистка
    Только переменные темы + алгоритмические HSL-аватары. Ноль новых hex.
