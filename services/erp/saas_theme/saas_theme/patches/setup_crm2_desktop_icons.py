@@ -30,7 +30,10 @@ def execute():
             "icon": "users",
             "app": "saas_theme",
             "bg_color": "blue",
-            "standard": 1,
+            # standard=0 (кастомная, владелец Administrator → видна всем): migrate в
+            # конце ПЕРЕСОБИРАЕТ standard=1 иконки и снёс бы нашу. standard=0 (как у
+            # «Калькуляторов») переживает миграции.
+            "standard": 0,
             "hidden": 0,
             "idx": 2,
         })
