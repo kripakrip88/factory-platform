@@ -16,6 +16,24 @@ from frappe.desk.doctype.desktop_icon.desktop_icon import clear_desktop_icons_ca
 
 
 def execute():
+    # 0. Workspace Sidebar «CRM 2.0» — КЛЮЧЕВОЕ: грид (get_sidebar_items, boot.py)
+    #    строится из доктайпа `Workspace Sidebar`, а НЕ из `Workspace`. Для воркспейсов
+    #    С модулем такая запись авто-создаётся (auto_generate_sidebar_from_module), а наш
+    #    module-less CRM 2.0 её не получил → Desktop Icon отсеивался is_permitted (нет
+    #    workspace_sidebar_item[label]). Создаём module-less (видна всем) с непустыми items.
+    if not frappe.db.exists("Workspace Sidebar", "CRM 2.0"):
+        frappe.get_doc({
+            "doctype": "Workspace Sidebar",
+            "title": "CRM 2.0",
+            "header_icon": "users",
+            "app": "saas_theme",
+            "items": [
+                {"type": "Link", "label": "Витрина", "link_type": "Page", "link_to": "crm2"},
+                {"type": "Link", "label": "Сделки", "link_type": "DocType", "link_to": "Opportunity"},
+                {"type": "Link", "label": "Лиды", "link_type": "DocType", "link_to": "Lead"},
+            ],
+        }).insert(ignore_permissions=True)
+
     # 1. CRM 2.0 в сетку приложений (app=saas_theme → svg-глиф crm_2.0.svg).
     #    Dynamic Link link_to капризничает на имени «CRM 2.0» (пробел+точка), хотя
     #    воркспейс существует → обходим валидацию ссылок (маршрут рабочий: иконка →
