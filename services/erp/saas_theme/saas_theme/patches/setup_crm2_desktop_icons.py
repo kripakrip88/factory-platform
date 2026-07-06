@@ -17,8 +17,11 @@ from frappe.desk.doctype.desktop_icon.desktop_icon import clear_desktop_icons_ca
 
 def execute():
     # 1. CRM 2.0 в сетку приложений (app=saas_theme → svg-глиф crm_2.0.svg).
+    #    Dynamic Link link_to капризничает на имени «CRM 2.0» (пробел+точка), хотя
+    #    воркспейс существует → обходим валидацию ссылок (маршрут рабочий: иконка →
+    #    воркспейс CRM 2.0 → редирект на страницу crm2, см. saas_theme.js).
     if not frappe.db.exists("Desktop Icon", {"label": "CRM 2.0", "icon_type": "Link"}):
-        frappe.get_doc({
+        di = frappe.get_doc({
             "doctype": "Desktop Icon",
             "label": "CRM 2.0",
             "link_type": "Workspace Sidebar",
@@ -30,7 +33,9 @@ def execute():
             "standard": 1,
             "hidden": 0,
             "idx": 2,
-        }).insert(ignore_permissions=True, ignore_if_duplicate=True)
+        })
+        di.flags.ignore_links = True
+        di.insert(ignore_permissions=True, ignore_if_duplicate=True)
 
     # 2. Скрыть App-плитку «Framework» из грида (технический шум для менеджера).
     fw = frappe.db.exists("Desktop Icon", {"label": "Framework", "icon_type": "App"})
