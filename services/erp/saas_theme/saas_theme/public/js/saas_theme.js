@@ -10,7 +10,7 @@
  */
 
 // Build marker — bump together with ?v=N in hooks.py; CI smoke-test greps for it.
-const SAAS_THEME_BUILD = "v149";
+const SAAS_THEME_BUILD = "v150";
 
 // Apply persisted theme-mode immediately — prevents flash on page reload.
 // Frappe uses data-theme-mode as source of truth; data-theme is derived from it.
@@ -69,6 +69,17 @@ $(document).ready(function () {
 		}
 		saas_theme.sidebar.setup_user_menu();
 	});
+
+	// CRM 2.0: воркспейс существует только ради лаунчера/сетки приложений — заход на
+	// его маршрут редиректим на страницу-витрину crm2 (единая точка входа).
+	if (frappe.router && frappe.router.on) {
+		frappe.router.on("change", function () {
+			const r = frappe.get_route() || [];
+			if (r[0] === "Workspaces" && /crm.?2/i.test(String(r[1] || ""))) {
+				frappe.set_route("crm2");
+			}
+		});
+	}
 
 	// Global "Отмена" button on every NEW document form — replaces the per-doctype
 	// Client Scripts (previously only Lead/Opportunity). form-refresh fires with frm.
@@ -870,7 +881,10 @@ saas_theme.sidebar = {
 			return (
 				icon.hidden !== 1 &&
 				icon.link_type === "Workspace Sidebar" &&
-				sidebar_items[icon.label.toLowerCase()]
+				sidebar_items[icon.label.toLowerCase()] &&
+				// «CRM 2.0» — в навбаре это синтетический пункт (data-page=crm2);
+				// воркспейс с тем же именем нужен только для лаунчера → не дублируем.
+				icon.label.toLowerCase() !== "crm 2.0"
 			);
 		});
 	},
