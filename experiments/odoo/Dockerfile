@@ -18,18 +18,25 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz0b libffi-dev \
     && rm -rf /var/lib/apt/lists/*
 
+# python-magic определяет тип файла через libmagic — без системной библиотеки импорт падает.
+RUN apt-get update && apt-get install -y --no-install-recommends libmagic1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Две группы пакетов:
+#  1) ОБЪЯВЛЕННЫЕ в external_dependencies манифестов RuOdoo;
+#  2) НЕ объявленные, но реально импортируемые в коде — найдены сканированием
+#     всех .py репозитория. Это дефект упаковки RuOdoo: без них модуль ставится
+#     «успешно» по манифесту и падает на импорте. Первым так отвалился l10n_ru_contract
+#     с ModuleNotFoundError: pymorphy2.
+#     pymorphy2 тянет словарь отдельным пакетом — pymorphy2-dicts-ru.
+#     matplotlib/networkx нужны только модулям mklab_* (показатели и графы);
+#     держим в образе, чтобы их можно было включить не пересобирая.
+#
 # --break-system-packages: в Debian 12+ системный python помечен как externally-managed
 # (PEP 668), без флага pip отказывается ставить. Для образа это безопасно.
-RUN pip3 install --no-cache-dir --break-system-packages \
-        pytils \
-        num2words \
-        docxcompose \
-        docxtpl \
-        beautifulsoup4 \
-        polib \
-        siphashc \
-        weasyprint \
-    || pip3 install --no-cache-dir \
-        pytils num2words docxcompose docxtpl beautifulsoup4 polib siphashc weasyprint
+ARG PYDEPS="pytils num2words docxcompose docxtpl beautifulsoup4 polib siphashc weasyprint \
+            pymorphy2 pymorphy2-dicts-ru dadata httpx python-magic matplotlib networkx openupgradelib"
+RUN pip3 install --no-cache-dir --break-system-packages ${PYDEPS} \
+    || pip3 install --no-cache-dir ${PYDEPS}
 
 USER odoo
