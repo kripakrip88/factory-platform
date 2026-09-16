@@ -33,9 +33,13 @@ services:
     mem_limit: 768m
 
   odoo:
-    # Тег с датой, а не плавающий 19.0 — иначе перезапуск может тихо сменить версию
-    # (у нас уже был такой прецедент с frappe/erpnext, см. CLAUDE.md «Версии»).
-    image: odoo:19.0-20260908
+    # Свой образ = официальный Odoo + Python-зависимости RuOdoo (см. Dockerfile).
+    # Без них модули локализации не ставятся: проверено, падает на docxcompose.
+    # Базовый тег с датой, а не плавающий 19.0 — иначе перезапуск может тихо
+    # сменить версию (прецедент с frappe/erpnext, см. CLAUDE.md «Версии»).
+    build:
+      context: .
+    image: odoo-ru:19.0-20260908
     container_name: odoo-app
     restart: unless-stopped
     depends_on:
