@@ -140,3 +140,77 @@ docker stack rm carbon          # снять стек (тома остаются
   ERP/MES работают без него.
 - Studio (админка БД) не публикуется: у неё нет своей аутентификации. База — через
   `ssh` + `docker exec psql`.
+
+---
+
+## Вход: важное про магические ссылки
+
+**У Carbon НЕТ входа по паролю.** Их `AUTH_PROVIDERS` принимает только
+`email,google,azure,passkey`, где `email` — это magic link. Пароль в GoTrue при этом
+работает (`grant_type=password` отдаёт токен), но интерфейс Carbon его не предлагает.
+
+Почта у стенда не настроена → письмо со ссылкой не приходит. Пока это так, ссылку
+нужно генерировать вручную:
+
+```bash
+ssh factory '
+C=$(docker ps --filter "name=carbon_storage" --format "{{.Names}}" | head -1)
+KEY=$(docker exec "$C" cat /run/secrets/service_role_key)
+echo "{\"type\":\"magiclink\",\"email\":\"admin@erppark.ru\"}" > /tmp/gl.json
+docker run --rm --network carbon_internal -v /tmp/gl.json:/d.json:ro curlimages/curl:latest \
+  -s -X POST http://kong:8000/auth/v1/admin/generate_link \
+  -H "apikey: $KEY" -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
+  --data @/d.json'
+```
+
+⚠️ В `action_link` из ответа GoTrue **отсутствует префикс `/auth/v1`** (следствие того,
+как задан его EXTERNAL_URL). Рабочий вид ссылки:
+
+```
+https://api.erppark.ru/auth/v1/verify?token=<ТОКЕН>&type=magiclink&redirect_to=https://carbon.erppark.ru/callback
+```
+
+Токен одноразовый.
+
+### Почему НЕ включён DEV_BYPASS_EMAIL
+
+В их `login.tsx` есть переменная `DEV_BYPASS_EMAIL`: если она равна адресу, вход
+происходит **вообще без проверки** — достаточно ввести этот адрес на странице входа.
+Стенд открыт в интернет, поэтому включать нельзя ни при каких условиях.
+
+### Как сделать нормально
+
+Настроить SMTP для GoTrue — тогда ссылки будут приходить письмом и костыль не нужен:
+
+1. В `.env` заполнить `GOTRUE_SMTP_HOST`, `GOTRUE_SMTP_PORT`, `GOTRUE_SMTP_USER`,
+   `GOTRUE_SMTP_ADMIN_EMAIL`.
+2. Пароль положить секретом Swarm (его набирает владелец ящика, не Claude):
+   ```bash
+   cd /opt/experiments/carbon/src/contrib/deploying/simple-docker-caddy
+   printf '%s' 'ПАРОЛЬ' | bash ./deploy.sh secret smtp_password
+   ```
+3. `docker service update --force carbon_gotrue`
+
+## Первичная настройка выполнена
+
+Мастер онбординга пройден целиком (тема → пользователь → компания). Создано:
+
+| | |
+|---|---|
+| Компания | `PMK Park`, Khabarovsk, RU |
+| Валюта | **RUB** |
+| Часовой пояс | Asia/Vladivostok (GMT+10) — определился сам, верно |
+| Сайт | pmkpark.ru |
+| Пользователь | Anton Karneev, `admin@erppark.ru`, активен, привязан сотрудником |
+
+⚠️ **Адрес и индекс — заглушки:** `addressLine1 = "TBD - уточнить"`, `postalCode = 680000`
+(общий индекс Хабаровска). Реального адреса завода я не знаю и выдумывать его не стал —
+поправить в настройках компании.
+
+### Грабли их интерфейса (если придётся повторять)
+
+Комбобоксы Carbon (страна, валюта) не принимают синтетический ввод: значение задваивается,
+Backspace не удаляет, а type-ahead в открытом списке молча меняет уже выбранное на другое
+(так страна дважды становилась Angola). Надёжно работает установка значения через нативный
+сеттер `HTMLInputElement.prototype.value` + `input`-событие — в том числе для скрытого поля
+`baseCurrencyCode`, через которое и была выставлена RUB.
