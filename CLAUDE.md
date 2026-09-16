@@ -67,14 +67,16 @@ services/ai-assistant/
 | Сервер | ✅ Бегет VPS, Ubuntu 24.04, IP: 155.212.143.179 |
 | Docker + автодеплой | ✅ работает, GitHub Actions настроен |
 | Docker Compose | ✅ проверен на сервере |
-| ERPNext | ✅ запущен на порту 8080 |
-| n8n | ✅ запущен, доступен через /n8n/ |
+| ERPNext | ✅ запущен: prod `erppark.ru` (:8080), staging `d.erppark.ru` (:8081) |
+| n8n | ✅ запущен, `n8n.erppark.ru` |
+| Домены + TLS | ✅ erppark.ru / d. / n8n. — Let's Encrypt с автопродлением, 80→443, www→apex |
 | PostgreSQL + Redis | ✅ работают |
 | Nginx | ✅ health check + reverse proxy |
 | GitHub Secrets | ✅ SERVER_HOST, SERVER_USER, SERVER_SSH_KEY |
+| Бэкапы | ✅ два уровня — см. `docs/backup.md` |
 | AI Assistant | ❌ пустая папка, нужно написать с нуля |
 | Telegram Bot | ❌ только /start и /help, логика не реализована |
-| n8n воркфлоу | ❌ пусто, нужно создать |
+| n8n воркфлоу | ⚠️ 1 воркфлоу (автоклассификация писем) — АКТИВЕН, но падает: ключ Anthropic 401 |
 
 ## Дорожная карта
 
@@ -88,7 +90,9 @@ services/ai-assistant/
 - ⏳ n8n воркфлоу: email → лид
 - ⏳ Email Analyzer → лид в ERP
 - ⏳ Telegram-уведомление менеджеру
-- ⏳ Автобэкап баз данных (PostgreSQL + brain-db) — cron job на сервере, дамп раз в сутки
+- ✅ Автобэкап баз данных — cron 03:00 (`services/erp/scripts/backup.sh`): ERPNext,
+  n8n, factory, brain-db. Плюс Бегет сам снимает VPS раз в 2-4 дня в отдельный ДЦ.
+  Подробности и восстановление — `docs/backup.md`. **Offsite покупать не нужно.**
 
 **Месяц 3-4 — первая ценность**
 - Quotation Assistant (считает КП из данных ERP)
