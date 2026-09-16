@@ -1,0 +1,140 @@
+# WebErpMesv2 — ИЗОЛИРОВАННЫЙ ЭКСПЕРИМЕНТ. Не часть основного стека.
+# Ничего не делит с erp / erp-staging / infra: свой проект, свои сети, свои тома.
+#
+# Их собственный docker-compose.yaml НЕ используется — в нём 4 дефекта,
+# разобраны в README.md рядом. Этот файл — наш, исправленный.
+#
+# Запуск:  см. install.sh  (или README.md → «Запуск вручную»)
+# Смотреть: http://155.212.143.179:8082
+
+name: wem
+
+services:
+  # ─── PHP-FPM: само приложение ───────────────────────────────────────────────
+  app:
+    build:
+      context: ${WEM_SRC:?не задан WEM_SRC — путь к исходникам WebErpMesv2}
+    image: wem-app:local
+    container_name: wem-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      DB_CONNECTION: mysql
+      DB_HOST: db                      # имя сервиса, не db-dev (у них было битое)
+      DB_PORT: "3306"
+      DB_DATABASE: ${WEM_DB_NAME:-wem}
+      DB_USERNAME: ${WEM_DB_USER:-wem_user}
+      DB_PASSWORD: ${WEM_DB_PASSWORD:?не задан WEM_DB_PASSWORD}
+      REDIS_HOST: redis
+      APP_URL: ${WEM_APP_URL:-http://155.212.143.179:8082}
+    volumes:
+      - ${WEM_SRC}:/app
+      # vendor и node_modules — в томах: инициализируются из образа и не затираются
+      # bind-монтированием исходников с хоста
+      - wem_vendor:/app/vendor
+      - wem_node_modules:/app/node_modules
+    command: ["/entrypoint.sh"]
+    expose:
+      - "9000"
+    mem_limit: 1g                      # потолок, чтобы эксперимент не задел прод
+    cpus: 1.5
+
+  # ─── Nginx: отдаёт публику и проксирует PHP ────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: wem-nginx
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      # Единственный порт наружу. 8080/8081 заняты прод/staging ERPNext.
+      - "8082:80"
+    volumes:
+      - ${WEM_SRC}:/app:ro
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    mem_limit: 128m
+
+  # ─── MySQL ─────────────────────────────────────────────────────────────────
+  db:
+    image: mysql:8.0
+    container_name: wem-db
+    restart: unless-stopped
+    # Портов наружу НЕТ (у них было 3306 нараспашку через redis-dev-подход)
+    command:
+      - --innodb-buffer-pool-size=128M
+      - --max-connections=50
+    environment:
+      MYSQL_DATABASE: ${WEM_DB_NAME:-wem}
+      MYSQL_USER: ${WEM_DB_USER:-wem_user}
+      MYSQL_PASSWORD: ${WEM_DB_PASSWORD:?не задан WEM_DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${WEM_DB_ROOT_PASSWORD:?не задан WEM_DB_ROOT_PASSWORD}
+    volumes:
+      - wem_db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-p${WEM_DB_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    mem_limit: 768m
+
+  # ─── Redis ─────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: wem-redis
+    restart: unless-stopped
+    # Портов наружу НЕТ. В их compose был "6379:6379" — Redis нараспашку
+    # на машине с публичным IP.
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    mem_limit: 128m
+
+  # ─── Очередь Laravel ───────────────────────────────────────────────────────
+  worker:
+    image: wem-app:local               # тот же образ, отдельной сборки не нужно
+    container_name: wem-worker
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_started
+    working_dir: /app                  # у них было /var/www/html — пустая папка
+    entrypoint: [""]                   # не гонять миграции второй раз
+    command: ["php", "artisan", "queue:work", "redis", "--tries=3", "--timeout=60", "--sleep=3"]
+    environment:
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_DATABASE: ${WEM_DB_NAME:-wem}
+      DB_USERNAME: ${WEM_DB_USER:-wem_user}
+      DB_PASSWORD: ${WEM_DB_PASSWORD:?}
+      REDIS_HOST: redis
+    volumes:
+      - ${WEM_SRC}:/app
+      - wem_vendor:/app/vendor
+      - wem_node_modules:/app/node_modules
+    mem_limit: 512m
+
+  # ─── Laravel Echo (realtime) — по умолчанию ВЫКЛЮЧЕН ───────────────────────
+  # Нужен только для живых обновлений. Их вариант тянет node:16 (EOL) и требует
+  # laravel-echo-server в node_modules. Для оценки системы не нужен.
+  # Включить: docker compose --profile realtime up -d
+  echo:
+    image: node:20-slim
+    container_name: wem-echo
+    profiles: ["realtime"]
+    restart: unless-stopped
+    working_dir: /app
+    depends_on:
+      - app
+    command: ["npm", "run", "echo-server"]
+    volumes:
+      - ${WEM_SRC}:/app
+      - wem_node_modules:/app/node_modules
+    mem_limit: 256m
+
+volumes:
+  wem_db_data:
+  wem_vendor:
+  wem_node_modules:
