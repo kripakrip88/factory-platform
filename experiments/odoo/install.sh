@@ -65,7 +65,11 @@ set -a; . "$ENV_FILE"; set +a
 
 # odoo.conf рендерим с мастер-паролем (он не должен лежать в git)
 sed "s|__ADMIN_PASSWD__|${ODOO_ADMIN_PASSWD}|" "$HERE/odoo.conf" > "$STACK_DIR/odoo.conf"
-chmod 600 "$STACK_DIR/odoo.conf"
+# 644, а НЕ 600: контейнер Odoo работает под пользователем odoo (uid 101), а файл
+# принадлежит root. С правами 600 контейнер читает пустоту и падает с
+# «configparser.NoSectionError: No section: options» — проверено.
+# Каталог /opt/experiments лежит под root, доступ к серверу и так только у нас.
+chmod 644 "$STACK_DIR/odoo.conf"
 ok "odoo.conf отрендерен (мастер-пароль подставлен, в git его нет)"
 
 # ─── 3. RuOdoo ───────────────────────────────────────────────────────────────
