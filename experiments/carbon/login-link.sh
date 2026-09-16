@@ -25,6 +25,9 @@ KEY=$(docker exec "$SRC" cat /run/secrets/service_role_key 2>/dev/null)
 
 REQ=$(mktemp)
 printf '{"type":"magiclink","email":"%s"}' "$EMAIL" > "$REQ"
+# Образ curl работает не под root, а mktemp создаёт файл с правами 600 —
+# без этого контейнер не сможет прочитать тело запроса.
+chmod 644 "$REQ"
 
 RESP=$(docker run --rm --network carbon_internal -v "$REQ":/d.json:ro curlimages/curl:latest \
   -s -X POST http://kong:8000/auth/v1/admin/generate_link \
