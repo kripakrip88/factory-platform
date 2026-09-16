@@ -1,0 +1,62 @@
+# Odoo 19 Community + RuOdoo — ИЗОЛИРОВАННЫЙ ЭКСПЕРИМЕНТ. Не часть основного стека.
+# Ничего не делит с erp / erp-staging / infra / wem / carbon: свой проект, сеть, тома.
+#
+# Запуск: см. install.sh
+# Смотреть: http://155.212.143.179:8084
+
+name: odoo
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: odoo-db
+    restart: unless-stopped
+    # Портов наружу НЕТ
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: ${ODOO_DB_USER:?не задан ODOO_DB_USER}
+      POSTGRES_PASSWORD: ${ODOO_DB_PASSWORD:?не задан ODOO_DB_PASSWORD}
+      # Odoo сам создаёт базы, поэтому пользователь должен уметь CREATEDB
+    command:
+      - postgres
+      - -c
+      - shared_buffers=256MB
+      - -c
+      - max_connections=60
+    volumes:
+      - odoo_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${ODOO_DB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    mem_limit: 768m
+
+  odoo:
+    # Тег с датой, а не плавающий 19.0 — иначе перезапуск может тихо сменить версию
+    # (у нас уже был такой прецедент с frappe/erpnext, см. CLAUDE.md «Версии»).
+    image: odoo:19.0-20260908
+    container_name: odoo-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      # Единственный порт наружу. 8080/8081/8082/8083 уже заняты.
+      - "8084:8069"
+    environment:
+      HOST: db
+      USER: ${ODOO_DB_USER}
+      PASSWORD: ${ODOO_DB_PASSWORD}
+    volumes:
+      - odoo_data:/var/lib/odoo
+      - ./odoo.conf:/etc/odoo/odoo.conf:ro
+      # RuOdoo подключается как дополнительный каталог модулей, только на чтение —
+      # чтобы эксперимент не мог испортить исходники локализации
+      - ${RUODOO_SRC:?не задан RUODOO_SRC}:/mnt/extra-addons:ro
+    mem_limit: 2g
+    cpus: 2.0
+
+volumes:
+  odoo_db_data:
+  odoo_data:
