@@ -110,3 +110,19 @@ ssh factory 'df -h / | tail -1'
 
 Скрипт при любой частичной ошибке пишет `❌` и выходит с кодом 1 — раньше он мог
 упасть посередине и всё равно отрапортовать «✅ завершён».
+
+## Воркфлоу n8n (для справки при восстановлении)
+
+На 16.09.2026 в n8n **один** воркфлоу — «Автоклассификация писем (v2, смотровой режим)»
+(`kyOWFTcrKsTYVI9Y`), и он **выключен**: на API Anthropic кончились средства. Его определение
+лежит рядом с бэкапами: `backups/erp/n8n-workflow-kyOWFTcrKsTYVI9Y-20260916.json`.
+
+```bash
+# включить обратно (когда будет баланс)
+ssh factory 'docker exec infra-n8n-1 n8n publish:workflow --id=kyOWFTcrKsTYVI9Y && docker restart infra-n8n-1'
+# выключить
+ssh factory 'docker exec infra-n8n-1 n8n unpublish:workflow --id=kyOWFTcrKsTYVI9Y && docker restart infra-n8n-1'
+```
+
+⚠️ Перед включением поправить расписание: нода называется «Каждые 15 минут», а настроена
+`minutesInterval: 1` — раз в минуту (1440 прогонов в сутки вместо 96).
