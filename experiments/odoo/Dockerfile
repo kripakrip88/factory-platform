@@ -36,7 +36,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends libmagic1 \
 # (PEP 668), без флага pip отказывается ставить. Для образа это безопасно.
 ARG PYDEPS="pytils num2words docxcompose docxtpl beautifulsoup4 polib siphashc weasyprint \
             pymorphy2 pymorphy2-dicts-ru dadata httpx python-magic matplotlib networkx openupgradelib"
-RUN pip3 install --no-cache-dir --break-system-packages ${PYDEPS} \
-    || pip3 install --no-cache-dir ${PYDEPS}
+
+# typing_extensions в этом образе поставлен пакетом Debian, без метаданных RECORD —
+# pip не может его удалить и падает с «Cannot uninstall typing_extensions ... RECORD
+# file not found», когда зависимость просит версию новее. Ставим его отдельно с
+# --ignore-installed (кладётся рядом, поверх системного), после чего остальное идёт штатно.
+RUN pip3 install --no-cache-dir --break-system-packages --ignore-installed typing_extensions \
+    && pip3 install --no-cache-dir --break-system-packages ${PYDEPS}
 
 USER odoo
