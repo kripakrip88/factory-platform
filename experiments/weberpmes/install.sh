@@ -99,13 +99,46 @@ elif [ "$ready" = 1 ]; then
   docker compose exec -T app npm run build || echo "⚠️ npm run build упал — фронт будет без стилей"
 fi
 
-# ─── 6. Итог ────────────────────────────────────────────────────────────────
+# ─── 6. Админ: пароль и подтверждение email ─────────────────────────────────
+# Их сидер CreateAdminUserSeeder создаёт админа с паролем `password` — он лежит в
+# их ОТКРЫТОМ репозитории и работает на их публичном демо, а порт 8082 виден из
+# интернета. Плюс Laravel требует подтверждения email, а почты у этого стенда нет
+# → вход упирается в «verify your email» без выхода.
+# Оба шага делаем здесь, чтобы переустановка не втыкалась в это заново.
+ADMIN_EMAIL="contact@wem-project.org"
+PW_FILE="$STACK_DIR/.admin-password"
+
+if [ "$ready" = 1 ]; then
+  if [ ! -f "$PW_FILE" ]; then
+    NEWPW=$(openssl rand -base64 18 | tr -d '/+=' | cut -c1-20)
+    echo "── меняю дефолтный пароль админа (он публичный) и подтверждаю email"
+    docker compose exec -T app php artisan tinker --execute="
+      \$u = \App\Models\User::where('email','$ADMIN_EMAIL')->first();
+      if (\$u) { \$u->password = bcrypt('$NEWPW'); \$u->email_verified_at = now(); \$u->save();
+                 echo 'админ настроен: '.\$u->email.PHP_EOL; }
+      else { echo 'ВНИМАНИЕ: пользователь $ADMIN_EMAIL не найден'.PHP_EOL; }" 2>&1 | grep -vE '^\s*$'
+    echo "$NEWPW" > "$PW_FILE"
+    chmod 600 "$PW_FILE"
+  else
+    echo "── пароль уже сгенерирован ранее, только подтверждаю email"
+    docker compose exec -T app php artisan tinker --execute="
+      \$u = \App\Models\User::where('email','$ADMIN_EMAIL')->first();
+      if (\$u && ! \$u->email_verified_at) { \$u->email_verified_at = now(); \$u->save();
+        echo 'email подтверждён'.PHP_EOL; }
+      else { echo 'email уже подтверждён'.PHP_EOL; }" 2>&1 | grep -vE '^\s*$'
+  fi
+fi
+
+# ─── 7. Итог ────────────────────────────────────────────────────────────────
 echo
 echo "═══ Готово ═══"
 docker compose ps --format "table {{.Name}}\t{{.Status}}\t{{.Ports}}"
 echo
 echo "Открыть:  http://155.212.143.179:8082"
-echo "Логин:    см. CreateAdminUserSeeder в их репозитории; СМЕНИТЬ пароль сразу"
+echo "Логин:    $ADMIN_EMAIL"
+echo "Пароль:   $(cat "$PW_FILE" 2>/dev/null || echo '(см. '"$PW_FILE"')')"
+echo "          email подтверждён скриптом (почты у стенда нет); смени пароль в UI"
+echo "          После входа откроется мастер первичной настройки /en/setup"
 echo
 echo "Управление (из $STACK_DIR):"
 echo "  docker compose stop      # остановить, освободить RAM (данные целы)"
