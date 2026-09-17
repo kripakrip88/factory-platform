@@ -1,0 +1,133 @@
+// Плотность формы и чат в едином потоке документа.
+
+// ─── Ячейки формы без «капсул» ────────────────────────────────────────────
+//
+// Тема Liquid Glass оборачивает КАЖДУЮ ячейку формы в стеклянную плашку:
+//     .o_cell { background: …; border: …; border-radius: 12px; padding: 10px }
+// А .o_cell в Odoo — это отдельно подпись и отдельно значение. Получается,
+// что «Получить от» лежит в одной плашке, «Administrator» в другой, между
+// ними рамки, и на каждое поле уходит вдвое больше места, чем нужно.
+//
+// Хуже того, рвётся связь подпись→значение: глаз читает не пару, а два
+// самостоятельных блока (правило whitespace-balance — пробелы должны
+// ГРУППИРОВАТЬ связанное, а не разделять его).
+//
+// Возвращаем плоскую сетку: рамка остаётся у самого поля ввода, подпись —
+// обычный текст рядом. Перебиваем !important темы своим, с запасом по
+// специфичности: наш модуль грузится в бандле раньше неё.
+.o_form_view .o_cell {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 2px 10px 2px 0 !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+
+// Подпись поля: тише значения, но читаемая — контраст держим выше
+// минимального, иначе она превратится в серое на сером.
+.o_form_view .o_form_label {
+  color: rgba(255, 255, 255, 0.62);
+  font-weight: 400;
+}
+
+// ─── Чат внизу, в общем потоке ────────────────────────────────────────────
+//
+// Раскладку переключает JS (см. chatter_inline.js), здесь — оформление.
+.o-mail-Form-chatter:not(.o-aside) {
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
+  margin-top: 8px;
+
+  // Строка сообщения во всю ширину экрана нечитаема: при 1900px выходит
+  // больше 200 символов, глаз теряет начало следующей строки.
+  // Правило line-length-control — 60-75 символов, отсюда ограничение.
+  .o-mail-Thread,
+  .o-mail-Composer {
+    max-width: 90ch;
+  }
+}
+
+// ─── Свёрнутое состояние ──────────────────────────────────────────────────
+//
+// Свёрнуто = видна только полоса с кнопками и счётчиками. Содержимое
+// (лента сообщений и поле ввода) скрыто, но не удалено: разворачивание
+// не должно дёргать раскладку.
+.o-mail-Chatter[data-pmk-collapsed="1"] {
+  height: auto !important;
+  flex-grow: 0 !important;
+
+  > *:not(.o-mail-Chatter-top) {
+    display: none !important;
+  }
+
+  .o-mail-Chatter-top {
+    position: static;
+    box-shadow: none;
+  }
+}
+
+.pmk-chatter-toggle {
+  gap: 6px;
+  padding: 4px 10px;
+  // Правило touch-target-size: по кнопке должны попадать пальцем, не только мышью.
+  min-height: 44px;
+  text-decoration: none;
+
+  &:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.85);
+    outline-offset: -2px;
+  }
+}
+
+.pmk-chatter-toggle__label {
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+.pmk-chatter-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.10);
+  color: rgba(255, 255, 255, 0.85);
+
+  // Просроченное: цвет ПЛЮС значок ПЛЮС слово — три признака, потому что
+  // на одном цвете держаться нельзя (color-not-only).
+  &--overdue {
+    background: rgba(240, 120, 120, 0.18);
+    color: #ffb4b4;
+  }
+}
+
+.pmk-chatter-badge__word {
+  @media (max-width: 1400px) { display: none; }   // на узком хватит значка и числа
+}
+
+// ─── Набор кнопок по типу документа ───────────────────────────────────────
+//
+// На складских документах отправлять сообщение некому — адресата у накладной
+// нет, а кнопка провоцирует случайное письмо контрагенту. Планировать
+// активность на накладную тоже не работа склада: задачи с дедлайнами живут
+// в общем списке дел и в колонке активностей в списках.
+//
+// Внутренняя заметка остаётся везде: это рабочий инструмент кладовщика.
+.o-mail-Chatter[data-pmk-model^="stock."],
+.o-mail-Chatter[data-pmk-model="mrp.production"] {
+  .o-mail-Chatter-sendMessage,
+  .o-mail-Chatter-activity {
+    display: none !important;
+  }
+}
+
+// Там, где кнопок несколько, основная должна быть одна (правило
+// primary-action): «Отправить сообщение» ведущая, заметка и активность тише.
+.o-mail-Chatter:not([data-pmk-model^="stock."]) {
+  .o-mail-Chatter-logNote,
+  .o-mail-Chatter-activity {
+    opacity: 0.85;
+  }
+}
