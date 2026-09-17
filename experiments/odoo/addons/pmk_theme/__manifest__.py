@@ -26,6 +26,7 @@
     "assets": {
         "web.assets_backend": [
             "pmk_theme/static/src/scss/navbar.scss",
+            "pmk_theme/static/src/js/navbar_active_section.js",
             "pmk_theme/static/src/xml/navbar.xml",
         ],
     },

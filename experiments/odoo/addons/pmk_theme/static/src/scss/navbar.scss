@@ -1,27 +1,59 @@
-// Модули строкой в верхней панели — оформление.
+// Шапка ПМК Парк: модули первой строкой, пункты раздела — второй.
 //
 // Решения приняты по правилам навыка ui-ux-pro-max:
-//  · активный пункт помечаем цветом И подчёркиванием (nav-state-active) —
-//    одним цветом обозначать нельзя, это правило color-not-only;
+//  · текущее положение помечаем цветом И формой (nav-state-active,
+//    color-not-only) — одним цветом обозначать нельзя;
 //  · горизонтальной прокрутки не делаем (horizontal-scroll, severity High):
-//    что не влезло — остаётся доступным через штатную кнопку «все приложения»;
-//  · подписи НЕ обрезаем многоточием без запаса: у русских слов длина на 20-30%
-//    больше английских (truncation-strategy), поэтому даём им ширину и держим
-//    полный текст в title;
+//    что не влезло — уходит в штатное меню «ещё»;
+//  · подписи не режем без запаса: русские слова на 20-30% длиннее английских
+//    (truncation-strategy), поэтому даём ширину и держим полный текст в title;
 //  · фокус видимый (focus-states) — на клавиатуре пункт должен читаться;
 //  · переходы 150-200 мс (duration-timing), только цвет и фон — без анимации
 //    ширины, чтобы не дёргалась раскладка.
 
+// ─── Цвета разделов ───────────────────────────────────────────────────────
+//
+// Один список на весь файл. Раньше цвет каждого раздела был записан дважды —
+// в цвете иконки и в подчёркивании активного модуля; с подсветкой второй
+// строки появилась бы третья копия, и они неизбежно разъехались бы.
+//
+// Цвета подобраны по смыслу, а не по радуге: деньги — зелёный, склад — синий,
+// производство — янтарный (горячий цех), закупки — бирюзовый, продажи —
+// фиолетовый, отчёты — серо-синий, люди — розовый.
+$pmk-accents: (
+  "pmk_theme.menu_pmk_sales":      #a78bfa,
+  "pmk_theme.menu_pmk_production": #f0a04b,
+  "pmk_theme.menu_pmk_purchase":   #4dd0b1,
+  "pmk_theme.menu_pmk_stock":      #6bb6f5,
+  "pmk_theme.menu_pmk_money":      #86c66b,
+  "pmk_theme.menu_pmk_reports":    #9aa9bd,
+  "pmk_theme.menu_pmk_people":     #f08fb0,
+  "base.menu_administration":      #9aa9bd,
+);
+
+@each $xmlid, $accent in $pmk-accents {
+  // Цвет иконки модуля в первой строке.
+  .pmk_app[data-menu-xmlid="#{$xmlid}"]::before { color: $accent; }
+
+  // Цвет текущего раздела отдаём всей шапке одной переменной: им красится
+  // и подчёркивание активного модуля, и метка активного пункта второй строки.
+  // Атрибут data-pmk-app проставляет navbar_active_section.js.
+  .o_navbar[data-pmk-app="#{$xmlid}"] { --pmk-accent: #{$accent}; }
+}
+
+// ─── Первая строка: модули ────────────────────────────────────────────────
+
 .pmk_apps_bar {
   display: flex;
-  align-items: stretch;
+  align-items: center;
   gap: 2px;
   margin-left: 4px;
   min-width: 0;          // чтобы flex-контейнер мог сжиматься, а не распирать панель
   overflow: hidden;      // лишнее прячем: остаётся кнопка «все приложения»
   flex: 1 1 auto;
+  min-height: calc(var(--o-navbar-height) - 8px);
 
-  // На узких экранах строка модулей только мешает — там штатная кнопка удобнее.
+  // На узких экранах строка модулей только мешает — там штатное мобильное меню.
   @media (max-width: 1100px) {
     display: none;
   }
@@ -36,6 +68,8 @@
   border-radius: 6px;
   font-size: 13px;
   line-height: 1.2;
+  height: auto;
+  min-height: 30px;
   color: rgba(255, 255, 255, 0.72);
   background: transparent;
   border-bottom: 2px solid transparent;
@@ -57,10 +91,34 @@
   &--active {
     color: #fff;
     background: rgba(255, 255, 255, 0.14);
-    border-bottom-color: currentColor;
+    border-bottom-color: var(--pmk-accent, currentColor);
     font-weight: 500;
   }
 }
+
+// Иконки шрифтовые из Font Awesome, который Odoo уже грузит: не эмодзи
+// (no-emoji-icons) и не свои SVG — набор должен быть единым со всем
+// остальным интерфейсом (icon-style-consistent). Привязка по data-menu-xmlid,
+// а не по порядку: переставим пункты — ничего не поедет.
+.pmk_app::before {
+  font-family: FontAwesome;
+  font-size: 13px;
+  margin-right: 6px;
+  opacity: 0.85;
+  speak: never;          // иконка декоративная, смысл несёт подпись рядом
+}
+
+.pmk_app:hover::before,
+.pmk_app--active::before { opacity: 1; }
+
+.pmk_app[data-menu-xmlid="pmk_theme.menu_pmk_sales"]::before      { content: "\f201"; }
+.pmk_app[data-menu-xmlid="pmk_theme.menu_pmk_production"]::before { content: "\f085"; }
+.pmk_app[data-menu-xmlid="pmk_theme.menu_pmk_purchase"]::before   { content: "\f07a"; }
+.pmk_app[data-menu-xmlid="pmk_theme.menu_pmk_stock"]::before      { content: "\f1b3"; }
+.pmk_app[data-menu-xmlid="pmk_theme.menu_pmk_money"]::before      { content: "\f0d6"; }
+.pmk_app[data-menu-xmlid="pmk_theme.menu_pmk_reports"]::before    { content: "\f080"; }
+.pmk_app[data-menu-xmlid="pmk_theme.menu_pmk_people"]::before     { content: "\f0c0"; }
+.pmk_app[data-menu-xmlid="base.menu_administration"]::before      { content: "\f0ad"; }
 
 .pmk_app__label {
   // Запас на длинные русские подписи («Выставление счетов», «Панели управления»).
@@ -69,62 +127,7 @@
   text-overflow: ellipsis;
 }
 
-// Уважаем системную настройку «меньше движения».
-@media (prefers-reduced-motion: reduce) {
-  .pmk_app {
-    transition: none;
-  }
-}
-
-// ─── Иконки и цвет раздела ────────────────────────────────────────────────
-//
-// Зачем: глаз находит нужный раздел по форме и цвету быстрее, чем читает
-// подпись — как было в нашем ERPNext.
-//
-// Решения по правилам ui-ux-pro-max:
-//  · иконки шрифтовые из Font Awesome, который Odoo уже грузит
-//    (src/libs/fontawesome) — не эмодзи (no-emoji-icons) и не свои SVG,
-//    чтобы набор был единым со всем остальным интерфейсом (icon-style-consistent);
-//  · цвет НЕ единственный признак: у каждого раздела своя иконка, есть подпись,
-//    а активный пункт дополнительно подчёркнут (color-not-only);
-//  · цвета подобраны по смыслу, а не по радуге: деньги — зелёный, склад — синий,
-//    производство — янтарный (горячий цех), закупки — бирюзовый, продажи —
-//    фиолетовый, отчёты — серо-синий, люди — розовый;
-//  · привязка по data-menu-xmlid, а не по порядку: переставим пункты — ничего
-//    не поедет.
-
-.pmk_app::before {
-  font-family: FontAwesome;
-  font-size: 13px;
-  margin-right: 6px;
-  opacity: 0.85;
-  // Иконка декоративная — смысл несёт подпись рядом.
-  speak: never;
-}
-
-.pmk_app:hover::before,
-.pmk_app--active::before { opacity: 1; }
-
-.pmk_app[data-menu-xmlid="pmk_theme.menu_pmk_sales"]::before      { content: "\f201"; color: #a78bfa; }
-.pmk_app[data-menu-xmlid="pmk_theme.menu_pmk_production"]::before { content: "\f085"; color: #f0a04b; }
-.pmk_app[data-menu-xmlid="pmk_theme.menu_pmk_purchase"]::before   { content: "\f07a"; color: #4dd0b1; }
-.pmk_app[data-menu-xmlid="pmk_theme.menu_pmk_stock"]::before      { content: "\f1b3"; color: #6bb6f5; }
-.pmk_app[data-menu-xmlid="pmk_theme.menu_pmk_money"]::before      { content: "\f0d6"; color: #86c66b; }
-.pmk_app[data-menu-xmlid="pmk_theme.menu_pmk_reports"]::before    { content: "\f080"; color: #9aa9bd; }
-.pmk_app[data-menu-xmlid="pmk_theme.menu_pmk_people"]::before     { content: "\f0c0"; color: #f08fb0; }
-.pmk_app[data-menu-xmlid="base.menu_administration"]::before      { content: "\f0ad"; color: #9aa9bd; }
-
-// Активный раздел: подчёркивание в цвете своей иконки — цвет подкрепляет,
-// а не заменяет признак активности.
-.pmk_app--active[data-menu-xmlid="pmk_theme.menu_pmk_sales"]      { border-bottom-color: #a78bfa; }
-.pmk_app--active[data-menu-xmlid="pmk_theme.menu_pmk_production"] { border-bottom-color: #f0a04b; }
-.pmk_app--active[data-menu-xmlid="pmk_theme.menu_pmk_purchase"]   { border-bottom-color: #4dd0b1; }
-.pmk_app--active[data-menu-xmlid="pmk_theme.menu_pmk_stock"]      { border-bottom-color: #6bb6f5; }
-.pmk_app--active[data-menu-xmlid="pmk_theme.menu_pmk_money"]      { border-bottom-color: #86c66b; }
-.pmk_app--active[data-menu-xmlid="pmk_theme.menu_pmk_reports"]    { border-bottom-color: #9aa9bd; }
-.pmk_app--active[data-menu-xmlid="pmk_theme.menu_pmk_people"]     { border-bottom-color: #f08fb0; }
-
-// ─── Подменю раздела — второй строкой ─────────────────────────────────────
+// ─── Вторая строка: пункты раздела ────────────────────────────────────────
 //
 // Проблема, которую чиним: Odoo кладёт пункты раздела (.o_menu_sections)
 // в ТУ ЖЕ строку, что и всё остальное, да ещё с bootstrap-классом w-0
@@ -152,13 +155,20 @@
   padding: 2px 4px 0;
   border-top: 1px solid rgba(255, 255, 255, 0.10);
   gap: 2px;
+  min-height: 32px;
+  align-items: center;
 
   .o_nav_entry {
     font-size: 13px;
     padding: 5px 10px;
     border-radius: 6px;
     color: rgba(255, 255, 255, 0.70);
-    border-bottom: 2px solid transparent;
+    // Своя высота строки вместо унаследованных от ядра 46px.
+    line-height: 1.2;
+    height: auto;
+    min-height: 26px;
+    display: inline-flex;
+    align-items: center;
     transition: color 160ms ease-out, background-color 160ms ease-out;
 
     &:hover {
@@ -170,15 +180,37 @@
       outline: 2px solid rgba(255, 255, 255, 0.85);
       outline-offset: -2px;
     }
+  }
+}
 
-    // Открытый сейчас пункт Odoo помечает классом active
-    &.active,
-    &[aria-current="page"] {
-      color: #fff;
-      background: rgba(255, 255, 255, 0.14);
-      border-bottom-color: currentColor;
-      font-weight: 500;
-    }
+// Текущий пункт. Класс проставляет navbar_active_section.js — ядро Odoo 19
+// активный подраздел никак не помечает (см. комментарий в том файле).
+//
+// Признаков намеренно три, потому что на одном цвете держаться нельзя
+// (color-not-only): заливка, насыщенность текста и цветная метка слева.
+// Метка — в цвете текущего раздела, тем же, что подчёркивает модуль
+// в первой строке: так глаз связывает «Продажи» наверху и «Лиды» внизу.
+//
+// Форма отличается от первой строки осознанно: там подчёркивание снизу,
+// здесь заливка с меткой. Два разных уровня навигации не должны выглядеть
+// одинаково, иначе непонятно, что чему подчинено (nav-hierarchy).
+.o_menu_sections .o_nav_entry.pmk_section--active {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.14);
+  font-weight: 500;
+
+  &::before {
+    content: "";
+    flex: 0 0 auto;
+    width: 6px;
+    height: 6px;
+    margin-right: 7px;
+    border-radius: 50%;
+    background: var(--pmk-accent, #fff);
+  }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.18);
   }
 }
 
@@ -207,21 +239,13 @@
   }
 }
 
-// ─── Высота шапки под две строки ──────────────────────────────────────────
+// ─── Геометрия шапки под две строки ───────────────────────────────────────
 //
 // Почему наползало: в ядре у .o_main_navbar задана ЖЁСТКАЯ высота
 // height: var(--o-navbar-height) = 46px (web/webclient/navbar/navbar.scss:10),
-// рассчитанная на одну строку. Мы добавили вторую — она не поместилась
-// и легла поверх первой.
-//
-// Вторая причина: пункты меню в ядре тянут line-height той же величины
-// (navbar.variables.scss:58), поэтому каждая ссылка второй строки занимала
-// 46px по высоте. Сбрасываем и её.
-//
+// рассчитанная на одну строку. Вторая не помещалась и ложилась поверх первой.
 // Высоту не задаём числом, а отпускаем в auto с нижней границей в штатные
-// 46px: одна строка выглядит как раньше, две — шапка растёт сама. Так ничего
-// не сломается, если в разделе появится перенос.
-
+// 46px: одна строка выглядит как раньше, две — шапка растёт сама.
 .o_main_navbar {
   height: auto;
   min-height: var(--o-navbar-height);
@@ -230,49 +254,25 @@
   row-gap: 0;
 }
 
-// Первая строка держит штатную высоту, чтобы шапка не «худела».
-.pmk_apps_bar {
-  min-height: calc(var(--o-navbar-height) - 8px);
-  align-items: center;
-}
-
-.pmk_app {
-  line-height: 1.2;
-  height: auto;
-  min-height: 30px;
-}
-
-.o_menu_sections {
-  // Своя высота строки вместо унаследованных 46px.
-  min-height: 32px;
-  align-items: center;
-
-  .o_nav_entry {
-    line-height: 1.2;
-    height: auto;
-    min-height: 26px;
-    display: inline-flex;
-    align-items: center;
-  }
-}
-
-// ─── Скругление шапки ─────────────────────────────────────────────────────
+// Скругление шапки. Тема Liquid Glass задаёт .o_navbar { border-radius: 999px }
+// — полную «таблетку». На одной строке высотой 46px это читалось, но со второй
+// строкой шапка выросла и тот же радиус превратил её в овал: углы наезжают на
+// крайние пункты. Радиус должен быть заметно меньше половины высоты, иначе
+// форма перестаёт читаться как панель. Берём 12px — это $radius-sm из шкалы
+// самой темы, чтобы не вводить четвёртую величину.
 //
-// Тема Liquid Glass задаёт .o_navbar { border-radius: 999px } — полную
-// «таблетку». На одной строке высотой 46px это читалось нормально, но после
-// добавления второй строки шапка выросла до ~86px, и тот же радиус превратил
-// её в овал: углы наезжают на крайние пункты и режут глаз.
-//
-// Правило радиуса простое: он должен быть заметно меньше половины высоты
-// элемента, иначе форма перестаёт читаться как панель. Берём 12px — это
-// $radius-sm из шкалы самой темы, чтобы не вводить четвёртую величину
-// и остаться с ней в одном языке форм.
-//
-// Специфичность: у темы селектор .o_navbar (0,1,0). Берём header.o_navbar
-// (0,1,1) — выигрываем по правилам каскада, без !important.
+// Специфичность: у темы селектор .o_navbar (0,1,0), у нас header.o_navbar
+// (0,1,1) — выигрываем каскадом, без !important.
 header.o_navbar {
   border-radius: 12px;
-  // Внутренние отступы тоже рассчитаны на одну строку — с двумя шапка
-  // становится рыхлой. Сжимаем по вертикали, по горизонтали оставляем.
+  // Внутренние отступы тоже были рассчитаны на одну строку.
   padding: 6px 12px;
+}
+
+// Уважаем системную настройку «меньше движения».
+@media (prefers-reduced-motion: reduce) {
+  .pmk_app,
+  .o_menu_sections .o_nav_entry {
+    transition: none;
+  }
 }
