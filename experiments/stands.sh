@@ -49,9 +49,12 @@ status() {
   printf '\n%-10s %-8s %-10s %s\n' "СТЕНД" "ПОРТ" "СОСТОЯНИЕ" "ПАМЯТЬ"
   printf -- '─%.0s' {1..52}; echo
 
+  # grep -c возвращает код 1, когда насчитал 0 — из-за этого «|| echo 0» дописывал
+  # ВТОРОЙ ноль и сравнение падало с «integer expression expected». Считаем без ||.
   local up
-  up=$(docker stack services carbon --format '{{.Replicas}}' 2>/dev/null | grep -cv '^0/' || echo 0)
-  if [ "${up:-0}" -gt 0 ]; then
+  up=$(docker stack services carbon --format '{{.Replicas}}' 2>/dev/null | grep -cv '^0/')
+  up=$(printf '%s' "${up:-0}" | tr -dc '0-9' | head -c 4)
+  if [ "${up:-0}" -gt 0 ] 2>/dev/null; then
     printf '%-10s %-8s %-10s %s МБ\n' "carbon" ":8083" "работает" \
       "$(docker stats --no-stream --format '{{.Name}} {{.MemUsage}}' 2>/dev/null | awk '/^carbon/{split($2,a,"MiB"); s+=a[1]} END{printf "%d", s}')"
   else
