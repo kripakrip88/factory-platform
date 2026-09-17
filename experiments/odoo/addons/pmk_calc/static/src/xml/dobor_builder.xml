@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+  <t t-name="pmk_calc.DoborBuilder">
+    <div class="pmk-dobor" t-ref="wrap">
+
+      <div class="pmk-dobor__bar">
+        <button type="button" class="btn btn-sm btn-secondary"
+                t-on-click="() => this.toggle('growEnd')"
+                t-att-title="state.growEnd ? 'Полки добавляются в конец — нажмите, чтобы в начало' : 'Полки добавляются в начало — нажмите, чтобы в конец'">
+          <t t-esc="state.growEnd ? 'в конец' : 'в начало'"/>
+        </button>
+        <button type="button" class="btn btn-sm btn-secondary" t-on-click="() => this.rotate(-5)" title="Повернуть влево">↺</button>
+        <button type="button" class="btn btn-sm btn-secondary" t-on-click="() => this.rotate(5)" title="Повернуть вправо">↻</button>
+        <button type="button" class="btn btn-sm btn-secondary" t-on-click="mirror" title="Зеркало: завальцовка и сторона окраски тоже меняются">⇋</button>
+
+        <span class="pmk-dobor__sep"/>
+
+        <label class="pmk-dobor__check">
+          <input type="checkbox" t-att-checked="state.hemLeft" t-on-change="() => this.toggle('hemLeft')"/>
+          завальцовка слева
+        </label>
+        <label class="pmk-dobor__check">
+          <input type="checkbox" t-att-checked="state.hemRight" t-on-change="() => this.toggle('hemRight')"/>
+          справа
+        </label>
+        <label class="pmk-dobor__check">
+          длина
+          <input type="number" class="pmk-dobor__num" t-att-value="state.hemLen" t-on-change="onHemLenChange"/>
+        </label>
+        <label class="pmk-dobor__check">
+          <input type="checkbox" t-att-checked="state.lock" t-on-change="() => this.toggle('lock')"/>
+          замок
+        </label>
+
+        <span class="pmk-dobor__sep"/>
+
+        <button type="button" class="btn btn-sm btn-secondary" t-on-click="undo" title="Убрать последнюю полку">Отменить полку</button>
+        <button type="button" class="btn btn-sm btn-secondary" t-on-click="clearAll">Очистить</button>
+      </div>
+
+      <!--
+        Холст фиксированного размера 760x440: чертёж вписывается в него
+        пересчётом масштаба, поэтому миллиметры профиля не зависят от того,
+        насколько широким получилось окно.
+      -->
+      <svg t-ref="svg" class="pmk-dobor__canvas" viewBox="0 0 760 440"
+           t-on-pointerdown="onCanvasPointerDown"
+           t-on-pointermove="onCanvasPointerMove"
+           t-on-pointerup="onCanvasPointerUp"
+           t-on-pointerleave="onCanvasPointerUp"/>
+
+      <!-- Правка размера по месту: клик по числу на чертеже. -->
+      <input type="number" t-ref="edit" class="pmk-dobor__edit"
+             t-on-keydown="onEditKeydown" t-on-blur="flushEdit"/>
+
+      <div class="pmk-dobor__results">
+        <span>Полок: <b t-esc="state.flanges"/></span>
+        <span>Гибов: <b t-esc="state.bends"/></span>
+        <span>Развёртка: <b t-esc="state.developed"/> мм</span>
+        <span class="pmk-dobor__hint">Клик по пустому месту — новая полка, по числу — правка размера, за точку — тянуть</span>
+      </div>
+    </div>
+  </t>
+
+</templates>

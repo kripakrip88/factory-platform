@@ -36,6 +36,13 @@
         "views/dobor_views.xml",
         "views/menus.xml",
     ],
+    "assets": {
+        "web.assets_backend": [
+            "pmk_calc/static/src/scss/dobor_builder.scss",
+            "pmk_calc/static/src/js/dobor_builder.js",
+            "pmk_calc/static/src/xml/dobor_builder.xml",
+        ],
+    },
     "installable": True,
     "application": True,
     "auto_install": False,

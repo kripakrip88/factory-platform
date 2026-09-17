@@ -44,6 +44,38 @@
               <!-- Снимок профиля правится построителем, руками в него не лезут. -->
               <field name="profile_snapshot_json" column_invisible="1"/>
             </list>
+            <form string="Доборка">
+              <group>
+                <group>
+                  <field name="title" placeholder="Например: планка примыкания"/>
+                  <field name="coating_id" options="{'no_create': True}"/>
+                  <field name="thickness"/>
+                  <field name="plank_length"/>
+                  <field name="qty"/>
+                </group>
+                <group>
+                  <field name="hem_left"/>
+                  <field name="hem_right"/>
+                  <field name="hem_len"/>
+                  <field name="lock"/>
+                  <field name="coil_width"/>
+                </group>
+              </group>
+              <separator string="Профиль сечения"/>
+              <field name="profile_snapshot_json" widget="pmk_dobor_builder" nolabel="1"/>
+              <group>
+                <group>
+                  <field name="developed_width" readonly="1"/>
+                  <field name="bends" readonly="1"/>
+                </group>
+                <group>
+                  <field name="weight_one" readonly="1"/>
+                  <field name="weight_total" readonly="1"/>
+                  <field name="strips" readonly="1"/>
+                  <field name="strip_waste" readonly="1"/>
+                </group>
+              </group>
+            </form>
           </field>
         </sheet>
         <chatter/>

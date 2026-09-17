@@ -1,0 +1,88 @@
+// Построитель профиля доборки.
+
+.pmk-dobor {
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.18);
+  padding: 8px;
+}
+
+.pmk-dobor__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.pmk-dobor__sep {
+  width: 1px;
+  align-self: stretch;
+  background: rgba(255, 255, 255, 0.12);
+  margin: 0 4px;
+}
+
+.pmk-dobor__check {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  font-size: 12px;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.pmk-dobor__num {
+  width: 56px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(0, 0, 0, 0.25);
+  color: inherit;
+}
+
+.pmk-dobor__canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  // Профиль рисуется от руки, поэтому выделение текста мешает: при
+  // перетаскивании вершины браузер иначе выделяет подписи размеров.
+  user-select: none;
+  touch-action: none;
+  cursor: crosshair;
+
+  .pmk-dobor-vert { cursor: grab; }
+  .pmk-dobor-len,
+  .pmk-dobor-bend { cursor: text; }
+}
+
+.pmk-dobor__edit {
+  position: absolute;
+  display: none;
+  width: 62px;
+  padding: 1px 4px;
+  font-size: 12px;
+  text-align: center;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: #1b2028;
+  color: #fff;
+  z-index: 5;
+}
+
+.pmk-dobor__results {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.pmk-dobor__hint {
+  margin-left: auto;
+  opacity: 0.6;
+}
