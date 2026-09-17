@@ -16,11 +16,56 @@ compute из dobor/api.py, которая и в исходнике была чи
 
 import json
 
+from markupsafe import Markup
+
 from odoo import api, fields, models
 from odoo.exceptions import ValidationError
 
 MM_IN_M = 1000.0
 STEEL_DENSITY_FACTOR = 7.85  # кг на м² при толщине 1 мм
+
+
+def compute_dobor(flanges, hem_left, hem_right, hem_len, mass_per_sqm,
+                  plank_length, qty, coil_width=0.0, lock=False):
+    """Чистый расчёт доборки — БЕЗ обращения к базе, поэтому проверяем тестом.
+
+    Единственное место, где живёт эта арифметика: ею пользуются и форма
+    позиции, и печатный лист. Если развести расчёт по двум местам, числа
+    рано или поздно разойдутся — ровно это уже произошло между Odoo и
+    ERPNext в правиле гибов.
+
+    ВАЖНО, чем отличается от ERPNext: завальцовка в число гибов НЕ входит.
+    Там она считается гибом и это закреплено тестом test_two_hems_count_as_bends.
+    Решение Антона (18.09.2026): в Odoo — не считается, ERPNext пока не трогаем.
+    """
+    flange_sum = sum(float(f.get("len") or 0) for f in (flanges or []) if isinstance(f, dict))
+    hem_count = (1 if hem_left else 0) + (1 if hem_right else 0)
+    developed = flange_sum + hem_count * hem_len
+
+    area_one = (developed / MM_IN_M) * (plank_length / MM_IN_M)
+    weight_one = area_one * mass_per_sqm
+
+    # Завальцовка расходует металл (она в развёртке), но гибом не считается.
+    bends = max(0, len(flanges or []) - 1) + (2 if lock else 0)
+
+    if developed > 0 and coil_width > 0:
+        strips = int(coil_width // developed)
+        strip_waste = coil_width - strips * developed
+    else:
+        strips = 0
+        strip_waste = coil_width or 0.0
+
+    return {
+        "developed_width": developed,
+        "flanges_count": len(flanges or []),
+        "bends": bends,
+        "area_one": area_one,
+        "area_total": area_one * (qty or 0),
+        "weight_one": weight_one,
+        "weight_total": weight_one * (qty or 0),
+        "strips": strips,
+        "strip_waste": strip_waste,
+    }
 
 
 class DoborCoating(models.Model):
@@ -85,6 +130,44 @@ class DoborOrder(models.Model):
                 vals["name"] = self.env["ir.sequence"].next_by_code("pmk.dobor.order") or "Черновик"
         return super().create(vals_list)
 
+    # ── печатный производственный лист ────────────────────────────────────
+
+    def _sheet_html(self):
+        """HTML производственного листа.
+
+        Вёрстку строит перенесённый с ERPNext генератор — он ничего не знает
+        ни про Odoo, ни про Frappe, поэтому данные отдаём ему обычным словарём,
+        а массу 1 м² — функцией: так модуль печати не ходит в базу сам и его
+        можно проверить без запущенной системы.
+        """
+        self.ensure_one()
+        from .dobor_report import order_html
+
+        sheets = self.env["pmk.metal.sheet"]
+
+        def mps(thickness):
+            row = sheets.search(
+                [("sheet_type", "=", "Гладкий"), ("thickness_mm", "=", thickness)], limit=1)
+            return row.mass_per_sqm if row else thickness * STEEL_DENSITY_FACTOR
+
+        order = {
+            "name": self.name,
+            "customer": self.customer or "—",
+            "order_date": fields.Date.to_string(self.order_date) if self.order_date else "",
+            "items": [{
+                "title": line.title,
+                "coating": line.coating_id.name or "",
+                "thickness": line.thickness,
+                "plank_length": line.plank_length,
+                "qty": line.qty,
+                "profile_snapshot_json": line.profile_snapshot_json,
+            } for line in self.line_ids],
+        }
+        return Markup(order_html(order, mps, author=self.env.user.name or ""))
+
+    def action_print_sheet(self):
+        return self.env.ref("pmk_calc.action_report_dobor_sheet").report_action(self)
+
 
 class DoborOrderLine(models.Model):
     _name = "pmk.dobor.order.line"
@@ -140,31 +223,19 @@ class DoborOrderLine(models.Model):
                 snapshot = []
             flanges = snapshot.get("segs", []) if isinstance(snapshot, dict) else snapshot
 
-            flange_sum = sum(float(f.get("len") or 0) for f in flanges if isinstance(f, dict))
-            hem_count = (1 if line.hem_left else 0) + (1 if line.hem_right else 0)
-            developed = flange_sum + hem_count * line.hem_len
-
-            area_one = (developed / MM_IN_M) * (line.plank_length / MM_IN_M)
-            weight_one = area_one * line._mass_per_sqm(line.thickness)
-
-            # Завальцовка в число гибов НЕ входит. В ERPNext она их добавляла
-            # (и это закреплено там тестом test_two_hems_count_as_bends), но по
-            # производству правило другое: завальцовка — отдельная операция, а
-            # не гиб. Длину металла она при этом съедает, поэтому в развёртке
-            # остаётся. Замок по-прежнему добавляет два гиба.
-            line.bends = max(0, len(flanges) - 1) + (2 if line.lock else 0)
-            line.developed_width = developed
-            line.area_one = area_one
-            line.area_total = area_one * (line.qty or 0)
-            line.weight_one = weight_one
-            line.weight_total = weight_one * (line.qty or 0)
-
-            if developed > 0 and line.coil_width > 0:
-                line.strips = int(line.coil_width // developed)
-                line.strip_waste = line.coil_width - line.strips * developed
-            else:
-                line.strips = 0
-                line.strip_waste = line.coil_width or 0.0
+            res = compute_dobor(
+                flanges, line.hem_left, line.hem_right, line.hem_len,
+                line._mass_per_sqm(line.thickness), line.plank_length,
+                line.qty, line.coil_width, line.lock,
+            )
+            line.developed_width = res["developed_width"]
+            line.bends = res["bends"]
+            line.area_one = res["area_one"]
+            line.area_total = res["area_total"]
+            line.weight_one = res["weight_one"]
+            line.weight_total = res["weight_total"]
+            line.strips = res["strips"]
+            line.strip_waste = res["strip_waste"]
 
     @api.constrains("thickness", "plank_length", "qty")
     def _check_positive(self):

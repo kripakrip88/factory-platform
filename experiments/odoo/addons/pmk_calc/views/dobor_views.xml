@@ -7,6 +7,8 @@
     <field name="arch" type="xml">
       <form string="Заказ доборки">
         <header>
+          <button name="action_print_sheet" type="object" string="Печать листа"
+                  class="btn-primary" icon="fa-print"/>
           <field name="state" widget="statusbar" options="{'clickable': 1}"/>
         </header>
         <sheet>

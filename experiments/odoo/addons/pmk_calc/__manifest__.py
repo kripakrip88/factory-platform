@@ -34,6 +34,7 @@
         "views/metal_views.xml",
         "views/metal_spec_views.xml",
         "views/dobor_views.xml",
+        "report/dobor_report.xml",
         "views/menus.xml",
     ],
     "assets": {

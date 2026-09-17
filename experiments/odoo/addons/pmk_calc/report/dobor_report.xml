@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+  <!--
+    Поля страницы нулевые: лист задаёт их сам правилом @page{size:A4;margin:12mm}
+    внутри своего CSS. Если задать поля ещё и здесь, они сложатся, и выверенный
+    на печати макет поедет.
+  -->
+  <record id="paperformat_dobor_sheet" model="report.paperformat">
+    <field name="name">Производственный лист доборки</field>
+    <field name="format">A4</field>
+    <field name="orientation">Portrait</field>
+    <field name="margin_top">0</field>
+    <field name="margin_bottom">0</field>
+    <field name="margin_left">0</field>
+    <field name="margin_right">0</field>
+    <field name="header_line" eval="False"/>
+    <field name="header_spacing">0</field>
+    <field name="dpi">96</field>
+  </record>
+
+  <!--
+    Шаблон намеренно пустой внутри: вся вёрстка приходит готовой строкой из
+    перенесённого генератора. Оборачивать её в стандартный макет Odoo нельзя —
+    там своя шапка и свои стили, а лист чёрно-белый и выверен на печати.
+  -->
+  <template id="report_dobor_sheet">
+    <t t-call="web.html_container">
+      <t t-foreach="docs" t-as="doc">
+        <t t-out="doc._sheet_html()"/>
+      </t>
+    </t>
+  </template>
+
+  <record id="action_report_dobor_sheet" model="ir.actions.report">
+    <field name="name">Производственный лист</field>
+    <field name="model">pmk.dobor.order</field>
+    <field name="report_type">qweb-pdf</field>
+    <field name="report_name">pmk_calc.report_dobor_sheet</field>
+    <field name="report_file">pmk_calc.report_dobor_sheet</field>
+    <field name="print_report_name">'Доборка %s' % (object.name)</field>
+    <field name="paperformat_id" ref="paperformat_dobor_sheet"/>
+    <field name="binding_model_id" ref="model_pmk_dobor_order"/>
+    <field name="binding_type">report</field>
+  </record>
+
+</odoo>
