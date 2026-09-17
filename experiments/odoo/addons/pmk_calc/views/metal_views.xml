@@ -29,7 +29,7 @@
         <field name="size_label"/>
         <field name="profile_type"/>
         <field name="gost"/>
-        <group expand="0" string="Группировать">
+        <group string="Группировать">
           <filter name="by_type" string="Вид проката" context="{'group_by': 'profile_type'}"/>
           <filter name="by_gost" string="Стандарт" context="{'group_by': 'gost'}"/>
         </group>
