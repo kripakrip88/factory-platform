@@ -45,37 +45,45 @@
               <!-- Снимок профиля правится построителем, руками в него не лезут. -->
               <field name="profile_snapshot_json" column_invisible="1"/>
             </list>
-            <form string="Доборка">
-              <group>
-                <group>
-                  <field name="title" placeholder="Например: планка примыкания"/>
-                  <field name="coating_id" options="{'no_create': True}"/>
-                  <field name="thickness"/>
-                  <field name="plank_length"/>
-                  <field name="qty"/>
-                </group>
-                <group>
-                  <field name="hem_left"/>
-                  <field name="hem_right"/>
-                  <field name="hem_len"/>
-                  <field name="lock"/>
-                  <field name="coil_width"/>
-                </group>
-              </group>
-              <separator string="Профиль сечения"/>
-              <field name="profile_snapshot_json" widget="pmk_dobor_builder" nolabel="1"/>
-              <group>
-                <group>
-                  <field name="developed_width" readonly="1"/>
-                  <field name="bends" readonly="1"/>
-                </group>
-                <group>
-                  <field name="weight_one" readonly="1"/>
-                  <field name="weight_total" readonly="1"/>
-                  <field name="strips" readonly="1"/>
-                  <field name="strip_waste" readonly="1"/>
-                </group>
-              </group>
+            <!--
+              Раскладка в две колонки, а не сверху вниз: чертёж — главное в этой
+              форме, и когда параметры стоят над ним, окно приходится листать,
+              чтобы свести размеры с рисунком. Слева узкая колонка полей,
+              справа холст во всю оставшуюся ширину.
+            -->
+            <form string="Доборка" class="pmk-dobor-form">
+              <div class="pmk-dobor-grid">
+                <div class="pmk-dobor-grid__side">
+                  <group string="Позиция">
+                    <field name="title" placeholder="Например: планка примыкания"/>
+                    <field name="coating_id" options="{'no_create': True}"/>
+                    <field name="thickness"/>
+                    <field name="plank_length"/>
+                    <field name="qty"/>
+                    <field name="coil_width"/>
+                  </group>
+                  <group string="Результат">
+                    <field name="developed_width" readonly="1"/>
+                    <field name="bends" readonly="1"/>
+                    <field name="weight_one" readonly="1"/>
+                    <field name="weight_total" readonly="1"/>
+                    <field name="strips" readonly="1"/>
+                    <field name="strip_waste" readonly="1"/>
+                  </group>
+                </div>
+
+                <div class="pmk-dobor-grid__main">
+                  <field name="profile_snapshot_json" widget="pmk_dobor_builder" nolabel="1"/>
+                </div>
+              </div>
+
+              <!-- Завальцовка и замок задаются на панели построителя, здесь
+                   держим поля скрытыми: два места ввода одного и того же
+                   расходятся между собой. -->
+              <field name="hem_left" invisible="1"/>
+              <field name="hem_right" invisible="1"/>
+              <field name="hem_len" invisible="1"/>
+              <field name="lock" invisible="1"/>
             </form>
           </field>
         </sheet>
