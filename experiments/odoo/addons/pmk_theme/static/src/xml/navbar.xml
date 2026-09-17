@@ -4,34 +4,44 @@
   <!--
     Модули строкой в верхней панели.
 
-    Штатная Odoo 19 рисует приложения компонентом <Dropdown> внутри
-    .o_navbar_apps_menu (см. web/static/src/webclient/navbar/navbar.xml:82-98) —
-    до нужного модуля два клика. Мы добавляем горизонтальный список РЯДОМ,
-    а кнопку-список НЕ убираем: она остаётся как «все приложения».
+    Штатная Odoo 19 рисует приложения выпадающим списком в .o_navbar_apps_menu
+    (web/static/src/webclient/navbar/navbar.xml:82) — до нужного модуля два
+    клика. Мы добавляем горизонтальный список в ту же шапку.
 
-    Почему не убираем: модулей 18, в строку на узком экране влезают не все.
-    Правило навигации «overflow-menu» требует, чтобы то, что не поместилось,
-    оставалось достижимым, а не обрезалось молча.
+    ПОЧЕМУ НАСЛЕДУЕМ web.NavBar, А НЕ web.NavBar.AppsMenu.
+    Сначала мы встраивались внутрь AppsMenu, и это дважды ломало интерфейс
+    белым экраном: там подряд идут
 
-    Методы getMenuItemHref и onNavBarDropdownItemSelection, а также menuService —
-    штатные у компонента NavBar, используем их же, чтобы не расходиться с ядром.
+        <div t-if="!isScopedApp" class="o_navbar_apps_menu">…</div>
+        <div t-else="" class="mx-2"/>
+
+    и любая вставка рядом рискует разорвать связку t-if/t-else — Owl падает с
+    «t-elif and t-else directives must be preceded by a t-if». Вторая причина
+    важнее: тема theme_liquid_glass наследует ТОТ ЖЕ шаблон и заменяет тот же
+    div.o_navbar_apps_menu на свою кнопку-бургер. Два наследования на один
+    узел, а порядок их применения зависит от порядка модулей в бандле — то
+    есть сборка ассетов могла разложить их иначе и всё ломалось заново.
+
+    Поэтому поднимаемся на уровень выше, в web.NavBar, и встаём сразу после
+    вызова меню приложений (navbar.xml:11-13). В этом месте соседи — одиночный
+    DropdownItem с t-if без t-else и обычный div, разрывать нечего.
+
+    apps берём тем же вызовом menuService.getApps(), которым их берёт ядро в
+    строке 12; getMenuItemHref и onNavBarDropdownItemSelection — штатные
+    методы компонента NavBar, используем их же, чтобы не расходиться с ядром.
   -->
   <t t-name="pmk_theme.NavBarAppsInline"
-     t-inherit="web.NavBar.AppsMenu"
+     t-inherit="web.NavBar"
      t-inherit-mode="extension">
-    <!--
-      Вставляем ВНУТРЬ блока t-else, а не после .o_navbar_apps_menu.
-      Причина: в штатном шаблоне идут подряд
-          <div t-if="!isScopedApp" class="o_navbar_apps_menu">…</div>
-          <div t-else="" class="mx-2"/>
-      Вставка между ними разрывает связку и Owl падает с
-      «t-elif and t-else directives must be preceded by a t-if» — проверено.
-      Заодно position="inside" даёт нужное поведение: строка модулей рисуется
-      только в десктопной ветке, на узких экранах её и не должно быть.
-    -->
-    <xpath expr="//t[@t-else='']" position="inside">
-      <nav class="pmk_apps_bar" aria-label="Модули">
-        <a t-foreach="apps" t-as="app" t-key="app.id"
+    <xpath expr="//t[@t-call='web.NavBar.AppsMenu']" position="after">
+      <!--
+        На узких экранах строку не рисуем вовсе — там работает штатное
+        мобильное меню, и лишние узлы в DOM ни к чему. CSS её тоже прячет
+        (одна граница в двух местах — на случай если ui.isSmall и наш
+        медиа-запрос разойдутся по ширине).
+      -->
+      <nav t-if="!this.ui.isSmall" class="pmk_apps_bar" aria-label="Модули">
+        <a t-foreach="menuService.getApps()" t-as="app" t-key="app.id"
            class="pmk_app"
            t-att-class="{ 'pmk_app--active': menuService.getCurrentApp() === app }"
            t-att-href="getMenuItemHref(app)"
