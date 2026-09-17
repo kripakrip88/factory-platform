@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Раздел называется «Калькуляторы», а не «Модули»: в Odoo модуль — это
+    служебное понятие (аддон, который ставят в настройках), и сотрудник,
+    увидев такой пункт, пойдёт туда за настройками, а не за расчётом.
+
+    Пока внутри только справочники — сами калькуляторы добавятся следующими
+    пунктами, поэтому «Справочники» вынесены в отдельную группу сразу,
+    чтобы потом не перекладывать меню.
+  -->
+  <menuitem id="menu_pmk_calc" name="Калькуляторы" sequence="80"/>
+
+  <menuitem id="menu_pmk_calc_reference" name="Справочники"
+            parent="menu_pmk_calc" sequence="90"/>
+
+  <menuitem id="menu_pmk_calc_profile" name="Линейный прокат"
+            parent="menu_pmk_calc_reference" action="action_metal_profile" sequence="10"/>
+  <menuitem id="menu_pmk_calc_sheet" name="Лист"
+            parent="menu_pmk_calc_reference" action="action_metal_sheet" sequence="20"/>
+  <menuitem id="menu_pmk_calc_vgp" name="Трубы ВГП"
+            parent="menu_pmk_calc_reference" action="action_metal_vgp" sequence="30"/>
+  <menuitem id="menu_pmk_calc_grade" name="Марки стали"
+            parent="menu_pmk_calc_reference" action="action_metal_grade" sequence="40"/>
+</odoo>

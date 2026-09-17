@@ -29,6 +29,9 @@ $pmk-accents: (
   "pmk_theme.menu_pmk_reports":    #9aa9bd,
   "pmk_theme.menu_pmk_people":     #f08fb0,
   "base.menu_administration":      #9aa9bd,
+  // Калькуляторы — инструмент, а не участок работы, поэтому нейтральный
+  // светло-стальной: он не конкурирует за внимание с деловыми разделами.
+  "pmk_calc.menu_pmk_calc":        #d8dee9,
 );
 
 @each $xmlid, $accent in $pmk-accents {
@@ -119,6 +122,7 @@ $pmk-accents: (
 .pmk_app[data-menu-xmlid="pmk_theme.menu_pmk_reports"]::before    { content: "\f080"; }
 .pmk_app[data-menu-xmlid="pmk_theme.menu_pmk_people"]::before     { content: "\f0c0"; }
 .pmk_app[data-menu-xmlid="base.menu_administration"]::before      { content: "\f0ad"; }
+.pmk_app[data-menu-xmlid="pmk_calc.menu_pmk_calc"]::before        { content: "\f1ec"; }
 
 .pmk_app__label {
   // Запас на длинные русские подписи («Выставление счетов», «Панели управления»).

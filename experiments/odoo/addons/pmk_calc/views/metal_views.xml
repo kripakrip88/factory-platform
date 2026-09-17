@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+  <!--
+    Справочники сортамента. Сотруднику даны только на чтение: это таблицы
+    ГОСТ, их не правят из интерфейса — ошибка здесь тихо испортит все расчёты
+    и отгрузочные документы. Права на запись есть у администратора.
+  -->
+
+  <record id="view_metal_profile_list" model="ir.ui.view">
+    <field name="name">pmk.metal.profile.list</field>
+    <field name="model">pmk.metal.profile</field>
+    <field name="arch" type="xml">
+      <list string="Линейный прокат" create="false" edit="false">
+        <field name="profile_type"/>
+        <field name="size_label"/>
+        <!-- sum даёт итог по отфильтрованному: удобно прикинуть массу подборки -->
+        <field name="mass_per_meter" sum="Итого кг/м"/>
+        <field name="gost" optional="show"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="view_metal_profile_search" model="ir.ui.view">
+    <field name="name">pmk.metal.profile.search</field>
+    <field name="model">pmk.metal.profile</field>
+    <field name="arch" type="xml">
+      <search>
+        <field name="size_label"/>
+        <field name="profile_type"/>
+        <field name="gost"/>
+        <group expand="0" string="Группировать">
+          <filter name="by_type" string="Вид проката" context="{'group_by': 'profile_type'}"/>
+          <filter name="by_gost" string="Стандарт" context="{'group_by': 'gost'}"/>
+        </group>
+      </search>
+    </field>
+  </record>
+
+  <record id="action_metal_profile" model="ir.actions.act_window">
+    <field name="name">Линейный прокат</field>
+    <field name="res_model">pmk.metal.profile</field>
+    <field name="view_mode">list</field>
+    <field name="context">{'search_default_by_type': 1}</field>
+  </record>
+
+  <record id="view_metal_sheet_list" model="ir.ui.view">
+    <field name="name">pmk.metal.sheet.list</field>
+    <field name="model">pmk.metal.sheet</field>
+    <field name="arch" type="xml">
+      <list string="Лист" create="false" edit="false">
+        <field name="sheet_type"/>
+        <field name="thickness_mm"/>
+        <field name="mass_per_sqm" sum="Итого кг/м²"/>
+        <field name="gost" optional="show"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="action_metal_sheet" model="ir.actions.act_window">
+    <field name="name">Лист</field>
+    <field name="res_model">pmk.metal.sheet</field>
+    <field name="view_mode">list</field>
+  </record>
+
+  <record id="view_metal_vgp_list" model="ir.ui.view">
+    <field name="name">pmk.metal.vgp.list</field>
+    <field name="model">pmk.metal.vgp</field>
+    <field name="arch" type="xml">
+      <list string="Трубы ВГП" create="false" edit="false">
+        <field name="du"/>
+        <field name="outer_mm"/>
+        <field name="wall_mm"/>
+        <field name="mass_per_meter" sum="Итого кг/м"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="action_metal_vgp" model="ir.actions.act_window">
+    <field name="name">Трубы ВГП</field>
+    <field name="res_model">pmk.metal.vgp</field>
+    <field name="view_mode">list</field>
+  </record>
+
+  <record id="view_metal_grade_list" model="ir.ui.view">
+    <field name="name">pmk.metal.grade.list</field>
+    <field name="model">pmk.metal.grade</field>
+    <field name="arch" type="xml">
+      <list string="Марки стали" create="false" edit="false">
+        <field name="name"/>
+        <field name="standard"/>
+        <field name="is_default"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="action_metal_grade" model="ir.actions.act_window">
+    <field name="name">Марки стали</field>
+    <field name="res_model">pmk.metal.grade</field>
+    <field name="view_mode">list</field>
+  </record>
+
+</odoo>

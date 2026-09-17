@@ -1,0 +1,9 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_pmk_metal_profile_user,pmk.metal.profile.user,model_pmk_metal_profile,base.group_user,1,0,0,0
+access_pmk_metal_profile_manager,pmk.metal.profile.manager,model_pmk_metal_profile,base.group_system,1,1,1,1
+access_pmk_metal_sheet_user,pmk.metal.sheet.user,model_pmk_metal_sheet,base.group_user,1,0,0,0
+access_pmk_metal_sheet_manager,pmk.metal.sheet.manager,model_pmk_metal_sheet,base.group_system,1,1,1,1
+access_pmk_metal_grade_user,pmk.metal.grade.user,model_pmk_metal_grade,base.group_user,1,0,0,0
+access_pmk_metal_grade_manager,pmk.metal.grade.manager,model_pmk_metal_grade,base.group_system,1,1,1,1
+access_pmk_metal_vgp_user,pmk.metal.vgp.user,model_pmk_metal_vgp,base.group_user,1,0,0,0
+access_pmk_metal_vgp_manager,pmk.metal.vgp.manager,model_pmk_metal_vgp,base.group_system,1,1,1,1
