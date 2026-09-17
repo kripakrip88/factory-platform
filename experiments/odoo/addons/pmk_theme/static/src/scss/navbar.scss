@@ -75,3 +75,51 @@
     transition: none;
   }
 }
+
+// ─── Иконки и цвет раздела ────────────────────────────────────────────────
+//
+// Зачем: глаз находит нужный раздел по форме и цвету быстрее, чем читает
+// подпись — как было в нашем ERPNext.
+//
+// Решения по правилам ui-ux-pro-max:
+//  · иконки шрифтовые из Font Awesome, который Odoo уже грузит
+//    (src/libs/fontawesome) — не эмодзи (no-emoji-icons) и не свои SVG,
+//    чтобы набор был единым со всем остальным интерфейсом (icon-style-consistent);
+//  · цвет НЕ единственный признак: у каждого раздела своя иконка, есть подпись,
+//    а активный пункт дополнительно подчёркнут (color-not-only);
+//  · цвета подобраны по смыслу, а не по радуге: деньги — зелёный, склад — синий,
+//    производство — янтарный (горячий цех), закупки — бирюзовый, продажи —
+//    фиолетовый, отчёты — серо-синий, люди — розовый;
+//  · привязка по data-menu-xmlid, а не по порядку: переставим пункты — ничего
+//    не поедет.
+
+.pmk_app::before {
+  font-family: FontAwesome;
+  font-size: 13px;
+  margin-right: 6px;
+  opacity: 0.85;
+  // Иконка декоративная — смысл несёт подпись рядом.
+  speak: never;
+}
+
+.pmk_app:hover::before,
+.pmk_app--active::before { opacity: 1; }
+
+.pmk_app[data-menu-xmlid="pmk_theme.menu_pmk_sales"]::before      { content: "\f201"; color: #a78bfa; }
+.pmk_app[data-menu-xmlid="pmk_theme.menu_pmk_production"]::before { content: "\f085"; color: #f0a04b; }
+.pmk_app[data-menu-xmlid="pmk_theme.menu_pmk_purchase"]::before   { content: "\f07a"; color: #4dd0b1; }
+.pmk_app[data-menu-xmlid="pmk_theme.menu_pmk_stock"]::before      { content: "\f1b3"; color: #6bb6f5; }
+.pmk_app[data-menu-xmlid="pmk_theme.menu_pmk_money"]::before      { content: "\f0d6"; color: #86c66b; }
+.pmk_app[data-menu-xmlid="pmk_theme.menu_pmk_reports"]::before    { content: "\f080"; color: #9aa9bd; }
+.pmk_app[data-menu-xmlid="pmk_theme.menu_pmk_people"]::before     { content: "\f0c0"; color: #f08fb0; }
+.pmk_app[data-menu-xmlid="base.menu_administration"]::before      { content: "\f0ad"; color: #9aa9bd; }
+
+// Активный раздел: подчёркивание в цвете своей иконки — цвет подкрепляет,
+// а не заменяет признак активности.
+.pmk_app--active[data-menu-xmlid="pmk_theme.menu_pmk_sales"]      { border-bottom-color: #a78bfa; }
+.pmk_app--active[data-menu-xmlid="pmk_theme.menu_pmk_production"] { border-bottom-color: #f0a04b; }
+.pmk_app--active[data-menu-xmlid="pmk_theme.menu_pmk_purchase"]   { border-bottom-color: #4dd0b1; }
+.pmk_app--active[data-menu-xmlid="pmk_theme.menu_pmk_stock"]      { border-bottom-color: #6bb6f5; }
+.pmk_app--active[data-menu-xmlid="pmk_theme.menu_pmk_money"]      { border-bottom-color: #86c66b; }
+.pmk_app--active[data-menu-xmlid="pmk_theme.menu_pmk_reports"]    { border-bottom-color: #9aa9bd; }
+.pmk_app--active[data-menu-xmlid="pmk_theme.menu_pmk_people"]     { border-bottom-color: #f08fb0; }
