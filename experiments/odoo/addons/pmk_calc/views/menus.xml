@@ -11,6 +11,9 @@
   -->
   <menuitem id="menu_pmk_calc" name="Калькуляторы" sequence="80"/>
 
+  <menuitem id="menu_pmk_calc_spec" name="Расчёт металлопроката"
+            parent="menu_pmk_calc" action="action_metal_spec" sequence="10"/>
+
   <menuitem id="menu_pmk_calc_reference" name="Справочники"
             parent="menu_pmk_calc" sequence="90"/>
 

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <data noupdate="1">
+    <!-- noupdate: при обновлении модуля счётчик не сбрасывается на единицу. -->
+    <record id="seq_metal_spec" model="ir.sequence">
+      <field name="name">Спецификация металлопроката</field>
+      <field name="code">pmk.metal.spec</field>
+      <field name="prefix">СМ-</field>
+      <field name="padding">5</field>
+      <field name="company_id" eval="False"/>
+    </record>
+  </data>
+</odoo>

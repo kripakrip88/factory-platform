@@ -7,3 +7,5 @@ access_pmk_metal_grade_user,pmk.metal.grade.user,model_pmk_metal_grade,base.grou
 access_pmk_metal_grade_manager,pmk.metal.grade.manager,model_pmk_metal_grade,base.group_system,1,1,1,1
 access_pmk_metal_vgp_user,pmk.metal.vgp.user,model_pmk_metal_vgp,base.group_user,1,0,0,0
 access_pmk_metal_vgp_manager,pmk.metal.vgp.manager,model_pmk_metal_vgp,base.group_system,1,1,1,1
+access_pmk_metal_spec_user,pmk.metal.spec.user,model_pmk_metal_spec,base.group_user,1,1,1,1
+access_pmk_metal_spec_line_user,pmk.metal.spec.line.user,model_pmk_metal_spec_line,base.group_user,1,1,1,1
