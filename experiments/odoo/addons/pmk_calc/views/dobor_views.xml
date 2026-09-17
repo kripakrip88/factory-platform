@@ -23,19 +23,20 @@
               <field name="total_weight"/>
             </group>
           </group>
+          <!--
+            Список НЕ редактируемый в строке намеренно: у доборки каждая
+            позиция требует нарисовать профиль, а построитель живёт в форме.
+            В editable-режиме Odoo правит ячейки и форму не открывает — тогда
+            до построителя просто не добраться.
+          -->
           <field name="line_ids">
-            <list editable="bottom">
+            <list>
               <field name="sequence" widget="handle"/>
               <field name="title"/>
               <field name="coating_id" options="{'no_create': True}"/>
               <field name="thickness"/>
               <field name="plank_length"/>
               <field name="qty"/>
-              <field name="hem_left" optional="show"/>
-              <field name="hem_right" optional="show"/>
-              <field name="hem_len" optional="hide"/>
-              <field name="lock" optional="hide"/>
-              <field name="coil_width" optional="hide"/>
               <field name="developed_width" readonly="1"/>
               <field name="bends" readonly="1" optional="show"/>
               <field name="strips" readonly="1" optional="hide"/>
