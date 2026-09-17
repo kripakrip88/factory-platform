@@ -10,7 +10,7 @@ compute из dobor/api.py, которая и в исходнике была чи
   развёртка = сумма полок + завальцовки × длина завальцовки
   площадь    = развёртка × длина планки (обе в метрах)
   вес        = площадь × масса 1 м² по толщине
-  гибов      = (полок − 1) + завальцовки + 2, если замок
+  гибов      = (полок − 1) + 2, если замок     ← завальцовка гибом НЕ считается
   полос из рулона = ширина рулона // развёртка, остаток — отход
 """
 
@@ -147,8 +147,12 @@ class DoborOrderLine(models.Model):
             area_one = (developed / MM_IN_M) * (line.plank_length / MM_IN_M)
             weight_one = area_one * line._mass_per_sqm(line.thickness)
 
-            # Завальцовка — это подгиб 180°, то есть тоже гиб; замок добавляет два.
-            line.bends = max(0, len(flanges) - 1) + hem_count + (2 if line.lock else 0)
+            # Завальцовка в число гибов НЕ входит. В ERPNext она их добавляла
+            # (и это закреплено там тестом test_two_hems_count_as_bends), но по
+            # производству правило другое: завальцовка — отдельная операция, а
+            # не гиб. Длину металла она при этом съедает, поэтому в развёртке
+            # остаётся. Замок по-прежнему добавляет два гиба.
+            line.bends = max(0, len(flanges) - 1) + (2 if line.lock else 0)
             line.developed_width = developed
             line.area_one = area_one
             line.area_total = area_one * (line.qty or 0)

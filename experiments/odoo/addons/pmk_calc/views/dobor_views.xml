@@ -46,13 +46,17 @@
               <field name="profile_snapshot_json" column_invisible="1"/>
             </list>
             <!--
-              Раскладка в две колонки, а не сверху вниз: чертёж — главное в этой
-              форме, и когда параметры стоят над ним, окно приходится листать,
-              чтобы свести размеры с рисунком. Слева узкая колонка полей,
-              справа холст во всю оставшуюся ширину.
+              Раскладка в две колонки: слева холст, справа параметры. Именно
+              так было в исходном прототипе («слева холст+кнопки, справа Полки
+              и гибы → Параметры доборки» — CHANGELOG модуля), и при рисовании
+              это удобнее: рука с мышью на чертеже, глаз сверяет числа сбоку.
             -->
             <form string="Доборка" class="pmk-dobor-form">
               <div class="pmk-dobor-grid">
+                <div class="pmk-dobor-grid__main">
+                  <field name="profile_snapshot_json" widget="pmk_dobor_builder" nolabel="1"/>
+                </div>
+
                 <div class="pmk-dobor-grid__side">
                   <group string="Позиция">
                     <field name="title" placeholder="Например: планка примыкания"/>
@@ -70,10 +74,6 @@
                     <field name="strips" readonly="1"/>
                     <field name="strip_waste" readonly="1"/>
                   </group>
-                </div>
-
-                <div class="pmk-dobor-grid__main">
-                  <field name="profile_snapshot_json" widget="pmk_dobor_builder" nolabel="1"/>
                 </div>
               </div>
 

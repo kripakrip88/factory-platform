@@ -194,7 +194,9 @@ export class DoborBuilder extends Component {
         const flangeSum = segs.reduce((a, s) => a + (s.len || 0), 0);
         const hemCount = (this.state.hemLeft ? 1 : 0) + (this.state.hemRight ? 1 : 0);
         this.state.developed = Math.round((flangeSum + hemCount * this.state.hemLen) * 100) / 100;
-        this.state.bends = Math.max(0, segs.length - 1) + hemCount + (this.state.lock ? 2 : 0);
+        // Завальцовка гибом не считается — см. пояснение в models/dobor.py.
+        // В развёртке выше она участвует: металл она расходует.
+        this.state.bends = Math.max(0, segs.length - 1) + (this.state.lock ? 2 : 0);
         this.state.flanges = segs.length;
     }
 
