@@ -206,3 +206,52 @@
     display: none;
   }
 }
+
+// ─── Высота шапки под две строки ──────────────────────────────────────────
+//
+// Почему наползало: в ядре у .o_main_navbar задана ЖЁСТКАЯ высота
+// height: var(--o-navbar-height) = 46px (web/webclient/navbar/navbar.scss:10),
+// рассчитанная на одну строку. Мы добавили вторую — она не поместилась
+// и легла поверх первой.
+//
+// Вторая причина: пункты меню в ядре тянут line-height той же величины
+// (navbar.variables.scss:58), поэтому каждая ссылка второй строки занимала
+// 46px по высоте. Сбрасываем и её.
+//
+// Высоту не задаём числом, а отпускаем в auto с нижней границей в штатные
+// 46px: одна строка выглядит как раньше, две — шапка растёт сама. Так ничего
+// не сломается, если в разделе появится перенос.
+
+.o_main_navbar {
+  height: auto;
+  min-height: var(--o-navbar-height);
+  align-items: center;
+  padding-bottom: 4px;
+  row-gap: 0;
+}
+
+// Первая строка держит штатную высоту, чтобы шапка не «худела».
+.pmk_apps_bar {
+  min-height: calc(var(--o-navbar-height) - 8px);
+  align-items: center;
+}
+
+.pmk_app {
+  line-height: 1.2;
+  height: auto;
+  min-height: 30px;
+}
+
+.o_menu_sections {
+  // Своя высота строки вместо унаследованных 46px.
+  min-height: 32px;
+  align-items: center;
+
+  .o_nav_entry {
+    line-height: 1.2;
+    height: auto;
+    min-height: 26px;
+    display: inline-flex;
+    align-items: center;
+  }
+}
