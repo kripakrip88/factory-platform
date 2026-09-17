@@ -77,6 +77,12 @@ patch(Chatter.prototype, {
 
     pmkToggle() {
         this.pmk.collapsed = !this.pmk.collapsed;
+        // Явная перерисовка. Состояние в патче чужого компонента реактивность
+        // Owl не подхватывает: значение менялось и сохранялось, а разметка
+        // оставалась прежней — проверено замером (aria-expanded показывал
+        // старое значение при уже записанном новом). Рендер по месту надёжнее,
+        // чем разбираться, на каком звене цепочки патчей теряется подписка.
+        this.render();
         try {
             browser.localStorage.setItem(this.pmkStorageKey(), this.pmk.collapsed ? "1" : "0");
         } catch {
