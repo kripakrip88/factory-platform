@@ -33,7 +33,38 @@
 
 // ─── Чат внизу, в общем потоке ────────────────────────────────────────────
 //
-// Раскладку переключает JS (см. chatter_inline.js), здесь — оформление.
+// Одного патча mailLayout мало. Ядро ВСЕГДА кладёт контейнер чата соседом
+// листа документа (form_compiler.js: append(parentXml, chatterContainerHookXml)),
+// а «сбоку или снизу» решает только классом: o-aside против mt-4 mt-md-0.
+// Родитель .o_form_renderer при этом остаётся горизонтальным flex — поэтому
+// чат без o-aside не уходит вниз, а просто занимает свободное место справа.
+//
+// Разворачиваем родителя в колонку — тогда лист и история встают друг под
+// друга. Прокрутку отдаём контейнеру целиком: это и есть та самая одна
+// прокрутка вместо двух, ради которой всё затевалось.
+.o_form_renderer:has(> .o-mail-Form-chatter:not(.o-aside)) {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  overflow-y: auto;
+
+  > .o_form_sheet_bg {
+    flex: 0 0 auto;
+    overflow: visible;      // иначе внутри листа заводится вторая прокрутка
+  }
+
+  > .o-mail-Form-chatter {
+    flex: 0 0 auto;
+    width: 100%;
+    height: auto;
+  }
+}
+
+// Класс h-100 от ядра распирает чат на всю высоту — в колонке он должен быть
+// по содержимому, иначе свёрнутая полоса занимает пол-экрана.
+.o-mail-Form-chatter:not(.o-aside) .o-mail-Chatter {
+  height: auto !important;
+}
+
 .o-mail-Form-chatter:not(.o-aside) {
   border-top: 1px solid rgba(255, 255, 255, 0.10);
   margin-top: 8px;
