@@ -36,13 +36,26 @@
  * К тому же класс через шаблон потребовал бы перерисовывать шапку на каждое
  * действие, а перерисовка тянет adapt() с пересчётом ширин всех пунктов.
  *
- * КОГДА ПЕРЕСЧИТЫВАЕМ:
+ * КОГДА ПЕРЕСЧИТЫВАЕМ — И ПОЧЕМУ ДВАЖДЫ.
  *  · ACTION_MANAGER:UI-UPDATED — шина сообщает о каждом открытом действии
  *    (action_service.js:1044);
- *  · ROUTE_CHANGE — навигация «назад/вперёд» в браузере, когда действие
- *    меняется мимо action_service (router.js:286, 301);
+ *  · ROUTE_CHANGE — клик по внутренней ссылке и навигация «назад/вперёд»
+ *    (router.js:286, 301, 334);
  *  · после каждого рендера шапки — иначе класс слетит, когда adapt()
  *    перерисует пункты, схлопнув часть из них в меню «ещё».
+ *
+ * Каждый пересчёт делаем ДВА раза: сразу и в следующем такте. Причина в том,
+ * что состояние роутера обновляется строкой `state = nextState` в самом конце
+ * doPush (router.js), а сам doPush обычно отложен в setTimeout
+ * (makeDebouncedPush) — и ROUTE_CHANGE после него НЕ триггерится. То есть в
+ * момент, когда шина сообщает о новом действии, состояние ещё старое, и
+ * никто больше об его обновлении не сообщит.
+ *
+ * Часть веток action_service толкает состояние синхронно (там pushState
+ * вызывается с { sync: true }) — для них верен первый пересчёт. Для остальных
+ * срабатывает второй: doPush уже стоит в очереди макрозадач, поэтому наш
+ * setTimeout(0), поставленный позже, выполнится после него. Два дешёвых
+ * прохода по десятку узлов надёжнее, чем угадывать, какая ветка сработала.
  */
 
 import { patch } from "@web/core/utils/patch";
@@ -55,11 +68,21 @@ import { useEffect } from "@odoo/owl";
 patch(NavBar.prototype, {
     setup() {
         super.setup();
-        useBus(this.env.bus, "ACTION_MANAGER:UI-UPDATED", () => this.pmkMarkActiveSection());
-        useBus(routerBus, "ROUTE_CHANGE", () => this.pmkMarkActiveSection());
+        useBus(this.env.bus, "ACTION_MANAGER:UI-UPDATED", () => this.pmkScheduleMark());
+        useBus(routerBus, "ROUTE_CHANGE", () => this.pmkScheduleMark());
         useEffect(() => {
             this.pmkMarkActiveSection();
         });
+    },
+
+    /**
+     * Пересчёт сразу и в следующем такте — см. пояснение в шапке файла.
+     * Отложенный вызов безопасен после размонтирования: pmkMarkActiveSection
+     * выходит сам, если у компонента больше нет корневого узла.
+     */
+    pmkScheduleMark() {
+        this.pmkMarkActiveSection();
+        browser.setTimeout(() => this.pmkMarkActiveSection(), 0);
     },
 
     /**
