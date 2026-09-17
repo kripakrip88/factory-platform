@@ -9,3 +9,7 @@ access_pmk_metal_vgp_user,pmk.metal.vgp.user,model_pmk_metal_vgp,base.group_user
 access_pmk_metal_vgp_manager,pmk.metal.vgp.manager,model_pmk_metal_vgp,base.group_system,1,1,1,1
 access_pmk_metal_spec_user,pmk.metal.spec.user,model_pmk_metal_spec,base.group_user,1,1,1,1
 access_pmk_metal_spec_line_user,pmk.metal.spec.line.user,model_pmk_metal_spec_line,base.group_user,1,1,1,1
+access_pmk_dobor_coating_user,pmk_dobor_coating.user,model_pmk_dobor_coating,base.group_user,1,1,1,1
+access_pmk_dobor_profile_user,pmk_dobor_profile.user,model_pmk_dobor_profile,base.group_user,1,1,1,1
+access_pmk_dobor_order_user,pmk_dobor_order.user,model_pmk_dobor_order,base.group_user,1,1,1,1
+access_pmk_dobor_order_line_user,pmk_dobor_order_line.user,model_pmk_dobor_order_line,base.group_user,1,1,1,1

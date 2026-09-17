@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+  <record id="view_dobor_order_form" model="ir.ui.view">
+    <field name="name">pmk.dobor.order.form</field>
+    <field name="model">pmk.dobor.order</field>
+    <field name="arch" type="xml">
+      <form string="Заказ доборки">
+        <header>
+          <field name="state" widget="statusbar" options="{'clickable': 1}"/>
+        </header>
+        <sheet>
+          <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
+          <group>
+            <group>
+              <field name="customer" placeholder="Кому или на какое изделие"/>
+              <field name="order_date"/>
+            </group>
+            <group>
+              <field name="total_positions"/>
+              <field name="total_qty"/>
+              <field name="total_area"/>
+              <field name="total_weight"/>
+            </group>
+          </group>
+          <field name="line_ids">
+            <list editable="bottom">
+              <field name="sequence" widget="handle"/>
+              <field name="title"/>
+              <field name="coating_id" options="{'no_create': True}"/>
+              <field name="thickness"/>
+              <field name="plank_length"/>
+              <field name="qty"/>
+              <field name="hem_left" optional="show"/>
+              <field name="hem_right" optional="show"/>
+              <field name="hem_len" optional="hide"/>
+              <field name="lock" optional="hide"/>
+              <field name="coil_width" optional="hide"/>
+              <field name="developed_width" readonly="1"/>
+              <field name="bends" readonly="1" optional="show"/>
+              <field name="strips" readonly="1" optional="hide"/>
+              <field name="strip_waste" readonly="1" optional="hide"/>
+              <field name="weight_total" readonly="1" sum="Итого, кг"/>
+              <!-- Снимок профиля правится построителем, руками в него не лезут. -->
+              <field name="profile_snapshot_json" column_invisible="1"/>
+            </list>
+          </field>
+        </sheet>
+        <chatter/>
+      </form>
+    </field>
+  </record>
+
+  <record id="view_dobor_order_list" model="ir.ui.view">
+    <field name="name">pmk.dobor.order.list</field>
+    <field name="model">pmk.dobor.order</field>
+    <field name="arch" type="xml">
+      <list string="Заказы доборки">
+        <field name="name"/>
+        <field name="order_date"/>
+        <field name="customer"/>
+        <field name="total_positions"/>
+        <field name="total_qty"/>
+        <field name="total_weight" sum="Итого, кг"/>
+        <field name="state" widget="badge"
+               decoration-info="state == 'draft'"
+               decoration-warning="state == 'confirmed'"
+               decoration-success="state == 'done'"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="action_dobor_order" model="ir.actions.act_window">
+    <field name="name">Доборные элементы</field>
+    <field name="res_model">pmk.dobor.order</field>
+    <field name="view_mode">list,form</field>
+  </record>
+
+  <record id="view_dobor_coating_list" model="ir.ui.view">
+    <field name="name">pmk.dobor.coating.list</field>
+    <field name="model">pmk.dobor.coating</field>
+    <field name="arch" type="xml">
+      <list string="Покрытия" editable="bottom">
+        <field name="name"/>
+        <field name="ral_code"/>
+        <field name="hex_color" widget="color"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="action_dobor_coating" model="ir.actions.act_window">
+    <field name="name">Покрытия</field>
+    <field name="res_model">pmk.dobor.coating</field>
+    <field name="view_mode">list</field>
+  </record>
+
+</odoo>

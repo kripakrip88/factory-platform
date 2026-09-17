@@ -14,6 +14,9 @@
   <menuitem id="menu_pmk_calc_spec" name="Расчёт металлопроката"
             parent="menu_pmk_calc" action="action_metal_spec" sequence="10"/>
 
+  <menuitem id="menu_pmk_calc_dobor" name="Доборные элементы"
+            parent="menu_pmk_calc" action="action_dobor_order" sequence="20"/>
+
   <menuitem id="menu_pmk_calc_reference" name="Справочники"
             parent="menu_pmk_calc" sequence="90"/>
 
@@ -25,4 +28,6 @@
             parent="menu_pmk_calc_reference" action="action_metal_vgp" sequence="30"/>
   <menuitem id="menu_pmk_calc_grade" name="Марки стали"
             parent="menu_pmk_calc_reference" action="action_metal_grade" sequence="40"/>
+  <menuitem id="menu_pmk_calc_coating" name="Покрытия доборки"
+            parent="menu_pmk_calc_reference" action="action_dobor_coating" sequence="50"/>
 </odoo>
