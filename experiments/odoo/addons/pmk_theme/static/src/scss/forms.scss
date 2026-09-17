@@ -69,12 +69,16 @@
 // Даём ей собственную карточку: тот же радиус и фон, что у листа, и воздух
 // между блоками. Правило whitespace-balance: пробел должен разделять разные
 // сущности — документ и его история это разные сущности.
+// !important здесь вынужденный: ядро вешает на контейнер bootstrap-классы
+// mt-4 mt-md-0, а mt-md-0 — это margin-top: 0 !important на экранах от 768px.
+// Без перебивания отступ так и остаётся нулевым (проверено замером). Фон тема
+// гасит своим transparent-bg — та же история, что была с пунктами меню.
 .o_form_renderer > .o-mail-Form-chatter:not(.o-aside) {
-  margin: 16px 0 24px;
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  border-top: 1px solid rgba(255, 255, 255, 0.10);   // перебиваем правило ниже
+  margin-top: 16px !important;
+  margin-bottom: 24px !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.03) !important;
   overflow: hidden;                                   // содержимое не вылезает за скругление
 }
 
