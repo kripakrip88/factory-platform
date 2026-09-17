@@ -58,6 +58,9 @@ services:
       # RuOdoo подключается как дополнительный каталог модулей, только на чтение —
       # чтобы эксперимент не мог испортить исходники локализации
       - ${RUODOO_SRC:?не задан RUODOO_SRC}:/mnt/extra-addons:ro
+      # Сторонние модули (темы и прочее) — отдельным каталогом, чтобы не мешать
+      # их с локализацией: у RuOdoo свой цикл обновления через git pull.
+      - ${EXTRA_ADDONS:-/opt/experiments/odoo/addons-extra}:/mnt/third-party:ro
     mem_limit: 2g
     cpus: 2.0
 
