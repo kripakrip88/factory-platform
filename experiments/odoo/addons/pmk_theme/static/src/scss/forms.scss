@@ -115,6 +115,22 @@
   opacity: 0.8;
 }
 
+// Стрелка вниз, когда развёрнуто; вбок — когда свёрнуто.
+.pmk-chatter-toggle__arrow {
+  transition: transform 200ms ease-out;
+}
+.o-mail-Chatter[data-pmk-collapsed="1"] .pmk-chatter-toggle__arrow {
+  transform: rotate(-90deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .pmk-chatter-toggle__arrow { transition: none; }
+}
+
+// Счётчики нужны только когда история свёрнута: иначе она видна сама.
+.o-mail-Chatter:not([data-pmk-collapsed="1"]) .pmk-chatter-badge {
+  display: none;
+}
+
 .pmk-chatter-badge {
   display: inline-flex;
   align-items: center;

@@ -27,12 +27,14 @@
               t-att-aria-expanded="pmk.collapsed ? 'false' : 'true'"
               t-att-title="pmk.collapsed ? 'Показать историю' : 'Свернуть историю'"
               t-on-click="pmkToggle">
-        <i class="fa fa-fw" t-att-class="pmk.collapsed ? 'fa-angle-right' : 'fa-angle-down'"
-           aria-hidden="true"/>
+        <!-- Стрелка одна, поворот делает CSS по состоянию: так разметка
+             остаётся статичной и не зависит от перерисовки. -->
+        <i class="fa fa-fw fa-angle-down pmk-chatter-toggle__arrow" aria-hidden="true"/>
         <span class="pmk-chatter-toggle__label">История</span>
 
-        <!-- Счётчики видны только в свёрнутом виде: развёрнутый чат говорит сам за себя. -->
-        <t t-if="pmk.collapsed">
+        <!-- Счётчики рисуем всегда, скрывает их CSS в развёрнутом виде:
+             развёрнутый чат говорит сам за себя. -->
+        <t>
           <span t-if="pmkCounts.messages" class="pmk-chatter-badge" title="Сообщений">
             <i class="fa fa-comment-o" aria-hidden="true"/><t t-esc="pmkCounts.messages"/>
           </span>
