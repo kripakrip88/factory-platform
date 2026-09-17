@@ -15,7 +15,14 @@
     "category": "Theme/Backend",
     "author": "ПМК Парк",
     "license": "LGPL-3",
-    "depends": ["web"],
+    # Зависимости — все модули, на действия которых ссылается наше меню.
+    # Без них Odoo не найдёт action при установке и упадёт.
+    "depends": [
+        "web", "crm", "sale_management", "purchase", "stock",
+        "mrp", "account", "repair", "maintenance", "hr",
+        "mail", "calendar", "project", "contacts",
+    ],
+    "data": ["data/menus.xml", "data/hide_menus.xml"],
     "assets": {
         "web.assets_backend": [
             "pmk_theme/static/src/scss/navbar.scss",
