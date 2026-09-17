@@ -123,3 +123,86 @@
 .pmk_app--active[data-menu-xmlid="pmk_theme.menu_pmk_money"]      { border-bottom-color: #86c66b; }
 .pmk_app--active[data-menu-xmlid="pmk_theme.menu_pmk_reports"]    { border-bottom-color: #9aa9bd; }
 .pmk_app--active[data-menu-xmlid="pmk_theme.menu_pmk_people"]     { border-bottom-color: #f08fb0; }
+
+// ─── Подменю раздела — второй строкой ─────────────────────────────────────
+//
+// Проблема, которую чиним: Odoo кладёт пункты раздела (.o_menu_sections)
+// в ТУ ЖЕ строку, что и всё остальное, да ещё с bootstrap-классом w-0
+// (ширина 0) и flex-shrink. Места не остаётся, и его собственный скрипт
+// схлопывания помечает почти все пункты как d-none — на экране виден один.
+// Пользователь просто не находит подменю.
+//
+// Решение: разрешаем шапке переносить строки и отдаём подменю всю ширину
+// отдельной строкой. Скрипт схлопывания при этом никуда не девается — он
+// продолжит прятать лишнее, если пунктов действительно много, но теперь
+// ему есть где развернуться.
+
+.o_main_navbar {
+  flex-wrap: wrap;
+}
+
+.o_menu_sections {
+  // w-0 и flex-shrink-1 приходят из bootstrap-классов в разметке ядра,
+  // поэтому перебиваем их явно.
+  flex: 1 0 100% !important;
+  width: auto !important;
+  order: 10;                  // после systray → уезжает на новую строку
+
+  margin-top: 4px;
+  padding: 2px 4px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
+  gap: 2px;
+
+  .o_nav_entry {
+    font-size: 13px;
+    padding: 5px 10px;
+    border-radius: 6px;
+    color: rgba(255, 255, 255, 0.70);
+    border-bottom: 2px solid transparent;
+    transition: color 160ms ease-out, background-color 160ms ease-out;
+
+    &:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.10);
+    }
+
+    &:focus-visible {
+      outline: 2px solid rgba(255, 255, 255, 0.85);
+      outline-offset: -2px;
+    }
+
+    // Открытый сейчас пункт Odoo помечает классом active
+    &.active,
+    &[aria-current="page"] {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.14);
+      border-bottom-color: currentColor;
+      font-weight: 500;
+    }
+  }
+}
+
+// На узких экранах второй строки нет — там работает штатное мобильное меню.
+@media (max-width: 1100px) {
+  .o_menu_sections {
+    flex: 1 1 auto !important;
+    order: 0;
+    margin-top: 0;
+    border-top: 0;
+  }
+}
+
+// ─── Кнопка «все приложения» — только на узких экранах ────────────────────
+//
+// Изначально мы её оставляли как запасной путь: приложений было 18, в строку
+// влезали не все, и правило overflow-menu требует, чтобы недостижимого
+// не осталось. После перегруппировки разделов стало восемь — они помещаются
+// целиком, и кнопка на десктопе дублирует то, что и так на виду.
+//
+// Границу берём ту же, что у строки модулей (1100px), чтобы они работали
+// в паре: шире — строка, уже — кнопка. Так ни один пункт не пропадает.
+@media (min-width: 1101px) {
+  .o_navbar_apps_menu {
+    display: none;
+  }
+}
