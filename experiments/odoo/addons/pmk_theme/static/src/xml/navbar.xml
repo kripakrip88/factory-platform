@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+  <!--
+    Модули строкой в верхней панели.
+
+    Штатная Odoo 19 рисует приложения компонентом <Dropdown> внутри
+    .o_navbar_apps_menu (см. web/static/src/webclient/navbar/navbar.xml:82-98) —
+    до нужного модуля два клика. Мы добавляем горизонтальный список РЯДОМ,
+    а кнопку-список НЕ убираем: она остаётся как «все приложения».
+
+    Почему не убираем: модулей 18, в строку на узком экране влезают не все.
+    Правило навигации «overflow-menu» требует, чтобы то, что не поместилось,
+    оставалось достижимым, а не обрезалось молча.
+
+    Методы getMenuItemHref и onNavBarDropdownItemSelection, а также menuService —
+    штатные у компонента NavBar, используем их же, чтобы не расходиться с ядром.
+  -->
+  <t t-name="pmk_theme.NavBarAppsInline"
+     t-inherit="web.NavBar.AppsMenu"
+     t-inherit-mode="extension">
+    <xpath expr="//div[hasclass('o_navbar_apps_menu')]" position="after">
+      <nav class="pmk_apps_bar" aria-label="Модули">
+        <a t-foreach="apps" t-as="app" t-key="app.id"
+           class="pmk_app"
+           t-att-class="{ 'pmk_app--active': menuService.getCurrentApp() === app }"
+           t-att-href="getMenuItemHref(app)"
+           t-att-data-menu-xmlid="app.xmlid"
+           t-att-title="app.name"
+           t-att-aria-current="menuService.getCurrentApp() === app ? 'page' : false"
+           t-on-click.prevent="() => this.onNavBarDropdownItemSelection(app)">
+          <span class="pmk_app__label" t-esc="app.name"/>
+        </a>
+      </nav>
+    </xpath>
+  </t>
+
+</templates>

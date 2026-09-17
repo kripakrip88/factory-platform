@@ -1,0 +1,77 @@
+// Модули строкой в верхней панели — оформление.
+//
+// Решения приняты по правилам навыка ui-ux-pro-max:
+//  · активный пункт помечаем цветом И подчёркиванием (nav-state-active) —
+//    одним цветом обозначать нельзя, это правило color-not-only;
+//  · горизонтальной прокрутки не делаем (horizontal-scroll, severity High):
+//    что не влезло — остаётся доступным через штатную кнопку «все приложения»;
+//  · подписи НЕ обрезаем многоточием без запаса: у русских слов длина на 20-30%
+//    больше английских (truncation-strategy), поэтому даём им ширину и держим
+//    полный текст в title;
+//  · фокус видимый (focus-states) — на клавиатуре пункт должен читаться;
+//  · переходы 150-200 мс (duration-timing), только цвет и фон — без анимации
+//    ширины, чтобы не дёргалась раскладка.
+
+.pmk_apps_bar {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  margin-left: 4px;
+  min-width: 0;          // чтобы flex-контейнер мог сжиматься, а не распирать панель
+  overflow: hidden;      // лишнее прячем: остаётся кнопка «все приложения»
+  flex: 1 1 auto;
+
+  // На узких экранах строка модулей только мешает — там штатная кнопка удобнее.
+  @media (max-width: 1100px) {
+    display: none;
+  }
+}
+
+.pmk_app {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  white-space: nowrap;
+  text-decoration: none;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.72);
+  background: transparent;
+  border-bottom: 2px solid transparent;
+  transition: color 160ms ease-out, background-color 160ms ease-out;
+
+  &:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.10);
+    text-decoration: none;
+  }
+
+  // Видимый фокус для клавиатуры — не убираем обводку, а делаем её своей.
+  &:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.85);
+    outline-offset: -2px;
+  }
+
+  // Активный модуль: и цвет, и подчёркивание — чтобы не зависеть от цвета одного.
+  &--active {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.14);
+    border-bottom-color: currentColor;
+    font-weight: 500;
+  }
+}
+
+.pmk_app__label {
+  // Запас на длинные русские подписи («Выставление счетов», «Панели управления»).
+  max-width: 15ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// Уважаем системную настройку «меньше движения».
+@media (prefers-reduced-motion: reduce) {
+  .pmk_app {
+    transition: none;
+  }
+}
