@@ -19,7 +19,17 @@
   <t t-name="pmk_theme.NavBarAppsInline"
      t-inherit="web.NavBar.AppsMenu"
      t-inherit-mode="extension">
-    <xpath expr="//div[hasclass('o_navbar_apps_menu')]" position="after">
+    <!--
+      Вставляем ВНУТРЬ блока t-else, а не после .o_navbar_apps_menu.
+      Причина: в штатном шаблоне идут подряд
+          <div t-if="!isScopedApp" class="o_navbar_apps_menu">…</div>
+          <div t-else="" class="mx-2"/>
+      Вставка между ними разрывает связку и Owl падает с
+      «t-elif and t-else directives must be preceded by a t-if» — проверено.
+      Заодно position="inside" даёт нужное поведение: строка модулей рисуется
+      только в десктопной ветке, на узких экранах её и не должно быть.
+    -->
+    <xpath expr="//t[@t-else='']" position="inside">
       <nav class="pmk_apps_bar" aria-label="Модули">
         <a t-foreach="apps" t-as="app" t-key="app.id"
            class="pmk_app"
