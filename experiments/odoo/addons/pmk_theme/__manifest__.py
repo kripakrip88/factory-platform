@@ -20,7 +20,7 @@
     "depends": [
         "web", "crm", "sale_management", "purchase", "stock",
         "mrp", "account", "repair", "maintenance", "hr",
-        "mail", "calendar", "project", "contacts",
+        "mail", "calendar", "project", "contacts", "project_todo", "spreadsheet_dashboard",
     ],
     "data": ["data/menus.xml", "data/hide_menus.xml"],
     "assets": {
