@@ -187,10 +187,14 @@ class DoborOrderLine(models.Model):
     # Форма сечения. Хранится снимком, а не ссылкой на шаблон: шаблон могут
     # потом поправить, а заказ должен остаться таким, каким его изготовили.
     profile_snapshot_json = fields.Text("Снимок профиля (JSON)", default="[]")
-    hem_left = fields.Boolean("Завальцовка слева")
-    hem_right = fields.Boolean("Завальцовка справа")
-    hem_len = fields.Float("Длина завальцовки, мм", default=10.0, digits=(6, 2))
-    lock = fields.Boolean("Замок")
+    # Завальцовка, её длина и замок задаются в построителе и живут ВНУТРИ
+    # снимка профиля. Здесь они вычисляемые, а не вводимые: раньше это были
+    # обычные поля, построитель их не заполнял, и расчёт шёл без завальцовок —
+    # развёртка выходила на 2×длину короче, чем показывал чертёж.
+    hem_left = fields.Boolean("Завальцовка слева", compute="_compute_dobor", store=True)
+    hem_right = fields.Boolean("Завальцовка справа", compute="_compute_dobor", store=True)
+    hem_len = fields.Float("Длина завальцовки, мм", compute="_compute_dobor", store=True, digits=(6, 2))
+    lock = fields.Boolean("Замок", compute="_compute_dobor", store=True)
 
     developed_width = fields.Float("Развёртка, мм", compute="_compute_dobor", store=True, digits=(12, 2))
     bends = fields.Integer("Гибов", compute="_compute_dobor", store=True)
@@ -213,21 +217,32 @@ class DoborOrderLine(models.Model):
             [("sheet_type", "=", "Гладкий"), ("thickness_mm", "=", thickness)], limit=1)
         return sheet.mass_per_sqm if sheet else thickness * STEEL_DENSITY_FACTOR
 
-    @api.depends("profile_snapshot_json", "hem_left", "hem_right", "hem_len",
-                 "lock", "thickness", "plank_length", "qty", "coil_width")
+    @api.depends("profile_snapshot_json", "thickness", "plank_length", "qty", "coil_width")
     def _compute_dobor(self):
         for line in self:
             try:
-                snapshot = json.loads(line.profile_snapshot_json or "[]")
+                snapshot = json.loads(line.profile_snapshot_json or "{}")
             except (ValueError, TypeError):
-                snapshot = []
-            flanges = snapshot.get("segs", []) if isinstance(snapshot, dict) else snapshot
+                snapshot = {}
+            if not isinstance(snapshot, dict):
+                # Старый формат: голый список полок без настроек завальцовки.
+                snapshot = {"segs": snapshot or []}
+
+            flanges = snapshot.get("segs") or []
+            hem_left = bool(snapshot.get("hemLeft"))
+            hem_right = bool(snapshot.get("hemRight"))
+            hem_len = float(snapshot.get("hemLen") or 0.0)
+            lock = bool(snapshot.get("lock") or snapshot.get("lockOn"))
 
             res = compute_dobor(
-                flanges, line.hem_left, line.hem_right, line.hem_len,
+                flanges, hem_left, hem_right, hem_len,
                 line._mass_per_sqm(line.thickness), line.plank_length,
-                line.qty, line.coil_width, line.lock,
+                line.qty, line.coil_width, lock,
             )
+            line.hem_left = hem_left
+            line.hem_right = hem_right
+            line.hem_len = hem_len
+            line.lock = lock
             line.developed_width = res["developed_width"]
             line.bends = res["bends"]
             line.area_one = res["area_one"]

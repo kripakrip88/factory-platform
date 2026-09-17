@@ -36,7 +36,7 @@ export class DoborBuilder extends Component {
 
         this.state = useState({
             hemLeft: false, hemRight: false, hemLen: 15,
-            lock: false, growEnd: true,
+            lock: false, growEnd: true, paintOn: false,
             developed: 0, bends: 0, flanges: 0,
         });
 
@@ -82,6 +82,7 @@ export class DoborBuilder extends Component {
         this.state.hemRight = !!snap.hemRight;
         this.state.hemLen = snap.hemLen ?? 15;
         this.state.lock = !!snap.lock;
+        this.state.paintOn = !!snap.paintOn;
     }
 
     saveToField() {
@@ -94,6 +95,7 @@ export class DoborBuilder extends Component {
             hemRightDir: this.geom.hemRightDir,
             hemLen: this.state.hemLen,
             lock: this.state.lock,
+            paintOn: this.state.paintOn,
             paintSide: this.geom.paintSide,
         };
         this.props.record.update({ [this.props.name]: JSON.stringify(snap) });
@@ -232,6 +234,26 @@ export class DoborBuilder extends Component {
                 return { x: dx / l, y: dy / l };
             };
 
+            // Слой краски: пунктир, отведённый по нормали в сторону покрытия.
+            // Рисуем ДО контура, чтобы линия профиля осталась главной.
+            if (this.state.paintOn) {
+                const off = v.map((p, i) => {
+                    let nx = 0, ny = 0;
+                    if (i < v.length - 1) {
+                        const d = unitv(p, v[i + 1]); nx += -d.y; ny += d.x;
+                    }
+                    if (i > 0) {
+                        const d = unitv(v[i - 1], p); nx += -d.y; ny += d.x;
+                    }
+                    const l = Math.hypot(nx, ny) || 1;
+                    return `${p.x + (nx / l) * 6 * this.geom.paintSide},${p.y + (ny / l) * 6 * this.geom.paintSide}`;
+                }).join(" ");
+                svg.appendChild(this.mk("polyline", {
+                    points: off, fill: "none", stroke: "#f08fb0",
+                    "stroke-width": "1.8", "stroke-dasharray": "4 3", "stroke-linejoin": "round",
+                }));
+            }
+
             // Контур. У подгиба 180° рисуется параллельная линия с разворотом,
             // а смещение НАКОПИТЕЛЬНОЕ — иначе при нескольких подгибах подряд
             // полки накладываются друг на друга и пропадают.
@@ -284,6 +306,34 @@ export class DoborBuilder extends Component {
             }
             if (this.state.hemRight && segs.length >= 1) {
                 drawHem(v[v.length - 1], unitv(v[v.length - 1], v[v.length - 2]), this.geom.hemRightDir);
+            }
+
+            // Замок — знак в фиксированной зоне снизу по центру, как в ERPNext:
+            // на самом контуре его не нарисовать, это способ соединения планок,
+            // а не элемент сечения.
+            if (this.state.lock && segs.length >= 1) {
+                const cx = VIEW_W / 2, cy = VIEW_H - 68;
+                svg.appendChild(this.mk("rect", {
+                    x: cx - 26, y: cy - 22, width: 52, height: 44, rx: 9,
+                    fill: "#ffffff", stroke: "#1a1f29", "stroke-width": "1.4",
+                }));
+                const g = this.mk("g", {
+                    transform: `translate(${cx},${cy}) scale(0.95)`,
+                    stroke: "#111", "stroke-width": "2.4",
+                    "stroke-linecap": "round", "stroke-linejoin": "round", fill: "none",
+                });
+                for (const d of ["M -20 7 L -8 -3", "M 20 7 L 8 -3",
+                                 "M -3 0 l 3 5", "M 1 -1 l 3 5", "M 5 -2 l 2 5"]) {
+                    g.appendChild(this.mk("path", { d }));
+                }
+                g.appendChild(this.mk("path", { d: "M -8 -3 Q -1 2 3 -1 Q 7 -4 9 -2", "stroke-width": "2.8" }));
+                svg.appendChild(g);
+                const lt = this.mk("text", {
+                    x: cx, y: cy + 34, "text-anchor": "middle",
+                    "font-size": "9", "font-weight": "700", fill: "#e6ebf2",
+                });
+                lt.textContent = "ЗАМОК";
+                svg.appendChild(lt);
             }
         }
 
@@ -493,6 +543,24 @@ export class DoborBuilder extends Component {
 
     toggle(key) {
         this.state[key] = !this.state[key];
+        this.redraw();
+        this.saveToField();
+    }
+
+    /** Развернуть завальцовку на другую сторону полки. */
+    flipHem(side) {
+        if (side === "left") {
+            this.geom.hemLeftDir *= -1;
+        } else {
+            this.geom.hemRightDir *= -1;
+        }
+        this.redraw();
+        this.saveToField();
+    }
+
+    /** Сторона покрытия: на какую сторону профиля лёг лак. */
+    flipPaint() {
+        this.geom.paintSide *= -1;
         this.redraw();
         this.saveToField();
     }

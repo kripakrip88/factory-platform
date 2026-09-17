@@ -20,18 +20,34 @@
           <input type="checkbox" t-att-checked="state.hemLeft" t-on-change="() => this.toggle('hemLeft')"/>
           завальцовка слева
         </label>
+        <!-- Развернуть завальцовку на другую сторону полки: так же, как в ERPNext. -->
+        <button type="button" class="btn btn-sm btn-secondary" t-if="state.hemLeft"
+                t-on-click="() => this.flipHem('left')" title="Развернуть левую завальцовку">⮃</button>
+
         <label class="pmk-dobor__check">
           <input type="checkbox" t-att-checked="state.hemRight" t-on-change="() => this.toggle('hemRight')"/>
           справа
         </label>
+        <button type="button" class="btn btn-sm btn-secondary" t-if="state.hemRight"
+                t-on-click="() => this.flipHem('right')" title="Развернуть правую завальцовку">⮃</button>
+
         <label class="pmk-dobor__check">
           длина
           <input type="number" class="pmk-dobor__num" t-att-value="state.hemLen" t-on-change="onHemLenChange"/>
         </label>
+
+        <span class="pmk-dobor__sep"/>
+
         <label class="pmk-dobor__check">
           <input type="checkbox" t-att-checked="state.lock" t-on-change="() => this.toggle('lock')"/>
           замок
         </label>
+        <label class="pmk-dobor__check">
+          <input type="checkbox" t-att-checked="state.paintOn" t-on-change="() => this.toggle('paintOn')"/>
+          покрытие
+        </label>
+        <button type="button" class="btn btn-sm btn-secondary" t-if="state.paintOn"
+                t-on-click="flipPaint" title="Сторона покрытия">↔</button>
 
         <span class="pmk-dobor__sep"/>
 
