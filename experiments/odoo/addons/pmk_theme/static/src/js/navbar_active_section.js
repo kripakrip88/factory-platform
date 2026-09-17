@@ -11,29 +11,44 @@
  * ПОЧЕМУ ВЫЧИСЛЯЕМ САМИ. menuService хранит только текущее ПРИЛОЖЕНИЕ
  * (currentAppId в menu_service.js), понятия «текущий пункт» в нём нет вовсе.
  *
- * КАК ОПРЕДЕЛЯЕМ. Сравниваем первый сегмент пути в адресной строке с тем,
- * что даёт getMenuItemHref(section) — то есть ровно с той функцией, которой
- * ядро рисует ссылку пункта. Симметрия важна: если Odoo однажды поменяет
- * формат адресов, подсветка поедет вместе с разметкой, а не разойдётся с ней.
- * Сегмент берём первый, потому что при открытии записи адрес удлиняется
- * (/odoo/action-348 → /odoo/action-348/5), а пункт остаётся тем же.
+ * КАК ОПРЕДЕЛЯЕМ — И ПОЧЕМУ НЕ ПО АДРЕСУ.
+ * Первая версия сравнивала первый сегмент адресной строки с ссылкой пункта.
+ * Это давало подсветку, отстающую на один шаг: открыты «Лиды» — подсвечены
+ * «Заказы клиентов». Причина в том, что запись в адресную строку отложена —
+ * router.js кладёт её в setTimeout (makeDebouncedPush, router.js:405-410),
+ * поэтому в момент, когда шина сообщает о новом действии, location.pathname
+ * ещё держит предыдущее.
  *
- * ПОЧЕМУ ПРАВИМ DOM, А НЕ ШАБЛОН. Шапку уже наследуют и ядро, и тема
- * theme_liquid_glass, и мы. Ещё одно наследование ради одного класса добавило
- * бы третьего участника в тот же узел. К тому же класс через шаблон потребовал
- * бы перерисовывать всю шапку на каждое действие, а перерисовка тянет за собой
- * adapt() с пересчётом ширин всех пунктов. Проставить класс дешевле.
+ * Вторая причина не использовать адрес: путь не всегда «первый сегмент —
+ * действие». Odoo складывает стек в вид active_id/action/res_id
+ * (router.js:134), так что у вложенного действия первым сегментом идёт
+ * идентификатор родителя, а не то, что нам нужно.
+ *
+ * Поэтому берём router.current.action — состояние роутера, которое
+ * обновляется сразу, до записи в адрес. Приводим его к тому же виду, в каком
+ * ядро рисует ссылку пункта: число или строка с точкой дают «action-<N>»,
+ * остальное — сам путь (та же развилка, что в stateToUrl, router.js:97-101).
+ * Ссылку пункта берём у самого ядра через getMenuItemHref, чтобы обе стороны
+ * сравнения происходили из одного источника.
+ *
+ * ПОЧЕМУ ПРАВИМ DOM, А НЕ ШАБЛОН. Шапку уже наследуют ядро, тема
+ * theme_liquid_glass и мы — третий участник в том же узле нам дорого обошёлся.
+ * К тому же класс через шаблон потребовал бы перерисовывать шапку на каждое
+ * действие, а перерисовка тянет adapt() с пересчётом ширин всех пунктов.
  *
  * КОГДА ПЕРЕСЧИТЫВАЕМ:
  *  · ACTION_MANAGER:UI-UPDATED — шина сообщает о каждом открытом действии
- *    (action_service.js:1044), это и есть смена пункта;
- *  · после каждого рендера шапки — иначе класс слетит, когда adapt() перерисует
- *    пункты, схлопнув часть из них в меню «ещё».
+ *    (action_service.js:1044);
+ *  · ROUTE_CHANGE — навигация «назад/вперёд» в браузере, когда действие
+ *    меняется мимо action_service (router.js:286, 301);
+ *  · после каждого рендера шапки — иначе класс слетит, когда adapt()
+ *    перерисует пункты, схлопнув часть из них в меню «ещё».
  */
 
 import { patch } from "@web/core/utils/patch";
 import { useBus } from "@web/core/utils/hooks";
 import { browser } from "@web/core/browser/browser";
+import { router, routerBus } from "@web/core/browser/router";
 import { NavBar } from "@web/webclient/navbar/navbar";
 import { useEffect } from "@odoo/owl";
 
@@ -41,26 +56,43 @@ patch(NavBar.prototype, {
     setup() {
         super.setup();
         useBus(this.env.bus, "ACTION_MANAGER:UI-UPDATED", () => this.pmkMarkActiveSection());
+        useBus(routerBus, "ROUTE_CHANGE", () => this.pmkMarkActiveSection());
         useEffect(() => {
             this.pmkMarkActiveSection();
         });
     },
 
-    /** Первый сегмент пути после /odoo/ — общий знаменатель адреса и ссылки пункта. */
-    pmkPathKey(path) {
-        const m = /^\/odoo\/([^/?#]+)/.exec(path || "");
-        return m ? m[1] : null;
+    /**
+     * Текущее действие в том же виде, в каком оно попадает в ссылку пункта.
+     * Развилка повторяет stateToUrl (router.js:97-101).
+     */
+    pmkCurrentKey() {
+        const action = router.current && router.current.action;
+        if (action === undefined || action === null || action === "") {
+            // Запасной путь на случай, если состояние роутера ещё пустое:
+            // берём последний сегмент вида action-N из адреса.
+            const m = /\/odoo\/(?:.*\/)?(action-[^/?#]+)/.exec(browser.location.pathname);
+            return m ? m[1] : null;
+        }
+        return typeof action === "number" || String(action).includes(".")
+            ? `action-${action}`
+            : String(action);
     },
 
-    /** Пункт активен сам или активен кто-то из его потомков (пункт-выпадашка). */
-    pmkIsActive(section, key) {
+    /** Ссылку пункта берём у ядра и отрезаем префикс — сравниваем сопоставимое. */
+    pmkMenuKey(menu) {
+        return this.getMenuItemHref(menu).replace(/^\/odoo\//, "");
+    },
+
+    /** Пункт активен сам или активен кто-то из потомков (пункт-выпадашка). */
+    pmkIsActive(menu, key) {
         if (!key) {
             return false;
         }
-        if (this.pmkPathKey(this.getMenuItemHref(section)) === key) {
+        if (this.pmkMenuKey(menu) === key) {
             return true;
         }
-        return (section.childrenTree || []).some((child) => this.pmkIsActive(child, key));
+        return (menu.childrenTree || []).some((child) => this.pmkIsActive(child, key));
     },
 
     pmkMarkActiveSection() {
@@ -69,13 +101,13 @@ patch(NavBar.prototype, {
             return;
         }
 
-        const key = this.pmkPathKey(browser.location.pathname);
+        const key = this.pmkCurrentKey();
         const active = this.currentAppSections.find((section) => this.pmkIsActive(section, key));
         const activeId = active ? String(active.id) : null;
 
         // Цвет текущего раздела отдаём в CSS одной переменной на всю шапку —
         // так обе строки подсвечиваются одним цветом, а сами цвета остаются
-        // в одном месте, в scss, и не дублируются в коде.
+        // в scss и не дублируются в коде.
         const app = this.currentApp;
         if (app && app.xmlid) {
             root.dataset.pmkApp = app.xmlid;
