@@ -44,3 +44,8 @@ data/
 
 # n8n Public API key (живёт только на сервере, не коммитить)
 .n8n-api-key
+
+# Правило data/ выше отсекало каталоги данных модулей Odoo — там лежат
+# определения меню, а не рантайм-данные. Возвращаем их под контроль версий.
+!experiments/odoo/addons/*/data/
+!experiments/odoo/addons/*/data/**

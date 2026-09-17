@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <data>
+
+    <!--
+      Навигация ПМК Парк: разделы названы по делу, а не по программе.
+
+      Вместо шестнадцати приложений Odoo («CRM», «Выставление счетов», «Покупка»)
+      — семь разделов, как привычно в МойСклад: «Продажи», «Производство»,
+      «Закупки», «Склад», «Деньги», «Отчёты», «Сотрудники».
+
+      ПОЧЕМУ СВОИ ПУНКТЫ, А НЕ ПЕРЕНОС ЧУЖИХ. Мы не трогаем штатные меню Odoo,
+      а создаём свои, ссылающиеся на ТЕ ЖЕ действия. Штатные корневые пункты
+      просто скрываются. Это обратимо и переживает обновление Odoo: если ядро
+      переименует или перенесёт свой пункт, наш продолжит работать, пока живо
+      действие, на которое он ссылается.
+
+      Все action-адреса проверены на живой установке, а не взяты по памяти.
+    -->
+
+    <!-- ─── Корневые разделы ─────────────────────────────────────────── -->
+    <menuitem id="menu_pmk_sales"      name="Продажи"      sequence="10"/>
+    <menuitem id="menu_pmk_production" name="Производство" sequence="20"/>
+    <menuitem id="menu_pmk_purchase"   name="Закупки"      sequence="30"/>
+    <menuitem id="menu_pmk_stock"      name="Склад"        sequence="40"/>
+    <menuitem id="menu_pmk_money"      name="Деньги"       sequence="50"/>
+    <menuitem id="menu_pmk_reports"    name="Отчёты"       sequence="60"/>
+    <menuitem id="menu_pmk_people"     name="Сотрудники"   sequence="70"/>
+
+    <!-- ─── Продажи ──────────────────────────────────────────────────── -->
+    <menuitem id="menu_pmk_sales_pipeline" name="Воронка сделок"
+              parent="menu_pmk_sales" action="crm.crm_lead_action_pipeline" sequence="10"/>
+    <menuitem id="menu_pmk_sales_leads" name="Лиды"
+              parent="menu_pmk_sales" action="crm.crm_lead_all_leads" sequence="20"/>
+    <menuitem id="menu_pmk_sales_quotations" name="Коммерческие предложения"
+              parent="menu_pmk_sales" action="sale.action_quotations_with_onboarding" sequence="30"/>
+    <menuitem id="menu_pmk_sales_orders" name="Заказы клиентов"
+              parent="menu_pmk_sales" action="sale.action_orders" sequence="40"/>
+    <menuitem id="menu_pmk_sales_customers" name="Клиенты"
+              parent="menu_pmk_sales" action="account.res_partner_action_customer" sequence="50"/>
+
+    <!-- ─── Производство ─────────────────────────────────────────────── -->
+    <menuitem id="menu_pmk_prod_orders" name="Производственные заказы"
+              parent="menu_pmk_production" action="mrp.mrp_production_action" sequence="10"/>
+    <menuitem id="menu_pmk_prod_workorders" name="Рабочие задания"
+              parent="menu_pmk_production" action="mrp.mrp_workorder_todo" sequence="20"/>
+    <menuitem id="menu_pmk_prod_bom" name="Спецификации"
+              parent="menu_pmk_production" action="mrp.mrp_bom_form_action" sequence="30"/>
+    <menuitem id="menu_pmk_prod_workcenters" name="Рабочие центры"
+              parent="menu_pmk_production" action="mrp.mrp_workcenter_action" sequence="40"/>
+    <menuitem id="menu_pmk_prod_maintenance" name="Обслуживание оборудования"
+              parent="menu_pmk_production" action="maintenance.hr_equipment_request_action" sequence="50"/>
+    <menuitem id="menu_pmk_prod_repairs" name="Ремонты"
+              parent="menu_pmk_production" action="repair.action_repair_order_tree" sequence="60"/>
+
+    <!-- ─── Закупки ──────────────────────────────────────────────────── -->
+    <menuitem id="menu_pmk_purch_rfq" name="Запросы цен"
+              parent="menu_pmk_purchase" action="purchase.purchase_rfq" sequence="10"/>
+    <menuitem id="menu_pmk_purch_orders" name="Заказы поставщикам"
+              parent="menu_pmk_purchase" action="purchase.purchase_form_action" sequence="20"/>
+    <menuitem id="menu_pmk_purch_suppliers" name="Поставщики"
+              parent="menu_pmk_purchase" action="account.res_partner_action_supplier" sequence="30"/>
+
+    <!-- ─── Склад ────────────────────────────────────────────────────── -->
+    <menuitem id="menu_pmk_stock_overview" name="Обзор операций"
+              parent="menu_pmk_stock" action="stock.stock_picking_type_action" sequence="10"/>
+    <menuitem id="menu_pmk_stock_in" name="Приёмки"
+              parent="menu_pmk_stock" action="stock.action_picking_tree_incoming" sequence="20"/>
+    <menuitem id="menu_pmk_stock_out" name="Отгрузки"
+              parent="menu_pmk_stock" action="stock.action_picking_tree_outgoing" sequence="30"/>
+    <menuitem id="menu_pmk_stock_quants" name="Остатки"
+              parent="menu_pmk_stock" action="stock.stock_quant_action" sequence="40"/>
+    <menuitem id="menu_pmk_stock_products" name="Номенклатура"
+              parent="menu_pmk_stock" action="stock.product_template_action_product" sequence="50"/>
+
+    <!-- ─── Деньги ───────────────────────────────────────────────────── -->
+    <menuitem id="menu_pmk_money_out" name="Счета покупателям"
+              parent="menu_pmk_money" action="account.action_move_out_invoice" sequence="10"/>
+    <menuitem id="menu_pmk_money_in" name="Счета от поставщиков"
+              parent="menu_pmk_money" action="account.action_move_in_invoice" sequence="20"/>
+    <menuitem id="menu_pmk_money_payments" name="Платежи полученные"
+              parent="menu_pmk_money" action="account.action_account_payments" sequence="30"/>
+    <menuitem id="menu_pmk_money_payments_out" name="Платежи отправленные"
+              parent="menu_pmk_money" action="account.action_account_payments_payable" sequence="40"/>
+
+    <!-- ─── Отчёты ──────────────────────────────────────────────────── -->
+    <menuitem id="menu_pmk_rep_sales" name="Продажи"
+              parent="menu_pmk_reports" action="sale.action_order_report_all" sequence="10"/>
+    <menuitem id="menu_pmk_rep_quotations" name="Коммерческие предложения"
+              parent="menu_pmk_reports" action="sale.action_order_report_quotation_salesteam" sequence="20"/>
+    <menuitem id="menu_pmk_rep_invoices" name="Счета"
+              parent="menu_pmk_reports" action="account.action_account_invoice_report_all" sequence="30"/>
+    <menuitem id="menu_pmk_rep_workcenters" name="Загрузка рабочих центров"
+              parent="menu_pmk_reports" action="mrp.action_mrp_workcenter_load_report_graph" sequence="40"/>
+
+    <!-- ─── Сотрудники ───────────────────────────────────────────────── -->
+    <menuitem id="menu_pmk_people_list" name="Сотрудники"
+              parent="menu_pmk_people" action="hr.open_view_employee_list_my" sequence="10"/>
+    <menuitem id="menu_pmk_people_depts" name="Подразделения"
+              parent="menu_pmk_people" action="hr.hr_department_tree_action" sequence="20"/>
+
+  </data>
+</odoo>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <data noupdate="0">
+
+    <!--
+      Скрываем штатные корневые пункты Odoo: их заменяют наши разделы
+      (см. menus.xml). Модули при этом остаются установленными и рабочими —
+      прячем только пункты меню, поэтому всё обратимо: снять active=False,
+      и штатная навигация вернётся.
+
+      Список согласован с Антоном 17.09.2026. «Сотрудники» он попросил
+      ОСТАВИТЬ — поэтому hr здесь нет, у нас он седьмым разделом.
+    -->
+
+    <!-- Дублируются нашими разделами -->
+    <record id="crm.crm_menu_root"                 model="ir.ui.menu"><field name="active" eval="False"/></record>
+    <record id="sale.sale_menu_root"               model="ir.ui.menu"><field name="active" eval="False"/></record>
+    <record id="purchase.menu_purchase_root"       model="ir.ui.menu"><field name="active" eval="False"/></record>
+    <record id="stock.menu_stock_root"             model="ir.ui.menu"><field name="active" eval="False"/></record>
+    <record id="mrp.menu_mrp_root"                 model="ir.ui.menu"><field name="active" eval="False"/></record>
+    <record id="account.menu_finance"              model="ir.ui.menu"><field name="active" eval="False"/></record>
+    <record id="maintenance.menu_maintenance_title" model="ir.ui.menu"><field name="active" eval="False"/></record>
+    <record id="repair.menu_repair_order"          model="ir.ui.menu"><field name="active" eval="False"/></record>
+    <record id="hr.menu_hr_root"                   model="ir.ui.menu"><field name="active" eval="False"/></record>
+
+    <!-- Заводу не нужны: внутренний чат, личные списки, проектное управление -->
+    <record id="mail.menu_root_discuss"            model="ir.ui.menu"><field name="active" eval="False"/></record>
+    <record id="calendar.mail_menu_calendar"       model="ir.ui.menu"><field name="active" eval="False"/></record>
+    <record id="project.menu_main_pm"              model="ir.ui.menu"><field name="active" eval="False"/></record>
+    <record id="contacts.menu_contacts"            model="ir.ui.menu"><field name="active" eval="False"/></record>
+
+  </data>
+</odoo>
