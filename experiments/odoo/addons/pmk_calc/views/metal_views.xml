@@ -12,7 +12,7 @@
     <field name="model">pmk.metal.profile</field>
     <field name="arch" type="xml">
       <list string="Линейный прокат" create="false" edit="false">
-        <field name="profile_type"/>
+        <field name="type_id"/>
         <field name="size_label"/>
         <!-- sum даёт итог по отфильтрованному: удобно прикинуть массу подборки -->
         <field name="mass_per_meter" sum="Итого кг/м"/>
@@ -27,10 +27,10 @@
     <field name="arch" type="xml">
       <search>
         <field name="size_label"/>
-        <field name="profile_type"/>
+        <field name="type_id"/>
         <field name="gost"/>
         <group>
-          <filter name="by_type" string="Вид проката" context="{'group_by': 'profile_type'}"/>
+          <filter name="by_type" string="Вид проката" context="{'group_by': 'type_id'}"/>
           <filter name="by_gost" string="Стандарт" context="{'group_by': 'gost'}"/>
         </group>
       </search>
@@ -63,7 +63,7 @@
     <field name="view_mode">list</field>
   </record>
 
-  <record id="view_metal_vgp_list" model="ir.ui.view">
+<!--
     <field name="name">pmk.metal.vgp.list</field>
     <field name="model">pmk.metal.vgp</field>
     <field name="arch" type="xml">
@@ -81,6 +81,8 @@
     <field name="res_model">pmk.metal.vgp</field>
     <field name="view_mode">list</field>
   </record>
+
+-->
 
   <record id="view_metal_grade_list" model="ir.ui.view">
     <field name="name">pmk.metal.grade.list</field>

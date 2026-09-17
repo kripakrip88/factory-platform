@@ -24,8 +24,6 @@
             parent="menu_pmk_calc_reference" action="action_metal_profile" sequence="10"/>
   <menuitem id="menu_pmk_calc_sheet" name="Лист"
             parent="menu_pmk_calc_reference" action="action_metal_sheet" sequence="20"/>
-  <menuitem id="menu_pmk_calc_vgp" name="Трубы ВГП"
-            parent="menu_pmk_calc_reference" action="action_metal_vgp" sequence="30"/>
   <menuitem id="menu_pmk_calc_grade" name="Марки стали"
             parent="menu_pmk_calc_reference" action="action_metal_grade" sequence="40"/>
   <menuitem id="menu_pmk_calc_coating" name="Покрытия доборки"

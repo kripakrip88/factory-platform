@@ -26,9 +26,9 @@
     "data": [
         "security/ir.model.access.csv",
         "data/pmk.metal.grade.csv",
+        "data/pmk.metal.profile.type.csv",
         "data/pmk.metal.profile.csv",
         "data/pmk.metal.sheet.csv",
-        "data/pmk.metal.vgp.csv",
         "data/pmk.dobor.coating.csv",
         "data/ir_sequence.xml",
         "views/metal_views.xml",

@@ -7,50 +7,85 @@
     <field name="arch" type="xml">
       <form string="Спецификация">
         <sheet>
-          <div class="oe_title">
-            <h1><field name="name" readonly="1"/></h1>
-          </div>
+          <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
           <group>
             <group>
               <field name="partner_id"/>
               <field name="date"/>
+              <field name="note" placeholder="Примечание…"/>
             </group>
             <group>
-              <field name="total_positions"/>
-              <field name="total_weight" widget="float" digits="[12,3]"/>
+              <field name="total_products"/>
+              <field name="total_details"/>
+              <field name="total_weight"/>
+              <field name="total_weight_t"/>
             </group>
           </group>
-          <field name="note" placeholder="Примечание к спецификации…"/>
 
           <!--
-            Поля разных видов проката лежат в одной строке и показываются по
-            выбранному виду. Так таблица остаётся одной: у линейного проката
-            спрашиваем длину, у листа две стороны — разводить это на три
-            отдельные таблицы значило бы заставлять считать в трёх местах.
+            Изделия раскрываются в форму: внутри у каждого две таблицы деталей,
+            в строку списка они не помещаются.
           -->
-          <field name="line_ids">
-            <list editable="bottom">
+          <field name="product_ids">
+            <list>
               <field name="sequence" widget="handle"/>
-              <field name="detail_name"/>
-              <field name="calc_mode"/>
-              <field name="profile_id" column_invisible="0"
-                     invisible="calc_mode != 'linear'"
-                     options="{'no_create': True}"/>
-              <field name="sheet_id"
-                     invisible="calc_mode != 'sheet'"
-                     options="{'no_create': True}"/>
-              <field name="vgp_id"
-                     invisible="calc_mode != 'vgp'"
-                     options="{'no_create': True}"/>
-              <field name="length_mm" invisible="calc_mode == 'sheet'"/>
-              <field name="a_mm" invisible="calc_mode != 'sheet'"/>
-              <field name="b_mm" invisible="calc_mode != 'sheet'"/>
+              <field name="name"/>
               <field name="qty"/>
-              <field name="grade_id" options="{'no_create': True}" optional="show"/>
               <field name="weight_one" readonly="1"/>
               <field name="weight_total" readonly="1" sum="Итого, кг"/>
-              <field name="size_label" column_invisible="1"/>
+              <field name="note" optional="hide"/>
             </list>
+            <form string="Изделие">
+              <group>
+                <group>
+                  <field name="name" placeholder="Например: Ферма ФС-1"/>
+                  <field name="qty"/>
+                </group>
+                <group>
+                  <field name="weight_one" readonly="1"/>
+                  <field name="weight_total" readonly="1"/>
+                  <field name="note"/>
+                </group>
+              </group>
+
+              <notebook>
+                <page string="Прокат" name="linear">
+                  <field name="line_linear_ids" context="{'default_calc_mode': 'linear'}">
+                    <list editable="bottom">
+                      <field name="sequence" widget="handle"/>
+                      <field name="calc_mode" column_invisible="1"/>
+                      <field name="detail_name"/>
+                      <field name="type_id" options="{'no_create': True}"/>
+                      <!-- Типоразмеры показываем только выбранного вида -->
+                      <field name="profile_id" options="{'no_create': True}"
+                             domain="[('type_id', '=', type_id)]"/>
+                      <field name="length_mm"/>
+                      <field name="qty"/>
+                      <field name="grade_id" options="{'no_create': True}" optional="hide"/>
+                      <field name="weight_one" readonly="1"/>
+                      <field name="weight_total" readonly="1" sum="Итого, кг"/>
+                    </list>
+                  </field>
+                </page>
+
+                <page string="Лист" name="sheet">
+                  <field name="line_sheet_ids" context="{'default_calc_mode': 'sheet'}">
+                    <list editable="bottom">
+                      <field name="sequence" widget="handle"/>
+                      <field name="calc_mode" column_invisible="1"/>
+                      <field name="detail_name"/>
+                      <field name="sheet_id" options="{'no_create': True}"/>
+                      <field name="a_mm"/>
+                      <field name="b_mm"/>
+                      <field name="qty"/>
+                      <field name="grade_id" options="{'no_create': True}" optional="hide"/>
+                      <field name="weight_one" readonly="1"/>
+                      <field name="weight_total" readonly="1" sum="Итого, кг"/>
+                    </list>
+                  </field>
+                </page>
+              </notebook>
+            </form>
           </field>
         </sheet>
         <chatter/>
@@ -66,8 +101,9 @@
         <field name="name"/>
         <field name="date"/>
         <field name="partner_id"/>
-        <field name="total_positions"/>
+        <field name="total_products"/>
         <field name="total_weight" sum="Итого, кг"/>
+        <field name="total_weight_t" sum="Итого, т"/>
       </list>
     </field>
   </record>
@@ -93,8 +129,8 @@
     <field name="view_mode">list,form</field>
     <field name="help" type="html">
       <p class="o_view_nocontent_smiling_face">Создайте первый расчёт</p>
-      <p>Вес считается по табличным значениям ГОСТ: выберите профиль,
-         укажите длину в миллиметрах и количество.</p>
+      <p>Спецификация состоит из изделий, у каждого своё количество.
+         Вес детали умножается и на количество в изделии, и на количество изделий.</p>
     </field>
   </record>
 

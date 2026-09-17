@@ -5,11 +5,12 @@ access_pmk_metal_sheet_user,pmk.metal.sheet.user,model_pmk_metal_sheet,base.grou
 access_pmk_metal_sheet_manager,pmk.metal.sheet.manager,model_pmk_metal_sheet,base.group_system,1,1,1,1
 access_pmk_metal_grade_user,pmk.metal.grade.user,model_pmk_metal_grade,base.group_user,1,0,0,0
 access_pmk_metal_grade_manager,pmk.metal.grade.manager,model_pmk_metal_grade,base.group_system,1,1,1,1
-access_pmk_metal_vgp_user,pmk.metal.vgp.user,model_pmk_metal_vgp,base.group_user,1,0,0,0
-access_pmk_metal_vgp_manager,pmk.metal.vgp.manager,model_pmk_metal_vgp,base.group_system,1,1,1,1
 access_pmk_metal_spec_user,pmk.metal.spec.user,model_pmk_metal_spec,base.group_user,1,1,1,1
 access_pmk_metal_spec_line_user,pmk.metal.spec.line.user,model_pmk_metal_spec_line,base.group_user,1,1,1,1
 access_pmk_dobor_coating_user,pmk_dobor_coating.user,model_pmk_dobor_coating,base.group_user,1,1,1,1
 access_pmk_dobor_profile_user,pmk_dobor_profile.user,model_pmk_dobor_profile,base.group_user,1,1,1,1
 access_pmk_dobor_order_user,pmk_dobor_order.user,model_pmk_dobor_order,base.group_user,1,1,1,1
 access_pmk_dobor_order_line_user,pmk_dobor_order_line.user,model_pmk_dobor_order_line,base.group_user,1,1,1,1
+access_pmk_metal_profile_type_user,pmk.metal.profile.type.user,model_pmk_metal_profile_type,base.group_user,1,0,0,0
+access_pmk_metal_profile_type_mgr,pmk.metal.profile.type.mgr,model_pmk_metal_profile_type,base.group_system,1,1,1,1
+access_pmk_metal_spec_product_user,pmk.metal.spec.product.user,model_pmk_metal_spec_product,base.group_user,1,1,1,1

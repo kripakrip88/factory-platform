@@ -10,21 +10,48 @@
 from odoo import api, fields, models
 
 
+class MetalProfileType(models.Model):
+    """Вид проката. Нужен, чтобы в расчёте сначала выбирался вид, а типоразмер
+    искался уже внутри него: в общем списке из 665 позиций не найтись."""
+
+    _name = "pmk.metal.profile.type"
+    _description = "Вид проката"
+    _order = "sequence, name"
+
+    name = fields.Char("Вид проката", required=True)
+    gost = fields.Char("Основной стандарт")
+    sequence = fields.Integer("Порядок", default=10)
+
+
 class MetalProfile(models.Model):
-    """Линейный прокат: уголок, швеллер, двутавр, труба, арматура, полоса."""
+    """Линейный прокат: уголок, швеллер, двутавр, труба, арматура, полоса.
+
+    Трубы ВГП лежат здесь же, а не отдельной моделью: математика у них та же —
+    килограммы на погонный метр. Отдельными они были в ERPNext только из-за
+    своей структуры полей (условный проход, наружный диаметр, стенка), и это
+    заставляло выбирать «вид проката» из трёх вариантов вместо двух.
+    Структурные поля сохранены, они просто пустуют у остального проката.
+    """
 
     _name = "pmk.metal.profile"
     _description = "Сортамент: линейный прокат"
     _order = "profile_type, size_label"
     _rec_name = "display_name"
 
-    profile_type = fields.Char("Вид проката", required=True, index=True)
+    type_id = fields.Many2one("pmk.metal.profile.type", "Вид проката", required=True, index=True)
+    profile_type = fields.Char("Вид проката (текст)", required=True, index=True)
     gost = fields.Char("Стандарт", required=True)
     size_label = fields.Char("Типоразмер", required=True)
     mass_per_meter = fields.Float(
         "Масса, кг/м", required=True, digits=(12, 4),
         help="Табличное значение ГОСТ. Масса погонного метра.",
     )
+    # Только у труб ВГП: наружный диаметр фиксирован для каждого условного
+    # прохода — на него режется трубная резьба.
+    du = fields.Integer("Ду, мм")
+    outer_mm = fields.Float("Наружный, мм", digits=(6, 2))
+    wall_mm = fields.Float("Стенка, мм", digits=(6, 2))
+
     display_name = fields.Char(compute="_compute_display_name", store=True)
 
     @api.depends("profile_type", "size_label")
@@ -72,27 +99,3 @@ class MetalGrade(models.Model):
     standard = fields.Char("Стандарт", required=True)
     is_default = fields.Boolean("По умолчанию")
 
-
-class MetalVgp(models.Model):
-    """Трубы водогазопроводные, ГОСТ 3262-75.
-
-    Вынесены отдельно, потому что у них наружный диаметр фиксирован для каждого
-    условного прохода (на него режется трубная резьба), а с толщиной стенки
-    меняется внутренний проход — в общий справочник профилей это не ложится.
-    """
-
-    _name = "pmk.metal.vgp"
-    _description = "Сортамент: труба ВГП"
-    _order = "du, wall_mm"
-    _rec_name = "display_name"
-
-    du = fields.Integer("Ду, мм", required=True)
-    outer_mm = fields.Float("Наружный, мм", required=True, digits=(6, 2))
-    wall_mm = fields.Float("Стенка, мм", required=True, digits=(6, 2))
-    mass_per_meter = fields.Float("Масса, кг/м", required=True, digits=(12, 4))
-    display_name = fields.Char(compute="_compute_display_name", store=True)
-
-    @api.depends("du", "wall_mm")
-    def _compute_display_name(self):
-        for rec in self:
-            rec.display_name = "Труба ВГП Ду%s×%g" % (rec.du, rec.wall_mm)
