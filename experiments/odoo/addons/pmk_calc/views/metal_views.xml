@@ -147,4 +147,60 @@
     <field name="view_mode">list</field>
   </record>
 
+
+  <record id="view_metal_fastener_list" model="ir.ui.view">
+    <field name="name">pmk.metal.fastener.list</field>
+    <field name="model">pmk.metal.fastener</field>
+    <field name="arch" type="xml">
+      <list string="Метизы" editable="bottom">
+        <field name="fastener_type"/>
+        <field name="name"/>
+        <field name="size_label"/>
+        <field name="gost" optional="show"/>
+        <field name="weight_kg"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="view_metal_fastener_search" model="ir.ui.view">
+    <field name="name">pmk.metal.fastener.search</field>
+    <field name="model">pmk.metal.fastener</field>
+    <field name="arch" type="xml">
+      <search>
+        <field name="name"/>
+        <field name="size_label"/>
+        <group>
+          <filter name="by_type" string="Вид" context="{'group_by': 'fastener_type'}"/>
+        </group>
+      </search>
+    </field>
+  </record>
+
+  <record id="action_metal_fastener" model="ir.actions.act_window">
+    <field name="name">Метизы</field>
+    <field name="res_model">pmk.metal.fastener</field>
+    <field name="view_mode">list</field>
+    <field name="context">{'search_default_by_type': 1}</field>
+  </record>
+
+  <record id="view_paint_coating_list" model="ir.ui.view">
+    <field name="name">pmk.paint.coating.list</field>
+    <field name="model">pmk.paint.coating</field>
+    <field name="arch" type="xml">
+      <list string="Покрытия" editable="bottom">
+        <field name="paint_type"/>
+        <field name="name"/>
+        <field name="color"/>
+        <field name="consumption"/>
+        <field name="layers"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="action_paint_coating" model="ir.actions.act_window">
+    <field name="name">Лакокрасочные покрытия</field>
+    <field name="res_model">pmk.paint.coating</field>
+    <field name="view_mode">list</field>
+  </record>
+
 </odoo>

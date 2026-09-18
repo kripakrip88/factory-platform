@@ -26,6 +26,10 @@
             parent="menu_pmk_calc_reference" action="action_metal_sheet" sequence="20"/>
   <menuitem id="menu_pmk_calc_grade" name="Марки стали"
             parent="menu_pmk_calc_reference" action="action_metal_grade" sequence="40"/>
+  <menuitem id="menu_pmk_calc_fastener" name="Метизы"
+            parent="menu_pmk_calc_reference" action="action_metal_fastener" sequence="25"/>
+  <menuitem id="menu_pmk_calc_paint" name="Лакокрасочные покрытия"
+            parent="menu_pmk_calc_reference" action="action_paint_coating" sequence="45"/>
   <menuitem id="menu_pmk_calc_coating" name="Покрытия доборки"
             parent="menu_pmk_calc_reference" action="action_dobor_coating" sequence="50"/>
 </odoo>

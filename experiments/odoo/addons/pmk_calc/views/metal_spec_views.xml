@@ -68,6 +68,40 @@
                   </field>
                 </page>
 
+                <page string="Метизы" name="fastener">
+                  <field name="line_fastener_ids" context="{'default_calc_mode': 'fastener'}">
+                    <list editable="bottom">
+                      <field name="sequence" widget="handle"/>
+                      <field name="calc_mode" column_invisible="1"/>
+                      <field name="detail_name"/>
+                      <field name="fastener_id" options="{'no_create': True}"/>
+                      <field name="qty"/>
+                      <field name="weight_one" readonly="1"/>
+                      <field name="weight_total" readonly="1" sum="Итого, кг"/>
+                    </list>
+                  </field>
+                </page>
+
+                <page string="Покрытие" name="paint">
+                  <!--
+                    Площадь подставляется из состава изделия по площади
+                    погонного метра сортамента. Пока эта характеристика не
+                    заполнена, площадь можно ввести руками — поле открыто.
+                  -->
+                  <field name="line_paint_ids" context="{'default_calc_mode': 'paint'}">
+                    <list editable="bottom">
+                      <field name="sequence" widget="handle"/>
+                      <field name="calc_mode" column_invisible="1"/>
+                      <field name="detail_name" string="Участок"/>
+                      <field name="paint_id" options="{'no_create': True}"/>
+                      <field name="area_m2"/>
+                      <field name="qty" column_invisible="1"/>
+                      <field name="weight_one" string="Расход, кг" readonly="1"/>
+                      <field name="weight_total" readonly="1" sum="Итого, кг"/>
+                    </list>
+                  </field>
+                </page>
+
                 <page string="Лист" name="sheet">
                   <field name="line_sheet_ids" context="{'default_calc_mode': 'sheet'}">
                     <list editable="bottom">

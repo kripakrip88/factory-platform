@@ -47,6 +47,8 @@ class MetalSpec(models.Model):
         "product_ids.line_ids",
         "product_ids.line_linear_ids",
         "product_ids.line_sheet_ids",
+        "product_ids.line_fastener_ids",
+        "product_ids.line_paint_ids",
     )
     def _compute_totals(self):
         for spec in self:
@@ -87,6 +89,12 @@ class MetalSpecProduct(models.Model):
     line_sheet_ids = fields.One2many(
         "pmk.metal.spec.line", "product_id", "Лист",
         domain=[("calc_mode", "=", "sheet")], context={"default_calc_mode": "sheet"})
+    line_fastener_ids = fields.One2many(
+        "pmk.metal.spec.line", "product_id", "Метизы",
+        domain=[("calc_mode", "=", "fastener")], context={"default_calc_mode": "fastener"})
+    line_paint_ids = fields.One2many(
+        "pmk.metal.spec.line", "product_id", "Покрытие",
+        domain=[("calc_mode", "=", "paint")], context={"default_calc_mode": "paint"})
 
     weight_one = fields.Float("Вес изделия, кг", compute="_compute_weight", store=True, digits=(12, 3))
     weight_total = fields.Float("Вес всего, кг", compute="_compute_weight", store=True, digits=(12, 3))
@@ -101,6 +109,8 @@ class MetalSpecProduct(models.Model):
         "line_ids.weight_total",
         "line_linear_ids.weight_total",
         "line_sheet_ids.weight_total",
+        "line_fastener_ids.weight_total",
+        "line_paint_ids.weight_total",
         "qty",
     )
     def _compute_weight(self):
@@ -128,7 +138,8 @@ class MetalSpecLine(models.Model):
     detail_name = fields.Char("Деталь")
 
     calc_mode = fields.Selection(
-        [("linear", "Прокат"), ("sheet", "Лист")],
+        [("linear", "Прокат"), ("sheet", "Лист"),
+         ("fastener", "Метиз"), ("paint", "Покрытие")],
         "Вид", required=True, default="linear")
 
     # Каскад: сперва вид проката, типоразмер ищется уже внутри него.
@@ -137,6 +148,15 @@ class MetalSpecLine(models.Model):
     profile_id = fields.Many2one("pmk.metal.profile", "Типоразмер")
     sheet_id = fields.Many2one("pmk.metal.sheet", "Лист")
     grade_id = fields.Many2one("pmk.metal.grade", "Марка стали")
+    fastener_id = fields.Many2one("pmk.metal.fastener", "Метиз")
+    paint_id = fields.Many2one("pmk.paint.coating", "Покрытие")
+
+    # Площадь окраски считается из состава изделия по площади погонного метра
+    # сортамента. Поле доступно и для ручного ввода: пока характеристика в
+    # справочнике не заполнена, площадь можно задать напрямую.
+    area_m2 = fields.Float(
+        "Площадь окраски, м²", compute="_compute_paint_area", store=True,
+        readonly=False, digits=(12, 4))
 
     length_mm = fields.Float("Длина, мм", digits=(12, 1))
     a_mm = fields.Float("A, мм", digits=(12, 1))
@@ -146,7 +166,35 @@ class MetalSpecLine(models.Model):
     weight_one = fields.Float("Вес шт, кг", compute="_compute_weight", store=True, digits=(12, 3))
     weight_total = fields.Float("Вес в изделии, кг", compute="_compute_weight", store=True, digits=(12, 3))
 
-    @api.depends("calc_mode", "profile_id", "sheet_id", "length_mm", "a_mm", "b_mm", "qty")
+    @api.depends("product_id.line_linear_ids.length_mm",
+                 "product_id.line_linear_ids.qty",
+                 "product_id.line_linear_ids.profile_id",
+                 "product_id.line_sheet_ids.a_mm",
+                 "product_id.line_sheet_ids.b_mm",
+                 "product_id.line_sheet_ids.qty",
+                 "calc_mode")
+    def _compute_paint_area(self):
+        """Площадь окраски изделия: сумма поверхностей его деталей.
+
+        У проката берётся площадь погонного метра из справочника — она
+        заполняется отдельно, и пока пуста, вклад такой детали равен нулю.
+        У листа площадь считается из размеров и удваивается: красят обе стороны.
+        """
+        for line in self:
+            if line.calc_mode != "paint":
+                line.area_m2 = line.area_m2 or 0.0
+                continue
+            product = line.product_id
+            area = 0.0
+            for d in product.line_linear_ids:
+                if d.profile_id.surface_per_meter:
+                    area += d.profile_id.surface_per_meter * (d.length_mm / MM_IN_M) * (d.qty or 0)
+            for d in product.line_sheet_ids:
+                area += (d.a_mm / MM_IN_M) * (d.b_mm / MM_IN_M) * 2 * (d.qty or 0)
+            line.area_m2 = area
+
+    @api.depends("calc_mode", "profile_id", "sheet_id", "fastener_id", "paint_id",
+                 "length_mm", "a_mm", "b_mm", "area_m2", "qty")
     def _compute_weight(self):
         for line in self:
             one = 0.0
@@ -154,8 +202,34 @@ class MetalSpecLine(models.Model):
                 one = line.profile_id.mass_per_meter * (line.length_mm / MM_IN_M)
             elif line.calc_mode == "sheet" and line.sheet_id:
                 one = line.sheet_id.mass_per_sqm * (line.a_mm / MM_IN_M) * (line.b_mm / MM_IN_M)
+            elif line.calc_mode == "fastener" and line.fastener_id:
+                # Метиз считается штуками: масса задана на штуку, длины нет.
+                one = line.fastener_id.weight_kg
+            elif line.calc_mode == "paint" and line.paint_id:
+                # Краска: расход на слой × число слоёв × площадь. Количество
+                # здесь всегда 1 — красят изделие целиком, а не «5 покрытий».
+                one = (line.paint_id.consumption * max(1, line.paint_id.layers)
+                       * (line.area_m2 or 0.0))
             line.weight_one = one
             line.weight_total = one * (line.qty or 0)
+
+    @api.onchange("calc_mode")
+    def _onchange_calc_mode(self):
+        """Чистим поля других видов, чтобы в документе не оставалось мусора."""
+        keep = {
+            "linear": {"type_id", "profile_id", "length_mm"},
+            "sheet": {"sheet_id", "a_mm", "b_mm"},
+            "fastener": {"fastener_id"},
+            "paint": {"paint_id", "area_m2"},
+        }.get(self.calc_mode, set())
+        for field in ("type_id", "profile_id", "sheet_id", "fastener_id", "paint_id"):
+            if field not in keep:
+                self[field] = False
+        for field in ("length_mm", "a_mm", "b_mm"):
+            if field not in keep:
+                self[field] = 0.0
+        if self.calc_mode == "paint":
+            self.qty = 1
 
     @api.onchange("type_id")
     def _onchange_type_id(self):
