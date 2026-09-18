@@ -37,7 +37,17 @@ class MetalSpec(models.Model):
     total_products = fields.Integer("Изделий", compute="_compute_totals", store=True)
     total_details = fields.Integer("Деталей", compute="_compute_totals", store=True)
 
-    @api.depends("product_ids.weight_total", "product_ids.line_ids")
+    # Итог спецификации складывается из весов изделий. Добавлены и
+    # отфильтрованные наборы: без них правка во вкладке не доходила до
+    # верхнего уровня — цепочка деталь → изделие → спецификация рвалась
+    # на первом же звене.
+    @api.depends(
+        "product_ids.weight_total",
+        "product_ids.qty",
+        "product_ids.line_ids",
+        "product_ids.line_linear_ids",
+        "product_ids.line_sheet_ids",
+    )
     def _compute_totals(self):
         for spec in self:
             spec.total_weight = sum(spec.product_ids.mapped("weight_total"))
@@ -81,7 +91,18 @@ class MetalSpecProduct(models.Model):
     weight_one = fields.Float("Вес изделия, кг", compute="_compute_weight", store=True, digits=(12, 3))
     weight_total = fields.Float("Вес всего, кг", compute="_compute_weight", store=True, digits=(12, 3))
 
-    @api.depends("line_ids.weight_total", "qty")
+    # Подписываемся на ВСЕ ТРИ поля деталей, а не только на общее.
+    # Причина: детали правят во вкладках «Прокат» и «Лист», то есть через
+    # line_linear_ids / line_sheet_ids, а вес был подписан на line_ids.
+    # Для Odoo это разные поля, хоть и одна таблица, поэтому в браузере
+    # пересчёт не срабатывал — вес обновлялся только после сохранения,
+    # когда данные перечитываются из базы.
+    @api.depends(
+        "line_ids.weight_total",
+        "line_linear_ids.weight_total",
+        "line_sheet_ids.weight_total",
+        "qty",
+    )
     def _compute_weight(self):
         for product in self:
             product.weight_one = sum(product.line_ids.mapped("weight_total"))
