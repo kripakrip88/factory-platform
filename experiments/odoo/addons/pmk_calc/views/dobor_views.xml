@@ -35,8 +35,8 @@
             <list>
               <field name="sequence" widget="handle"/>
               <field name="title"/>
-              <field name="coating_id" options="{'no_create': True}"/>
-              <field name="thickness"/>
+              <field name="coating_id"/>
+              <field name="sheet_id" options="{'no_create': True}" required="1"/>
               <field name="plank_length"/>
               <field name="qty"/>
               <field name="developed_width" readonly="1"/>
@@ -62,8 +62,10 @@
                 <div class="pmk-dobor-grid__side">
                   <group string="Позиция">
                     <field name="title" placeholder="Например: планка примыкания"/>
-                    <field name="coating_id" options="{'no_create': True}"/>
-                    <field name="thickness"/>
+                    <!-- Покрытие можно завести прямо отсюда: цвета добавляются
+                         по ходу работы, гонять человека в справочник незачем. -->
+                    <field name="coating_id"/>
+                    <field name="sheet_id" options="{'no_create': True}" required="1"/>
                     <field name="plank_length"/>
                     <field name="qty"/>
                     <field name="coil_width"/>

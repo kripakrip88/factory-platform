@@ -353,11 +353,41 @@ export class DoborBuilder extends Component {
             svg.appendChild(t);
         }
 
-        // Углы между полками.
+        // Углы между полками. Подпись выносится НАРУЖУ ПО БИССЕКТРИСЕ, иначе
+        // она ложится прямо на линию профиля и мешает читать чертёж — в
+        // ERPNext это решено так же.
         for (let i = 1; i < segs.length; i++) {
-            const p = v[i];
+            const ba = Math.abs(this.bendAngle(i));
+            // На подгибе 180° угла нет — там метка подгиба, а не градусы.
+            if (ba < 1 || ba > 170) {
+                continue;
+            }
+            const p = v[i], a = v[i - 1], b = v[i + 1];
+
+            // Единичные векторы от вершины к соседям.
+            let t1x = a.x - p.x, t1y = a.y - p.y;
+            const l1 = Math.hypot(t1x, t1y) || 1;
+            t1x /= l1; t1y /= l1;
+            let t2x = b.x - p.x, t2y = b.y - p.y;
+            const l2 = Math.hypot(t2x, t2y) || 1;
+            t2x /= l2; t2y /= l2;
+
+            // Внутренняя биссектриса, взятая с минусом — то есть наружу.
+            let bx = t1x + t2x, by = t1y + t2y;
+            const bl = Math.hypot(bx, by);
+            let ox, oy;
+            if (bl < 0.15) {
+                // Почти развёрнутый угол: биссектриса вырождается, уходим по нормали.
+                ox = -t2y; oy = t2x;
+            } else {
+                ox = -bx / bl; oy = -by / bl;
+            }
+
+            svg.appendChild(this.mk("circle", {
+                cx: p.x, cy: p.y, r: 11, fill: "#f0a04b", opacity: 0.14,
+            }));
             const t = this.mk("text", {
-                x: p.x, y: p.y - 14, "text-anchor": "middle",
+                x: p.x + ox * 20, y: p.y + oy * 20 + 3.5, "text-anchor": "middle",
                 "font-size": "11", "font-weight": "700", fill: "#f0a04b",
                 class: "pmk-dobor-bend", "data-idx": i,
             });

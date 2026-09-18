@@ -178,8 +178,25 @@ class DoborOrderLine(models.Model):
     sequence = fields.Integer("№", default=10)
     title = fields.Char("Название доборки", required=True)
     coating_id = fields.Many2one("pmk.dobor.coating", "Покрытие")
-    thickness = fields.Float("Толщина, мм", required=True, default=0.5, digits=(6, 2))
-    plank_length = fields.Float("Длина планки, мм", required=True, default=2000.0, digits=(12, 1))
+    # Металл берём из ОБЩЕГО справочника, того же, что у калькулятора
+    # металлопроката: иначе толщина и масса живут в двух местах и расходятся.
+    # НЕ required на уровне модели: поле добавлено позже, и обязательность
+    # уронила бы обновление на уже заведённых доборках. Обязательность задана
+    # в форме, а существующим строкам металл проставляет post_init_hook
+    # по их толщине.
+    sheet_id = fields.Many2one(
+        "pmk.metal.sheet", "Металл",
+        domain=[("thickness_mm", "<=", 2)],
+        help="Тонколистовой прокат, из которого гнётся доборка")
+    thickness = fields.Float("Толщина, мм", default=0.5, digits=(6, 2))
+
+    @api.onchange("sheet_id")
+    def _onchange_sheet_id(self):
+        """Толщина приходит из справочника — вводить её вторично незачем."""
+        if self.sheet_id:
+            self.thickness = self.sheet_id.thickness_mm
+    # 2500 — стандартная длина планки доборки.
+    plank_length = fields.Float("Длина планки, мм", required=True, default=2500.0, digits=(12, 1))
     qty = fields.Integer("Количество, шт", required=True, default=1)
     coil_width = fields.Float("Ширина рулона, мм", digits=(12, 1),
                               help="Если задана — считается, сколько полос выходит из рулона и какой остаётся отход")
@@ -206,16 +223,18 @@ class DoborOrderLine(models.Model):
     strip_waste = fields.Float("Отход рулона, мм", compute="_compute_dobor", store=True, digits=(12, 2))
 
     def _mass_per_sqm(self, thickness):
-        """Масса 1 м² по толщине: сперва справочник, иначе толщина × 7.85.
+        """Масса 1 м² — из выбранной позиции справочника.
 
-        Порядок важен и сохранён из исходника: у гладкого листа табличное
-        значение ГОСТ и есть толщина × 7.85, но для нестандартных толщин
-        (0.4, 0.45, 0.7 — обычные для доборки) записи в справочнике нет,
-        и формула остаётся единственным источником.
+        Раньше здесь был поиск по толщине с откатом на формулу «толщина × 7.85»,
+        потому что тонкого проката в справочнике не было вовсе. Теперь он там
+        есть, и масса берётся у самой записи: один справочник на калькулятор
+        металлопроката и на доборку, расходиться нечему. Формула осталась
+        только как страховка, если запись почему-то не выбрана.
         """
-        sheet = self.env["pmk.metal.sheet"].search(
-            [("sheet_type", "=", "Гладкий"), ("thickness_mm", "=", thickness)], limit=1)
-        return sheet.mass_per_sqm if sheet else thickness * STEEL_DENSITY_FACTOR
+        self.ensure_one()
+        if self.sheet_id:
+            return self.sheet_id.mass_per_sqm
+        return (thickness or 0.0) * STEEL_DENSITY_FACTOR
 
     @api.depends("profile_snapshot_json", "thickness", "plank_length", "qty", "coil_width")
     def _compute_dobor(self):
@@ -252,11 +271,9 @@ class DoborOrderLine(models.Model):
             line.strips = res["strips"]
             line.strip_waste = res["strip_waste"]
 
-    @api.constrains("thickness", "plank_length", "qty")
+    @api.constrains("plank_length", "qty")
     def _check_positive(self):
         for line in self:
-            if line.thickness <= 0:
-                raise ValidationError("Толщина должна быть больше нуля.")
             if line.plank_length <= 0:
                 raise ValidationError("Длина планки должна быть больше нуля.")
             if line.qty <= 0:
