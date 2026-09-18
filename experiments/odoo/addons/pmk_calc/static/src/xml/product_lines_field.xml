@@ -31,17 +31,25 @@
                 </div>
 
                 <table class="pmk-prow__table">
-                  <thead>
-                    <tr>
-                      <th class="pmk-c-detail">Деталь</th>
-                      <th class="pmk-c-what">Позиция</th>
-                      <th class="pmk-c-size">Размеры</th>
-                      <th class="pmk-num pmk-c-qty">Кол-во</th>
-                      <th class="pmk-num pmk-c-weight">Вес, кг</th>
-                      <th class="pmk-c-act"><span class="visually-hidden">Действия</span></th>
-                    </tr>
-                  </thead>
+                  <!--
+                    Шапка НЕ в <thead> намеренно. Odoo раздаёт ширины колонок
+                    перебором всех "thead th" внутри таблицы списка, а наши
+                    таблицы лежат внутри его строки — заголовки состава
+                    попадали в тот же перебор и получали чужие ширины. Хуже
+                    того, от раскрытия состава менялось их число, и Odoo
+                    пересчитывал ширины самого списка изделий.
+                    Ячейки остаются <th scope="col"> — для чтения с экрана
+                    это по-прежнему заголовки столбцов.
+                  -->
                   <tbody>
+                    <tr class="pmk-prow__headrow">
+                      <th scope="col" class="pmk-c-detail">Деталь</th>
+                      <th scope="col" class="pmk-c-what">Позиция</th>
+                      <th scope="col" class="pmk-c-size">Размеры</th>
+                      <th scope="col" class="pmk-num pmk-c-qty">Кол-во</th>
+                      <th scope="col" class="pmk-num pmk-c-weight">Вес, кг</th>
+                      <th scope="col" class="pmk-c-act"><span class="visually-hidden">Действия</span></th>
+                    </tr>
                     <t t-foreach="section.lines" t-as="line" t-key="line.id">
 
                       <!-- Чтение. Клик по строке открывает её редактор —
