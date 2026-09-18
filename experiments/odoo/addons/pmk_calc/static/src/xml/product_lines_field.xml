@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+  <!--
+    Первичное наследование: создаём СВОЙ шаблон строк на основе штатного.
+    Расширение (extension) поменяло бы все списки в системе, а нужен только
+    список изделий.
+  -->
+  <t t-name="pmk_calc.ProductRows" t-inherit="web.ListRenderer.Rows" t-inherit-mode="primary">
+    <xpath expr="//t[@t-call='{{ constructor.recordRowTemplate }}']" position="after">
+      <!--
+        Строка состава идёт сразу под изделием. Она есть всегда, но свёрнута:
+        <details> раскрывает её силами браузера, без нашего кода и без
+        состояния, которое пришлось бы хранить и синхронизировать.
+      -->
+      <tr t-if="countLines(record)" class="pmk-prow" t-att-data-for="record.id">
+        <td t-att-colspan="compositionColspan">
+          <details class="pmk-prow__wrap">
+            <summary class="pmk-prow__toggle">
+              Состав: <t t-esc="countLines(record)"/>
+              <t t-esc="countLines(record) === 1 ? ' деталь' : (countLines(record) &lt; 5 ? ' детали' : ' деталей')"/>
+            </summary>
+            <div t-foreach="composition(record)" t-as="section" t-key="section.title"
+                 class="pmk-prow__section">
+              <h6 t-esc="section.title"/>
+              <table class="pmk-prow__table">
+                <thead>
+                  <tr>
+                    <th>Деталь</th><th>Позиция</th><th>Размеры</th>
+                    <th class="pmk-num">Кол-во</th><th class="pmk-num">Вес, кг</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr t-foreach="section.rows" t-as="row" t-key="row_index">
+                    <td t-esc="row.detail"/>
+                    <td t-esc="row.what"/>
+                    <td t-esc="row.size"/>
+                    <td class="pmk-num" t-esc="row.qty"/>
+                    <td class="pmk-num" t-esc="row.weight"/>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </details>
+        </td>
+      </tr>
+    </xpath>
+  </t>
+
+</templates>

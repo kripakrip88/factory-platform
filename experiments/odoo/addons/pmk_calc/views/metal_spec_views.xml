@@ -26,8 +26,30 @@
             Изделия раскрываются в форму: внутри у каждого две таблицы деталей,
             в строку списка они не помещаются.
           -->
-          <field name="product_ids">
+          <!--
+            Свой виджет списка: под каждым изделием раскрывается его состав.
+            Вложенные строки перечислены явно — иначе Odoo их не загрузит и
+            составу неоткуда будет взяться.
+          -->
+          <field name="product_ids" widget="pmk_product_lines">
             <list>
+              <field name="line_ids" column_invisible="1">
+                <list>
+                  <field name="calc_mode"/>
+                  <field name="detail_name"/>
+                  <field name="profile_id"/>
+                  <field name="sheet_id"/>
+                  <field name="fastener_id"/>
+                  <field name="paint_id"/>
+                  <field name="length_mm"/>
+                  <field name="a_mm"/>
+                  <field name="b_mm"/>
+                  <field name="area_m2"/>
+                  <field name="paint_thickness_um"/>
+                  <field name="qty"/>
+                  <field name="weight_total"/>
+                </list>
+              </field>
               <field name="sequence" widget="handle"/>
               <field name="name"/>
               <field name="qty"/>
@@ -130,38 +152,6 @@
             остаётся местом ввода, а этот блок — местом чтения: посмотреть,
             из чего собрано, не заходя в каждое изделие.
           -->
-          <separator string="Состав изделий"/>
-          <!--
-            Второе появление product_ids: сверху таблица для ВВОДА, здесь
-            виджет для ЧТЕНИЯ. Вложенные строки перечислены явно — без этого
-            Odoo не загрузит их в память, и состав показывал бы прежнее
-            состояние до сохранения документа.
-          -->
-          <field name="product_ids" widget="pmk_composition" nolabel="1" readonly="1">
-            <list>
-              <field name="name"/>
-              <field name="qty"/>
-              <field name="weight_one"/>
-              <field name="weight_total"/>
-              <field name="line_ids">
-                <list>
-                  <field name="calc_mode"/>
-                  <field name="detail_name"/>
-                  <field name="profile_id"/>
-                  <field name="sheet_id"/>
-                  <field name="fastener_id"/>
-                  <field name="paint_id"/>
-                  <field name="length_mm"/>
-                  <field name="a_mm"/>
-                  <field name="b_mm"/>
-                  <field name="area_m2"/>
-                  <field name="paint_thickness_um"/>
-                  <field name="qty"/>
-                  <field name="weight_total"/>
-                </list>
-              </field>
-            </list>
-          </field>
         </sheet>
         <chatter/>
       </form>
