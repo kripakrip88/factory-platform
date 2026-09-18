@@ -192,6 +192,7 @@
         <field name="name"/>
         <field name="color"/>
         <field name="consumption"/>
+        <field name="base_thickness_um"/>
         <field name="layers"/>
       </list>
     </field>

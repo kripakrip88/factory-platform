@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+  <t t-name="pmk_calc.CompositionField">
+    <div class="pmk-comp">
+      <div t-if="!products.length" class="pmk-comp__empty">
+        Изделий пока нет — добавьте их в таблице выше.
+      </div>
+
+      <div t-foreach="products" t-as="product" t-key="product.index" class="pmk-comp__item">
+        <!--
+          Кнопка, а не div с обработчиком: так строка доступна с клавиатуры
+          и читается вспомогательными технологиями как раскрывающийся блок.
+        -->
+        <button type="button" class="pmk-comp__head"
+                t-att-aria-expanded="ui.open[product.index] ? 'true' : 'false'"
+                t-on-click="() => this.toggle(product.index)">
+          <i class="fa fa-fw" t-att-class="ui.open[product.index] ? 'fa-angle-down' : 'fa-angle-right'"/>
+          <span class="pmk-comp__name" t-esc="product.name"/>
+          <span class="pmk-comp__meta">
+            <t t-esc="product.qty"/> шт ·
+            <t t-esc="fmt(product.weightOne)"/> кг/шт ·
+            <t t-esc="fmt(product.weightTotal)"/> кг всего
+          </span>
+        </button>
+
+        <div t-if="ui.open[product.index]" class="pmk-comp__body">
+          <div t-if="!product.sections.length" class="pmk-comp__empty">
+            Состав не заполнен
+          </div>
+          <div t-foreach="product.sections" t-as="section" t-key="section.title"
+               class="pmk-comp__section">
+            <h6 t-esc="section.title"/>
+            <table class="pmk-comp__table">
+              <thead>
+                <tr>
+                  <th>Деталь</th><th>Позиция</th><th>Размеры</th>
+                  <th class="pmk-num">Кол-во</th><th class="pmk-num">Вес, кг</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr t-foreach="section.rows" t-as="row" t-key="row_index">
+                  <td t-esc="row.detail"/>
+                  <td t-esc="row.what"/>
+                  <td t-esc="row.size"/>
+                  <td class="pmk-num" t-esc="row.qty"/>
+                  <td class="pmk-num" t-esc="row.weight"/>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </t>
+
+</templates>

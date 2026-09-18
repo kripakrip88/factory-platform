@@ -1,7 +1,7 @@
-id,name,paint_type,color,consumption,layers
-paint_gf021,Грунт ГФ-021,primer,Красно-коричневый,0.1000,1
-paint_pf115,Эмаль ПФ-115,enamel,По RAL,0.1500,2
-paint_3in1,Грунт-эмаль 3 в 1,enamel,По RAL,0.1800,1
-paint_powder_pe,Порошковая полиэфирная,powder,По RAL,0.1200,1
-paint_zinc_hot,Цинкование горячее,galvanic,Серый,0.6000,1
-paint_zinc_cold,Цинконаполненная грунтовка,primer,Серый,0.2000,1
+id,name,paint_type,color,consumption,layers,base_thickness_um
+paint_gf021,Грунт ГФ-021,primer,Красно-коричневый,0.1000,1,20
+paint_pf115,Эмаль ПФ-115,enamel,По RAL,0.1500,2,25
+paint_3in1,Грунт-эмаль 3 в 1,enamel,По RAL,0.1800,1,30
+paint_powder_pe,Порошковая полиэфирная,powder,По RAL,0.1200,1,60
+paint_zinc_hot,Цинкование горячее,galvanic,Серый,0.6000,1,80
+paint_zinc_cold,Цинконаполненная грунтовка,primer,Серый,0.2000,1,40

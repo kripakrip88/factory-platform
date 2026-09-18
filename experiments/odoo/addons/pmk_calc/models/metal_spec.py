@@ -38,15 +38,6 @@ class MetalSpec(models.Model):
     total_weight_t = fields.Float("Итого, т", compute="_compute_totals", store=True, digits=(12, 4))
     total_products = fields.Integer("Изделий", compute="_compute_totals", store=True)
 
-    # Состав всех изделий одним блоком с раскрытием. Сделано разметкой, а не
-    # виджетом: элемент <details> раскрывается силами браузера, без нашего
-    # кода — значит нечему ломаться при обновлении Odoo. Вложенные таблицы
-    # в списках Odoo не умеет, а заглядывать в каждое изделие ради состава
-    # неудобно.
-    composition_html = fields.Html(
-        "Состав изделий", compute="_compute_composition", sanitize=False)
-    total_details = fields.Integer("Деталей", compute="_compute_totals", store=True)
-
     # Итог спецификации складывается из весов изделий. Добавлены и
     # отфильтрованные наборы: без них правка во вкладке не доходила до
     # верхнего уровня — цепочка деталь → изделие → спецификация рвалась
@@ -68,67 +59,6 @@ class MetalSpec(models.Model):
             spec.total_weight_t = spec.total_weight / 1000.0
             spec.total_products = len(spec.product_ids)
             spec.total_details = sum(len(p.line_ids) for p in spec.product_ids)
-
-    @api.depends("product_ids.name", "product_ids.qty", "product_ids.weight_one",
-                 "product_ids.weight_total", "product_ids.line_ids.weight_total")
-    def _compute_composition(self):
-        SECTIONS = [
-            ("linear", "Линейный прокат"),
-            ("sheet", "Листовой прокат"),
-            ("fastener", "Метизы"),
-            ("paint", "Лакокрасочное покрытие"),
-        ]
-
-        def row(line):
-            """Строка состава. Что показывать в «размерах» — зависит от вида:
-            у проката длина, у листа две стороны, у метиза размеров нет вовсе."""
-            if line.calc_mode == "linear":
-                what, size = line.profile_id.display_name, "%g мм" % line.length_mm
-            elif line.calc_mode == "sheet":
-                what, size = line.sheet_id.display_name, "%g×%g мм" % (line.a_mm, line.b_mm)
-            elif line.calc_mode == "fastener":
-                what, size = line.fastener_id.name, ""
-            else:
-                what = line.paint_id.name
-                size = "%.2f м²" % line.area_m2 if line.area_m2 else "площадь не задана"
-            return (
-                "<tr><td>%s</td><td>%s</td><td>%s</td><td class='pmk-num'>%s</td>"
-                "<td class='pmk-num'>%.3f</td></tr>" % (
-                    escape(line.detail_name or "—"), escape(what or "—"),
-                    escape(size), line.qty, line.weight_total)
-            )
-
-        for spec in self:
-            if not spec.product_ids:
-                spec.composition_html = False
-                continue
-            blocks = []
-            for product in spec.product_ids:
-                tables = []
-                for mode, title in SECTIONS:
-                    lines = product.line_ids.filtered(lambda l, m=mode: l.calc_mode == m)
-                    if not lines:
-                        continue
-                    tables.append(
-                        "<div class='pmk-comp__section'><h6>%s</h6>"
-                        "<table class='pmk-comp__table'><thead><tr>"
-                        "<th>Деталь</th><th>Позиция</th><th>Размеры</th>"
-                        "<th class='pmk-num'>Кол-во</th><th class='pmk-num'>Вес, кг</th>"
-                        "</tr></thead><tbody>%s</tbody></table></div>"
-                        % (escape(title), "".join(row(l) for l in lines))
-                    )
-                body = "".join(tables) or "<div class='pmk-comp__empty'>Состав не заполнен</div>"
-                # open у первого изделия: чаще всего оно одно, и лишний клик ни к чему
-                blocks.append(
-                    "<details class='pmk-comp__item'%s><summary>"
-                    "<span class='pmk-comp__name'>%s</span>"
-                    "<span class='pmk-comp__meta'>%s шт · %.3f кг/шт · %.3f кг всего</span>"
-                    "</summary>%s</details>" % (
-                        " open" if product == spec.product_ids[0] else "",
-                        escape(product.name or "Без названия"),
-                        product.qty, product.weight_one, product.weight_total, body)
-                )
-            spec.composition_html = Markup("<div class='pmk-comp'>%s</div>" % "".join(blocks))
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -229,6 +159,14 @@ class MetalSpecLine(models.Model):
         "Площадь окраски, м²", compute="_compute_paint_area", store=True,
         readonly=False, digits=(12, 4))
 
+    # Требуемая толщина покрытия. Подставляется базовая из справочника, но
+    # заказчик может потребовать другую — тогда расход пересчитывается
+    # пропорционально: 120 г/м² при 20 мкм превращаются в 300 г/м² при 50 мкм.
+    paint_thickness_um = fields.Float(
+        "Толщина покрытия, мкм", digits=(8, 1),
+        help="Толщина сухой плёнки по требованию заказчика. "
+             "Пусто — берётся базовая из справочника.")
+
     length_mm = fields.Float("Длина, мм", digits=(12, 1))
     a_mm = fields.Float("A, мм", digits=(12, 1))
     b_mm = fields.Float("B, мм", digits=(12, 1))
@@ -265,7 +203,7 @@ class MetalSpecLine(models.Model):
             line.area_m2 = area
 
     @api.depends("calc_mode", "profile_id", "sheet_id", "fastener_id", "paint_id",
-                 "length_mm", "a_mm", "b_mm", "area_m2", "qty")
+                 "length_mm", "a_mm", "b_mm", "area_m2", "paint_thickness_um", "qty")
     def _compute_weight(self):
         for line in self:
             one = 0.0
@@ -277,10 +215,13 @@ class MetalSpecLine(models.Model):
                 # Метиз считается штуками: масса задана на штуку, длины нет.
                 one = line.fastener_id.weight_kg
             elif line.calc_mode == "paint" and line.paint_id:
-                # Краска: расход на слой × число слоёв × площадь. Количество
-                # здесь всегда 1 — красят изделие целиком, а не «5 покрытий».
-                one = (line.paint_id.consumption * max(1, line.paint_id.layers)
-                       * (line.area_m2 or 0.0))
+                # Краска: расход пропорционален ТОЛЩИНЕ сухой плёнки.
+                # Слои сознательно не умножаем: они лишь способ набрать нужную
+                # толщину, и множить на них — считать краску дважды.
+                base = line.paint_id.base_thickness_um or 0.0
+                want = line.paint_thickness_um or base
+                factor = (want / base) if base else 1.0
+                one = line.paint_id.consumption * factor * (line.area_m2 or 0.0)
             line.weight_one = one
             line.weight_total = one * (line.qty or 0)
 
@@ -301,6 +242,12 @@ class MetalSpecLine(models.Model):
                 self[field] = 0.0
         if self.calc_mode == "paint":
             self.qty = 1
+
+    @api.onchange("paint_id")
+    def _onchange_paint_id(self):
+        """Подставляем базовую толщину — её и правят, если требование иное."""
+        if self.paint_id and not self.paint_thickness_um:
+            self.paint_thickness_um = self.paint_id.base_thickness_um
 
     @api.onchange("type_id")
     def _onchange_type_id(self):

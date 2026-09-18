@@ -95,6 +95,9 @@
                       <field name="detail_name" string="Участок"/>
                       <field name="paint_id" options="{'no_create': True}"/>
                       <field name="area_m2"/>
+                      <!-- Базовая подставляется из справочника; правят, когда
+                           заказчик требует другую толщину плёнки. -->
+                      <field name="paint_thickness_um"/>
                       <field name="qty" column_invisible="1"/>
                       <field name="weight_one" string="Расход, кг" readonly="1"/>
                       <field name="weight_total" readonly="1" sum="Итого, кг"/>
@@ -128,7 +131,37 @@
             из чего собрано, не заходя в каждое изделие.
           -->
           <separator string="Состав изделий"/>
-          <field name="composition_html" widget="pmk_svg" nolabel="1" readonly="1"/>
+          <!--
+            Второе появление product_ids: сверху таблица для ВВОДА, здесь
+            виджет для ЧТЕНИЯ. Вложенные строки перечислены явно — без этого
+            Odoo не загрузит их в память, и состав показывал бы прежнее
+            состояние до сохранения документа.
+          -->
+          <field name="product_ids" widget="pmk_composition" nolabel="1" readonly="1">
+            <list>
+              <field name="name"/>
+              <field name="qty"/>
+              <field name="weight_one"/>
+              <field name="weight_total"/>
+              <field name="line_ids">
+                <list>
+                  <field name="calc_mode"/>
+                  <field name="detail_name"/>
+                  <field name="profile_id"/>
+                  <field name="sheet_id"/>
+                  <field name="fastener_id"/>
+                  <field name="paint_id"/>
+                  <field name="length_mm"/>
+                  <field name="a_mm"/>
+                  <field name="b_mm"/>
+                  <field name="area_m2"/>
+                  <field name="paint_thickness_um"/>
+                  <field name="qty"/>
+                  <field name="weight_total"/>
+                </list>
+              </field>
+            </list>
+          </field>
         </sheet>
         <chatter/>
       </form>

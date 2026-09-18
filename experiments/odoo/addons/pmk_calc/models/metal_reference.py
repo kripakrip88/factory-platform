@@ -163,5 +163,12 @@ class PaintCoating(models.Model):
     color = fields.Char("Цвет / RAL")
     consumption = fields.Float(
         "Расход, кг/м²", required=True, digits=(10, 4), default=0.15,
-        help="Расход на ОДИН слой одного квадратного метра")
-    layers = fields.Integer("Слоёв", default=1)
+        help="Расход на квадратный метр при БАЗОВОЙ толщине покрытия")
+    base_thickness_um = fields.Float(
+        "Базовая толщина, мкм", required=True, digits=(8, 1), default=20.0,
+        help="Толщина сухой плёнки, при которой указан расход. "
+             "Если заказчик требует другую — расход пересчитается пропорционально.")
+    layers = fields.Integer(
+        "Слоёв", default=1,
+        help="Рекомендуемое число слоёв для базовой толщины. Справочно: "
+             "на расход не влияет, его определяет итоговая толщина плёнки.")
