@@ -34,6 +34,8 @@
           <field name="line_ids">
             <list>
               <field name="sequence" widget="handle"/>
+              <!-- Эскиз первым: профиль узнают по силуэту быстрее, чем по названию. -->
+              <field name="sketch" widget="pmk_svg" string="Профиль" optional="show"/>
               <field name="title"/>
               <field name="coating_id"/>
               <field name="sheet_id" options="{'no_create': True}" required="1"/>
@@ -61,7 +63,7 @@
 
                 <div class="pmk-dobor-grid__side">
                   <group string="Позиция">
-                    <field name="title" placeholder="Например: планка примыкания"/>
+                    <field name="title" placeholder="Если пусто — назовём «Доборка N»"/>
                     <!-- Покрытие можно завести прямо отсюда: цвета добавляются
                          по ходу работы, гонять человека в справочник незачем. -->
                     <field name="coating_id"/>

@@ -176,7 +176,9 @@ class DoborOrderLine(models.Model):
 
     order_id = fields.Many2one("pmk.dobor.order", "Заказ", required=True, ondelete="cascade")
     sequence = fields.Integer("№", default=10)
-    title = fields.Char("Название доборки", required=True)
+    # Не обязательное: пока профиль рисуют, название придумывать рано, а
+    # форма не должна этого требовать. Пустое заполняется само — см. create().
+    title = fields.Char("Название доборки")
     coating_id = fields.Many2one("pmk.dobor.coating", "Покрытие")
     # Металл берём из ОБЩЕГО справочника, того же, что у калькулятора
     # металлопроката: иначе толщина и масса живут в двух местах и расходятся.
@@ -213,6 +215,11 @@ class DoborOrderLine(models.Model):
     hem_len = fields.Float("Длина завальцовки, мм", compute="_compute_dobor", store=True, digits=(6, 2))
     lock = fields.Boolean("Замок", compute="_compute_dobor", store=True)
 
+    # Эскиз профиля прямо в списке позиций: иначе, чтобы понять, что за
+    # доборка, приходится открывать каждую. Рисует тот же генератор, что и
+    # печатный лист — двух разных чертежей одной позиции быть не должно.
+    sketch = fields.Html("Эскиз", compute="_compute_sketch", store=True, sanitize=False)
+
     developed_width = fields.Float("Развёртка, мм", compute="_compute_dobor", store=True, digits=(12, 2))
     bends = fields.Integer("Гибов", compute="_compute_dobor", store=True)
     area_one = fields.Float("Площадь шт, м²", compute="_compute_dobor", store=True, digits=(12, 4))
@@ -221,6 +228,24 @@ class DoborOrderLine(models.Model):
     weight_total = fields.Float("Вес всего, кг", compute="_compute_dobor", store=True, digits=(12, 3))
     strips = fields.Integer("Полос из рулона", compute="_compute_dobor", store=True)
     strip_waste = fields.Float("Отход рулона, мм", compute="_compute_dobor", store=True, digits=(12, 2))
+
+    @api.depends("profile_snapshot_json")
+    def _compute_sketch(self):
+        from .dobor_report import sketch_svg
+
+        for line in self:
+            try:
+                snapshot = json.loads(line.profile_snapshot_json or "{}")
+            except (ValueError, TypeError):
+                snapshot = {}
+            if not isinstance(snapshot, dict) or not snapshot.get("segs"):
+                line.sketch = False
+                continue
+            try:
+                line.sketch = Markup(sketch_svg(snapshot))
+            except Exception:
+                # Кривой снимок не должен ронять список позиций.
+                line.sketch = False
 
     def _mass_per_sqm(self, thickness):
         """Масса 1 м² — из выбранной позиции справочника.
@@ -270,6 +295,25 @@ class DoborOrderLine(models.Model):
             line.weight_total = res["weight_total"]
             line.strips = res["strips"]
             line.strip_waste = res["strip_waste"]
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        lines = super().create(vals_list)
+        for line in lines:
+            if not (line.title or "").strip():
+                line.title = line._default_title()
+        return lines
+
+    def _default_title(self):
+        """Имя по умолчанию: «Доборка N» с номером по порядку внутри заказа.
+
+        Считаем по количеству уже заведённых позиций, а не по sequence:
+        позиции переставляют перетаскиванием, и номер в названии от этого
+        меняться не должен — он часть имени, а не порядковый номер строки.
+        """
+        self.ensure_one()
+        others = self.search_count([("order_id", "=", self.order_id.id), ("id", "!=", self.id)])
+        return "Доборка %s" % (others + 1)
 
     @api.constrains("plank_length", "qty")
     def _check_positive(self):
