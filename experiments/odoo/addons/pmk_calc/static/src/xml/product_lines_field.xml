@@ -16,7 +16,8 @@
           <button type="button" class="pmk-prow__toggle" t-att-aria-expanded="isOpen(record)"
                   t-on-click.stop.prevent="() => this.toggleComposition(record)">
             <i class="fa fa-fw" t-att-class="isOpen(record) ? 'fa-angle-down' : 'fa-angle-right'"/>
-            Состав: <t t-esc="linesLabel(record)"/>
+            <t t-if="countLines(record)">Состав: <t t-esc="linesLabel(record)"/></t>
+            <t t-else="">Состав не заполнен</t>
           </button>
 
           <div t-if="isOpen(record)" class="pmk-prow__wrap">

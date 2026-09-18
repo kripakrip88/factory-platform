@@ -175,9 +175,6 @@ export class ProductLinesRenderer extends ListRenderer {
     /** «1 деталь», «3 детали», «7 деталей» — иначе счётчик читается коряво. */
     linesLabel(record) {
         const n = this.countLines(record);
-        if (!n) {
-            return "состав не заполнен";
-        }
         const last = n % 10;
         const teen = n % 100 >= 11 && n % 100 <= 14;
         if (!teen && last === 1) {
