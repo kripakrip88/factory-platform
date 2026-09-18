@@ -25,11 +25,14 @@ import { useService } from "@web/core/utils/hooks";
 import { ListRenderer } from "@web/views/list/list_renderer";
 import { X2ManyField, x2ManyField } from "@web/views/fields/x2many/x2many_field";
 
+// Цвет метки у каждого раздела свой — глаз находит нужный блок раньше, чем
+// прочитает заголовок. Цвет не единственный признак: есть и подпись, и
+// порядок разделов (правило color-not-only).
 const SECTIONS = [
-    { mode: "linear", title: "Линейный прокат" },
-    { mode: "sheet", title: "Листовой прокат" },
-    { mode: "fastener", title: "Метизы" },
-    { mode: "paint", title: "Лакокрасочное покрытие" },
+    { mode: "linear", title: "Линейный прокат", accent: "#6bb6f5" },
+    { mode: "sheet", title: "Листовой прокат", accent: "#4dd0b1" },
+    { mode: "fastener", title: "Метизы", accent: "#9aa9bd" },
+    { mode: "paint", title: "Лакокрасочное покрытие", accent: "#f08fb0" },
 ];
 
 // Состав правят во вкладках диалога, то есть через ОТФИЛЬТРОВАННЫЕ наборы.
@@ -123,17 +126,33 @@ export class ProductLinesRenderer extends ListRenderer {
             if (!rows.length) {
                 continue;
             }
+            // Итог по разделу в заголовке: сколько позиций и сколько это в
+            // килограммах. Иначе, чтобы понять вклад раздела, приходится
+            // складывать столбец глазами.
+            const weight = rows.reduce((sum, l) => sum + (l.weight_total || 0), 0);
             const body = rows.map((line) => {
                 const [what, size] = this.describe(line);
-                return `<tr><td>${esc(line.detail_name || "—")}</td><td>${esc(what)}</td>` +
-                       `<td>${esc(size)}</td><td class="pmk-num">${line.qty || 0}</td>` +
-                       `<td class="pmk-num">${num(line.weight_total)}</td></tr>`;
+                // Длинные названия режем, полное — в подсказке (truncation-strategy):
+                // «Труба профильная квадратная 100x100x3» в колонку не помещается.
+                return `<tr>` +
+                    `<td class="pmk-c-detail" title="${esc(line.detail_name || "")}">${esc(line.detail_name || "—")}</td>` +
+                    `<td class="pmk-c-what" title="${esc(what)}">${esc(what)}</td>` +
+                    `<td class="pmk-c-size">${esc(size)}</td>` +
+                    `<td class="pmk-num pmk-c-qty">${line.qty || 0}</td>` +
+                    `<td class="pmk-num pmk-c-weight">${num(line.weight_total)}</td>` +
+                    `</tr>`;
             }).join("");
             blocks.push(
-                `<div class="pmk-prow__section"><h6>${esc(section.title)}</h6>` +
+                `<div class="pmk-prow__section" style="--pmk-accent:${section.accent}">` +
+                `<div class="pmk-prow__head">` +
+                `<span class="pmk-prow__title">${esc(section.title)}</span>` +
+                `<span class="pmk-prow__sum">${rows.length} поз. · ${num(weight)} кг</span>` +
+                `</div>` +
                 `<table class="pmk-prow__table"><thead><tr>` +
-                `<th>Деталь</th><th>Позиция</th><th>Размеры</th>` +
-                `<th class="pmk-num">Кол-во</th><th class="pmk-num">Вес, кг</th>` +
+                `<th class="pmk-c-detail">Деталь</th><th class="pmk-c-what">Позиция</th>` +
+                `<th class="pmk-c-size">Размеры</th>` +
+                `<th class="pmk-num pmk-c-qty">Кол-во</th>` +
+                `<th class="pmk-num pmk-c-weight">Вес, кг</th>` +
                 `</tr></thead><tbody>${body}</tbody></table></div>`
             );
         }
