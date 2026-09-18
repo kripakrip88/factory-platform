@@ -10,7 +10,7 @@ compute из dobor/api.py, которая и в исходнике была чи
   развёртка = сумма полок + завальцовки × длина завальцовки
   площадь    = развёртка × длина планки (обе в метрах)
   вес        = площадь × масса 1 м² по толщине
-  гибов      = (полок − 1) + 2, если замок     ← завальцовка гибом НЕ считается
+  гибов      = (полок − 1) + завальцовки + 2, если замок
   полос из рулона = ширина рулона // развёртка, остаток — отход
 """
 
@@ -34,9 +34,10 @@ def compute_dobor(flanges, hem_left, hem_right, hem_len, mass_per_sqm,
     рано или поздно разойдутся — ровно это уже произошло между Odoo и
     ERPNext в правиле гибов.
 
-    ВАЖНО, чем отличается от ERPNext: завальцовка в число гибов НЕ входит.
-    Там она считается гибом и это закреплено тестом test_two_hems_count_as_bends.
-    Решение Антона (18.09.2026): в Odoo — не считается, ERPNext пока не трогаем.
+    Завальцовка СЧИТАЕТСЯ гибом: это подгиб 180°, металл там гнут. На
+    П-образном профиле из трёх полок выходит 4 гиба — два угла и две
+    завальцовки, именно столько и гнёт станок. Правило то же, что в ERPNext,
+    системы в этом сходятся.
     """
     flange_sum = sum(float(f.get("len") or 0) for f in (flanges or []) if isinstance(f, dict))
     hem_count = (1 if hem_left else 0) + (1 if hem_right else 0)
@@ -45,8 +46,7 @@ def compute_dobor(flanges, hem_left, hem_right, hem_len, mass_per_sqm,
     area_one = (developed / MM_IN_M) * (plank_length / MM_IN_M)
     weight_one = area_one * mass_per_sqm
 
-    # Завальцовка расходует металл (она в развёртке), но гибом не считается.
-    bends = max(0, len(flanges or []) - 1) + (2 if lock else 0)
+    bends = max(0, len(flanges or []) - 1) + hem_count + (2 if lock else 0)
 
     if developed > 0 and coil_width > 0:
         strips = int(coil_width // developed)
