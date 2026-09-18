@@ -113,8 +113,23 @@
     <field name="model">pmk.metal.spec</field>
     <field name="arch" type="xml">
       <search>
-        <field name="name"/>
-        <field name="partner_id"/>
+        <!-- Номер, клиент и содержимое: спецификацию ищут по всем трём —
+             по номеру из переписки, по клиенту и «где мы считали уголок». -->
+        <field name="name" string="Номер"/>
+        <field name="partner_id" string="Клиент"/>
+        <field name="note"/>
+        <field name="product_ids" string="Изделие"
+               filter_domain="[('product_ids.name', 'ilike', self)]"/>
+
+        <filter name="this_month" string="Этот месяц"
+                domain="[('date', '&gt;=', (context_today() + relativedelta(day=1)).strftime('%Y-%m-%d'))]"/>
+        <filter name="this_year" string="Этот год"
+                domain="[('date', '&gt;=', (context_today() + relativedelta(month=1, day=1)).strftime('%Y-%m-%d'))]"/>
+        <separator/>
+        <!-- Порог в тонну отделяет рабочие расчёты от прикидок на пару деталей. -->
+        <filter name="heavy" string="От 1 тонны" domain="[('total_weight', '&gt;=', 1000)]"/>
+        <filter name="no_partner" string="Без клиента" domain="[('partner_id', '=', False)]"/>
+
         <group>
           <filter name="by_partner" string="Клиент" context="{'group_by': 'partner_id'}"/>
           <filter name="by_date" string="Дата" context="{'group_by': 'date'}"/>

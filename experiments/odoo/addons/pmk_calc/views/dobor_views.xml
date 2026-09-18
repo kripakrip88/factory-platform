@@ -108,12 +108,45 @@
         <field name="customer"/>
         <field name="total_positions"/>
         <field name="total_qty"/>
+        <field name="total_area" sum="Площадь, м²" optional="show"/>
         <field name="total_weight" sum="Итого, кг"/>
         <field name="state" widget="badge"
                decoration-info="state == 'draft'"
                decoration-warning="state == 'confirmed'"
                decoration-success="state == 'done'"/>
       </list>
+    </field>
+  </record>
+
+  <record id="view_dobor_order_search" model="ir.ui.view">
+    <field name="name">pmk.dobor.order.search</field>
+    <field name="model">pmk.dobor.order</field>
+    <field name="arch" type="xml">
+      <search>
+        <!-- Поиск по номеру и заказчику: по ним заказ и ищут, когда звонит клиент. -->
+        <field name="name" string="Номер заказа"/>
+        <field name="customer" string="Заказчик"/>
+        <field name="line_ids" string="Позиция"
+               filter_domain="[('line_ids.title', 'ilike', self)]"/>
+
+        <filter name="draft" string="Черновики" domain="[('state', '=', 'draft')]"/>
+        <filter name="confirmed" string="В работе" domain="[('state', '=', 'confirmed')]"/>
+        <filter name="done" string="Изготовлены" domain="[('state', '=', 'done')]"/>
+        <separator/>
+        <!-- «Не закрытые» — то, что реально нужно цеху каждый день. -->
+        <filter name="open" string="Не изготовлены" domain="[('state', '!=', 'done')]"/>
+        <separator/>
+        <filter name="this_month" string="Этот месяц"
+                domain="[('order_date', '&gt;=', (context_today() + relativedelta(day=1)).strftime('%Y-%m-%d'))]"/>
+        <filter name="this_year" string="Этот год"
+                domain="[('order_date', '&gt;=', (context_today() + relativedelta(month=1, day=1)).strftime('%Y-%m-%d'))]"/>
+
+        <group>
+          <filter name="by_customer" string="Заказчик" context="{'group_by': 'customer'}"/>
+          <filter name="by_state" string="Статус" context="{'group_by': 'state'}"/>
+          <filter name="by_date" string="Дата" context="{'group_by': 'order_date'}"/>
+        </group>
+      </search>
     </field>
   </record>
 
@@ -132,6 +165,19 @@
         <field name="ral_code"/>
         <field name="hex_color" widget="color"/>
       </list>
+    </field>
+  </record>
+
+  <record id="view_dobor_coating_search" model="ir.ui.view">
+    <field name="name">pmk.dobor.coating.search</field>
+    <field name="model">pmk.dobor.coating</field>
+    <field name="arch" type="xml">
+      <search>
+        <!-- Ищут и по названию («шоколад»), и по коду («8017») — в заявках
+             клиенты пишут то одно, то другое. -->
+        <field name="name"/>
+        <field name="ral_code" string="Код RAL"/>
+      </search>
     </field>
   </record>
 
