@@ -14,6 +14,7 @@
  */
 
 import { registry } from "@web/core/registry";
+import { useState } from "@odoo/owl";
 import { ListRenderer } from "@web/views/list/list_renderer";
 import { X2ManyField, x2ManyField } from "@web/views/fields/x2many/x2many_field";
 
@@ -24,19 +25,50 @@ const SECTIONS = [
     { mode: "paint", title: "Лакокрасочное покрытие" },
 ];
 
+// Состав правят во вкладках диалога, то есть через ОТФИЛЬТРОВАННЫЕ наборы.
+// Общий line_ids при этом не обновляется — для Odoo это разные наборы данных,
+// и счётчик показывал бы прежнее число до сохранения документа.
+const LINE_FIELDS = ["line_linear_ids", "line_sheet_ids", "line_fastener_ids", "line_paint_ids"];
+
 export class ProductLinesRenderer extends ListRenderer {
     static rowsTemplate = "pmk_calc.ProductRows";
+
+    setup() {
+        super.setup();
+        // Раскрытие держим сами: браузерный <details> внутри таблицы Odoo
+        // не открывается — клик по строке перехватывается списком.
+        this.expanded = useState({});
+    }
 
     /** Число колонок под составом: занимаем всю ширину строки. */
     get compositionColspan() {
         return this.nbCols;
     }
 
+    isExpanded(record) {
+        return !!this.expanded[record.id];
+    }
+
+    toggleComposition(record) {
+        this.expanded[record.id] = !this.expanded[record.id];
+    }
+
+    /** Все детали изделия — из четырёх отфильтрованных наборов сразу. */
+    allLines(record) {
+        const lines = [];
+        for (const field of LINE_FIELDS) {
+            const list = record.data[field];
+            for (const line of (list && list.records) || []) {
+                lines.push(line.data);
+            }
+        }
+        return lines;
+    }
+
     /** Состав изделия, разложенный по разделам. Данные берутся из памяти
         формы, поэтому правки видны сразу, без сохранения документа. */
     composition(record) {
-        const lines = ((record.data.line_ids && record.data.line_ids.records) || [])
-            .map((l) => l.data);
+        const lines = this.allLines(record);
         return SECTIONS.map((section) => ({
             title: section.title,
             rows: lines
@@ -46,7 +78,21 @@ export class ProductLinesRenderer extends ListRenderer {
     }
 
     countLines(record) {
-        return ((record.data.line_ids && record.data.line_ids.records) || []).length;
+        return this.allLines(record).length;
+    }
+
+    /** «1 деталь», «3 детали», «7 деталей» — иначе счётчик читается коряво. */
+    linesLabel(record) {
+        const n = this.countLines(record);
+        const last = n % 10;
+        const teen = n % 100 >= 11 && n % 100 <= 14;
+        if (!teen && last === 1) {
+            return `${n} деталь`;
+        }
+        if (!teen && last >= 2 && last <= 4) {
+            return `${n} детали`;
+        }
+        return `${n} деталей`;
     }
 
     /** Что показывать в «позиции» и «размерах» — зависит от вида детали:

@@ -9,17 +9,20 @@
   <t t-name="pmk_calc.ProductRows" t-inherit="web.ListRenderer.Rows" t-inherit-mode="primary">
     <xpath expr="//t[@t-call='{{ constructor.recordRowTemplate }}']" position="after">
       <!--
-        Строка состава идёт сразу под изделием. Она есть всегда, но свёрнута:
-        <details> раскрывает её силами браузера, без нашего кода и без
-        состояния, которое пришлось бы хранить и синхронизировать.
+        Строка состава идёт сразу под своим изделием. Раскрытие держим сами,
+        а не браузерным <details>: внутри таблицы Odoo он не открывается —
+        клик перехватывает список.
       -->
-      <tr t-if="countLines(record)" class="pmk-prow" t-att-data-for="record.id">
+      <tr t-if="countLines(record)" class="pmk-prow">
         <td t-att-colspan="compositionColspan">
-          <details class="pmk-prow__wrap">
-            <summary class="pmk-prow__toggle">
-              Состав: <t t-esc="countLines(record)"/>
-              <t t-esc="countLines(record) === 1 ? ' деталь' : (countLines(record) &lt; 5 ? ' детали' : ' деталей')"/>
-            </summary>
+          <button type="button" class="pmk-prow__toggle"
+                  t-att-aria-expanded="isExpanded(record) ? 'true' : 'false'"
+                  t-on-click.stop="() => this.toggleComposition(record)">
+            <i class="fa fa-fw" t-att-class="isExpanded(record) ? 'fa-angle-down' : 'fa-angle-right'"/>
+            Состав: <t t-esc="linesLabel(record)"/>
+          </button>
+
+          <div t-if="isExpanded(record)" class="pmk-prow__wrap">
             <div t-foreach="composition(record)" t-as="section" t-key="section.title"
                  class="pmk-prow__section">
               <h6 t-esc="section.title"/>
@@ -41,7 +44,7 @@
                 </tbody>
               </table>
             </div>
-          </details>
+          </div>
         </td>
       </tr>
     </xpath>

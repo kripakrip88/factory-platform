@@ -33,7 +33,58 @@
           -->
           <field name="product_ids" widget="pmk_product_lines">
             <list>
-              <field name="line_ids" column_invisible="1">
+              <field name="line_linear_ids" column_invisible="1">
+                <list>
+                  <field name="calc_mode"/>
+                  <field name="detail_name"/>
+                  <field name="profile_id"/>
+                  <field name="sheet_id"/>
+                  <field name="fastener_id"/>
+                  <field name="paint_id"/>
+                  <field name="length_mm"/>
+                  <field name="a_mm"/>
+                  <field name="b_mm"/>
+                  <field name="area_m2"/>
+                  <field name="paint_thickness_um"/>
+                  <field name="qty"/>
+                  <field name="weight_total"/>
+                </list>
+              </field>
+              <field name="line_sheet_ids" column_invisible="1">
+                <list>
+                  <field name="calc_mode"/>
+                  <field name="detail_name"/>
+                  <field name="profile_id"/>
+                  <field name="sheet_id"/>
+                  <field name="fastener_id"/>
+                  <field name="paint_id"/>
+                  <field name="length_mm"/>
+                  <field name="a_mm"/>
+                  <field name="b_mm"/>
+                  <field name="area_m2"/>
+                  <field name="paint_thickness_um"/>
+                  <field name="qty"/>
+                  <field name="weight_total"/>
+                </list>
+              </field>
+              <field name="line_fastener_ids" column_invisible="1">
+                <list>
+                  <field name="calc_mode"/>
+                  <field name="detail_name"/>
+                  <field name="profile_id"/>
+                  <field name="sheet_id"/>
+                  <field name="fastener_id"/>
+                  <field name="paint_id"/>
+                  <field name="length_mm"/>
+                  <field name="a_mm"/>
+                  <field name="b_mm"/>
+                  <field name="area_m2"/>
+                  <field name="paint_thickness_um"/>
+                  <field name="qty"/>
+                  <field name="weight_total"/>
+                </list>
+              </field>
+              <field name="line_paint_ids" column_invisible="1">
                 <list>
                   <field name="calc_mode"/>
                   <field name="detail_name"/>

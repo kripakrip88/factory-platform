@@ -362,11 +362,21 @@
   padding: 2px 12px 8px 34px;   // отступ слева равен ширине ручки перетаскивания
 }
 
+// Кнопка, а не элемент с обработчиком: так строка доступна с клавиатуры и
+// читается как переключатель. Фон прозрачный — она живёт внутри таблицы и
+// не должна выглядеть как отдельная кнопка действия.
 .pmk-prow__toggle {
-  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 34px;
+  padding: 5px 8px 5px 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
   font-size: 12px;
   opacity: 0.7;
-  padding: 4px 0;
+  cursor: pointer;
   user-select: none;
 
   &:hover { opacity: 1; }
