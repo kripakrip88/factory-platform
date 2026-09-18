@@ -16,20 +16,34 @@
 
         <span class="pmk-dobor__sep"/>
 
-        <label class="pmk-dobor__check">
-          <input type="checkbox" t-att-checked="state.hemLeft" t-on-change="() => this.toggle('hemLeft')"/>
-          завальцовка слева
-        </label>
-        <!-- Развернуть завальцовку на другую сторону полки: так же, как в ERPNext. -->
-        <button type="button" class="btn btn-sm btn-secondary" t-if="state.hemLeft"
-                t-on-click="() => this.flipHem('left')" title="Развернуть левую завальцовку">⮃</button>
+        <!--
+          Чекбокс и его кнопка разворота живут ОДНОЙ группой, и кнопка есть в
+          разметке всегда — просто скрыта, пока завальцовка выключена. Если
+          добавлять её по месту, при каждом включении соседние подписи
+          сдвигаются (правило content-jumping: под условный элемент место
+          резервируют заранее).
+        -->
+        <span class="pmk-dobor__unit">
+          <label class="pmk-dobor__check">
+            <input type="checkbox" t-att-checked="state.hemLeft" t-on-change="() => this.toggle('hemLeft')"/>
+            завальцовка слева
+          </label>
+          <button type="button" class="btn btn-sm btn-secondary pmk-dobor__flip"
+                  t-att-class="{ 'pmk-dobor__flip--off': !state.hemLeft }"
+                  t-att-tabindex="state.hemLeft ? 0 : -1"
+                  t-on-click="() => this.flipHem('left')" title="Развернуть левую завальцовку">⮃</button>
+        </span>
 
-        <label class="pmk-dobor__check">
-          <input type="checkbox" t-att-checked="state.hemRight" t-on-change="() => this.toggle('hemRight')"/>
-          справа
-        </label>
-        <button type="button" class="btn btn-sm btn-secondary" t-if="state.hemRight"
-                t-on-click="() => this.flipHem('right')" title="Развернуть правую завальцовку">⮃</button>
+        <span class="pmk-dobor__unit">
+          <label class="pmk-dobor__check">
+            <input type="checkbox" t-att-checked="state.hemRight" t-on-change="() => this.toggle('hemRight')"/>
+            справа
+          </label>
+          <button type="button" class="btn btn-sm btn-secondary pmk-dobor__flip"
+                  t-att-class="{ 'pmk-dobor__flip--off': !state.hemRight }"
+                  t-att-tabindex="state.hemRight ? 0 : -1"
+                  t-on-click="() => this.flipHem('right')" title="Развернуть правую завальцовку">⮃</button>
+        </span>
 
         <label class="pmk-dobor__check">
           длина
@@ -42,12 +56,16 @@
           <input type="checkbox" t-att-checked="state.lock" t-on-change="() => this.toggle('lock')"/>
           замок
         </label>
-        <label class="pmk-dobor__check">
-          <input type="checkbox" t-att-checked="state.paintOn" t-on-change="() => this.toggle('paintOn')"/>
-          покрытие
-        </label>
-        <button type="button" class="btn btn-sm btn-secondary" t-if="state.paintOn"
-                t-on-click="flipPaint" title="Сторона покрытия">↔</button>
+        <span class="pmk-dobor__unit">
+          <label class="pmk-dobor__check">
+            <input type="checkbox" t-att-checked="state.paintOn" t-on-change="() => this.toggle('paintOn')"/>
+            покрытие
+          </label>
+          <button type="button" class="btn btn-sm btn-secondary pmk-dobor__flip"
+                  t-att-class="{ 'pmk-dobor__flip--off': !state.paintOn }"
+                  t-att-tabindex="state.paintOn ? 0 : -1"
+                  t-on-click="flipPaint" title="Сторона покрытия">↔</button>
+        </span>
 
         <span class="pmk-dobor__sep"/>
 
