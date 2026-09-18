@@ -15,14 +15,14 @@
       -->
       <tr t-if="countLines(record)" class="pmk-prow">
         <td t-att-colspan="compositionColspan">
-          <button type="button" class="pmk-prow__toggle"
-                  t-att-aria-expanded="isExpanded(record) ? 'true' : 'false'"
-                  t-on-click.stop="() => this.toggleComposition(record)">
-            <i class="fa fa-fw" t-att-class="isExpanded(record) ? 'fa-angle-down' : 'fa-angle-right'"/>
+          <button type="button" class="pmk-prow__toggle" aria-expanded="false"
+                  t-on-click.stop.prevent="toggleComposition">
+            <i class="fa fa-fw fa-angle-right"/>
             Состав: <t t-esc="linesLabel(record)"/>
           </button>
 
-          <div t-if="isExpanded(record)" class="pmk-prow__wrap">
+          <!-- Состав всегда в разметке, показывает его класс на строке. -->
+          <div class="pmk-prow__wrap">
             <div t-foreach="composition(record)" t-as="section" t-key="section.title"
                  class="pmk-prow__section">
               <h6 t-esc="section.title"/>

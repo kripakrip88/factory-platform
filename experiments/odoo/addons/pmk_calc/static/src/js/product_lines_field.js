@@ -34,13 +34,6 @@ export class ProductLinesRenderer extends ListRenderer {
 
     setup() {
         super.setup();
-        // Раскрытие держим сами: браузерный <details> внутри таблицы Odoo
-        // не открывается — клик по строке перехватывается списком.
-        //
-        // Обычный объект, а не реактивный: на реактивность здесь полагаться
-        // нельзя — в списке она не довела изменение до перерисовки, кнопка
-        // нажималась, а состав не появлялся. Перерисовываем явно в toggle.
-        this.expandedRows = {};
     }
 
     /** Число колонок под составом: занимаем всю ширину строки. */
@@ -48,13 +41,32 @@ export class ProductLinesRenderer extends ListRenderer {
         return this.nbCols;
     }
 
-    isExpanded(record) {
-        return !!this.expandedRows[record.id];
-    }
-
-    toggleComposition(record) {
-        this.expandedRows[record.id] = !this.expandedRows[record.id];
-        this.render();
+    /**
+     * Переключение раскрытия — правкой DOM, без состояния и перерисовки.
+     *
+     * Так пришлось сделать после трёх неудачных попыток. Ни реактивное
+     * состояние, ни явный render() внутри чужого рендерера до экрана не
+     * доходили: кнопка нажималась, а состав не появлялся. Разбираться, на
+     * каком звене теряется обновление, дороже, чем переключить класс.
+     *
+     * Состав при этом ВСЕГДА в разметке, скрыт стилем. Это и делает приём
+     * надёжным: показывать нечего ждать, элемент уже на месте.
+     */
+    toggleComposition(ev) {
+        const row = ev.target.closest("tr");
+        if (!row) {
+            return;
+        }
+        const opened = row.classList.toggle("pmk-prow--open");
+        const icon = row.querySelector(".pmk-prow__toggle .fa");
+        if (icon) {
+            icon.classList.toggle("fa-angle-right", !opened);
+            icon.classList.toggle("fa-angle-down", opened);
+        }
+        const button = row.querySelector(".pmk-prow__toggle");
+        if (button) {
+            button.setAttribute("aria-expanded", opened ? "true" : "false");
+        }
     }
 
     /** Все детали изделия — из четырёх отфильтрованных наборов сразу. */
