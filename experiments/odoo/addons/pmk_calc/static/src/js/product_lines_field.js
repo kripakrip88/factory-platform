@@ -1,122 +1,163 @@
 /**
- * Список изделий с составом, раскрывающимся под строкой.
+ * Список изделий с составом, который раскрывается и правится прямо под строкой.
  *
- * Odoo не умеет вкладывать таблицу в таблицу, а состав хотелось видеть там же,
- * где изделия. Поэтому вклиниваемся в разметку строк списка: после строки
- * каждого изделия добавляем свою, со составом.
+ * Odoo не умеет вкладывать таблицу в таблицу, а состав нужен там же, где
+ * изделия: заходить в отдельное окно ради одной детали — дорого. Поэтому
+ * вклиниваемся в разметку строк списка и после строки каждого изделия рисуем
+ * свою — с составом и его редактором.
  *
- * ПОЧЕМУ СОСТАВ ГРУЗИТСЯ ОТДЕЛЬНЫМ ЗАПРОСОМ. Сперва я читал вложенные строки
- * из памяти формы — и они приходили ПУСТЫМИ ЗАГЛУШКАМИ: поля есть, значения
- * нулевые (calc_mode: false, qty: 0). Odoo знает о записях, но не читает их
- * содержимое, если колонка скрыта. Счётчик при этом верен — записи посчитаны,
- * а состав пуст. Поэтому содержимое запрашиваем сами, при первом раскрытии.
+ * ОТКУДА БЕРУТСЯ ДАННЫЕ. Из памяти формы, как и всё остальное в документе.
+ * Раньше состав приходил сюда ПУСТЫМИ ЗАГЛУШКАМИ (поля есть, значения нулевые)
+ * и его приходилось дочитывать с сервера отдельным запросом — а несохранённые
+ * правки в такой запрос, понятно, не попадали. Причина была не в Odoo, а в
+ * нашем описании вида: у вложенных наборов не было своей разметки, и читать
+ * было нечего. Разметка добавлена в metal_spec_views.xml — запрос больше не
+ * нужен, и состав всегда показывает то же, что форма.
  *
- * ПОЧЕМУ РИСУЕМ В DOM, А НЕ ШАБЛОНОМ. Ни реактивное состояние, ни явный
- * render() внутри чужого рендерера до экрана не доходили — кнопка нажималась,
- * а состав не появлялся. Три попытки на это ушло, поэтому здесь ничего не
- * ждём от перерисовки: вставляем разметку по месту.
- *
- * Ввод не тронут: добавление, удаление, перетаскивание и открытие изделия
- * работают штатно, мы только дорисовываем строку.
+ * ПОЧЕМУ ПРАВКА БЕЗ СОХРАНЕНИЯ НА СЕРВЕР. Строки создаются и меняются в
+ * наборе документа (addNewRecord / update / delete), то есть живут в памяти
+ * до сохранения спецификации. Создавать их сразу в базе нельзя: нажатие
+ * «Отменить» в документе обязано отменить и состав.
  */
 
 import { registry } from "@web/core/registry";
-import { useService } from "@web/core/utils/hooks";
+import { useState } from "@odoo/owl";
 import { ListRenderer } from "@web/views/list/list_renderer";
+import { Field } from "@web/views/fields/field";
 import { X2ManyField, x2ManyField } from "@web/views/fields/x2many/x2many_field";
 
-// Цвет метки у каждого раздела свой — глаз находит нужный блок раньше, чем
-// прочитает заголовок. Цвет не единственный признак: есть и подпись, и
-// порядок разделов (правило color-not-only).
+// Разделы состава. Цвет метки у каждого свой — глаз находит нужный блок
+// раньше, чем прочитает заголовок. Цвет не единственный признак: есть подпись
+// и постоянный порядок разделов (правило color-not-only).
+//
+// inputs — что показывает редактор строки. Порядок тот же, что в диалоге
+// изделия, чтобы привычка работала в обоих местах. wide — поле текстовое или
+// со справочником, ему нужна ширина; остальные числовые и узкие.
 const SECTIONS = [
-    { mode: "linear", title: "Линейный прокат", accent: "#6bb6f5" },
-    { mode: "sheet", title: "Листовой прокат", accent: "#4dd0b1" },
-    { mode: "fastener", title: "Метизы", accent: "#9aa9bd" },
-    { mode: "paint", title: "Лакокрасочное покрытие", accent: "#f08fb0" },
+    {
+        mode: "linear",
+        field: "line_linear_ids",
+        title: "Линейный прокат",
+        short: "Прокат",
+        accent: "#6bb6f5",
+        inputs: [
+            { name: "detail_name", label: "Деталь", wide: true },
+            { name: "type_id", label: "Вид проката", wide: true },
+            { name: "profile_id", label: "Типоразмер", wide: true },
+            { name: "length_mm", label: "Длина, мм" },
+            { name: "qty", label: "Кол-во" },
+        ],
+    },
+    {
+        mode: "sheet",
+        field: "line_sheet_ids",
+        title: "Листовой прокат",
+        short: "Лист",
+        accent: "#4dd0b1",
+        inputs: [
+            { name: "detail_name", label: "Деталь", wide: true },
+            { name: "sheet_id", label: "Лист", wide: true },
+            { name: "a_mm", label: "A, мм" },
+            { name: "b_mm", label: "B, мм" },
+            { name: "qty", label: "Кол-во" },
+        ],
+    },
+    {
+        mode: "fastener",
+        field: "line_fastener_ids",
+        title: "Метизы",
+        short: "Метизы",
+        accent: "#9aa9bd",
+        inputs: [
+            { name: "detail_name", label: "Деталь", wide: true },
+            { name: "fastener_id", label: "Метиз", wide: true },
+            { name: "qty", label: "Кол-во" },
+        ],
+    },
+    {
+        mode: "paint",
+        field: "line_paint_ids",
+        title: "Лакокрасочное покрытие",
+        short: "Покрытие",
+        accent: "#f08fb0",
+        inputs: [
+            { name: "detail_name", label: "Участок", wide: true },
+            { name: "paint_id", label: "Покрытие", wide: true },
+            { name: "area_m2", label: "Площадь, м²" },
+            { name: "paint_thickness_um", label: "Толщина, мкм" },
+        ],
+    },
 ];
 
-// Состав правят во вкладках диалога, то есть через ОТФИЛЬТРОВАННЫЕ наборы.
-// Общий line_ids при этом не обновляется — для Odoo это разные наборы данных,
-// и счётчик показывал бы прежнее число до сохранения документа.
-const LINE_FIELDS = ["line_linear_ids", "line_sheet_ids", "line_fastener_ids", "line_paint_ids"];
+const num = (value) => (value || 0).toLocaleString("ru-RU", { maximumFractionDigits: 3 });
 
-const READ_FIELDS = [
-    "calc_mode", "detail_name", "profile_id", "sheet_id", "fastener_id", "paint_id",
-    "length_mm", "a_mm", "b_mm", "area_m2", "paint_thickness_um", "qty", "weight_total",
-];
-
-const esc = (value) =>
-    String(value === undefined || value === null || value === false ? "—" : value)
-        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-
-const num = (value) =>
-    (value || 0).toLocaleString("ru-RU", { maximumFractionDigits: 3 });
+// Ссылка на справочник приходит объектом {id, display_name}. Старый вид —
+// пара [id, name] — встречается в ответах сервера, поэтому держим оба.
+const relName = (value) => {
+    if (!value) {
+        return "—";
+    }
+    if (Array.isArray(value)) {
+        return value[1] || "—";
+    }
+    return value.display_name || "—";
+};
 
 export class ProductLinesRenderer extends ListRenderer {
     static rowsTemplate = "pmk_calc.ProductRows";
+    static components = { ...ListRenderer.components, Field };
 
     setup() {
         super.setup();
-        this.orm = useService("orm");
+        // open — какие изделия раскрыты, editing — какая строка состава сейчас
+        // в редакторе. Раскрытие держим сами: браузерный <details> внутри
+        // таблицы Odoo не открывается, клик перехватывает список.
+        this.pmk = useState({ open: {}, editing: null });
     }
 
     get compositionColspan() {
         return this.nbCols;
     }
 
-    /** Строки изделия из всех четырёх наборов — здесь нужны только их id. */
-    lineIds(record) {
-        const ids = [];
-        for (const field of LINE_FIELDS) {
-            const list = record.data[field];
-            for (const line of (list && list.records) || []) {
-                if (typeof line.resId === "number") {
-                    ids.push(line.resId);
-                }
-            }
-        }
-        return ids;
+    get allSections() {
+        return SECTIONS;
     }
 
-    /**
-     * Свежие значения из формы — те, что ещё не сохранены на сервере.
-     *
-     * Состав приходит с сервера, поэтому без этого он показывал бы прежние
-     * числа: в форме площадь уже 10, а в составе всё ещё 23. Накладываем
-     * поверх серверных только ЧИСЛА и подписи, которые правят руками —
-     * названия позиций берём с сервера, там они в готовом виде.
-     *
-     * Незагруженные строки отсеиваем по calc_mode: у них поля есть, но пустые
-     * (false, 0), и наложить такое значит затереть верные данные нулями.
-     */
-    unsavedChanges(record) {
-        const patch = {};
-        for (const field of LINE_FIELDS) {
-            const list = record.data[field];
-            for (const line of (list && list.records) || []) {
-                const d = line.data || {};
-                if (typeof line.resId !== "number" || !d.calc_mode) {
-                    continue;
-                }
-                patch[line.resId] = {
-                    detail_name: d.detail_name,
-                    length_mm: d.length_mm,
-                    a_mm: d.a_mm,
-                    b_mm: d.b_mm,
-                    area_m2: d.area_m2,
-                    paint_thickness_um: d.paint_thickness_um,
-                    qty: d.qty,
-                    weight_total: d.weight_total,
-                };
+    /** Формат чисел для шаблона: разряды и запятая, как принято в документах. */
+    num(value) {
+        return num(value);
+    }
+
+    isOpen(record) {
+        return !!this.pmk.open[record.id];
+    }
+
+    toggleComposition(record) {
+        this.pmk.open[record.id] = !this.pmk.open[record.id];
+    }
+
+    /** Непустые разделы изделия — с итогом по каждому. */
+    compositionSections(record) {
+        const out = [];
+        for (const section of SECTIONS) {
+            const list = record.data[section.field];
+            const lines = (list && list.records) || [];
+            if (!lines.length) {
+                continue;
             }
+            out.push({
+                ...section,
+                lines,
+                weight: lines.reduce((sum, line) => sum + (line.data.weight_total || 0), 0),
+            });
         }
-        return patch;
+        return out;
     }
 
     countLines(record) {
         let count = 0;
-        for (const field of LINE_FIELDS) {
-            const list = record.data[field];
+        for (const section of SECTIONS) {
+            const list = record.data[section.field];
             count += ((list && list.records) || []).length;
         }
         return count;
@@ -125,6 +166,9 @@ export class ProductLinesRenderer extends ListRenderer {
     /** «1 деталь», «3 детали», «7 деталей» — иначе счётчик читается коряво. */
     linesLabel(record) {
         const n = this.countLines(record);
+        if (!n) {
+            return "состав не заполнен";
+        }
         const last = n % 10;
         const teen = n % 100 >= 11 && n % 100 <= 14;
         if (!teen && last === 1) {
@@ -138,102 +182,69 @@ export class ProductLinesRenderer extends ListRenderer {
 
     /** Что показывать в «позиции» и «размерах» — зависит от вида детали. */
     describe(line) {
-        const rel = (v) => (Array.isArray(v) ? v[1] : v) || "—";
-        if (line.calc_mode === "linear") {
-            return [rel(line.profile_id), `${num(line.length_mm)} мм`];
+        const d = line.data;
+        if (d.calc_mode === "linear") {
+            return [relName(d.profile_id), `${num(d.length_mm)} мм`];
         }
-        if (line.calc_mode === "sheet") {
-            return [rel(line.sheet_id), `${num(line.a_mm)}×${num(line.b_mm)} мм`];
+        if (d.calc_mode === "sheet") {
+            return [relName(d.sheet_id), `${num(d.a_mm)}×${num(d.b_mm)} мм`];
         }
-        if (line.calc_mode === "fastener") {
-            return [rel(line.fastener_id), ""];
+        if (d.calc_mode === "fastener") {
+            return [relName(d.fastener_id), ""];
         }
         // Толщину показываем всегда: именно она объясняет расход краски.
-        const thickness = line.paint_thickness_um ? `, ${num(line.paint_thickness_um)} мкм` : "";
-        const size = line.area_m2 ? `${num(line.area_m2)} м²${thickness}` : "площадь не задана";
-        return [rel(line.paint_id), size];
+        const thickness = d.paint_thickness_um ? `, ${num(d.paint_thickness_um)} мкм` : "";
+        const size = d.area_m2 ? `${num(d.area_m2)} м²${thickness}` : "площадь не задана";
+        return [relName(d.paint_id), size];
     }
 
-    buildHtml(lines) {
-        const blocks = [];
-        for (const section of SECTIONS) {
-            const rows = lines.filter((l) => l.calc_mode === section.mode);
-            if (!rows.length) {
-                continue;
-            }
-            // Итог по разделу в заголовке: сколько позиций и сколько это в
-            // килограммах. Иначе, чтобы понять вклад раздела, приходится
-            // складывать столбец глазами.
-            const weight = rows.reduce((sum, l) => sum + (l.weight_total || 0), 0);
-            const body = rows.map((line) => {
-                const [what, size] = this.describe(line);
-                // Длинные названия режем, полное — в подсказке (truncation-strategy):
-                // «Труба профильная квадратная 100x100x3» в колонку не помещается.
-                return `<tr>` +
-                    `<td class="pmk-c-detail" title="${esc(line.detail_name || "")}">${esc(line.detail_name || "—")}</td>` +
-                    `<td class="pmk-c-what" title="${esc(what)}">${esc(what)}</td>` +
-                    `<td class="pmk-c-size">${esc(size)}</td>` +
-                    `<td class="pmk-num pmk-c-qty">${line.qty || 0}</td>` +
-                    `<td class="pmk-num pmk-c-weight">${num(line.weight_total)}</td>` +
-                    `</tr>`;
-            }).join("");
-            blocks.push(
-                `<div class="pmk-prow__section" style="--pmk-accent:${section.accent}">` +
-                `<div class="pmk-prow__head">` +
-                `<span class="pmk-prow__title">${esc(section.title)}</span>` +
-                `<span class="pmk-prow__sum">${rows.length} поз. · ${num(weight)} кг</span>` +
-                `</div>` +
-                `<table class="pmk-prow__table"><thead><tr>` +
-                `<th class="pmk-c-detail">Деталь</th><th class="pmk-c-what">Позиция</th>` +
-                `<th class="pmk-c-size">Размеры</th>` +
-                `<th class="pmk-num pmk-c-qty">Кол-во</th>` +
-                `<th class="pmk-num pmk-c-weight">Вес, кг</th>` +
-                `</tr></thead><tbody>${body}</tbody></table></div>`
-            );
-        }
-        return blocks.join("") || '<div class="pmk-prow__empty">Состав не заполнен</div>';
+    detailOf(line) {
+        return line.data.detail_name || "—";
     }
 
-    async toggleComposition(ev, record) {
-        const row = ev.target.closest("tr");
-        if (!row) {
-            return;
-        }
-        const opened = row.classList.toggle("pmk-prow--open");
-        const icon = row.querySelector(".pmk-prow__toggle .fa");
-        if (icon) {
-            icon.classList.toggle("fa-angle-right", !opened);
-            icon.classList.toggle("fa-angle-down", opened);
-        }
-        const button = row.querySelector(".pmk-prow__toggle");
-        if (button) {
-            button.setAttribute("aria-expanded", opened ? "true" : "false");
-        }
-        if (!opened) {
-            return;
-        }
+    qtyOf(line) {
+        return line.data.qty || 0;
+    }
 
-        const wrap = row.querySelector(".pmk-prow__wrap");
-        if (!wrap) {
-            return;
+    weightOf(line) {
+        return num(line.data.weight_total);
+    }
+
+    isEditing(line) {
+        return this.pmk.editing === line.id;
+    }
+
+    editLine(line) {
+        this.pmk.editing = line.id;
+    }
+
+    stopEdit() {
+        this.pmk.editing = null;
+    }
+
+    /**
+     * Новая строка состава — сразу в редакторе.
+     *
+     * Вид детали передаём контекстом: он обязателен, и без него строка
+     * попала бы не в тот раздел. Запись создаётся в наборе документа, а не
+     * в базе — сохранится вместе со спецификацией.
+     */
+    async addLine(record, section) {
+        const list = record.data[section.field];
+        const line = await list.addNewRecord({
+            position: "bottom",
+            mode: "edit",
+            context: { default_calc_mode: section.mode },
+        });
+        this.pmk.open[record.id] = true;
+        this.pmk.editing = line.id;
+    }
+
+    async removeLine(record, section, line) {
+        if (this.pmk.editing === line.id) {
+            this.pmk.editing = null;
         }
-        // Перечитываем при каждом раскрытии: состав могли поправить, пока
-        // строка была свёрнута, и показать устаревшее хуже, чем подождать.
-        wrap.innerHTML = '<div class="pmk-prow__empty">Загружаем состав…</div>';
-        const ids = this.lineIds(record);
-        if (!ids.length) {
-            wrap.innerHTML = '<div class="pmk-prow__empty">Состав не заполнен</div>';
-            return;
-        }
-        try {
-            const lines = await this.orm.read("pmk.metal.spec.line", ids, READ_FIELDS);
-            const patch = this.unsavedChanges(record);
-            wrap.innerHTML = this.buildHtml(
-                lines.map((line) => (patch[line.id] ? { ...line, ...patch[line.id] } : line))
-            );
-        } catch {
-            wrap.innerHTML = '<div class="pmk-prow__empty">Не удалось загрузить состав</div>';
-        }
+        await record.data[section.field].delete(line);
     }
 }
 

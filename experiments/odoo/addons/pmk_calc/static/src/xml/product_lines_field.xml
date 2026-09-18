@@ -8,16 +8,108 @@
   -->
   <t t-name="pmk_calc.ProductRows" t-inherit="web.ListRenderer.Rows" t-inherit-mode="primary">
     <xpath expr="//t[@t-call='{{ constructor.recordRowTemplate }}']" position="after">
-      <tr t-if="countLines(record)" class="pmk-prow">
+      <tr class="pmk-prow">
         <td t-att-colspan="compositionColspan">
-          <button type="button" class="pmk-prow__toggle" aria-expanded="false"
-                  t-on-click.stop.prevent="(ev) => this.toggleComposition(ev, record)">
-            <i class="fa fa-fw fa-angle-right"/>
+
+          <!-- Кнопка, а не строка с обработчиком: так переключатель доступен
+               с клавиатуры и читается как переключатель. -->
+          <button type="button" class="pmk-prow__toggle" t-att-aria-expanded="isOpen(record)"
+                  t-on-click.stop.prevent="() => this.toggleComposition(record)">
+            <i class="fa fa-fw" t-att-class="isOpen(record) ? 'fa-angle-down' : 'fa-angle-right'"/>
             Состав: <t t-esc="linesLabel(record)"/>
           </button>
-          <!-- Содержимое вставляет виджет при раскрытии: из памяти формы
-               оно приходит пустыми заглушками, см. пояснение в js. -->
-          <div class="pmk-prow__wrap"/>
+
+          <div t-if="isOpen(record)" class="pmk-prow__wrap">
+
+            <t t-foreach="compositionSections(record)" t-as="section" t-key="section.mode">
+              <div class="pmk-prow__section" t-attf-style="--pmk-accent:{{ section.accent }}">
+                <div class="pmk-prow__head">
+                  <span class="pmk-prow__title" t-esc="section.title"/>
+                  <span class="pmk-prow__sum">
+                    <t t-esc="section.lines.length"/> поз. · <t t-esc="num(section.weight)"/> кг
+                  </span>
+                </div>
+
+                <table class="pmk-prow__table">
+                  <thead>
+                    <tr>
+                      <th class="pmk-c-detail">Деталь</th>
+                      <th class="pmk-c-what">Позиция</th>
+                      <th class="pmk-c-size">Размеры</th>
+                      <th class="pmk-num pmk-c-qty">Кол-во</th>
+                      <th class="pmk-num pmk-c-weight">Вес, кг</th>
+                      <th class="pmk-c-act"><span class="visually-hidden">Действия</span></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <t t-foreach="section.lines" t-as="line" t-key="line.id">
+
+                      <!-- Чтение. Клик по строке открывает её редактор —
+                           так же, как строка изделия открывает изделие. -->
+                      <tr t-if="!isEditing(line)" class="pmk-prow__row" tabindex="0"
+                          t-on-click.stop="() => this.editLine(line)"
+                          t-on-keydown.stop="(ev) => ['Enter',' '].includes(ev.key) &amp;&amp; this.editLine(line)">
+                        <t t-set="info" t-value="describe(line)"/>
+                        <td class="pmk-c-detail" t-att-title="detailOf(line)" t-esc="detailOf(line)"/>
+                        <td class="pmk-c-what" t-att-title="info[0]" t-esc="info[0]"/>
+                        <td class="pmk-c-size" t-esc="info[1]"/>
+                        <td class="pmk-num pmk-c-qty" t-esc="qtyOf(line)"/>
+                        <td class="pmk-num pmk-c-weight" t-esc="weightOf(line)"/>
+                        <td class="pmk-c-act">
+                          <button type="button" class="pmk-prow__del" title="Удалить деталь"
+                                  aria-label="Удалить деталь"
+                                  t-on-click.stop.prevent="() => this.removeLine(record, section, line)">
+                            <i class="fa fa-trash-o"/>
+                          </button>
+                        </td>
+                      </tr>
+
+                      <!-- Правка. Поля с подписями, а не вписанные в колонки:
+                           в колонку шириной 8% справочник не помещается, а
+                           подпись над полем нужна и при вводе (input-labels). -->
+                      <tr t-else="" class="pmk-prow__editrow">
+                        <td colspan="6">
+                          <div class="pmk-edit">
+                            <t t-foreach="section.inputs" t-as="input" t-key="input.name">
+                              <label class="pmk-edit__field"
+                                     t-att-class="{ 'pmk-edit__field--wide': input.wide }">
+                                <span class="pmk-edit__label" t-esc="input.label"/>
+                                <Field record="line" name="input.name"/>
+                              </label>
+                            </t>
+                            <div class="pmk-edit__actions">
+                              <span class="pmk-edit__weight">
+                                <t t-esc="weightOf(line)"/> кг
+                              </span>
+                              <button type="button" class="btn btn-sm btn-primary"
+                                      t-on-click.stop.prevent="() => this.stopEdit()">Готово</button>
+                              <button type="button" class="btn btn-sm btn-link pmk-edit__del"
+                                      t-on-click.stop.prevent="() => this.removeLine(record, section, line)">Удалить</button>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+
+                    </t>
+                  </tbody>
+                </table>
+              </div>
+            </t>
+
+            <!-- Добавление. Все четыре вида показаны всегда, в том числе когда
+                 раздела ещё нет: иначе завести первую краску было бы негде. -->
+            <div class="pmk-prow__add">
+              <span class="pmk-prow__add-label">Добавить:</span>
+              <t t-foreach="allSections" t-as="section" t-key="section.mode">
+                <button type="button" class="pmk-prow__add-btn"
+                        t-attf-style="--pmk-accent:{{ section.accent }}"
+                        t-on-click.stop.prevent="() => this.addLine(record, section)">
+                  <i class="fa fa-plus"/> <t t-esc="section.short"/>
+                </button>
+              </t>
+            </div>
+
+          </div>
         </td>
       </tr>
     </xpath>

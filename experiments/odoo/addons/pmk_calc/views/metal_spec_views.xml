@@ -27,16 +27,66 @@
             в строку списка они не помещаются.
           -->
           <!--
-            Свой виджет списка: под каждым изделием раскрывается его состав.
-            Вложенные строки перечислены явно — иначе Odoo их не загрузит и
-            составу неоткуда будет взяться.
+            Свой виджет списка: под каждым изделием раскрывается его состав,
+            и прямо там же состав правится.
+
+            У вложенных наборов СВОЯ разметка, хотя колонок они не образуют.
+            Без неё Odoo загружал записи, но не их содержимое: поля приходили
+            пустыми (calc_mode: false, qty: 0) — счётчик верен, состав пуст.
+            Набор полей задаёт, что будет прочитано и что можно править.
           -->
           <field name="product_ids" widget="pmk_product_lines">
             <list>
-              <field name="line_linear_ids" column_invisible="1"/>
-              <field name="line_sheet_ids" column_invisible="1"/>
-              <field name="line_fastener_ids" column_invisible="1"/>
-              <field name="line_paint_ids" column_invisible="1"/>
+              <field name="line_linear_ids" column_invisible="1">
+                <list>
+                  <field name="sequence"/>
+                  <field name="calc_mode"/>
+                  <field name="detail_name"/>
+                  <field name="type_id"/>
+                  <field name="profile_id"/>
+                  <field name="length_mm"/>
+                  <field name="qty"/>
+                  <field name="weight_one" readonly="1"/>
+                  <field name="weight_total" readonly="1"/>
+                </list>
+              </field>
+              <field name="line_sheet_ids" column_invisible="1">
+                <list>
+                  <field name="sequence"/>
+                  <field name="calc_mode"/>
+                  <field name="detail_name"/>
+                  <field name="sheet_id"/>
+                  <field name="a_mm"/>
+                  <field name="b_mm"/>
+                  <field name="qty"/>
+                  <field name="weight_one" readonly="1"/>
+                  <field name="weight_total" readonly="1"/>
+                </list>
+              </field>
+              <field name="line_fastener_ids" column_invisible="1">
+                <list>
+                  <field name="sequence"/>
+                  <field name="calc_mode"/>
+                  <field name="detail_name"/>
+                  <field name="fastener_id"/>
+                  <field name="qty"/>
+                  <field name="weight_one" readonly="1"/>
+                  <field name="weight_total" readonly="1"/>
+                </list>
+              </field>
+              <field name="line_paint_ids" column_invisible="1">
+                <list>
+                  <field name="sequence"/>
+                  <field name="calc_mode"/>
+                  <field name="detail_name"/>
+                  <field name="paint_id"/>
+                  <field name="area_m2"/>
+                  <field name="paint_thickness_um"/>
+                  <field name="qty"/>
+                  <field name="weight_one" readonly="1"/>
+                  <field name="weight_total" readonly="1"/>
+                </list>
+              </field>
               <field name="sequence" widget="handle"/>
               <field name="name"/>
               <field name="qty"/>

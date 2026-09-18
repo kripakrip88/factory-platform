@@ -480,18 +480,173 @@
 }
 
 // Ширины: деталь и позиция — текстовые и самые длинные, остальное узкое.
-.pmk-c-detail { width: 22%; }
-.pmk-c-what   { width: 38%; }
-.pmk-c-size   { width: 20%; }
+.pmk-c-detail { width: 20%; }
+.pmk-c-what   { width: 34%; }
+.pmk-c-size   { width: 18%; }
 .pmk-c-qty    { width: 8%; }
 .pmk-c-weight { width: 12%; }
+.pmk-c-act    { width: 8%; }
 
 // На узкой панели размеры прячем: без них строка остаётся читаемой, а
 // с ними колонки схлопываются в кашу.
 @media (max-width: 1000px) {
   .pmk-prow__table .pmk-c-size { display: none; }
-  .pmk-c-detail { width: 30%; }
-  .pmk-c-what   { width: 44%; }
+  .pmk-c-detail { width: 26%; }
+  .pmk-c-what   { width: 40%; }
+}
+
+// ─── Правка состава на месте ──────────────────────────────────────────────
+//
+// Строка состава открывается в редактор по клику — той же привычкой, что и
+// строка изделия открывает изделие. Поэтому она должна выглядеть нажимаемой.
+.pmk-prow__row {
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.85);
+    outline-offset: -2px;
+  }
+}
+
+// Корзина появляется по наведению, но место под неё зарезервировано колонкой:
+// иначе при наведении таблица дёргалась бы (правило layout-shift-avoid).
+// На устройстве без наведения показываем всегда — иначе удалить нечем.
+.pmk-prow__del {
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 150ms ease-out;
+
+  &:focus-visible { opacity: 1; outline: 2px solid rgba(255, 255, 255, 0.85); }
+  &:hover { color: #f08fb0; }
+}
+
+.pmk-prow__table tbody tr:hover .pmk-prow__del { opacity: 0.75; }
+
+@media (hover: none) {
+  .pmk-prow__del { opacity: 0.6; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pmk-prow__del { transition: none; }
+}
+
+// Редактор строки: поля с подписями, а не втиснутые в колонки таблицы.
+// Раскладка переносится по ширине — на узкой панели поля встают в столбик,
+// а не режутся.
+.pmk-prow__editrow > td {
+  padding: 8px 10px 10px 0 !important;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.pmk-edit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 12px;
+}
+
+.pmk-edit__field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 90px;
+  min-width: 0;
+  margin: 0;
+
+  &--wide { flex: 2 1 170px; }
+
+  .o_field_widget { width: 100%; }
+
+  input,
+  .o_input {
+    height: 28px;
+    font-size: 12.5px;
+  }
+}
+
+.pmk-edit__label {
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.pmk-edit__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  padding-bottom: 1px;
+}
+
+// Вес строки виден прямо в редакторе: это единственная обратная связь, что
+// введённые размеры дали ожидаемый результат (правило success-feedback).
+.pmk-edit__weight {
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  opacity: 0.75;
+}
+
+.pmk-edit__del {
+  color: #f08fb0;
+  text-decoration: none;
+
+  &:hover { color: #f08fb0; text-decoration: underline; }
+}
+
+// ─── Добавление детали ────────────────────────────────────────────────────
+//
+// Все четыре вида показаны всегда, даже когда раздела ещё нет: иначе первую
+// краску в изделии завести было бы негде.
+.pmk-prow__add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.pmk-prow__add-label {
+  font-size: 11px;
+  opacity: 0.5;
+  margin-right: 2px;
+}
+
+.pmk-prow__add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  // 28px ниже рекомендованных 44px, но это вспомогательное действие внутри
+  // плотной таблицы; отступы между кнопками держим, чтобы не промахиваться.
+  min-height: 28px;
+  padding: 3px 10px;
+  border: 1px solid var(--pmk-accent, rgba(255, 255, 255, 0.25));
+  border-radius: 14px;
+  background: transparent;
+  color: inherit;
+  font-size: 11.5px;
+  cursor: pointer;
+  transition: background-color 150ms ease-out;
+
+  .fa { color: var(--pmk-accent, inherit); }
+
+  &:hover { background: rgba(255, 255, 255, 0.08); }
+
+  &:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.85);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pmk-prow__add-btn { transition: none; }
 }
 
 .pmk-prow__empty {

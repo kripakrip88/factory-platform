@@ -147,7 +147,13 @@ class MetalSpecLine(models.Model):
     # Каскад: сперва вид проката, типоразмер ищется уже внутри него.
     # В общем списке из 665 позиций поиск превращается в перебор.
     type_id = fields.Many2one("pmk.metal.profile.type", "Вид проката")
-    profile_id = fields.Many2one("pmk.metal.profile", "Типоразмер")
+    # Домен на самом поле, а не только в разметке: состав правится и в
+    # диалоге изделия, и в раскрытом списке — правило отбора должно быть
+    # одно. Пока вид не выбран, показываем весь сортамент: иначе поиск
+    # молча не находит ничего.
+    profile_id = fields.Many2one(
+        "pmk.metal.profile", "Типоразмер",
+        domain="[('type_id', '=', type_id)] if type_id else []")
     sheet_id = fields.Many2one("pmk.metal.sheet", "Лист")
     grade_id = fields.Many2one("pmk.metal.grade", "Марка стали")
     fastener_id = fields.Many2one("pmk.metal.fastener", "Метиз")
