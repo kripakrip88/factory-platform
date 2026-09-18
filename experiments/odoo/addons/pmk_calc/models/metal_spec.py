@@ -59,7 +59,13 @@ class MetalSpec(models.Model):
             # «30000 кг» глазом уже не читается.
             spec.total_weight_t = spec.total_weight / 1000.0
             spec.total_products = len(spec.product_ids)
-            spec.total_details = sum(len(p.line_ids) for p in spec.product_ids)
+            # Считаем по тем же четырём наборам: len(line_ids) не видел
+            # несохранённых строк, и «Деталей» отставало до сохранения.
+            spec.total_details = sum(
+                len(p.line_linear_ids) + len(p.line_sheet_ids)
+                + len(p.line_fastener_ids) + len(p.line_paint_ids)
+                for p in spec.product_ids
+            )
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -117,7 +123,20 @@ class MetalSpecProduct(models.Model):
     )
     def _compute_weight(self):
         for product in self:
-            product.weight_one = sum(product.line_ids.mapped("weight_total"))
+            # Складываем ЧЕТЫРЕ отфильтрованных набора, а не общий line_ids.
+            # Причина та же, что и у подписки выше, но проявляется позже:
+            # подписка срабатывает, а тело читает line_ids, который при
+            # пересчёте в браузере ещё не знает о только что добавленной
+            # строке — она пришла в line_linear_ids. Вес изделия оставался
+            # прежним, хотя итог документа уже менялся.
+            # Наборы не пересекаются и покрывают все виды деталей, поэтому
+            # сумма та же, что по line_ids.
+            product.weight_one = sum(
+                product.line_linear_ids.mapped("weight_total")
+                + product.line_sheet_ids.mapped("weight_total")
+                + product.line_fastener_ids.mapped("weight_total")
+                + product.line_paint_ids.mapped("weight_total")
+            )
             product.weight_total = product.weight_one * (product.qty or 0)
 
     @api.constrains("qty")
