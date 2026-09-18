@@ -163,10 +163,23 @@ class MetalSpecLine(models.Model):
     # Требуемая толщина покрытия. Подставляется базовая из справочника, но
     # заказчик может потребовать другую — тогда расход пересчитывается
     # пропорционально: 120 г/м² при 20 мкм превращаются в 300 г/м² при 50 мкм.
+    # Вычисляемое с возможностью правки: базовая толщина подставляется сама,
+    # но её переопределяют, когда заказчик требует другую плёнку. Через
+    # onchange так не сделать — он срабатывает только в интерфейсе, и при
+    # создании документа из кода или импортом поле осталось бы пустым.
     paint_thickness_um = fields.Float(
-        "Толщина покрытия, мкм", digits=(8, 1),
-        help="Толщина сухой плёнки по требованию заказчика. "
-             "Пусто — берётся базовая из справочника.")
+        "Толщина покрытия, мкм", compute="_compute_paint_thickness",
+        store=True, readonly=False, digits=(8, 1),
+        help="Толщина сухой плёнки. По умолчанию базовая из справочника; "
+             "измените, если заказчик требует другую — расход пересчитается.")
+
+    @api.depends("paint_id")
+    def _compute_paint_thickness(self):
+        for line in self:
+            if line.calc_mode == "paint" and line.paint_id and not line.paint_thickness_um:
+                line.paint_thickness_um = line.paint_id.base_thickness_um
+            elif line.calc_mode != "paint":
+                line.paint_thickness_um = 0.0
 
     length_mm = fields.Float("Длина, мм", digits=(12, 1))
     a_mm = fields.Float("A, мм", digits=(12, 1))
@@ -243,12 +256,6 @@ class MetalSpecLine(models.Model):
                 self[field] = 0.0
         if self.calc_mode == "paint":
             self.qty = 1
-
-    @api.onchange("paint_id")
-    def _onchange_paint_id(self):
-        """Подставляем базовую толщину — её и правят, если требование иное."""
-        if self.paint_id and not self.paint_thickness_um:
-            self.paint_thickness_um = self.paint_id.base_thickness_um
 
     @api.onchange("type_id")
     def _onchange_type_id(self):
