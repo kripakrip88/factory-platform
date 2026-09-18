@@ -47,8 +47,8 @@
                       <!-- Чтение. Клик по строке открывает её редактор —
                            так же, как строка изделия открывает изделие. -->
                       <tr t-if="!isEditing(line)" class="pmk-prow__row" tabindex="0"
-                          t-on-click.stop="() => this.editLine(line)"
-                          t-on-keydown.stop="(ev) => ['Enter',' '].includes(ev.key) &amp;&amp; this.editLine(line)">
+                          t-on-click.stop="() => this.editLine(record, section, line)"
+                          t-on-keydown.stop="(ev) => ['Enter',' '].includes(ev.key) &amp;&amp; this.editLine(record, section, line)">
                         <t t-set="info" t-value="describe(line)"/>
                         <td class="pmk-c-detail" t-att-title="detailOf(line)" t-esc="detailOf(line)"/>
                         <td class="pmk-c-what" t-att-title="info[0]" t-esc="info[0]"/>
@@ -74,7 +74,13 @@
                               <label class="pmk-edit__field"
                                      t-att-class="{ 'pmk-edit__field--wide': input.wide }">
                                 <span class="pmk-edit__label" t-esc="input.label"/>
-                                <Field record="line" name="input.name"/>
+                                <!-- Позиции справочника из подсказки не заводим:
+                                     опечатка не должна порождать новый сортамент.
+                                     Справочники правят отдельным разделом. -->
+                                <Field t-if="input.ref" record="line" name="input.name"
+                                       canCreate="false" canCreateEdit="false"
+                                       canQuickCreate="false"/>
+                                <Field t-else="" record="line" name="input.name"/>
                               </label>
                             </t>
                             <div class="pmk-edit__actions">
@@ -82,7 +88,7 @@
                                 <t t-esc="weightOf(line)"/> кг
                               </span>
                               <button type="button" class="btn btn-sm btn-primary"
-                                      t-on-click.stop.prevent="() => this.stopEdit()">Готово</button>
+                                      t-on-click.stop.prevent="() => this.stopEdit(record, section)">Готово</button>
                               <button type="button" class="btn btn-sm btn-link pmk-edit__del"
                                       t-on-click.stop.prevent="() => this.removeLine(record, section, line)">Удалить</button>
                             </div>

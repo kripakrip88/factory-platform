@@ -42,8 +42,8 @@ const SECTIONS = [
         accent: "#6bb6f5",
         inputs: [
             { name: "detail_name", label: "Деталь", wide: true },
-            { name: "type_id", label: "Вид проката", wide: true },
-            { name: "profile_id", label: "Типоразмер", wide: true },
+            { ref: true, name: "type_id", label: "Вид проката", wide: true },
+            { ref: true, name: "profile_id", label: "Типоразмер", wide: true },
             { name: "length_mm", label: "Длина, мм" },
             { name: "qty", label: "Кол-во" },
         ],
@@ -56,7 +56,7 @@ const SECTIONS = [
         accent: "#4dd0b1",
         inputs: [
             { name: "detail_name", label: "Деталь", wide: true },
-            { name: "sheet_id", label: "Лист", wide: true },
+            { ref: true, name: "sheet_id", label: "Лист", wide: true },
             { name: "a_mm", label: "A, мм" },
             { name: "b_mm", label: "B, мм" },
             { name: "qty", label: "Кол-во" },
@@ -70,7 +70,7 @@ const SECTIONS = [
         accent: "#9aa9bd",
         inputs: [
             { name: "detail_name", label: "Деталь", wide: true },
-            { name: "fastener_id", label: "Метиз", wide: true },
+            { ref: true, name: "fastener_id", label: "Метиз", wide: true },
             { name: "qty", label: "Кол-во" },
         ],
     },
@@ -82,7 +82,7 @@ const SECTIONS = [
         accent: "#f08fb0",
         inputs: [
             { name: "detail_name", label: "Участок", wide: true },
-            { name: "paint_id", label: "Покрытие", wide: true },
+            { ref: true, name: "paint_id", label: "Покрытие", wide: true },
             { name: "area_m2", label: "Площадь, м²" },
             { name: "paint_thickness_um", label: "Толщина, мкм" },
         ],
@@ -132,8 +132,17 @@ export class ProductLinesRenderer extends ListRenderer {
         return !!this.pmk.open[record.id];
     }
 
-    toggleComposition(record) {
-        this.pmk.open[record.id] = !this.pmk.open[record.id];
+    async toggleComposition(record) {
+        const open = !this.pmk.open[record.id];
+        if (!open && this.pmk.editing) {
+            // Свернули с открытым редактором — закрываем его по-настоящему,
+            // иначе строка осталась бы «в правке» без видимого редактора.
+            for (const section of SECTIONS) {
+                await record.data[section.field].leaveEditMode();
+            }
+            this.pmk.editing = null;
+        }
+        this.pmk.open[record.id] = open;
     }
 
     /** Непустые разделы изделия — с итогом по каждому. */
@@ -214,11 +223,23 @@ export class ProductLinesRenderer extends ListRenderer {
         return this.pmk.editing === line.id;
     }
 
-    editLine(line) {
+    /**
+     * Открыть строку в редакторе.
+     *
+     * Через enterEditMode, а не своим признаком: поле Odoo рисуется
+     * редактируемым, только когда сама запись в режиме правки. Иначе редактор
+     * открывался бы, но ввести в него ничего было нельзя.
+     *
+     * Переход заодно закрывает предыдущую строку, и пустая только что
+     * добавленная при этом исчезает сама — как в обычных списках Odoo.
+     */
+    async editLine(record, section, line) {
+        await record.data[section.field].enterEditMode(line);
         this.pmk.editing = line.id;
     }
 
-    stopEdit() {
+    async stopEdit(record, section) {
+        await record.data[section.field].leaveEditMode();
         this.pmk.editing = null;
     }
 
@@ -231,6 +252,11 @@ export class ProductLinesRenderer extends ListRenderer {
      */
     async addLine(record, section) {
         const list = record.data[section.field];
+        if (this.pmk.editing) {
+            for (const other of SECTIONS) {
+                await record.data[other.field].leaveEditMode();
+            }
+        }
         const line = await list.addNewRecord({
             position: "bottom",
             mode: "edit",
