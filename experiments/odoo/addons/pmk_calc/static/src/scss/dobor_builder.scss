@@ -254,3 +254,95 @@
     opacity: 0.85;
   }
 }
+
+// ─── Состав изделий с раскрытием ──────────────────────────────────────────
+//
+// Раскрытие делает сам элемент <details>: браузер умеет это без нашего кода,
+// а значит нечему ломаться при обновлении Odoo. Вложенные таблицы в списках
+// Odoo не поддерживает, поэтому состав показываем отдельным блоком.
+
+.pmk-comp {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pmk-comp__item {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 8px 12px;
+
+  > summary {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    cursor: pointer;
+    // Область клика во всю ширину: попадать в маленький треугольник неудобно.
+    list-style-position: outside;
+    padding: 2px 0;
+
+    &:focus-visible {
+      outline: 2px solid rgba(255, 255, 255, 0.85);
+      outline-offset: 2px;
+      border-radius: 6px;
+    }
+  }
+}
+
+.pmk-comp__name {
+  font-weight: 600;
+}
+
+.pmk-comp__meta {
+  margin-left: auto;
+  font-size: 12px;
+  opacity: 0.7;
+  // Числа не должны прыгать при раскрытии соседних блоков.
+  font-variant-numeric: tabular-nums;
+}
+
+.pmk-comp__section {
+  margin-top: 10px;
+
+  h6 {
+    margin: 0 0 4px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    opacity: 0.6;
+  }
+}
+
+.pmk-comp__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+
+  th {
+    text-align: left;
+    font-weight: 500;
+    opacity: 0.6;
+    padding: 3px 8px 3px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+  }
+
+  td {
+    padding: 3px 8px 3px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  // Числовые колонки вправо и моноширинными цифрами: так столбец читается
+  // как столбец, а не как рваный край.
+  .pmk-num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+}
+
+.pmk-comp__empty {
+  margin-top: 8px;
+  font-size: 13px;
+  opacity: 0.55;
+}

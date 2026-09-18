@@ -14,6 +14,8 @@
 Марка стали в арифметике НЕ участвует, только атрибут для документов.
 """
 
+from markupsafe import Markup, escape
+
 from odoo import api, fields, models
 from odoo.exceptions import ValidationError
 
@@ -35,6 +37,14 @@ class MetalSpec(models.Model):
     total_weight = fields.Float("Итого, кг", compute="_compute_totals", store=True, digits=(12, 3))
     total_weight_t = fields.Float("Итого, т", compute="_compute_totals", store=True, digits=(12, 4))
     total_products = fields.Integer("Изделий", compute="_compute_totals", store=True)
+
+    # Состав всех изделий одним блоком с раскрытием. Сделано разметкой, а не
+    # виджетом: элемент <details> раскрывается силами браузера, без нашего
+    # кода — значит нечему ломаться при обновлении Odoo. Вложенные таблицы
+    # в списках Odoo не умеет, а заглядывать в каждое изделие ради состава
+    # неудобно.
+    composition_html = fields.Html(
+        "Состав изделий", compute="_compute_composition", sanitize=False)
     total_details = fields.Integer("Деталей", compute="_compute_totals", store=True)
 
     # Итог спецификации складывается из весов изделий. Добавлены и
@@ -58,6 +68,67 @@ class MetalSpec(models.Model):
             spec.total_weight_t = spec.total_weight / 1000.0
             spec.total_products = len(spec.product_ids)
             spec.total_details = sum(len(p.line_ids) for p in spec.product_ids)
+
+    @api.depends("product_ids.name", "product_ids.qty", "product_ids.weight_one",
+                 "product_ids.weight_total", "product_ids.line_ids.weight_total")
+    def _compute_composition(self):
+        SECTIONS = [
+            ("linear", "Линейный прокат"),
+            ("sheet", "Листовой прокат"),
+            ("fastener", "Метизы"),
+            ("paint", "Лакокрасочное покрытие"),
+        ]
+
+        def row(line):
+            """Строка состава. Что показывать в «размерах» — зависит от вида:
+            у проката длина, у листа две стороны, у метиза размеров нет вовсе."""
+            if line.calc_mode == "linear":
+                what, size = line.profile_id.display_name, "%g мм" % line.length_mm
+            elif line.calc_mode == "sheet":
+                what, size = line.sheet_id.display_name, "%g×%g мм" % (line.a_mm, line.b_mm)
+            elif line.calc_mode == "fastener":
+                what, size = line.fastener_id.name, ""
+            else:
+                what = line.paint_id.name
+                size = "%.2f м²" % line.area_m2 if line.area_m2 else "площадь не задана"
+            return (
+                "<tr><td>%s</td><td>%s</td><td>%s</td><td class='pmk-num'>%s</td>"
+                "<td class='pmk-num'>%.3f</td></tr>" % (
+                    escape(line.detail_name or "—"), escape(what or "—"),
+                    escape(size), line.qty, line.weight_total)
+            )
+
+        for spec in self:
+            if not spec.product_ids:
+                spec.composition_html = False
+                continue
+            blocks = []
+            for product in spec.product_ids:
+                tables = []
+                for mode, title in SECTIONS:
+                    lines = product.line_ids.filtered(lambda l, m=mode: l.calc_mode == m)
+                    if not lines:
+                        continue
+                    tables.append(
+                        "<div class='pmk-comp__section'><h6>%s</h6>"
+                        "<table class='pmk-comp__table'><thead><tr>"
+                        "<th>Деталь</th><th>Позиция</th><th>Размеры</th>"
+                        "<th class='pmk-num'>Кол-во</th><th class='pmk-num'>Вес, кг</th>"
+                        "</tr></thead><tbody>%s</tbody></table></div>"
+                        % (escape(title), "".join(row(l) for l in lines))
+                    )
+                body = "".join(tables) or "<div class='pmk-comp__empty'>Состав не заполнен</div>"
+                # open у первого изделия: чаще всего оно одно, и лишний клик ни к чему
+                blocks.append(
+                    "<details class='pmk-comp__item'%s><summary>"
+                    "<span class='pmk-comp__name'>%s</span>"
+                    "<span class='pmk-comp__meta'>%s шт · %.3f кг/шт · %.3f кг всего</span>"
+                    "</summary>%s</details>" % (
+                        " open" if product == spec.product_ids[0] else "",
+                        escape(product.name or "Без названия"),
+                        product.qty, product.weight_one, product.weight_total, body)
+                )
+            spec.composition_html = Markup("<div class='pmk-comp'>%s</div>" % "".join(blocks))
 
     @api.model_create_multi
     def create(self, vals_list):
