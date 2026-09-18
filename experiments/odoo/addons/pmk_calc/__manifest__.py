@@ -29,6 +29,8 @@
         "data/pmk.metal.profile.type.csv",
         "data/pmk.metal.profile.csv",
         "data/pmk.metal.sheet.csv",
+        "data/pmk.metal.fastener.csv",
+        "data/pmk.paint.coating.csv",
         "data/pmk.dobor.coating.csv",
         "data/ir_sequence.xml",
         "views/metal_views.xml",
