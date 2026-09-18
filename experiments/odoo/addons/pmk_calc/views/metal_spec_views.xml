@@ -40,11 +40,13 @@
             optional="hide" прячет колонку не модификатором, а пользовательской
             настройкой, под это ограничение не попадает и ничего не ломает:
             колонка скрыта, поля читаются. Плата — четыре строки в меню выбора
-            колонок списка. Разметка внутри задаёт, что читать и что править.
+            колонок списка — им дали говорящие названия, чтобы включивший
+            понимал, что это состав, а не отдельное свойство изделия.
+            Разметка внутри задаёт, что читать и что править.
           -->
           <field name="product_ids" widget="pmk_product_lines">
             <list>
-              <field name="line_linear_ids" optional="hide">
+              <field name="line_linear_ids" optional="hide" string="Состав: прокат">
                 <list>
                   <field name="sequence"/>
                   <field name="calc_mode"/>
@@ -57,7 +59,7 @@
                   <field name="weight_total" readonly="1"/>
                 </list>
               </field>
-              <field name="line_sheet_ids" optional="hide">
+              <field name="line_sheet_ids" optional="hide" string="Состав: лист">
                 <list>
                   <field name="sequence"/>
                   <field name="calc_mode"/>
@@ -70,7 +72,7 @@
                   <field name="weight_total" readonly="1"/>
                 </list>
               </field>
-              <field name="line_fastener_ids" optional="hide">
+              <field name="line_fastener_ids" optional="hide" string="Состав: метизы">
                 <list>
                   <field name="sequence"/>
                   <field name="calc_mode"/>
@@ -81,7 +83,7 @@
                   <field name="weight_total" readonly="1"/>
                 </list>
               </field>
-              <field name="line_paint_ids" optional="hide">
+              <field name="line_paint_ids" optional="hide" string="Состав: покрытие">
                 <list>
                   <field name="sequence"/>
                   <field name="calc_mode"/>
