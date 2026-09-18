@@ -30,14 +30,21 @@
             Свой виджет списка: под каждым изделием раскрывается его состав,
             и прямо там же состав правится.
 
-            У вложенных наборов СВОЯ разметка, хотя колонок они не образуют.
-            Без неё Odoo загружал записи, но не их содержимое: поля приходили
-            пустыми (calc_mode: false, qty: 0) — счётчик верен, состав пуст.
-            Набор полей задаёт, что будет прочитано и что можно править.
+            У вложенных наборов СВОЯ разметка и пометка optional="hide", хотя
+            колонками они не работают. Так пришлось сделать из-за поведения
+            Odoo: содержимое набора НЕ запрашивается у сервера, если колонка
+            помечена постоянно невидимой (getFieldsSpec пропускает такие поля).
+            Именно поэтому состав раньше приходил пустыми заглушками —
+            calc_mode: false, qty: 0 — счётчик верен, а состав пуст.
+
+            optional="hide" прячет колонку не модификатором, а пользовательской
+            настройкой, под это ограничение не попадает и ничего не ломает:
+            колонка скрыта, поля читаются. Плата — четыре строки в меню выбора
+            колонок списка. Разметка внутри задаёт, что читать и что править.
           -->
           <field name="product_ids" widget="pmk_product_lines">
             <list>
-              <field name="line_linear_ids" column_invisible="1">
+              <field name="line_linear_ids" optional="hide">
                 <list>
                   <field name="sequence"/>
                   <field name="calc_mode"/>
@@ -50,7 +57,7 @@
                   <field name="weight_total" readonly="1"/>
                 </list>
               </field>
-              <field name="line_sheet_ids" column_invisible="1">
+              <field name="line_sheet_ids" optional="hide">
                 <list>
                   <field name="sequence"/>
                   <field name="calc_mode"/>
@@ -63,7 +70,7 @@
                   <field name="weight_total" readonly="1"/>
                 </list>
               </field>
-              <field name="line_fastener_ids" column_invisible="1">
+              <field name="line_fastener_ids" optional="hide">
                 <list>
                   <field name="sequence"/>
                   <field name="calc_mode"/>
@@ -74,7 +81,7 @@
                   <field name="weight_total" readonly="1"/>
                 </list>
               </field>
-              <field name="line_paint_ids" column_invisible="1">
+              <field name="line_paint_ids" optional="hide">
                 <list>
                   <field name="sequence"/>
                   <field name="calc_mode"/>
