@@ -14,7 +14,6 @@
  */
 
 import { registry } from "@web/core/registry";
-import { useState } from "@odoo/owl";
 import { ListRenderer } from "@web/views/list/list_renderer";
 import { X2ManyField, x2ManyField } from "@web/views/fields/x2many/x2many_field";
 
@@ -37,7 +36,11 @@ export class ProductLinesRenderer extends ListRenderer {
         super.setup();
         // Раскрытие держим сами: браузерный <details> внутри таблицы Odoo
         // не открывается — клик по строке перехватывается списком.
-        this.expanded = useState({});
+        //
+        // Обычный объект, а не реактивный: на реактивность здесь полагаться
+        // нельзя — в списке она не довела изменение до перерисовки, кнопка
+        // нажималась, а состав не появлялся. Перерисовываем явно в toggle.
+        this.expandedRows = {};
     }
 
     /** Число колонок под составом: занимаем всю ширину строки. */
@@ -46,11 +49,12 @@ export class ProductLinesRenderer extends ListRenderer {
     }
 
     isExpanded(record) {
-        return !!this.expanded[record.id];
+        return !!this.expandedRows[record.id];
     }
 
     toggleComposition(record) {
-        this.expanded[record.id] = !this.expanded[record.id];
+        this.expandedRows[record.id] = !this.expandedRows[record.id];
+        this.render();
     }
 
     /** Все детали изделия — из четырёх отфильтрованных наборов сразу. */
