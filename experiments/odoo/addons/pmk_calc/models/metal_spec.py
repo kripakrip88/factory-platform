@@ -37,6 +37,7 @@ class MetalSpec(models.Model):
     total_weight = fields.Float("Итого, кг", compute="_compute_totals", store=True, digits=(12, 3))
     total_weight_t = fields.Float("Итого, т", compute="_compute_totals", store=True, digits=(12, 4))
     total_products = fields.Integer("Изделий", compute="_compute_totals", store=True)
+    total_details = fields.Integer("Деталей", compute="_compute_totals", store=True)
 
     # Итог спецификации складывается из весов изделий. Добавлены и
     # отфильтрованные наборы: без них правка во вкладке не доходила до
