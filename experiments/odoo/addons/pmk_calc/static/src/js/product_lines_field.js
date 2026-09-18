@@ -78,6 +78,41 @@ export class ProductLinesRenderer extends ListRenderer {
         return ids;
     }
 
+    /**
+     * Свежие значения из формы — те, что ещё не сохранены на сервере.
+     *
+     * Состав приходит с сервера, поэтому без этого он показывал бы прежние
+     * числа: в форме площадь уже 10, а в составе всё ещё 23. Накладываем
+     * поверх серверных только ЧИСЛА и подписи, которые правят руками —
+     * названия позиций берём с сервера, там они в готовом виде.
+     *
+     * Незагруженные строки отсеиваем по calc_mode: у них поля есть, но пустые
+     * (false, 0), и наложить такое значит затереть верные данные нулями.
+     */
+    unsavedChanges(record) {
+        const patch = {};
+        for (const field of LINE_FIELDS) {
+            const list = record.data[field];
+            for (const line of (list && list.records) || []) {
+                const d = line.data || {};
+                if (typeof line.resId !== "number" || !d.calc_mode) {
+                    continue;
+                }
+                patch[line.resId] = {
+                    detail_name: d.detail_name,
+                    length_mm: d.length_mm,
+                    a_mm: d.a_mm,
+                    b_mm: d.b_mm,
+                    area_m2: d.area_m2,
+                    paint_thickness_um: d.paint_thickness_um,
+                    qty: d.qty,
+                    weight_total: d.weight_total,
+                };
+            }
+        }
+        return patch;
+    }
+
     countLines(record) {
         let count = 0;
         for (const field of LINE_FIELDS) {
@@ -192,7 +227,10 @@ export class ProductLinesRenderer extends ListRenderer {
         }
         try {
             const lines = await this.orm.read("pmk.metal.spec.line", ids, READ_FIELDS);
-            wrap.innerHTML = this.buildHtml(lines);
+            const patch = this.unsavedChanges(record);
+            wrap.innerHTML = this.buildHtml(
+                lines.map((line) => (patch[line.id] ? { ...line, ...patch[line.id] } : line))
+            );
         } catch {
             wrap.innerHTML = '<div class="pmk-prow__empty">Не удалось загрузить состав</div>';
         }
