@@ -609,8 +609,7 @@
   // Коробка вокруг поля. Второй селектор — для полей, обёрнутых в `.o_row`:
   // так Odoo кладёт поля с кнопкой или единицей измерения рядом.
   .o_inner_group.grid > .o_cell:not(.o_wrap_label) > .o_field_widget,
-  .o_inner_group.grid > .o_cell:not(.o_wrap_label) > .o_row > .o_field_widget,
-  .o_inner_group.grid > .o_cell:not(.o_wrap_label) > .o_address_format {
+  .o_inner_group.grid > .o_cell:not(.o_wrap_label) > .o_row > .o_field_widget {
     display: flex;
     // Направление задаём явно: иначе поле наследует колонку и ввод уезжает
     // вниз под собственную подпись. Эти грабли уже были в шапке спецификации.
@@ -628,17 +627,39 @@
     }
   }
 
-  // Адрес — четыре строки в одном блоке, разворачиваем внутри коробки
-  // столбцом и снимаем рамки с вложенных полей, чтобы не было коробки в коробке.
-  .o_inner_group.grid > .o_cell > .o_address_format {
+  // Адрес: строка за строкой, а не пять сжатых полей в ряд.
+  //
+  // Раньше рамка вокруг адреса стояла в общем правиле «поле в строку», а
+  // правило про столбец было слабее по весу селектора и проигрывало. На
+  // экране это выглядело как «Улица… | Код ФИАС… | Город | П… | Рос…» —
+  // прочитать нельзя, ввести тоже.
+  .o_inner_group.grid > .o_cell:not(.o_wrap_label) > .o_address_format {
+    display: flex;
     flex-direction: column;
     align-items: stretch;
+    gap: 4px;
+    padding: 4px 10px;
+    background: #{rgba(0, 0, 0, 0.18)};
+    border: 1px solid #{rgba(255, 255, 255, 0.1)};
+    border-radius: 8px;
 
+    // Внутренние поля без своих рамок: коробка в коробке читается хуже.
     .o_field_widget {
+      width: 100%;
       background: transparent;
       border: 0;
       padding: 0;
-      min-height: 0;
+      min-height: 26px;
+    }
+
+    // Город, индекс и страна стоят в одной строке — это привычно и экономит
+    // место, но каждому нужна своя доля ширины, а не сжатие по содержимому.
+    .o_address_city,
+    .o_address_zip,
+    .o_address_state,
+    .o_address_country {
+      flex: 1 1 0;
+      min-width: 0;
     }
   }
 

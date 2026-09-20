@@ -139,9 +139,12 @@
       <field name="office" position="attributes">
         <attribute name="invisible">1</attribute>
       </field>
-      <field name="fias_id" position="attributes">
+      <!-- Код ФИАС остаётся скрытым В БЛОКЕ АДРЕСА: там он сжимает улицу и
+           город до нечитаемого. Ввод для него есть на вкладке «Реквизиты». -->
+      <xpath expr="//div[hasclass('o_address_format')]//field[@name='fias_id']"
+             position="attributes">
         <attribute name="invisible">1</attribute>
-      </field>
+      </xpath>
       <field name="street2" position="attributes">
         <attribute name="invisible">1</attribute>
       </field>
