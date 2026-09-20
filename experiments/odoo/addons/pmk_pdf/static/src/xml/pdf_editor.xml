@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+  <t t-name="pmk_pdf.Editor">
+    <div class="pmk-pdf">
+
+      <div class="pmk-pdf__bar">
+        <label class="pmk-pdf__name">
+          <span class="pmk-pdf__name-label">Имя файла</span>
+          <input type="text" class="form-control" t-model="state.name"
+                 placeholder="Без имени"/>
+        </label>
+
+        <div class="pmk-pdf__info">
+          <span><t t-esc="state.pages.length"/> стр.</span>
+          <!-- Число частей показываем, только когда разрезы есть: иначе
+               «частей: 1» — шум, который нечего сообщать. -->
+          <span t-if="partsCount > 1" class="pmk-pdf__parts">
+            → <t t-esc="partsCount"/> файла
+          </span>
+        </div>
+
+        <div class="pmk-pdf__buttons">
+          <button type="button" class="btn btn-secondary" t-on-click="close">Отмена</button>
+          <button type="button" class="btn btn-primary"
+                  t-att-disabled="state.busy or !state.pages.length"
+                  t-on-click="save">
+            <t t-if="state.busy">Собираем…</t>
+            <t t-else="">Сохранить в документ</t>
+          </button>
+        </div>
+      </div>
+
+      <div t-if="state.loading" class="pmk-pdf__message">Загружаем страницы…</div>
+
+      <div t-elif="state.error" class="pmk-pdf__message alert alert-warning m-3">
+        <t t-esc="state.error"/>
+      </div>
+
+      <div t-else="" class="pmk-pdf__grid" t-ref="grid">
+        <t t-foreach="state.pages" t-as="page" t-key="page.key">
+
+          <!-- Разрез: с этой страницы начинается следующий файл. -->
+          <div t-if="page.breakBefore" class="pmk-pdf__break">
+            <span>новый файл</span>
+          </div>
+
+          <div class="pmk-pdf__page" t-att-data-page-key="page.key"
+               draggable="true"
+               t-on-dragstart="(ev) => this.onDragStart(ev, page)"
+               t-on-dragover="onDragOver"
+               t-on-drop="(ev) => this.onDrop(ev, page)">
+
+            <div class="pmk-pdf__thumb">
+              <img t-if="thumbOf(page.key)" t-att-src="thumbOf(page.key)"
+                   t-attf-style="transform: rotate({{ page.rotate }}deg)" alt=""/>
+              <div t-else="" class="pmk-pdf__placeholder">
+                <t t-esc="page_index + 1"/>
+              </div>
+            </div>
+
+            <div class="pmk-pdf__foot">
+              <span class="pmk-pdf__num"><t t-esc="page_index + 1"/></span>
+              <span class="pmk-pdf__src" t-att-title="page.label" t-esc="page.label"/>
+            </div>
+
+            <div class="pmk-pdf__tools">
+              <button type="button" title="Повернуть на 90°" aria-label="Повернуть"
+                      t-on-click.stop="() => this.rotate(page)">
+                <i class="fa fa-rotate-right"/>
+              </button>
+              <button type="button" t-if="page_index > 0"
+                      t-att-title="page.breakBefore ? 'Убрать разрез' : 'Разрезать здесь'"
+                      t-att-class="page.breakBefore ? 'pmk-pdf__cut--on' : ''"
+                      t-on-click.stop="() => this.toggleBreak(page)">
+                <i class="fa fa-scissors"/>
+              </button>
+              <button type="button" title="Удалить страницу" aria-label="Удалить"
+                      class="pmk-pdf__del"
+                      t-on-click.stop="() => this.remove(page)">
+                <i class="fa fa-trash-o"/>
+              </button>
+            </div>
+          </div>
+        </t>
+      </div>
+
+    </div>
+  </t>
+
+</templates>

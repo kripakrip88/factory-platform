@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+  <!--
+    Само окно редактора. Открывается не из меню, а из документа — ему нужна
+    запись, к вложениям которой применяться.
+  -->
+  <record id="action_pdf_editor" model="ir.actions.client">
+    <field name="name">Правка PDF</field>
+    <field name="tag">pmk_pdf_editor</field>
+  </record>
+
+</odoo>

@@ -1,0 +1,203 @@
+// Редактор страниц PDF. Оформление тем же рецептом, что и остальные наши
+// карточки: фон 0.03, рамка 0.10 — чтобы экран не выглядел чужим.
+
+.pmk-pdf {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.pmk-pdf__bar {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 14px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.pmk-pdf__name {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 0;
+  flex: 0 1 320px;
+  min-width: 0;
+}
+
+.pmk-pdf__name-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.pmk-pdf__info {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding-bottom: 8px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  font-variant-numeric: tabular-nums;
+}
+
+.pmk-pdf__parts { color: #f0a04b; }
+
+.pmk-pdf__buttons {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+  padding-bottom: 4px;
+}
+
+.pmk-pdf__message {
+  padding: 24px 20px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+// Сетка страниц. Колонки подстраиваются сами: на широком мониторе их больше,
+// на узком меньше, и горизонтальной прокрутки не заводится.
+.pmk-pdf__grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 14px;
+  padding: 18px 20px 28px;
+  align-content: start;
+}
+
+.pmk-pdf__page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: grab;
+
+  &:active { cursor: grabbing; }
+
+  &:hover {
+    border-color: rgba(255, 255, 255, 0.24);
+    .pmk-pdf__tools { opacity: 1; }
+  }
+}
+
+.pmk-pdf__thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 190px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.22);
+
+  img {
+    max-width: 100%;
+    max-height: 100%;
+    // Поворот показываем сразу, не дожидаясь сборки на сервере: иначе
+    // непонятно, что кнопка вообще сработала.
+    transition: transform 150ms ease-out;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
+  }
+}
+
+.pmk-pdf__placeholder {
+  font-size: 22px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.25);
+}
+
+.pmk-pdf__foot {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 7px 10px;
+  font-size: 11.5px;
+  min-width: 0;
+}
+
+.pmk-pdf__num {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+// Имя исходного файла нужно, когда страницы собраны из нескольких вложений:
+// иначе не отличить, откуда какая страница.
+.pmk-pdf__src {
+  color: rgba(255, 255, 255, 0.45);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// Кнопки появляются по наведению, но место под них не резервируется —
+// они лежат поверх миниатюры, поэтому сетка не дёргается.
+.pmk-pdf__tools {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 150ms ease-out;
+
+  button {
+    width: 26px;
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    font-size: 12px;
+    cursor: pointer;
+
+    &:hover { background: rgba(0, 0, 0, 0.8); }
+
+    &:focus-visible {
+      opacity: 1;
+      outline: 2px solid rgba(255, 255, 255, 0.85);
+      outline-offset: 1px;
+    }
+  }
+}
+
+// На устройстве без мыши навести нечем — показываем всегда.
+@media (hover: none) {
+  .pmk-pdf__tools { opacity: 1; }
+}
+
+.pmk-pdf__del:hover { background: rgba(200, 40, 60, 0.85) !important; }
+.pmk-pdf__cut--on { background: rgba(240, 160, 75, 0.85) !important; }
+
+// Разрез занимает всю строку сетки: это граница между файлами, и она должна
+// читаться как граница, а не как ещё одна карточка.
+.pmk-pdf__break {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 2px 0;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #f0a04b;
+
+  &::before,
+  &::after {
+    content: "";
+    flex: 1 1 auto;
+    height: 1px;
+    background: rgba(240, 160, 75, 0.45);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pmk-pdf__thumb img,
+  .pmk-pdf__tools { transition: none; }
+}
