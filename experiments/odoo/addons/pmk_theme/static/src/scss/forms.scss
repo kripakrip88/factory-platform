@@ -443,7 +443,12 @@
 
   > .o_field_widget {
     display: flex;
+    // Направление задаём ЯВНО: у .o_field_widget оно приходит column, и
+    // единственный потомок вставал по центру рамки — ввод начинался на
+    // 143px правее её левого края (ровно половина свободного места).
+    flex-direction: row;
     align-items: center;
+    justify-content: flex-start;
     min-height: 34px;
     padding: 4px 10px;
     background: rgba(0, 0, 0, 0.18);
