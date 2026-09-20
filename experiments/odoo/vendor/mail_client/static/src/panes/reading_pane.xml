@@ -177,15 +177,27 @@
 
                 <div class="px-4 pb-2" t-if="props.detail.attachments.length">
                     <div class="d-flex flex-wrap gap-2">
-                        <button t-foreach="props.detail.attachments" t-as="attachment"
-                                t-key="attachment.id"
-                                class="btn btn-sm btn-light o_mail_client_chip d-inline-flex align-items-center gap-2"
-                                t-att-disabled="state.downloading === attachment.id"
-                                t-on-click="() => this.onDownload(attachment)">
-                            <i class="fa" t-att-class="state.downloading === attachment.id ? 'fa-circle-o-notch fa-spin' : 'fa-paperclip'"/>
-                            <span t-esc="attachment.name"/>
-                            <small class="text-muted" t-esc="formatSize(attachment.size)"/>
-                        </button>
+                        <!-- ПРАВКА ПМК: у вложения теперь два действия. Кнопка
+                             скачивания осталась ровно такой, какой была, рядом
+                             с ней встала «Посмотреть». Обе лежат в одной
+                             группе: так они выглядят одной плашкой файла и при
+                             переносе строки не разъезжаются по разным строкам. -->
+                        <div class="btn-group" role="group"
+                             t-foreach="props.detail.attachments" t-as="attachment"
+                             t-key="attachment.id">
+                            <button class="btn btn-sm btn-light o_mail_client_chip d-inline-flex align-items-center gap-2"
+                                    t-att-disabled="state.downloading === attachment.id"
+                                    t-on-click="() => this.onDownload(attachment)">
+                                <i class="fa" t-att-class="state.downloading === attachment.id ? 'fa-circle-o-notch fa-spin' : 'fa-paperclip'"/>
+                                <span t-esc="attachment.name"/>
+                                <small class="text-muted" t-esc="formatSize(attachment.size)"/>
+                            </button>
+                            <button class="btn btn-sm btn-light d-inline-flex align-items-center gap-1"
+                                    t-on-click="() => this.onPreview(attachment)">
+                                <i class="fa fa-eye"/>
+                                <span>View</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 

@@ -3,6 +3,7 @@ import { useService } from "@web/core/utils/hooks";
 import { _t } from "@web/core/l10n/translation";
 
 import { formatMessageDate, formatSize } from "../utils";
+import { AttachmentPreviewDialog } from "../attachments/attachment_preview_dialog";
 
 export class ReadingPane extends Component {
     static template = "mail_client.ReadingPane";
@@ -28,6 +29,7 @@ export class ReadingPane extends Component {
 
     setup() {
         this.notification = useService("notification");
+        this.dialog = useService("dialog");
         this.state = useState({
             showMoveMenu: false,
             downloading: null,
@@ -77,6 +79,24 @@ export class ReadingPane extends Component {
         } finally {
             this.state.downloading = null;
         }
+    }
+
+    /**
+     * ПРАВКА ПМК: показать вложение, не скачивая его.
+     *
+     * Окно заводится прямо отсюда, а не через корень почты: просмотр не часть
+     * состояния почты и живёт ровно столько, сколько открыт диалог. Кнопка
+     * скачивания рядом осталась нетронутой — файл всё равно иногда нужен на
+     * диске, и тогда его берут в один клик, как раньше.
+     */
+    onPreview(attachment) {
+        this.dialog.add(AttachmentPreviewDialog, {
+            attachmentId: attachment.id,
+            name: attachment.name,
+            // Скачивание из окна идёт тем же путём, что и по кнопке в письме:
+            // колесо на кнопке и разбор отказа остаются в одном месте.
+            onDownload: () => this.onDownload(attachment),
+        });
     }
 
     onMoveTo(folderId) {

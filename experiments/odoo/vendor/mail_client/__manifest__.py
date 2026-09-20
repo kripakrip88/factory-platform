@@ -105,6 +105,11 @@ See README.md for setup, usage and architecture notes.
             'mail_client/static/src/**/*.js',
             'mail_client/static/src/**/*.xml',
             'mail_client/static/src/scss/mail_client.scss',
+            # ПМК: стили окна просмотра вложения. Отдельным файлом, а не
+            # строчками в mail_client.scss: при обновлении вендорского модуля
+            # наш файл не участвует в слиянии вовсе. Глоб выше собирает только
+            # js и xml, поэтому scss приходится называть руками.
+            'mail_client/static/src/scss/attachment_preview.scss',
         ],
         # Served when the color_scheme cookie is "dark"
         'web.assets_web_dark': [

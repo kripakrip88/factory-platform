@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ПМК: разметка окна просмотра вложения. -->
+<templates xml:space="preserve">
+
+    <t t-name="mail_client.AttachmentPreviewDialog">
+        <Dialog size="'xl'"
+                title="dialogTitle"
+                contentClass="'o_mail_client_preview'"
+                bodyClass="'o_mail_client_preview_body'"
+                withBodyPadding="false">
+
+            <div class="o_mail_client_preview_bar d-flex flex-wrap align-items-center gap-2 px-3 py-2">
+                <small class="text-truncate opacity-75" t-esc="subtitle"/>
+                <div class="btn-group btn-group-sm ms-auto" role="group"
+                     aria-label="Sheets" t-if="sheets.length > 1">
+                    <button t-foreach="sheets" t-as="tab" t-key="tab.index"
+                            class="btn btn-light"
+                            t-att-class="tab_index === state.tab ? 'active' : ''"
+                            t-on-click="() => this.selectSheet(tab_index)">
+                        <span t-esc="tab.name"/>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Предупреждение про сам файл: показался, но с оговоркой.
+                 Стоит над содержимым, а не под ним: «назван .xls, а внутри
+                 HTML» объясняет, почему таблица выглядит непривычно, и
+                 читать это надо до таблицы, а не после. -->
+            <div class="o_mail_client_preview_note px-3 py-2 small d-flex gap-2"
+                 t-if="preview.note and !state.loading">
+                <i class="fa fa-info-circle mt-1"/>
+                <span t-esc="preview.note"/>
+            </div>
+
+            <t t-if="state.loading">
+                <div class="o_mail_client_preview_center flex-grow-1">
+                    <i class="fa fa-circle-o-notch fa-spin fa-2x"/>
+                    <div class="small mt-2">Reading the file…</div>
+                    <div class="small opacity-75" t-esc="props.name"/>
+                </div>
+            </t>
+            <t t-elif="state.error">
+                <div class="o_mail_client_preview_center flex-grow-1 px-4">
+                    <i class="fa fa-exclamation-triangle fa-2x"/>
+                    <div class="small mt-2 text-center" t-esc="state.error"/>
+                    <div class="small opacity-75 mt-2">The file can still be downloaded.</div>
+                </div>
+            </t>
+            <t t-elif="preview.kind === KINDS.SHEET and sheet">
+                <!-- Сводка прайса. Ради неё всё и затевалось: таблица на
+                     семьсот строк не отвечает на вопрос «сколько отсюда ляжет
+                     в цены», а эта строка отвечает. -->
+                <div class="o_mail_client_preview_price px-3 pt-2 pb-1 d-flex flex-wrap align-items-center gap-3"
+                     t-if="price">
+                    <span><t>Rows in the price list:</t> <b t-esc="price.rowsTotal"/></span>
+                    <span><t>Recognised:</t> <b t-esc="price.matched"/> <span t-esc="percentLabel"/></span>
+                    <span><t>Not recognised:</t> <b t-esc="price.unmatched"/></span>
+                    <span class="opacity-75" t-if="state.scanningPrice">
+                        <i class="fa fa-circle-o-notch fa-spin me-1"/>
+                    </span>
+                </div>
+                <div class="o_mail_client_preview_price px-3 pb-2 small" t-if="price">
+                    <!-- Разбор не состоялся вовсе (нет справочника металла).
+                         Молчание здесь человек прочитал бы как «в прайсе
+                         ничего не узналось» — то есть как ответ про прайс,
+                         хотя ответ про систему. -->
+                    <div class="text-warning" t-if="price.error">
+                        <i class="fa fa-exclamation-triangle me-1"/>
+                        <span t-esc="price.error"/>
+                    </div>
+                    <div class="text-warning" t-if="price.note">
+                        <i class="fa fa-exclamation-triangle me-1"/>
+                        <span t-esc="price.note"/>
+                    </div>
+                    <div t-if="price.byStatus.length" class="d-flex flex-wrap gap-3 opacity-75">
+                        <span>Why not recognised:</span>
+                        <span t-foreach="price.byStatus" t-as="item" t-key="item.status"
+                              t-esc="statusLabel(item)"/>
+                    </div>
+                    <div t-if="price.unmatchedExamples.length" class="mt-1">
+                        <div class="opacity-75">Not recognised, for example:</div>
+                        <div t-foreach="price.unmatchedExamples" t-as="example"
+                             t-key="example_index" class="text-truncate">
+                            <span class="opacity-75 me-1" t-if="example.row" t-esc="rowLabel(example)"/>
+                            <span t-esc="example.text"/>
+                        </div>
+                    </div>
+                    <!-- Кнопки «Загрузить цены» здесь нет намеренно, и это не
+                         недоделка. Загрузчик прайсов не берёт из файла ни
+                         поставщика, ни дату, ни ставку НДС: цена, залитая по
+                         вчерашней ставке или под чужой датой, ошибается молча
+                         и на деньги. Поэтому окно говорит, что для заливки
+                         нужно, а не делает вид, что справится само. -->
+                    <div class="mt-2 opacity-75" t-if="price.matched">
+                        <i class="fa fa-info-circle me-1"/>
+                        <span t-esc="priceLoaderHint"/>
+                    </div>
+                </div>
+                <div class="o_mail_client_preview_doc o_mail_client_preview_doc_scroll flex-grow-1">
+                    <table class="o_mail_client_preview_table">
+                        <thead t-if="sheet.hasHeader">
+                            <tr>
+                                <th t-foreach="sheet.columns" t-as="column" t-key="column_index"
+                                    t-att-class="sheet.aligns[column_index] === 'num' ? 'o_mail_client_preview_num' : ''"
+                                    t-esc="column"/>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="sheet.rows" t-as="row" t-key="row_index">
+                                <td t-foreach="row" t-as="cell" t-key="cell_index"
+                                    t-att-class="sheet.aligns[cell_index] === 'num' ? 'o_mail_client_preview_num' : ''"
+                                    t-esc="cell"/>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="o_mail_client_preview_bar px-3 py-1 small d-flex align-items-center gap-2"
+                     t-if="sheet.truncated">
+                    <span t-esc="truncatedLabel"/>
+                    <button class="btn btn-sm btn-link p-0"
+                            t-att-disabled="state.loadingMore"
+                            t-on-click="() => this.loadMore()">
+                        <i class="fa fa-circle-o-notch fa-spin me-1" t-if="state.loadingMore"/>
+                        <t>Show more</t>
+                    </button>
+                </div>
+            </t>
+            <t t-elif="preview.kind === KINDS.PDF">
+                <div class="o_mail_client_preview_doc flex-grow-1">
+                    <iframe class="o_mail_client_preview_frame"
+                            t-att-src="pdfViewerUrl"
+                            t-ref="pdfFrame"
+                            title="Attachment"/>
+                </div>
+            </t>
+            <t t-elif="preview.kind === KINDS.IMAGE">
+                <div class="o_mail_client_preview_doc o_mail_client_preview_center flex-grow-1 p-3">
+                    <img class="o_mail_client_preview_image"
+                         t-att-src="preview.url"
+                         t-att-alt="props.name"/>
+                </div>
+            </t>
+            <t t-else="">
+                <div class="o_mail_client_preview_center flex-grow-1 px-4">
+                    <i class="fa fa-file-o fa-2x"/>
+                    <div class="small mt-2 text-center">
+                        <t t-if="preview.reason" t-esc="preview.reason"/>
+                        <t t-else="">Files of this kind cannot be shown here yet.</t>
+                    </div>
+                    <div class="small opacity-75 mt-2">Download the file to open it on your computer.</div>
+                </div>
+            </t>
+
+            <t t-set-slot="footer">
+                <button class="btn btn-secondary" t-if="props.onDownload"
+                        t-on-click="() => this.onDownload()">
+                    <i class="fa fa-download me-1"/>
+                    Download
+                </button>
+                <button class="btn btn-primary" t-on-click="() => this.onClose()">
+                    Close
+                </button>
+            </t>
+        </Dialog>
+    </t>
+
+</templates>

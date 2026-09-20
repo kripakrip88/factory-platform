@@ -27,22 +27,22 @@ from odoo import http
 from odoo.exceptions import AccessError, UserError
 from odoo.http import content_disposition, request
 
-from ..models.mail_client_attachment_preview import PreviewError, detect_format
+from ..models.mail_client_attachment_preview import (
+    BROWSER_IMAGE_FORMATS, FORMAT_MIME, PreviewError, detect_format,
+)
 
 _logger = logging.getLogger(__name__)
 
-# Картинки, которые браузер рисует сам и в которых нет исполняемого кода.
-# SVG здесь нет намеренно — см. заголовок файла.
-INLINE_TYPES = {
-    'png': 'image/png',
-    'jpeg': 'image/jpeg',
-    'gif': 'image/gif',
-    'bmp': 'image/bmp',
-    'webp': 'image/webp',
-}
-# PDF отдаём с настоящим типом: pdf.js проверяет его, а показать файл сам
+# Форматы, которые уходят под своим настоящим типом.
+#
+# Список картинок берём из модели, а не заводим свой: там же решается, какой
+# вид файла объявить окну просмотра. Разойдись два списка — и окно поставит
+# <img> на файл, который контроллер отдаёт «скачиванием», а человек увидит
+# битый значок вместо картинки.
+#
+# PDF отдаём с настоящим типом: pdf.js его проверяет, а показать файл сам
 # браузер всё равно не сможет — мешает disposition=attachment.
-DOWNLOAD_TYPES = {'pdf': 'application/pdf'}
+NAMED_TYPES = {fmt: FORMAT_MIME[fmt] for fmt in BROWSER_IMAGE_FORMATS + ('pdf',)}
 
 
 class MailClientPreview(http.Controller):
@@ -72,11 +72,12 @@ class MailClientPreview(http.Controller):
                 ('Content-Type', 'text/plain; charset=utf-8')])
 
         fmt, _kind, _note = detect_format(payload, record.name)
-        if fmt in INLINE_TYPES:
-            content_type, disposition = INLINE_TYPES[fmt], 'inline'
-        else:
-            content_type = DOWNLOAD_TYPES.get(fmt, 'application/octet-stream')
-            disposition = 'attachment'
+        content_type = NAMED_TYPES.get(fmt, 'application/octet-stream')
+        # Встроенным показом браузера пользуются только растровые картинки:
+        # их он рисует и выполнить в них нечего. Всё остальное, включая PDF,
+        # уходит «вложением», и прямой переход по ссылке обернётся
+        # скачиванием, а не показом чужого файла на нашем домене.
+        disposition = 'inline' if fmt in BROWSER_IMAGE_FORMATS else 'attachment'
 
         return request.make_response(payload, headers=[
             ('Content-Type', content_type),

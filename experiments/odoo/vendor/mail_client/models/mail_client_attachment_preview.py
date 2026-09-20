@@ -63,6 +63,20 @@ MAX_CELL_CHARS = 200
 
 MAX_SHEETS = 20
 
+# Ячеек на ВЕСЬ ответ, на все листы вместе.
+#
+# Окно показывает листы вкладками и переключает их у себя, не спрашивая сервер
+# заново, — значит строки всех листов уезжают в браузер одним ответом. Книга
+# поставщика на восемь листов по 200 строк по 40 колонок — это 64 000 ячеек,
+# а страница из 200 строк на 15 колонок весит 27 КБ. Потолок держит ответ в
+# пределах пары сотен килобайт при любой книге.
+RESPONSE_CELLS = 40000
+# ...но каждому листу — хотя бы столько строк, даже когда потолок выбран:
+# вкладка без единой строки в окне просто исчезает, и человек решит, что
+# лист в книге один. Двадцать листов по 20 строк по 40 колонок = 16 000
+# ячеек, то есть нижняя граница всегда помещается в потолок выше.
+MIN_SHEET_ROWS = 20
+
 # Сколько строк читаем с диска вообще. Сводка по прайсу считается по ВСЕМУ
 # листу, иначе она врёт, поэтому предел выше страничного. 20 000 строк — это
 # заведомо больше любого прайса поставщика, что мы видели.
@@ -117,6 +131,32 @@ EXT_FORMAT = {
     'png': 'png', 'jpg': 'jpeg', 'jpeg': 'jpeg', 'gif': 'gif', 'bmp': 'bmp',
     'webp': 'webp', 'tif': 'tiff', 'tiff': 'tiff', 'doc': 'ole2', 'docx': 'docx',
 }
+
+# Настоящий тип файла — по содержимому, а не по тому, что написал отправитель.
+# Идёт в подпись окна и в заголовок ответа контроллера.
+FORMAT_MIME = {
+    'xls': 'application/vnd.ms-excel',
+    'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'ods': 'application/vnd.oasis.opendocument.spreadsheet',
+    'csv': 'text/csv', 'html': 'text/html', 'pdf': 'application/pdf',
+    'png': 'image/png', 'jpeg': 'image/jpeg', 'gif': 'image/gif',
+    'bmp': 'image/bmp', 'webp': 'image/webp', 'tiff': 'image/tiff',
+    'dxf': 'image/vnd.dxf', 'svg': 'image/svg+xml',
+    'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'zip': 'application/zip', 'ole2': 'application/x-ole-storage',
+}
+
+# Картинки, которые браузер рисует сам и в которых нет исполняемого кода.
+#
+# Список общий с контроллером (controllers/preview.py импортирует его отсюда),
+# и это не про красоту. Разойдись два списка — и вид файла, объявленный
+# клиенту, перестанет совпадать с тем, как контроллер файл отдаёт: окно
+# поставит <img>, контроллер пришлёт «скачать», человек увидит битую картинку.
+#
+# SVG здесь нет намеренно: внутри него бывает скрипт, и это единственный
+# формат изображения, который выполняется. TIFF нет потому, что его не рисует
+# ни один браузер, — обещать просмотр, которого не будет, хуже отказа.
+BROWSER_IMAGE_FORMATS = ('png', 'jpeg', 'gif', 'bmp', 'webp')
 
 _TEXT_ENCODINGS = ('utf-8-sig', 'utf-8', 'cp1251', 'koi8-r')
 
@@ -233,6 +273,48 @@ def detect_format(blob, filename=''):
         note = ("Файл назван «.%s», а внутри — %s. Читаем по содержимому."
                 % (ext, FORMAT_TITLE.get(fmt, fmt)))
     return fmt, kind, note
+
+
+# Виды, которыми говорят с браузером. Их ровно четыре, по числу способов
+# показать файл: таблица, pdf.js, <img> и честный отказ. Внутренние виды
+# подробнее (doc, cad2d, other), но клиенту от этой подробности толку нет:
+# рисовать чертёж DXF ему всё равно нечем.
+WIRE_KINDS = ('sheet', 'pdf', 'image', 'none')
+
+
+def wire_kind(fmt, kind):
+    """Внутренний вид файла -> вид, который понимает окно просмотра."""
+    if kind == 'sheet':
+        return 'sheet'
+    if fmt == 'pdf':
+        return 'pdf'
+    # Не `kind == 'image'`, а список форматов: TIFF по виду картинка, но ни
+    # один браузер её не рисует, и <img> дал бы человеку битый значок.
+    if fmt in BROWSER_IMAGE_FORMATS:
+        return 'image'
+    return 'none'
+
+
+def no_preview_reason(fmt, kind):
+    """Почему просмотра нет — словами, которые что-то объясняют.
+
+    «Формат не поддерживается» человеку не говорит ничего. «Это чертёж DXF»
+    говорит: файл опознан, просто рисовать его нечем, и дальше понятно, что
+    делать — скачать и открыть в своей программе.
+    """
+    if kind == 'cad2d':
+        return "Это чертёж DXF — в системе он не рисуется."
+    if fmt == 'tiff':
+        return "Это картинка TIFF — её не показывает ни один браузер."
+    if fmt == 'svg':
+        # Отказ намеренный: в SVG бывает скрипт, и наш контроллер такой файл
+        # картинкой не отдаёт. Человеку честнее сказать причину, чем сделать
+        # вид, что формат неизвестен.
+        return "Картинки SVG в системе не показываются: внутри них бывает код."
+    title = FORMAT_TITLE.get(fmt)
+    if title:
+        return "Это %s — показать его в системе нечем." % title
+    return "Этот вид файла в системе не показывается."
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -830,7 +912,7 @@ def summarize_price(rows, header, matcher):
     unknown = []
     matched = 0
     items = price_rows(rows, header)
-    for name, section, _index in items:
+    for name, section, index in items:
         result = matcher.match(name)
         if result['status'] != 'совпало' and section:
             # Вторая попытка с разделом: «Квадратная 40 х 40 х 2» сама по себе
@@ -844,13 +926,18 @@ def summarize_price(rows, header, matcher):
         if result['status'] == 'совпало':
             matched += 1
         elif len(unknown) < 10:
-            unknown.append({'name': name, 'status': result['status']})
+            # Номер строки ЛИСТА, как его показывает Excel (с единицы): по
+            # нему человек находит позицию в своём файле. Без номера примеры
+            # «не узнано» бесполезны — искать название глазами по 700 строкам
+            # никто не станет.
+            unknown.append({'row': index + 1, 'text': name,
+                            'status': result['status']})
     return {
-        'rows': len(items),
+        'rows_total': len(items),
         'matched': matched,
         'unmatched': len(items) - matched,
         'by_status': dict(statuses),
-        'unknown': unknown,
+        'unmatched_examples': unknown,
     }
 
 
@@ -895,10 +982,29 @@ class MailClientAttachment(models.Model):
     def preview(self, attachment_id, sheet=0, offset=0, limit=None):
         """Что показать вместо кнопки «скачать».
 
-        Ответ всегда один и тот же по форме: вид файла, чем его показывать и
-        по возможности содержимое. Ошибка разбора — это тоже ответ с полем
-        error, а не исключение: сорванный разбор чужого файла не повод
-        показывать человеку окно с трейсбеком.
+        ОТВЕТ — ЭТО ДОГОВОР С ОКНОМ ПРОСМОТРА. Второй его конец описан в
+        static/src/attachments/preview_payload.js, и менять форму ответа можно
+        только вместе с ним: имена полей здесь — это имена, которые читает
+        разбор на клиенте, а не свободный набор.
+
+            kind    'sheet' | 'pdf' | 'image' | 'none' — ЧЕМ ПОКАЗЫВАТЬ.
+                    Не «что за файл», а именно чем: вид считается по
+                    содержимому (заявленному типу в письме верить нельзя) и
+                    сводится к четырём способам показа.
+            name, mimetype, size  — подпись окна. size РАСКОДИРОВАННЫЙ:
+                    в письме стоит размер base64, он на треть больше.
+            url     путь к байтам на нашем сервере — для pdf.js и <img>.
+            sheets  [{name, columns, rows, total_rows}] для kind='sheet'.
+                    Ячейки уже строки: форматирует их сервер, он один знает
+                    тип ячейки xls.
+            price   разбор прайса или None (см. _price_summary).
+            note    предупреждение, которое показывается и при удавшемся
+                    просмотре: «назван .xls, а внутри HTML».
+            reason  для kind='none' — почему просмотра нет.
+
+        Ошибка разбора — это тоже ответ (kind='none' и reason), а не
+        исключение: сорванный разбор чужого файла не повод показывать
+        человеку окно с трейсбеком.
         """
         record = self.browse(attachment_id).exists()
         if not record:
@@ -910,13 +1016,18 @@ class MailClientAttachment(models.Model):
             'id': record.id,
             'name': record.name,
             'size': record._decoded_size(),
-            'content_type': record.content_type or '',
-            'kind': 'other',
+            # До разбора настоящий тип неизвестен, и пока стоит заявленный
+            # отправителем — чтобы подпись окна не пустовала, если файл не
+            # удастся даже получить.
+            'mimetype': record.content_type or '',
+            'kind': 'none',
             'format': 'other',
             'note': '',
-            'error': '',
+            'reason': '',
             'url': '/mail_client/attachment/%s/raw' % record.id,
             'download_url': '',
+            'sheets': [],
+            'price': None,
         }
         try:
             blob = record._preview_bytes()
@@ -924,57 +1035,118 @@ class MailClientAttachment(models.Model):
                                        % record.attachment_id.id)
             payload['size'] = len(blob)
             fmt, kind, note = detect_format(blob, record.name)
-            payload.update({'format': fmt, 'kind': kind, 'note': note})
+            payload.update({
+                'format': fmt,
+                'note': note,
+                'kind': wire_kind(fmt, kind),
+                'mimetype': FORMAT_MIME.get(fmt) or record.content_type or '',
+            })
 
             if kind == 'sheet':
                 payload.update(record._preview_sheet(blob, fmt, sheet, offset, limit))
             elif kind == 'doc':
                 payload.update(pdf_info(blob))
+                if payload.get('encrypted'):
+                    # Такой файл pdf.js откроет, но сперва спросит пароль.
+                    # Пустое окно с полем ввода без объяснения выглядит как
+                    # поломка просмотра, а это не поломка.
+                    payload['note'] = "Документ закрыт паролем — просмотрщик его спросит."
             elif kind == 'image':
                 payload.update(image_info(blob))
-            elif kind == 'cad2d':
-                payload['note'] = (payload['note'] + ' ' if payload['note'] else '') + \
-                    "Чертёж DXF в системе не рисуется — файл можно скачать."
-            else:
-                payload['note'] = (payload['note'] + ' ' if payload['note'] else '') + \
-                    "Этот вид файла в системе не показывается — его можно скачать."
+
+            if payload['kind'] == 'none':
+                payload['reason'] = no_preview_reason(fmt, kind)
         except PreviewError as exc:
-            payload['error'] = str(exc)
+            payload.update({'kind': 'none', 'reason': str(exc)})
         except UserError as exc:
             # Сюда попадает отказ IMAP из _fetch вендорского модуля.
-            payload['error'] = str(exc)
+            payload.update({'kind': 'none', 'reason': str(exc)})
         except Exception:
             # Файл пришёл от постороннего: сломать разбор может что угодно, и
             # падать из-за чужого файла почта не должна. Трейсбек — в журнал.
             _logger.exception("Mail Client: разбор вложения %s не удался", attachment_id)
-            payload['error'] = "Файл не удалось разобрать. Его можно скачать."
+            payload.update({'kind': 'none',
+                            'reason': "Файл не удалось разобрать."})
         return payload
 
     def _preview_sheet(self, blob, fmt, sheet_index, offset, limit):
-        """Листы таблицы плюс страница строк и сводка по прайсу."""
+        """Листы книги со строками и сводка по прайсу.
+
+        Строки едут ДЛЯ КАЖДОГО ЛИСТА, а не только для выбранного: вкладки
+        листов окно переключает у себя, не спрашивая сервер, и лист без строк
+        из вкладок просто исчез бы. Чтобы книга на два десятка листов не
+        уехала в браузер целиком, на весь ответ стоит потолок по ячейкам, а
+        каждому листу гарантирован минимум строк (см. RESPONSE_CELLS).
+
+        Аргументы sheet/offset/limit открывают окно побольше для ОДНОГО листа
+        — по ним работает кнопка «Показать ещё»: она просит следующий кусок
+        того же листа, а остальные листы приходят своим обычным началом.
+        """
         self.ensure_one()
         sheets = read_sheets(blob, fmt)
         sheet_index = max(0, min(int(sheet_index or 0), len(sheets) - 1))
         offset = max(0, int(offset or 0))
         limit = min(int(limit or PAGE_ROWS), PAGE_ROWS_MAX)
-        current = sheets[sheet_index]
 
-        out = {
-            'sheets': [{'index': index, 'name': item['name'], 'rows': item['nrows'],
-                        'cols': item['ncols'], 'truncated': item['truncated']}
-                       for index, item in enumerate(sheets)],
-            'page': {'sheet': sheet_index, 'offset': offset, 'limit': limit,
-                     'rows': current['rows'][offset:offset + limit]},
-            'price': None,
-        }
+        out_sheets = []
+        budget = RESPONSE_CELLS
+        for index, item in enumerate(sheets):
+            header = find_price_header(item['rows'])
+            if header:
+                # Шапку прайса вынимаем в заголовок таблицы: она и описывает
+                # колонки, и остаётся на месте при прокрутке. Строки ВЫШЕ неё
+                # — это шапка письма прайса (фирма, дата, телефон), каждая в
+                # одну ячейку; в сетке таблицы они сбивают колонки и выглядят
+                # поломкой. Разборщику прайса они по-прежнему видны целиком:
+                # он работает по item['rows'], а не по тому, что здесь.
+                columns = item['rows'][header['header_row']]
+                data = item['rows'][header['header_row'] + 1:]
+            else:
+                columns = []
+                data = item['rows']
+
+            start = offset if index == sheet_index else 0
+            want = limit if index == sheet_index else PAGE_ROWS
+            width = max(1, item['ncols'])
+            take = min(want, max(MIN_SHEET_ROWS, budget // width))
+            rows = data[start:start + take]
+            budget -= len(rows) * width
+
+            out_sheets.append({
+                'index': index,
+                'name': item['name'],
+                'columns': columns,
+                'rows': rows,
+                # Сколько строк ДАННЫХ на листе всего: по нему окно пишет
+                # «показаны первые 200 из 698» и решает, звать ли ещё.
+                'total_rows': len(data),
+                'offset': start,
+                'cols': item['ncols'],
+                'truncated': item['truncated'],
+            })
+
+        out = {'sheets': out_sheets, 'price': None}
         if offset == 0:
             # Сводка считается по всему листу, поэтому только на первой
             # странице: листать таблицу не значит пересчитывать прайс.
-            out['price'] = self._price_summary(current)
+            summary = self._price_summary(sheets[sheet_index])
+            # Про КАКОЙ лист эта сводка — говорим прямо. Пустые листы в показ
+            # не попадают, и «первая вкладка» на клиенте запросто окажется
+            # вторым листом книги; без этого номера цифры прайса легли бы под
+            # чужую вкладку, и никто бы не заметил.
+            summary['sheet'] = sheet_index
+            out['price'] = summary
         return out
 
     def _price_summary(self, sheet):
-        """Прайс это или нет, и что из него система узнала."""
+        """Прайс это или нет, и что из него система узнала.
+
+        Ради этой сводки всё и затевалось. Таблица на 700 строк человеку не
+        говорит ничего — «цены пришли» видно и по имени файла. Полезен ответ
+        на другой вопрос: сколько отсюда система узнала и сможет залить.
+
+        Имена полей — часть договора с окном просмотра, см. preview().
+        """
         header = find_price_header(sheet['rows'])
         if not header:
             return {'is_price': False,
@@ -984,8 +1156,8 @@ class MailClientAttachment(models.Model):
                    'header_row': header['header_row'] + 1,
                    'price_column': header['price_column'],
                    'name_columns': header['name_columns'],
-                   'rows': 0, 'matched': 0, 'unmatched': 0,
-                   'by_status': {}, 'unknown': [], 'error': ''}
+                   'rows_total': 0, 'matched': 0, 'unmatched': 0,
+                   'by_status': {}, 'unmatched_examples': [], 'error': ''}
 
         module = _matcher_module()
         if module is None:
@@ -1009,7 +1181,7 @@ class MailClientAttachment(models.Model):
         # счёта. Отличает их доля узнанного: если из тридцати строк узнались
         # четыре, это не наш металл, и человеку лучше сказать это прямо, чем
         # оставить его гадать, почему так мало.
-        if summary['rows'] >= 10 and summary['matched'] < summary['rows'] * 0.15:
+        if summary['rows_total'] >= 10 and summary['matched'] < summary['rows_total'] * 0.15:
             summary['note'] = ("Узнано меньше шестой части строк — похоже, это не "
                                "прайс на металлопрокат.")
         return summary
@@ -1031,7 +1203,9 @@ class MailClientAttachment(models.Model):
                                   % FORMAT_TITLE.get(fmt, 'другой файл')}
             sheets = read_sheets(blob, fmt)
             index = max(0, min(int(sheet or 0), len(sheets) - 1))
-            return record._price_summary(sheets[index])
+            summary = record._price_summary(sheets[index])
+            summary['sheet'] = index
+            return summary
         except PreviewError as exc:
             return {'is_price': False, 'reason': str(exc)}
         except UserError as exc:

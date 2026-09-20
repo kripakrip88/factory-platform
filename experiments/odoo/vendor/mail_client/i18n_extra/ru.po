@@ -32,6 +32,113 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/attachments/attachment_preview_dialog.xml:0
+msgid "Close"
+msgstr "Закрыть"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/attachments/attachment_preview_dialog.xml:0
+msgid "Download"
+msgstr "Скачать"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/attachments/attachment_preview_dialog.xml:0
+msgid "Download the file to open it on your computer."
+msgstr "Скачайте файл, чтобы открыть его на компьютере."
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/attachments/attachment_preview_dialog.xml:0
+msgid "Files of this kind cannot be shown here yet."
+msgstr "Файлы такого вида здесь пока не показываются."
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/attachments/attachment_preview_dialog.xml:0
+msgid "Not recognised, for example:"
+msgstr "Не узнаны, например:"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/attachments/attachment_preview_dialog.xml:0
+msgid "Not recognised:"
+msgstr "Не узнано:"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/attachments/attachment_preview_dialog.js:0
+msgid ""
+"Prices are loaded by the price loader: it needs the supplier, the date of "
+"the price list and the VAT rate. A person sets those — the system does not "
+"guess them."
+msgstr ""
+"Цены заливает загрузчик прайсов: ему нужны поставщик, дата прайса и ставка "
+"НДС. Их задаёт человек — система их не угадывает."
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/attachments/attachment_preview_dialog.xml:0
+msgid "Reading the file…"
+msgstr "Читаем файл…"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/attachments/attachment_preview_dialog.xml:0
+msgid "Recognised:"
+msgstr "Узнано:"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/attachments/attachment_preview_dialog.xml:0
+msgid "Rows in the price list:"
+msgstr "Строк в прайсе:"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/attachments/attachment_preview_dialog.xml:0
+msgid "Sheets"
+msgstr "Листы"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/attachments/attachment_preview_dialog.xml:0
+msgid "Show more"
+msgstr "Показать ещё"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/attachments/attachment_preview_dialog.js:0
+msgid "Showing %s rows of %s."
+msgstr "Показано %s строк из %s."
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/attachments/attachment_preview_dialog.xml:0
+msgid "The file can still be downloaded."
+msgstr "Файл всё равно можно скачать."
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/attachments/attachment_preview_dialog.js:0
+msgid "The file could not be read."
+msgstr "Файл не удалось прочитать."
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/reading_pane.xml:0
+msgid "View"
+msgstr "Посмотреть"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/attachments/attachment_preview_dialog.xml:0
+msgid "Why not recognised:"
+msgstr "Почему не узнано:"
+
+#. module: mail_client
 #. odoo-python
 #: code:addons/mail_client/models/mail_client_server.py:0
 msgid "\n\nCredentials and server capabilities were NOT checked: the master user can only sign into a specific mailbox, and IMAP servers only advertise their full capability list after login. Add a mail account, then test again."
@@ -2436,6 +2543,12 @@ msgstr "например, Входящие отдела продаж"
 #: model_terms:ir.ui.view,arch_db:mail_client.mail_client_server_view_form
 msgid "e.g. mailcow - mail.company.co.id"
 msgstr "например, mailcow - mail.company.co.id"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/attachments/attachment_preview_dialog.js:0
+msgid "line %s:"
+msgstr "строка %s:"
 
 #. module: mail_client
 #: model_terms:ir.ui.view,arch_db:mail_client.mail_client_server_view_form
