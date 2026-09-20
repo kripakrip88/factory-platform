@@ -237,7 +237,9 @@ class PmkCutPlan(models.Model):
                 )
             blocks.append(
                 '<div class="pmk-cut__pattern">'
-                '<div class="pmk-cut__head"><b>%s мм</b> — повторить %s раз</div>'
+                # «повторить 2 раз» не согласуется, а склонять числительное
+                # в разметке нечем — ставим знак умножения, он не склоняется.
+                '<div class="pmk-cut__head"><b>%s мм</b> &#215; %s</div>'
                 '<div class="pmk-cut__bar">%s</div></div>'
                 % (escape(self._fmt(pattern["stock_length"])), pattern["count"], "".join(cells))
             )
