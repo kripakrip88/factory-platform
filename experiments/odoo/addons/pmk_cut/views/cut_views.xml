@@ -114,6 +114,7 @@
                   <field name="bars_used"/>
                   <field name="lower_bound" optional="show"/>
                   <field name="weight_total" sum="Взято, кг"/>
+                  <field name="leftover_weight" sum="В остатки, кг" optional="show"/>
                   <field name="scrap_weight" sum="В лом, кг"/>
                   <field name="waste_ratio"/>
                   <field name="leftovers_text" optional="show"/>
@@ -128,6 +129,7 @@
                     </group>
                     <group>
                       <field name="weight_total" readonly="1"/>
+                      <field name="leftover_weight" readonly="1"/>
                       <field name="scrap_weight" readonly="1"/>
                       <field name="waste_ratio" readonly="1"/>
                     </group>

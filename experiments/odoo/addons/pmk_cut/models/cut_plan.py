@@ -188,8 +188,13 @@ class PmkCutPlan(models.Model):
             "scrap_mm": res["scrap"],
             "weight_total": to_kg(res["total_stock"]),
             "weight_parts": to_kg(res["total_parts"]),
+            "leftover_weight": to_kg(sum(res["useful_leftovers"])),
             "scrap_weight": to_kg(res["scrap"]),
-            "waste_ratio": round(100.0 * res["waste_ratio"], 2),
+            # Отход — ТОЛЬКО безвозвратные потери. Годный остаток уходит на
+            # склад и металлом быть не перестаёт; считать его отходом значит
+            # пугать цифрой 22% там, где реально потеряно полкилограмма.
+            "waste_ratio": round(
+                100.0 * res["scrap"] / res["total_stock"], 2) if res["total_stock"] else 0.0,
             "lower_bound": res["lower_bound"],
             "layout_html": self._layout_html(res),
             "leftovers_text": self._leftovers_text(res),
@@ -310,6 +315,7 @@ class PmkCutResult(models.Model):
 
     weight_total = fields.Float("Взято, кг", digits=(12, 2))
     weight_parts = fields.Float("В деталях, кг", digits=(12, 2))
+    leftover_weight = fields.Float("В годные остатки, кг", digits=(12, 2))
     scrap_weight = fields.Float("В лом, кг", digits=(12, 2))
     waste_ratio = fields.Float("Отход, %", digits=(5, 2))
     # Грубая нижняя граница: показывает, есть ли куда ужиматься вообще.
