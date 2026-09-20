@@ -26,12 +26,17 @@
 
             <div class="pmk-kpi">
               <div class="pmk-kpi__card">
-                <div class="pmk-kpi__label">К изготовлению</div>
+                <!--
+                  Существительное держим в подписи, а не рядом с числом:
+                  «1 планок» и «в 1 позициях» не согласуются, а склонять
+                  числительное в разметке нечем. «шт» не склоняется вовсе.
+                -->
+                <div class="pmk-kpi__label">Планок к изготовлению</div>
                 <div class="pmk-kpi__value">
-                  <field name="total_qty"/><span class="pmk-kpi__unit">планок</span>
+                  <field name="total_qty"/><span class="pmk-kpi__unit">шт</span>
                 </div>
                 <div class="pmk-kpi__sub">
-                  <span>в</span><field name="total_positions"/><span>позициях</span>
+                  <span>Позиций:</span><field name="total_positions"/>
                 </div>
               </div>
 

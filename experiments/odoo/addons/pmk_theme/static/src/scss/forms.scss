@@ -258,6 +258,10 @@
   @media (max-width: 1100px) {
     grid-template-columns: 1fr;
     gap: 12px;
+
+    // Карточки при этом встают в ряд, а не растягиваются каждая на всю
+    // ширину: число в карточке шириной 800px теряется в пустоте.
+    .pmk-kpi { grid-template-columns: 1fr 1fr; }
   }
 }
 
