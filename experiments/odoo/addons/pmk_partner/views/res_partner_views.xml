@@ -123,6 +123,79 @@
         <attribute name="invisible">company_type != 'person'</attribute>
       </field>
 
+      <!-- ── Адрес: девять полей вместо четырёх ────────────────────────────
+           Российская локализация дописала «дом», «офис» и код ФИАС поверх
+           стандартных улицы, улицы-2, города, области, индекса и страны.
+           Для реестра поставщиков хватает улицы, города, индекса и страны —
+           остальное заполняют один раз в жизни и то не всегда. -->
+      <field name="house" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </field>
+      <field name="office" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </field>
+      <field name="fias_id" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </field>
+      <field name="street2" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </field>
+      <field name="state_id" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </field>
+
+      <!-- Язык: система русская, выбирать не из чего. -->
+      <field name="lang" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </field>
+
+      <!-- ID EDI — идентификатор в системе электронного документооборота.
+           ЭДО не подключён, поле пустое у всех. -->
+      <field name="edi" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </field>
+
+      <!-- «ID компании» дублирует ОГРН, который уже есть рядом. -->
+      <field name="company_registry" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </field>
+
+      <!-- Сайт — это выбор ИЗ КАКОГО сайта Odoo контрагент, а не его адрес
+           в интернете (тот в поле «Веб-сайт»). Сайт один, путаница лишняя. -->
+      <field name="website_id" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </field>
+
+      <!-- Отрасль: у нас есть своё поле «Что возит», оно точнее. -->
+      <field name="industry_id" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </field>
+
+      <!-- Внутренняя ссылка — свободный код контрагента, не используется. -->
+      <field name="ref" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </field>
+
+      <!-- Методы платежа: строки банковских способов оплаты из бухгалтерии,
+           которая пока не ведётся. Условия платежей рядом остаются. -->
+      <field name="property_inbound_payment_method_line_id" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </field>
+      <field name="property_outbound_payment_method_line_id" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </field>
+
+      <!-- Прайс-лист продаж: механизм скидок для клиентов, не используется. -->
+      <field name="property_product_pricelist" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </field>
+
+      <!-- Группировка автоматических запросов котировок: тонкая настройка
+           планировщика закупок, до неё далеко. -->
+      <xpath expr="//div[@name='group_rfq_container']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+
     </field>
   </record>
 

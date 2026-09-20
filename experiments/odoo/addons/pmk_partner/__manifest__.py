@@ -34,6 +34,9 @@
         "l10n_ru_doc",
         "l10n_ru_upd_xml",
         "l10n_ru_contract",
+        "purchase_stock",
+        "product",
+        "website",
         # ради стилей полей
         "pmk_theme",
     ],

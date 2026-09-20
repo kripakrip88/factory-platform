@@ -8,6 +8,13 @@
     <field name="sequence">35</field>
   </record>
 
+  <record id="menu_price_mailing" model="ir.ui.menu">
+    <field name="name">Рассылка прайсов</field>
+    <field name="parent_id" ref="pmk_theme.menu_pmk_purchase"/>
+    <field name="action" ref="action_price_mailing"/>
+    <field name="sequence">36</field>
+  </record>
+
   <record id="menu_supply_category" model="ir.ui.menu">
     <field name="name">Группы поставки</field>
     <field name="parent_id" ref="pmk_theme.menu_pmk_purchase"/>

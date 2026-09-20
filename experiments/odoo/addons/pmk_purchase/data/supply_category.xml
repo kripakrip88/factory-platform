@@ -51,6 +51,11 @@
     <field name="sequence">90</field>
     <field name="note">Грунт, эмаль по металлу, растворители</field>
   </record>
+  <record id="cat_building" model="pmk.supply.category">
+    <field name="name">Стройматериалы</field>
+    <field name="sequence">95</field>
+    <field name="note">Всё прочее по стройке: крепёжная химия, инструмент, сыпучие</field>
+  </record>
   <record id="cat_service" model="pmk.supply.category">
     <field name="name">Услуги металлообработки</field>
     <field name="sequence">100</field>

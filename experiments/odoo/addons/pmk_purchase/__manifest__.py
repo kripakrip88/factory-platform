@@ -29,6 +29,7 @@
         "data/ir_cron.xml",
         "views/supply_category_views.xml",
         "views/res_partner_views.xml",
+        "views/price_mailing_views.xml",
         "views/menus.xml",
     ],
     "post_init_hook": "post_init_hook",

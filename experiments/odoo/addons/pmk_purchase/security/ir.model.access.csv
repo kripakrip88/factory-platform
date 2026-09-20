@@ -2,3 +2,5 @@ id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_pmk_supply_category_user,pmk.supply.category user,model_pmk_supply_category,base.group_user,1,0,0,0
 access_pmk_supply_category_purchase,pmk.supply.category purchase,model_pmk_supply_category,purchase.group_purchase_user,1,1,1,0
 access_pmk_supply_category_manager,pmk.supply.category manager,model_pmk_supply_category,purchase.group_purchase_manager,1,1,1,1
+access_pmk_price_mailing_purchase,pmk.price.mailing purchase,model_pmk_price_mailing,purchase.group_purchase_user,1,1,1,0
+access_pmk_price_mailing_manager,pmk.price.mailing manager,model_pmk_price_mailing,purchase.group_purchase_manager,1,1,1,1
