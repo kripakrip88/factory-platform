@@ -26,14 +26,14 @@
           -->
           <div class="pmk-doc-head">
             <div class="pmk-doc-head__fields">
-              <group>
-                <group>
-                  <field name="customer" placeholder="Кому или на какое изделие"/>
-                </group>
-                <group>
-                  <field name="order_date"/>
-                </group>
-              </group>
+              <div class="pmk-field">
+                <label for="customer"/>
+                <field name="customer" nolabel="1" placeholder="Кому или на какое изделие"/>
+              </div>
+              <div class="pmk-field">
+                <label for="order_date"/>
+                <field name="order_date" nolabel="1"/>
+              </div>
             </div>
 
             <div class="pmk-kpi">

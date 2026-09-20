@@ -24,17 +24,18 @@
           -->
           <div class="pmk-doc-head">
             <div class="pmk-doc-head__fields">
-              <group>
-                <group>
-                  <field name="partner_id"/>
-                </group>
-                <group>
-                  <field name="date"/>
-                </group>
-              </group>
-              <group>
-                <field name="note" placeholder="Примечание…"/>
-              </group>
+              <div class="pmk-field">
+                <label for="partner_id"/>
+                <field name="partner_id" nolabel="1"/>
+              </div>
+              <div class="pmk-field">
+                <label for="date"/>
+                <field name="date" nolabel="1"/>
+              </div>
+              <div class="pmk-field pmk-field--wide">
+                <label for="note"/>
+                <field name="note" nolabel="1" placeholder="Примечание…"/>
+              </div>
             </div>
 
             <!--
