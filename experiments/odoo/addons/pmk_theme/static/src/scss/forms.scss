@@ -562,31 +562,28 @@
 
 // ─── Единый вид полей на чужих формах ──────────────────────────────────────
 //
-// Класс `pmk-form` вешает представление (см. модуль pmk_partner), а стили
-// живут здесь. Разметку чужих форм НЕ переписываем: карточка контрагента
-// собрана из двадцати наследованных представлений, и своя вёрстка ломалась бы
-// при каждом обновлении любого из них. Вид получается тот же, что в шапке
-// спецификации — подпись сверху, поле в рамке, — но поверх родной вёрстки.
+// Класс `pmk-form` вешает представление (модуль pmk_partner), стили живут
+// здесь. Разметку чужих форм НЕ переписываем: карточка контрагента собрана из
+// двадцати наследованных представлений, и своя вёрстка ломалась бы при
+// обновлении любого из них. Вид получается тот же, что в шапке спецификации,
+// но достигается поверх родной вёрстки.
+//
+// Как устроена группа в Odoo 19 (проверено в браузере, не по памяти):
+// `.o_inner_group.grid` — это CSS-сетка из двух колонок, а подпись и поле
+// лежат в ней СОСЕДНИМИ ячейками `.o_cell.o_wrap_label` и `.o_cell`, без
+// обёртки-строки. Поэтому «подпись сверху» делается не флексом, а схлопыванием
+// сетки в одну колонку: ячейки сами встают друг под другом.
 
 .o_form_view .pmk-form {
 
-  // Родная раскладка группы — две колонки «подпись | поле». Разворачиваем
-  // строку в столбец: подпись сверху, поле под ней.
-  .o_inner_group > .o_wrap_field {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 2px;
-    margin-bottom: .45rem;
+  .o_inner_group.grid {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0;
   }
 
-  .o_inner_group > .o_wrap_field > .o_cell {
-    padding: 0;
-    width: auto;
-    max-width: none;
-  }
+  .o_cell.o_wrap_label {
+    padding: 0 0 2px;
 
-  .o_inner_group > .o_wrap_field > .o_cell.o_wrap_label {
     label,
     .o_form_label {
       font-size: .6875rem;
@@ -598,11 +595,20 @@
     }
   }
 
-  .o_inner_group > .o_wrap_field > .o_cell:not(.o_wrap_label) > .o_field_widget {
+  // Утилиты Bootstrap на ячейке гасят нижний отступ на широком экране
+  // (`mb-sm-0`), а в одну колонку строки от этого слипаются.
+  .o_inner_group.grid > .o_cell:not(.o_wrap_label) {
+    margin-bottom: .5rem !important;
+  }
+
+  // Коробка вокруг поля. Второй селектор — для полей, обёрнутых в `.o_row`:
+  // так Odoo кладёт поля с кнопкой или единицей измерения рядом.
+  .o_inner_group.grid > .o_cell:not(.o_wrap_label) > .o_field_widget,
+  .o_inner_group.grid > .o_cell:not(.o_wrap_label) > .o_row > .o_field_widget,
+  .o_inner_group.grid > .o_cell:not(.o_wrap_label) > .o_address_format {
     display: flex;
-    // Направление задаём явно: .o_field_widget наследует колонку от строки и
-    // без этого ввод уезжает вниз под собственный текст. Эти грабли уже были
-    // в шапке спецификации.
+    // Направление задаём явно: иначе поле наследует колонку и ввод уезжает
+    // вниз под собственную подпись. Эти грабли уже были в шапке спецификации.
     flex-direction: row;
     align-items: center;
     min-height: 34px;
@@ -615,9 +621,25 @@
       flex: 1 1 auto;
       min-width: 0;
     }
+  }
 
-    // Флажки, вложенные списки, картинки и текстовые блоки в рамку не берём:
-    // у них своя геометрия, коробка вокруг них только мешает читать.
+  // Адрес — четыре строки в одном блоке, разворачиваем внутри коробки
+  // столбцом и снимаем рамки с вложенных полей, чтобы не было коробки в коробке.
+  .o_inner_group.grid > .o_cell > .o_address_format {
+    flex-direction: column;
+    align-items: stretch;
+
+    .o_field_widget {
+      background: transparent;
+      border: 0;
+      padding: 0;
+      min-height: 0;
+    }
+  }
+
+  // Флажки, вложенные списки, картинки и многострочный текст в рамку не берём:
+  // у них своя геометрия, коробка вокруг них только мешает читать.
+  .o_inner_group.grid > .o_cell:not(.o_wrap_label) > .o_field_widget {
     &.o_field_boolean,
     &.o_field_x2many,
     &.o_field_image,
@@ -628,21 +650,6 @@
       padding: 0;
       background: transparent;
       border-color: transparent;
-    }
-  }
-
-  // Адрес — единый блок из четырёх строк. Берём в одну рамку целиком, иначе
-  // улица, город и индекс превращаются в четыре отдельные коробки подряд.
-  .o_inner_group .o_address_format {
-    padding: 4px 10px;
-    background: #{rgba(0, 0, 0, 0.18)};
-    border: 1px solid #{rgba(255, 255, 255, 0.1)};
-    border-radius: 8px;
-
-    .o_field_widget {
-      background: transparent;
-      border: 0;
-      padding: 0;
     }
   }
 }
