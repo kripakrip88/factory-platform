@@ -9,6 +9,9 @@
         <header>
           <button name="action_compute" type="object" string="Рассчитать"
                   class="btn-primary" icon="fa-cogs"/>
+          <button name="%(pmk_cut.action_report_cut_sheet)d" type="action"
+                  string="Печать листа" icon="fa-print"
+                  invisible="not result_ids"/>
         </header>
         <sheet>
           <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>

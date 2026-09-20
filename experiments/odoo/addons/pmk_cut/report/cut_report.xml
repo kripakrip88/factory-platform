@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+  <!-- Поля нулевые: их задаёт сам лист правилом @page. Иначе сложатся. -->
+  <record id="paperformat_cut_sheet" model="report.paperformat">
+    <field name="name">Лист раскроя</field>
+    <field name="format">A4</field>
+    <field name="orientation">Portrait</field>
+    <field name="margin_top">0</field>
+    <field name="margin_bottom">0</field>
+    <field name="margin_left">0</field>
+    <field name="margin_right">0</field>
+    <field name="header_line" eval="False"/>
+    <field name="header_spacing">0</field>
+    <field name="dpi">96</field>
+  </record>
+
+  <template id="report_cut_sheet">
+    <t t-call="web.html_container">
+      <t t-foreach="docs" t-as="doc">
+        <t t-out="doc._sheet_html()"/>
+      </t>
+    </t>
+  </template>
+
+  <record id="action_report_cut_sheet" model="ir.actions.report">
+    <field name="name">Лист раскроя</field>
+    <field name="model">pmk.cut.plan</field>
+    <field name="report_type">qweb-pdf</field>
+    <field name="report_name">pmk_cut.report_cut_sheet</field>
+    <field name="report_file">pmk_cut.report_cut_sheet</field>
+    <field name="print_report_name">'Раскрой %s' % (object.name)</field>
+    <field name="paperformat_id" ref="paperformat_cut_sheet"/>
+    <field name="binding_model_id" ref="model_pmk_cut_plan"/>
+    <field name="binding_type">report</field>
+  </record>
+
+</odoo>

@@ -26,6 +26,7 @@
         "security/ir.model.access.csv",
         "data/ir_sequence.xml",
         "views/cut_views.xml",
+        "report/cut_report.xml",
     ],
     "assets": {
         "web.assets_backend": [
