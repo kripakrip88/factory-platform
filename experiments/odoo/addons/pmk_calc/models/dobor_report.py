@@ -263,6 +263,13 @@ def _card_html(idx, item, mps_for_thickness):
 			snap = json.loads(item["profile_snapshot_json"])
 		except Exception:
 			snap = {}
+		# Старый формат снимка — голый список полок, без ключей. Дальше по коду
+		# идут snap.get(...), и на списке это AttributeError: печать всего
+		# заказа падала целиком из-за одной такой позиции.
+		if isinstance(snap, list):
+			snap = {"segs": snap}
+		elif not isinstance(snap, dict):
+			snap = {}
 	thickness = float(item.get("thickness") or 0)
 	plank = float(item.get("plank_length") or 2500)
 	qty = int(item.get("qty") or 0)
@@ -270,8 +277,14 @@ def _card_html(idx, item, mps_for_thickness):
 	svg = sketch_svg(snap) if snap.get("segs") else '<div style="color:#999;font-size:10px;padding:24px;text-align:center">нет эскиза</div>'
 	coating = escape(str(item.get("coating") or "—"))
 	name = escape(str(item.get("title") or "Доборка"))
-	lock = '<span class="lock">ЗАМОК</span>' if snap.get("lockOn") else ""
-	hem_len = snap.get("hemLen") or 15
+	# Построитель пишет в снимок ключ `lock`, а `lockOn` — наследие ERPNext.
+	# Читали только второй, поэтому на профилях, нарисованных в Odoo, плашка
+	# ЗАМОК не печаталась НИКОГДА, хотя замок даёт два гиба из расчёта.
+	# Строка 207 уже читает оба ключа — здесь было расхождение с ней.
+	lock = '<span class="lock">ЗАМОК</span>' if (snap.get("lockOn") or snap.get("lock")) else ""
+	# Было `or 15`: при завальцовке без длины лист печатал «15 мм», а в расчёт
+	# (строка 204) шёл ноль. Цех гнул по одному числу, считали по другому.
+	hem_len = float(snap.get("hemLen") or 0)
 	hem = f"{hem_len:g} мм" if (snap.get("hemLeft") or snap.get("hemRight")) else "—"
 	if r:
 		dev, nflange, nbend = f'{r["developed_width"]:g}', r["flanges_count"], r["bends"]
@@ -322,6 +335,10 @@ def order_html(order, mps_for_thickness, author=""):
 		try:
 			snap = json.loads(it.get("profile_snapshot_json") or "{}")
 		except Exception:
+			snap = {}
+		if isinstance(snap, list):
+			snap = {"segs": snap}
+		elif not isinstance(snap, dict):
 			snap = {}
 		if not snap.get("segs"):
 			continue
