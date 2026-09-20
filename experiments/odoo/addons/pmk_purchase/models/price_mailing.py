@@ -148,6 +148,22 @@ class PriceMailing(models.Model):
         records._pull_from_system()
         return records
 
+    @staticmethod
+    def _next_occurrence(weekday, hour, minute):
+        """Ближайшее наступление дня недели и времени — в UTC.
+
+        Считаем в часовом поясе завода: `nextcall` хранится в UTC, и записать
+        туда местное время значит промахнуться на десять часов.
+        """
+        tz = pytz.timezone(TZ)
+        now = datetime.datetime.now(tz)
+        ahead = (weekday - now.weekday()) % 7
+        day = now + datetime.timedelta(days=ahead)
+        local = tz.localize(datetime.datetime(day.year, day.month, day.day, hour, minute))
+        if local <= now:
+            local += datetime.timedelta(days=7)
+        return local.astimezone(pytz.UTC).replace(tzinfo=None)
+
     def _compute_runtime(self):
         """Что происходит прямо сейчас — считается, не хранится."""
         P = self.env["res.partner"]
