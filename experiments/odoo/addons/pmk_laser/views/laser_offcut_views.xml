@@ -85,7 +85,7 @@
         <field name="thickness_mm"/>
         <filter name="proposal" string="Ждут подтверждения" domain="[('state', '=', 'proposal')]"/>
         <filter name="confirmed" string="На стеллаже" domain="[('state', '=', 'confirmed')]"/>
-        <group expand="0" string="Группировать по">
+        <group string="Группировать по">
           <filter name="group_thickness" string="Толщина" context="{'group_by': 'thickness_mm'}"/>
           <filter name="group_type" string="Вид листа" context="{'group_by': 'sheet_type'}"/>
           <filter name="group_state" string="Состояние" context="{'group_by': 'state'}"/>

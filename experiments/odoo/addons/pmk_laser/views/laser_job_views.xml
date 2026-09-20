@@ -285,7 +285,7 @@
         <filter name="no_drawing" string="Чертежи не разобраны" domain="[('plan_state', '=', 'no_drawing')]"/>
         <filter name="not_measured" string="Не замерено" domain="[('measure_state', '!=', 'done')]"/>
         <filter name="balance_broken" string="Баланс не сходится" domain="[('balance_broken', '=', True)]"/>
-        <group expand="0" string="Группировать по">
+        <group string="Группировать по">
           <filter name="group_machine" string="Станок" context="{'group_by': 'machine_id'}"/>
           <filter name="group_date" string="Дата" context="{'group_by': 'date'}"/>
           <filter name="group_partner" string="Заказчик" context="{'group_by': 'partner_id'}"/>

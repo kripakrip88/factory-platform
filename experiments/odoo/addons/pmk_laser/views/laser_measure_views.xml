@@ -89,7 +89,7 @@
         <filter name="counted" string="Идут в норматив"
                 domain="[('excluded', '=', False), ('state', '=', 'done')]"/>
         <filter name="excluded" string="Исключены мастером" domain="[('excluded', '=', True)]"/>
-        <group expand="0" string="Группировать по">
+        <group string="Группировать по">
           <filter name="group_machine" string="Станок" context="{'group_by': 'machine_id'}"/>
           <filter name="group_thickness" string="Толщина" context="{'group_by': 'thickness_mm'}"/>
           <filter name="group_operator" string="Оператор" context="{'group_by': 'operator_id'}"/>
