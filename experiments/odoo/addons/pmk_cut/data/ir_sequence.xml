@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <record id="seq_cut_plan" model="ir.sequence">
+    <field name="name">Раскрой</field>
+    <field name="code">pmk.cut.plan</field>
+    <field name="prefix">РК-</field>
+    <field name="padding">5</field>
+    <field name="company_id" eval="False"/>
+  </record>
+</odoo>

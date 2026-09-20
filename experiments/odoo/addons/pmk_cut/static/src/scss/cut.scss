@@ -1,0 +1,49 @@
+// Схема раскроя полосками. Цеху нужна картинка, а не столбец чисел:
+// по полоскам сразу видно, где длинные куски, а где остаток.
+
+.pmk-cut__pattern {
+  margin-bottom: 14px;
+
+  &:last-child { margin-bottom: 0; }
+}
+
+.pmk-cut__head {
+  font-size: 12px;
+  margin-bottom: 4px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.pmk-cut__bar {
+  display: flex;
+  height: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+  overflow: hidden;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pmk-cut__piece,
+.pmk-cut__rest {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  // Разделитель между отрезками — это и есть рез. Показываем его линией,
+  // чтобы схема читалась так же, как её будут пилить.
+  border-right: 1px solid rgba(0, 0, 0, 0.45);
+
+  &:last-child { border-right: 0; }
+}
+
+.pmk-cut__piece {
+  background: rgba(107, 182, 245, 0.35);
+  color: #fff;
+}
+
+// Годный остаток и лом разного цвета: это разные вещи по смыслу и по
+// деньгам. Цвет не единственный признак — у остатка своя подпись в мм.
+.pmk-cut__rest--useful { background: rgba(77, 208, 177, 0.32); color: #fff; }
+.pmk-cut__rest--scrap  { background: rgba(240, 143, 176, 0.28); color: #fff; }

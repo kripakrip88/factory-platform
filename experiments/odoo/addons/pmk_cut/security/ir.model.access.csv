@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_pmk_cut_plan,pmk.cut.plan,model_pmk_cut_plan,base.group_user,1,1,1,1
+access_pmk_cut_stock,pmk.cut.stock,model_pmk_cut_stock,base.group_user,1,1,1,1
+access_pmk_cut_part,pmk.cut.part,model_pmk_cut_part,base.group_user,1,1,1,1
+access_pmk_cut_result,pmk.cut.result,model_pmk_cut_result,base.group_user,1,1,1,1

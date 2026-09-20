@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+  <record id="view_cut_plan_form" model="ir.ui.view">
+    <field name="name">pmk.cut.plan.form</field>
+    <field name="model">pmk.cut.plan</field>
+    <field name="arch" type="xml">
+      <form string="Раскрой">
+        <header>
+          <button name="action_compute" type="object" string="Рассчитать"
+                  class="btn-primary" icon="fa-cogs"/>
+        </header>
+        <sheet>
+          <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
+
+          <!-- Шапка тем же приёмом, что в остальных документах. -->
+          <div class="pmk-doc-head">
+            <div class="pmk-doc-head__fields">
+              <div class="pmk-field">
+                <label for="partner_id"/>
+                <field name="partner_id" nolabel="1"/>
+              </div>
+              <div class="pmk-field">
+                <label for="date"/>
+                <field name="date" nolabel="1"/>
+              </div>
+              <div class="pmk-field">
+                <label for="kerf_mm"/>
+                <field name="kerf_mm" nolabel="1"/>
+              </div>
+              <div class="pmk-field">
+                <label for="min_useful_mm"/>
+                <field name="min_useful_mm" nolabel="1"/>
+              </div>
+              <div class="pmk-field pmk-field--wide">
+                <label for="note"/>
+                <field name="note" nolabel="1" placeholder="Примечание…"/>
+              </div>
+            </div>
+
+            <div class="pmk-kpi">
+              <div class="pmk-kpi__card">
+                <div class="pmk-kpi__label">Взято металла, кг</div>
+                <div class="pmk-kpi__value"><field name="total_weight"/></div>
+              </div>
+              <div class="pmk-kpi__card">
+                <div class="pmk-kpi__label">Отход, %</div>
+                <div class="pmk-kpi__value"><field name="waste_ratio"/></div>
+              </div>
+              <div class="pmk-kpi__note">
+                <span>Заготовок:</span><field name="total_bars"/>
+                <span class="pmk-kpi__dot">·</span>
+                <span>В лом, кг:</span><field name="scrap_weight"/>
+              </div>
+            </div>
+          </div>
+
+          <div class="alert alert-warning" role="alert" invisible="not has_unplaced">
+            Не все отрезки удалось разместить — смотрите колонку «Не размещено».
+            Обычно это значит, что деталь длиннее любой заготовки.
+          </div>
+
+          <notebook>
+            <page string="Заготовки" name="stock">
+              <p class="text-muted">
+                Хлысты и обрезки со склада — в одной таблице. Обрезкам ставьте
+                очерёдность 1, чтобы уходили в дело первыми. Пустое количество
+                означает «не ограничено».
+              </p>
+              <field name="stock_ids" class="pmk-rows">
+                <list editable="bottom">
+                  <field name="sequence" widget="handle"/>
+                  <field name="profile_id" options="{'no_create': True}"/>
+                  <field name="length_mm"/>
+                  <field name="qty"/>
+                  <field name="priority"/>
+                  <field name="name"/>
+                  <control>
+                    <create string="Добавить заготовку"/>
+                  </control>
+                </list>
+              </field>
+            </page>
+
+            <page string="Отрезки" name="parts">
+              <group>
+                <group>
+                  <field name="spec_id" options="{'no_create': True}"/>
+                </group>
+                <group>
+                  <button name="action_fill_from_spec" type="object"
+                          string="Заполнить из спецификации" icon="fa-download"
+                          class="btn-secondary" invisible="not spec_id"/>
+                </group>
+              </group>
+              <field name="part_ids" class="pmk-rows">
+                <list editable="bottom">
+                  <field name="sequence" widget="handle"/>
+                  <field name="profile_id" options="{'no_create': True}"/>
+                  <field name="length_mm"/>
+                  <field name="qty" sum="Всего отрезков"/>
+                  <field name="name"/>
+                  <control>
+                    <create string="Добавить отрезок"/>
+                  </control>
+                </list>
+              </field>
+            </page>
+
+            <page string="Результат" name="result">
+              <field name="result_ids" readonly="1">
+                <list>
+                  <field name="profile_id"/>
+                  <field name="bars_used"/>
+                  <field name="lower_bound" optional="show"/>
+                  <field name="weight_total" sum="Взято, кг"/>
+                  <field name="scrap_weight" sum="В лом, кг"/>
+                  <field name="waste_ratio"/>
+                  <field name="leftovers_text" optional="show"/>
+                  <field name="unplaced_text" optional="show"/>
+                </list>
+                <form string="Раскрой типоразмера">
+                  <group>
+                    <group>
+                      <field name="profile_id" readonly="1"/>
+                      <field name="bars_used" readonly="1"/>
+                      <field name="lower_bound" readonly="1"/>
+                    </group>
+                    <group>
+                      <field name="weight_total" readonly="1"/>
+                      <field name="scrap_weight" readonly="1"/>
+                      <field name="waste_ratio" readonly="1"/>
+                    </group>
+                  </group>
+                  <group>
+                    <field name="leftovers_text" readonly="1"/>
+                    <field name="unplaced_text" readonly="1"/>
+                  </group>
+                  <field name="layout_html" nolabel="1" readonly="1"/>
+                </form>
+              </field>
+            </page>
+          </notebook>
+        </sheet>
+        <chatter/>
+      </form>
+    </field>
+  </record>
+
+  <record id="view_cut_plan_list" model="ir.ui.view">
+    <field name="name">pmk.cut.plan.list</field>
+    <field name="model">pmk.cut.plan</field>
+    <field name="arch" type="xml">
+      <list string="Раскрой">
+        <field name="name"/>
+        <field name="date"/>
+        <field name="partner_id"/>
+        <field name="total_bars"/>
+        <field name="total_weight" sum="Взято, кг"/>
+        <field name="scrap_weight" sum="В лом, кг"/>
+        <field name="waste_ratio"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="view_cut_plan_search" model="ir.ui.view">
+    <field name="name">pmk.cut.plan.search</field>
+    <field name="model">pmk.cut.plan</field>
+    <field name="arch" type="xml">
+      <search>
+        <field name="name" string="Номер"/>
+        <field name="partner_id" string="Клиент"/>
+        <field name="spec_id" string="Спецификация"/>
+        <filter name="this_month" string="Этот месяц"
+                domain="[('date', '&gt;=', (context_today() + relativedelta(day=1)).strftime('%Y-%m-%d'))]"/>
+        <separator/>
+        <!-- Раскрои с большим отходом — первое, что стоит пересмотреть. -->
+        <filter name="wasteful" string="Отход больше 10%" domain="[('waste_ratio', '&gt;', 10)]"/>
+        <filter name="unplaced" string="Есть неразмещённые" domain="[('has_unplaced', '=', True)]"/>
+        <group>
+          <filter name="by_partner" string="Клиент" context="{'group_by': 'partner_id'}"/>
+          <filter name="by_date" string="Дата" context="{'group_by': 'date'}"/>
+        </group>
+      </search>
+    </field>
+  </record>
+
+  <record id="action_cut_plan" model="ir.actions.act_window">
+    <field name="name">Раскрой сортамента</field>
+    <field name="res_model">pmk.cut.plan</field>
+    <field name="view_mode">list,form</field>
+    <field name="help" type="html">
+      <p class="o_view_nocontent_smiling_face">Создайте первый раскрой</p>
+      <p>Укажите, из чего режете (хлысты и обрезки со склада) и что нужно получить.
+         Отрезки можно перенести из спецификации одной кнопкой.</p>
+    </field>
+  </record>
+
+  <menuitem id="menu_pmk_cut" name="Раскрой сортамента"
+            parent="pmk_calc.menu_pmk_calc" action="action_cut_plan" sequence="25"/>
+
+</odoo>
