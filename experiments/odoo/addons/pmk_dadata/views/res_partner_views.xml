@@ -15,7 +15,7 @@
 
         Вкладка первая в блокноте: заводя поставщика, начинают именно с неё.
       -->
-      <xpath expr="//notebook" position="inside">
+      <xpath expr="//notebook/page[1]" position="before">
         <page string="Реквизиты" name="pmk_requisites">
           <group>
             <group>
@@ -24,9 +24,11 @@
               <div class="d-flex align-items-center gap-2">
                 <field name="inn" nolabel="1" class="oe_inline"
                        placeholder="10 цифр у организации, 12 у ИП"/>
+                <!-- Кнопку показываем всегда, даже на пустом ИНН: спрятанная
+                     кнопка не объясняет, почему её нет. Пустое поле ловится
+                     в обработчике понятным сообщением. -->
                 <button name="action_pmk_fill_by_inn" type="object"
-                        string="Заполнить по ИНН" class="btn-secondary"
-                        invisible="not inn"/>
+                        string="Заполнить по ИНН" class="btn-secondary"/>
               </div>
               <field name="pmk_legal_name" placeholder="Как в ЕГРЮЛ, с формой собственности"/>
               <field name="pmk_legal_address" placeholder="Одной строкой, как в выписке"/>
