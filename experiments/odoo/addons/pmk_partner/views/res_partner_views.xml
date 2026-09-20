@@ -192,7 +192,7 @@
 
       <!-- Группировка автоматических запросов котировок: тонкая настройка
            планировщика закупок, до неё далеко. -->
-      <xpath expr="//div[@name='group_rfq_container']" position="attributes">
+      <xpath expr="//*[@name='group_rfq_container']" position="attributes">
         <attribute name="invisible">1</attribute>
       </xpath>
 
