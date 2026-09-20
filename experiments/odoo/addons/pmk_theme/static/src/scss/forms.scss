@@ -251,7 +251,9 @@
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 24px;
-  align-items: start;
+  // Колонки одной высоты: плашки тянутся до низа блока полей, но не ниже —
+  // высоту шапки по-прежнему задают поля.
+  align-items: stretch;
 
   // На узком экране колонки встают друг под друга: 1fr под итоги — это
   // меньше 300px, туда не помещается ни одно значение с подписью.
@@ -282,7 +284,9 @@
 .pmk-kpi__card {
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  // Содержимое сверху, как в образце: число сразу под подписью, а не
+  // плавает посреди плашки.
+  justify-content: flex-start;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.10);
   border-radius: 16px;
