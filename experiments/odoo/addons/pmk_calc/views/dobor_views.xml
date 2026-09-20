@@ -25,12 +25,16 @@
             бы шапку вниз.
           -->
           <div class="pmk-doc-head">
-            <group col="4">
-              <field name="customer" colspan="4" placeholder="Кому или на какое изделие"/>
-              <field name="order_date"/>
-              <field name="total_positions"/>
-              <field name="total_area"/>
-            </group>
+            <div class="pmk-doc-head__fields">
+              <group>
+                <group>
+                  <field name="customer" placeholder="Кому или на какое изделие"/>
+                </group>
+                <group>
+                  <field name="order_date"/>
+                </group>
+              </group>
+            </div>
 
             <div class="pmk-kpi">
               <div class="pmk-kpi__card">
@@ -44,6 +48,11 @@
                 <div class="pmk-kpi__value">
                   <field name="total_weight" digits="[12,2]"/>
                 </div>
+              </div>
+              <div class="pmk-kpi__note">
+                <span>Позиций:</span><field name="total_positions"/>
+                <span class="pmk-kpi__dot">·</span>
+                <span>Площадь, м²:</span><field name="total_area" digits="[12,2]"/>
               </div>
             </div>
           </div>

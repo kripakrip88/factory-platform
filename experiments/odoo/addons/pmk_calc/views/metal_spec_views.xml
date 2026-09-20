@@ -15,24 +15,31 @@
             ширина, числам нет. Оформление приёмом темы (.pmk-kpi), чтобы
             доборка и будущие документы выглядели так же.
           -->
+          <!--
+            Раскладка ШТАТНОЙ структурой Odoo — вложенные группы дают две
+            колонки сами. Раньше она держалась на нашем CSS, и стоило
+            таблице стилей отстать от разметки (Odoo — одностраничное
+            приложение, вью оно перечитывает, а стили нет), как поля
+            разъезжались. Теперь без стилей это просто обычная форма Odoo.
+          -->
           <div class="pmk-doc-head">
-            <!--
-              col="4" — два поля в строке. На широком листе одно поле в строку
-              растягивалось на метр; примечание занимает строку целиком.
-              Счётчики стоят здесь же, слева: в правой колонке они добавили бы
-              второй ряд карточек и вытянули шапку вниз.
-            -->
-            <group col="4">
-              <field name="partner_id"/>
-              <field name="date"/>
-              <field name="note" colspan="4" placeholder="Примечание…"/>
-              <field name="total_products"/>
-              <field name="total_details"/>
-            </group>
+            <div class="pmk-doc-head__fields">
+              <group>
+                <group>
+                  <field name="partner_id"/>
+                </group>
+                <group>
+                  <field name="date"/>
+                </group>
+              </group>
+              <group>
+                <field name="note" placeholder="Примечание…"/>
+              </group>
+            </div>
 
             <!--
-              Две равные плашки В РЯД. Единица измерения — в подписи, у числа
-              её нет: плашки одинаковы по строению, и ничего не надо склонять.
+              Две равные плашки, под ними счётчики строкой: в группе полей
+              они добавляли лишние ряды и тянули шапку вниз.
             -->
             <div class="pmk-kpi">
               <div class="pmk-kpi__card">
@@ -46,6 +53,11 @@
                 <div class="pmk-kpi__value">
                   <field name="total_weight_t" digits="[12,3]"/>
                 </div>
+              </div>
+              <div class="pmk-kpi__note">
+                <span>Изделий:</span><field name="total_products"/>
+                <span class="pmk-kpi__dot">·</span>
+                <span>Деталей:</span><field name="total_details"/>
               </div>
             </div>
           </div>

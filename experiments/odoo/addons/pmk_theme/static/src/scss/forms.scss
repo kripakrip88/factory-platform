@@ -264,6 +264,12 @@
 }
 
 
+// Блок полей слева. Раскладку в две колонки делает штатная вложенность
+// групп Odoo, здесь только ограничиваем ширину: поле шириной в метр
+// читается как баннер, а не как поле.
+.pmk-doc-head__fields .o_inner_group { max-width: 100%; }
+
+
 // ─── Карточка показателя ──────────────────────────────────────────────────
 //
 // Итог документа — его главное число, но набран он был тем же кеглем, что
@@ -292,6 +298,23 @@
   border-radius: 16px;
   padding: 12px 16px;
 }
+
+// Счётчики строкой под плашками: в группе полей они добавляли лишние
+// ряды и тянули шапку вниз, а здесь занимают пустое место под карточками.
+.pmk-kpi__note {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 0 4px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.55);
+  font-variant-numeric: tabular-nums;
+
+  .o_field_widget { color: rgba(255, 255, 255, 0.8); font-weight: 600; }
+}
+
+.pmk-kpi__dot { opacity: 0.4; }
 
 .pmk-kpi__label {
   font-size: 11px;
@@ -394,51 +417,42 @@
     color: rgba(255, 255, 255, 0.6) !important;
   }
 
-  // Два поля в строке. Атрибут col="4" в разметке Odoo 19 до сетки не
-  // доводит — замер показал три колонки вместо четырёх и поле шириной 959px
-  // на весь лист. Поэтому раскладку задаём здесь: дети группы идут парами
-  // «подпись / значение», и четыре колонки дают ровно два поля в строку.
-  // Примечание Odoo уже помечает как span 3 — в четырёх колонках оно и
-  // занимает строку целиком.
-  .o_inner_group.grid {
-    grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr);
-    column-gap: 24px;
-    // Полю с рамкой нужен воздух, иначе рамки соседних строк слипаются.
-    row-gap: 10px;
-  }
+  // Строки шапки чуть свободнее: полю с рамкой нужен воздух, иначе рамки
+  // соседних строк слипаются.
+  .o_inner_group { row-gap: 8px; }
 
-  // На узком листе пара колонок вместо четырёх, и тогда растянутых ячеек
-  // быть не должно — иначе span 3 уедет за сетку.
-  @media (max-width: 1400px) {
-    .o_inner_group.grid {
-      grid-template-columns: auto minmax(0, 1fr);
-    }
-    .o_inner_group.grid > .o_cell { grid-column: auto !important; }
-  }
-
-  .o_field_widget input:not([type="checkbox"]):not([type="radio"]),
-  .o_field_widget textarea {
+  // Рамку даём КОНТЕЙНЕРУ поля, а не полю ввода: у даты и целых чисел
+  // элемента ввода нет вовсе (проверено — o_field_date и o_field_integer
+  // отдают просто текст), и рамка на input оставила бы их без оформления.
+  // Так все значения выглядят одинаково, чем бы они ни рисовались внутри.
+  .o_cell.o_wrap_input > .o_field_widget {
+    display: flex;
+    align-items: center;
+    min-height: 34px;
+    padding: 4px 10px;
     background: rgba(0, 0, 0, 0.18);
-    border: 1px solid rgba(255, 255, 255, 0.10) !important;
+    border: 1px solid rgba(255, 255, 255, 0.10);
     border-radius: 8px;
-    padding: 6px 10px;
-    min-height: 32px;
+
+    &:hover { border-color: rgba(255, 255, 255, 0.18); }
+
+    // Обводку фокуса ставим контейнеру: сам input внутри уже без рамки.
+    &:focus-within {
+      background: rgba(0, 0, 0, 0.28);
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+  }
+
+  // Поле ввода внутри рамки — прозрачное, иначе рамки будет две.
+  .o_cell.o_wrap_input .o_field_widget input,
+  .o_cell.o_wrap_input .o_field_widget textarea {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    padding: 0;
+    min-height: 0;
 
     &::placeholder { color: rgba(255, 255, 255, 0.32); }
-
-    &:hover { border-color: rgba(255, 255, 255, 0.18) !important; }
-
-    &:focus {
-      background: rgba(0, 0, 0, 0.28);
-      border-color: rgba(255, 255, 255, 0.4) !important;
-      box-shadow: none;
-    }
-
-    // Обводку фокуса не снимаем: по ней работают с клавиатуры.
-    &:focus-visible {
-      outline: 2px solid rgba(255, 255, 255, 0.75);
-      outline-offset: 1px;
-    }
   }
 
   // Стрелка выпадающего списка прижата к правому краю поля, а не к тексту.
