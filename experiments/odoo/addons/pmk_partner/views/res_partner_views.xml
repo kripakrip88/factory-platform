@@ -98,7 +98,7 @@
       </button>
       <!-- У этой кнопки в name лежит числовой id действия, разный в каждой
            базе, поэтому ищем её по вложенному полю. -->
-      <xpath expr="//button[field[@name='payment_token_count']]" position="attributes">
+      <xpath expr="//button[.//field[@name='payment_token_count']]" position="attributes">
         <attribute name="invisible">1</attribute>
       </xpath>
 
