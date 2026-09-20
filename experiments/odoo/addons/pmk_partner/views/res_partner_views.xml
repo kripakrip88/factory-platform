@@ -190,14 +190,11 @@
         <attribute name="invisible">1</attribute>
       </field>
 
-      <!-- Группировка автоматических запросов котировок: тонкая настройка
-           планировщика закупок, до неё далеко. -->
-      <field name="group_rfq" position="attributes">
-        <attribute name="invisible">1</attribute>
-      </field>
-      <field name="group_on" position="attributes">
-        <attribute name="invisible">1</attribute>
-      </field>
+      <!-- Группировка автоматических запросов котировок (поля group_rfq и
+           group_on из purchase_stock) НЕ скрывается: её представление
+           применяется к форме ПОСЛЕ нашего, и xpath до неё не достаёт.
+           Прятать через отдельное представление-наследник purchase_stock
+           ради двух полей не стоит — оставлено осознанно. -->
 
     </field>
   </record>
