@@ -462,18 +462,31 @@ class LaserJob(models.Model):
     # ==================================================================
 
     def action_propose_offcuts(self):
-        """Предложить обрезки по листам, где остался цельный кусок."""
+        """Предложить обрезки по листам, где остался цельный кусок.
+
+        Кнопка обязана всегда делать что-то осмысленное. Раньше повторное
+        нажатие выдавало «всё в лом», хотя обрезок уже был предложен первым
+        нажатием: лист с готовым обрезком пропускался, счётчик оставался
+        нулём, и человек видел отказ вместо своего же результата. Теперь
+        «уже предложено» и «нечего предлагать» — разные исходы, и в обоих
+        случаях открывается список: в первом с тем, что есть, во втором
+        пустой, чтобы завести обрезок руками.
+        """
         offcuts = self.env["pmk.laser.offcut"]
         created = 0
+        already = 0
+        small_sheets = []
         smallest = min(self.mapped("min_offcut_mm") or [money.DEFAULT_MIN_OFFCUT_MM])
         for job in self:
             for sheet in job.sheet_ids:
                 if sheet.offcut_ids:
+                    already += len(sheet.offcut_ids)
                     continue
                 proposal = money.propose_offcut(
                     sheet.width_mm, sheet.length_mm, sheet.utilization_pct,
                     min_length_mm=job.min_offcut_mm)
                 if not proposal:
+                    small_sheets.append(sheet.number)
                     continue
                 width, length = proposal
                 offcuts.create({
@@ -483,13 +496,28 @@ class LaserJob(models.Model):
                     "length_mm": length,
                 })
                 created += 1
-        if not created:
-            raise UserError(_(
-                "Ни на одном листе не осталось куска длиннее %g мм — всё в лом. "
-                "Если на листе цельный остаток есть, заведите обрезок руками: "
-                "точный свободный прямоугольник по файлу пока не считается."
-            ) % smallest)
-        return True
+
+        # Что сказать человеку. Предложение ГРУБОЕ — точный свободный
+        # прямоугольник считается по геометрии раскладки, а она в двоичной
+        # части файла. Поэтому про правку размера говорим всегда, а не только
+        # когда предложить не вышло.
+        if created:
+            msg = _("Предложено обрезков: %(n)s. Размер прикидочный — "
+                    "посмотрите на лист и поправьте.") % {"n": created}
+        elif already:
+            msg = _("Обрезки по этому заданию уже предложены (%(n)s). "
+                    "Ниже — то, что есть; размер можно поправить.") % {"n": already}
+        else:
+            msg = _("Свободного куска длиннее %(mm)g мм не нашлось — по расчёту "
+                    "всё уходит в лом. Если на листе цельный остаток есть, "
+                    "заведите обрезок кнопкой «Новое»: точный прямоугольник "
+                    "по файлу пока не считается.") % {"mm": smallest}
+
+        action = self.env["ir.actions.actions"]._for_xml_id("pmk_laser.action_laser_offcut")
+        action["domain"] = [("job_id", "in", self.ids)]
+        action["context"] = dict(self.env.context, default_job_id=self[:1].id)
+        action["help"] = "<p class='o_view_nocontent_smiling_face'>%s</p>" % msg
+        return action
 
     # ==================================================================
     # Нормативы
