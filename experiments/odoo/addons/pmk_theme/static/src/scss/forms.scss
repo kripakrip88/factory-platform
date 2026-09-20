@@ -390,9 +390,27 @@
     color: rgba(255, 255, 255, 0.6) !important;
   }
 
-  // Строки шапки чуть свободнее: полю с рамкой нужен воздух, иначе рамки
-  // соседних строк слипаются.
-  .o_inner_group { row-gap: 10px; }
+  // Два поля в строке. Атрибут col="4" в разметке Odoo 19 до сетки не
+  // доводит — замер показал три колонки вместо четырёх и поле шириной 959px
+  // на весь лист. Поэтому раскладку задаём здесь: дети группы идут парами
+  // «подпись / значение», и четыре колонки дают ровно два поля в строку.
+  // Примечание Odoo уже помечает как span 3 — в четырёх колонках оно и
+  // занимает строку целиком.
+  .o_inner_group.grid {
+    grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr);
+    column-gap: 24px;
+    // Полю с рамкой нужен воздух, иначе рамки соседних строк слипаются.
+    row-gap: 10px;
+  }
+
+  // На узком листе пара колонок вместо четырёх, и тогда растянутых ячеек
+  // быть не должно — иначе span 3 уедет за сетку.
+  @media (max-width: 1400px) {
+    .o_inner_group.grid {
+      grid-template-columns: auto minmax(0, 1fr);
+    }
+    .o_inner_group.grid > .o_cell { grid-column: auto !important; }
+  }
 
   .o_field_widget input:not([type="checkbox"]):not([type="radio"]),
   .o_field_widget textarea {
