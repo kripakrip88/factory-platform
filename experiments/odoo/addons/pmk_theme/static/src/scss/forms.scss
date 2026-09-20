@@ -581,13 +581,24 @@
 
 .o_form_view.pmk-form {
 
+  // !important здесь вынужденный: Odoo задаёт колонки и в правиле формы,
+  // и утилитой .grid из Bootstrap, и на части групп выигрывала утилита —
+  // подпись и поле оставались в двух колонках, а на узком окне колонка
+  // подписи схлопывалась в столбик из букв.
   .o_inner_group.grid {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) !important;
     row-gap: 0;
   }
 
   .o_cell.o_wrap_label {
     padding: 0 0 2px;
+    // На узком окне колонка подписи схлопывается, а класс text-break у Odoo
+    // ломает слово по буквам — подпись встаёт вертикальным столбиком из
+    // отдельных букв. Ширину не даём опускаться ниже читаемой, перенос
+    // разрешаем только по словам.
+    min-width: 7rem;
+    word-break: normal;
+    overflow-wrap: normal;
 
     label,
     .o_form_label {
