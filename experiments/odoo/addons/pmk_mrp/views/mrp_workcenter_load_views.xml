@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+  <!--
+    Загрузка рабочих центров на текущую неделю — полосы «участок · процент»
+    из прототипа владельца.
+
+    ПОЧЕМУ КАНБАН, А НЕ ОДНА КАРТОЧКА СО СПИСКОМ ПОЛОС. В прототипе это один
+    блок, внутри которого четыре строки. В Odoo одна карточка на несколько
+    записей — это либо отчёт QWeb (не кликается, живёт отдельной страницей),
+    либо свой компонент на JS. Канбан даёт ровно ту же разметку полосы на
+    запись, штатным способом, и карточка остаётся кликабельной: с неё
+    открывается сам рабочий центр. Разница с макетом — полосы лежат на
+    отдельных карточках, а не на одной общей.
+
+    sample="0" — обязательно. По умолчанию Odoo на пустой модели показывает
+    выдуманные записи-образцы, и приёмка увидела бы участки с процентами,
+    которых нет. Ровно та же беда, что со штатным графиком загрузки, который
+    при пустой таблице заданий подставляет случайные числа.
+  -->
+  <record id="view_mrp_workcenter_load_kanban" model="ir.ui.view">
+    <field name="name">mrp.workcenter.kanban.pmk.load</field>
+    <field name="model">mrp.workcenter</field>
+    <!--
+      Приоритет 99, чтобы этот канбан НЕ стал канбаном рабочих центров по
+      умолчанию: Odoo выбирает вид с наименьшим приоритетом, у штатного он 16.
+      Наш открывается только своим действием, из своего пункта меню.
+    -->
+    <field name="priority">99</field>
+    <field name="arch" type="xml">
+      <!--
+        Своего класса на канбане нет. Стоял pmk-mrp-load, но в теме такого
+        класса не описано ни строчки (grep по pmk_theme/static/src/scss) —
+        крючок без правил, который выглядит как «стиль есть, просто не
+        доехал». Оформление полосы даёт .pmk-meter из indicators.scss, оно
+        ниже в шаблоне карточки.
+      -->
+      <kanban create="0" sample="0">
+        <!--
+          Поля, которые читает шаблон, объявляются здесь: то, что не объявлено,
+          Odoo не запрашивает у сервера, и record.pmk_load_bar в шаблоне будет
+          пустым. Считаются они на сервере (models/mrp_workcenter.py) — вид
+          только раскладывает готовые значения.
+        -->
+        <field name="name"/>
+        <field name="pmk_load_bar"/>
+        <field name="pmk_load_token"/>
+        <field name="pmk_load_label"/>
+        <field name="pmk_load_note"/>
+        <templates>
+          <t t-name="card">
+            <!--
+              Разметка полосы — договорённость с темой
+              (pmk_theme/static/src/scss/indicators.scss): название, дорожка с
+              заливкой, процент. Ширину и цвет CSS не решает и решать не
+              должен: порог «сколько процентов уже тревога» — вопрос
+              производства, а не оформления, поэтому и то и другое приезжает
+              инлайном из данных. В стиль подставляется ИМЯ переменной темы,
+              а сам цвет остаётся в теме.
+
+              Названия участков длиннее колонки («Плазменная резка»,
+              «Сварочный пост №2») режутся многоточием, поэтому полное имя
+              обязательно уходит в title: обрезанная подпись без подсказки —
+              это потерянные данные.
+            -->
+            <div class="pmk-meter">
+              <span class="pmk-meter__name" t-att-title="record.name.value">
+                <field name="name"/>
+              </span>
+              <span class="pmk-meter__track">
+                <span class="pmk-meter__fill"
+                      t-attf-style="width: #{record.pmk_load_bar.raw_value}%; background: var(#{record.pmk_load_token.raw_value});"/>
+              </span>
+              <span class="pmk-meter__pct"
+                    t-attf-style="color: var(#{record.pmk_load_token.raw_value});"
+                    t-att-title="record.pmk_load_note.value">
+                <field name="pmk_load_label"/>
+              </span>
+            </div>
+            <!--
+              Строка-пояснение обязательна, а не украшение. Когда считать не
+              из чего, в узкую колонку процентов помещается только прочерк —
+              слова «нет данных» и причина живут здесь. Когда данные есть,
+              здесь видно, из чего сложился процент: «18,5 из 40,0 ч».
+            -->
+            <div class="text-muted small mt-1">
+              <field name="pmk_load_note"/>
+            </div>
+          </t>
+        </templates>
+      </kanban>
+    </field>
+  </record>
+
+  <record id="action_mrp_workcenter_load" model="ir.actions.act_window">
+    <field name="name">Загрузка рабочих центров</field>
+    <field name="res_model">mrp.workcenter</field>
+    <field name="view_mode">kanban,list,form</field>
+    <field name="view_id" ref="view_mrp_workcenter_load_kanban"/>
+    <field name="help" type="html">
+      <p class="o_view_nocontent_smiling_face">Рабочих центров пока нет</p>
+      <p>
+        Участок заводится в разделе «Производство → Рабочие центры».
+        Загрузка считается по рабочим заданиям недели и графику работы
+        участка; пока заданий нет, экран так и пишет: нет данных.
+      </p>
+    </field>
+  </record>
+
+</odoo>
