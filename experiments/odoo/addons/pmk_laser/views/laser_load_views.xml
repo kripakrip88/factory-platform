@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+  <!--
+    Экран загрузки участка. Считает он ровно то, что есть: минуты по нормативу
+    плюс загрузка и разгрузка стола на каждый лист.
+
+    Главная ловушка этого экрана — задания БЕЗ норматива. Их план равен нулю, и
+    в сумме по дню они выглядят как «станок свободен». Поэтому и в списке, и в
+    сводной таблице рядом с минутами всегда стоит состояние плана, а в фильтрах
+    первым идёт «без норматива»: пустое должно быть видно, а не тихо
+    складываться с настоящими минутами.
+  -->
+
+  <record id="view_laser_load_pivot" model="ir.ui.view">
+    <field name="name">pmk.laser.job.pivot</field>
+    <field name="model">pmk.laser.job</field>
+    <field name="arch" type="xml">
+      <pivot string="Загрузка участка">
+        <field name="date" type="row" interval="day"/>
+        <field name="machine_id" type="col"/>
+        <field name="planned_minutes" type="measure"/>
+        <field name="actual_minutes" type="measure"/>
+        <field name="sheet_count" type="measure"/>
+        <field name="useful_mass_kg" type="measure"/>
+      </pivot>
+    </field>
+  </record>
+
+  <record id="view_laser_load_graph" model="ir.ui.view">
+    <field name="name">pmk.laser.job.graph</field>
+    <field name="model">pmk.laser.job</field>
+    <field name="arch" type="xml">
+      <graph string="Загрузка участка" type="bar" stacked="1">
+        <field name="date" type="row" interval="day"/>
+        <field name="machine_id" type="col"/>
+        <field name="planned_minutes" type="measure"/>
+      </graph>
+    </field>
+  </record>
+
+  <record id="view_laser_load_list" model="ir.ui.view">
+    <field name="name">pmk.laser.job.load.list</field>
+    <field name="model">pmk.laser.job</field>
+    <field name="arch" type="xml">
+      <list string="Загрузка по дням" default_order="date, machine_id">
+        <field name="date"/>
+        <field name="machine_id"/>
+        <field name="name"/>
+        <field name="sheet_id" string="Лист"/>
+        <field name="sheet_count" sum="Листов"/>
+        <field name="cut_length_m" sum="Рез, м"/>
+        <field name="pierce_count" sum="Проколов"/>
+        <field name="planned_minutes" sum="План, мин"/>
+        <field name="actual_minutes" sum="Факт, мин"/>
+        <field name="plan_state" widget="badge"
+               decoration-success="plan_state == 'ok'"
+               decoration-warning="plan_state == 'rough'"
+               decoration-muted="plan_state in ('no_norm', 'no_drawing')"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="action_laser_load" model="ir.actions.act_window">
+    <field name="name">Загрузка участка</field>
+    <field name="res_model">pmk.laser.job</field>
+    <field name="view_mode">pivot,graph,list</field>
+    <field name="search_view_id" ref="view_laser_job_search"/>
+    <field name="context">{'group_by': ['date', 'machine_id']}</field>
+    <field name="help" type="html">
+      <p class="o_view_nocontent_smiling_face">Пока нечего планировать</p>
+      <p>Минуты появятся, когда у заданий будут разобраны чертежи (метры реза и
+         проколы) и выведен хотя бы один норматив по замерам. Задания без
+         норматива показывают ноль минут и помечены отдельно — это не «станок
+         свободен», это «мы ещё не мерили».</p>
+    </field>
+  </record>
+
+  <record id="action_laser_load_pivot_view" model="ir.actions.act_window.view">
+    <field name="sequence">1</field>
+    <field name="view_mode">pivot</field>
+    <field name="view_id" ref="view_laser_load_pivot"/>
+    <field name="act_window_id" ref="action_laser_load"/>
+  </record>
+
+  <record id="action_laser_load_graph_view" model="ir.actions.act_window.view">
+    <field name="sequence">2</field>
+    <field name="view_mode">graph</field>
+    <field name="view_id" ref="view_laser_load_graph"/>
+    <field name="act_window_id" ref="action_laser_load"/>
+  </record>
+
+  <record id="action_laser_load_list_view" model="ir.actions.act_window.view">
+    <field name="sequence">3</field>
+    <field name="view_mode">list</field>
+    <field name="view_id" ref="view_laser_load_list"/>
+    <field name="act_window_id" ref="action_laser_load"/>
+  </record>
+
+</odoo>

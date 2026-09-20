@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <data noupdate="1">
+    <!--
+      noupdate: при обновлении модуля счётчик не сбрасывается на единицу.
+      Без этой записи models/job.py::create молча оставил бы каждому заданию
+      имя «Черновик» — next_by_code на несуществующем коде возвращает None,
+      исключения не будет. Десяток одинаковых «Черновиков» в списке заданий
+      обнаружится не сразу, а когда оператору надо будет сказать, на каком
+      из них он режет.
+    -->
+    <record id="seq_laser_job" model="ir.sequence">
+      <field name="name">Задание на лазерную резку</field>
+      <field name="code">pmk.laser.job</field>
+      <field name="prefix">ЛР-</field>
+      <field name="padding">5</field>
+      <field name="company_id" eval="False"/>
+    </record>
+  </data>
+</odoo>

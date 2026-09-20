@@ -31,11 +31,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends libmagic1 \
 #     pymorphy2 тянет словарь отдельным пакетом — pymorphy2-dicts-ru.
 #     matplotlib/networkx нужны только модулям mklab_* (показатели и графы);
 #     держим в образе, чтобы их можно было включить не пересобирая.
+#  3) НАШИ модули: ezdxf — чтение чертежей .dxf в pmk_laser (длина реза, проколы,
+#     эскиз). Объявлен в external_dependencies манифеста, поэтому без него Odoo
+#     просто не даст поставить pmk_laser — трейсбека на кнопке не будет.
+#     ЕДИНСТВЕННЫЙ ЗАКРЕПЛЁННЫЙ ПАКЕТ в списке, и вот почему: метрики чертежа —
+#     это цифры, на которые опирается норматив участка. Числа закреплены тестами
+#     на 29 живых развёртках (349240.1 мм реза суммарно) и посчитаны именно
+#     на 1.4.2. Смена версии меняет спрямление дуг — то есть длину реза, — и
+#     сделает это молча: тесты упадут, а причина будет выглядеть как ошибка
+#     в нашем коде. Обновлять осознанно и с перепрогоном тестов.
 #
 # --break-system-packages: в Debian 12+ системный python помечен как externally-managed
 # (PEP 668), без флага pip отказывается ставить. Для образа это безопасно.
 ARG PYDEPS="pytils num2words docxcompose docxtpl beautifulsoup4 polib siphashc weasyprint \
-            pymorphy2 pymorphy2-dicts-ru dadata httpx python-magic matplotlib networkx openupgradelib"
+            pymorphy2 pymorphy2-dicts-ru dadata httpx python-magic matplotlib networkx openupgradelib \
+            ezdxf==1.4.2"
 
 # typing_extensions в этом образе поставлен пакетом Debian, без метаданных RECORD —
 # pip не может его удалить и падает с «Cannot uninstall typing_extensions ... RECORD

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+  <record id="view_laser_machine_list" model="ir.ui.view">
+    <field name="name">pmk.laser.machine.list</field>
+    <field name="model">pmk.laser.machine</field>
+    <field name="arch" type="xml">
+      <list string="Станки">
+        <field name="sequence" widget="handle"/>
+        <field name="name"/>
+        <field name="power_kw"/>
+        <field name="max_thickness_mm"/>
+        <field name="load_min"/>
+        <field name="unload_min"/>
+        <field name="shift_minutes"/>
+        <field name="workcenter_id" optional="hide"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="view_laser_machine_form" model="ir.ui.view">
+    <field name="name">pmk.laser.machine.form</field>
+    <field name="model">pmk.laser.machine</field>
+    <field name="arch" type="xml">
+      <form string="Станок">
+        <sheet>
+          <div class="oe_title">
+            <h1><field name="name" placeholder="Например, Раскройный лазер 6 кВт"/></h1>
+          </div>
+          <group>
+            <group string="Станок">
+              <field name="power_kw"/>
+              <field name="max_thickness_mm"/>
+              <field name="max_width_mm"/>
+              <field name="max_length_mm"/>
+              <field name="active" invisible="1"/>
+            </group>
+            <group string="Стол">
+              <!-- Минуты НА ЛИСТ, а не на задание: в задании на 8 листов это
+                   восемь загрузок и восемь разгрузок. -->
+              <field name="load_min"/>
+              <field name="unload_min"/>
+              <field name="shift_minutes"/>
+              <field name="workcenter_id"/>
+            </group>
+          </group>
+          <div class="text-muted">
+            Загрузка и разгрузка стола — константы станка на КАЖДЫЙ лист.
+            Замер оператора («начал» / «закончил») покрывает весь лист целиком,
+            и эти минуты из него вычитаются: в норматив должно попадать чистое
+            время резки, иначе станок с подъёмником и станок без него нельзя
+            будет сравнить.
+          </div>
+          <field name="note" placeholder="Примечание…"/>
+        </sheet>
+      </form>
+    </field>
+  </record>
+
+  <record id="action_laser_machine" model="ir.actions.act_window">
+    <field name="name">Станки</field>
+    <field name="res_model">pmk.laser.machine</field>
+    <field name="view_mode">list,form</field>
+    <field name="help" type="html">
+      <p class="o_view_nocontent_smiling_face">Заведите два станка участка</p>
+      <p>Мощность в расчёт не входит намеренно: скорость выводится из замеров
+         этого станка, а не из его киловатт.</p>
+    </field>
+  </record>
+
+</odoo>

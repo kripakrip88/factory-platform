@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+  <record id="view_laser_job_list" model="ir.ui.view">
+    <field name="name">pmk.laser.job.list</field>
+    <field name="model">pmk.laser.job</field>
+    <field name="arch" type="xml">
+      <!-- Список заданий: слева что режем, справа деньги. Премия в списке не
+           украшение — это то, ради чего участок вообще заводят в систему. -->
+      <list string="Задания на резку">
+        <field name="name"/>
+        <field name="date"/>
+        <field name="partner_id" optional="show"/>
+        <field name="sheet_id" string="Лист"/>
+        <field name="machine_id"/>
+        <field name="sheet_count" sum="Листов"/>
+        <field name="utilization_pct" optional="show"/>
+        <field name="useful_mass_kg" sum="Полезный вес, кг"/>
+        <field name="premium_rub" sum="Премия, ₽"/>
+        <field name="planned_minutes" sum="План, мин" optional="show"/>
+        <field name="actual_minutes" sum="Факт, мин" optional="show"/>
+        <field name="plan_state" widget="badge"
+               decoration-success="plan_state == 'ok'"
+               decoration-warning="plan_state == 'rough'"
+               decoration-muted="plan_state in ('no_norm', 'no_drawing')"/>
+        <field name="measure_state" widget="badge"
+               decoration-success="measure_state == 'done'"
+               decoration-warning="measure_state == 'partial'"
+               decoration-muted="measure_state == 'none'"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="view_laser_job_form" model="ir.ui.view">
+    <field name="name">pmk.laser.job.form</field>
+    <field name="model">pmk.laser.job</field>
+    <field name="arch" type="xml">
+      <form string="Задание на резку">
+        <header>
+          <button name="action_parse_file" type="object" string="Разобрать файл"
+                  class="btn-primary" icon="fa-file-archive-o" invisible="not file"/>
+          <button name="action_parse_drawings" type="object" string="Разобрать чертежи"
+                  icon="fa-drafting-compass" invisible="not part_ids"/>
+          <button name="action_propose_offcuts" type="object" string="Предложить обрезки"
+                  icon="fa-recycle" invisible="not sheet_ids"/>
+          <button name="action_update_norms" type="object" string="Пересчитать нормативы"
+                  icon="fa-line-chart" invisible="measure_state != 'done'"/>
+        </header>
+        <sheet>
+          <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
+
+          <div class="alert alert-info" role="alert" invisible="not technical_is_demo">
+            Параметры резки в файле демонстрационные — <field name="technical_note" readonly="1" nolabel="1"/>.
+            Толщина взята из имени файла, режимы из файла не используются.
+          </div>
+          <div class="alert alert-warning" role="alert" invisible="not parse_warning">
+            <field name="parse_warning" readonly="1" nolabel="1"/>
+          </div>
+          <div class="alert alert-warning" role="alert" invisible="not balance_broken">
+            Баланс не сходится: обрезков оприходовано больше, чем было металла.
+            Проверьте размеры обрезков — лом не может быть отрицательным.
+          </div>
+          <div class="alert alert-secondary" role="alert" invisible="plan_state != 'no_norm'">
+            На толщине <field name="thickness_mm" readonly="1" nolabel="1"/> мм ещё нет ни одного
+            замера, поэтому плана нет. Среднее по соседним толщинам не подставляется:
+            двойка и десятка режутся с разницей в разы.
+          </div>
+          <div class="alert alert-secondary" role="alert" invisible="plan_state != 'no_drawing'">
+            Длина реза не разобрана: у <field name="parts_without_drawing" readonly="1" nolabel="1"/>
+            деталей нет чертежа. Без знаменателя замер оператора останется числом
+            «47 минут», которое нельзя перенести на другой заказ.
+          </div>
+
+          <group>
+            <group string="Заказ">
+              <field name="date"/>
+              <field name="partner_id"/>
+              <field name="sale_order_id"/>
+              <field name="machine_id"/>
+              <field name="note" placeholder="Примечание…"/>
+            </group>
+            <group string="Материал">
+              <!-- Вид листа из имени файла не виден: «3мм» не говорит, гладкий
+                   он или рифлёный. По умолчанию разбор ставит гладкий, здесь
+                   технолог может выбрать другой — масса квадрата у них разная. -->
+              <field name="sheet_id" options="{'no_create': True}"/>
+              <field name="sheet_type" readonly="1"/>
+              <field name="thickness_mm" readonly="1"/>
+              <field name="mass_per_sqm" readonly="1"/>
+              <field name="grade_id"/>
+              <field name="kerf_mm"/>
+              <field name="min_offcut_mm"/>
+            </group>
+          </group>
+
+          <group>
+            <group string="Файл раскроя">
+              <field name="file" filename="file_name" widget="binary"/>
+              <field name="file_name" invisible="1"/>
+              <field name="file_app" readonly="1" invisible="not file_app"/>
+              <field name="file_operator" readonly="1" invisible="not file_operator"/>
+              <field name="file_saved_text" readonly="1" invisible="not file_saved_text"/>
+              <field name="contour_count" readonly="1" invisible="not contour_count"/>
+              <field name="technical_is_demo" invisible="1"/>
+            </group>
+            <group string="Металл и деньги">
+              <field name="sheet_count"/>
+              <field name="gross_area_m2"/>
+              <field name="useful_area_m2"/>
+              <field name="utilization_pct"/>
+              <field name="useful_mass_kg"/>
+              <field name="premium_rate_rub"/>
+              <field name="premium_rub"/>
+            </group>
+          </group>
+
+          <notebook>
+            <page string="Листы" name="sheets">
+              <p class="text-muted">
+                Строка на каждый физический лист, даже если раскладка одна и та же:
+                лист кладут, режут и снимают поштучно. Оператору здесь два касания —
+                «Начал» и «Закончил», всё остальное подставится из задания.
+              </p>
+              <field name="sheet_ids" readonly="1">
+                <list>
+                  <field name="number"/>
+                  <field name="nest_index" optional="show"/>
+                  <field name="width_mm"/>
+                  <field name="length_mm"/>
+                  <field name="utilization_pct"/>
+                  <field name="mass_kg" sum="Масса, кг"/>
+                  <field name="useful_mass_kg" sum="Полезный вес, кг"/>
+                  <field name="actual_minutes" sum="Факт, мин"/>
+                  <button name="action_start_cut" type="object" string="Начал"
+                          class="btn-primary" icon="fa-play"/>
+                  <button name="action_finish_cut" type="object" string="Закончил"
+                          class="btn-secondary" icon="fa-stop"/>
+                </list>
+              </field>
+            </page>
+
+            <page string="Детали и чертежи" name="parts">
+              <p class="text-muted">
+                Чертёж даёт знаменатель: метры реза и проколы. Эскиз и метрики —
+                в одной строке, чтобы было видно, что разобрали именно эту деталь.
+              </p>
+              <field name="part_ids">
+                <list editable="bottom">
+                  <field name="preview_svg" widget="pmk_svg" string="Эскиз" optional="show"/>
+                  <field name="name"/>
+                  <field name="qty"/>
+                  <field name="qty_used" optional="show"/>
+                  <field name="drawing" filename="drawing_name" widget="binary"/>
+                  <field name="drawing_name" column_invisible="True"/>
+                  <field name="cut_length_mm"/>
+                  <field name="pierce_count"/>
+                  <field name="cut_length_total_m" sum="Рез всего, м"/>
+                  <field name="pierces_total" sum="Проколов всего"/>
+                  <button name="action_parse_drawing" type="object" string="Разобрать"
+                          icon="fa-magic" invisible="not drawing"/>
+                </list>
+              </field>
+              <group>
+                <group string="Знаменатель задания">
+                  <field name="cut_length_m"/>
+                  <field name="pierce_count"/>
+                  <field name="parts_without_drawing"/>
+                  <field name="contour_gap_pct"/>
+                </group>
+                <group string="План и факт">
+                  <field name="plan_state"/>
+                  <field name="planned_minutes"/>
+                  <field name="actual_minutes"/>
+                  <field name="measure_state"/>
+                </group>
+              </group>
+              <div class="text-muted" invisible="contour_gap_pct &lt; 10">
+                Проколы по чертежам расходятся с контурами файла раскроя более чем
+                на десятую часть — похоже, к деталям приложены не те чертежи.
+              </div>
+            </page>
+
+            <page string="Операторы и премия" name="operators">
+              <p class="text-muted">
+                Премия считается от полезного веса и делится между операторами
+                поровну. Делёж идёт в копейках, поэтому сумма долей всегда равна
+                премии: 738,20 ₽ на троих — 246,07 + 246,07 + 246,06.
+              </p>
+              <field name="operator_ids">
+                <list editable="bottom">
+                  <field name="sequence" widget="handle"/>
+                  <field name="employee_id"/>
+                  <field name="amount_rub" sum="Итого, ₽"/>
+                </list>
+              </field>
+            </page>
+
+            <page string="Обрезки" name="offcuts">
+              <p class="text-muted">
+                Система предлагает размер, технолог смотрит на лист и правит.
+                Предложение грубое: точный свободный прямоугольник считается по
+                геометрии раскладки, а она в двоичной части файла. В баланс идут
+                только подтверждённые обрезки.
+              </p>
+              <field name="offcut_ids">
+                <list editable="bottom" decoration-muted="state == 'scrap'">
+                  <field name="job_id" column_invisible="True"/>
+                  <field name="sheet_line_id"/>
+                  <field name="width_mm"/>
+                  <field name="length_mm"/>
+                  <field name="proposed_width_mm" optional="hide"/>
+                  <field name="proposed_length_mm" optional="hide"/>
+                  <field name="deviation_pct" optional="show"/>
+                  <field name="mass_kg" sum="Обрезков, кг"/>
+                  <field name="state" widget="badge"
+                         decoration-success="state == 'confirmed'"
+                         decoration-warning="state == 'proposal'"/>
+                  <field name="note" optional="hide"/>
+                  <button name="action_confirm" type="object" string="Подтвердить"
+                          icon="fa-check" invisible="state == 'confirmed'"/>
+                  <button name="action_scrap" type="object" string="В лом"
+                          icon="fa-trash" invisible="state == 'scrap'"/>
+                </list>
+              </field>
+            </page>
+
+            <page string="Баланс металла" name="balance">
+              <p class="text-muted">
+                Вес списанных листов = детали + обрезки + пропил + лом. Лом не
+                вводят, он получается вычитанием — и именно поэтому по нему видно,
+                что обрезки не оприходуют или что раскладка плохая. Пропил считается
+                по ширине реза на всю толщину: на десятке метр реза уносит 15,7 г.
+              </p>
+              <group>
+                <group string="Списано">
+                  <field name="mass_kg"/>
+                </group>
+                <group string="Куда ушло">
+                  <field name="useful_mass_kg"/>
+                  <field name="offcut_mass_kg"/>
+                  <field name="kerf_mass_kg"/>
+                  <field name="scrap_mass_kg"/>
+                  <field name="balance_broken" invisible="1"/>
+                </group>
+              </group>
+            </page>
+
+            <page string="Замеры" name="measures">
+              <field name="measure_ids" readonly="1">
+                <list decoration-muted="excluded">
+                  <field name="job_id" column_invisible="True"/>
+                  <field name="sheet_line_id"/>
+                  <field name="operator_id"/>
+                  <field name="started_at"/>
+                  <field name="finished_at"/>
+                  <field name="duration_minutes" sum="Лист занял, мин"/>
+                  <field name="cut_minutes" sum="Чистая резка, мин"/>
+                  <field name="state"/>
+                  <field name="excluded"/>
+                  <field name="exclude_reason" optional="show"/>
+                </list>
+              </field>
+            </page>
+          </notebook>
+        </sheet>
+        <chatter/>
+      </form>
+    </field>
+  </record>
+
+  <record id="view_laser_job_search" model="ir.ui.view">
+    <field name="name">pmk.laser.job.search</field>
+    <field name="model">pmk.laser.job</field>
+    <field name="arch" type="xml">
+      <search string="Задания на резку">
+        <field name="name"/>
+        <field name="partner_id"/>
+        <field name="machine_id"/>
+        <field name="sheet_id"/>
+        <filter name="today" string="Сегодня" domain="[('date', '=', context_today().strftime('%Y-%m-%d'))]"/>
+        <filter name="this_month" string="Этот месяц"
+                domain="[('date', '&gt;=', (context_today() + relativedelta(day=1)).strftime('%Y-%m-%d'))]"/>
+        <separator/>
+        <filter name="no_norm" string="Без норматива" domain="[('plan_state', '=', 'no_norm')]"/>
+        <filter name="no_drawing" string="Чертежи не разобраны" domain="[('plan_state', '=', 'no_drawing')]"/>
+        <filter name="not_measured" string="Не замерено" domain="[('measure_state', '!=', 'done')]"/>
+        <filter name="balance_broken" string="Баланс не сходится" domain="[('balance_broken', '=', True)]"/>
+        <group expand="0" string="Группировать по">
+          <filter name="group_machine" string="Станок" context="{'group_by': 'machine_id'}"/>
+          <filter name="group_date" string="Дата" context="{'group_by': 'date'}"/>
+          <filter name="group_partner" string="Заказчик" context="{'group_by': 'partner_id'}"/>
+          <filter name="group_thickness" string="Толщина" context="{'group_by': 'thickness_mm'}"/>
+        </group>
+      </search>
+    </field>
+  </record>
+
+  <record id="action_laser_job" model="ir.actions.act_window">
+    <field name="name">Задания на резку</field>
+    <field name="res_model">pmk.laser.job</field>
+    <field name="view_mode">list,form</field>
+    <field name="search_view_id" ref="view_laser_job_search"/>
+    <field name="help" type="html">
+      <p class="o_view_nocontent_smiling_face">Первое задание на резку</p>
+      <p>Приложите управляющий файл CypCut (.lxds) и нажмите «Разобрать файл»:
+         состав, листы и использование придут из него, толщина — из имени файла.</p>
+    </field>
+  </record>
+
+</odoo>

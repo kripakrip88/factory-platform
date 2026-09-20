@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+  <record id="view_laser_offcut_list" model="ir.ui.view">
+    <field name="name">pmk.laser.offcut.list</field>
+    <field name="model">pmk.laser.offcut</field>
+    <field name="arch" type="xml">
+      <!-- Реестр обрезков: габарит впереди веса. По габариту потом ищут, куда
+           кусок влезет; по весу этого не сделать — решение владельца. -->
+      <list string="Обрезки" decoration-muted="state == 'scrap'" decoration-warning="state == 'proposal'">
+        <field name="job_id"/>
+        <field name="sheet_line_id" optional="show"/>
+        <field name="sheet_type"/>
+        <field name="thickness_mm"/>
+        <field name="width_mm"/>
+        <field name="length_mm"/>
+        <field name="area_m2" sum="Площадь, м²"/>
+        <field name="mass_kg" sum="Масса, кг"/>
+        <field name="deviation_pct" optional="show"/>
+        <field name="state" widget="badge"
+               decoration-success="state == 'confirmed'"
+               decoration-warning="state == 'proposal'"
+               decoration-muted="state == 'scrap'"/>
+        <button name="action_confirm" type="object" string="Подтвердить"
+                class="btn-primary" icon="fa-check" invisible="state == 'confirmed'"/>
+        <button name="action_scrap" type="object" string="В лом"
+                icon="fa-trash" invisible="state == 'scrap'"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="view_laser_offcut_form" model="ir.ui.view">
+    <field name="name">pmk.laser.offcut.form</field>
+    <field name="model">pmk.laser.offcut</field>
+    <field name="arch" type="xml">
+      <form string="Обрезок">
+        <header>
+          <button name="action_confirm" type="object" string="Подтвердить"
+                  class="btn-primary" icon="fa-check" invisible="state == 'confirmed'"/>
+          <button name="action_scrap" type="object" string="Оказался ломом"
+                  icon="fa-trash" invisible="state == 'scrap'"/>
+          <field name="state" widget="statusbar"/>
+        </header>
+        <sheet>
+          <div class="oe_title"><h1><field name="display_name" readonly="1" nolabel="1"/></h1></div>
+          <group>
+            <group string="Откуда">
+              <field name="job_id"/>
+              <field name="sheet_line_id"/>
+              <field name="sheet_type" readonly="1"/>
+              <field name="thickness_mm" readonly="1"/>
+            </group>
+            <group string="Размер">
+              <field name="width_mm"/>
+              <field name="length_mm"/>
+              <field name="area_m2"/>
+              <field name="mass_kg"/>
+            </group>
+          </group>
+          <group string="Что предложила система">
+            <field name="proposed_width_mm"/>
+            <field name="proposed_length_mm"/>
+            <field name="deviation_pct"/>
+            <field name="note" placeholder="Примечание…"/>
+          </group>
+          <div class="text-muted">
+            Предложение грубое: считается полоса во всю ширину листа длиной
+            «габарит × (1 − использование)». Точный свободный прямоугольник
+            лежит в двоичной части файла раскроя. Поэтому размер правит технолог,
+            а система запоминает своё предложение — по расхождению потом будет
+            видно, стоило ли разбирать геометрию.
+          </div>
+        </sheet>
+      </form>
+    </field>
+  </record>
+
+  <record id="view_laser_offcut_search" model="ir.ui.view">
+    <field name="name">pmk.laser.offcut.search</field>
+    <field name="model">pmk.laser.offcut</field>
+    <field name="arch" type="xml">
+      <search string="Обрезки">
+        <field name="job_id"/>
+        <field name="sheet_type"/>
+        <field name="thickness_mm"/>
+        <filter name="proposal" string="Ждут подтверждения" domain="[('state', '=', 'proposal')]"/>
+        <filter name="confirmed" string="На стеллаже" domain="[('state', '=', 'confirmed')]"/>
+        <group expand="0" string="Группировать по">
+          <filter name="group_thickness" string="Толщина" context="{'group_by': 'thickness_mm'}"/>
+          <filter name="group_type" string="Вид листа" context="{'group_by': 'sheet_type'}"/>
+          <filter name="group_state" string="Состояние" context="{'group_by': 'state'}"/>
+        </group>
+      </search>
+    </field>
+  </record>
+
+  <record id="action_laser_offcut" model="ir.actions.act_window">
+    <field name="name">Обрезки</field>
+    <field name="res_model">pmk.laser.offcut</field>
+    <field name="view_mode">list,form</field>
+    <field name="search_view_id" ref="view_laser_offcut_search"/>
+    <field name="context">{'search_default_confirmed': 1}</field>
+  </record>
+
+</odoo>

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Раздел называется «Лазерная резка», а не «Производство»: на заводе есть и
+    другие участки, и когда за ними придёт очередь, каждый получит свой пункт,
+    а не будет прятаться внутри общего.
+
+    Порядок пунктов — порядок работы. Сначала задания (их заводит технолог),
+    потом замеры (их закрывает оператор), потом загрузка (её смотрит владелец),
+    и только затем нормативы: они выводятся сами и трогать их руками не нужно.
+  -->
+  <menuitem id="menu_pmk_laser" name="Лазерная резка" sequence="82"/>
+
+  <menuitem id="menu_pmk_laser_job" name="Задания на резку"
+            parent="menu_pmk_laser" action="action_laser_job" sequence="10"/>
+
+  <menuitem id="menu_pmk_laser_measure" name="Замеры"
+            parent="menu_pmk_laser" action="action_laser_measure" sequence="20"/>
+
+  <menuitem id="menu_pmk_laser_load" name="Загрузка участка"
+            parent="menu_pmk_laser" action="action_laser_load" sequence="30"/>
+
+  <menuitem id="menu_pmk_laser_offcut" name="Обрезки"
+            parent="menu_pmk_laser" action="action_laser_offcut" sequence="40"/>
+
+  <menuitem id="menu_pmk_laser_norm" name="Нормативы"
+            parent="menu_pmk_laser" action="action_laser_norm" sequence="50"/>
+
+  <menuitem id="menu_pmk_laser_config" name="Настройка"
+            parent="menu_pmk_laser" sequence="90"/>
+
+  <menuitem id="menu_pmk_laser_machine" name="Станки"
+            parent="menu_pmk_laser_config" action="action_laser_machine" sequence="10"/>
+</odoo>

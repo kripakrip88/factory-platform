@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+  <record id="view_laser_measure_list" model="ir.ui.view">
+    <field name="name">pmk.laser.measure.list</field>
+    <field name="model">pmk.laser.measure</field>
+    <field name="arch" type="xml">
+      <list string="Замеры" decoration-muted="excluded">
+        <field name="job_id"/>
+        <field name="sheet_line_id"/>
+        <field name="machine_id"/>
+        <field name="thickness_mm"/>
+        <field name="operator_id"/>
+        <field name="started_at"/>
+        <field name="finished_at"/>
+        <field name="duration_minutes" sum="Лист занял, мин"/>
+        <field name="cut_minutes" sum="Чистая резка, мин"/>
+        <field name="state" widget="badge"
+               decoration-success="state == 'done'"
+               decoration-warning="state == 'running'"
+               decoration-muted="state == 'waiting'"/>
+        <field name="excluded" optional="show"/>
+        <field name="exclude_reason" optional="hide"/>
+        <button name="action_finish" type="object" string="Закончил"
+                class="btn-primary" icon="fa-stop" invisible="state != 'running'"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="view_laser_measure_form" model="ir.ui.view">
+    <field name="name">pmk.laser.measure.form</field>
+    <field name="model">pmk.laser.measure</field>
+    <field name="arch" type="xml">
+      <form string="Замер резки">
+        <header>
+          <!-- Два касания, и ничего больше. Семь полей оператор вбивать не
+               станет — тогда замеров не будет вовсе, а без них у участка не
+               появится ни одного норматива. -->
+          <button name="action_start" type="object" string="Начал"
+                  class="btn-primary" icon="fa-play" invisible="state != 'waiting'"/>
+          <button name="action_finish" type="object" string="Закончил"
+                  class="btn-primary" icon="fa-stop" invisible="state != 'running'"/>
+          <field name="state" widget="statusbar"/>
+        </header>
+        <sheet>
+          <group>
+            <group string="Что режем">
+              <field name="job_id"/>
+              <field name="sheet_line_id"/>
+              <field name="machine_id" readonly="1"/>
+              <field name="sheet_type" readonly="1"/>
+              <field name="thickness_mm" readonly="1"/>
+            </group>
+            <group string="Время">
+              <field name="operator_id"/>
+              <field name="started_at"/>
+              <field name="finished_at"/>
+              <field name="duration_minutes"/>
+              <field name="cut_minutes"/>
+            </group>
+          </group>
+          <group string="Для мастера">
+            <field name="excluded"/>
+            <field name="exclude_reason" invisible="not excluded" required="excluded"
+                   placeholder="Обед внутри замера, поломка, чужой лист…"/>
+          </group>
+          <div class="text-muted">
+            Чистая резка — это полное время листа минус загрузка и разгрузка стола
+            (константы станка). В норматив идёт именно она: иначе станок с
+            подъёмником и станок без него окажутся с разной «скоростью» при
+            одинаковой резке.
+          </div>
+        </sheet>
+      </form>
+    </field>
+  </record>
+
+  <record id="view_laser_measure_search" model="ir.ui.view">
+    <field name="name">pmk.laser.measure.search</field>
+    <field name="model">pmk.laser.measure</field>
+    <field name="arch" type="xml">
+      <search string="Замеры">
+        <field name="job_id"/>
+        <field name="operator_id"/>
+        <field name="machine_id"/>
+        <filter name="running" string="Сейчас режет" domain="[('state', '=', 'running')]"/>
+        <filter name="done" string="Закончены" domain="[('state', '=', 'done')]"/>
+        <separator/>
+        <filter name="counted" string="Идут в норматив"
+                domain="[('excluded', '=', False), ('state', '=', 'done')]"/>
+        <filter name="excluded" string="Исключены мастером" domain="[('excluded', '=', True)]"/>
+        <group expand="0" string="Группировать по">
+          <filter name="group_machine" string="Станок" context="{'group_by': 'machine_id'}"/>
+          <filter name="group_thickness" string="Толщина" context="{'group_by': 'thickness_mm'}"/>
+          <filter name="group_operator" string="Оператор" context="{'group_by': 'operator_id'}"/>
+          <filter name="group_started" string="Дата" context="{'group_by': 'started_at:day'}"/>
+        </group>
+      </search>
+    </field>
+  </record>
+
+  <record id="action_laser_measure" model="ir.actions.act_window">
+    <field name="name">Замеры</field>
+    <field name="res_model">pmk.laser.measure</field>
+    <field name="view_mode">list,form</field>
+    <field name="search_view_id" ref="view_laser_measure_search"/>
+    <field name="help" type="html">
+      <p class="o_view_nocontent_smiling_face">Замеров пока нет</p>
+      <p>Замер начинают с листа в задании: кнопки «Начал» и «Закончил».
+         Всё остальное — станок, материал, толщина, длина реза — подставляется
+         из задания, вводить руками нечего.</p>
+    </field>
+  </record>
+
+</odoo>

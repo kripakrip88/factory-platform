@@ -1,0 +1,17 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_pmk_laser_machine_user,pmk.laser.machine.user,model_pmk_laser_machine,base.group_user,1,0,0,0
+access_pmk_laser_machine_mgr,pmk.laser.machine.mgr,model_pmk_laser_machine,base.group_system,1,1,1,1
+access_pmk_laser_job_user,pmk.laser.job.user,model_pmk_laser_job,base.group_user,1,1,1,1
+access_pmk_laser_job_mgr,pmk.laser.job.mgr,model_pmk_laser_job,base.group_system,1,1,1,1
+access_pmk_laser_job_part_user,pmk.laser.job.part.user,model_pmk_laser_job_part,base.group_user,1,1,1,1
+access_pmk_laser_job_part_mgr,pmk.laser.job.part.mgr,model_pmk_laser_job_part,base.group_system,1,1,1,1
+access_pmk_laser_job_sheet_user,pmk.laser.job.sheet.user,model_pmk_laser_job_sheet,base.group_user,1,1,1,1
+access_pmk_laser_job_sheet_mgr,pmk.laser.job.sheet.mgr,model_pmk_laser_job_sheet,base.group_system,1,1,1,1
+access_pmk_laser_job_operator_user,pmk.laser.job.operator.user,model_pmk_laser_job_operator,base.group_user,1,1,1,1
+access_pmk_laser_job_operator_mgr,pmk.laser.job.operator.mgr,model_pmk_laser_job_operator,base.group_system,1,1,1,1
+access_pmk_laser_measure_user,pmk.laser.measure.user,model_pmk_laser_measure,base.group_user,1,1,1,1
+access_pmk_laser_measure_mgr,pmk.laser.measure.mgr,model_pmk_laser_measure,base.group_system,1,1,1,1
+access_pmk_laser_offcut_user,pmk.laser.offcut.user,model_pmk_laser_offcut,base.group_user,1,1,1,1
+access_pmk_laser_offcut_mgr,pmk.laser.offcut.mgr,model_pmk_laser_offcut,base.group_system,1,1,1,1
+access_pmk_laser_norm_user,pmk.laser.norm.user,model_pmk_laser_norm,base.group_user,1,1,1,0
+access_pmk_laser_norm_mgr,pmk.laser.norm.mgr,model_pmk_laser_norm,base.group_system,1,1,1,1

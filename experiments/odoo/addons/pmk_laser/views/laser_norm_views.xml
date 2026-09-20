@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+  <record id="view_laser_norm_list" model="ir.ui.view">
+    <field name="name">pmk.laser.norm.list</field>
+    <field name="model">pmk.laser.norm</field>
+    <field name="arch" type="xml">
+      <!-- Строка норматива всегда показывает, НА ЧЁМ он держится: сколько
+           заданий в выборке и какой разброс. Норматив по одному заданию и
+           норматив по двадцати выглядят одинаково солидно, пока не увидишь
+           колонку «Заданий в выборке». -->
+      <list string="Нормативы" decoration-muted="mode == 'none'" decoration-warning="mode == 'aggregate'">
+        <field name="machine_id"/>
+        <field name="sheet_type"/>
+        <field name="thickness_mm"/>
+        <field name="mode" widget="badge"
+               decoration-success="mode == 'full'"
+               decoration-warning="mode == 'aggregate'"
+               decoration-muted="mode == 'none'"/>
+        <field name="min_per_m"/>
+        <field name="speed_mm_min"/>
+        <field name="pierce_time_s"/>
+        <field name="spread_pct"/>
+        <field name="sample_count"/>
+        <field name="skipped_count" optional="hide"/>
+        <field name="last_sample" optional="show"/>
+        <field name="reason" optional="show"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="view_laser_norm_form" model="ir.ui.view">
+    <field name="name">pmk.laser.norm.form</field>
+    <field name="model">pmk.laser.norm</field>
+    <field name="arch" type="xml">
+      <form string="Норматив">
+        <header>
+          <button name="action_sync" type="object" string="Пересчитать по замерам"
+                  class="btn-primary" icon="fa-refresh"/>
+        </header>
+        <sheet>
+          <div class="oe_title"><h1><field name="display_name" readonly="1" nolabel="1"/></h1></div>
+
+          <div class="alert alert-secondary" role="alert" invisible="mode != 'none'">
+            Норматива нет: по этой толщине ещё не закрыто ни одного задания с
+            замерами. Среднее по соседним толщинам сюда не подставляется — двойка
+            и десятка режутся с разницей в разы, и такое «среднее» выглядело бы
+            как норматив, считалось как норматив и врало бы как норматив.
+          </div>
+          <div class="alert alert-warning" role="alert" invisible="mode != 'aggregate'">
+            Рез и проколы не разделены: <field name="reason" readonly="1" nolabel="1"/>.
+            Планировать можно — минут на метр реза хватает, — но время прокола
+            отдельной цифрой не показывается, потому что его не из чего вывести.
+          </div>
+
+          <group>
+            <group string="Где действует">
+              <field name="machine_id"/>
+              <field name="sheet_type"/>
+              <field name="thickness_mm"/>
+              <field name="mode"/>
+            </group>
+            <group string="Что выведено">
+              <field name="min_per_m"/>
+              <field name="speed_mm_min" invisible="mode != 'full'"/>
+              <field name="pierce_time_s" invisible="mode != 'full'"/>
+              <field name="spread_pct"/>
+              <field name="sample_count"/>
+              <field name="skipped_count"/>
+              <field name="last_sample"/>
+            </group>
+          </group>
+          <div class="text-muted">
+            Норматив не вводят, а выводят обратным счётом из замеров: время
+            каждого задания делится на его знаменатель — метры реза и проколы.
+            Скорость здесь эффективная, с холостыми перемещениями внутри:
+            планируем мы стол, а не луч.
+          </div>
+        </sheet>
+      </form>
+    </field>
+  </record>
+
+  <record id="action_laser_norm" model="ir.actions.act_window">
+    <field name="name">Нормативы</field>
+    <field name="res_model">pmk.laser.norm</field>
+    <field name="view_mode">list,form</field>
+    <field name="help" type="html">
+      <p class="o_view_nocontent_smiling_face">Нормативов пока нет</p>
+      <p>Они появятся сами, когда закроется первое задание с замерами по всем
+         листам и разобранными чертежами. До тех пор планировать нечем — и это
+         честнее, чем планировать выдуманным.</p>
+    </field>
+  </record>
+
+  <record id="action_laser_norm_sync" model="ir.actions.server">
+    <field name="name">Пересчитать по замерам</field>
+    <field name="model_id" ref="model_pmk_laser_norm"/>
+    <field name="binding_model_id" ref="model_pmk_laser_norm"/>
+    <field name="binding_view_types">list</field>
+    <field name="state">code</field>
+    <field name="code">model._sync_from_measures()</field>
+  </record>
+
+</odoo>
