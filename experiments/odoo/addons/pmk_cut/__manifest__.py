@@ -25,8 +25,10 @@
     "data": [
         "security/ir.model.access.csv",
         "data/ir_sequence.xml",
-        "views/cut_views.xml",
+        # Отчёт РАНЬШЕ видов: в шапке формы есть кнопка печати, и на момент
+        # разбора вида действие отчёта уже должно существовать.
         "report/cut_report.xml",
+        "views/cut_views.xml",
     ],
     "assets": {
         "web.assets_backend": [
