@@ -40,38 +40,31 @@ class PriceMailing(models.Model):
     # ── рубильник и потолок (живут в системных параметрах)
     enabled = fields.Boolean(
         "Рассылка включена",
-        compute="_compute_settings", inverse="_inverse_enabled",
         help="Пока выключено, задание просыпается по расписанию и ничего не "
              "отправляет. Это главный рубильник.",
     )
-    max_per_run = fields.Integer(
-        "Не больше писем за раз",
-        compute="_compute_settings", inverse="_inverse_max",
-        help="Остальные подождут следующего раза.",
-    )
+    max_per_run = fields.Integer("Не больше писем за раз", default=30,
+                                 help="Остальные подождут следующего раза.")
 
     # ── расписание (живёт в плановом задании; nextcall хранится в UTC)
-    weekday = fields.Selection(
-        WEEKDAYS, string="День недели",
-        compute="_compute_schedule", inverse="_inverse_schedule")
-    hour = fields.Integer("Час", compute="_compute_schedule", inverse="_inverse_schedule")
-    minute = fields.Integer("Минута", compute="_compute_schedule", inverse="_inverse_schedule")
-    next_run = fields.Char("Следующая отправка", compute="_compute_schedule")
-    last_run = fields.Datetime("Последний прогон", compute="_compute_schedule")
+    weekday = fields.Selection(WEEKDAYS, string="День недели", default="0")
+    hour = fields.Integer("Час", default=9)
+    minute = fields.Integer("Минута", default=10)
+    next_run = fields.Char("Следующая отправка", compute="_compute_runtime")
+    last_run = fields.Datetime("Последний прогон", compute="_compute_runtime")
 
     # ── письмо (живёт в шаблоне)
-    subject = fields.Char("Тема письма", compute="_compute_letter", inverse="_inverse_letter")
+    subject = fields.Char("Тема письма")
     body_html = fields.Html(
-        "Текст письма", compute="_compute_letter", inverse="_inverse_letter",
-        sanitize=False,
+        "Текст письма", sanitize=False,
         help="Доступны подстановки Odoo. Список групп поставки подставляется "
              "автоматически по каждому получателю.")
 
     # ── что происходит сейчас
-    recipient_count = fields.Integer("Получателей в рассылке", compute="_compute_stats")
-    supplier_count = fields.Integer("Всего поставщиков в реестре", compute="_compute_stats")
-    queue_count = fields.Integer("Писем в очереди на отправку", compute="_compute_stats")
-    server_ready = fields.Boolean("Почтовый сервер настроен", compute="_compute_stats")
+    recipient_count = fields.Integer("Получателей в рассылке", compute="_compute_runtime")
+    supplier_count = fields.Integer("Всего поставщиков в реестре", compute="_compute_runtime")
+    queue_count = fields.Integer("Писем в очереди на отправку", compute="_compute_runtime")
+    server_ready = fields.Boolean("Почтовый сервер настроен", compute="_compute_runtime")
     test_email = fields.Char("Адрес для пробного письма",
                              help="Пробное письмо уходит только сюда и никому больше.")
 
@@ -82,6 +75,10 @@ class PriceMailing(models.Model):
     def action_open(self):
         """Открыть единственную запись, создав её при первом заходе."""
         record = self.search([], limit=1) or self.create({})
+        # Подтягиваем при каждом открытии: настройки могли поменять напрямую —
+        # в плановом задании, системных параметрах или шаблоне письма. Так
+        # расхождение «в окне одно, в системе другое» не переживает открытия.
+        record._pull_from_system()
         return {
             "type": "ir.actions.act_window",
             "name": _("Рассылка прайсов"),
@@ -103,77 +100,59 @@ class PriceMailing(models.Model):
     def _template(self):
         return self.env.ref(TEMPLATE_XMLID, raise_if_not_found=False)
 
-    def _compute_settings(self):
-        icp = self._icp()
-        on = icp.get_param(PARAM_ENABLED, "0") == "1"
-        cap = int(icp.get_param(PARAM_MAX, "30") or 30)
-        for rec in self:
-            rec.enabled = on
-            rec.max_per_run = cap
-
-    def _inverse_enabled(self):
-        for rec in self:
-            self._icp().set_param(PARAM_ENABLED, "1" if rec.enabled else "0")
-            _logger.info("Рассылка прайсов %s пользователем %s",
-                         "ВКЛЮЧЕНА" if rec.enabled else "выключена", self.env.user.login)
-
-    def _inverse_max(self):
-        for rec in self:
-            self._icp().set_param(PARAM_MAX, str(max(1, rec.max_per_run or 1)))
-
-    def _compute_schedule(self):
-        cron = self._cron()
+    def _pull_from_system(self):
+        """Прочитать настоящее состояние из задания, параметров и шаблона."""
+        icp, cron, tmpl = self._icp(), self._cron(), self._template()
         tz = pytz.timezone(TZ)
         for rec in self:
-            if not cron or not cron.nextcall:
-                rec.weekday, rec.hour, rec.minute = "0", 9, 10
-                rec.next_run, rec.last_run = _("расписание не заведено"), False
-                continue
-            local = pytz.UTC.localize(cron.nextcall).astimezone(tz)
-            rec.weekday = str(local.weekday())
-            rec.hour, rec.minute = local.hour, local.minute
-            rec.next_run = local.strftime("%d.%m.%Y в %H:%M") + " (Владивосток)"
-            rec.last_run = cron.lastcall
+            vals = {
+                "enabled": icp.get_param(PARAM_ENABLED, "0") == "1",
+                "max_per_run": int(icp.get_param(PARAM_MAX, "30") or 30),
+            }
+            if cron and cron.nextcall:
+                local = pytz.UTC.localize(cron.nextcall).astimezone(tz)
+                vals.update(weekday=str(local.weekday()), hour=local.hour, minute=local.minute)
+            if tmpl:
+                vals.update(subject=tmpl.subject, body_html=tmpl.body_html)
+            # super, иначе write() тут же погонит те же значения обратно
+            super(PriceMailing, rec).write(vals)
 
-    def _inverse_schedule(self):
-        cron = self._cron()
-        if not cron:
-            return
+    def _push_to_system(self):
+        """Разложить изменения туда, где значения живут на самом деле."""
+        icp, cron, tmpl = self._icp(), self._cron(), self._template()
         for rec in self:
-            cron.sudo().write({"nextcall": self._next_occurrence(
-                int(rec.weekday or 0), rec.hour or 0, rec.minute or 0)})
+            icp.set_param(PARAM_ENABLED, "1" if rec.enabled else "0")
+            icp.set_param(PARAM_MAX, str(max(1, rec.max_per_run or 1)))
+            if cron:
+                cron.sudo().write({"nextcall": self._next_occurrence(
+                    int(rec.weekday or 0), rec.hour or 0, rec.minute or 0)})
+            if tmpl and (rec.subject or rec.body_html):
+                tmpl.sudo().write({"subject": rec.subject, "body_html": rec.body_html})
+            _logger.info("Рассылка прайсов: %s, %s в %02d:%02d, потолок %s — правил %s",
+                         "ВКЛЮЧЕНА" if rec.enabled else "выключена",
+                         dict(WEEKDAYS).get(rec.weekday, "?"), rec.hour or 0,
+                         rec.minute or 0, rec.max_per_run, self.env.user.login)
 
-    @staticmethod
-    def _next_occurrence(weekday, hour, minute):
-        """Ближайшее наступление дня недели и времени — в UTC.
+    def write(self, vals):
+        res = super().write(vals)
+        # Раскладываем только когда меняли настройки, а не служебные поля
+        # вроде адреса для пробного письма.
+        if {"enabled", "max_per_run", "weekday", "hour", "minute",
+            "subject", "body_html"} & set(vals):
+            self._push_to_system()
+        return res
 
-        Считаем в часовом поясе завода: `nextcall` хранится в UTC, и записать
-        туда местное время значит промахнуться на десять часов.
-        """
-        tz = pytz.timezone(TZ)
-        now = datetime.datetime.now(tz)
-        ahead = (weekday - now.weekday()) % 7
-        day = now + datetime.timedelta(days=ahead)
-        local = tz.localize(datetime.datetime(day.year, day.month, day.day, hour, minute))
-        if local <= now:
-            local += datetime.timedelta(days=7)
-        return local.astimezone(pytz.UTC).replace(tzinfo=None)
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        records._pull_from_system()
+        return records
 
-    def _compute_letter(self):
-        tmpl = self._template()
-        for rec in self:
-            rec.subject = tmpl.subject if tmpl else False
-            rec.body_html = tmpl.body_html if tmpl else False
-
-    def _inverse_letter(self):
-        tmpl = self._template()
-        if not tmpl:
-            return
-        for rec in self:
-            tmpl.sudo().write({"subject": rec.subject, "body_html": rec.body_html})
-
-    def _compute_stats(self):
+    def _compute_runtime(self):
+        """Что происходит прямо сейчас — считается, не хранится."""
         P = self.env["res.partner"]
+        cron = self._cron()
+        tz = pytz.timezone(TZ)
         recipients = P.search_count([("pmk_price_mailing", "=", True)])
         suppliers = P.search_count([("pmk_price_supplier", "=", True)])
         queued = self.env["mail.mail"].sudo().search_count([("state", "=", "outgoing")])
@@ -183,6 +162,12 @@ class PriceMailing(models.Model):
             rec.supplier_count = suppliers
             rec.queue_count = queued
             rec.server_ready = ready
+            if cron and cron.nextcall:
+                local = pytz.UTC.localize(cron.nextcall).astimezone(tz)
+                rec.next_run = local.strftime("%d.%m.%Y в %H:%M") + " (Владивосток)"
+                rec.last_run = cron.lastcall
+            else:
+                rec.next_run, rec.last_run = _("расписание не заведено"), False
 
     # ------------------------------------------------------------------
     # кнопки
