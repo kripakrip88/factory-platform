@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Коды ОКЕИ (ОК 015-94) на единицы измерения стенда.
+
+        Зачем. На стенде у ВСЕХ 30 единиц поля okei и kod пустые, а российские
+        первичные документы без них не собираются:
+
+          * okei  — из l10n_ru_upd_xml. Уходит в атрибут ОКЕИ_Тов электронного
+            УПД. Проверка выгрузки (l10n_ru_upd_xml/models/account_move.py)
+            прямо отказывает: «Не указан код ОКЕИ для единицы измерения ...».
+          * kod   — из l10n_ru_doc. Печатается в колонке «Код» единицы
+            измерения печатных форм УПД и УКД (report_upd.xml, report_updn.xml).
+
+        Два модуля хранят одно и то же число в двух полях. Заполняем оба
+        одинаково, иначе электронный УПД уйдёт, а в печатной форме будет прочерк.
+
+        Коды сверены по двум независимым источникам (classinform.ru и
+        legalacts.ru, текст ОК 015-94), а 796 подтверждается ещё и самой
+        RuOdoo — ruodoo_demo_data/data/uom_uom.xml ставит штуке ровно 796.
+        Пять кодов, названных владельцем (006, 055, 166, 168, 796), сверку
+        прошли без единой правки.
+
+        Заполняем ВСЕ активные единицы, а не только наши четыре. Причина
+        простая: проверка УПД смотрит на единицу КАЖДОЙ строки документа, и
+        один «Час» в строке услуги заблокирует выгрузку всего документа.
+
+        ГРАБЛЯ ЗАГРУЗКИ. Все записи uom.uom заведены модулем uom с флагом
+        noupdate=1 в ir_model_data, а orm/models.py::_load_records пропускает
+        такие записи в режиме обновления:
+
+            if not (update and d_noupdate): to_update.append(data)
+
+        Проверено: при загрузке этого файла в режиме 'update' он проходит без
+        единой ошибки, а okei и kod остаются пустыми у всех тридцати единиц.
+        Атрибут noupdate в ЭТОМ файле ни на что не влияет — проверка смотрит
+        на строку в базе, а не на файл.
+
+        Значит: коды лягут при ПЕРВОЙ установке модуля (тогда режим 'init') и
+        при явном прогоне scripts/prepare_environment.py, который грузит
+        именно этот файл в 'init'. Команда `-u pmk_bridge` их не перепишет.
+        Если коды придётся менять — прогонять скрипт, а не обновлять модуль.
+    -->
+    <data>
+
+        <!-- ─── Единицы, в которых лежит наша номенклатура ─────────────── -->
+
+        <!-- Метр. Прокат: 665 карточек профиля. -->
+        <record id="uom.product_uom_meter" model="uom.uom">
+            <field name="okei">006</field>
+            <field name="kod">006</field>
+        </record>
+
+        <!-- Штука. Лист (решение владельца: лист считаем штуками
+             определённого размера) и 25 метизов. -->
+        <record id="uom.product_uom_unit" model="uom.uom">
+            <field name="okei">796</field>
+            <field name="kod">796</field>
+        </record>
+
+        <!-- Килограмм. Шесть лакокрасочных покрытий. -->
+        <record id="uom.product_uom_kgm" model="uom.uom">
+            <field name="okei">166</field>
+            <field name="kod">166</field>
+        </record>
+
+        <!-- Тонна. Номенклатура в тоннах не хранится, но в тоннах приходит
+             прайс, и тонна попадает в строку закупки. -->
+        <record id="uom.product_uom_ton" model="uom.uom">
+            <field name="okei">168</field>
+            <field name="kod">168</field>
+        </record>
+
+        <!-- Квадратный метр. Сейчас в нём лежат два листа, заведённые до
+             решения «лист — штуками». Плюс им меряется окраска. -->
+        <record id="uom.product_uom_square_meter" model="uom.uom">
+            <field name="okei">055</field>
+            <field name="kod">055</field>
+        </record>
+
+        <!-- ─── Остальные активные единицы ────────────────────────────── -->
+        <!-- Не наши, но любая из них в строке документа блокирует выгрузку
+             УПД целиком, поэтому закрываем всё, что включено. -->
+
+        <record id="uom.product_uom_millimeter" model="uom.uom">
+            <field name="okei">003</field>
+            <field name="kod">003</field>
+        </record>
+
+        <record id="uom.product_uom_gram" model="uom.uom">
+            <field name="okei">163</field>
+            <field name="kod">163</field>
+        </record>
+
+        <!-- 111 в ОКЕИ — «Миллилитр; кубический сантиметр»: одна строка на две
+             равные единицы, поэтому источники называют её по-разному. -->
+        <record id="uom.product_uom_milliliter" model="uom.uom">
+            <field name="okei">111</field>
+            <field name="kod">111</field>
+        </record>
+
+        <record id="uom.product_uom_litre" model="uom.uom">
+            <field name="okei">112</field>
+            <field name="kod">112</field>
+        </record>
+
+        <record id="uom.product_uom_hour" model="uom.uom">
+            <field name="okei">356</field>
+            <field name="kod">356</field>
+        </record>
+
+        <record id="uom.product_uom_minute" model="uom.uom">
+            <field name="okei">355</field>
+            <field name="kod">355</field>
+        </record>
+
+        <!-- В ОКЕИ это «Сутки», а не «День»; в Odoo единица названа Days. -->
+        <record id="uom.product_uom_day" model="uom.uom">
+            <field name="okei">359</field>
+            <field name="kod">359</field>
+        </record>
+
+        <record id="uom.product_uom_kwh" model="uom.uom">
+            <field name="okei">245</field>
+            <field name="kod">245</field>
+        </record>
+
+        <!-- 778 — «Упаковка». Не 704: 704 в ОКЕИ — «Набор». -->
+        <record id="uom.product_uom_pack_6" model="uom.uom">
+            <field name="okei">778</field>
+            <field name="kod">778</field>
+        </record>
+
+        <!-- ─── Выключенные метрические единицы ───────────────────────── -->
+        <!-- Их могут включить позже; дюймы, футы и галлоны не трогаем — в
+             российских первичных документах им делать нечего. -->
+
+        <record id="uom.product_uom_cm" model="uom.uom">
+            <field name="okei">004</field>
+            <field name="kod">004</field>
+        </record>
+
+        <record id="uom.product_uom_km" model="uom.uom">
+            <field name="okei">008</field>
+            <field name="kod">008</field>
+        </record>
+
+        <record id="uom.product_uom_cubic_meter" model="uom.uom">
+            <field name="okei">113</field>
+            <field name="kod">113</field>
+        </record>
+
+    </data>
+</odoo>

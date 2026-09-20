@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Дерево категорий номенклатуры: два уровня, 25 категорий на 752 карточки.
+
+        ПОЧЕМУ ДВА УРОВНЯ, А НЕ ОДИН. Разобрано по исходникам Odoo 19, потому
+        что «категория тянет счета учёта» верно только наполовину:
+
+          * Счета дохода и расхода ДЕЙСТВИТЕЛЬНО наследуются вверх по дереву —
+            account/models/product.py::_get_category_account идёт циклом
+            `categ = categ.parent_id`, пока не найдёт заполненное поле. Их
+            достаточно задать один раз на верхнем уровне.
+          * Способ учёта затрат и оценка запасов НЕ НАСЛЕДУЮТСЯ. В
+            stock_account/models/product.py::_compute_cost_method стоит
+            `categ_id.property_cost_method or company.cost_method` — родителя
+            в цепочке нет вовсе. Пустая подкатегория провалится не к
+            «Металлопрокату», а к настройке компании.
+          * Счёт оценки запасов и журнал склада тоже не наследуются: там
+            get_company_dependent_fallback, то есть снова настройка компании.
+
+        Отсюда правило этого файла: КАЖДЫЙ лист несёт fifo + real_time явно.
+        Ровно эти значения стоят сегодня на единственной живой категории
+        «Металлопрокат» (id 6), поэтому поведение не меняется ни на копейку,
+        а четыре существующих товара переезжают в листья без переоценки.
+        Это важно: product_template.write() в stock_account сравнивает
+        cost_method старой и новой категории и при расхождении зовёт
+        _update_standard_price() — то есть переразложить карточки «потом»
+        означает не правку поля, а переоценку склада.
+
+        Счета (доход, расход, оценка, журнал) НЕ задаём нигде: сегодня они
+        пусты и на «Металлопрокате», и на трёх стандартных категориях, всё
+        работает от настроек компании. Задать их — отдельное решение
+        бухгалтерии, и место для него уже готово: верхний уровень.
+
+        Второй уровень нужен не ради счетов, а ради того, что по категории
+        действительно фильтруется: правила размещения (stock.putaway.rule
+        умеет category_id — это наши METAL и REMNANT), стратегия списания,
+        отчёты по закупке и оборачиваемости, и поиск в списке из 752 карточек.
+    -->
+    <data noupdate="0">
+
+        <!-- ═══ 1. МЕТАЛЛОПРОКАТ — 665 карточек, 12 видов ═══════════════
+             Сама категория уже существует на стенде (id 6, в ней 4 товара).
+             Скрипт подготовки среды выдаёт ей этот внешний идентификатор ДО
+             загрузки файла, поэтому запись ниже обновляет существующую
+             категорию, а не заводит вторую с тем же названием.
+
+             Списание FIFO: кусок проката = партия, и брать надо тот, что
+             пришёл раньше, а не тот, что ближе лежит.
+        -->
+        <record id="categ_rolled" model="product.category">
+            <field name="name">Металлопрокат</field>
+            <field name="parent_id" eval="False"/>
+            <field name="property_cost_method">fifo</field>
+            <field name="property_valuation">real_time</field>
+            <field name="removal_strategy_id" ref="stock.removal_fifo"/>
+        </record>
+
+        <!-- Порядок видов — как в pmk.metal.profile.type (поле sequence),
+             чтобы список категорий и список видов проката в калькуляторе
+             читались одинаково. В скобках — сколько типоразмеров придёт. -->
+
+        <record id="categ_rolled_arm" model="product.category">   <!-- 15 -->
+            <field name="name">Арматура</field>
+            <field name="parent_id" ref="categ_rolled"/>
+            <field name="property_cost_method">fifo</field>
+            <field name="property_valuation">real_time</field>
+            <field name="removal_strategy_id" ref="stock.removal_fifo"/>
+        </record>
+
+        <record id="categ_rolled_dvt" model="product.category">   <!-- 87 -->
+            <field name="name">Двутавр</field>
+            <field name="parent_id" ref="categ_rolled"/>
+            <field name="property_cost_method">fifo</field>
+            <field name="property_valuation">real_time</field>
+            <field name="removal_strategy_id" ref="stock.removal_fifo"/>
+        </record>
+
+        <record id="categ_rolled_shv" model="product.category">   <!-- 58 -->
+            <field name="name">Швеллер</field>
+            <field name="parent_id" ref="categ_rolled"/>
+            <field name="property_cost_method">fifo</field>
+            <field name="property_valuation">real_time</field>
+            <field name="removal_strategy_id" ref="stock.removal_fifo"/>
+        </record>
+
+        <record id="categ_rolled_ugr" model="product.category">   <!-- 111 -->
+            <field name="name">Уголок равнополочный</field>
+            <field name="parent_id" ref="categ_rolled"/>
+            <field name="property_cost_method">fifo</field>
+            <field name="property_valuation">real_time</field>
+            <field name="removal_strategy_id" ref="stock.removal_fifo"/>
+        </record>
+
+        <record id="categ_rolled_ugn" model="product.category">   <!-- 62 -->
+            <field name="name">Уголок неравнополочный</field>
+            <field name="parent_id" ref="categ_rolled"/>
+            <field name="property_cost_method">fifo</field>
+            <field name="property_valuation">real_time</field>
+            <field name="removal_strategy_id" ref="stock.removal_fifo"/>
+        </record>
+
+        <record id="categ_rolled_krg" model="product.category">   <!-- 54 -->
+            <field name="name">Круг</field>
+            <field name="parent_id" ref="categ_rolled"/>
+            <field name="property_cost_method">fifo</field>
+            <field name="property_valuation">real_time</field>
+            <field name="removal_strategy_id" ref="stock.removal_fifo"/>
+        </record>
+
+        <record id="categ_rolled_kvd" model="product.category">   <!-- 30 -->
+            <field name="name">Квадрат</field>
+            <field name="parent_id" ref="categ_rolled"/>
+            <field name="property_cost_method">fifo</field>
+            <field name="property_valuation">real_time</field>
+            <field name="removal_strategy_id" ref="stock.removal_fifo"/>
+        </record>
+
+        <record id="categ_rolled_shg" model="product.category">   <!-- 31 -->
+            <field name="name">Шестигранник</field>
+            <field name="parent_id" ref="categ_rolled"/>
+            <field name="property_cost_method">fifo</field>
+            <field name="property_valuation">real_time</field>
+            <field name="removal_strategy_id" ref="stock.removal_fifo"/>
+        </record>
+
+        <!-- 98 круглых труб: 65 электросварных и 33 бесшовных. Владелец
+             решил разводить их РАЗНЫМИ КАРТОЧКАМИ (суффикс -BS в артикуле),
+             но категория одна: вид проката в справочнике один, и в двенадцати
+             видах владелец тоже считал их вместе. Если позже окажется, что
+             бесшовку нужно отдельно в отчётах по закупке — это отдельная
+             категория, и переезд 33 карточек, а не 98. -->
+        <record id="categ_rolled_trk" model="product.category">   <!-- 98 -->
+            <field name="name">Труба круглая</field>
+            <field name="parent_id" ref="categ_rolled"/>
+            <field name="property_cost_method">fifo</field>
+            <field name="property_valuation">real_time</field>
+            <field name="removal_strategy_id" ref="stock.removal_fifo"/>
+        </record>
+
+        <record id="categ_rolled_tpk" model="product.category">   <!-- 49 -->
+            <field name="name">Труба профильная квадратная</field>
+            <field name="parent_id" ref="categ_rolled"/>
+            <field name="property_cost_method">fifo</field>
+            <field name="property_valuation">real_time</field>
+            <field name="removal_strategy_id" ref="stock.removal_fifo"/>
+        </record>
+
+        <record id="categ_rolled_tpp" model="product.category">   <!-- 40 -->
+            <field name="name">Труба профильная прямоугольная</field>
+            <field name="parent_id" ref="categ_rolled"/>
+            <field name="property_cost_method">fifo</field>
+            <field name="property_valuation">real_time</field>
+            <field name="removal_strategy_id" ref="stock.removal_fifo"/>
+        </record>
+
+        <record id="categ_rolled_vgp" model="product.category">   <!-- 30 -->
+            <field name="name">Труба ВГП</field>
+            <field name="parent_id" ref="categ_rolled"/>
+            <field name="property_cost_method">fifo</field>
+            <field name="property_valuation">real_time</field>
+            <field name="removal_strategy_id" ref="stock.removal_fifo"/>
+        </record>
+
+        <!-- ═══ 2. ЛИСТ — 56 карточек, 4 вида ═══════════════════════════
+             Отдельная ветвь, а не подкатегория металлопроката: лист меряется
+             штуками, а прокат метрами, у листа своя характеристика «Габарит»,
+             свои правила размещения (обрезок в REMNANT отдельной партией со
+             своими размерами) и свой раскрой. Смешивать их в одном дереве —
+             значит каждый отчёт по металлопрокату складывать метры со штуками.
+
+             В справочнике 57 строк листа, но одна (id 57, оцинкованный 0,6 мм)
+             — дубль, заведённый руками мимо CSV. Карточек будет 56.
+        -->
+        <record id="categ_sheet" model="product.category">
+            <field name="name">Лист</field>
+            <field name="parent_id" eval="False"/>
+            <field name="property_cost_method">fifo</field>
+            <field name="property_valuation">real_time</field>
+            <field name="removal_strategy_id" ref="stock.removal_fifo"/>
+        </record>
+
+        <record id="categ_sheet_gl" model="product.category">     <!-- 31 -->
+            <field name="name">Лист горячекатаный гладкий</field>
+            <field name="parent_id" ref="categ_sheet"/>
+            <field name="property_cost_method">fifo</field>
+            <field name="property_valuation">real_time</field>
+            <field name="removal_strategy_id" ref="stock.removal_fifo"/>
+        </record>
+
+        <record id="categ_sheet_rf" model="product.category">     <!-- 8 -->
+            <field name="name">Лист рифлёный</field>
+            <field name="parent_id" ref="categ_sheet"/>
+            <field name="property_cost_method">fifo</field>
+            <field name="property_valuation">real_time</field>
+            <field name="removal_strategy_id" ref="stock.removal_fifo"/>
+        </record>
+
+        <record id="categ_sheet_pv" model="product.category">     <!-- 7 -->
+            <field name="name">Лист просечно-вытяжной</field>
+            <field name="parent_id" ref="categ_sheet"/>
+            <field name="property_cost_method">fifo</field>
+            <field name="property_valuation">real_time</field>
+            <field name="removal_strategy_id" ref="stock.removal_fifo"/>
+        </record>
+
+        <record id="categ_sheet_zn" model="product.category">     <!-- 10 -->
+            <field name="name">Лист оцинкованный тонколистовой</field>
+            <field name="parent_id" ref="categ_sheet"/>
+            <field name="property_cost_method">fifo</field>
+            <field name="property_valuation">real_time</field>
+            <field name="removal_strategy_id" ref="stock.removal_fifo"/>
+        </record>
+
+        <!-- ═══ 3. МЕТИЗЫ — 25 карточек, 5 видов ════════════════════════
+             Здесь FIFO не нужен: болт М8 одной партии от болта М8 другой
+             неотличим, а средняя цена избавляет от слоёв оценки на копеечных
+             позициях. Списание — ближайшее, метизы лежат в ящиках.
+        -->
+        <record id="categ_hw" model="product.category">
+            <field name="name">Метизы</field>
+            <field name="parent_id" eval="False"/>
+            <field name="property_cost_method">average</field>
+            <field name="property_valuation">real_time</field>
+            <field name="removal_strategy_id" ref="stock.removal_closest"/>
+        </record>
+
+        <record id="categ_hw_blt" model="product.category">       <!-- 10 -->
+            <field name="name">Болты</field>
+            <field name="parent_id" ref="categ_hw"/>
+            <field name="property_cost_method">average</field>
+            <field name="property_valuation">real_time</field>
+            <field name="removal_strategy_id" ref="stock.removal_closest"/>
+        </record>
+
+        <record id="categ_hw_nut" model="product.category">       <!-- 5 -->
+            <field name="name">Гайки</field>
+            <field name="parent_id" ref="categ_hw"/>
+            <field name="property_cost_method">average</field>
+            <field name="property_valuation">real_time</field>
+            <field name="removal_strategy_id" ref="stock.removal_closest"/>
+        </record>
+
+        <record id="categ_hw_wsh" model="product.category">       <!-- 5 -->
+            <field name="name">Шайбы</field>
+            <field name="parent_id" ref="categ_hw"/>
+            <field name="property_cost_method">average</field>
+            <field name="property_valuation">real_time</field>
+            <field name="removal_strategy_id" ref="stock.removal_closest"/>
+        </record>
+
+        <record id="categ_hw_anc" model="product.category">       <!-- 3 -->
+            <field name="name">Анкеры</field>
+            <field name="parent_id" ref="categ_hw"/>
+            <field name="property_cost_method">average</field>
+            <field name="property_valuation">real_time</field>
+            <field name="removal_strategy_id" ref="stock.removal_closest"/>
+        </record>
+
+        <record id="categ_hw_scr" model="product.category">       <!-- 2 -->
+            <field name="name">Саморезы</field>
+            <field name="parent_id" ref="categ_hw"/>
+            <field name="property_cost_method">average</field>
+            <field name="property_valuation">real_time</field>
+            <field name="removal_strategy_id" ref="stock.removal_closest"/>
+        </record>
+
+        <!-- ═══ 4. ЛКП — 6 карточек, без второго уровня ═════════════════
+             Второй уровень не заводим сознательно: на шесть позиций он даст
+             четыре категории по одной-две карточки. Средняя цена — краску
+             доливают в одну ёмкость, партии в ней уже перемешаны физически.
+        -->
+        <record id="categ_paint" model="product.category">        <!-- 6 -->
+            <field name="name">Лакокрасочные покрытия</field>
+            <field name="parent_id" eval="False"/>
+            <field name="property_cost_method">average</field>
+            <field name="property_valuation">real_time</field>
+            <field name="removal_strategy_id" ref="stock.removal_fifo"/>
+        </record>
+
+    </data>
+</odoo>

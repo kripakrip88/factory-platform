@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Характеристики номенклатуры: «Марка стали» и «Габарит листа».
+
+        Обе — dynamic (варианты создаются по требованию), решение владельца.
+        Цифры, почему это единственный рабочий режим, — ниже; они получены
+        не из документации, а замером на копии живой базы.
+
+        ═══ ГЛАВНАЯ ГРАБЛЯ: КАК ВЕШАТЬ ХАРАКТЕРИСТИКУ НА ЖИВОЙ ТОВАР ═══
+
+        Четыре существующие карточки уже возили металл. Если повесить на такую
+        карточку характеристику сразу со всеми значениями, Odoo 19 АРХИВИРУЕТ
+        её единственный вариант вместе с остатком. Замер на копии, товар
+        «Труба профильная 100x100x3», 3621,790 м на складе, 15 движений:
+
+            до:    вариант 9, active=True,  метки нет,  склад 3621,790
+            после: вариант 9, active=False, метки нет,  склад 3621,790
+
+        Остаток никуда не делся — он просто перестал быть виден: товар в архиве.
+        Нового варианта тоже нет, dynamic создаёт их по требованию.
+
+        Механика (product/models/product_template.py::_create_variant_ids):
+        у старого варианта набор значений ПУСТ, а на шаблоне теперь одна строка
+        характеристики. _filter_combinations_impossible_by_config сравнивает
+        длины (0 против 1), не пропускает пустую комбинацию — и вариант падает
+        в variants_to_unlink. Удалиться он не может, на нём движения, поэтому
+        _unlink_or_archive тихо ставит active=False.
+
+        ЛЕЧЕНИЕ — «правило одного значения». В том же методе есть ветка
+        single_value_lines: если в строке характеристики РОВНО ОДНО активное
+        значение, Odoo не пересоздаёт вариант, а дописывает это значение
+        существующему. Значит порядок такой:
+
+            шаг 1 — завести строку характеристики с ОДНИМ значением
+                    (маркой, которая у товара фактически лежит на складе);
+            шаг 2 — расширить строку до полного набора.
+
+        Замер того же товара по этому порядку:
+
+            до:               вариант 9, active=True, метки нет,      3621,790
+            после 1 значения: вариант 9, active=True, метки Ст3сп,    3621,790
+            после всех 8:     вариант 9, active=True, метки Ст3сп,    3621,790
+
+        Для листа, где характеристики ДВЕ, правило работает так же: обе строки
+        заводятся с одним значением, вариант впитывает обе метки
+        (Ст3сп, 1500x6000) и остаётся живым; 8 x 3 = 24 комбинации потом
+        создаются по требованию.
+
+        Что было бы при create_variant='always' (тот же замер): старый вариант
+        архивируется вместе с 3621,790 м, и рядом появляются 8 пустых вариантов
+        с нулевыми остатками. Это хуже dynamic, а не лучше.
+
+        При 'no_variant' вариант не трогается вовсе — но тогда марка остаётся
+        надписью в строке заказа: отдельного остатка, своей цены поставщика и
+        своего штрихкода у марки не будет. Под задачу «цене поставщика есть
+        куда лечь» это не годится.
+
+        На пустых карточках (их будет 748 из 752) порядок значения не имеет:
+        архивировать там нечего. Правило одного значения нужно ровно для
+        четырёх уже работающих товаров.
+    -->
+    <data noupdate="0">
+
+        <!-- ═══ МАРКА СТАЛИ ═════════════════════════════════════════════
+             Восемь значений — ровно те, что лежат в pmk.metal.grade и уже
+             участвуют в расчётах калькулятора. Порядок как в справочнике:
+             сначала ходовые Ст3 (у Ст3сп в справочнике стоит is_default),
+             затем низколегированные, затем качественные.
+
+             Марка — характеристика, а не отдельная карточка, потому что
+             уголок 63x63x5 из Ст3сп и из 09Г2С — это один типоразмер с одной
+             массой метра и одним ГОСТом на сортамент. Разные у них только
+             цена и поставщик, а это ровно то, что висит на варианте.
+        -->
+        <record id="attr_grade" model="product.attribute">
+            <field name="name">Марка стали</field>
+            <field name="create_variant">dynamic</field>
+            <field name="display_type">radio</field>
+            <field name="sequence">10</field>
+        </record>
+
+        <record id="attr_grade_st3sp" model="product.attribute.value">
+            <field name="name">Ст3сп</field>
+            <field name="attribute_id" ref="attr_grade"/>
+            <field name="sequence">10</field>
+        </record>
+        <record id="attr_grade_st3ps" model="product.attribute.value">
+            <field name="name">Ст3пс</field>
+            <field name="attribute_id" ref="attr_grade"/>
+            <field name="sequence">20</field>
+        </record>
+        <record id="attr_grade_09g2s" model="product.attribute.value">
+            <field name="name">09Г2С</field>
+            <field name="attribute_id" ref="attr_grade"/>
+            <field name="sequence">30</field>
+        </record>
+        <record id="attr_grade_10hsnd" model="product.attribute.value">
+            <field name="name">10ХСНД</field>
+            <field name="attribute_id" ref="attr_grade"/>
+            <field name="sequence">40</field>
+        </record>
+        <record id="attr_grade_17g1s" model="product.attribute.value">
+            <field name="name">17Г1С</field>
+            <field name="attribute_id" ref="attr_grade"/>
+            <field name="sequence">50</field>
+        </record>
+        <record id="attr_grade_15hsnd" model="product.attribute.value">
+            <field name="name">15ХСНД</field>
+            <field name="attribute_id" ref="attr_grade"/>
+            <field name="sequence">60</field>
+        </record>
+        <record id="attr_grade_st20" model="product.attribute.value">
+            <field name="name">Ст20</field>
+            <field name="attribute_id" ref="attr_grade"/>
+            <field name="sequence">70</field>
+        </record>
+        <record id="attr_grade_40h" model="product.attribute.value">
+            <field name="name">40Х</field>
+            <field name="attribute_id" ref="attr_grade"/>
+            <field name="sequence">80</field>
+        </record>
+
+        <!-- ═══ ГАБАРИТ ЛИСТА ═══════════════════════════════════════════
+             Три ходовых габарита с завода. Габарит — характеристика, а не
+             часть названия карточки, по той же причине, что и марка: лист
+             гладкий 3 мм остаётся листом гладким 3 мм, меняется только то,
+             сколько его в одной штуке.
+
+             И именно габарит превращает «лист в штуках» из условности в
+             учёт: 1500x3000 — это 4,5 м², 1500x6000 — 9 м², 1000x4000 — 4 м².
+             Без габарита штука ничего не весит и ни во что не пересчитывается.
+
+             Обрезок сюда НЕ попадает. По решению владельца остаток листа
+             предлагает на приход технолог, и идёт он отдельной партией со
+             своими размерами — то есть это лот, а не ещё одно значение
+             характеристики. Иначе каждый новый обрезок заводил бы значение
+             в общий справочник габаритов.
+        -->
+        <record id="attr_sheet_size" model="product.attribute">
+            <field name="name">Габарит листа</field>
+            <field name="create_variant">dynamic</field>
+            <field name="display_type">radio</field>
+            <field name="sequence">20</field>
+        </record>
+
+        <!-- Порядок — по площади: так в списке сразу видно, где листа больше. -->
+        <record id="attr_sheet_size_1000x4000" model="product.attribute.value">
+            <field name="name">1000x4000</field>
+            <field name="attribute_id" ref="attr_sheet_size"/>
+            <field name="sequence">10</field>
+        </record>
+        <record id="attr_sheet_size_1500x3000" model="product.attribute.value">
+            <field name="name">1500x3000</field>
+            <field name="attribute_id" ref="attr_sheet_size"/>
+            <field name="sequence">20</field>
+        </record>
+        <record id="attr_sheet_size_1500x6000" model="product.attribute.value">
+            <field name="name">1500x6000</field>
+            <field name="attribute_id" ref="attr_sheet_size"/>
+            <field name="sequence">30</field>
+        </record>
+
+    </data>
+</odoo>
