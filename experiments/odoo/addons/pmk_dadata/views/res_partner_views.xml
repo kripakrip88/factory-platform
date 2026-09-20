@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+  <record id="view_partner_form_requisites" model="ir.ui.view">
+    <field name="name">res.partner.form.pmk.requisites</field>
+    <field name="model">res.partner</field>
+    <field name="inherit_id" ref="base.view_partner_form"/>
+    <field name="arch" type="xml">
+
+      <!--
+        Отдельная вкладка «Реквизиты» по образцу МойСклада, которым завод
+        пользуется сегодня: всё, что переписывают из выписки, в одном месте и
+        в привычном порядке. Раньше ИНН и КПП лежали в одной вкладке, ОГРН и
+        ОКПО в другой, а юридический адрес приходилось собирать из девяти полей.
+
+        Вкладка первая в блокноте: заводя поставщика, начинают именно с неё.
+      -->
+      <xpath expr="//notebook" position="inside">
+        <page string="Реквизиты" name="pmk_requisites">
+          <group>
+            <group>
+              <field name="company_type" widget="radio" options="{'horizontal': true}"/>
+              <label for="inn"/>
+              <div class="d-flex align-items-center gap-2">
+                <field name="inn" nolabel="1" class="oe_inline"
+                       placeholder="10 цифр у организации, 12 у ИП"/>
+                <button name="action_pmk_fill_by_inn" type="object"
+                        string="Заполнить по ИНН" class="btn-secondary"
+                        invisible="not inn"/>
+              </div>
+              <field name="pmk_legal_name" placeholder="Как в ЕГРЮЛ, с формой собственности"/>
+              <field name="pmk_legal_address" placeholder="Одной строкой, как в выписке"/>
+              <field name="pmk_address_note" placeholder="Ориентир, офис, как проехать"/>
+              <field name="fias_id" string="Код ФИАС"/>
+            </group>
+            <group>
+              <field name="kpp"/>
+              <field name="ogrn"/>
+              <field name="okpo"/>
+              <field name="pmk_dadata_status"/>
+            </group>
+          </group>
+
+          <group string="Банковские счета">
+            <field name="bank_ids" nolabel="1" colspan="2">
+              <list editable="bottom">
+                <field name="acc_number" string="Расчётный счёт"/>
+                <field name="bank_id" string="Банк"/>
+                <field name="allow_out_payment" optional="hide"/>
+              </list>
+            </field>
+          </group>
+        </page>
+      </xpath>
+
+      <!--
+        Код ФИАС прятали в pmk_partner как лишний, но в МойСкладе он есть и
+        Антон на него указал. Возвращаем — но только на вкладке реквизитов,
+        в блоке адреса ему по-прежнему не место.
+      -->
+      <field name="fias_id" position="attributes">
+        <attribute name="invisible">0</attribute>
+      </field>
+
+    </field>
+  </record>
+
+</odoo>
