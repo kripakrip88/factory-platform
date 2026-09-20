@@ -59,8 +59,16 @@ ARGS="-u $(echo $UPD | tr ' ' ',')"
 [ -n "$I18N" ] && ARGS="$ARGS --i18n-overwrite"
 [ -n "$INSTALL" ] && ARGS="$ARGS -i $(echo $INSTALL | tr ' ' ',')"
 echo "→ odoo $ARGS"
+# WARNING показываем наравне с ошибками: именно предупреждением Odoo сообщает,
+# что наследуемое представление не применилось и было ВЫКЛЮЧЕНО. Прежний фильтр
+# ловил только CRITICAL/ERROR, поэтому такая потеря проходила молча — карточка
+# контрагента так и стояла без секций, а деплой писал «готово» (прецедент
+# 2026-09-20). Шум чужих модулей (нет license/author в манифесте, незнакомые
+# ключи конфига) отсеиваем отдельной строкой, иначе важное утонет в нём.
 docker compose run --rm -T odoo odoo -d odoo $ARGS --stop-after-init 2>&1 \
-  | grep -E "CRITICAL|ERROR|Failed to|Modules loaded" | tail -5
+  | grep -E "CRITICAL|ERROR|WARNING|Failed to|Modules loaded" \
+  | grep -vE "Missing \`(license|author)\` key|unknown option '|missing --http-interface" \
+  | tail -20
 
 # Бандлы ассетов кэшируются в ir_attachment: без чистки сервер продолжит
 # отдавать старый CSS/JS, сколько ни обновляй модули (CLAUDE.md, п. 8).
