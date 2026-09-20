@@ -188,11 +188,27 @@ class PriceMailing(models.Model):
     # ------------------------------------------------------------------
     # кнопки
     # ------------------------------------------------------------------
-    def action_open_recipients(self):
+    def action_choose_recipients(self):
+        """Весь список поставщиков — чтобы было кого отмечать."""
         self.ensure_one()
         action = self.env["ir.actions.act_window"]._for_xml_id(
             "pmk_purchase.action_price_supplier")
-        action["context"] = dict(self.env.context, search_default_in_mailing=1)
+        action["name"] = _("Выберите получателей рассылки")
+        # Группировку снимаем: отмечать галочками удобнее в плоском списке,
+        # а по группам поставщик с несколькими группами встречается несколько раз.
+        action["context"] = {"default_pmk_price_supplier": True,
+                             "default_is_company": True}
+        return action
+
+    def action_open_recipients(self):
+        """Только те, кто уже в рассылке."""
+        self.ensure_one()
+        action = self.env["ir.actions.act_window"]._for_xml_id(
+            "pmk_purchase.action_price_supplier")
+        action["name"] = _("Получатели рассылки")
+        action["context"] = {"default_pmk_price_supplier": True,
+                             "default_is_company": True,
+                             "search_default_in_mailing": 1}
         return action
 
     def action_open_queue(self):

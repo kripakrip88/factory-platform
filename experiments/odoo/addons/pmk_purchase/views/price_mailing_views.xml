@@ -36,9 +36,20 @@
             <group string="Кому">
               <field name="recipient_count" readonly="1"/>
               <field name="supplier_count" readonly="1"/>
-              <button name="action_open_recipients" type="object"
-                      string="Открыть список получателей" class="btn-link"
-                      icon="fa-arrow-right"/>
+              <div colspan="2" class="text-muted small mb-2">
+                В списке поставщиков отметьте нужных галочкой слева и нажмите
+                сверху «Включить в рассылку». Или щёлкните переключатель
+                в колонке «В рассылке» у одной строки.
+              </div>
+              <div colspan="2">
+                <!-- Две разные кнопки намеренно. Раньше была одна, и она
+                     открывала список, отфильтрованный по тем, кто УЖЕ в
+                     рассылке — то есть пустой. Добавлять было негде. -->
+                <button name="action_choose_recipients" type="object"
+                        string="Выбрать получателей" class="btn-primary"/>
+                <button name="action_open_recipients" type="object"
+                        string="Кто уже в рассылке" class="btn-secondary ms-2"/>
+              </div>
             </group>
           </group>
 
@@ -71,8 +82,17 @@
               <group>
                 <field name="subject"/>
               </group>
-              <field name="body_html" widget="html"
-                     options="{'style-inline': true}"/>
+              <div class="text-muted small mb-2">
+                Выделите текст мышью — появится панель форматирования: жирный,
+                курсив, размер, списки, ссылки.
+              </div>
+              <!-- widget="html_mail" — тот же, которым Odoo правит собственные
+                   шаблоны писем (mail.email_template_form). Обычный "html"
+                   давал редактор без панели форматирования. -->
+              <field name="body_html" widget="html_mail" nolabel="1"
+                     class="oe-bordered-editor"
+                     options="{'codeview': true}"
+                     placeholder="Текст письма поставщику…"/>
             </page>
           </notebook>
         </sheet>
