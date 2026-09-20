@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <data noupdate="0">
+
+    <!--
+      Письмо поставщику. Короткое намеренно: снабженец на той стороне читает
+      десятки таких в день, и длинное письмо не читают вовсе.
+
+      Адрес получателя подставляет крон через email_values — из нашего поля
+      pmk_price_email, а не из штатного email. Так письмо уходит именно туда,
+      куда мы проверяли, и никакая другая рассылка Odoo этих контрагентов
+      случайно не зацепит.
+    -->
+    <record id="mail_template_price_request" model="mail.template">
+      <field name="name">Запрос актуального прайса поставщику</field>
+      <field name="model_id" ref="base.model_res_partner"/>
+      <field name="subject">Запрос актуального прайс-листа — ПМК Парк, Хабаровск</field>
+      <field name="email_from">{{ user.company_id.email or 'zakaz@pmkpark.ru' }}</field>
+      <field name="lang">ru_RU</field>
+      <field name="auto_delete" eval="False"/>
+      <field name="body_html" type="html">
+<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#1a1a1a">
+  <p>Здравствуйте!</p>
+
+  <p>Пишет <strong>ПМК Парк</strong> — завод металлоконструкций в Хабаровске.
+     Изготавливаем металлоконструкции и закладные детали, ограждения, анкерные
+     блоки, опоры контактной сети и фундаменты для РЖД, доборные элементы кровли.</p>
+
+  <p>Просим прислать <strong>актуальный прайс-лист</strong>
+     <t t-if="object.pmk_supply_ids">по позициям:
+       <t t-out="', '.join(object.pmk_supply_ids.mapped('name')).lower()"/></t>.</p>
+
+  <p>Удобен любой привычный вам формат — Excel, PDF или таблица прямо в письме.
+     Если цены зависят от объёма, пришлите, пожалуйста, с указанием минимальной
+     партии и условий доставки до Хабаровска.</p>
+
+  <p>Ответ на это письмо попадёт сразу в работу.</p>
+
+  <p style="margin-top:18px">
+     С уважением,<br/>
+     отдел снабжения ПМК Парк<br/>
+     <a href="mailto:zakaz@pmkpark.ru" style="color:#1a1a1a">zakaz@pmkpark.ru</a>
+  </p>
+</div>
+      </field>
+    </record>
+
+  </data>
+</odoo>

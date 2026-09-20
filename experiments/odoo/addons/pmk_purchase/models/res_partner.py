@@ -1,7 +1,12 @@
 # -*- coding: utf-8 -*-
+import logging
+
 from dateutil.relativedelta import relativedelta
 
-from odoo import api, fields, models
+from odoo import _, api, fields, models
+from odoo.exceptions import UserError
+
+_logger = logging.getLogger(__name__)
 
 
 class ResPartner(models.Model):
@@ -20,6 +25,21 @@ class ResPartner(models.Model):
         string="Что возит",
         help="По этим группам у поставщика и спрашиваем цены.",
     )
+    # Ручной выключатель рассылки. Отдельно от «поставщик прайсов»: в реестре
+    # держим всех найденных, а письма уходят только отмеченным. Снабженец
+    # правит этот флажок сам, в том числе пачкой из списка.
+    pmk_price_mailing = fields.Boolean(
+        "В рассылке",
+        help="Письмо с запросом прайса уходит только тем, у кого включено.",
+        index="btree_not_null",
+    )
+    pmk_price_request_date = fields.Datetime(
+        "Последний запрос отправлен",
+        readonly=True,
+        help="Когда мы последний раз просили прайс. По нему считается, "
+             "не пора ли спросить снова.",
+    )
+
     pmk_has_stock = fields.Boolean(
         "Склад на Дальнем Востоке",
         help="Есть своя площадка, а не только офис. Короткое плечо поставки.",
@@ -107,3 +127,101 @@ class ResPartner(models.Model):
             partner.pmk_price_email_state = "invalid"
             if partner.email and partner.email == partner.pmk_price_email:
                 partner.email = False
+
+    # ------------------------------------------------------------------
+    # управление рассылкой руками
+    # ------------------------------------------------------------------
+    def action_pmk_mailing_on(self):
+        """Включить в рассылку. Без адреса включать нечего."""
+        without = self.filtered(lambda p: not p.pmk_price_email)
+        if without:
+            raise UserError(_(
+                "Нельзя включить в рассылку без адреса для запроса прайса:\n\n%s",
+                "\n".join("— %s" % p.display_name for p in without[:10])))
+        self.write({"pmk_price_mailing": True})
+
+    def action_pmk_mailing_off(self):
+        self.write({"pmk_price_mailing": False})
+
+    def action_pmk_period_weekly(self):
+        self.write({"pmk_price_period_days": 7})
+
+    def action_pmk_period_biweekly(self):
+        self.write({"pmk_price_period_days": 14})
+
+    # ------------------------------------------------------------------
+    # рассылка
+    # ------------------------------------------------------------------
+    @api.model
+    def _cron_send_price_requests(self):
+        """Еженедельный запрос актуальных прайсов.
+
+        Три предохранителя, и каждый снимается отдельно:
+          1. рубильник `pmk.price_request.enabled` — пока не '1', ничего не уходит;
+          2. флажок «В рассылке» на каждом поставщике — ставит человек;
+          3. потолок писем за прогон `pmk.price_request.max_per_run`.
+
+        Письма НЕ отправляются здесь, а кладутся в очередь Odoo
+        (`force_send=False`). Разгребает её штатное задание «Mail: Email Queue
+        Manager» — снять с него «Активно» значит мгновенно остановить всю
+        исходящую почту, письма останутся в очереди.
+        """
+        ICP = self.env["ir.config_parameter"].sudo()
+        if ICP.get_param("pmk.price_request.enabled", "0") != "1":
+            _logger.info("Рассылка прайсов выключена: pmk.price_request.enabled != 1")
+            return False
+
+        template = self.env.ref(
+            "pmk_purchase.mail_template_price_request", raise_if_not_found=False)
+        if not template:
+            _logger.warning("Шаблон письма запроса прайса не найден")
+            return False
+
+        limit = int(ICP.get_param("pmk.price_request.max_per_run", "30") or 30)
+        now = fields.Datetime.now()
+
+        candidates = self.search([
+            ("pmk_price_supplier", "=", True),
+            ("pmk_price_mailing", "=", True),
+            ("pmk_price_email", "!=", False),
+            # Штатная защита Odoo: чёрный список рассылок и счётчик отказов
+            # доставки. Ядро само их не применит — домен наш.
+            ("is_blacklisted", "=", False),
+            ("message_bounce", "<", 3),
+        ])
+
+        def due(partner):
+            if not partner.pmk_price_request_date:
+                return True
+            period = partner.pmk_price_period_days or 0
+            if period <= 0:
+                return True
+            return (now - partner.pmk_price_request_date).days >= period
+
+        targets = candidates.filtered(due)
+        dropped = len(targets) - limit
+        targets = targets[:limit]
+
+        sent = 0
+        for partner in targets:
+            try:
+                template.send_mail(
+                    partner.id,
+                    force_send=False,          # в очередь, а не напрямую
+                    email_values={"email_to": partner.pmk_price_email},
+                )
+            except Exception as exc:           # один сбой не должен рвать прогон
+                _logger.warning("Запрос прайса для %s не поставлен в очередь: %s",
+                                partner.display_name, exc)
+                continue
+            # Отметку ставим в той же транзакции, что и письмо: откат снимет оба.
+            partner.pmk_price_request_date = now
+            sent += 1
+
+        if dropped > 0:
+            # Молчаливое усечение читается как «разослали всем» — говорим вслух.
+            _logger.info("Запросы прайсов: отложено до следующего прогона %s штук "
+                         "(потолок %s за прогон)", dropped, limit)
+        _logger.info("Запросы прайсов: поставлено в очередь %s из %s подходящих",
+                     sent, len(candidates))
+        return sent

@@ -25,10 +25,13 @@
     "data": [
         "security/ir.model.access.csv",
         "data/supply_category.xml",
+        "data/mail_template.xml",
+        "data/ir_cron.xml",
         "views/supply_category_views.xml",
         "views/res_partner_views.xml",
         "views/menus.xml",
     ],
+    "post_init_hook": "post_init_hook",
     "license": "LGPL-3",
     "installable": True,
     "application": False,

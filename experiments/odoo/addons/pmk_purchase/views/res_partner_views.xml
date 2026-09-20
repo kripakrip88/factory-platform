@@ -24,7 +24,10 @@
                decoration-danger="pmk_price_email_state == 'invalid'"/>
         <field name="pmk_price_email_source" invisible="not pmk_price_supplier"
                widget="url"/>
+        <field name="pmk_price_mailing" invisible="not pmk_price_supplier"
+               widget="boolean_toggle"/>
         <field name="pmk_price_period_days" invisible="not pmk_price_supplier"/>
+        <field name="pmk_price_request_date" invisible="not pmk_price_supplier"/>
         <field name="pmk_price_last_date" invisible="not pmk_price_supplier"/>
         <field name="pmk_price_next_date" invisible="not pmk_price_supplier"/>
       </xpath>
@@ -38,6 +41,23 @@
     <field name="model">res.partner</field>
     <field name="arch" type="xml">
       <list string="Поставщики прайсов">
+        <!--
+          Кнопки появляются, когда отмечены строки. Так управление рассылкой
+          живёт там же, где список: отметил галочками кого надо — нажал.
+          Через меню «Действия» было бы то же самое, но оно цепляется ко ВСЕМ
+          спискам контрагентов, включая клиентов, где эти кнопки лишние.
+        -->
+        <header>
+          <button name="action_pmk_mailing_on" type="object" class="btn-primary"
+                  string="Включить в рассылку"/>
+          <button name="action_pmk_mailing_off" type="object"
+                  string="Исключить из рассылки"/>
+          <button name="action_pmk_period_weekly" type="object"
+                  string="Спрашивать раз в неделю"/>
+          <button name="action_pmk_period_biweekly" type="object"
+                  string="Раз в две недели"/>
+        </header>
+        <field name="pmk_price_mailing" string="В рассылке" widget="boolean_toggle"/>
         <field name="name"/>
         <field name="pmk_supply_ids" widget="many2many_tags" string="Что возит"/>
         <field name="pmk_has_stock" string="Склад ДВ"/>
@@ -49,9 +69,10 @@
         <field name="phone" optional="show"/>
         <field name="city" optional="show"/>
         <field name="website" optional="hide"/>
-        <field name="pmk_price_period_days" optional="hide"/>
-        <field name="pmk_price_last_date" optional="show"/>
-        <field name="pmk_price_next_date" optional="show"/>
+        <field name="pmk_price_period_days" string="Период, дней" optional="show"/>
+        <field name="pmk_price_request_date" string="Запрос отправлен" optional="show"/>
+        <field name="pmk_price_last_date" string="Прайс получен" optional="show"/>
+        <field name="pmk_price_next_date" optional="hide"/>
       </list>
     </field>
   </record>
@@ -65,6 +86,11 @@
         <field name="pmk_supply_ids" string="Что возит"/>
         <field name="city"/>
 
+        <filter name="in_mailing" string="В рассылке"
+                domain="[('pmk_price_mailing', '=', True)]"/>
+        <filter name="not_in_mailing" string="Не в рассылке"
+                domain="[('pmk_price_mailing', '=', False)]"/>
+        <separator/>
         <filter name="confirmed" string="Адрес подтверждён"
                 domain="[('pmk_price_email_state', '=', 'confirmed')]"/>
         <filter name="draft" string="Адрес не подтверждён"
@@ -84,6 +110,8 @@
                   context="{'group_by': 'pmk_supply_ids'}"/>
           <filter name="by_state" string="Состояние адреса"
                   context="{'group_by': 'pmk_price_email_state'}"/>
+          <filter name="by_mailing" string="В рассылке"
+                  context="{'group_by': 'pmk_price_mailing'}"/>
           <filter name="by_city" string="Город" context="{'group_by': 'city'}"/>
         </group>
       </search>
