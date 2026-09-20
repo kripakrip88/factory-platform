@@ -25,7 +25,8 @@
       <xpath expr="//notebook" position="before">
 
         <group string="Реквизиты" name="pmk_s_requisites" class="pmk-section">
-          <xpath expr="//page[@name='pmk_requisites']/group[1]" position="move"/>
+          <xpath expr="//page[@name='pmk_requisites']/group[@name='pmk_g_requisites']"
+                 position="move"/>
         </group>
 
         <group string="Контактные лица" name="pmk_s_contacts" class="pmk-section pmk-section--closed">
@@ -36,10 +37,12 @@
           <xpath expr="//page[@name='sales_purchases']/group[@name='container_row_2']" position="move"/>
         </group>
 
-        <!-- По строке заголовка, а не по номеру: номера съезжают после
-             первого переноса, и «второй группой» окажется не та. -->
+        <!-- По имени, а не по номеру: номера съезжают после первого переноса,
+             и «второй группой» окажется не та. Выбирать по заголовку Odoo
+             не разрешает — «View inheritance may not use attribute 'string'
+             as a selector». -->
         <group string="Банковские счета" name="pmk_s_bank" class="pmk-section pmk-section--closed">
-          <xpath expr="//page[@name='pmk_requisites']/group[@string='Банковские счета']"
+          <xpath expr="//page[@name='pmk_requisites']/group[@name='pmk_g_bank']"
                  position="move"/>
         </group>
 

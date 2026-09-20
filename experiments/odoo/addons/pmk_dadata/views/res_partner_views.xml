@@ -17,7 +17,9 @@
       -->
       <xpath expr="//notebook/page[1]" position="before">
         <page string="Реквизиты" name="pmk_requisites">
-          <group>
+          <!-- Имена нужны, чтобы плоская раскладка могла сослаться на группы:
+               выбирать узел по заголовку Odoo не разрешает. -->
+          <group name="pmk_g_requisites">
             <group>
               <field name="company_type" widget="radio" options="{'horizontal': true}"/>
               <label for="inn"/>
@@ -52,7 +54,7 @@
             </group>
           </group>
 
-          <group string="Банковские счета">
+          <group string="Банковские счета" name="pmk_g_bank">
             <field name="bank_ids" nolabel="1" colspan="2">
               <list editable="bottom">
                 <field name="acc_number" string="Расчётный счёт"/>
