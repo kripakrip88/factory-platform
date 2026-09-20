@@ -92,14 +92,6 @@
         <attribute name="invisible">1</attribute>
       </xpath>
 
-      <!--
-        Код ФИАС прятали в pmk_partner как лишний, но в МойСкладе он есть и
-        Антон на него указал. Возвращаем — но только на вкладке реквизитов,
-        в блоке адреса ему по-прежнему не место.
-      -->
-      <field name="fias_id" position="attributes">
-        <attribute name="invisible">0</attribute>
-      </field>
 
     </field>
   </record>
