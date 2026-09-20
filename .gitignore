@@ -49,3 +49,7 @@ data/
 # определения меню, а не рантайм-данные. Возвращаем их под контроль версий.
 !experiments/odoo/addons/*/data/
 !experiments/odoo/addons/*/data/**
+# То же самое для вендорских модулей: без этого из mail_client уехала копия
+# без data/ir_cron.xml, и Odoo не смог загрузить модуль вообще.
+!experiments/odoo/vendor/*/data/
+!experiments/odoo/vendor/*/data/**
