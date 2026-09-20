@@ -2502,3 +2502,59 @@ msgstr "server_id"
 #: model:ir.ui.menu,name:mail_client.menu_mail_client_configuration
 msgid "Почтовые ящики"
 msgstr "Почтовые ящики"
+
+#
+# ── Строки, которых нет в выгрузке POT ─────────────────────────────────────
+#
+# Извлекатель Odoo берёт из шаблонов только статические атрибуты title=,
+# placeholder=, alt=, aria-label= и label=. Литералы внутри выражений
+# t-att-* он не видит вообще, а у компонентов переводит лишь атрибуты с
+# суффиксом .translate. Из-за этого подсказки кнопок и подсказка в поле
+# получателей оставались английскими при полностью переведённом модуле.
+#
+# Мы вынесли эти литералы в геттеры с _t() и в placeholder.translate —
+# см. «ПРАВКА ПМК» в исходниках. Записи ниже дописаны вручную: в POT,
+# снятом ДО правки, их ещё нет.
+#
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/mail_client_action.js:0
+msgid "Hide folders"
+msgstr "Скрыть папки"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/mail_client_action.js:0
+msgid "Show folders"
+msgstr "Показать папки"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/message_list.js:0
+msgid "Mark as read"
+msgstr "Отметить прочитанным"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/message_list.js:0
+msgid "Mark as unread"
+msgstr "Отметить непрочитанным"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/message_list.js:0
+msgid "No message matches %s."
+msgstr "По фильтру «%s» ничего не нашлось."
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/message_list.js:0
+msgid "%s messages"
+msgstr "Писем в переписке: %s"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/composer/composer.xml:0
+msgid "Start typing a name, or paste an address"
+msgstr "Начните вводить имя или вставьте адрес"

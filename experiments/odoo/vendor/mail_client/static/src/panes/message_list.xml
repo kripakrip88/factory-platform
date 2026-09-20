@@ -20,7 +20,7 @@
             <div class="o_mail_client_bulkbar d-flex align-items-center gap-1 px-2 py-1"
                  t-if="props.selectedIds.length">
                 <button class="btn btn-sm btn-light" t-att-disabled="props.busy"
-                        t-att-title="anyUnread ? 'Mark as read' : 'Mark as unread'"
+                        t-att-title="bulkSeenTitle"
                         t-on-click="() => props.onBulkSeen(anyUnread)">
                     <i class="fa" t-att-class="anyUnread ? 'fa-envelope-open-o' : 'fa-envelope'"/>
                 </button>
@@ -68,7 +68,7 @@
                             <!-- Saying "nothing here" under an active filter
                                  reads as an empty folder, and the filter is the
                                  one thing that can be undone from here. -->
-                            No message matches <b><t t-esc="props.filterLabel"/></b>.
+                            <t t-esc="noMatchLabel"/>
                             <div class="mt-2">
                                 <button class="btn btn-link btn-sm p-0"
                                         t-on-click="() => props.onClearFilter()">
@@ -106,7 +106,7 @@
                             <i t-if="message.flag_answered" class="fa fa-reply text-muted me-1 small"/>
                             <span t-if="message.thread_count > 1"
                                   class="badge rounded-pill text-bg-secondary me-1"
-                                  t-att-title="message.thread_count + ' messages'">
+                                  t-att-title="threadTitle(message.thread_count)">
                                 <t t-esc="message.thread_count"/>
                             </span>
                             <span t-att-class="message.flag_seen ? '' : 'fw-bold'">

@@ -20,7 +20,7 @@
                     <div class="o_mail_client_field d-flex align-items-center">
                         <label class="o_mail_client_composer_label">To</label>
                         <RecipientInput label="''" value="state.email_to"
-                                        placeholder="'Start typing a name, or paste an address'"
+                                        placeholder.translate="Start typing a name, or paste an address"
                                         onUpdate="(value) => this.updateField('email_to', value)"/>
                         <button class="btn btn-sm btn-link text-muted flex-shrink-0 px-2"
                                 t-on-click="() => state.showCc = !state.showCc">

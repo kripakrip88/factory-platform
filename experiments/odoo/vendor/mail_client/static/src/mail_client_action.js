@@ -111,6 +111,14 @@ export class MailClientInbox extends Component {
         return null;
     }
 
+    // ПРАВКА ПМК: подписи вынесены из шаблона в геттеры. Извлекатель
+    // переводов Odoo берёт только статические title=/placeholder=/alt=, а
+    // литералы внутри выражений t-att-* не видит вовсе — из-за этого подсказки
+    // кнопок оставались английскими при полностью переведённом модуле.
+    get sidebarTitle() {
+        return this.state.sidebarPinned ? _t("Hide folders") : _t("Show folders");
+    }
+
     get activeFolder() {
         for (const account of this.state.accounts) {
             const folder = account.folders.find((f) => f.id === this.state.activeFolderId);

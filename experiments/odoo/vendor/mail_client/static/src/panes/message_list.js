@@ -1,4 +1,6 @@
 import { Component, useState } from "@odoo/owl";
+import { _t } from "@web/core/l10n/translation";
+
 import { formatMessageDate, senderName } from "../utils";
 
 export class MessageList extends Component {
@@ -59,6 +61,20 @@ export class MessageList extends Component {
     /** True when some but not all rows are ticked. */
     get someTicked() {
         return this.props.selectedIds.length > 0 && !this.allTicked;
+    }
+
+    // ПРАВКА ПМК: см. комментарий в mail_client_action.js — литералы из
+    // выражений в шаблоне вынесены сюда, иначе они не переводятся.
+    get bulkSeenTitle() {
+        return this.anyUnread ? _t("Mark as read") : _t("Mark as unread");
+    }
+
+    get noMatchLabel() {
+        return _t("No message matches %s.", this.props.filterLabel);
+    }
+
+    threadTitle(count) {
+        return _t("%s messages", count);
     }
 
     get anyUnread() {

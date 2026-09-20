@@ -35,6 +35,11 @@ export class ReadingPane extends Component {
         });
     }
 
+    // ПРАВКА ПМК: см. комментарий в mail_client_action.js.
+    get seenTitle() {
+        return this.props.detail?.flag_seen ? _t("Mark as unread") : _t("Mark as read");
+    }
+
     /** Other messages in this conversation, current one excluded. */
     get otherInThread() {
         if (!this.props.thread || !this.props.detail) {

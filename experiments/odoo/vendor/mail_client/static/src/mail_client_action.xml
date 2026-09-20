@@ -5,7 +5,7 @@
         <div class="o_mail_client d-flex flex-column h-100">
             <div class="o_mail_client_topbar d-flex align-items-center gap-2 px-3 py-2">
                 <button class="btn btn-light btn-sm"
-                        t-att-title="state.sidebarPinned ? 'Hide folders' : 'Show folders'"
+                        t-att-title="sidebarTitle"
                         t-on-click="() => this.toggleSidebar()">
                     <i class="fa" t-att-class="state.sidebarPinned ? 'fa-angle-double-left' : 'fa-bars'"/>
                 </button>
