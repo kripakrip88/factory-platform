@@ -78,6 +78,20 @@ import re
 import sys
 from collections import Counter, defaultdict, namedtuple
 
+# ─── ПРЕДОХРАНИТЕЛЬ ───────────────────────────────────────────────────────
+# Скрипт пишет сотни строк цен и ФИКСИРУЕТ их (env.cr.commit ниже). У трёх его
+# соседей по каталогу такой предохранитель есть, у него не было — приёмка это
+# и поймала: один неверный ключ -d, и прайс ложится в боевую базу.
+# Живая заливка разрешается только осознанно, переменной PMK_LIVE=1.
+REHEARSAL_DBS = ("odoo_rehearsal", "odoo_probe", "odoo_rollback", "odoo_rollback_adopt")
+_LIVE_OK = os.environ.get("PMK_LIVE") == "1"
+if env.cr.dbname not in REHEARSAL_DBS and not _LIVE_OK:  # noqa: F821
+    sys.exit("ОТКАЗ: %r не копия. Цены репетируют на копии; для боевой заливки"
+             " запускать с PMK_LIVE=1." % env.cr.dbname)  # noqa: F821
+if _LIVE_OK and env.cr.dbname not in REHEARSAL_DBS:  # noqa: F821
+    print("@@ ВНИМАНИЕ: боевая заливка цен в базу %r (PMK_LIVE=1)" % env.cr.dbname)  # noqa: F821
+
+
 # Внутри odoo shell скрипт приходит по stdin, и __file__ там не существует —
 # отсюда запасной путь. Пути нужны только режиму без базы (справочник из CSV,
 # разборщик рядом), внутри Odoo и то и другое берётся из базы и из окружения.
