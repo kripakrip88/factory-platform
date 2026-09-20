@@ -19,14 +19,9 @@
 //
 // Цвета подобраны по смыслу, а не по радуге: деньги — зелёный, склад — синий,
 // производство — янтарный (горячий цех), закупки — бирюзовый, продажи —
-// фирменный лайм завода, отчёты — серо-синий, люди — розовый.
-//
-// У Продаж раньше стоял #a78bfa — фиолетовый «по умолчанию», ничей. Заменён на
-// #C8F000 из design-system.css сайта pmkpark.ru: это цвет завода, и логично,
-// что он достался разделу, которым завод разговаривает с клиентом. На тёмном
-// фоне у него контраст 10.85:1 — лучший из девяти.
+// фиолетовый, отчёты — серо-синий, люди — розовый.
 $pmk-accents: (
-  "pmk_theme.menu_pmk_sales":      #C8F000,
+  "pmk_theme.menu_pmk_sales":      #a78bfa,
   "pmk_theme.menu_pmk_production": #f0a04b,
   "pmk_theme.menu_pmk_purchase":   #4dd0b1,
   "pmk_theme.menu_pmk_stock":      #6bb6f5,
@@ -39,32 +34,6 @@ $pmk-accents: (
   "pmk_calc.menu_pmk_calc":        #d8dee9,
 );
 
-// Те же девять разделов для светлого вида.
-//
-// Это не «перекраска ради красоты». Все девять цветов выше рассчитаны на тёмный
-// фон и на белом проваливаются: замер даёт 1.21–2.49:1 при норме 3:1 для
-// значка. На экране у станка иконку раздела просто не было бы видно. Двойники
-// получены затемнением по светлоте С СОХРАНЕНИЕМ тона и насыщенности — раздел
-// узнаётся тем же цветом, только глубже; каждый держит 4.5:1 на фоне #F4F5F7.
-//
-// Фирменный лайм тут показателен: на тёмном он лучший (10.85), а на светлом
-// худший из девяти (1.21). Поэтому буквами и значками на светлом он идёт
-// затемнённым, а чистый #C8F000 остаётся заливкой, на которой пишут тёмным.
-$pmk-accents-light: (
-  "pmk_theme.menu_pmk_sales":      #647900,
-  "pmk_theme.menu_pmk_production": #A85E0E,
-  "pmk_theme.menu_pmk_purchase":   #217E68,
-  "pmk_theme.menu_pmk_stock":      #0D72C7,
-  "pmk_theme.menu_pmk_money":      #477D30,
-  "pmk_theme.menu_pmk_reports":    #5D728F,
-  "pmk_theme.menu_pmk_people":     #D81D5D,
-  "base.menu_administration":      #5D728F,
-  // Механическое затемнение дало бы здесь синеватый #59719D, и Калькуляторы
-  // перестали бы быть нейтральными. Берём ровный стальной — тот же смысл,
-  // что и в тёмном наборе: инструмент не спорит за внимание с разделами.
-  "pmk_calc.menu_pmk_calc":        #5A6470,
-);
-
 @each $xmlid, $accent in $pmk-accents {
   // Цвет иконки модуля в первой строке.
   .pmk_app[data-menu-xmlid="#{$xmlid}"]::before { color: $accent; }
@@ -73,11 +42,6 @@ $pmk-accents-light: (
   // и подчёркивание активного модуля, и метка активного пункта второй строки.
   // Атрибут data-pmk-app проставляет navbar_active_section.js.
   .o_navbar[data-pmk-app="#{$xmlid}"] { --pmk-accent: #{$accent}; }
-}
-
-@each $xmlid, $accent in $pmk-accents-light {
-  html[data-pmk-scheme="light"] .pmk_app[data-menu-xmlid="#{$xmlid}"]::before { color: $accent; }
-  html[data-pmk-scheme="light"] .o_navbar[data-pmk-app="#{$xmlid}"] { --pmk-accent: #{$accent}; }
 }
 
 // ─── Первая строка: модули ────────────────────────────────────────────────
@@ -109,27 +73,27 @@ $pmk-accents-light: (
   line-height: 1.2;
   height: auto;
   min-height: 30px;
-  color: var(--pmk-nav-app);
+  color: rgba(255, 255, 255, 0.72);
   background: transparent;
   border-bottom: 2px solid transparent;
   transition: color 160ms ease-out, background-color 160ms ease-out;
 
   &:hover {
-    color: var(--pmk-text-strong);
-    background: var(--pmk-fill-hover-nav);
+    color: #fff;
+    background: rgba(255, 255, 255, 0.10);
     text-decoration: none;
   }
 
   // Видимый фокус для клавиатуры — не убираем обводку, а делаем её своей.
   &:focus-visible {
-    outline: 2px solid var(--pmk-focus-ring);
+    outline: 2px solid rgba(255, 255, 255, 0.85);
     outline-offset: -2px;
   }
 
   // Активный модуль: и цвет, и подчёркивание — чтобы не зависеть от цвета одного.
   &--active {
-    color: var(--pmk-text-strong);
-    background: var(--pmk-fill-active);
+    color: #fff;
+    background: rgba(255, 255, 255, 0.14);
     border-bottom-color: var(--pmk-accent, currentColor);
     font-weight: 500;
   }
@@ -193,7 +157,7 @@ $pmk-accents-light: (
 
   margin-top: 4px;
   padding: 2px 4px 0;
-  border-top: 1px solid var(--pmk-border);
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
   gap: 2px;
   min-height: 32px;
   align-items: center;
@@ -202,7 +166,7 @@ $pmk-accents-light: (
     font-size: 13px;
     padding: 5px 10px;
     border-radius: 6px;
-    color: var(--pmk-nav-entry);
+    color: rgba(255, 255, 255, 0.70);
     // Своя высота строки вместо унаследованных от ядра 46px.
     line-height: 1.2;
     height: auto;
@@ -213,11 +177,11 @@ $pmk-accents-light: (
 
     // Фон здесь НЕ задаём: его перебивает тема (см. блок «Перебиваем тему» ниже).
     &:hover {
-      color: var(--pmk-text-strong);
+      color: #fff;
     }
 
     &:focus-visible {
-      outline: 2px solid var(--pmk-focus-ring);
+      outline: 2px solid rgba(255, 255, 255, 0.85);
       outline-offset: -2px;
     }
   }
@@ -235,7 +199,7 @@ $pmk-accents-light: (
 // здесь заливка с меткой. Два разных уровня навигации не должны выглядеть
 // одинаково, иначе непонятно, что чему подчинено (nav-hierarchy).
 .o_menu_sections .o_nav_entry.pmk_section--active {
-  color: var(--pmk-text-strong);
+  color: #fff;
   font-weight: 500;
 
   &::before {
@@ -245,7 +209,7 @@ $pmk-accents-light: (
     height: 6px;
     margin-right: 7px;
     border-radius: 50%;
-    background: var(--pmk-accent, var(--pmk-text-strong));
+    background: var(--pmk-accent, #fff);
   }
 }
 
@@ -263,9 +227,9 @@ $pmk-accents-light: (
 //
 // Это единственное место в файле с !important, и оно вынужденное.
 header.o_navbar .o_main_navbar .o_menu_sections .o_nav_entry {
-  &:hover                     { background: var(--pmk-fill-hover-nav) !important; }
-  &.pmk_section--active       { background: var(--pmk-fill-active) !important; }
-  &.pmk_section--active:hover { background: var(--pmk-fill-active-hover) !important; }
+  &:hover                     { background: rgba(255, 255, 255, 0.10) !important; }
+  &.pmk_section--active       { background: rgba(255, 255, 255, 0.14) !important; }
+  &.pmk_section--active:hover { background: rgba(255, 255, 255, 0.18) !important; }
 }
 
 // На узких экранах второй строки нет — там работает штатное мобильное меню.

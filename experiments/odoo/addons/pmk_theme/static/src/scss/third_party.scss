@@ -10,50 +10,48 @@
 // достаточно переопределить переменные — ни одного !important, ни одной драки
 // с их правилами. Список взят из их же static/src/css/teaminbox_basic.css.
 //
-// Значения берём не числами, а ролями из palette.scss: поверхность, линия,
-// подпись — те же переменные, что у наших карточек. Экран читается как часть
-// системы, а не как вставка, и вместе со всей темой переключается на светлый.
+// Значения повторяют рецепт наших карточек: фон 0.03, рамка 0.10, подпись
+// 0.55 — чтобы экран читался как часть системы, а не как вставка.
 //
-// Определяем и для светлого, и для тёмного варианта СВОЕГО переключателя: у
-// модуля есть кнопка, которая вешает класс ntib_dark, и без второго блока она
-// перебила бы наши цвета обратно на свои. Оба его состояния красим одинаково —
-// вид экрана решает наш переключатель на <html>, а не его собственный.
+// Определяем и для светлого, и для тёмного варианта: у модуля есть свой
+// переключатель, который вешает класс ntib_dark, и без второго блока он
+// перебил бы наши цвета обратно на свои.
 .ntib_root,
 .ntib_root.ntib_dark {
   // Акцент — как у активного пункта нашей шапки.
-  --ntib-accent: var(--pmk-fill-active);
-  --ntib-accent-hover: var(--pmk-fill-accent-hover);
-  --ntib-on-accent: var(--pmk-text-strong);
+  --ntib-accent: #{rgba(255, 255, 255, 0.14)};
+  --ntib-accent-hover: #{rgba(255, 255, 255, 0.22)};
+  --ntib-on-accent: #fff;
 
   // Текст: заголовок белый, основной приглушён, подписи ещё тише.
-  --ntib-ink: var(--pmk-text-strong);
-  --ntib-text: var(--pmk-text);
-  --ntib-soft: var(--pmk-label);
-  --ntib-muted: var(--pmk-text-faint);
-  --ntib-muted2: var(--pmk-text-hint);
-  --ntib-hint: var(--pmk-text-ghost);
+  --ntib-ink: #fff;
+  --ntib-text: #{rgba(255, 255, 255, 0.82)};
+  --ntib-soft: #{rgba(255, 255, 255, 0.62)};
+  --ntib-muted: #{rgba(255, 255, 255, 0.45)};
+  --ntib-muted2: #{rgba(255, 255, 255, 0.35)};
+  --ntib-hint: #{rgba(255, 255, 255, 0.3)};
 
   // Линии той же плотности, что у наших карточек и таблиц.
-  --ntib-line: var(--pmk-border-vendor);
-  --ntib-line-soft: var(--pmk-border-soft);
-  --ntib-line-faint: var(--pmk-border-faint);
+  --ntib-line: #{rgba(255, 255, 255, 0.12)};
+  --ntib-line-soft: #{rgba(255, 255, 255, 0.08)};
+  --ntib-line-faint: #{rgba(255, 255, 255, 0.05)};
 
   // Фон страницы прозрачный: под ним лежит градиент системы, и закрашивать
   // его своим цветом значит вырезать в интерфейсе прямоугольник.
   --ntib-bg-page: transparent;
-  --ntib-panel: var(--pmk-surface);
-  --ntib-bg-side: var(--pmk-surface-sunken);
-  --ntib-bg-hover: var(--pmk-fill-hover-soft);
-  --ntib-bg-sel: var(--pmk-fill-selected);
-  --ntib-bg-input: var(--pmk-input-bg);
-  --ntib-bg-input-h: var(--pmk-input-bg-hover-vendor);
-  --ntib-hover2: var(--pmk-fill-hover-soft);
-  --ntib-row-hover: var(--pmk-row-hover);
-  --ntib-bg-deep: var(--pmk-input-bg-deep);
+  --ntib-panel: #{rgba(255, 255, 255, 0.03)};
+  --ntib-bg-side: #{rgba(255, 255, 255, 0.02)};
+  --ntib-bg-hover: #{rgba(255, 255, 255, 0.06)};
+  --ntib-bg-sel: #{rgba(255, 255, 255, 0.1)};
+  --ntib-bg-input: #{rgba(0, 0, 0, 0.18)};
+  --ntib-bg-input-h: #{rgba(0, 0, 0, 0.26)};
+  --ntib-hover2: #{rgba(255, 255, 255, 0.06)};
+  --ntib-row-hover: #{rgba(255, 255, 255, 0.04)};
+  --ntib-bg-deep: #{rgba(0, 0, 0, 0.12)};
 
-  --ntib-ava-a: var(--pmk-avatar-a);
-  --ntib-ava-b: var(--pmk-avatar-b);
-  --ntib-ava-line: var(--pmk-border);
+  --ntib-ava-a: #{rgba(255, 255, 255, 0.08)};
+  --ntib-ava-b: #{rgba(255, 255, 255, 0.04)};
+  --ntib-ava-line: #{rgba(255, 255, 255, 0.1)};
 }
 
 // Скругления модуля мельче наших — подтягиваем к общему виду.
@@ -88,37 +86,37 @@
 .o_mail_client.o_mail_client {
   // Фон прозрачный: под приложением лежит градиент системы.
   --mc-panel-bg: transparent;
-  --mc-border: var(--pmk-border-vendor);
-  --mc-hover-bg: var(--pmk-fill-hover-soft);
+  --mc-border: #{rgba(255, 255, 255, 0.12)};
+  --mc-hover-bg: #{rgba(255, 255, 255, 0.06)};
 
   // Активная папка — как активный пункт нашей шапки, а не фирменный
   // фиолетовый Odoo.
-  --mc-active-bg: var(--pmk-fill-active-vendor);
-  --mc-active-color: var(--pmk-text-strong);
+  --mc-active-bg: #{rgba(255, 255, 255, 0.16)};
+  --mc-active-color: #fff;
 
   // Метка непрочитанного и подсветка отмеченных строк: берём акцент
   // раздела, он приходит из шапки переменной --pmk-accent.
-  --mc-unread-marker: var(--pmk-accent, var(--pmk-text-emphasis));
-  --mc-ticked-bg: var(--pmk-fill-selected);
+  --mc-unread-marker: var(--pmk-accent, #{rgba(255, 255, 255, 0.85)});
+  --mc-ticked-bg: #{rgba(255, 255, 255, 0.1)};
 
-  color: var(--pmk-text);
+  color: #{rgba(255, 255, 255, 0.82)};
 }
 
 // Три панели получают чуть заметную подложку — иначе список писем висит
 // прямо на градиенте и границы колонок теряются.
 .o_mail_client.o_mail_client {
   .o_mail_client_folders,
-  .o_mail_client_list { background-color: var(--pmk-surface); }
+  .o_mail_client_list { background-color: #{rgba(255, 255, 255, 0.03)}; }
 
-  .o_mail_client_topbar { background-color: var(--pmk-surface-raised); }
+  .o_mail_client_topbar { background-color: #{rgba(255, 255, 255, 0.04)}; }
 
   // Строка письма: наведение и выделение теми же значениями, что в наших
   // таблицах, чтобы поведение читалось одинаково по всей системе.
-  .o_mail_client_row:hover { background-color: var(--pmk-row-hover-vendor); }
+  .o_mail_client_row:hover { background-color: #{rgba(255, 255, 255, 0.05)}; }
 
   // Заголовки и подписи приглушаем: у модуля они рассчитаны на светлый фон.
   .o_mail_client_list_header,
-  .o_mail_client_contact_history { color: var(--pmk-caption); }
+  .o_mail_client_contact_history { color: #{rgba(255, 255, 255, 0.55)}; }
 }
 
 // Холст письма модуль намеренно оставляет белым — почтовая вёрстка почти
