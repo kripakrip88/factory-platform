@@ -13,12 +13,18 @@
     модули, дописывающие внутрь страниц (stock, account_add_gln, l10n_ru_doc),
     положат своё уже в опустевшую страницу, и поля тихо исчезнут.
 
-    ВАЖНО про синтаксис: узел `<xpath position="move"/>` обязан быть ПРЯМЫМ
-    потомком спецификации-приёмника. Вложенный глубже (например внутрь
-    `<group>`) он не выполняется, а вставляется в разметку как есть — секции
-    получаются пустыми, а карточка остаётся без полей. Поэтому сначала
-    создаём пустые секции, а затем отдельными спецификациями переносим в них
-    содержимое.
+    ВАЖНО про синтаксис, дважды проверено на живой форме:
+    1) узел `<xpath position="move"/>` обязан быть ПРЯМЫМ потомком
+       спецификации-приёмника; вложенный глубже он не выполняется, а
+       вставляется в разметку как есть;
+    2) `position="inside"` перенос НЕ выполняет вовсе — ядро обрабатывает
+       `move` только в ветках `before` и `replace`
+       (odoo/tools/template_inheritance.py:45, 210, 214). Поэтому приёмник
+       объявлен как `position="replace" mode="inner"`: там ядро ставит
+       sentinel специально ради переноса существующих узлов внутрь.
+
+    Обе ошибки стоили сломанной карточки: секции выходили пустыми, а блокнот
+    был уже скрыт — форма оставалась без единого поля.
   -->
   <record id="view_partner_form_flat" model="ir.ui.view">
     <field name="name">res.partner.form.pmk.flat</field>
@@ -47,31 +53,31 @@
       </xpath>
 
       <!-- Шаг 2: переносим содержимое вкладок в секции. -->
-      <xpath expr="//group[@name='pmk_s_requisites']" position="inside">
+      <xpath expr="//group[@name='pmk_s_requisites']" position="replace" mode="inner">
         <xpath expr="//page[@name='pmk_requisites']/group[@name='pmk_g_requisites']"
                position="move"/>
       </xpath>
 
-      <xpath expr="//group[@name='pmk_s_contacts']" position="inside">
+      <xpath expr="//group[@name='pmk_s_contacts']" position="replace" mode="inner">
         <xpath expr="//page[@name='contact_addresses']/field[@name='child_ids']"
                position="move"/>
       </xpath>
 
-      <xpath expr="//group[@name='pmk_s_trade']" position="inside">
+      <xpath expr="//group[@name='pmk_s_trade']" position="replace" mode="inner">
         <xpath expr="//page[@name='sales_purchases']/group[@name='container_row_2']"
                position="move"/>
       </xpath>
 
-      <xpath expr="//group[@name='pmk_s_bank']" position="inside">
+      <xpath expr="//group[@name='pmk_s_bank']" position="replace" mode="inner">
         <xpath expr="//page[@name='pmk_requisites']/group[@name='pmk_g_bank']"
                position="move"/>
       </xpath>
 
-      <xpath expr="//group[@name='pmk_s_accounting']" position="inside">
+      <xpath expr="//group[@name='pmk_s_accounting']" position="replace" mode="inner">
         <xpath expr="//page[@name='accounting']/group[1]" position="move"/>
       </xpath>
 
-      <xpath expr="//group[@name='pmk_s_notes']" position="inside">
+      <xpath expr="//group[@name='pmk_s_notes']" position="replace" mode="inner">
         <xpath expr="//page[@name='internal_notes']/field[@name='comment']"
                position="move"/>
         <xpath expr="//page[@name='internal_notes']/group[@name='warnings']"
