@@ -163,7 +163,13 @@ class DoborOrder(models.Model):
                 "profile_snapshot_json": line.profile_snapshot_json,
             } for line in self.line_ids],
         }
-        return Markup(order_html(order, mps, author=self.env.user.name or ""))
+        # Обёртка class="article" ОБЯЗАТЕЛЬНА: по ней Odoo находит содержимое
+        # и оборачивает его в minimal_layout, где есть <meta charset="utf-8">.
+        # Без неё срабатывает запасной путь — в wkhtmltopdf уходит фрагмент
+        # без объявления кодировки, и кириллица печатается абракадаброй.
+        return Markup(
+            '<div class="article" data-oe-model="%s" data-oe-id="%s">%s</div>'
+            % (self._name, self.id, order_html(order, mps, author=self.env.user.name or "")))
 
     def action_print_sheet(self):
         return self.env.ref("pmk_calc.action_report_dobor_sheet").report_action(self)

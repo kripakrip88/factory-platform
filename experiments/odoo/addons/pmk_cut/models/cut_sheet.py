@@ -24,7 +24,16 @@ class PmkCutPlanSheet(models.Model):
         for result in self.result_ids:
             parts.append(self._sheet_result(result))
         parts.append(self._sheet_footer())
-        return Markup('<div class="cut">%s</div>' % "".join(parts))
+        # Обёртка class="article" ОБЯЗАТЕЛЬНА, и вот почему. Odoo ищет в
+        # свёрстанной странице блоки с этим классом и каждый оборачивает в
+        # свой minimal_layout, где есть <meta charset="utf-8">. Если ни
+        # одного такого блока нет, срабатывает запасной путь: в файл для
+        # wkhtmltopdf уходит голый фрагмент БЕЗ объявления кодировки, и
+        # кириллица печатается как «Ð›Ð¸ÑÑ Ñ€Ð°ÑÐºÑ€Ð¾Ñ».
+        return Markup(
+            '<div class="article" data-oe-model="%s" data-oe-id="%s">'
+            '<div class="cut">%s</div></div>'
+            % (self._name, self.id, "".join(parts)))
 
     # ------------------------------------------------------------------
 
