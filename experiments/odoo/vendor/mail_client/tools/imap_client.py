@@ -258,12 +258,18 @@ class ImapConnection:
         """Establish the transport, translating the two failures that actually
         happen in the field into something an administrator can act on."""
         try:
+            # ПРАВКА ПМК: imaplib без ssl_context берёт _create_stdlib_context(),
+            # у которого check_hostname=False и verify_mode=CERT_NONE — то есть
+            # сертификат сервера не проверяется вовсе, и посредник может забрать
+            # пароль от ящика. Передаём контекст с полной проверкой.
+            _ctx = ssl.create_default_context()
             if self.encryption == 'ssl':
-                self.imap = _IMAP4_SSL(self.host, self.port, timeout=self.timeout)
+                self.imap = _IMAP4_SSL(self.host, self.port, timeout=self.timeout,
+                                       ssl_context=_ctx)
             else:
                 self.imap = _IMAP4(self.host, self.port, timeout=self.timeout)
                 if self.encryption == 'starttls':
-                    self.imap.starttls()
+                    self.imap.starttls(ssl_context=_ctx)
         except (socket.timeout, TimeoutError) as exc:
             hint = ''
             if self.encryption != 'ssl' and self.port == 993:
@@ -792,6 +798,9 @@ class ImapConnection:
         term = (term or '').strip()
         if not term:
             return []
+        # ПРАВКА ПМК: вычищаем переводы строк — иначе строка поиска уезжает
+        # в протокол отдельной командой (imaplib этого не проверяет).
+        term = term.replace("\r", " ").replace("\n", " ")
         # Quote for the protocol: a stray double quote would end the string.
         quoted = '"%s"' % term.replace('\\', '\\\\').replace('"', '\\"')
         criteria = ['OR', 'OR', 'SUBJECT', quoted, 'FROM', quoted, 'TEXT', quoted]
