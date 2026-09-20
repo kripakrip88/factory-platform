@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+  <!--
+    Тот же вид полей на документах закупок: заказ поставщику и запрос цен —
+    это одна форма purchase.order, разделены только состоянием.
+  -->
+  <record id="view_purchase_order_form_pmk" model="ir.ui.view">
+    <field name="name">purchase.order.form.pmk</field>
+    <field name="model">purchase.order</field>
+    <field name="inherit_id" ref="purchase.purchase_order_form"/>
+    <field name="arch" type="xml">
+      <form position="attributes">
+        <attribute name="class" add="pmk-form" separator=" "/>
+      </form>
+    </field>
+  </record>
+
+</odoo>

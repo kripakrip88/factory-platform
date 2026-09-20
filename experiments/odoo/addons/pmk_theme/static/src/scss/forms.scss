@@ -559,3 +559,90 @@
     right: 10px;
   }
 }
+
+// ─── Единый вид полей на чужих формах ──────────────────────────────────────
+//
+// Класс `pmk-form` вешает представление (см. модуль pmk_partner), а стили
+// живут здесь. Разметку чужих форм НЕ переписываем: карточка контрагента
+// собрана из двадцати наследованных представлений, и своя вёрстка ломалась бы
+// при каждом обновлении любого из них. Вид получается тот же, что в шапке
+// спецификации — подпись сверху, поле в рамке, — но поверх родной вёрстки.
+
+.o_form_view .pmk-form {
+
+  // Родная раскладка группы — две колонки «подпись | поле». Разворачиваем
+  // строку в столбец: подпись сверху, поле под ней.
+  .o_inner_group > .o_wrap_field {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+    margin-bottom: .45rem;
+  }
+
+  .o_inner_group > .o_wrap_field > .o_cell {
+    padding: 0;
+    width: auto;
+    max-width: none;
+  }
+
+  .o_inner_group > .o_wrap_field > .o_cell.o_wrap_label {
+    label,
+    .o_form_label {
+      font-size: .6875rem;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      font-weight: 500;
+      color: #{rgba(255, 255, 255, 0.55)};
+      white-space: normal;
+    }
+  }
+
+  .o_inner_group > .o_wrap_field > .o_cell:not(.o_wrap_label) > .o_field_widget {
+    display: flex;
+    // Направление задаём явно: .o_field_widget наследует колонку от строки и
+    // без этого ввод уезжает вниз под собственный текст. Эти грабли уже были
+    // в шапке спецификации.
+    flex-direction: row;
+    align-items: center;
+    min-height: 34px;
+    padding: 4px 10px;
+    background: #{rgba(0, 0, 0, 0.18)};
+    border: 1px solid #{rgba(255, 255, 255, 0.1)};
+    border-radius: 8px;
+
+    > * {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    // Флажки, вложенные списки, картинки и текстовые блоки в рамку не берём:
+    // у них своя геометрия, коробка вокруг них только мешает читать.
+    &.o_field_boolean,
+    &.o_field_x2many,
+    &.o_field_image,
+    &.o_field_html,
+    &.o_field_text {
+      display: block;
+      min-height: 0;
+      padding: 0;
+      background: transparent;
+      border-color: transparent;
+    }
+  }
+
+  // Адрес — единый блок из четырёх строк. Берём в одну рамку целиком, иначе
+  // улица, город и индекс превращаются в четыре отдельные коробки подряд.
+  .o_inner_group .o_address_format {
+    padding: 4px 10px;
+    background: #{rgba(0, 0, 0, 0.18)};
+    border: 1px solid #{rgba(255, 255, 255, 0.1)};
+    border-radius: 8px;
+
+    .o_field_widget {
+      background: transparent;
+      border: 0;
+      padding: 0;
+    }
+  }
+}

@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+  <record id="view_partner_form_pmk" model="ir.ui.view">
+    <field name="name">res.partner.form.pmk</field>
+    <field name="model">res.partner</field>
+    <field name="inherit_id" ref="base.view_partner_form"/>
+    <!--
+      Приоритет ниже по списку не нужен: наследники применяются по priority,
+      затем по id, а наш появляется последним. Но полей мы касаемся чужих,
+      поэтому все модули-владельцы объявлены в depends — иначе xpath не найдёт
+      узел и модуль не поставится. Это нарочно: громкая ошибка лучше тихо
+      пропавшей правки.
+    -->
+    <field name="arch" type="xml">
+
+      <!-- Единый вид полей темы: подпись сверху, поле в рамке. -->
+      <form position="attributes">
+        <attribute name="class" add="pmk-form" separator=" "/>
+      </form>
+
+      <!-- ── Европейское электронное выставление счетов ────────────────────
+           Peppol — сеть обмена счетами в ЕС, в России не применяется.
+           GLN — глобальный код места в сети GS1, нужен ритейлу, не заводу. -->
+      <field name="peppol_eas" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </field>
+      <field name="peppol_endpoint" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </field>
+      <field name="global_location_number" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </field>
+      <field name="invoice_edi_format" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </field>
+
+      <!-- ── НДС по европейской базе ───────────────────────────────────────
+           Поле «НДС» и проверка по VIES дублируют ИНН из российской
+           локализации и сбивают: заполняют то одно, то другое. -->
+      <field name="vat" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </field>
+      <field name="perform_vies_validation" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </field>
+      <field name="vies_valid" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </field>
+
+      <!-- Факс. -->
+      <field name="facsimile" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </field>
+
+      <!-- ── Бухгалтерская автоматика, которой завод не пользуется ─────────
+           Автопроводка счетов поставщика и предупреждения об «аномальных»
+           суммах и датах включают разбор счетов, которого у нас нет.
+           Налоговая позиция — схемы налогообложения, тоже не используются. -->
+      <field name="autopost_bills" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </field>
+      <field name="ignore_abnormal_invoice_amount" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </field>
+      <field name="ignore_abnormal_invoice_date" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </field>
+      <field name="property_account_position_id" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </field>
+
+      <!-- Склады по умолчанию: виртуальные локации клиента и поставщика.
+           Площадка одна, выбирать не из чего. -->
+      <field name="property_stock_customer" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </field>
+      <field name="property_stock_supplier" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </field>
+
+      <!-- ── Кнопки-счётчики ──────────────────────────────────────────────
+           Встречи, задачи и сотрудники: календарь, проекты и кадры заводом
+           не ведутся, счётчики всегда нулевые.
+           Сохранённые способы оплаты — банковские карты интернет-магазина.
+
+           Заказы поставщикам, счета поставщиков, своевременность поставок,
+           партии и договоры НЕ трогаем: это ровно то, ради чего карточка
+           поставщика и нужна. -->
+      <button name="schedule_meeting" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </button>
+      <button name="action_view_tasks" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </button>
+      <button name="action_open_employees" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </button>
+      <!-- У этой кнопки в name лежит числовой id действия, разный в каждой
+           базе, поэтому ищем её по вложенному полю. -->
+      <xpath expr="//button[field[@name='payment_token_count']]" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+
+      <!-- ── Поля индивидуального предпринимателя ──────────────────────────
+           Оставлены: с ИП работаем. Но у организации ФИО и паспорт — мусор
+           в форме, поэтому показываем только когда выбран тип «физлицо». -->
+      <field name="last_name_IP" position="attributes">
+        <attribute name="invisible">company_type != 'person'</attribute>
+      </field>
+      <field name="first_name_IP" position="attributes">
+        <attribute name="invisible">company_type != 'person'</attribute>
+      </field>
+      <field name="middle_name_IP" position="attributes">
+        <attribute name="invisible">company_type != 'person'</attribute>
+      </field>
+      <field name="passport" position="attributes">
+        <attribute name="invisible">company_type != 'person'</attribute>
+      </field>
+
+    </field>
+  </record>
+
+</odoo>
