@@ -18,36 +18,31 @@
             справа карточками. Ведущее число здесь — планки: это то, что
             цех делает. Материал (площадь и вес) собран во второй карточке.
           -->
+          <!--
+            Шапка тем же приёмом, что в спецификации: поля слева, две равные
+            плашки справа. Ведущие числа — планки (это делает цех) и вес.
+            Позиции и площадь стоят слева: во второй ряд плашек они вытянули
+            бы шапку вниз.
+          -->
           <div class="pmk-doc-head">
-            <group>
-              <field name="customer" placeholder="Кому или на какое изделие"/>
+            <group col="4">
+              <field name="customer" colspan="4" placeholder="Кому или на какое изделие"/>
               <field name="order_date"/>
+              <field name="total_positions"/>
+              <field name="total_area"/>
             </group>
 
             <div class="pmk-kpi">
               <div class="pmk-kpi__card">
-                <!--
-                  Существительное держим в подписи, а не рядом с числом:
-                  «1 планок» и «в 1 позициях» не согласуются, а склонять
-                  числительное в разметке нечем. «шт» не склоняется вовсе.
-                -->
-                <div class="pmk-kpi__label">Планок к изготовлению</div>
+                <div class="pmk-kpi__label">Планок, шт</div>
                 <div class="pmk-kpi__value">
-                  <field name="total_qty"/><span class="pmk-kpi__unit">шт</span>
-                </div>
-                <div class="pmk-kpi__sub">
-                  <span>Позиций:</span><field name="total_positions"/>
+                  <field name="total_qty"/>
                 </div>
               </div>
-
               <div class="pmk-kpi__card">
-                <div class="pmk-kpi__row">
-                  <span class="pmk-kpi__label">Площадь, м²</span>
-                  <field name="total_area"/>
-                </div>
-                <div class="pmk-kpi__row">
-                  <span class="pmk-kpi__label">Вес, кг</span>
-                  <field name="total_weight"/>
+                <div class="pmk-kpi__label">Общий вес, кг</div>
+                <div class="pmk-kpi__value">
+                  <field name="total_weight" digits="[12,2]"/>
                 </div>
               </div>
             </div>

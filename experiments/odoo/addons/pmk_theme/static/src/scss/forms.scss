@@ -258,10 +258,6 @@
   @media (max-width: 1100px) {
     grid-template-columns: 1fr;
     gap: 12px;
-
-    // Карточки при этом встают в ряд, а не растягиваются каждая на всю
-    // ширину: число в карточке шириной 800px теряется в пустоте.
-    .pmk-kpi { grid-template-columns: 1fr 1fr; }
   }
 }
 
@@ -276,10 +272,17 @@
 // каждая новая плашка заводит собственный вид.
 .pmk-kpi {
   display: grid;
+  // В РЯД, а не стопкой: две плашки одна под другой растягивали шапку выше
+  // блока полей, и правая колонка тянула вниз всю строку документа.
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
+  align-items: stretch;
 }
 
 .pmk-kpi__card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.10);
   border-radius: 16px;
@@ -306,45 +309,6 @@
   font-variant-numeric: tabular-nums;
 
   .o_field_widget { font-size: inherit; font-weight: inherit; }
-}
-
-.pmk-kpi__unit {
-  font-size: 13px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.5);
-}
-
-// Тонны под килограммами, а не рядом: это то же число в других единицах,
-// а не второй показатель. Рядом они читались бы как два разных итога.
-.pmk-kpi__sub {
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
-  margin-top: 3px;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.55);
-  font-variant-numeric: tabular-nums;
-
-  .o_field_widget { font-size: inherit; }
-}
-
-// Счётчики: подпись слева, число справа — так столбец чисел читается
-// столбцом, а не рваным краем.
-.pmk-kpi__row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 2px 0;
-  font-size: 12.5px;
-
-  + .pmk-kpi__row { border-top: 1px solid rgba(255, 255, 255, 0.06); }
-
-  .o_field_widget {
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.85);
-    font-variant-numeric: tabular-nums;
-  }
 }
 
 
@@ -402,4 +366,61 @@
 // фон, только по наведению, без смещения и без рамок.
 .o_form_view .o_list_renderer .o_data_row:hover > td {
   background: rgba(255, 255, 255, 0.04);
+}
+
+
+// ─── Поля шапки видны как поля ────────────────────────────────────────────
+//
+// Odoo 19 рисует поля формы без рамки: граница появляется только при вводе.
+// На широком листе это дало «плавающий текст» — где заканчивается подпись и
+// начинается значение, глазу непонятно, пока не ткнёшь.
+//
+// ЭТО НЕ ОТКАТ правила выше, снимающего «капсулы» Liquid Glass. Там капсула
+// оборачивала ОТДЕЛЬНО подпись и ОТДЕЛЬНО значение и рвала их пару. Здесь
+// рамка у самого поля ввода, подпись остаётся обычным текстом рядом — пара
+// не рвётся, а поле читается полем всегда.
+//
+// Область — только шапка документа: остальная система остаётся в штатном
+// виде Odoo, пока приём не проверен в работе.
+.pmk-doc-head {
+  // Подпись тише значения. Без этого подпись и значение одного кегля, веса
+  // и цвета — иерархии нет, читаются как два равных текста.
+  .o_form_label {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.6) !important;
+  }
+
+  // Строки шапки чуть свободнее: полю с рамкой нужен воздух, иначе рамки
+  // соседних строк слипаются.
+  .o_inner_group { row-gap: 10px; }
+
+  .o_field_widget input:not([type="checkbox"]):not([type="radio"]),
+  .o_field_widget textarea {
+    background: rgba(0, 0, 0, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.10) !important;
+    border-radius: 8px;
+    padding: 6px 10px;
+    min-height: 32px;
+
+    &::placeholder { color: rgba(255, 255, 255, 0.32); }
+
+    &:hover { border-color: rgba(255, 255, 255, 0.18) !important; }
+
+    &:focus {
+      background: rgba(0, 0, 0, 0.28);
+      border-color: rgba(255, 255, 255, 0.4) !important;
+      box-shadow: none;
+    }
+
+    // Обводку фокуса не снимаем: по ней работают с клавиатуры.
+    &:focus-visible {
+      outline: 2px solid rgba(255, 255, 255, 0.75);
+      outline-offset: 1px;
+    }
+  }
+
+  // Стрелка выпадающего списка прижата к правому краю поля, а не к тексту.
+  .o_field_widget .o_input_dropdown .o_dropdown_button {
+    right: 10px;
+  }
 }

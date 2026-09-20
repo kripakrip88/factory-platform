@@ -16,32 +16,35 @@
             доборка и будущие документы выглядели так же.
           -->
           <div class="pmk-doc-head">
-            <group>
+            <!--
+              col="4" — два поля в строке. На широком листе одно поле в строку
+              растягивалось на метр; примечание занимает строку целиком.
+              Счётчики стоят здесь же, слева: в правой колонке они добавили бы
+              второй ряд карточек и вытянули шапку вниз.
+            -->
+            <group col="4">
               <field name="partner_id"/>
               <field name="date"/>
-              <field name="note" placeholder="Примечание…"/>
+              <field name="note" colspan="4" placeholder="Примечание…"/>
+              <field name="total_products"/>
+              <field name="total_details"/>
             </group>
 
+            <!--
+              Две равные плашки В РЯД. Единица измерения — в подписи, у числа
+              её нет: плашки одинаковы по строению, и ничего не надо склонять.
+            -->
             <div class="pmk-kpi">
               <div class="pmk-kpi__card">
-                <div class="pmk-kpi__label">Итого</div>
+                <div class="pmk-kpi__label">Общий вес, кг</div>
                 <div class="pmk-kpi__value">
-                  <field name="total_weight"/><span class="pmk-kpi__unit">кг</span>
-                </div>
-                <!-- Тонны под килограммами: то же число в других единицах. -->
-                <div class="pmk-kpi__sub">
-                  <field name="total_weight_t"/><span>т</span>
+                  <field name="total_weight" digits="[12,2]"/>
                 </div>
               </div>
-
               <div class="pmk-kpi__card">
-                <div class="pmk-kpi__row">
-                  <span class="pmk-kpi__label">Изделий</span>
-                  <field name="total_products"/>
-                </div>
-                <div class="pmk-kpi__row">
-                  <span class="pmk-kpi__label">Деталей</span>
-                  <field name="total_details"/>
+                <div class="pmk-kpi__label">Общий вес, т</div>
+                <div class="pmk-kpi__value">
+                  <field name="total_weight_t" digits="[12,3]"/>
                 </div>
               </div>
             </div>
