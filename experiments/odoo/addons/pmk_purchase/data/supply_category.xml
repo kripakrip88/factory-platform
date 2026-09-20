@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Группы поставки. Разбиты не по ГОСТам, а по тому, как устроен рынок:
+    сортовой и фасонный прокат возит один круг поставщиков, тонкий лист с
+    покрытием — совсем другой, метизы и расходники — третий. Запрос прайса
+    имеет смысл слать по группам, а не «пришлите всё».
+  -->
+  <record id="cat_long" model="pmk.supply.category">
+    <field name="name">Сортовой прокат</field>
+    <field name="sequence">10</field>
+    <field name="note">Арматура, круг, квадрат, шестигранник, полоса</field>
+  </record>
+  <record id="cat_shaped" model="pmk.supply.category">
+    <field name="name">Фасонный прокат</field>
+    <field name="sequence">20</field>
+    <field name="note">Уголок, швеллер, двутавр</field>
+  </record>
+  <record id="cat_pipe" model="pmk.supply.category">
+    <field name="name">Трубы</field>
+    <field name="sequence">30</field>
+    <field name="note">Круглая, профильная, ВГП, бесшовная, электросварная</field>
+  </record>
+  <record id="cat_sheet" model="pmk.supply.category">
+    <field name="name">Лист</field>
+    <field name="sequence">40</field>
+    <field name="note">Горячекатаный, холоднокатаный, рифлёный, оцинкованный</field>
+  </record>
+  <record id="cat_coated" model="pmk.supply.category">
+    <field name="name">Тонкий лист с покрытием</field>
+    <field name="sequence">50</field>
+    <field name="note">Рулон и штрипс на доборные элементы кровли</field>
+  </record>
+  <record id="cat_fastener" model="pmk.supply.category">
+    <field name="name">Метизы</field>
+    <field name="sequence">60</field>
+    <field name="note">Анкеры, болты, гайки, шайбы, шпильки, саморезы, заклёпки</field>
+  </record>
+  <record id="cat_welding" model="pmk.supply.category">
+    <field name="name">Сварочные материалы</field>
+    <field name="sequence">70</field>
+    <field name="note">Электроды, проволока, газы</field>
+  </record>
+  <record id="cat_abrasive" model="pmk.supply.category">
+    <field name="name">Абразивы</field>
+    <field name="sequence">80</field>
+    <field name="note">Круги отрезные и зачистные, щётки</field>
+  </record>
+  <record id="cat_paint" model="pmk.supply.category">
+    <field name="name">Лакокрасочные материалы</field>
+    <field name="sequence">90</field>
+    <field name="note">Грунт, эмаль по металлу, растворители</field>
+  </record>
+  <record id="cat_service" model="pmk.supply.category">
+    <field name="name">Услуги металлообработки</field>
+    <field name="sequence">100</field>
+    <field name="note">Резка, гибка, вальцевание на стороне</field>
+  </record>
+</odoo>

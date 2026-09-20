@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!-- В раздел Закупок нашей темы, сразу после «Поставщики». -->
+  <record id="menu_price_supplier" model="ir.ui.menu">
+    <field name="name">Поставщики прайсов</field>
+    <field name="parent_id" ref="pmk_theme.menu_pmk_purchase"/>
+    <field name="action" ref="action_price_supplier"/>
+    <field name="sequence">35</field>
+  </record>
+
+  <record id="menu_supply_category" model="ir.ui.menu">
+    <field name="name">Группы поставки</field>
+    <field name="parent_id" ref="pmk_theme.menu_pmk_purchase"/>
+    <field name="action" ref="action_supply_category"/>
+    <field name="sequence">90</field>
+  </record>
+</odoo>

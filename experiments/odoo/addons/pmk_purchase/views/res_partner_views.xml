@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+  <!-- Блок запроса прайсов — в группу «Закупки» карточки контрагента,
+       рядом с закупщиком и условиями оплаты, а не отдельной вкладкой:
+       снабженец смотрит всё это разом. -->
+  <record id="view_partner_form_price" model="ir.ui.view">
+    <field name="name">res.partner.form.pmk.price</field>
+    <field name="model">res.partner</field>
+    <field name="inherit_id" ref="base.view_partner_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//group[@name='purchase']" position="inside">
+        <field name="pmk_price_supplier"/>
+        <field name="pmk_supply_ids" widget="many2many_tags"
+               invisible="not pmk_price_supplier"
+               options="{'no_create_edit': True}"/>
+        <field name="pmk_has_stock" invisible="not pmk_price_supplier"/>
+        <field name="pmk_price_email" invisible="not pmk_price_supplier"
+               placeholder="zakaz@postavshchik.ru"/>
+        <field name="pmk_price_email_state" invisible="not pmk_price_supplier"
+               widget="badge"
+               decoration-warning="pmk_price_email_state == 'draft'"
+               decoration-success="pmk_price_email_state == 'confirmed'"
+               decoration-danger="pmk_price_email_state == 'invalid'"/>
+        <field name="pmk_price_email_source" invisible="not pmk_price_supplier"
+               widget="url"/>
+        <field name="pmk_price_period_days" invisible="not pmk_price_supplier"/>
+        <field name="pmk_price_last_date" invisible="not pmk_price_supplier"/>
+        <field name="pmk_price_next_date" invisible="not pmk_price_supplier"/>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- Отдельный список: карточка контрагента для этого слишком длинная,
+       а снабженцу нужен именно перечень — кто, что возит, когда был прайс. -->
+  <record id="view_price_supplier_list" model="ir.ui.view">
+    <field name="name">res.partner.list.pmk.price</field>
+    <field name="model">res.partner</field>
+    <field name="arch" type="xml">
+      <list string="Поставщики прайсов">
+        <field name="name"/>
+        <field name="pmk_supply_ids" widget="many2many_tags" string="Что возит"/>
+        <field name="pmk_has_stock" string="Склад ДВ"/>
+        <field name="pmk_price_email" string="Адрес для прайса"/>
+        <field name="pmk_price_email_state" widget="badge"
+               decoration-warning="pmk_price_email_state == 'draft'"
+               decoration-success="pmk_price_email_state == 'confirmed'"
+               decoration-danger="pmk_price_email_state == 'invalid'"/>
+        <field name="phone" optional="show"/>
+        <field name="city" optional="show"/>
+        <field name="website" optional="hide"/>
+        <field name="pmk_price_period_days" optional="hide"/>
+        <field name="pmk_price_last_date" optional="show"/>
+        <field name="pmk_price_next_date" optional="show"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="view_price_supplier_search" model="ir.ui.view">
+    <field name="name">res.partner.search.pmk.price</field>
+    <field name="model">res.partner</field>
+    <field name="arch" type="xml">
+      <search>
+        <field name="name" string="Поставщик"/>
+        <field name="pmk_supply_ids" string="Что возит"/>
+        <field name="city"/>
+
+        <filter name="confirmed" string="Адрес подтверждён"
+                domain="[('pmk_price_email_state', '=', 'confirmed')]"/>
+        <filter name="draft" string="Адрес не подтверждён"
+                domain="[('pmk_price_email_state', '=', 'draft')]"/>
+        <separator/>
+        <filter name="has_stock" string="Со складом на ДВ"
+                domain="[('pmk_has_stock', '=', True)]"/>
+        <separator/>
+        <!-- Ради этого фильтра всё и затевается: кого пора дёрнуть за прайсом. -->
+        <filter name="due" string="Пора запросить прайс"
+                domain="[('pmk_price_next_date', '&lt;=', context_today().strftime('%Y-%m-%d'))]"/>
+        <filter name="never" string="Прайса ещё не было"
+                domain="[('pmk_price_last_date', '=', False)]"/>
+
+        <group>
+          <filter name="by_supply" string="Что возит"
+                  context="{'group_by': 'pmk_supply_ids'}"/>
+          <filter name="by_state" string="Состояние адреса"
+                  context="{'group_by': 'pmk_price_email_state'}"/>
+          <filter name="by_city" string="Город" context="{'group_by': 'city'}"/>
+        </group>
+      </search>
+    </field>
+  </record>
+
+  <record id="action_price_supplier" model="ir.actions.act_window">
+    <field name="name">Поставщики прайсов</field>
+    <field name="res_model">res.partner</field>
+    <field name="view_mode">list,form</field>
+    <field name="domain">[('pmk_price_supplier', '=', True)]</field>
+    <field name="context">{'default_pmk_price_supplier': True, 'default_is_company': True, 'res_partner_search_mode': 'supplier'}</field>
+    <field name="search_view_id" ref="view_price_supplier_search"/>
+    <field name="help" type="html">
+      <p class="o_view_nocontent_smiling_face">Поставщиков ещё нет</p>
+      <p>Здесь живут те, у кого мы регулярно спрашиваем цены: что возит,
+         на какой адрес писать и когда прайс приходил в последний раз.</p>
+    </field>
+  </record>
+
+  <record id="action_price_supplier_list_binding" model="ir.actions.act_window.view">
+    <field name="sequence">1</field>
+    <field name="view_mode">list</field>
+    <field name="view_id" ref="view_price_supplier_list"/>
+    <field name="act_window_id" ref="action_price_supplier"/>
+  </record>
+  <record id="action_price_supplier_form_binding" model="ir.actions.act_window.view">
+    <field name="sequence">2</field>
+    <field name="view_mode">form</field>
+    <field name="act_window_id" ref="action_price_supplier"/>
+  </record>
+</odoo>
