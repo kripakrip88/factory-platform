@@ -13,3 +13,5 @@ from . import mail_client_sync_op
 from . import mail_client_compose
 from . import mail_client_audit
 from . import res_users
+# Правка ПМК Парк: разбор вложений для просмотра без скачивания.
+from . import mail_client_attachment_preview
