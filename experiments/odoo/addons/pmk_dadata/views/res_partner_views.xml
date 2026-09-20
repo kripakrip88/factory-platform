@@ -21,8 +21,17 @@
             <group>
               <field name="company_type" widget="radio" options="{'horizontal': true}"/>
               <label for="inn"/>
-              <div class="d-flex align-items-center gap-2">
-                <field name="inn" nolabel="1" class="oe_inline"
+              <!--
+                o_row, а не свой d-flex. Тема оформляет ровно три формы
+                разметки ячейки: поле напрямую, поле внутри o_row и блок
+                адреса. Своя обёртка не попадала ни под одну — поле
+                оставалось без фона и рамки. Плюс ядро схлопывает oe_inline
+                по содержимому (`width: auto !important`), и пустое поле
+                становилось шириной в ноль. На экране это выглядело как
+                «поля ИНН нет вообще».
+              -->
+              <div class="o_row">
+                <field name="inn" nolabel="1"
                        placeholder="10 цифр у организации, 12 у ИП"/>
                 <!-- Кнопку показываем всегда, даже на пустом ИНН: спрятанная
                      кнопка не объясняет, почему её нет. Пустое поле ловится
@@ -53,6 +62,25 @@
             </field>
           </group>
         </page>
+      </xpath>
+
+      <!--
+        Дубли. КПП, ОГРН и ОКПО показываются дважды: российская локализация
+        кладёт их в ШАПКУ листа (выше блокнота), и мы добавили их сюда.
+        Прячем копии в шапке — здесь они лежат в осмысленном соседстве
+        с ИНН и кнопкой заполнения.
+
+        ИНН в шапке локализация прячет сама (invisible="True"), поэтому
+        единственный видимый ввод ИНН — наш.
+      -->
+      <xpath expr="//sheet//field[@name='kpp'][1]" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//sheet//field[@name='ogrn'][1]" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//sheet//field[@name='okpo'][1]" position="attributes">
+        <attribute name="invisible">1</attribute>
       </xpath>
 
       <!--
