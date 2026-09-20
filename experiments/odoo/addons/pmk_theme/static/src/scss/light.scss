@@ -288,4 +288,67 @@ html[data-pmk-scheme="light"] {
   textarea.o_input {
     color: var(--pmk-text-strong) !important;
   }
+
+  // ─── Остальной белый текст чужой темы ─────────────────────────────────────
+  //
+  // Список ниже не придуман и не переписан по памяти: он снят с СОБРАННОГО
+  // бандла на стенде. Скрипт прошёл по всем правилам страницы и выбрал те, что
+  // ставят цвету белый с !important, — таких нашлось 48. Пять из них правила
+  // самой Odoo (.text-bg-primary, .text-bg-success, .o-discuss-badge и
+  // родня): там белые буквы лежат на цветной плашке и обязаны остаться
+  // белыми. Остальные — чужой темы, и все они перечислены здесь или выше.
+  //
+  // Проверка потом шла тем же способом, а не глазами: тот же скрипт считает
+  // контраст каждой видимой надписи к её фактическому фону. Ищем то, чего на
+  // экране просто НЕ ВИДНО, а такое взглядом и не найдёшь — оно невидимое.
+  .o_searchview .o_searchview_input_container .o_searchview_input,
+  .o_searchview_icon,
+  .o_cp_action_menus div .o-dropdown,
+  .o-mail-Message-actions button:hover,
+  .o_search_panel_section .o_search_panel_category_value,
+  .o-mail-AutoresizeInput,
+  .o-mail-Composer-actions button,
+  .o_tooltip_legend,
+  .o_graph_custom_tooltip,
+  .bg-view,
+  .bg-primary-subtle,
+  .bg-secondary,
+  .text-700,
+  .text-900,
+  .o_input,
+  .oe_subtotal_footer,
+  .text-primary,
+  a.text-primary:hover,
+  .o-we-table-menu,
+  pre,
+  .o_datetime_button,
+  .o-tag-undefined,
+  .o_previous.btn,
+  .o_next.btn,
+  .company_label.text-body,
+  .o_form_button_create,
+  .list-group-item-action,
+  .o_burger_menu_content li,
+  .o_apps_sidebar .o_sidebar_header h3,
+  .o_apps_sidebar .o_apps_sidebar_item .o_app_name,
+  .o_navbar_sidebar_toggle {
+    color: var(--pmk-text-strong) !important;
+  }
+
+  .list-group-item-action:hover,
+  .list-group-item-action.active {
+    color: var(--pmk-text-strong) !important;
+    background: var(--pmk-fill-hover-soft) !important;
+  }
+
+  // Дата сообщения — подпись, а не текст: тише основного, но читаемая.
+  .o-mail-Message-date {
+    color: var(--pmk-label) !important;
+  }
+
+  // Крестик у фильтра поиска обязан оставаться тревожным: он удаляет условие.
+  // Чужая тема красила его белым заодно со всем остальным.
+  .o_facet_remove.btn-link.text-danger {
+    color: var(--pmk-danger-text) !important;
+  }
 }
