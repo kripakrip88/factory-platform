@@ -63,10 +63,16 @@
       </xpath>
 
       <!-- Шаг 2: переносим содержимое вкладок в секции. -->
-      <xpath expr="//group[@name='pmk_s_requisites']" position="replace" mode="inner">
-        <xpath expr="//page[@name='pmk_requisites']/group[@name='pmk_g_requisites']"
-               position="move"/>
-      </xpath>
+      <!--
+        Секции «Реквизиты» и «Банковские счета» наполняет pmk_dadata, а не этот
+        файл, и это не вкусовщина. Страницу «Реквизиты» создаёт pmk_dadata,
+        который зависит от pmk_partner, — обратной связи нет. Во время загрузки
+        Odoo собирает представление ТОЛЬКО из уже загруженных модулей, поэтому
+        отсюда той страницы ещё не видно, и перенос падал с «cannot be located
+        in parent view». Представление из-за этого держали выключенным, и
+        плоских секций не видел никто (обнаружено 2026-09-20).
+        Приёмники стоят выше пустыми, наполнение — в pmk_dadata с приоритетом 100.
+      -->
 
       <xpath expr="//group[@name='pmk_s_contacts']" position="replace" mode="inner">
         <xpath expr="//page[@name='contact_addresses']/field[@name='child_ids']"
@@ -75,11 +81,6 @@
 
       <xpath expr="//group[@name='pmk_s_trade']" position="replace" mode="inner">
         <xpath expr="//page[@name='sales_purchases']/group[@name='container_row_2']"
-               position="move"/>
-      </xpath>
-
-      <xpath expr="//group[@name='pmk_s_bank']" position="replace" mode="inner">
-        <xpath expr="//page[@name='pmk_requisites']/group[@name='pmk_g_bank']"
                position="move"/>
       </xpath>
 

@@ -135,4 +135,44 @@
     </field>
   </record>
 
+  <!--
+    Наполнение плоских секций «Реквизиты» и «Банковские счета».
+
+    Почему здесь, а не в pmk_partner рядом с остальными секциями: страницу
+    «Реквизиты» создаёт ЭТОТ модуль, а зависимость идёт в одну сторону —
+    pmk_dadata зависит от pmk_partner. Во время загрузки Odoo собирает
+    представление только из уже загруженных модулей, поэтому из pmk_partner
+    страницы ещё не существует и перенос падает с «cannot be located in parent
+    view». Именно из-за этого плоское представление стояло выключенным, а
+    карточка контрагента — без секций (2026-09-20).
+
+    Приоритет 100 — на единицу выше плоской раскладки (99): к этому моменту
+    пустые секции уже созданы, и переносить есть куда.
+
+    Перенос, а не объявление полей заново: у полей свои groups и invisible,
+    переписывание рано или поздно откроет лишнее не тому человеку. Приёмник
+    объявлен как replace mode="inner" — position="inside" перенос не выполняет
+    вовсе (odoo/tools/template_inheritance.py), это уже стоило сломанной формы.
+  -->
+  <record id="view_partner_form_flat_requisites" model="ir.ui.view">
+    <field name="name">res.partner.form.pmk.flat.requisites</field>
+    <field name="model">res.partner</field>
+    <field name="inherit_id" ref="base.view_partner_form"/>
+    <field name="priority">100</field>
+    <field name="active">True</field>
+    <field name="arch" type="xml">
+
+      <xpath expr="//group[@name='pmk_s_requisites']" position="replace" mode="inner">
+        <xpath expr="//page[@name='pmk_requisites']/group[@name='pmk_g_requisites']"
+               position="move"/>
+      </xpath>
+
+      <xpath expr="//group[@name='pmk_s_bank']" position="replace" mode="inner">
+        <xpath expr="//page[@name='pmk_requisites']/group[@name='pmk_g_bank']"
+               position="move"/>
+      </xpath>
+
+    </field>
+  </record>
+
 </odoo>
