@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+  <!--
+    Карточка контрагента одним списком вместо вкладок.
+
+    Почему переносим узлы, а не объявляем поля заново: на форме 28 наследованных
+    представлений, у полей свои `groups=` и `invisible=`, и переписывание их
+    вручную рано или поздно откроет снабженцу счета учёта. Перенос сохраняет
+    все атрибуты как есть.
+
+    Приоритет 99 — чтобы наше представление применялось ПОСЛЕДНИМ. Иначе чужие
+    модули, которые дописывают внутрь страниц (stock, account_add_gln,
+    l10n_ru_doc), положат своё уже в пустую страницу, и поля тихо исчезнут.
+
+    Блокнот скрываем, а не удаляем: чужие xpath продолжают находить свои узлы.
+  -->
+  <record id="view_partner_form_flat" model="ir.ui.view">
+    <field name="name">res.partner.form.pmk.flat</field>
+    <field name="model">res.partner</field>
+    <field name="inherit_id" ref="base.view_partner_form"/>
+    <field name="priority">99</field>
+    <field name="arch" type="xml">
+
+      <xpath expr="//notebook" position="before">
+
+        <group string="Реквизиты" name="pmk_s_requisites" class="pmk-section">
+          <xpath expr="//page[@name='pmk_requisites']/group[1]" position="move"/>
+        </group>
+
+        <group string="Контактные лица" name="pmk_s_contacts" class="pmk-section pmk-section--closed">
+          <xpath expr="//page[@name='contact_addresses']/field[@name='child_ids']" position="move"/>
+        </group>
+
+        <group string="Продажи и закупки" name="pmk_s_trade" class="pmk-section pmk-section--closed">
+          <xpath expr="//page[@name='sales_purchases']/group[@name='container_row_2']" position="move"/>
+        </group>
+
+        <!-- По строке заголовка, а не по номеру: номера съезжают после
+             первого переноса, и «второй группой» окажется не та. -->
+        <group string="Банковские счета" name="pmk_s_bank" class="pmk-section pmk-section--closed">
+          <xpath expr="//page[@name='pmk_requisites']/group[@string='Банковские счета']"
+                 position="move"/>
+        </group>
+
+        <!-- Права и условие видимости переезжают со страницы на секцию:
+             без них счета учёта увидел бы кто угодно. -->
+        <group string="Выставление счетов" name="pmk_s_accounting"
+               class="pmk-section pmk-section--closed"
+               groups="account.group_account_invoice,account.group_account_readonly"
+               invisible="not is_company and parent_id">
+          <xpath expr="//page[@name='accounting']/group[1]" position="move"/>
+        </group>
+
+        <group string="Заметки" name="pmk_s_notes" class="pmk-section pmk-section--closed">
+          <xpath expr="//page[@name='internal_notes']/field[@name='comment']" position="move"/>
+          <xpath expr="//page[@name='internal_notes']/group[@name='warnings']" position="move"/>
+        </group>
+
+      </xpath>
+
+      <notebook position="attributes">
+        <attribute name="invisible">1</attribute>
+      </notebook>
+
+    </field>
+  </record>
+
+</odoo>

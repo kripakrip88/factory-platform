@@ -27,6 +27,7 @@
         "web.assets_backend": [
             "pmk_theme/static/src/scss/navbar.scss",
             "pmk_theme/static/src/scss/forms.scss",
+            "pmk_theme/static/src/js/collapsible_sections.js",
             "pmk_theme/static/src/scss/third_party.scss",
             "pmk_theme/static/src/js/navbar_active_section.js",
             "pmk_theme/static/src/js/chatter_inline.js",

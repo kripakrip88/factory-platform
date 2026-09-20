@@ -691,3 +691,90 @@
     color: #0b5ed7;
   }
 }
+
+// ─── Сворачиваемые секции формы ────────────────────────────────────────────
+//
+// Штатного механизма в Odoo 19 нет, но класс из представления до разметки
+// доезжает — на этом и строимся. Поведение в
+// pmk_theme/static/src/js/collapsible_sections.js.
+
+.o_form_view.pmk-form {
+
+  .pmk-section {
+    margin-bottom: 1.25rem;
+
+    // Заголовок работает кнопкой, значит должен вести себя как кнопка:
+    // курсор, отклик на наведение, видимая рамка фокуса и высота, в которую
+    // попадают и мышью, и пальцем.
+    > .o_horizontal_separator {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      min-height: 44px;
+      margin: 0 0 .5rem;
+      padding: 0 .25rem;
+      border-bottom: 1px solid #{rgba(255, 255, 255, 0.1)};
+      cursor: pointer;
+      user-select: none;
+      font-size: .8125rem;
+      letter-spacing: .04em;
+      color: #{rgba(255, 255, 255, 0.72)};
+      transition: color .15s ease, border-color .15s ease;
+
+      &::before {
+        content: "";
+        flex: 0 0 auto;
+        width: 0; height: 0;
+        border-left: 5px solid currentColor;
+        border-top: 4px solid transparent;
+        border-bottom: 4px solid transparent;
+        transform: rotate(90deg);
+        transition: transform .18s ease;
+      }
+
+      &:hover {
+        color: #{rgba(255, 255, 255, 0.95)};
+        border-color: #{rgba(255, 255, 255, 0.24)};
+      }
+
+      // Рамку фокуса не убираем: по форме ходят с клавиатуры.
+      &:focus-visible {
+        outline: 2px solid #{rgba(255, 255, 255, 0.55)};
+        outline-offset: 2px;
+        border-radius: 4px;
+      }
+    }
+
+    // Содержимое: всё, кроме заголовка.
+    > *:not(.o_horizontal_separator) {
+      transition: opacity .15s ease;
+    }
+
+    &.pmk-section--closed {
+      margin-bottom: .5rem;
+
+      > .o_horizontal_separator::before {
+        transform: rotate(0deg);
+      }
+
+      > *:not(.o_horizontal_separator) {
+        display: none;
+      }
+    }
+  }
+
+  // Движение служит делу, а не украшает: кто просил меньше анимации —
+  // получает мгновенное переключение.
+  @media (prefers-reduced-motion: reduce) {
+    .pmk-section > .o_horizontal_separator,
+    .pmk-section > .o_horizontal_separator::before {
+      transition: none;
+    }
+  }
+
+  // Блокнот скрыт представлением, но на всякий случай убираем и полосу вкладок:
+  // пустая полоса над плоским списком выглядит как недоделка.
+  .o_notebook .nav-tabs {
+    display: none;
+  }
+}
