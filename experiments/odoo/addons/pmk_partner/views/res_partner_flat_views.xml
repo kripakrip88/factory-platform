@@ -9,11 +9,16 @@
     вручную рано или поздно откроет снабженцу счета учёта. Перенос сохраняет
     все атрибуты как есть.
 
-    Приоритет 99 — чтобы наше представление применялось ПОСЛЕДНИМ. Иначе чужие
-    модули, которые дописывают внутрь страниц (stock, account_add_gln,
-    l10n_ru_doc), положат своё уже в пустую страницу, и поля тихо исчезнут.
+    Приоритет 99 — чтобы представление применялось ПОСЛЕДНИМ. Иначе чужие
+    модули, дописывающие внутрь страниц (stock, account_add_gln, l10n_ru_doc),
+    положат своё уже в опустевшую страницу, и поля тихо исчезнут.
 
-    Блокнот скрываем, а не удаляем: чужие xpath продолжают находить свои узлы.
+    ВАЖНО про синтаксис: узел `<xpath position="move"/>` обязан быть ПРЯМЫМ
+    потомком спецификации-приёмника. Вложенный глубже (например внутрь
+    `<group>`) он не выполняется, а вставляется в разметку как есть — секции
+    получаются пустыми, а карточка остаётся без полей. Поэтому сначала
+    создаём пустые секции, а затем отдельными спецификациями переносим в них
+    содержимое.
   -->
   <record id="view_partner_form_flat" model="ir.ui.view">
     <field name="name">res.partner.form.pmk.flat</field>
@@ -22,46 +27,59 @@
     <field name="priority">99</field>
     <field name="arch" type="xml">
 
+      <!-- Шаг 1: пустые секции в листе, в нужном порядке. -->
       <xpath expr="//notebook" position="before">
-
-        <group string="Реквизиты" name="pmk_s_requisites" class="pmk-section">
-          <xpath expr="//page[@name='pmk_requisites']/group[@name='pmk_g_requisites']"
-                 position="move"/>
-        </group>
-
-        <group string="Контактные лица" name="pmk_s_contacts" class="pmk-section pmk-section--closed">
-          <xpath expr="//page[@name='contact_addresses']/field[@name='child_ids']" position="move"/>
-        </group>
-
-        <group string="Продажи и закупки" name="pmk_s_trade" class="pmk-section pmk-section--closed">
-          <xpath expr="//page[@name='sales_purchases']/group[@name='container_row_2']" position="move"/>
-        </group>
-
-        <!-- По имени, а не по номеру: номера съезжают после первого переноса,
-             и «второй группой» окажется не та. Выбирать по заголовку Odoo
-             не разрешает — «View inheritance may not use attribute 'string'
-             as a selector». -->
-        <group string="Банковские счета" name="pmk_s_bank" class="pmk-section pmk-section--closed">
-          <xpath expr="//page[@name='pmk_requisites']/group[@name='pmk_g_bank']"
-                 position="move"/>
-        </group>
-
+        <group string="Реквизиты" name="pmk_s_requisites" class="pmk-section"/>
+        <group string="Контактные лица" name="pmk_s_contacts"
+               class="pmk-section pmk-section--closed"/>
+        <group string="Продажи и закупки" name="pmk_s_trade"
+               class="pmk-section pmk-section--closed"/>
+        <group string="Банковские счета" name="pmk_s_bank"
+               class="pmk-section pmk-section--closed"/>
         <!-- Права и условие видимости переезжают со страницы на секцию:
              без них счета учёта увидел бы кто угодно. -->
         <group string="Выставление счетов" name="pmk_s_accounting"
                class="pmk-section pmk-section--closed"
                groups="account.group_account_invoice,account.group_account_readonly"
-               invisible="not is_company and parent_id">
-          <xpath expr="//page[@name='accounting']/group[1]" position="move"/>
-        </group>
-
-        <group string="Заметки" name="pmk_s_notes" class="pmk-section pmk-section--closed">
-          <xpath expr="//page[@name='internal_notes']/field[@name='comment']" position="move"/>
-          <xpath expr="//page[@name='internal_notes']/group[@name='warnings']" position="move"/>
-        </group>
-
+               invisible="not is_company and parent_id"/>
+        <group string="Заметки" name="pmk_s_notes"
+               class="pmk-section pmk-section--closed"/>
       </xpath>
 
+      <!-- Шаг 2: переносим содержимое вкладок в секции. -->
+      <xpath expr="//group[@name='pmk_s_requisites']" position="inside">
+        <xpath expr="//page[@name='pmk_requisites']/group[@name='pmk_g_requisites']"
+               position="move"/>
+      </xpath>
+
+      <xpath expr="//group[@name='pmk_s_contacts']" position="inside">
+        <xpath expr="//page[@name='contact_addresses']/field[@name='child_ids']"
+               position="move"/>
+      </xpath>
+
+      <xpath expr="//group[@name='pmk_s_trade']" position="inside">
+        <xpath expr="//page[@name='sales_purchases']/group[@name='container_row_2']"
+               position="move"/>
+      </xpath>
+
+      <xpath expr="//group[@name='pmk_s_bank']" position="inside">
+        <xpath expr="//page[@name='pmk_requisites']/group[@name='pmk_g_bank']"
+               position="move"/>
+      </xpath>
+
+      <xpath expr="//group[@name='pmk_s_accounting']" position="inside">
+        <xpath expr="//page[@name='accounting']/group[1]" position="move"/>
+      </xpath>
+
+      <xpath expr="//group[@name='pmk_s_notes']" position="inside">
+        <xpath expr="//page[@name='internal_notes']/field[@name='comment']"
+               position="move"/>
+        <xpath expr="//page[@name='internal_notes']/group[@name='warnings']"
+               position="move"/>
+      </xpath>
+
+      <!-- Шаг 3: блокнот скрываем, а не удаляем — чужие xpath продолжают
+           находить свои узлы, и обновление сторонних модулей не падает. -->
       <notebook position="attributes">
         <attribute name="invisible">1</attribute>
       </notebook>
