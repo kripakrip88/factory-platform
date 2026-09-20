@@ -1,0 +1,2504 @@
+# Русский перевод модуля mail_client.
+#
+# Каталог i18n_extra, а не i18n, выбран намеренно: Odoo читает его ПОСЛЕ
+# i18n/<lang>.po, поэтому если автор модуля когда-нибудь выпустит собственный
+# русский файл, наш останется сверху, а конфликта имён при обновлении не будет.
+#
+# Перевод чужого модуля из своего модуля сделать нельзя: для строк Python
+# перевод берётся строго по модулю кадра стека, для JS — по модулю исходного
+# файла, а плоский запасной словарь недетерминирован (порядок обхода множества
+# установленных модулей, PYTHONHASHSEED не задан). Поэтому файл лежит внутри
+# самого mail_client, а модуль вендорится — см. experiments/odoo/vendor/README.md.
+#
+# Чтобы Odoo перечитал этот файл, нужен ПЕРЕЗАПУСК процесса: кэш переводов кода
+# живёт в памяти и ничем не сбрасывается. Для строк, которые хранятся в базе
+# (метки полей, значения списков, подсказки, формы, меню), дополнительно нужен
+# odoo -u mail_client --i18n-overwrite.
+#
+# .pot рядом с этим файлом НЕ класть: PoFileReader сольёт .po с .pot и пометит
+# устаревшими все записи, которых в .pot нет.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: mail_client 19.0.1.0.0\n"
+"Report-Msgid-Bugs-To: \n"
+"PO-Revision-Date: 2026-09-20 00:00+0000\n"
+"Last-Translator: ПМК Парк\n"
+"Language-Team: \n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: \n"
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_server.py:0
+msgid "\n\nCredentials and server capabilities were NOT checked: the master user can only sign into a specific mailbox, and IMAP servers only advertise their full capability list after login. Add a mail account, then test again."
+msgstr "\n\nУчётные данные и возможности сервера НЕ проверены: главный пользователь может входить только в конкретный почтовый ящик, а серверы IMAP сообщают полный список своих возможностей только после входа. Добавьте учётную запись почты и повторите проверку."
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_server.py:0
+msgid "\n\nSigned in to '%(email)s', which exposes %(count)s folders."
+msgstr "\n\nВыполнен вход в «%(email)s», доступно папок: %(count)s."
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_server.py:0
+msgid "\n\nWarning: this server does not advertise QRESYNC. Sync will use the slower full-UID comparison."
+msgstr "\n\nВнимание: этот сервер не сообщает о поддержке QRESYNC. Синхронизация будет работать медленнее — через полное сравнение UID."
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_account.py:0
+msgid " - WILL BE REJECTED: it is not allowed to send as %s"
+msgstr " - БУДЕТ ОТКЛОНЕНО: отправка от имени %s не разрешена"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/composer/composer.js:0
+msgid "%(name)s is larger than %(limit)s and was skipped."
+msgstr "Файл %(name)s больше %(limit)s и был пропущен."
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_account.py:0
+msgid "%(server)s (personal server of %(user)s)"
+msgstr "%(server)s (личный сервер пользователя %(user)s)"
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_account.py:0
+msgid "%s (fallback from the mail server)"
+msgstr "%s (запасной вариант с почтового сервера)"
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_account.py:0
+msgid "%s (set on this mailbox)"
+msgstr "%s (задано для этого почтового ящика)"
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_access.py:0
+msgid "%s already owns this mailbox and does not need an access entry."
+msgstr "%s уже владеет этим почтовым ящиком, отдельная запись доступа не нужна."
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/mail_client_action.js:0
+msgid "%s more message(s) found on the server."
+msgstr "На сервере найдено ещё писем: %s."
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_message.py:0
+msgid "'%(email)s' is set to read only, so %(action)s here would remove the message from Odoo without touching the mail server - and it would not come back.\n\nSet this mailbox's Sync Mode to Two-way to act on mail from Odoo."
+msgstr "«%(email)s» работает только на чтение, поэтому %(action)s здесь уберёт письмо из Odoo, не затронув почтовый сервер - и вернуть его не получится.\n\nЧтобы работать с почтой из Odoo, задайте этому почтовому ящику двустороннюю синхронизацию."
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_account.py:0
+msgid "'%(name)s' is not authorised yet.\n\nOpen the mailbox and click Authorise to sign in with %(provider)s, or connect with an app password instead by setting the account type to Generic IMAP."
+msgstr "«%(name)s» ещё не авторизована.\n\nОткройте почтовый ящик и нажмите «Авторизовать», чтобы войти через %(provider)s, либо подключитесь по паролю приложения: выберите тип учётной записи «Обычный IMAP»."
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_account.py:0
+msgid "'%(name)s' is set up as %(provider)s, which signs in with OAuth2. That is not available yet.\n\nYou can connect today with an app password instead: set the account type to Generic IMAP, and point it at a mail server using %(host)s port 993 with SSL/TLS and 'Per-Account Password' authentication.\n\nNote that an outgoing SMTP server only covers sending; reading the mailbox needs this IMAP connection."
+msgstr "«%(name)s» настроена как %(provider)s, вход выполняется через OAuth2. Пока это недоступно.\n\nСейчас можно подключиться по паролю приложения: выберите тип учётной записи «Обычный IMAP» и укажите почтовый сервер %(host)s, порт 993, шифрование SSL/TLS и аутентификацию «Пароль для каждой учётной записи».\n\nУчтите: исходящий сервер SMTP отвечает только за отправку, а для чтения почтового ящика нужно это подключение по IMAP."
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_account.py:0
+msgid "'%(server)s' belongs to %(user)s but has no FROM Filtering, so Odoo will not use it. Set its FROM Filtering to the owner's address."
+msgstr "«%(server)s» принадлежит пользователю %(user)s, но на нём не задана фильтрация FROM, поэтому Odoo не будет его использовать. Укажите в фильтрации FROM адрес владельца."
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_account.py:0
+msgid "'%(server)s' belongs to %(user)s, but that user has no email address in Odoo. Set it to the mailbox address first."
+msgstr "«%(server)s» принадлежит пользователю %(user)s, но у этого пользователя в Odoo не указан адрес почты. Сначала укажите ему адрес почтового ящика."
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_account.py:0
+msgid "'%(server)s' is only allowed to send as %(filter)s, but this mailbox is %(email)s.\n\nGive %(email)s its own outgoing server (Preferences > Account Security, or an ir.mail_server with this user as Owner), or widen the FROM Filtering on '%(server)s'."
+msgstr "«%(server)s» может отправлять только от имени %(filter)s, а этот почтовый ящик - %(email)s.\n\nДайте %(email)s собственный сервер исходящей почты (Настройки > Безопасность учётной записи либо запись ir.mail_server, где владельцем указан этот пользователь) или расширьте фильтрацию FROM на «%(server)s»."
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_account.py:0
+msgid "'%(server)s' is owned by %(user)s, whose Odoo email is '%(owner_email)s'. Odoo only treats a server as personal when its FROM Filtering and User email both match that address exactly.\n\nMismatch: %(problems)s.\n\nEither change %(user)s's email in Odoo to the mailbox address, or point this server's FROM Filtering and User email at '%(owner_email)s'."
+msgstr "«%(server)s» принадлежит пользователю %(user)s, чей адрес почты в Odoo - «%(owner_email)s». Odoo считает сервер личным только тогда, когда его фильтрация FROM и адрес пользователя в точности совпадают с этим адресом.\n\nНесовпадение: %(problems)s.\n\nЛибо измените в Odoo адрес почты пользователя %(user)s на адрес почтового ящика, либо укажите в фильтрации FROM и адресе пользователя этого сервера «%(owner_email)s»."
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_message.py:0
+msgid "'%(subject)s' belongs to %(email)s and cannot be moved into a folder of another mailbox."
+msgstr "«%(subject)s» принадлежит ящику %(email)s, его нельзя переместить в папку другого почтового ящика."
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_tag.py:0
+msgid "'%s' cannot be used as an IMAP keyword: spaces and the characters ( ) { } %% * \" \\ [ ] are not allowed."
+msgstr "«%s» нельзя использовать как ключевое слово IMAP: пробелы и символы ( ) { } %% * \" \\ [ ] не допускаются."
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_account.py:0
+msgid "'%s' has no mail server selected, so there is nothing to connect to."
+msgstr "Для «%s» не выбран почтовый сервер, подключаться не к чему."
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/reading_pane.xml:0
+msgid "(Rspamd score"
+msgstr "(оценка Rspamd"
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_compose.py:0
+#: code:addons/mail_client/models/mail_client_message.py:0
+msgid "(no subject)"
+msgstr "(без темы)"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/utils.js:0
+msgid "(unknown sender)"
+msgstr "(отправитель неизвестен)"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/reading_pane.xml:0
+msgid ". Treat links and\n                    attachments with suspicion."
+msgstr ". Относитесь к ссылкам и\n                    вложениям с осторожностью."
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_account_view_form
+msgid "<i class=\"fa fa-check me-1\" title=\"Authorised\" aria-hidden=\"true\"/>\n                        <strong>Authorised.</strong> This mailbox signs in with OAuth2;\n                        no password is stored in Odoo."
+msgstr "<i class=\"fa fa-check me-1\" title=\"Авторизовано\" aria-hidden=\"true\"/>\n                        <strong>Авторизовано.</strong> Этот почтовый ящик входит через OAuth2;\n                        пароль в Odoo не хранится."
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_server_view_form
+msgid "<strong>The master password opens every mailbox on this server.</strong>\n                        It is encrypted with a key stored in <code>odoo.conf</code> rather than in\n                        the database, and every use of it is recorded in the access log. Treat it\n                        with the same care as the server's root password."
+msgstr "<strong>Главный пароль открывает любой почтовый ящик на этом сервере.</strong>\n                        Он зашифрован ключом, который хранится в <code>odoo.conf</code>, а не в\n                        базе данных, и каждое его использование записывается в журнал доступа. Обращайтесь\n                        с ним так же бережно, как с паролем root этого сервера."
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_server_view_form
+msgid "<strong>This default cannot be right for every mailbox.</strong>"
+msgstr "<strong>Это значение по умолчанию не может подойти каждому почтовому ящику.</strong>"
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_account_view_form
+msgid "<strong>This mailbox is not authorised yet.</strong>\n                        Gmail and Microsoft 365 sign in with OAuth2 instead of a\n                        password, so no mail server is needed, but you have to\n                        grant access once."
+msgstr "<strong>Этот почтовый ящик ещё не авторизован.</strong>\n                        Gmail и Microsoft 365 входят через OAuth2, а не по\n                        паролю, поэтому почтовый сервер не нужен, но один раз\n                        надо выдать доступ."
+
+#. module: mail_client
+#: model:ir.model.constraint,message:mail_client.constraint_mail_client_folder_path_account_uniq
+msgid "A folder with this path already exists on this account."
+msgstr "Папка с таким путём уже существует в этой учётной записи."
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_server.py:0
+msgid "A mailbox is required to open an IMAP session: the master user can only be used to log into a specific mailbox."
+msgstr "Чтобы открыть сеанс IMAP, нужен почтовый ящик: главный пользователь может входить только в конкретный почтовый ящик."
+
+#. module: mail_client
+#: model:ir.model.constraint,message:mail_client.constraint_mail_client_message_uid_folder_uniq
+msgid "A message with this UID already exists in this folder."
+msgstr "Письмо с таким UID уже есть в этой папке."
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__access_ids
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_account_view_form
+msgid "Access"
+msgstr "Доступ"
+
+#. module: mail_client
+#: model:ir.actions.act_window,name:mail_client.mail_client_audit_action
+#: model:ir.ui.menu,name:mail_client.menu_mail_client_audit
+msgid "Access Log"
+msgstr "Журнал доступа"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__google_gmail_access_token
+msgid "Access Token"
+msgstr "Токен доступа"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__google_gmail_access_token_expiration
+msgid "Access Token Expiration Timestamp"
+msgstr "Время истечения токена доступа"
+
+#. module: mail_client
+#: model:ir.module.category,description:mail_client.module_category_mail_client
+msgid "Access level for the in-Odoo email client."
+msgstr "Уровень доступа к почтовому клиенту внутри Odoo."
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_audit.py:0
+msgid "Access log entries cannot be deleted."
+msgstr "Записи журнала доступа нельзя удалять."
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_audit.py:0
+msgid "Access log entries cannot be modified."
+msgstr "Записи журнала доступа нельзя изменять."
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_access__account_id
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_attachment__account_id
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_audit__account_id
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_compose__account_id
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_folder__account_id
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_message__account_id
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_signature__account_id
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_sync_op__account_id
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_tag__account_id
+msgid "Account"
+msgstr "Учётная запись"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_server__account_count
+msgid "Account Count"
+msgstr "Количество учётных записей"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_audit__account_email
+msgid "Account Email"
+msgstr "Адрес учётной записи"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__account_type
+msgid "Account Type"
+msgstr "Тип учётной записи"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_server__account_ids
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_server_view_form
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_server_view_list
+msgid "Accounts"
+msgstr "Учётные записи"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_audit__user_id
+msgid "Acting User"
+msgstr "Пользователь, выполнивший действие"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_audit__action
+msgid "Action"
+msgstr "Действие"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__active
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_folder__active
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_server__active
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_signature__active
+msgid "Active"
+msgstr "Активно"
+
+#. module: mail_client
+#: model_terms:ir.actions.act_window,help:mail_client.mail_client_account_action
+msgid "Add a mailbox"
+msgstr "Добавьте почтовый ящик"
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_compose.py:0
+msgid "Add at least one recipient before sending."
+msgstr "Перед отправкой добавьте хотя бы одного получателя."
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/composer/composer.js:0
+msgid "Add at least one recipient."
+msgstr "Добавьте хотя бы одного получателя."
+
+#. module: mail_client
+#: model:res.groups,name:mail_client.group_mail_client_admin
+msgid "Administrator"
+msgstr "Администратор"
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_access__role__agent
+msgid "Agent"
+msgstr "Сотрудник"
+
+#. module: mail_client
+#: model:ir.model.fields,help:mail_client.field_mail_client_account__allowed_writer_ids
+msgid "Agents and managers: may flag, move, delete and reply."
+msgstr "Сотрудники и управляющие: могут ставить флаги, перемещать, удалять и отвечать."
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/mail_client_action.js:0
+msgid "All"
+msgstr "Все"
+
+#. module: mail_client
+#. odoo-javascript
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_folder.py:0
+#: code:addons/mail_client/static/src/panes/folder_tree.xml:0
+msgid "All Inboxes"
+msgstr "Все входящие"
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_folder__role__archive
+msgid "Archive"
+msgstr "Архив"
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_account_view_search
+msgid "Archived"
+msgstr "В архиве"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/composer/composer.xml:0
+msgid "Attach"
+msgstr "Прикрепить"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_attachment__attachment_id
+msgid "Attachment"
+msgstr "Вложение"
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_attachment.py:0
+msgid "Attachment %s"
+msgstr "Вложение %s"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_compose__attachment_ids
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_message__client_attachment_ids
+msgid "Attachments"
+msgstr "Вложения"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__server_auth_mode
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_audit__auth_mode
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_server__auth_mode
+msgid "Auth Mode"
+msgstr "Способ аутентификации"
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_server_view_form
+msgid "Authentication"
+msgstr "Аутентификация"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__microsoft_outlook_uri
+msgid "Authentication URI"
+msgstr "URI аутентификации"
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_account_view_form
+msgid "Authorise"
+msgstr "Авторизовать"
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_account__oauth_state__linked
+msgid "Authorised"
+msgstr "Авторизовано"
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_account_view_list
+msgid "Auto Sync"
+msgstr "Автосинхронизация"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__active_sync
+msgid "Automatic Sync"
+msgstr "Автоматическая синхронизация"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/composer/composer.xml:0
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_compose__email_bcc
+msgid "Bcc"
+msgstr "Скрытая копия"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_compose__body_html
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_message__body_html
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_signature__body_html
+msgid "Body Html"
+msgstr "HTML-содержимое"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_message__body_state
+msgid "Body State"
+msgstr "Состояние содержимого"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/composer/editor_toolbar.js:0
+msgid "Bold"
+msgstr "Жирный"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/composer/editor_toolbar.js:0
+msgid "Bulleted list"
+msgstr "Маркированный список"
+
+#. module: mail_client
+#: model:ir.model.fields,help:mail_client.field_mail_client_account__notify_url
+msgid "Call this from a Dovecot delivery script to sync within seconds instead of waiting for the cron."
+msgstr "Вызывайте этот адрес из скрипта доставки Dovecot — тогда почта синхронизируется за секунды, а не по расписанию cron."
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__allowed_writer_ids
+msgid "Can Act"
+msgstr "Может работать"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__allowed_manager_ids
+msgid "Can Manage"
+msgstr "Может управлять"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__allowed_user_ids
+msgid "Can Read"
+msgstr "Может читать"
+
+#. module: mail_client
+#: model:res.groups,comment:mail_client.group_mail_client_agent
+msgid "Can also open shared mailboxes they were granted access to."
+msgstr "Может также открывать общие почтовые ящики, к которым ему выдан доступ."
+
+#. module: mail_client
+#: model:res.groups,comment:mail_client.group_mail_client_admin
+msgid "Can configure mailboxes for other users and read the access log."
+msgstr "Может настраивать почтовые ящики других пользователей и читать журнал доступа."
+
+#. module: mail_client
+#: model:res.groups,comment:mail_client.group_mail_client_user
+msgid "Can use their own mailboxes."
+msgstr "Может пользоваться своими почтовыми ящиками."
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_server__capabilities
+msgid "Capabilities"
+msgstr "Возможности"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/composer/composer.xml:0
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_compose__email_cc
+msgid "Cc"
+msgstr "Копия"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/composer/composer.xml:0
+msgid "Cc/Bcc"
+msgstr "Копия / скрытая копия"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/reading_pane.xml:0
+msgid "Cc:"
+msgstr "Копия:"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/composer/editor_toolbar.js:0
+msgid "Checklist"
+msgstr "Список задач"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_folder__child_ids
+msgid "Child"
+msgstr "Вложенные папки"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/composer/editor_toolbar.js:0
+msgid "Clear formatting"
+msgstr "Убрать форматирование"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/composer/composer.xml:0
+msgid "Close (keeps a draft if anything was typed)"
+msgstr "Закрыть (черновик сохранится, если что-то набрано)"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__color
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_tag__color
+msgid "Color"
+msgstr "Цвет"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/mail_client_action.xml:0
+msgid "Compose"
+msgstr "Написать"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_compose__compose_mode
+msgid "Compose Mode"
+msgstr "Режим написания"
+
+#. module: mail_client
+#: model_terms:ir.actions.act_window,help:mail_client.mail_client_server_action
+msgid "Connect your mail server"
+msgstr "Подключите почтовый сервер"
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_account__state__connected
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_server__state__connected
+msgid "Connected"
+msgstr "Подключено"
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_server.py:0
+msgid "Connection failed:\n\n%s"
+msgstr "Не удалось подключиться:\n\n%s"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_attachment__content_type
+msgid "Content Type"
+msgstr "Тип содержимого"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_access__create_uid
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__create_uid
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_attachment__create_uid
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_audit__create_uid
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_compose__create_uid
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_folder__create_uid
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_message__create_uid
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_server__create_uid
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_signature__create_uid
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_sync_op__create_uid
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_tag__create_uid
+msgid "Created by"
+msgstr "Создано пользователем"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_access__create_date
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__create_date
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_attachment__create_date
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_audit__create_date
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_compose__create_date
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_folder__create_date
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_message__create_date
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_server__create_date
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_signature__create_date
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_sync_op__create_date
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_tag__create_date
+msgid "Created on"
+msgstr "Дата создания"
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_server_view_form
+msgid "DOVECOT_MASTER_USER"
+msgstr "DOVECOT_MASTER_USER"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_message__date
+msgid "Date"
+msgstr "Дата"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_server__smtp_server_id
+msgid "Default Outgoing Server"
+msgstr "Сервер исходящей почты по умолчанию"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/message_list.xml:0
+#: code:addons/mail_client/static/src/panes/reading_pane.xml:0
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_sync_op__op_type__delete
+msgid "Delete"
+msgstr "Удалить"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_folder__delimiter
+msgid "Delimiter"
+msgstr "Разделитель"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_audit__detail
+msgid "Detail"
+msgstr "Подробности"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/composer/composer.xml:0
+msgid "Discard"
+msgstr "Удалить черновик"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_access__display_name
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__display_name
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_attachment__display_name
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_audit__display_name
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_compose__display_name
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_folder__display_name
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_message__display_name
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_server__display_name
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_signature__display_name
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_sync_op__display_name
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_tag__display_name
+#: model:ir.model.fields,field_description:mail_client.field_res_users__display_name
+msgid "Display Name"
+msgstr "Отображаемое имя"
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_sync_op__state__done
+msgid "Done"
+msgstr "Выполнено"
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_server__auth_mode__master
+msgid "Dovecot Master User"
+msgstr "Главный пользователь Dovecot"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/reading_pane.xml:0
+msgid "Download original (.eml)"
+msgstr "Скачать оригинал (.eml)"
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_attachment__state__fetched
+msgid "Downloaded"
+msgstr "Загружено"
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_compose__state__draft
+msgid "Draft"
+msgstr "Черновик"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/composer/composer.xml:0
+msgid "Draft saved"
+msgstr "Черновик сохранён"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/composer/composer.js:0
+msgid "Draft saved."
+msgstr "Черновик сохранён."
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_folder__role__drafts
+msgid "Drafts"
+msgstr "Черновики"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/composer/composer.xml:0
+msgid "Editing the HTML source"
+msgstr "Редактирование HTML-кода"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__email
+msgid "Email Address"
+msgstr "Адрес электронной почты"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_message__email_cc
+msgid "Email Cc"
+msgstr "Копия"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_message__email_from
+msgid "Email From"
+msgstr "От кого"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_message__email_to
+msgid "Email To"
+msgstr "Кому"
+
+#. module: mail_client
+#: model:ir.model.fields,help:mail_client.field_mail_client_attachment__file_size
+msgid "Encoded size as reported by the server."
+msgstr "Размер в закодированном виде, как его сообщает сервер."
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_attachment__encoding
+msgid "Encoding"
+msgstr "Кодировка"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_server__imap_encryption
+msgid "Encryption"
+msgstr "Шифрование"
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_account__state__error
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_server__state__error
+msgid "Error"
+msgstr "Ошибка"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__error_message
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_attachment__error_message
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_compose__error_message
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_server__error_message
+msgid "Error Message"
+msgstr "Текст ошибки"
+
+#. module: mail_client
+#: model_terms:ir.actions.act_window,help:mail_client.mail_client_audit_action
+msgid "Every connection made with the Dovecot master user is logged here.\n                Entries cannot be edited or deleted from the interface."
+msgstr "Здесь записано каждое подключение под главным пользователем Dovecot.\n                Записи нельзя изменить или удалить из интерфейса."
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_account.py:0
+msgid "FROM Filtering is '%(actual)s'"
+msgstr "фильтрация FROM задана как «%(actual)s»"
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_attachment__state__failed
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_compose__state__failed
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_message__body_state__failed
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_message__structure_state__failed
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_sync_op__state__failed
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_sync_op_view_search
+msgid "Failed"
+msgstr "Ошибка"
+
+#. module: mail_client
+#: model:ir.model.fields,help:mail_client.field_mail_client_server__smtp_server_id
+msgid "Fallback only, used by mailboxes on this server that have no outgoing server of their own.\n\nSending is per mailbox: a mail server that enforces sender-login matching - mailcow and Gmail both do - refuses to let one account send as another. So this default can only ever be correct for one mailbox, and is best left empty when several share this server."
+msgstr "Запасной вариант: его берут почтовые ящики этого сервера, у которых нет своего сервера исходящей почты.\n\nОтправка идёт от каждого ящика отдельно: почтовый сервер, который сверяет отправителя с логином — так делают и mailcow, и Gmail, — не даст одной учётной записи отправлять от имени другой. Поэтому такое значение по умолчанию может быть верным только для одного ящика, и если сервер делят несколько ящиков, поле лучше оставить пустым."
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_message__body_state__fetched
+msgid "Fetched"
+msgstr "Загружено"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/reading_pane.xml:0
+msgid "Fetching message…"
+msgstr "Загрузка письма…"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_attachment__file_size
+msgid "File Size"
+msgstr "Размер файла"
+
+#. module: mail_client
+#: model:ir.model.fields,help:mail_client.field_mail_client_attachment__attachment_id
+msgid "Filled in once the part has actually been downloaded."
+msgstr "Заполняется после того, как часть письма действительно скачана."
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/mail_client_action.xml:0
+msgid "Filter messages"
+msgstr "Фильтр писем"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_message__flag_answered
+msgid "Flag Answered"
+msgstr "Флаг «Отвечено»"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_message__flag_deleted
+msgid "Flag Deleted"
+msgstr "Флаг «Удалено»"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_message__flag_draft
+msgid "Flag Draft"
+msgstr "Флаг «Черновик»"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_message__flag_flagged
+msgid "Flag Flagged"
+msgstr "Флаг «Помечено»"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_message__flag_seen
+msgid "Flag Seen"
+msgstr "Флаг «Прочитано»"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_message__folder_id
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_sync_op__folder_id
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_sync_op_view_list
+msgid "Folder"
+msgstr "Папка"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__folder_ids
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_account_view_form
+msgid "Folders"
+msgstr "Папки"
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_account_view_form
+msgid "Folders appear here after the first synchronisation.\n                                Untick <em>Subscribed</em> to stop mirroring a folder into\n                                Odoo. The inbox is re-enabled on every synchronisation:\n                                many servers leave it out of their subscription list even\n                                though it always exists."
+msgstr "Папки появятся здесь после первой синхронизации.\n                                Снимите флажок <em>Подписана</em>, чтобы папка перестала зеркалироваться в\n                                Odoo. Входящие включаются заново при каждой синхронизации:\n                                многие серверы не вносят их в список подписок,\n                                хотя эта папка есть всегда."
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/composer/composer.js:0
+#: code:addons/mail_client/static/src/panes/reading_pane.xml:0
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_compose__compose_mode__forward
+msgid "Forward"
+msgstr "Переслать"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/mail_client_action.js:0
+msgid "From a contact"
+msgstr "От контакта"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/reading_pane.xml:0
+msgid "From:"
+msgstr "От:"
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_account_view_form
+msgid "Generate Token"
+msgstr "Создать токен"
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_account__account_type__imap
+msgid "Generic IMAP"
+msgstr "Обычный IMAP"
+
+#. module: mail_client
+#: model_terms:ir.actions.act_window,help:mail_client.mail_client_account_action
+msgid "Give the mailbox an owner for a personal inbox, or leave the owner\n                empty to create a shared mailbox such as info@ or sales@."
+msgstr "Укажите владельца — получится личный ящик; оставьте владельца\n                пустым — получится общий ящик вроде info@ или sales@."
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_message.py:0
+msgid "Give the tag a name."
+msgstr "Укажите название метки."
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_account__account_type__gmail
+msgid "Gmail"
+msgstr "Gmail"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/mail_client_action.xml:0
+msgid "Group messages into conversations"
+msgstr "Группировать письма в переписки"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_message__has_attachment
+msgid "Has Attachment"
+msgstr "Есть вложение"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/mail_client_action.js:0
+msgid "Has attachments"
+msgstr "С вложениями"
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_message__body_state__header_only
+msgid "Headers only"
+msgstr "Только заголовки"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_folder__highest_mod_seq
+msgid "Highest Mod Seq"
+msgstr "Наибольший MODSEQ"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_access__id
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__id
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_attachment__id
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_audit__id
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_compose__id
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_folder__id
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_message__id
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_server__id
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_signature__id
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_sync_op__id
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_tag__id
+#: model:ir.model.fields,field_description:mail_client.field_res_users__id
+msgid "ID"
+msgstr "ID"
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_audit__action__imap_connect
+msgid "IMAP Connection"
+msgstr "Подключение по IMAP"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_server__imap_host
+msgid "IMAP Host"
+msgstr "Сервер IMAP"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_server__imap_port
+msgid "IMAP Port"
+msgstr "Порт IMAP"
+
+#. module: mail_client
+#: model:ir.model.fields,help:mail_client.field_mail_client_attachment__part_number
+msgid "IMAP part address, e.g. 2 or 1.3"
+msgstr "Адрес части письма в IMAP, например 2 или 1.3"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_message__images_allowed
+msgid "Images Allowed"
+msgstr "Изображения разрешены"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_compose__imap_draft_uid
+msgid "Imap Draft Uid"
+msgstr "UID черновика IMAP"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_tag__imap_keyword
+msgid "Imap Keyword"
+msgstr "Ключевое слово IMAP"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_folder__imap_path
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_sync_op__imap_path
+msgid "Imap Path"
+msgstr "Путь IMAP"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_message__imap_uid
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_sync_op__imap_uid
+msgid "Imap Uid"
+msgstr "UID IMAP"
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_account_view_search
+msgid "In Error"
+msgstr "С ошибкой"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_compose__parent_id
+msgid "In Reply To"
+msgstr "В ответ на"
+
+#. module: mail_client
+#: model:ir.actions.client,name:mail_client.mail_client_inbox_action
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_folder__role__inbox
+#: model:ir.ui.menu,name:mail_client.menu_mail_client_inbox
+msgid "Inbox"
+msgstr "Входящие"
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_server_view_form
+msgid "Incoming (IMAP)"
+msgstr "Входящая почта (IMAP)"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/composer/editor_toolbar.js:0
+msgid "Insert link"
+msgstr "Вставить ссылку"
+
+#. module: mail_client
+#: model:ir.model.fields,help:mail_client.field_mail_client_signature__is_default
+msgid "Inserted automatically when writing from this mailbox."
+msgstr "Подставляется автоматически, когда вы пишете из этого ящика."
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_message__is_dirty
+msgid "Is Dirty"
+msgstr "Изменено локально"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__is_shared
+msgid "Is Shared"
+msgstr "Общий ящик"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_message__is_spam
+msgid "Is Spam"
+msgstr "Спам"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/composer/editor_toolbar.js:0
+msgid "Italic"
+msgstr "Курсив"
+
+#. module: mail_client
+#: model:ir.model.fields,help:mail_client.field_mail_client_sync_op__imap_uid
+msgid "Kept alongside the message so the operation still makes sense once the local record is gone."
+msgstr "Хранится рядом с письмом, чтобы операция оставалась понятной даже после того, как локальная запись удалена."
+
+#. module: mail_client
+#: model:ir.model.fields,help:mail_client.field_mail_client_tag__account_id
+msgid "Keywords live inside one mailbox, so a tag belongs to one account."
+msgstr "Ключевые слова живут внутри одного почтового ящика, поэтому метка принадлежит одной учётной записи."
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_sync_op__last_error
+msgid "Last Error"
+msgstr "Последняя ошибка"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__last_sync_date
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_folder__last_sync_date
+msgid "Last Sync Date"
+msgstr "Дата последней синхронизации"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_access__write_uid
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__write_uid
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_attachment__write_uid
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_audit__write_uid
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_compose__write_uid
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_folder__write_uid
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_message__write_uid
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_server__write_uid
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_signature__write_uid
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_sync_op__write_uid
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_tag__write_uid
+msgid "Last Updated by"
+msgstr "Последнее обновление пользователем"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_access__write_date
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__write_date
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_attachment__write_date
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_audit__write_date
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_compose__write_date
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_folder__write_date
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_message__write_date
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_server__write_date
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_signature__write_date
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_sync_op__write_date
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_tag__write_date
+msgid "Last Updated on"
+msgstr "Дата последнего обновления"
+
+#. module: mail_client
+#: model:ir.model.fields,help:mail_client.field_mail_client_account__server_id
+msgid "Leave empty for external Gmail / Microsoft 365 accounts."
+msgstr "Для внешних учётных записей Gmail / Microsoft 365 оставьте пустым."
+
+#. module: mail_client
+#: model:ir.model.fields,help:mail_client.field_mail_client_account__user_id
+msgid "Leave empty to turn this into a shared mailbox managed through the Access tab."
+msgstr "Оставьте пустым — ящик станет общим, доступ к нему настраивается на вкладке «Доступ»."
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_account_view_form
+msgid "Leave empty to use the default below"
+msgstr "Оставьте пустым, чтобы использовать значение по умолчанию ниже"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/message_list.xml:0
+msgid "Load more"
+msgstr "Загрузить ещё"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__login
+msgid "Login"
+msgstr "Логин"
+
+#. module: mail_client
+#: model:ir.ui.menu,name:mail_client.menu_mail_client_root
+msgid "Mail"
+msgstr "Почта"
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_server.py:0
+#: model:ir.actions.act_window,name:mail_client.mail_client_account_action
+#: model:ir.model.fields,field_description:mail_client.field_res_users__mail_client_account_ids
+#: model:ir.ui.menu,name:mail_client.menu_mail_client_accounts
+msgid "Mail Accounts"
+msgstr "Учётные записи почты"
+
+#. module: mail_client
+#: model:ir.module.category,name:mail_client.module_category_mail_client
+#: model:res.groups.privilege,name:mail_client.res_groups_privilege_mail_client
+msgid "Mail Client"
+msgstr "Почтовый клиент"
+
+#. module: mail_client
+#: model:ir.model,name:mail_client.model_mail_client_access
+msgid "Mail Client Access"
+msgstr "Почтовый клиент: доступ"
+
+#. module: mail_client
+#: model:ir.model,name:mail_client.model_mail_client_audit
+msgid "Mail Client Access Log"
+msgstr "Почтовый клиент: журнал доступа"
+
+#. module: mail_client
+#: model:ir.model,name:mail_client.model_mail_client_account
+msgid "Mail Client Account"
+msgstr "Почтовый клиент: учётная запись почты"
+
+#. module: mail_client
+#: model:ir.model,name:mail_client.model_mail_client_attachment
+msgid "Mail Client Attachment"
+msgstr "Почтовый клиент: вложение"
+
+#. module: mail_client
+#: model:ir.model,name:mail_client.model_mail_client_compose
+msgid "Mail Client Composer"
+msgstr "Почтовый клиент: редактор письма"
+
+#. module: mail_client
+#: model:ir.model,name:mail_client.model_mail_client_folder
+msgid "Mail Client Folder"
+msgstr "Почтовый клиент: папка"
+
+#. module: mail_client
+#: model:ir.model,name:mail_client.model_mail_client_message
+msgid "Mail Client Message"
+msgstr "Почтовый клиент: письмо"
+
+#. module: mail_client
+#: model:ir.model,name:mail_client.model_mail_client_sync_op
+msgid "Mail Client Pending Operation"
+msgstr "Почтовый клиент: ожидающая операция"
+
+#. module: mail_client
+#: model:ir.model,name:mail_client.model_mail_client_server
+msgid "Mail Client Server"
+msgstr "Почтовый клиент: почтовый сервер"
+
+#. module: mail_client
+#: model:ir.model,name:mail_client.model_mail_client_signature
+msgid "Mail Client Signature"
+msgstr "Почтовый клиент: подпись"
+
+#. module: mail_client
+#: model:ir.model,name:mail_client.model_mail_client_tag
+msgid "Mail Client Tag"
+msgstr "Почтовый клиент: метка"
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/tools/crypto.py:0
+msgid "Mail Client credential encryption is not configured.\n\nAdd a line like this to your odoo.conf, then restart Odoo:\n\n    %(key)s = %(suggestion)s\n\nAny random string works - the value above is only an example, freshly generated each time this message appears. Pick one, then never change it: the stored credentials can only be read back with the same key.\n\nThe key is deliberately kept outside the database so that a database dump alone cannot reveal your mail server passwords. Back it up separately from your database backups."
+msgstr "Шифрование учётных данных почтового клиента не настроено.\n\nДобавьте в odoo.conf такую строку и перезапустите Odoo:\n\n    %(key)s = %(suggestion)s\n\nПодойдёт любая случайная строка - значение выше лишь пример, он создаётся заново каждый раз, когда появляется это сообщение. Выберите ключ и больше никогда его не меняйте: сохранённые учётные данные читаются только тем же ключом.\n\nКлюч намеренно хранится вне базы данных, чтобы один лишь дамп базы не выдал пароли от ваших почтовых серверов. Храните его резервную копию отдельно от резервных копий базы."
+
+#. module: mail_client
+#: model:ir.actions.server,name:mail_client.ir_cron_mail_client_structure_backfill_ir_actions_server
+msgid "Mail Client: Describe Older Messages"
+msgstr "Почтовый клиент: описать старые письма"
+
+#. module: mail_client
+#: model:ir.actions.server,name:mail_client.ir_cron_mail_client_draft_gc_ir_actions_server
+msgid "Mail Client: Remove Empty Drafts"
+msgstr "Почтовый клиент: удалить пустые черновики"
+
+#. module: mail_client
+#: model:ir.actions.server,name:mail_client.ir_cron_mail_client_sync_ir_actions_server
+msgid "Mail Client: Synchronise Mailboxes"
+msgstr "Почтовый клиент: синхронизировать почтовые ящики"
+
+#. module: mail_client
+#: model:ir.actions.server,name:mail_client.ir_cron_mail_client_audit_gc_ir_actions_server
+msgid "Mail Client: Trim Access Log"
+msgstr "Почтовый клиент: почистить журнал доступа"
+
+#. module: mail_client
+#: model:ir.actions.server,name:mail_client.ir_cron_mail_client_sync_op_gc_ir_actions_server
+msgid "Mail Client: Trim Completed Operations"
+msgstr "Почтовый клиент: почистить завершённые операции"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__server_id
+msgid "Mail Server"
+msgstr "Почтовый сервер"
+
+#. module: mail_client
+#: model:ir.actions.act_window,name:mail_client.mail_client_server_action
+#: model:ir.ui.menu,name:mail_client.menu_mail_client_servers
+msgid "Mail Servers"
+msgstr "Почтовые серверы"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/mail_client_action.js:0
+msgid "Mail sync"
+msgstr "Синхронизация почты"
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_account_view_form
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_audit_view_list
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_audit_view_search
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_sync_op_view_search
+msgid "Mailbox"
+msgstr "Почтовый ящик"
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_access__role__manager
+msgid "Manager"
+msgstr "Управляющий"
+
+#. module: mail_client
+#: model:ir.model.fields,help:mail_client.field_mail_client_account__allowed_manager_ids
+msgid "Managers: may also change the mailbox and its access list."
+msgstr "Управляющие: могут ещё менять сам почтовый ящик и список доступа к нему."
+
+#. module: mail_client
+#: model_terms:ir.actions.act_window,help:mail_client.mail_client_sync_op_action
+msgid "Marking a message read, starring, moving or deleting it is recorded\n                here first and pushed to the mail server on the next synchronisation.\n                That keeps the interface instant and lets a change survive a dropped\n                connection."
+msgstr "Письмо отмечено прочитанным, отмечено звёздочкой, перемещено или удалено — всё это\n                сначала записывается здесь, а на почтовый сервер уходит при следующей синхронизации.\n                Поэтому интерфейс отвечает мгновенно, а изменение не теряется при обрыве\n                связи."
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_server__master_password
+msgid "Master Password"
+msgstr "Главный пароль"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_server__master_password_encrypted
+msgid "Master Password Encrypted"
+msgstr "Главный пароль (зашифрованный)"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_server__master_realm
+msgid "Master Realm"
+msgstr "Realm главного пользователя"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_server__master_user
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_audit__auth_mode__master
+msgid "Master User"
+msgstr "Главный пользователь"
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_audit_view_search
+msgid "Master User Access"
+msgstr "Доступ главного пользователя"
+
+#. module: mail_client
+#: model:ir.model.fields,help:mail_client.field_mail_client_account__server_auth_mode
+#: model:ir.model.fields,help:mail_client.field_mail_client_server__auth_mode
+msgid "Master User: one admin credential opens every mailbox, so no user password is ever stored in Odoo.\nPer-Account: each account carries its own password. More tedious, but nothing in Odoo can reach the whole mail system."
+msgstr "Главный пользователь: одна административная учётная запись открывает любой почтовый ящик, поэтому пароли пользователей в Odoo вообще не хранятся.\nОтдельно для каждой учётной записи: у каждой свой пароль. Возни больше, зато из Odoo нельзя добраться до всей почтовой системы."
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_server.py:0
+msgid "Master authentication requires the master user name (DOVECOT_MASTER_USER in mailcow.conf)."
+msgstr "Для аутентификации главного пользователя нужно указать его имя (DOVECOT_MASTER_USER в mailcow.conf)."
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_attachment__message_id
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_folder__message_ids
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_message__message_id
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_sync_op__message_id
+msgid "Message"
+msgstr "Письмо"
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_audit__action__body_fetch
+msgid "Message Body Fetch"
+msgstr "Загрузка текста письма"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__message_count
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_tag__message_count
+msgid "Message Count"
+msgstr "Количество писем"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/reading_pane.xml:0
+msgid "Message body"
+msgstr "Текст письма"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/composer/composer.js:0
+msgid "Message sent."
+msgstr "Письмо отправлено."
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_tag__message_ids
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_account_view_form
+msgid "Messages"
+msgstr "Письма"
+
+#. module: mail_client
+#: model:ir.model.fields,help:mail_client.field_mail_client_account__sync_window_days
+msgid "Messages older than this are not backfilled on the first sync. 0 fetches everything - expect a long first run."
+msgstr "Письма старше этого срока при первой синхронизации не загружаются. 0 — забирать всё, но тогда первый проход будет долгим."
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_account__account_type__outlook
+msgid "Microsoft 365"
+msgstr "Microsoft 365"
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_sync_op__op_type__move
+msgid "Move"
+msgstr "Переместить"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/message_list.xml:0
+#: code:addons/mail_client/static/src/panes/reading_pane.xml:0
+msgid "Move to folder"
+msgstr "Переместить в папку"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__name
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_attachment__name
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_folder__name
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_server__name
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_signature__name
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_tag__name
+msgid "Name"
+msgstr "Название"
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_compose__compose_mode__new
+msgid "New"
+msgstr "Новое письмо"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/composer/composer.js:0
+msgid "New message"
+msgstr "Новое письмо"
+
+#. module: mail_client
+#: model_terms:ir.actions.act_window,help:mail_client.mail_client_audit_action
+msgid "No mailbox access recorded yet"
+msgstr "Обращений к почтовым ящикам пока не было"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/folder_tree.xml:0
+msgid "No mailbox is available to you yet. Ask an administrator to add one."
+msgstr "Вам пока не доступен ни один почтовый ящик. Попросите администратора добавить его."
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_server.py:0
+msgid "No master password is configured on server '%s'."
+msgstr "На сервере «%s» не задан главный пароль."
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_compose.py:0
+msgid "No outgoing mail server is available for %(email)s.\n\nThe Dovecot master user does not cover SMTP submission, so sending needs its own credentials - a mailcow app password restricted to SMTP is the safest choice. Set one on this mailbox, on the user, or on '%(server)s'."
+msgstr "Для %(email)s нет доступного сервера исходящей почты.\n\nГлавный пользователь Dovecot не даёт права на отправку через SMTP, поэтому для отправки нужны отдельные учётные данные - безопаснее всего завести в mailcow пароль приложения только для SMTP. Задайте его для этого почтового ящика, для пользователя или для «%(server)s»."
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_server.py:0
+msgid "No password is configured on account '%s'."
+msgstr "Для учётной записи «%s» не задан пароль."
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_server__imap_encryption__none
+msgid "None"
+msgstr "Без шифрования"
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_message.py:0
+msgid "None of those messages exist any more."
+msgstr "Ни одного из этих писем больше нет."
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_account__state__draft
+msgid "Not Connected"
+msgstr "Не подключено"
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_server__state__draft
+msgid "Not Tested"
+msgstr "Не проверено"
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_account__oauth_state__none
+msgid "Not applicable"
+msgstr "Не применимо"
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_account__oauth_state__pending
+msgid "Not authorised"
+msgstr "Не авторизовано"
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_account.py:0
+msgid "Not configured - sending will fail"
+msgstr "Не настроено - отправка не пройдёт"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/reading_pane.xml:0
+msgid "Not in your contacts."
+msgstr "Нет в ваших контактах."
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_message__structure_state__unknown
+msgid "Not inspected"
+msgstr "Не разобрано"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/mail_client_action.js:0
+msgid "Nothing further found on the server."
+msgstr "Больше на сервере ничего не найдено."
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/message_list.xml:0
+msgid "Nothing here."
+msgstr "Здесь пусто."
+
+#. module: mail_client
+#: model_terms:ir.actions.act_window,help:mail_client.mail_client_sync_op_action
+msgid "Nothing is waiting to be sent"
+msgstr "Ничего не ждёт отправки"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__notify_token
+msgid "Notify Token"
+msgstr "Токен уведомлений"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/composer/editor_toolbar.js:0
+msgid "Numbered list"
+msgstr "Нумерованный список"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__oauth_state
+msgid "Oauth State"
+msgstr "Состояние OAuth"
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_message.py:0
+msgid "On %(date)s, %(sender)s wrote:"
+msgstr "%(date)s, %(sender)s писал(а):"
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_attachment__state__remote
+msgid "On server"
+msgstr "На сервере"
+
+#. module: mail_client
+#: model:ir.model.fields,help:mail_client.field_mail_client_account__login
+msgid "Only needed when the server uses per-account passwords."
+msgstr "Нужен, только если на сервере у каждой учётной записи свой пароль."
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_sync_op__op_type
+msgid "Op Type"
+msgstr "Тип операции"
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_sync_op_view_search
+msgid "Operation"
+msgstr "Операция"
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_server_view_form
+msgid "Optional fallback. Sending is configured per mailbox,\n                                on the Mail Account itself - mailcow and Gmail both\n                                refuse to let one account send as another."
+msgstr "Необязательный запасной вариант. Отправка настраивается для каждого ящика,\n                                в самой учётной записи почты - mailcow и Gmail оба\n                                не дают одной учётной записи отправлять от имени другой."
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_folder__role__other
+msgid "Other"
+msgstr "Прочее"
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_server_view_form
+msgid "Outgoing (SMTP)"
+msgstr "Исходящая почта (SMTP)"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__smtp_server_id
+msgid "Outgoing Mail Server"
+msgstr "Сервер исходящей почты"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__microsoft_outlook_access_token
+msgid "Outlook Access Token"
+msgstr "Токен доступа Outlook"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__microsoft_outlook_access_token_expiration
+msgid "Outlook Access Token Expiration Timestamp"
+msgstr "Срок действия токена доступа Outlook"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__microsoft_outlook_refresh_token
+msgid "Outlook Refresh Token"
+msgstr "Токен обновления Outlook"
+
+#. module: mail_client
+#: model:ir.model.fields,help:mail_client.field_mail_client_account__smtp_server_id
+msgid "Overrides everything else for this mailbox. Leave empty to use the owner's personal outgoing server if they have one, and the mail server's shared one otherwise."
+msgstr "Для этого ящика перекрывает все остальные настройки. Оставьте пустым — возьмётся личный сервер исходящей почты владельца, если он у него есть, а иначе общий сервер, заданный на почтовом сервере."
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__user_id
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_account_view_search
+msgid "Owner"
+msgstr "Владелец"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_folder__parent_id
+msgid "Parent"
+msgstr "Родительская папка"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_folder__parent_path
+msgid "Parent Path"
+msgstr "Путь родительской папки"
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_message__structure_state__parsed
+msgid "Parsed"
+msgstr "Разобрано"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_attachment__part_number
+msgid "Part Number"
+msgstr "Номер части"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_message__partner_id
+msgid "Partner"
+msgstr "Партнёр"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__password
+msgid "Password"
+msgstr "Пароль"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__password_encrypted
+msgid "Password Encrypted"
+msgstr "Пароль (зашифрованный)"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_sync_op__payload
+msgid "Payload"
+msgstr "Данные операции"
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_sync_op__state__pending
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_sync_op_view_search
+msgid "Pending"
+msgstr "Ожидает"
+
+#. module: mail_client
+#: model:ir.actions.act_window,name:mail_client.mail_client_sync_op_action
+#: model:ir.ui.menu,name:mail_client.menu_mail_client_sync_ops
+msgid "Pending Operations"
+msgstr "Ожидающие операции"
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_audit__auth_mode__per_account
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_server__auth_mode__per_account
+msgid "Per-Account Password"
+msgstr "Пароль учётной записи"
+
+#. module: mail_client
+#: model_terms:ir.actions.act_window,help:mail_client.mail_client_server_action
+msgid "Point Odoo at your mailcow instance. With a Dovecot master user,\n                one credential serves every mailbox and no user ever types their\n                mail password into Odoo."
+msgstr "Укажите Odoo адрес вашего сервера mailcow. С главным пользователем Dovecot\n                одной учётной записи хватает на все ящики, и никому не придётся вводить\n                свой почтовый пароль в Odoo."
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_account_view_form
+msgid "Prefer not to use OAuth? Set <em>Account Type</em> to\n                            <strong>Generic IMAP</strong> and connect with an app password\n                            against <code>imap.gmail.com:993</code> or\n                            <code>outlook.office365.com:993</code>."
+msgstr "Не хотите пользоваться OAuth? Задайте <em>Тип учётной записи</em> как\n                            <strong>Обычный IMAP</strong> и подключитесь по паролю приложения\n                            к <code>imap.gmail.com:993</code> или\n                            <code>outlook.office365.com:993</code>."
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_message__preview
+msgid "Preview"
+msgstr "Предпросмотр"
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_account_view_form
+msgid "Push Notifications"
+msgstr "Push-уведомления"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__notify_url
+msgid "Push URL"
+msgstr "URL push-уведомлений"
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_server_view_list
+msgid "QRESYNC"
+msgstr "QRESYNC"
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_sync_op_view_list
+msgid "Queued"
+msgstr "В очереди"
+
+#. module: mail_client
+#: model:ir.model.fields,help:mail_client.field_mail_client_message__references
+msgid "Raw References header, used to thread replies."
+msgstr "Заголовок References как есть — по нему ответы собираются в переписку."
+
+#. module: mail_client
+#: model:ir.model.fields,help:mail_client.field_mail_client_folder__imap_path
+msgid "Raw mailbox name as the server knows it."
+msgstr "Имя папки в том виде, в каком его знает сервер."
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_server.py:0
+msgid "Reached %(host)s:%(port)s over %(encryption)s."
+msgstr "Установлено соединение с %(host)s:%(port)s по %(encryption)s."
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/mail_client_action.js:0
+msgid "Read"
+msgstr "Прочитанные"
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_account__sync_mode__one_way
+msgid "Read only (server to Odoo)"
+msgstr "Только чтение (с сервера в Odoo)"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_message__references
+msgid "References"
+msgstr "References"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__google_gmail_refresh_token
+msgid "Refresh Token"
+msgstr "Токен обновления"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/reading_pane.xml:0
+msgid "Remote images are blocked. Loading them tells the sender you opened this message."
+msgstr "Внешние изображения заблокированы. Их загрузка сообщит отправителю, что вы открыли это письмо."
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/message_list.xml:0
+msgid "Remove star"
+msgstr "Снять отметку"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/composer/composer.js:0
+#: code:addons/mail_client/static/src/panes/reading_pane.xml:0
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_compose__compose_mode__reply
+msgid "Reply"
+msgstr "Ответить"
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_compose__compose_mode__reply_all
+msgid "Reply All"
+msgstr "Ответить всем"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/reading_pane.xml:0
+msgid "Reply all"
+msgstr "Ответить всем"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/composer/composer.js:0
+msgid "Reply to all"
+msgstr "Ответить всем"
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_sync_op_view_list
+msgid "Retry"
+msgstr "Повторить"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_sync_op__retry_count
+msgid "Retry Count"
+msgstr "Количество попыток"
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_account_view_form
+msgid "Revoke"
+msgstr "Отозвать"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_access__role
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_folder__role
+msgid "Role"
+msgstr "Роль"
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_server__imap_encryption__ssl
+msgid "SSL/TLS"
+msgstr "SSL/TLS"
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_server__imap_encryption__starttls
+msgid "STARTTLS"
+msgstr "STARTTLS"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/composer/composer.xml:0
+msgid "Save draft"
+msgstr "Сохранить черновик"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/composer/composer.xml:0
+msgid "Saving…"
+msgstr "Сохранение…"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/mail_client_action.xml:0
+msgid "Search on the mail server, including messages not stored here"
+msgstr "Искать на почтовом сервере, включая письма, которых здесь нет"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/mail_client_action.xml:0
+msgid "Search subject, sender or preview…"
+msgstr "Поиск по теме, отправителю или началу письма…"
+
+#. module: mail_client
+#: model:ir.model.fields,help:mail_client.field_mail_client_account__notify_token
+msgid "Secret used by the mail server to trigger an immediate sync."
+msgstr "Секрет, по которому почтовый сервер запускает немедленную синхронизацию."
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/reading_pane.xml:0
+msgid "Select a message to read it."
+msgstr "Выберите письмо, чтобы прочитать его."
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/message_list.xml:0
+msgid "Select all"
+msgstr "Выбрать все"
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_account__account_type__mailcow
+msgid "Self-hosted (mailcow / Dovecot)"
+msgstr "Свой сервер (mailcow / Dovecot)"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/composer/composer.xml:0
+msgid "Send"
+msgstr "Отправить"
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_account_view_form
+msgid "Sending"
+msgstr "Отправка"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__smtp_source
+msgid "Sending Via"
+msgstr "Отправка через"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/composer/composer.xml:0
+msgid "Sending…"
+msgstr "Отправка…"
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_compose__state__sent
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_folder__role__sent
+msgid "Sent"
+msgstr "Отправленные"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_compose__sent_date
+msgid "Sent Date"
+msgstr "Дата отправки"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__sequence
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_attachment__sequence
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_server__sequence
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_signature__sequence
+msgid "Sequence"
+msgstr "Последовательность"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/mail_client_action.xml:0
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_audit__server_id
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_account_view_search
+msgid "Server"
+msgstr "Искать на сервере"
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_server_view_form
+msgid "Server Capabilities"
+msgstr "Возможности сервера"
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_sync_op__op_type__set_flag
+msgid "Set Flag"
+msgstr "Установить флаг"
+
+#. module: mail_client
+#: model:ir.model.fields,help:mail_client.field_mail_client_compose__parent_id
+msgid "Set for replies and forwards; drives the threading headers."
+msgstr "Заполняется для ответов и пересылок — от него зависят заголовки переписки."
+
+#. module: mail_client
+#: model:ir.model.fields,help:mail_client.field_mail_client_message__is_dirty
+msgid "Set while a local change is still waiting to reach the server."
+msgstr "Стоит, пока локальное изменение ещё не дошло до сервера."
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_account_view_list
+msgid "Shared"
+msgstr "Общий"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_res_users__mail_client_access_ids
+msgid "Shared Mailbox Access"
+msgstr "Доступ к общим почтовым ящикам"
+
+#. module: mail_client
+#: model:res.groups,name:mail_client.group_mail_client_agent
+msgid "Shared Mailbox Agent"
+msgstr "Сотрудник общего ящика"
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_account_view_search
+msgid "Shared Mailboxes"
+msgstr "Общие почтовые ящики"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/folder_tree.xml:0
+msgid "Shared mailbox"
+msgstr "Общий почтовый ящик"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/message_list.xml:0
+msgid "Show all messages"
+msgstr "Показать все письма"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/reading_pane.xml:0
+msgid "Show contact"
+msgstr "Открыть контакт"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/reading_pane.xml:0
+msgid "Show images"
+msgstr "Показать изображения"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__signature_ids
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_account_view_form
+msgid "Signatures"
+msgstr "Подписи"
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_account_view_form
+msgid "Signatures belong to the mailbox, not the person:\n                                answering from sales@ is rarely signed the same way as\n                                answering from your own address."
+msgstr "Подписи принадлежат почтовому ящику, а не человеку:\n                                ответ с sales@ редко подписывают так же, как\n                                ответ со своего собственного адреса."
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_message__size
+msgid "Size"
+msgstr "Размер"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/message_list.xml:0
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_folder__role__spam
+msgid "Spam"
+msgstr "Спам"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_message__spam_score
+msgid "Spam Score"
+msgstr "Оценка спама"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/message_list.xml:0
+#: code:addons/mail_client/static/src/panes/reading_pane.xml:0
+msgid "Star"
+msgstr "Отметить"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/mail_client_action.js:0
+msgid "Starred"
+msgstr "Избранные"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__state
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_attachment__state
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_compose__state
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_server__state
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_sync_op__state
+msgid "State"
+msgstr "Статус"
+
+#. module: mail_client
+#: model:ir.model.fields,help:mail_client.field_mail_client_folder__highest_mod_seq
+msgid "Stored as text: MODSEQ is a 64-bit counter that outgrows Odoo's Integer."
+msgstr "Хранится текстом: MODSEQ — 64-битный счётчик, он не помещается в целочисленное поле Odoo."
+
+#. module: mail_client
+#: model:ir.model.fields,help:mail_client.field_mail_client_server__master_password
+msgid "Stored encrypted with a key held in odoo.conf, never in the database."
+msgstr "Хранится в зашифрованном виде; ключ лежит в odoo.conf, а не в базе данных."
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/tools/crypto.py:0
+msgid "Stored mail server credentials cannot be decrypted. The '%s' value in odoo.conf has changed or is missing. Restore the original key, or re-enter the credentials."
+msgstr "Не удаётся расшифровать сохранённые учётные данные почтового сервера. Значение «%s» в odoo.conf изменилось или отсутствует. Верните исходный ключ или введите учётные данные заново."
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/composer/editor_toolbar.js:0
+msgid "Strikethrough"
+msgstr "Зачёркнутый"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_message__structure_state
+msgid "Structure State"
+msgstr "Состояние структуры"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/composer/composer.xml:0
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_compose__subject
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_message__subject
+msgid "Subject"
+msgstr "Тема"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_folder__subscribed
+msgid "Subscribed"
+msgstr "Подписка"
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_server.py:0
+msgid "Success"
+msgstr "Успешно"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_server__supports_move
+msgid "Supports Move"
+msgstr "Поддерживает MOVE"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_server__supports_qresync
+msgid "Supports Qresync"
+msgstr "Поддерживает QRESYNC"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/mail_client_action.xml:0
+msgid "Sync"
+msgstr "Синхронизировать"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__sync_mode
+msgid "Sync Mode"
+msgstr "Режим синхронизации"
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_account_view_form
+msgid "Sync Now"
+msgstr "Синхронизировать сейчас"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__sync_window_days
+msgid "Sync Window (days)"
+msgstr "Окно синхронизации (дней)"
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_account_view_form
+msgid "Synchronisation"
+msgstr "Синхронизация"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/mail_client_action.js:0
+msgid "Synchronisation failed."
+msgstr "Синхронизация не удалась."
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__tag_ids
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_message__tag_ids
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_account_view_form
+msgid "Tags"
+msgstr "Метки"
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_account_view_form
+msgid "Tags are real IMAP keywords, so they also appear in SOGo and\n                                on your phone - and labels applied there show up here."
+msgstr "Метки являются настоящими ключевыми словами IMAP, поэтому они видны и в SOGo, и\n                                на телефоне - а метки, поставленные там, показываются здесь."
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_server_view_form
+msgid "Test Connection"
+msgstr "Проверить подключение"
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_message.py:0
+msgid "That folder does not belong to this mailbox."
+msgstr "Эта папка не принадлежит этому почтовому ящику."
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_message.py:0
+msgid "That folder no longer exists."
+msgstr "Этой папки больше нет."
+
+#. module: mail_client
+#: model:ir.model.constraint,message:mail_client.constraint_mail_client_tag_keyword_account_uniq
+msgid "That keyword already exists on this mailbox."
+msgstr "Такое ключевое слово уже есть в этом почтовом ящике."
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_message.py:0
+msgid "That tag belongs to a different mailbox."
+msgstr "Эта метка принадлежит другому почтовому ящику."
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_message.py:0
+msgid "That tag no longer exists."
+msgstr "Этой метки больше нет."
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/tools/crypto.py:0
+msgid "The 'cryptography' Python package is required to store mail server credentials but is not installed."
+msgstr "Для хранения учётных данных почтовых серверов нужен пакет Python «cryptography», но он не установлен."
+
+#. module: mail_client
+#: model:ir.model.fields,help:mail_client.field_mail_client_server__master_user
+msgid "The DOVECOT_MASTER_USER value from mailcow.conf."
+msgstr "Значение DOVECOT_MASTER_USER из mailcow.conf."
+
+#. module: mail_client
+#: model:ir.model.constraint,message:mail_client.constraint_mail_client_server_imap_port_range
+msgid "The IMAP port must be between 1 and 65535."
+msgstr "Порт IMAP должен быть от 1 до 65535."
+
+#. module: mail_client
+#: model:ir.model.fields,help:mail_client.field_mail_client_account__google_gmail_uri
+msgid "The URL to generate the authorization code from Google"
+msgstr "Адрес, по которому Google выдаёт код авторизации"
+
+#. module: mail_client
+#: model:ir.model.fields,help:mail_client.field_mail_client_account__microsoft_outlook_uri
+msgid "The URL to generate the authorization code from Outlook"
+msgstr "Адрес, по которому Outlook выдаёт код авторизации"
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_account_view_form
+msgid "The cron syncs every two minutes. Because this mail server\n                                is yours, it can instead tell Odoo the moment mail arrives.\n                                Generate a token and call the URL below from a delivery\n                                script on the server. The endpoint only triggers a sync -\n                                it never receives message content."
+msgstr "Синхронизация по расписанию идёт каждые две минуты. Поскольку этот почтовый сервер\n                                ваш, он может сам сообщать Odoo в тот момент, когда письмо пришло.\n                                Создайте токен и вызывайте указанный ниже URL из скрипта\n                                доставки на сервере. Этот адрес только запускает синхронизацию -\n                                он никогда не получает содержимое писем."
+
+#. module: mail_client
+#: model:ir.model.fields,help:mail_client.field_mail_client_tag__imap_keyword
+msgid "The keyword as stored on the server."
+msgstr "Ключевое слово в том виде, в каком оно хранится на сервере."
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_folder.py:0
+msgid "The mail server could not run that search:\n\n%s"
+msgstr "Почтовый сервер не смог выполнить этот поиск:\n\n%s"
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_compose.py:0
+msgid "The message could not be sent:\n\n%s"
+msgstr "Не удалось отправить письмо:\n\n%s"
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_account.py:0
+msgid "This account type does not use OAuth2."
+msgstr "Этот тип учётной записи не использует OAuth2."
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_attachment.py:0
+msgid "This attachment could not be downloaded:\n\n%s"
+msgstr "Не удалось скачать это вложение:\n\n%s"
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_attachment.py:0
+msgid "This attachment no longer exists."
+msgstr "Этого вложения больше нет."
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_compose.py:0
+msgid "This draft no longer exists."
+msgstr "Этого черновика больше нет."
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_folder.py:0
+msgid "This folder no longer exists."
+msgstr "Этой папки больше нет."
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_account_view_form
+msgid "This mailbox has no owner, so it is a <strong>shared mailbox</strong>.\n                        Grant access below; nobody sees it until they are listed there."
+msgstr "У этого почтового ящика нет владельца, значит это <strong>общий почтовый ящик</strong>.\n                        Выдайте доступ ниже; пока человек не указан в списке, ящика он не видит."
+
+#. module: mail_client
+#: model:ir.model.constraint,message:mail_client.constraint_mail_client_account_email_server_uniq
+msgid "This mailbox is already configured on that server."
+msgstr "Этот почтовый ящик уже настроен на том сервере."
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_account.py:0
+#: code:addons/mail_client/models/mail_client_compose.py:0
+msgid "This mailbox no longer exists."
+msgstr "Этого почтового ящика больше нет."
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/reading_pane.xml:0
+msgid "This message could not be downloaded from the mail server."
+msgstr "Не удалось загрузить это письмо с почтового сервера."
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_message.py:0
+msgid "This message no longer exists."
+msgstr "Этого письма больше нет."
+
+#. module: mail_client
+#: model:ir.model.constraint,message:mail_client.constraint_mail_client_attachment_part_message_uniq
+msgid "This part is already recorded for that message."
+msgstr "Эта часть уже записана для того письма."
+
+#. module: mail_client
+#: model:ir.model.constraint,message:mail_client.constraint_mail_client_access_account_user_uniq
+msgid "This user already has access to that mailbox."
+msgstr "У этого пользователя уже есть доступ к тому почтовому ящику."
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_message__thread_key
+msgid "Thread Key"
+msgstr "Ключ переписки"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/composer/composer.xml:0
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_compose__email_to
+msgid "To"
+msgstr "Кому"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/reading_pane.xml:0
+msgid "To:"
+msgstr "Кому:"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/composer/composer.xml:0
+msgid "Toggle HTML source"
+msgstr "Показать или скрыть HTML-код"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_folder__total_count
+msgid "Total Count"
+msgstr "Всего писем"
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_folder__role__trash
+msgid "Trash"
+msgstr "Корзина"
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_sync_op_view_list
+msgid "Tries"
+msgstr "Попытки"
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_account__sync_mode__two_way
+msgid "Two-way"
+msgstr "Двусторонняя синхронизация"
+
+#. module: mail_client
+#: model:ir.model.fields,help:mail_client.field_mail_client_account__sync_mode
+msgid "Two-way also pushes flags, tags, moves and deletes back to the mail server."
+msgstr "Двусторонняя ещё и отправляет обратно на почтовый сервер флаги, метки, перемещения и удаления."
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_sync_op_view_list
+msgid "UID"
+msgstr "UID"
+
+#. module: mail_client
+#: model:ir.model.fields,help:mail_client.field_mail_client_compose__imap_draft_uid
+msgid "UID of the copy filed in the server's Drafts folder, so a re-save can replace it instead of adding another one."
+msgstr "UID копии, отложенной в папку черновиков на сервере: при повторном сохранении она заменяется, а не добавляется ещё одна."
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__google_gmail_uri
+msgid "URI"
+msgstr "URI"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_folder__uid_next
+msgid "Uid Next"
+msgstr "Следующий UID"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_folder__uid_validity
+msgid "Uid Validity"
+msgstr "UIDVALIDITY"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/composer/editor_toolbar.js:0
+msgid "Underline"
+msgstr "Подчёркнутый"
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_folder.py:0
+msgid "Unknown message filter: %s"
+msgstr "Неизвестный фильтр писем: %s"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/mail_client_action.js:0
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_account_view_form
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_account_view_list
+msgid "Unread"
+msgstr "Непрочитанные"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_account__unread_count
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_folder__unread_count
+msgid "Unread Count"
+msgstr "Количество непрочитанных"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/folder_tree.xml:0
+msgid "Unsent drafts"
+msgstr "Неотправленные черновики"
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_sync_op__op_type__unset_flag
+msgid "Unset Flag"
+msgstr "Снять флаг"
+
+#. module: mail_client
+#: model:ir.model.fields,help:mail_client.field_mail_client_signature__use_on_reply
+msgid "Untick to keep replies clean and only sign new messages."
+msgstr "Снимите галочку, чтобы подпись ставилась только в новые письма, а ответы оставались чистыми."
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/composer/composer.xml:0
+msgid "Uploading…"
+msgstr "Загрузка…"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_signature__use_on_reply
+msgid "Use On Reply"
+msgstr "Использовать при ответе"
+
+#. module: mail_client
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_signature__is_default
+msgid "Use by Default"
+msgstr "Использовать по умолчанию"
+
+#. module: mail_client
+#: model:ir.model,name:mail_client.model_res_users
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_access__user_id
+#: model:ir.model.fields,field_description:mail_client.field_mail_client_compose__user_id
+#: model:res.groups,name:mail_client.group_mail_client_user
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_audit_view_search
+msgid "User"
+msgstr "Пользователь"
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_account.py:0
+msgid "User email is '%(actual)s'"
+msgstr "адрес почты пользователя задан как «%(actual)s»"
+
+#. module: mail_client
+#: model:ir.model.fields.selection,name:mail_client.selection__mail_client_access__role__viewer
+msgid "Viewer"
+msgstr "Читатель"
+
+#. module: mail_client
+#: model:ir.model.fields,help:mail_client.field_mail_client_access__role
+msgid "Viewer: read only.\nAgent: read, reply, flag, tag, move and delete.\nManager: everything an agent can do, plus managing this access list."
+msgstr "Читатель: только чтение.\nСотрудник: читать, отвечать, ставить флаги и метки, перемещать и удалять.\nУправляющий: всё то же, что и сотрудник, плюс управление этим списком доступа."
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_audit_view_list
+msgid "When"
+msgstr "Когда"
+
+#. module: mail_client
+#: model:ir.model.fields,help:mail_client.field_mail_client_message__images_allowed
+msgid "Whether remote images in this message may be loaded."
+msgstr "Можно ли загружать внешние картинки в этом письме."
+
+#. module: mail_client
+#: model:ir.model.fields,help:mail_client.field_mail_client_message__structure_state
+msgid "Whether the MIME structure has been read from the server yet."
+msgstr "Прочитана ли уже с сервера структура MIME."
+
+#. module: mail_client
+#: model:ir.model.fields,help:mail_client.field_mail_client_account__oauth_state
+msgid "Whether this provider account has been signed into yet."
+msgstr "Выполнен ли вход в эту учётную запись у провайдера."
+
+#. module: mail_client
+#: model:ir.model.fields,help:mail_client.field_mail_client_account__smtp_source
+msgid "Which outgoing server this mailbox will actually use."
+msgstr "Какой сервер исходящей почты этот ящик использует на самом деле."
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/reading_pane.xml:0
+msgid "Your mail server flagged this message as spam"
+msgstr "Почтовый сервер пометил это письмо как спам"
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_account_view_form
+msgid "Your signature…"
+msgstr "Ваша подпись…"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/composer/composer.xml:0
+msgid "attachment(s)"
+msgstr "вложений"
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_message.py:0
+msgid "deleting mail"
+msgstr "удаление почты"
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_account_view_form
+msgid "e.g. Sales Inbox"
+msgstr "например, Входящие отдела продаж"
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_server_view_form
+msgid "e.g. mailcow - mail.company.co.id"
+msgstr "например, mailcow - mail.company.co.id"
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_server_view_form
+msgid "mail.company.co.id"
+msgstr "mail.company.co.id"
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_server_view_form
+msgid "mailboxes use this server, but an outgoing server may only send\n                        as its own address. Set the outgoing server on each Mail Account\n                        instead and leave this empty."
+msgstr "почтовых ящиков используют этот сервер, но исходящий сервер может отправлять\n                        только со своего собственного адреса. Задайте исходящий сервер в каждой\n                        учётной записи почты, а это поле оставьте пустым."
+
+#. module: mail_client
+#: model:ir.model.fields,help:mail_client.field_mail_client_server__master_realm
+msgid "mailcow expands the master user to <user>@<realm>."
+msgstr "mailcow разворачивает главного пользователя в <user>@<realm>."
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_account_view_form
+msgid "mailcow refuses to let one account send as another, so\n                                each mailbox needs an outgoing server allowed to use its\n                                address. A server with an <em>Owner</em> is personal to\n                                that user and is never used for ordinary Odoo notifications."
+msgstr "mailcow не даёт одной учётной записи отправлять от имени другой, поэтому\n                                каждому ящику нужен исходящий сервер, которому разрешено отправлять с его\n                                адреса. Сервер с указанным <em>Владельцем</em> принадлежит лично\n                                этому пользователю и никогда не используется для обычных уведомлений Odoo."
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/reading_pane.xml:0
+msgid "message(s) from this address"
+msgstr "писем с этого адреса"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/reading_pane.xml:0
+msgid "more in this conversation"
+msgstr "писем в этой переписке"
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_message.py:0
+msgid "moving mail"
+msgstr "перемещение почты"
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_message.py:0
+msgid "part %s"
+msgstr "часть %s"
+
+#. module: mail_client
+#: model_terms:ir.ui.view,arch_db:mail_client.mail_client_account_view_form
+msgid "sales@company.co.id"
+msgstr "sales@company.co.id"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/message_list.xml:0
+msgid "selected"
+msgstr "выбрано"
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_server.py:0
+msgid "server_id"
+msgstr "server_id"
+
+#. module: mail_client
+#: model:ir.ui.menu,name:mail_client.menu_mail_client_configuration
+msgid "Почтовые ящики"
+msgstr "Почтовые ящики"

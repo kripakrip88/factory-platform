@@ -48,7 +48,15 @@ for M in $VENDOR; do
 done
 echo "→ разложено: $OURS | вендор: $VENDOR"
 
-ARGS="-u $(echo $OURS | tr ' ' ',')"
+UPD="$OURS"
+# I18N=1 — дозалить переводы вендорских модулей в базу. Строки кода (.po)
+# читаются из файла и обновления не требуют, а метки полей, значения списков,
+# подсказки и заголовки форм лежат в jsonb-колонках и попадают туда только при
+# -u. Без --i18n-overwrite Odoo лишь доливает недостающие и НЕ заменяет уже
+# записанные — то есть исправление перевода без этого флага не доедет.
+[ -n "$I18N" ] && UPD="$UPD $VENDOR"
+ARGS="-u $(echo $UPD | tr ' ' ',')"
+[ -n "$I18N" ] && ARGS="$ARGS --i18n-overwrite"
 [ -n "$INSTALL" ] && ARGS="$ARGS -i $(echo $INSTALL | tr ' ' ',')"
 echo "→ odoo $ARGS"
 docker compose run --rm -T odoo odoo -d odoo $ARGS --stop-after-init 2>&1 \
@@ -59,5 +67,8 @@ docker compose run --rm -T odoo odoo -d odoo $ARGS --stop-after-init 2>&1 \
 docker compose exec -T db psql -U odoo -d odoo -tAc \
   "DELETE FROM ir_attachment WHERE url LIKE '/web/assets/%';" >/dev/null
 
+# Перезапуск, а не старт: кэш переводов кода живёт в памяти процесса и ничем
+# не сбрасывается — без него правка .po в браузере не появится.
 docker compose start odoo >/dev/null 2>&1
+docker compose restart odoo >/dev/null 2>&1
 echo "→ готово"
