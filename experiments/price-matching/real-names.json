@@ -1,0 +1,3498 @@
+[
+ {
+  "raw": "Арматура А500C  №8 L=6000",
+  "supplier": "ООО «МеталлСити» (555metal555.ru)",
+  "url": "https://555metal555.ru/content/files/prays-list-metallsiti-sklad.pdf",
+  "guess_type": "Арматура",
+  "guess_size": "d8",
+  "extra": "прайс PDF от 12.08.2026, строка таблицы: raw = колонка «Сортамент» + колонка «Размер»; марка А500С; ГОСТ 52544-2006 / 34028-2016; длина 6 м; вес 2,5 кг/шт; цена 87 500 руб./тн с НДС"
+ },
+ {
+  "raw": "Арматура А500C  №10 L=11700",
+  "supplier": "ООО «МеталлСити» (555metal555.ru)",
+  "url": "https://555metal555.ru/content/files/prays-list-metallsiti-sklad.pdf",
+  "guess_type": "Арматура",
+  "guess_size": "d10",
+  "extra": "прайс PDF от 12.08.2026, строка таблицы: raw = колонка «Сортамент» + колонка «Размер»; марка А500С; ГОСТ 52544-2006 / 34028-2016; длина 11,7 м; 82 950 руб./тн"
+ },
+ {
+  "raw": "Арматура А500C  №12 L=6000",
+  "supplier": "ООО «МеталлСити» (555metal555.ru)",
+  "url": "https://555metal555.ru/content/files/prays-list-metallsiti-sklad.pdf",
+  "guess_type": "Арматура",
+  "guess_size": "d12",
+  "extra": "прайс PDF от 12.08.2026, строка таблицы: raw = колонка «Сортамент» + колонка «Размер»; марка А500С; длина 6 м; 81 700 руб./тн"
+ },
+ {
+  "raw": "Арматура А400(А-III)  №6 мотки",
+  "supplier": "ООО «МеталлСити» (555metal555.ru)",
+  "url": "https://555metal555.ru/content/files/prays-list-metallsiti-sklad.pdf",
+  "guess_type": "Арматура",
+  "guess_size": "d6",
+  "extra": "прайс PDF от 12.08.2026, строка таблицы: raw = колонка «Сортамент» + колонка «Размер»; марка 25Г2С; ГОСТ 5781-82 / 34028-2016; единица — моток 1368 кг; 83 000 руб./тн"
+ },
+ {
+  "raw": "Арматура А400(А-III)  №14 L=11700",
+  "supplier": "ООО «МеталлСити» (555metal555.ru)",
+  "url": "https://555metal555.ru/content/files/prays-list-metallsiti-sklad.pdf",
+  "guess_type": "Арматура",
+  "guess_size": "d14",
+  "extra": "прайс PDF от 12.08.2026, строка таблицы: raw = колонка «Сортамент» + колонка «Размер»; марка 25Г2С; длина 11,7 м; 82 020 руб./тн"
+ },
+ {
+  "raw": "Арматура А240(А-I) / Круг г/к  №12 L=6000",
+  "supplier": "ООО «МеталлСити» (555metal555.ru)",
+  "url": "https://555metal555.ru/content/files/prays-list-metallsiti-sklad.pdf",
+  "guess_type": "Арматура / Круг",
+  "guess_size": "d12",
+  "extra": "прайс PDF от 12.08.2026, строка таблицы: raw = колонка «Сортамент» + колонка «Размер»; одна строка на ДВА вида проката сразу (арматура А240 и круг г/к); марка Ст3сп; ГОСТ 5781-82 / 34028-2016 / 2590-88"
+ },
+ {
+  "raw": "Арматура А240(А-I) / Круг г/к  №25 L=11700",
+  "supplier": "ООО «МеталлСити» (555metal555.ru)",
+  "url": "https://555metal555.ru/content/files/prays-list-metallsiti-sklad.pdf",
+  "guess_type": "Арматура / Круг",
+  "guess_size": "d25",
+  "extra": "прайс PDF от 12.08.2026, строка таблицы: raw = колонка «Сортамент» + колонка «Размер»; марка Ст3сп; длина 11,7 м; 78 860 руб./тн"
+ },
+ {
+  "raw": "Арматура А800 (Ат-V)  №12",
+  "supplier": "ООО «МеталлСити» (555metal555.ru)",
+  "url": "https://555metal555.ru/content/files/prays-list-metallsiti-sklad.pdf",
+  "guess_type": "Арматура",
+  "guess_size": "d12",
+  "extra": "прайс PDF от 12.08.2026, строка таблицы: raw = колонка «Сортамент» + колонка «Размер»; марка 25Г2С / 28С; ГОСТ 10884-94 / 34028-2016; длина не указана; 85 605 руб./тн"
+ },
+ {
+  "raw": "Катанка  Ø 5,5; 6",
+  "supplier": "ООО «МеталлСити» (555metal555.ru)",
+  "url": "https://555metal555.ru/content/files/prays-list-metallsiti-sklad.pdf",
+  "guess_type": "Круг (катанка)",
+  "guess_size": "d5.5 / d6",
+  "extra": "прайс PDF от 12.08.2026, строка таблицы: raw = колонка «Сортамент» + колонка «Размер»; ДВА размера в одной строке через «;»; марка Ст 0/Ст3сп; ТУ 14-1-5282-94; моток 1368 кг"
+ },
+ {
+  "raw": "Уголок  25х25х4 L=9000",
+  "supplier": "ООО «МеталлСити» (555metal555.ru)",
+  "url": "https://555metal555.ru/content/files/prays-list-metallsiti-sklad.pdf",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "25x25x4",
+  "extra": "прайс PDF от 12.08.2026, строка таблицы: raw = колонка «Сортамент» + колонка «Размер»; марка Ст3сп / Ст5сп; ГОСТ 8509-93; длина 9 м; 85 700 руб./тн"
+ },
+ {
+  "raw": "Уголок  63х63х5 L=12000",
+  "supplier": "ООО «МеталлСити» (555metal555.ru)",
+  "url": "https://555metal555.ru/content/files/prays-list-metallsiti-sklad.pdf",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "63x63x5",
+  "extra": "прайс PDF от 12.08.2026, строка таблицы: raw = колонка «Сортамент» + колонка «Размер»; марка Ст3сп / Ст5сп; ГОСТ 8509-93; длина 12 м; 87 500 руб./тн"
+ },
+ {
+  "raw": "Уголок  100х100х7 L=12000",
+  "supplier": "ООО «МеталлСити» (555metal555.ru)",
+  "url": "https://555metal555.ru/content/files/prays-list-metallsiti-sklad.pdf",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "100x100x7",
+  "extra": "прайс PDF от 12.08.2026, строка таблицы: raw = колонка «Сортамент» + колонка «Размер»; марка Ст3сп / Ст5сп; ГОСТ 8509-93; вес 131 кг; 97 500 руб./тн"
+ },
+ {
+  "raw": "Уголок  125х125х8 L=12000",
+  "supplier": "ООО «МеталлСити» (555metal555.ru)",
+  "url": "https://555metal555.ru/content/files/prays-list-metallsiti-sklad.pdf",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "125x125x8",
+  "extra": "прайс PDF от 12.08.2026, строка таблицы: raw = колонка «Сортамент» + колонка «Размер»; марка Ст3сп / Ст5сп; ГОСТ 8509-93"
+ },
+ {
+  "raw": "Двутавр  20Б1 L=12000",
+  "supplier": "ООО «МеталлСити» (555metal555.ru)",
+  "url": "https://555metal555.ru/content/files/prays-list-metallsiti-sklad.pdf",
+  "guess_type": "Двутавр",
+  "guess_size": "20Б1",
+  "extra": "прайс PDF от 12.08.2026, строка таблицы: raw = колонка «Сортамент» + колонка «Размер»; марка С255; ГОСТ Р 57837-17; длина 12 м; 110 000 руб./тн"
+ },
+ {
+  "raw": "Двутавр  35Б1 L=12000",
+  "supplier": "ООО «МеталлСити» (555metal555.ru)",
+  "url": "https://555metal555.ru/content/files/prays-list-metallsiti-sklad.pdf",
+  "guess_type": "Двутавр",
+  "guess_size": "35Б1",
+  "extra": "прайс PDF от 12.08.2026, строка таблицы: raw = колонка «Сортамент» + колонка «Размер»; марка С255; ГОСТ Р 57837-17; 105 000 руб./тн"
+ },
+ {
+  "raw": "Швеллер  8У/П L=12000",
+  "supplier": "ООО «МеталлСити» (555metal555.ru)",
+  "url": "https://555metal555.ru/content/files/prays-list-metallsiti-sklad.pdf",
+  "guess_type": "Швеллер",
+  "guess_size": "8У и 8П одной строкой",
+  "extra": "прайс PDF от 12.08.2026, строка таблицы: raw = колонка «Сортамент» + колонка «Размер»; «У/П» = обе серии полок в одной позиции; марка Ст3сп; ГОСТ 8240-97"
+ },
+ {
+  "raw": "Швеллер  10У/П L=12000",
+  "supplier": "ООО «МеталлСити» (555metal555.ru)",
+  "url": "https://555metal555.ru/content/files/prays-list-metallsiti-sklad.pdf",
+  "guess_type": "Швеллер",
+  "guess_size": "10У и 10П одной строкой",
+  "extra": "прайс PDF от 12.08.2026, строка таблицы: raw = колонка «Сортамент» + колонка «Размер»; марка Ст3сп; ГОСТ 8240-97; 90 000 руб./тн"
+ },
+ {
+  "raw": "Швеллер  14П L=12000",
+  "supplier": "ООО «МеталлСити» (555metal555.ru)",
+  "url": "https://555metal555.ru/content/files/prays-list-metallsiti-sklad.pdf",
+  "guess_type": "Швеллер",
+  "guess_size": "14П",
+  "extra": "прайс PDF от 12.08.2026, строка таблицы: raw = колонка «Сортамент» + колонка «Размер»; марка Ст3сп; ГОСТ 8240-97; здесь серия уже разнесена по отдельным строкам 14П и 14У"
+ },
+ {
+  "raw": "Швеллер  14У L=12000",
+  "supplier": "ООО «МеталлСити» (555metal555.ru)",
+  "url": "https://555metal555.ru/content/files/prays-list-metallsiti-sklad.pdf",
+  "guess_type": "Швеллер",
+  "guess_size": "14У",
+  "extra": "прайс PDF от 12.08.2026, строка таблицы: raw = колонка «Сортамент» + колонка «Размер»; марка Ст3сп; ГОСТ 8240-97"
+ },
+ {
+  "raw": "Швеллер  24У/П L=12000",
+  "supplier": "ООО «МеталлСити» (555metal555.ru)",
+  "url": "https://555metal555.ru/content/files/prays-list-metallsiti-sklad.pdf",
+  "guess_type": "Швеллер",
+  "guess_size": "24У и 24П одной строкой",
+  "extra": "прайс PDF от 12.08.2026, строка таблицы: raw = колонка «Сортамент» + колонка «Размер»; марка Ст3сп; 110 000 руб./тн"
+ },
+ {
+  "raw": "Лист горячекатаный  2*1250*2500",
+  "supplier": "ООО «МеталлСити» (555metal555.ru)",
+  "url": "https://555metal555.ru/content/files/prays-list-metallsiti-sklad.pdf",
+  "guess_type": "Лист гладкий",
+  "guess_size": "2 мм, 1250x2500",
+  "extra": "прайс PDF от 12.08.2026, строка таблицы: raw = колонка «Сортамент» + колонка «Размер»; марка Ст3сп; ГОСТ 16523-97; разделитель «*»; 80 000 руб./тн"
+ },
+ {
+  "raw": "Лист горячекатаный  10*1500*6000",
+  "supplier": "ООО «МеталлСити» (555metal555.ru)",
+  "url": "https://555metal555.ru/content/files/prays-list-metallsiti-sklad.pdf",
+  "guess_type": "Лист гладкий",
+  "guess_size": "10 мм, 1500x6000",
+  "extra": "прайс PDF от 12.08.2026, строка таблицы: raw = колонка «Сортамент» + колонка «Размер»; марка Ст3сп; ГОСТ 14637-89; вес 725 кг"
+ },
+ {
+  "raw": "Лист г/к рифленый (чечевица)  4*1500*6000",
+  "supplier": "ООО «МеталлСити» (555metal555.ru)",
+  "url": "https://555metal555.ru/content/files/prays-list-metallsiti-sklad.pdf",
+  "guess_type": "Лист рифлёный",
+  "guess_size": "4 мм, 1500x6000",
+  "extra": "прайс PDF от 12.08.2026, строка таблицы: raw = колонка «Сортамент» + колонка «Размер»; «г/к» + тип рифления в скобках; марка Ст3сп; ГОСТ 8568-77; 90 000 руб./тн"
+ },
+ {
+  "raw": "Полоса г/к  4*40",
+  "supplier": "ООО «МеталлСити» (555metal555.ru)",
+  "url": "https://555metal555.ru/content/files/prays-list-metallsiti-sklad.pdf",
+  "guess_type": "Полоса",
+  "guess_size": "4x40",
+  "extra": "прайс PDF от 12.08.2026, строка таблицы: raw = колонка «Сортамент» + колонка «Размер»; марка Ст3сп; ГОСТ 6009-74; длина 6 м"
+ },
+ {
+  "raw": "Труба ВГП  15*2,8",
+  "supplier": "ООО «МеталлСити» (555metal555.ru)",
+  "url": "https://555metal555.ru/content/files/prays-list-metallsiti-sklad.pdf",
+  "guess_type": "Труба ВГП",
+  "guess_size": "Ду15x2.8",
+  "extra": "прайс PDF от 12.08.2026, строка таблицы: raw = колонка «Сортамент» + колонка «Размер»; марка Ст3сп/пс; ГОСТ 3262-75; длина 6 м; ЗДЕСЬ Ду НЕ УКАЗАН, просто 15*2,8"
+ },
+ {
+  "raw": "Труба ВГП  40*3,0",
+  "supplier": "ООО «МеталлСити» (555metal555.ru)",
+  "url": "https://555metal555.ru/content/files/prays-list-metallsiti-sklad.pdf",
+  "guess_type": "Труба ВГП",
+  "guess_size": "Ду40x3",
+  "extra": "прайс PDF от 12.08.2026, строка таблицы: raw = колонка «Сортамент» + колонка «Размер»; марка Ст3сп/пс; ГОСТ 3262-75; толщина записана как «3,0»"
+ },
+ {
+  "raw": "Труба ВГП  50*3,5",
+  "supplier": "ООО «МеталлСити» (555metal555.ru)",
+  "url": "https://555metal555.ru/content/files/prays-list-metallsiti-sklad.pdf",
+  "guess_type": "Труба ВГП",
+  "guess_size": "Ду50x3.5",
+  "extra": "прайс PDF от 12.08.2026, строка таблицы: raw = колонка «Сортамент» + колонка «Размер»; марка Ст3сп/пс; ГОСТ 3262-75; 89 000 руб./тн"
+ },
+ {
+  "raw": "Труба электросварная  Ø57*3",
+  "supplier": "ООО «МеталлСити» (555metal555.ru)",
+  "url": "https://555metal555.ru/content/files/prays-list-metallsiti-sklad.pdf",
+  "guess_type": "Труба круглая",
+  "guess_size": "57x3",
+  "extra": "прайс PDF от 12.08.2026, строка таблицы: raw = колонка «Сортамент» + колонка «Размер»; знак Ø перед диаметром; марка Ст3сп/пс; ГОСТ 10705-80; длина 6 и 12 м двумя строками"
+ },
+ {
+  "raw": "Труба электросварная  Ø108*4,5",
+  "supplier": "ООО «МеталлСити» (555metal555.ru)",
+  "url": "https://555metal555.ru/content/files/prays-list-metallsiti-sklad.pdf",
+  "guess_type": "Труба круглая",
+  "guess_size": "108x4.5",
+  "extra": "прайс PDF от 12.08.2026, строка таблицы: raw = колонка «Сортамент» + колонка «Размер»; марка Ст3сп/пс; ГОСТ 10705-80; длина 12 м"
+ },
+ {
+  "raw": "Труба электросварная  Ø219*5",
+  "supplier": "ООО «МеталлСити» (555metal555.ru)",
+  "url": "https://555metal555.ru/content/files/prays-list-metallsiti-sklad.pdf",
+  "guess_type": "Труба круглая",
+  "guess_size": "219x5",
+  "extra": "прайс PDF от 12.08.2026, строка таблицы: raw = колонка «Сортамент» + колонка «Размер»; марка «Ст.20» (с точкой после Ст); ГОСТ 10705-80; 80 000 руб./тн"
+ },
+ {
+  "raw": "Труба профильная квадрат.  15*15*1,2",
+  "supplier": "ООО «МеталлСити» (555metal555.ru)",
+  "url": "https://555metal555.ru/content/files/prays-list-metallsiti-sklad.pdf",
+  "guess_type": "Труба профильная квадратная",
+  "guess_size": "15x15x1.2",
+  "extra": "прайс PDF от 12.08.2026, строка таблицы: raw = колонка «Сортамент» + колонка «Размер»; сокращение «квадрат.» с точкой; марка Ст3сп/08пс/08кп; ГОСТ 13663-86"
+ },
+ {
+  "raw": "Труба профильная квадрат.  100*100*3",
+  "supplier": "ООО «МеталлСити» (555metal555.ru)",
+  "url": "https://555metal555.ru/content/files/prays-list-metallsiti-sklad.pdf",
+  "guess_type": "Труба профильная квадратная",
+  "guess_size": "100x100x3",
+  "extra": "прайс PDF от 12.08.2026, строка таблицы: raw = колонка «Сортамент» + колонка «Размер»; марка Ст3сп/08пс/08кп; ГОСТ 13663-86; длина 12 м; 85 000 руб./тн"
+ },
+ {
+  "raw": "Труба профильная квадрат.  180*180*8",
+  "supplier": "ООО «МеталлСити» (555metal555.ru)",
+  "url": "https://555metal555.ru/content/files/prays-list-metallsiti-sklad.pdf",
+  "guess_type": "Труба профильная квадратная",
+  "guess_size": "180x180x8",
+  "extra": "прайс PDF от 12.08.2026, строка таблицы: raw = колонка «Сортамент» + колонка «Размер»; марка Ст3сп/08пс/08кп; ГОСТ 13663-86; вес 509 кг"
+ },
+ {
+  "raw": "Труба профильная прямоуг.  40*20*1,5",
+  "supplier": "ООО «МеталлСити» (555metal555.ru)",
+  "url": "https://555metal555.ru/content/files/prays-list-metallsiti-sklad.pdf",
+  "guess_type": "Труба профильная прямоугольная",
+  "guess_size": "40x20x1.5",
+  "extra": "прайс PDF от 12.08.2026, строка таблицы: raw = колонка «Сортамент» + колонка «Размер»; сокращение «прямоуг.»; марка Ст3сп/08пс/08кп; ГОСТ 8645-68"
+ },
+ {
+  "raw": "Труба профильная прямоуг.  100*50*4",
+  "supplier": "ООО «МеталлСити» (555metal555.ru)",
+  "url": "https://555metal555.ru/content/files/prays-list-metallsiti-sklad.pdf",
+  "guess_type": "Труба профильная прямоугольная",
+  "guess_size": "100x50x4",
+  "extra": "прайс PDF от 12.08.2026, строка таблицы: raw = колонка «Сортамент» + колонка «Размер»; марка Ст3сп/08пс/08кп; ГОСТ 8645-68; длина 12 м"
+ },
+ {
+  "raw": "ПВЛ 306  306*1000*4500",
+  "supplier": "ООО «МеталлСити» (555metal555.ru)",
+  "url": "https://555metal555.ru/content/files/prays-list-metallsiti-sklad.pdf",
+  "guess_type": "Лист просечно-вытяжной",
+  "guess_size": "ПВЛ 306, карта 1000x4500",
+  "extra": "прайс PDF от 12.08.2026, строка таблицы: raw = колонка «Сортамент» + колонка «Размер»; номер ПВЛ ДУБЛИРУЕТСЯ в наименовании и в размере; марка Ст3сп; ТУ 25.93.13-001-39280576-2023; единица — 1 кв.м"
+ },
+ {
+  "raw": "Ду 15*2.8 L=6000",
+  "supplier": "ООО «МеталлСити» (555metal555.ru)",
+  "url": "https://555metal555.ru/catalog/trubnyj-metalloprokat-c1/truba-vodogazoprovodnaya-vgp-gost-3262-75-i1.html",
+  "guess_type": "Труба ВГП",
+  "guess_size": "Ду15x2.8",
+  "extra": "карточка «Труба водогазопроводная (ВГП) ГОСТ 3262-75» на сайте; колонка «Сортамент»; ТОЧКА в дроби (2.8), а в PDF того же поставщика — ЗАПЯТАЯ (2,8); цена 712 руб./шт / 89000 руб./тн"
+ },
+ {
+  "raw": "Ду 25*3.2 L=6000",
+  "supplier": "ООО «МеталлСити» (555metal555.ru)",
+  "url": "https://555metal555.ru/catalog/trubnyj-metalloprokat-c1/truba-vodogazoprovodnaya-vgp-gost-3262-75-i1.html",
+  "guess_type": "Труба ВГП",
+  "guess_size": "Ду25x3.2",
+  "extra": "карточка на сайте; вид проката только в заголовке таблицы, в строке — один размер; 1335/89000"
+ },
+ {
+  "raw": "Ду 50*3.5 L=6000",
+  "supplier": "ООО «МеталлСити» (555metal555.ru)",
+  "url": "https://555metal555.ru/catalog/trubnyj-metalloprokat-c1/truba-vodogazoprovodnaya-vgp-gost-3262-75-i1.html",
+  "guess_type": "Труба ВГП",
+  "guess_size": "Ду50x3.5",
+  "extra": "карточка на сайте; 2670 руб./шт"
+ },
+ {
+  "raw": "Труба профильная 10х10х1,5",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/truby_profilnye/",
+  "guess_type": "Труба профильная квадратная",
+  "guess_size": "10x10x1.5",
+  "extra": "длина 6 м; 125,00 руб./м розница; разделитель — КИРИЛЛИЧЕСКАЯ «х», дробь через запятую"
+ },
+ {
+  "raw": "Труба профильная 15х15х1,5",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/truby_profilnye/",
+  "guess_type": "Труба профильная квадратная",
+  "guess_size": "15x15x1.5",
+  "extra": "длина записана как «6 метров» (а в соседних строках «6 м»); 130,00 / 113,00 руб. за метр"
+ },
+ {
+  "raw": "Труба профильная 20х10х1,5",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/truby_profilnye/",
+  "guess_type": "Труба профильная прямоугольная",
+  "guess_size": "20x10x1.5",
+  "extra": "длина 6 м; 166,67 руб./м"
+ },
+ {
+  "raw": "Труба профильная 20х20х1,5 АКЦИЯ!!!",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/truby_profilnye/",
+  "guess_type": "Труба профильная квадратная",
+  "guess_size": "20x20x1.5",
+  "extra": "маркетинговая приписка «АКЦИЯ!!!» прямо в наименовании; длина 6 м; 123,50 / 117,50"
+ },
+ {
+  "raw": "Труба профильная 20х20х1,5 ОЦИНК.",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/truby_profilnye/",
+  "guess_type": "Труба профильная квадратная",
+  "guess_size": "20x20x1.5",
+  "extra": "покрытие сокращено как «ОЦИНК.» с точкой; длина 6 м; 250,00 руб./м"
+ },
+ {
+  "raw": "Труба профильная 20x20x2,0",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/truby_profilnye/",
+  "guess_type": "Труба профильная квадратная",
+  "guess_size": "20x20x2",
+  "extra": "ЛАТИНСКАЯ «x» — в той же таблице соседние строки идут с кириллической «х»; толщина «2,0» с нулём"
+ },
+ {
+  "raw": "Труба профильная 20x20x3,0",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/truby_profilnye/",
+  "guess_type": "Труба профильная квадратная",
+  "guess_size": "20x20x3",
+  "extra": "латинская «x»; длина 6 м; 322,50 / 283,50"
+ },
+ {
+  "raw": "Труба профильная 40х20х1,5 ОЦИНК",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/truby_profilnye/",
+  "guess_type": "Труба профильная прямоугольная",
+  "guess_size": "40x20x1.5",
+  "extra": "здесь «ОЦИНК» БЕЗ точки, а в строке 20х20 — «ОЦИНК.» с точкой"
+ },
+ {
+  "raw": "Труба профильная 40х40х1,5 ОЦИНК",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/truby_profilnye/",
+  "guess_type": "Труба профильная квадратная",
+  "guess_size": "40x40x1.5",
+  "extra": "длина 6 м; 458,33 руб./м"
+ },
+ {
+  "raw": "Труба профильная 50х50х4,0",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/truby_profilnye/",
+  "guess_type": "Труба профильная квадратная",
+  "guess_size": "50x50x4",
+  "extra": "длина 12 м; 1002,21 руб./м"
+ },
+ {
+  "raw": "Труба профильная 60х30х1,5",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/truby_profilnye/",
+  "guess_type": "Труба профильная прямоугольная",
+  "guess_size": "60x30x1.5",
+  "extra": "в колонке длины стоит «6 м Распродажа» — статус склада уехал в поле длины"
+ },
+ {
+  "raw": "Труба профильная 60х60х3,0",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/truby_profilnye/",
+  "guess_type": "Труба профильная квадратная",
+  "guess_size": "60x60x3",
+  "extra": "длина «6 м ; 12 м» — два варианта длины в одной ячейке"
+ },
+ {
+  "raw": "Труба профильная 70х70х4,0",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/truby_profilnye/",
+  "guess_type": "Труба профильная квадратная",
+  "guess_size": "70x70x4",
+  "extra": "длина 6 м; 1792,58 руб./м"
+ },
+ {
+  "raw": "Труба профильная 100х100х3,0",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/truby_profilnye/",
+  "guess_type": "Труба профильная квадратная",
+  "guess_size": "100x100x3",
+  "extra": "позиция из того же прайса профильной трубы Град Стали"
+ },
+ {
+  "raw": "Уголок горячекатаный равнополочный 20 х 4",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/ugolok_goryachekatanyi/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "20x20x4",
+  "extra": "ДВА числа вместо трёх: ширина полки и толщина; ПРОБЕЛЫ вокруг «х»; длина 6 м; 380,00 руб./м"
+ },
+ {
+  "raw": "Уголок горячекатаный равнополочный 25 х 4",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/ugolok_goryachekatanyi/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "25x25x4",
+  "extra": "длина 9 м; 256,70 / 229,44 руб. за метр"
+ },
+ {
+  "raw": "Уголок горячекатаный равнополочный 32 х 4",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/ugolok_goryachekatanyi/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "32x32x4",
+  "extra": "длина «9 и 12 м» — два значения в ячейке"
+ },
+ {
+  "raw": "Уголок горячекатаный равнополочный 40 х 4 ст. 09Г2С — 15",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/ugolok_goryachekatanyi/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "40x40x4",
+  "extra": "марка стали с «ст.» и ТИРЕ: «09Г2С — 15» (09Г2С-15); длина 12 м; 487,50 руб./м"
+ },
+ {
+  "raw": "Уголок горячекатаный равнополочный 50 х 5 ст. 09Г2С — 15",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/ugolok_goryachekatanyi/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "50x50x5",
+  "extra": "длина 12 м; 747,50 руб./м"
+ },
+ {
+  "raw": "Уголок горячекатаный равнополочный 63 х 4",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/ugolok_goryachekatanyi/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "63x63x4",
+  "extra": "длина «11,8 м и 12 м»"
+ },
+ {
+  "raw": "Уголок горячекатаный равнополочный 63 х 6 ст. 09Г2С — 15",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/ugolok_goryachekatanyi/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "63x63x6",
+  "extra": "длина 12 м; 1137,50 руб./м"
+ },
+ {
+  "raw": "Уголок горячекатаный равнополочный 70 х 5",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/ugolok_goryachekatanyi/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "70x70x5",
+  "extra": "длина 12 м; 1002,08 руб./м"
+ },
+ {
+  "raw": "Уголок горячекатаный разнополочный 63х40х5",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/ugolok-neravnopolochnyi/",
+  "guess_type": "Уголок неравнополочный",
+  "guess_size": "63x40x5",
+  "extra": "здесь слово «РАЗНОполочный» (в шапке страницы — «неравнополочный»); размер БЕЗ пробелов, три числа; длина 12 м"
+ },
+ {
+  "raw": "Уголок горячекатаный разнополочный 100х63х6",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/ugolok-neravnopolochnyi/",
+  "guess_type": "Уголок неравнополочный",
+  "guess_size": "100x63x6",
+  "extra": "длина 12 м; 2027,03 руб./м"
+ },
+ {
+  "raw": "Уголок горячекатаный разнополочный 125х80х10",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/ugolok-neravnopolochnyi/",
+  "guess_type": "Уголок неравнополочный",
+  "guess_size": "125x80x10",
+  "extra": "длина 12 м; 4340,00 руб./м"
+ },
+ {
+  "raw": "Уголок горячекатаный разнополочный 200х125х14",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/ugolok-neravnopolochnyi/",
+  "guess_type": "Уголок неравнополочный",
+  "guess_size": "200x125x14",
+  "extra": "длина 12 м; 9660,00 руб./м"
+ },
+ {
+  "raw": "Швеллер 5",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/shveller/",
+  "guess_type": "Швеллер",
+  "guess_size": "5У или 5П — НЕ ОПРЕДЕЛЕНО",
+  "extra": "серия полок (У/П) в наименовании ОТСУТСТВУЕТ вообще; длина «6 м и 12 м»; 1059,17 руб./м"
+ },
+ {
+  "raw": "Швеллер 6,5",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/shveller/",
+  "guess_type": "Швеллер",
+  "guess_size": "6.5У или 6.5П — не определено",
+  "extra": "номер швеллера сам содержит ЗАПЯТУЮ (6,5) — легко спутать с дробным размером; длина 12 м"
+ },
+ {
+  "raw": "Швеллер 10 ст. 09Г2С / С345",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/shveller/",
+  "guess_type": "Швеллер",
+  "guess_size": "10У или 10П — не определено",
+  "extra": "ДВЕ марки через слэш (09Г2С / С345); длина 12 м; 1695,21 руб./м"
+ },
+ {
+  "raw": "Швеллер ст. 14 09Г2С / С355",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/shveller/",
+  "guess_type": "Швеллер",
+  "guess_size": "14У или 14П — не определено",
+  "extra": "ПОРЯДОК СЛОВ СЛОМАН: «Швеллер ст. 14 09Г2С» — номер 14 стоит после «ст.», марка после номера; длина 12 м"
+ },
+ {
+  "raw": "Швеллер 16",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/shveller/",
+  "guess_type": "Швеллер",
+  "guess_size": "16У или 16П — не определено",
+  "extra": "длина «11,7 и 12 м»; 2200,00 руб./м"
+ },
+ {
+  "raw": "Швеллер 22",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/shveller/",
+  "guess_type": "Швеллер",
+  "guess_size": "22У или 22П — не определено",
+  "extra": "в колонке длины «н/м, 12 м» (н/м = немерная)"
+ },
+ {
+  "raw": "Швеллер 40",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/shveller/",
+  "guess_type": "Швеллер",
+  "guess_size": "40У или 40П — не определено",
+  "extra": "длина 12 м; 13725,50 руб./м"
+ },
+ {
+  "raw": "Труба водогазопроводная ДУ 15 х 2,5  (1/2 дюйма), наружный диаметр 21,3 мм",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/truby-vodogazoprovodnye-electrosvarnye/",
+  "guess_type": "Труба ВГП",
+  "guess_size": "Ду15x2.5",
+  "extra": "«ДУ» ЗАГЛАВНЫМИ + пробелы вокруг «х» + дюймовый размер в скобках + наружный диаметр текстом; длина 6 м; 260,00 руб./м"
+ },
+ {
+  "raw": "Труба водогазопроводная ДУ 20 х 2,8  (3/4), наружный диаметр 26,8 мм",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/truby-vodogazoprovodnye-electrosvarnye/",
+  "guess_type": "Труба ВГП",
+  "guess_size": "Ду20x2.8",
+  "extra": "в скобках «(3/4)» БЕЗ слова «дюйма»; длина «6; 9 м»"
+ },
+ {
+  "raw": "Труба водогазопроводная ДУ 32 х 3,2  (1 1/4), наружный диаметр 42,8 мм",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/truby-vodogazoprovodnye-electrosvarnye/",
+  "guess_type": "Труба ВГП",
+  "guess_size": "Ду32x3.2",
+  "extra": "дюймы дробью с целой частью «1 1/4»; длина 6 м; 502,86 руб./м"
+ },
+ {
+  "raw": "Труба водогазопроводная ДУ 50 х 3,5  (2 дюйма), наружный диаметр 60 мм",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/truby-vodogazoprovodnye-electrosvarnye/",
+  "guess_type": "Труба ВГП",
+  "guess_size": "Ду50x3.5",
+  "extra": "длина «6,0 и 10,5 м»; 800,00 руб./м"
+ },
+ {
+  "raw": "Труба водогазопроводная Ду 65 х 3",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/truby-vodogazoprovodnye-electrosvarnye/",
+  "guess_type": "Труба ВГП",
+  "guess_size": "Ду65x3",
+  "extra": "в этой строке «Ду» уже строчными буквами и БЕЗ дюймов/наружного диаметра; длина «12м» слитно"
+ },
+ {
+  "raw": "Труба водогазопроводная Ду 80 х 3,5",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/truby-vodogazoprovodnye-electrosvarnye/",
+  "guess_type": "Труба ВГП",
+  "guess_size": "Ду80x3.5",
+  "extra": "длина «12м»; 1335,00 руб./м"
+ },
+ {
+  "raw": "Труба бесшовная холоднодеформированная 16 х 3",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/truby_goryachekatanye/",
+  "guess_type": "Труба круглая (бесшовная х/д)",
+  "guess_size": "16x3",
+  "extra": "способ производства словом, а не «бесш»; длина «8,9м -10 м»; 577,50 руб./м"
+ },
+ {
+  "raw": "Труба бесшовная холоднодеформированная 27х4",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/truby_goryachekatanye/",
+  "guess_type": "Труба круглая (бесшовная х/д)",
+  "guess_size": "27x4",
+  "extra": "в этой строке БЕЗ пробелов вокруг «х», в соседней (27 х 3) — С пробелами; длина «8,7м — 9,14 м»"
+ },
+ {
+  "raw": "Труба бесшовная холоднодеформированная 32х4,5",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/truby_goryachekatanye/",
+  "guess_type": "Труба круглая (бесшовная х/д)",
+  "guess_size": "32x4.5",
+  "extra": "позиция встречается в таблице ДВАЖДЫ, один раз с пустой ценой"
+ },
+ {
+  "raw": "Труба бесшовная холоднодеформированная 108х5",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/truby_goryachekatanye/",
+  "guess_type": "Труба круглая (бесшовная х/д)",
+  "guess_size": "108x5",
+  "extra": "длина «7,91 — 10,03» — БЕЗ единицы измерения; 4875,00 руб./м"
+ },
+ {
+  "raw": "Труба бесшовная горячедеформированная 57 х 4",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/truby_goryachekatanye/",
+  "guess_type": "Труба круглая (бесшовная г/д)",
+  "guess_size": "57x4",
+  "extra": "длина «10,82м-нд» (нд = нет данных); 1787,50 руб./м"
+ },
+ {
+  "raw": "Труба бесшовная горячедеформированная 60 х 4,0",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/truby_goryachekatanye/",
+  "guess_type": "Труба круглая (бесшовная г/д)",
+  "guess_size": "60x4",
+  "extra": "длина «~10,1м» — с ТИЛЬДОЙ; 1950,00 руб./м"
+ },
+ {
+  "raw": "Труба бесшовная горячедеформированная 73х5",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/truby_goryachekatanye/",
+  "guess_type": "Труба круглая (бесшовная г/д)",
+  "guess_size": "73x5",
+  "extra": "длина 11,3 м; 2732,30 руб./м"
+ },
+ {
+  "raw": "Арматура стальная периодическая класса А-III А400 6 мм",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/armatura-khabarovsk/",
+  "guess_type": "Арматура",
+  "guess_size": "d6",
+  "extra": "КИРИЛЛИЧЕСКАЯ «А» в «А-III»; размер словами «6 мм» в конце; марка 25Г2С; длина «6 — 6,1 м»; 101500 руб./тн"
+ },
+ {
+  "raw": "Арматура стальная периодическая класса A-III А400 10 мм",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/armatura-khabarovsk/",
+  "guess_type": "Арматура",
+  "guess_size": "d10",
+  "extra": "ЛАТИНСКАЯ «A» в «A-III» — в той же таблице соседние строки с кириллической «А»; длина 11.7 м (точка!)"
+ },
+ {
+  "raw": "Арматура стальная периодическая класса A-III А400, 12 мм",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/armatura-khabarovsk/",
+  "guess_type": "Арматура",
+  "guess_size": "d12",
+  "extra": "ЗАПЯТАЯ перед размером — в соседних строках её нет; 79500 руб./тн"
+ },
+ {
+  "raw": "Арматура стальная периодическая класса A-III А400С 14 мм (НЕМЕРНАЯ)",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/armatura-khabarovsk/",
+  "guess_type": "Арматура",
+  "guess_size": "d14",
+  "extra": "приписка «(НЕМЕРНАЯ)» капсом; длина «6 — 11 метров»; вместо цены текст «ограниченное количество»"
+ },
+ {
+  "raw": "Арматура стальная периодическая класса A-III А500, 16 мм",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/armatura-khabarovsk/",
+  "guess_type": "Арматура",
+  "guess_size": "d16",
+  "extra": "класс A-III и А500 одновременно (взаимоисключающая маркировка); длина 11,7 м"
+ },
+ {
+  "raw": "Арматура стальная холоднотянутая 4 мм",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/armatura-khabarovsk/",
+  "guess_type": "Арматура (проволока Вр)",
+  "guess_size": "d4",
+  "extra": "марка не указана; длина 6 м; 165000 руб./тн"
+ },
+ {
+  "raw": "Арматура В500С 6 мм (мотки)",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/armatura-khabarovsk/",
+  "guess_type": "Арматура",
+  "guess_size": "d6",
+  "extra": "форма поставки «(мотки)» в наименовании, при этом в колонке длины «бухты»; 99500 руб./тн"
+ },
+ {
+  "raw": "Круг 6 мм (бухты)",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/krug/",
+  "guess_type": "Круг",
+  "guess_size": "d6",
+  "extra": "марка 3сп (без «Ст»); в колонке длины «1.3 — 1.4 т» — вес вместо длины; 44,99 руб./м"
+ },
+ {
+  "raw": "Круг 20 мм",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/krug/",
+  "guess_type": "Круг",
+  "guess_size": "d20",
+  "extra": "марка 3сп; длина 11,7 м; 408,97 руб./м"
+ },
+ {
+  "raw": "Круг 45 мм",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/krug/",
+  "guess_type": "Круг",
+  "guess_size": "d45",
+  "extra": "марка 3сп; длина «3,0 — 5,8 м»; 2020,30 руб./м"
+ },
+ {
+  "raw": "Квадрат 10 х 10",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/kvadrat/",
+  "guess_type": "Квадрат",
+  "guess_size": "10",
+  "extra": "сторона ПРОДУБЛИРОВАНА (10 х 10), у нас в справочнике пишется одним числом; длина 6 м"
+ },
+ {
+  "raw": "Квадрат 50 х 50",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/kvadrat/",
+  "guess_type": "Квадрат",
+  "guess_size": "50",
+  "extra": "в колонке длины «нд»; 3810,31 руб./м"
+ },
+ {
+  "raw": "Квадрат 90 х 90",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/kvadrat/",
+  "guess_type": "Квадрат",
+  "guess_size": "90",
+  "extra": "длина 6,04 м; 11792,22 руб./м"
+ },
+ {
+  "raw": "Шестигранник 10 калибр.",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/shestigrannik/",
+  "guess_type": "Шестигранник",
+  "guess_size": "S10",
+  "extra": "приписка «калибр.» (калиброванный) с точкой; марка 45; длина 3,9 м; БЕЗ буквы S и без «мм»"
+ },
+ {
+  "raw": "Шестигранник 22",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/shestigrannik/",
+  "guess_type": "Шестигранник",
+  "guess_size": "S22",
+  "extra": "марка 45; длина «2,93 — 5.06 м» — в одной ячейке и запятая, и ТОЧКА как разделитель дробной части"
+ },
+ {
+  "raw": "Шестигранник 36",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/shestigrannik/",
+  "guess_type": "Шестигранник",
+  "guess_size": "S36",
+  "extra": "одинаковое наименование идёт ДВАЖДЫ с разными марками (45 и 30ХМА) — различить можно только по колонке марки"
+ },
+ {
+  "raw": "Балка 10",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/balka/",
+  "guess_type": "Двутавр",
+  "guess_size": "10Б1? — серия не указана",
+  "extra": "двутавр назван «Балка», серия (Б/Ш/К/М) отсутствует; длина 12 м; 2058,00 руб./м"
+ },
+ {
+  "raw": "Балка 10 сталь 09Г2С",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/balka/",
+  "guess_type": "Двутавр",
+  "guess_size": "10Б1? — серия не указана",
+  "extra": "марка через слово «сталь» (не «ст.»); длина 12 м"
+ },
+ {
+  "raw": "Балка 20Ш1",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/balka/",
+  "guess_type": "Двутавр (широкополочный)",
+  "guess_size": "20Ш1",
+  "extra": "длина 12 м; 6040,21 руб./м"
+ },
+ {
+  "raw": "Балка 35 Б1",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/balka/",
+  "guess_type": "Двутавр",
+  "guess_size": "35Б1",
+  "extra": "ПРОБЕЛ между номером и серией («35 Б1»), в соседних строках пробела нет («20Ш1»)"
+ },
+ {
+  "raw": "Балка 24М",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/balka/",
+  "guess_type": "Двутавр (монорельс)",
+  "guess_size": "24М",
+  "extra": "серия М = монорельсовый; длина 12 м; 9892,29 руб./м"
+ },
+ {
+  "raw": "Балка 25Ш1, 25Ш2, 25Ш3",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/balka/",
+  "guess_type": "Двутавр (широкополочный)",
+  "guess_size": "25Ш1 / 25Ш2 / 25Ш3",
+  "extra": "ТРИ разные позиции в одной строке через запятую; вместо цены «под заказ»"
+ },
+ {
+  "raw": "Лист горячекатаный 2 мм",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/list_goryachekatanyi/",
+  "guess_type": "Лист гладкий",
+  "guess_size": "2 мм, 1000x2000",
+  "extra": "толщина в наименовании, ГАБАРИТ В ОТДЕЛЬНОЙ КОЛОНКЕ «1000 х 2000»; марка 3сп; цена за 1 лист"
+ },
+ {
+  "raw": "Лист горячекатаный 2 мм",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/list_goryachekatanyi/",
+  "guess_type": "Лист гладкий",
+  "guess_size": "2 мм, 1250x2500",
+  "extra": "то же наименование, что и строкой выше — отличается только колонками «марка 3сп5» и «1250 х 2500»; цена за лист 6675,00"
+ },
+ {
+  "raw": "Лист горячекатаный 3 мм",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/list_goryachekatanyi/",
+  "guess_type": "Лист гладкий",
+  "guess_size": "3 мм, 1250x2500",
+  "extra": "марка в колонке указана как «309Г2С» — похоже на ОПЕЧАТКУ (должно быть 09Г2С); 13642,00 руб./лист"
+ },
+ {
+  "raw": "Лист горячекатаный 12 мм",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/list_goryachekatanyi/",
+  "guess_type": "Лист гладкий",
+  "guess_size": "12 мм, 1500x6000",
+  "extra": "марка 09Г2С; цена за лист 159750,00"
+ },
+ {
+  "raw": "Лист рифлёный 3 мм",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/list_riflenyi/",
+  "guess_type": "Лист рифлёный",
+  "guess_size": "3 мм, 1250x2500",
+  "extra": "через «ё»; тип рифления не указан (ниже на странице отдельная таблица весов «ромбическое/чечевичное»)"
+ },
+ {
+  "raw": "Лист рифленый 5 мм",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/list_riflenyi/",
+  "guess_type": "Лист рифлёный",
+  "guess_size": "5 мм, 1500x3000",
+  "extra": "в ТОЙ ЖЕ таблице уже через «е» — «рифленый» вместо «рифлёный»"
+ },
+ {
+  "raw": "Лист стальной холоднокатаный оцинкованный 1,0 мм",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/list_ocinkovannyi/",
+  "guess_type": "Лист оцинкованный",
+  "guess_size": "1 мм, 1250x2500",
+  "extra": "три признака подряд (стальной / холоднокатаный / оцинкованный); толщина «1,0»; 6110,00 руб./лист"
+ },
+ {
+  "raw": "Лист стальной холоднокатаный оцинкованный 0,5 мм",
+  "supplier": "ООО «Град Сталь» (gradstal.ru)",
+  "url": "https://gradstal.ru/catalog/list_ocinkovannyi/",
+  "guess_type": "Лист оцинкованный",
+  "guess_size": "0.5 мм, 1250x2500",
+  "extra": "2730,00 руб./лист"
+ },
+ {
+  "raw": "Арматура 6 мм А400 (АIII, А3) бухта",
+  "supplier": "ООО «ДМК-Снаб» (dmk.su)",
+  "url": "https://dmk.su/metalloprokat/sortovoj-prokat-jshop",
+  "guess_type": "Арматура",
+  "guess_size": "d6",
+  "extra": "ТРИ синонима класса в одной строке: А400, АIII (без дефиса), А3; форма поставки «бухта»"
+ },
+ {
+  "raw": "Арматура 10 мм А400 (АIII, А3) L=6м",
+  "supplier": "ООО «ДМК-Снаб» (dmk.su)",
+  "url": "https://dmk.su/metalloprokat/sortovoj-prokat-jshop",
+  "guess_type": "Арматура",
+  "guess_size": "d10",
+  "extra": "порядок: размер → класс; длина «L=6м» слитно без пробела"
+ },
+ {
+  "raw": "Арматура 14 мм А400 (АIII, А3) L=11,7м",
+  "supplier": "ООО «ДМК-Снаб» (dmk.su)",
+  "url": "https://dmk.su/metalloprokat/sortovoj-prokat-jshop",
+  "guess_type": "Арматура",
+  "guess_size": "d14",
+  "extra": "длина дробная с запятой «L=11,7м»"
+ },
+ {
+  "raw": "Швеллер 5 П ГОСТ 8240-97 L=12м",
+  "supplier": "ООО «ДМК-Снаб» (dmk.su)",
+  "url": "https://dmk.su/metalloprokat/sortovoj-prokat-jshop",
+  "guess_type": "Швеллер",
+  "guess_size": "5П",
+  "extra": "ПРОБЕЛ между номером и серией: «5 П»; ГОСТ внутри наименования; длина L=12м"
+ },
+ {
+  "raw": "Швеллер 8 У ГОСТ 8240-97 L=12м",
+  "supplier": "ООО «ДМК-Снаб» (dmk.su)",
+  "url": "https://dmk.su/metalloprokat/sortovoj-prokat-jshop",
+  "guess_type": "Швеллер",
+  "guess_size": "8У",
+  "extra": "«8 У» с пробелом"
+ },
+ {
+  "raw": "Швеллер 10 У ГОСТ 8240-97 L=12м (авт.)",
+  "supplier": "ООО «ДМК-Снаб» (dmk.su)",
+  "url": "https://dmk.su/metalloprokat/sortovoj-prokat-jshop",
+  "guess_type": "Швеллер",
+  "guess_size": "10У",
+  "extra": "приписка «(авт.)» в конце — вероятно автозавод/автоматная поставка, к размеру отношения не имеет"
+ },
+ {
+  "raw": "Швеллер 14 У ГОСТ 8240-97 L=11,7м",
+  "supplier": "ООО «ДМК-Снаб» (dmk.su)",
+  "url": "https://dmk.su/metalloprokat/sortovoj-prokat-jshop",
+  "guess_type": "Швеллер",
+  "guess_size": "14У",
+  "extra": "длина 11,7 м"
+ },
+ {
+  "raw": "Швеллер 24 У ГОСТ 8240-97 L=9м",
+  "supplier": "ООО «ДМК-Снаб» (dmk.su)",
+  "url": "https://dmk.su/metalloprokat/sortovoj-prokat-jshop",
+  "guess_type": "Швеллер",
+  "guess_size": "24У",
+  "extra": "длина 9 м"
+ },
+ {
+  "raw": "Швеллер гнутый 160х60х5мм L=12м",
+  "supplier": "ООО «ДМК-Снаб» (dmk.su)",
+  "url": "https://dmk.su/metalloprokat/sortovoj-prokat-jshop",
+  "guess_type": "Швеллер гнутый",
+  "guess_size": "160x60x5",
+  "extra": "гнутый швеллер пишется ТРЕМЯ размерами, а горячекатаный — номером; «5мм» слитно"
+ },
+ {
+  "raw": "Балка двутавровая 12мм",
+  "supplier": "ООО «ДМК-Снаб» (dmk.su)",
+  "url": "https://dmk.su/metalloprokat/sortovoj-prokat-jshop",
+  "guess_type": "Двутавр",
+  "guess_size": "12Б1? — серия не указана",
+  "extra": "«12мм» — на самом деле номер двутавра (12 см), а не миллиметры: единица измерения указана НЕВЕРНО"
+ },
+ {
+  "raw": "Лист горячекатаный 2х1250х2500 мм",
+  "supplier": "ООО «ДМК-Снаб» (dmk.su)",
+  "url": "https://dmk.su/metalloprokat/sortovoj-prokat-jshop",
+  "guess_type": "Лист гладкий",
+  "guess_size": "2 мм, 1250x2500",
+  "extra": "все три размера слитно через кириллическую «х», «мм» в конце"
+ },
+ {
+  "raw": "Лист РС В 5х1500х6000 мм",
+  "supplier": "ООО «ДМК-Снаб» (dmk.su)",
+  "url": "https://dmk.su/metalloprokat/sortovoj-prokat-jshop",
+  "guess_type": "Лист гладкий (судостроительный)",
+  "guess_size": "5 мм, 1500x6000",
+  "extra": "«РС В» = Российский морской регистр судоходства, категория В — не марка и не размер"
+ },
+ {
+  "raw": "Лист рифленый ГОСТ 8568-77 3х1250х2500 мм чечевица",
+  "supplier": "ООО «ДМК-Снаб» (dmk.su)",
+  "url": "https://dmk.su/metalloprokat/sortovoj-prokat-jshop",
+  "guess_type": "Лист рифлёный",
+  "guess_size": "3 мм, 1250x2500",
+  "extra": "тип рифления «чечевица» приписан в САМОМ КОНЦЕ строки, после размера"
+ },
+ {
+  "raw": "Лист оцинкованный 0,5х1250х2500 мм окраш.",
+  "supplier": "ООО «ДМК-Снаб» (dmk.su)",
+  "url": "https://dmk.su/metalloprokat/sortovoj-prokat-jshop",
+  "guess_type": "Лист с полимерным покрытием",
+  "guess_size": "0.5 мм, 1250x2500",
+  "extra": "«окраш.» в конце = полимерное покрытие; при этом позиция названа «оцинкованный»"
+ },
+ {
+  "raw": "Лист оцинкованный Ст08ПС 0,5х1250х2500 мм",
+  "supplier": "ООО «ДМК-Снаб» (dmk.su)",
+  "url": "https://dmk.su/metalloprokat/sortovoj-prokat-jshop",
+  "guess_type": "Лист оцинкованный",
+  "guess_size": "0.5 мм, 1250x2500",
+  "extra": "марка «Ст08ПС» КАПСОМ слитно (обычно 08пс)"
+ },
+ {
+  "raw": "Лист 1000х3700 мм Ст3сп5 ТУ36.3611-5-89 ПВЛ-406",
+  "supplier": "ООО «ДМК-Снаб» (dmk.su)",
+  "url": "https://dmk.su/metalloprokat/sortovoj-prokat-jshop",
+  "guess_type": "Лист просечно-вытяжной",
+  "guess_size": "ПВЛ 406, карта 1000x3700",
+  "extra": "вид проката (ПВЛ-406) стоит В САМОМ КОНЦЕ, а строка начинается просто со слова «Лист»"
+ },
+ {
+  "raw": "Круг оцинкованный 16 мм L=6м",
+  "supplier": "ООО «ДМК-Снаб» (dmk.su)",
+  "url": "https://dmk.su/metalloprokat/sortovoj-prokat-jshop",
+  "guess_type": "Круг",
+  "guess_size": "d16",
+  "extra": "покрытие сразу после вида проката; длина L=6м"
+ },
+ {
+  "raw": "Полоса стальная 25х4 мм L=6м",
+  "supplier": "ООО «ДМК-Снаб» (dmk.su)",
+  "url": "https://dmk.su/metalloprokat/sortovoj-prokat-jshop",
+  "guess_type": "Полоса",
+  "guess_size": "25x4",
+  "extra": "порядок «ширина х толщина»; длина L=6м"
+ },
+ {
+  "raw": "Полоса стальная оцинкованная 40 х 4мм L=5м",
+  "supplier": "ООО «ДМК-Снаб» (dmk.su)",
+  "url": "https://dmk.su/metalloprokat/sortovoj-prokat-jshop",
+  "guess_type": "Полоса",
+  "guess_size": "40x4",
+  "extra": "пробелы вокруг «х», но «4мм» слитно — внутри ОДНОЙ строки два разных стиля"
+ },
+ {
+  "raw": "Катанка стальная 6,0 мм кольцо",
+  "supplier": "ООО «ДМК-Снаб» (dmk.su)",
+  "url": "https://dmk.su/metalloprokat/sortovoj-prokat-jshop",
+  "guess_type": "Круг (катанка)",
+  "guess_size": "d6",
+  "extra": "«6,0 мм» с нулём; форма поставки «кольцо» (у других — «моток»/«бухта»)"
+ },
+ {
+  "raw": "Труба водогазопроводная 15х2,8 мм L=6м",
+  "supplier": "ООО «ДМК-Снаб» (dmk.su)",
+  "url": "https://dmk.su/metalloprokat/truby-i-otvody-jshop",
+  "guess_type": "Труба ВГП",
+  "guess_size": "Ду15x2.8",
+  "extra": "БЕЗ «Ду» — 15 здесь условный проход, а не наружный диаметр; «мм» после размера"
+ },
+ {
+  "raw": "Труба водогазопроводная 50х3,5 мм L=10,5м",
+  "supplier": "ООО «ДМК-Снаб» (dmk.su)",
+  "url": "https://dmk.su/metalloprokat/truby-i-otvody-jshop",
+  "guess_type": "Труба ВГП",
+  "guess_size": "Ду50x3.5",
+  "extra": "та же позиция есть и с L=6м — отличаются ТОЛЬКО длиной"
+ },
+ {
+  "raw": "Труба водогазопроводная оцинкованная 15х2,8 мм L=7,8",
+  "supplier": "ООО «ДМК-Снаб» (dmk.su)",
+  "url": "https://dmk.su/metalloprokat/truby-i-otvody-jshop",
+  "guess_type": "Труба ВГП оцинкованная",
+  "guess_size": "Ду15x2.8",
+  "extra": "длина «L=7,8» БЕЗ «м», хотя в соседней строке «L=7,8м»"
+ },
+ {
+  "raw": "Труба водогазопроводная оцинкованная 40х3,0 мм L=7,8м",
+  "supplier": "ООО «ДМК-Снаб» (dmk.su)",
+  "url": "https://dmk.su/metalloprokat/truby-i-otvody-jshop",
+  "guess_type": "Труба ВГП оцинкованная",
+  "guess_size": "Ду40x3",
+  "extra": "толщина «3,0»"
+ },
+ {
+  "raw": "Труба бесшовная 14 х 2,0 мм ст. 20 ГОСТ 8734",
+  "supplier": "ООО «ДМК-Снаб» (dmk.su)",
+  "url": "https://dmk.su/metalloprokat/truby-i-otvody-jshop",
+  "guess_type": "Труба круглая (бесшовная)",
+  "guess_size": "14x2",
+  "extra": "ГОСТ 8734 БЕЗ года; марка «ст. 20» с пробелом; пробелы вокруг «х»"
+ },
+ {
+  "raw": "Труба бесшовная 60 х 3,5 мм ст. 20 ГОСТ 8732",
+  "supplier": "ООО «ДМК-Снаб» (dmk.su)",
+  "url": "https://dmk.su/metalloprokat/truby-i-otvody-jshop",
+  "guess_type": "Труба круглая (бесшовная)",
+  "guess_size": "60x3.5",
+  "extra": "ГОСТ 8732 = горячедеформированная, 8734/8733 = холоднодеформированная — способ производства зашит в номер ГОСТа"
+ },
+ {
+  "raw": "Труба бесшовная 18 х 3,0 мм ст. 20 ГОСТ 8733",
+  "supplier": "ООО «ДМК-Снаб» (dmk.su)",
+  "url": "https://dmk.su/metalloprokat/truby-i-otvody-jshop",
+  "guess_type": "Труба круглая (бесшовная)",
+  "guess_size": "18x3",
+  "extra": "ГОСТ 8733 без года"
+ },
+ {
+  "raw": "Труба профильная 40х20х2 мм L=6,03м",
+  "supplier": "ООО «ДМК-Снаб» (dmk.su)",
+  "url": "https://dmk.su/metalloprokat/truby-i-otvody-jshop",
+  "guess_type": "Труба профильная прямоугольная",
+  "guess_size": "40x20x2",
+  "extra": "нестандартная длина «6,03м»; есть ещё строка с тем же размером и L=6м"
+ },
+ {
+  "raw": "Труба профильная 80х80х3 мм L=12м",
+  "supplier": "ООО «ДМК-Снаб» (dmk.su)",
+  "url": "https://dmk.su/metalloprokat/truby-i-otvody-jshop",
+  "guess_type": "Труба профильная квадратная",
+  "guess_size": "80x80x3",
+  "extra": "«мм» стоит после всех трёх чисел"
+ },
+ {
+  "raw": "Труба электросварная 57х3,0 мм L=12м",
+  "supplier": "ООО «ДМК-Снаб» (dmk.su)",
+  "url": "https://dmk.su/metalloprokat/truby-i-otvody-jshop",
+  "guess_type": "Труба круглая",
+  "guess_size": "57x3",
+  "extra": "57 — наружный диаметр (в отличие от ВГП, где число — Ду)"
+ },
+ {
+  "raw": "Переход 89х3,5-76х3,5 мм",
+  "supplier": "ООО «ДМК-Снаб» (dmk.su)",
+  "url": "https://dmk.su/metalloprokat/truby-i-otvody-jshop",
+  "guess_type": "Фасонная деталь (не прокат)",
+  "guess_size": "-",
+  "extra": "ДВА типоразмера трубы в одной строке через дефис — при парсинге легко принять за трубу"
+ },
+ {
+  "raw": "Отвод короткий ст. ДУ - 20 (26.9*2)",
+  "supplier": "ООО «ДМК-Снаб» (dmk.su)",
+  "url": "https://dmk.su/metalloprokat/truby-i-otvody-jshop",
+  "guess_type": "Фасонная деталь (не прокат)",
+  "guess_size": "-",
+  "extra": "в одной строке и Ду (20), и наружный размер в скобках «26.9*2» — с ТОЧКОЙ и ЗВЁЗДОЧКОЙ"
+ },
+ {
+  "raw": "Труба проф. 100*100*3,0 ст.3сп Феррум 12м ГОСТ 13663-86",
+  "supplier": "ГК «ФЕРРУМ», Хабаровск (habarovsk.ferrum-n.ru)",
+  "url": "https://habarovsk.ferrum-n.ru/catalog/truba/truba-profilnaya/",
+  "guess_type": "Труба профильная квадратная",
+  "guess_size": "100x100x3",
+  "extra": "сокращение «проф.»; разделитель ЗВЁЗДОЧКА; «ст.3сп» слитно; «Феррум» — собственная марка производителя внутри наименования; длина «12м»"
+ },
+ {
+  "raw": "Труба проф. 100*100*4,0 09Г2С Феррум 12м ГОСТ 13663-86",
+  "supplier": "ГК «ФЕРРУМ», Хабаровск (habarovsk.ferrum-n.ru)",
+  "url": "https://habarovsk.ferrum-n.ru/catalog/truba/truba-profilnaya/",
+  "guess_type": "Труба профильная квадратная",
+  "guess_size": "100x100x4",
+  "extra": "марка 09Г2С БЕЗ «ст.», а в соседней строке «ст.3сп» — с «ст.»"
+ },
+ {
+  "raw": "Труба проф. 100*100*4,0 ст.3сп 12м ГОСТ 13663-86",
+  "supplier": "ГК «ФЕРРУМ», Хабаровск (habarovsk.ferrum-n.ru)",
+  "url": "https://habarovsk.ferrum-n.ru/catalog/truba/truba-profilnaya/",
+  "guess_type": "Труба профильная квадратная",
+  "guess_size": "100x100x4",
+  "extra": "то же самое, но БЕЗ слова «Феррум» — отдельная позиция каталога (другой завод)"
+ },
+ {
+  "raw": "Труба проф. 100*50*4,0 ст.3сп Феррум 12м ГОСТ 13663-86",
+  "supplier": "ГК «ФЕРРУМ», Хабаровск (habarovsk.ferrum-n.ru)",
+  "url": "https://habarovsk.ferrum-n.ru/catalog/truba/truba-profilnaya/",
+  "guess_type": "Труба профильная прямоугольная",
+  "guess_size": "100x50x4",
+  "extra": "прямоугольная лежит в одном разделе с квадратной, отличается только размером"
+ },
+ {
+  "raw": "Труба проф. 120*120*5,0 ст.3сп Феррум 12м ГОСТ 30245-2003",
+  "supplier": "ГК «ФЕРРУМ», Хабаровск (habarovsk.ferrum-n.ru)",
+  "url": "https://habarovsk.ferrum-n.ru/catalog/truba/truba-profilnaya/",
+  "guess_type": "Труба профильная квадратная",
+  "guess_size": "120x120x5",
+  "extra": "ДВА ГОСТа на один размер: есть строка с 13663-86 и строка с 30245-2003 — разные позиции"
+ },
+ {
+  "raw": "Труба проф. 120*80*3,0 ст.3сп Феррум 12м ГОСТ 13663-86",
+  "supplier": "ГК «ФЕРРУМ», Хабаровск (habarovsk.ferrum-n.ru)",
+  "url": "https://habarovsk.ferrum-n.ru/catalog/truba/truba-profilnaya/",
+  "guess_type": "Труба профильная прямоугольная",
+  "guess_size": "120x80x3",
+  "extra": "длина 12 м"
+ },
+ {
+  "raw": "Труба проф. 140*140*6,0 ст.3сп Феррум 12м ГОСТ 30245-2003",
+  "supplier": "ГК «ФЕРРУМ», Хабаровск (habarovsk.ferrum-n.ru)",
+  "url": "https://habarovsk.ferrum-n.ru/catalog/truba/truba-profilnaya/",
+  "guess_type": "Труба профильная квадратная",
+  "guess_size": "140x140x6",
+  "extra": "ГОСТ 30245-2003 — гнутые замкнутые профили"
+ },
+ {
+  "raw": "Труба ВГП 15*2,8 ст.3сп Феррум 6м ГОСТ 3262-75",
+  "supplier": "ГК «ФЕРРУМ», Хабаровск (habarovsk.ferrum-n.ru)",
+  "url": "https://habarovsk.ferrum-n.ru/catalog/truba/truba-vgp/",
+  "guess_type": "Труба ВГП",
+  "guess_size": "Ду15x2.8",
+  "extra": "БЕЗ «Ду»: «15» здесь условный проход; звёздочка-разделитель"
+ },
+ {
+  "raw": "Труба ВГП 15*2,8 ст.3сп Феррум 6м ГОСТ 3262-75 Стык",
+  "supplier": "ГК «ФЕРРУМ», Хабаровск (habarovsk.ferrum-n.ru)",
+  "url": "https://habarovsk.ferrum-n.ru/catalog/truba/truba-vgp/",
+  "guess_type": "Труба ВГП",
+  "guess_size": "Ду15x2.8",
+  "extra": "приписка «Стык» В САМОМ КОНЦЕ, после ГОСТа — отличает позицию от строки выше"
+ },
+ {
+  "raw": "Труба ВГП 15*2,8 ст.08кп Феррум 6м ГОСТ 3262-75",
+  "supplier": "ГК «ФЕРРУМ», Хабаровск (habarovsk.ferrum-n.ru)",
+  "url": "https://habarovsk.ferrum-n.ru/catalog/truba/truba-vgp/",
+  "guess_type": "Труба ВГП",
+  "guess_size": "Ду15x2.8",
+  "extra": "марка ст.08кп — третий вариант той же строки, различается только маркой"
+ },
+ {
+  "raw": "Труба ВГП 25*2,8 ст.3сп Феррум 6м ТУ",
+  "supplier": "ГК «ФЕРРУМ», Хабаровск (habarovsk.ferrum-n.ru)",
+  "url": "https://habarovsk.ferrum-n.ru/catalog/truba/truba-vgp/",
+  "guess_type": "Труба ВГП",
+  "guess_size": "Ду25x2.8",
+  "extra": "вместо ГОСТа просто «ТУ» — без номера"
+ },
+ {
+  "raw": "Труба ВГП 40*3,5 ст.08кп Феррум 6м ГОСТ 3262-75",
+  "supplier": "ГК «ФЕРРУМ», Хабаровск (habarovsk.ferrum-n.ru)",
+  "url": "https://habarovsk.ferrum-n.ru/catalog/truba/truba-vgp/",
+  "guess_type": "Труба ВГП",
+  "guess_size": "Ду40x3.5",
+  "extra": "длина 6 м"
+ },
+ {
+  "raw": "Труба электросварная 57*3,0 ст.3сп Феррум 12м ГОСТ 10705-80",
+  "supplier": "ГК «ФЕРРУМ», Хабаровск (habarovsk.ferrum-n.ru)",
+  "url": "https://habarovsk.ferrum-n.ru/catalog/truba/truba-esv/",
+  "guess_type": "Труба круглая",
+  "guess_size": "57x3",
+  "extra": "здесь 57 — НАРУЖНЫЙ диаметр, хотя формат строки почти как у ВГП, где число — Ду"
+ },
+ {
+  "raw": "Труба электросварная 102*3,5 ст.3сп Феррум 12м Стык ГОСТ 10705-80",
+  "supplier": "ГК «ФЕРРУМ», Хабаровск (habarovsk.ferrum-n.ru)",
+  "url": "https://habarovsk.ferrum-n.ru/catalog/truba/truba-esv/",
+  "guess_type": "Труба круглая",
+  "guess_size": "102x3.5",
+  "extra": "«Стык» стоит ПЕРЕД ГОСТом, а в трубе ВГП того же сайта — ПОСЛЕ ГОСТа"
+ },
+ {
+  "raw": "Труба электросварная 108*4,0 ст.3сп Феррум 12м ГОСТ 10705-80",
+  "supplier": "ГК «ФЕРРУМ», Хабаровск (habarovsk.ferrum-n.ru)",
+  "url": "https://habarovsk.ferrum-n.ru/catalog/truba/truba-esv/",
+  "guess_type": "Труба круглая",
+  "guess_size": "108x4",
+  "extra": "длина 12 м"
+ },
+ {
+  "raw": "Труба электросварная 219*5,0 ст.20 Феррум 12м ГОСТ 10705-80",
+  "supplier": "ГК «ФЕРРУМ», Хабаровск (habarovsk.ferrum-n.ru)",
+  "url": "https://habarovsk.ferrum-n.ru/catalog/truba/truba-esv/",
+  "guess_type": "Труба круглая",
+  "guess_size": "219x5",
+  "extra": "марка «ст.20» слитно"
+ },
+ {
+  "raw": "Труба электросварная 273*5,0 ст.20 Феррум 12м ГОСТ 10705-80",
+  "supplier": "ГК «ФЕРРУМ», Хабаровск (habarovsk.ferrum-n.ru)",
+  "url": "https://habarovsk.ferrum-n.ru/catalog/truba/truba-esv/",
+  "guess_type": "Труба круглая",
+  "guess_size": "273x5",
+  "extra": "длина 12 м"
+ },
+ {
+  "raw": "Угол 25*25*4,0 ст.3сп 9м ГОСТ 535-2005/ГОСТ 8509-93",
+  "supplier": "ГК «ФЕРРУМ», Хабаровск (habarovsk.ferrum-n.ru)",
+  "url": "https://habarovsk.ferrum-n.ru/catalog/fasonnyy-prokat/ugol/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "25x25x4",
+  "extra": "вид проката назван «УГОЛ», а не «уголок»; ДВА ГОСТа через слэш (на сталь и на профиль); длина 9 м"
+ },
+ {
+  "raw": "Угол 100*100*10 ст.3сп 12м ГОСТ 535-2005/ГОСТ 8509-93",
+  "supplier": "ГК «ФЕРРУМ», Хабаровск (habarovsk.ferrum-n.ru)",
+  "url": "https://habarovsk.ferrum-n.ru/catalog/fasonnyy-prokat/ugol/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "100x100x10",
+  "extra": "толщина «10» БЕЗ «,0», а у 4,0/7,0/8,0 — с нулём: внутри одной таблицы два стиля"
+ },
+ {
+  "raw": "Угол 125*125*8,0 09Г2С 12м ГОСТ 19281-2014/ГОСТ 8509-93",
+  "supplier": "ГК «ФЕРРУМ», Хабаровск (habarovsk.ferrum-n.ru)",
+  "url": "https://habarovsk.ferrum-n.ru/catalog/fasonnyy-prokat/ugol/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "125x125x8",
+  "extra": "низколегированная марка тянет за собой ДРУГОЙ ГОСТ на сталь (19281 вместо 535)"
+ },
+ {
+  "raw": "Угол 160*160*10 С255 12м ГОСТ 27772-2021/ГОСТ 8509-93",
+  "supplier": "ГК «ФЕРРУМ», Хабаровск (habarovsk.ferrum-n.ru)",
+  "url": "https://habarovsk.ferrum-n.ru/catalog/fasonnyy-prokat/ugol/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "160x160x10",
+  "extra": "марка задана классом прочности С255 (ГОСТ 27772), а не Ст3сп"
+ },
+ {
+  "raw": "Угол 90*90*6,0 ст.3пс 12м ГОСТ 535-2005/ГОСТ 8509-93",
+  "supplier": "ГК «ФЕРРУМ», Хабаровск (habarovsk.ferrum-n.ru)",
+  "url": "https://habarovsk.ferrum-n.ru/catalog/fasonnyy-prokat/ugol/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "90x90x6",
+  "extra": "марка ст.3пс"
+ },
+ {
+  "raw": "Швеллер 6,5У ст.3сп 12м ГОСТ 535-2005/ГОСТ 8240-97",
+  "supplier": "ГК «ФЕРРУМ», Хабаровск (habarovsk.ferrum-n.ru)",
+  "url": "https://habarovsk.ferrum-n.ru/catalog/fasonnyy-prokat/shveller/",
+  "guess_type": "Швеллер",
+  "guess_size": "6.5У",
+  "extra": "номер с запятой + серия СЛИТНО («6,5У»); у ДМК то же самое пишется «6,5 У» с пробелом, у Град Стали — вообще без серии"
+ },
+ {
+  "raw": "Швеллер 10П ст.3сп 12м ГОСТ 535-2005/ГОСТ 8240-97",
+  "supplier": "ГК «ФЕРРУМ», Хабаровск (habarovsk.ferrum-n.ru)",
+  "url": "https://habarovsk.ferrum-n.ru/catalog/fasonnyy-prokat/shveller/",
+  "guess_type": "Швеллер",
+  "guess_size": "10П",
+  "extra": "длина 12 м"
+ },
+ {
+  "raw": "Швеллер 10П С355 12м ГОСТ 27772-2021/ГОСТ 8240-97",
+  "supplier": "ГК «ФЕРРУМ», Хабаровск (habarovsk.ferrum-n.ru)",
+  "url": "https://habarovsk.ferrum-n.ru/catalog/fasonnyy-prokat/shveller/",
+  "guess_type": "Швеллер",
+  "guess_size": "10П",
+  "extra": "тот же типоразмер, отличается только маркой С355 и ГОСТом на сталь"
+ },
+ {
+  "raw": "Швеллер 12У 09Г2С 12м ГОСТ 19281-2014/ГОСТ 8240-97",
+  "supplier": "ГК «ФЕРРУМ», Хабаровск (habarovsk.ferrum-n.ru)",
+  "url": "https://habarovsk.ferrum-n.ru/catalog/fasonnyy-prokat/shveller/",
+  "guess_type": "Швеллер",
+  "guess_size": "12У",
+  "extra": "марка 09Г2С без «ст.»"
+ },
+ {
+  "raw": "Швеллер 14П ст.3пс 12м ГОСТ 535-2005/ГОСТ 8240-97",
+  "supplier": "ГК «ФЕРРУМ», Хабаровск (habarovsk.ferrum-n.ru)",
+  "url": "https://habarovsk.ferrum-n.ru/catalog/fasonnyy-prokat/shveller/",
+  "guess_type": "Швеллер",
+  "guess_size": "14П",
+  "extra": "длина 12 м"
+ },
+ {
+  "raw": "Лист горячекатаный 2,0*1250*2500 ст.3сп ММК ГОСТ 16523-97",
+  "supplier": "ГК «ФЕРРУМ», Хабаровск (habarovsk.ferrum-n.ru)",
+  "url": "https://habarovsk.ferrum-n.ru/catalog/ploskiy-prokat/listy-g-k/",
+  "guess_type": "Лист гладкий",
+  "guess_size": "2 мм, 1250x2500",
+  "extra": "толщина «2,0» с нулём; «ММК» — ЗАВОД-ИЗГОТОВИТЕЛЬ внутри наименования (ещё встречаются Кармет, ЧМК, Феррум)"
+ },
+ {
+  "raw": "Лист горячекатаный 10*1500*6000 09Г2С Кармет ГОСТ 19281-2014",
+  "supplier": "ГК «ФЕРРУМ», Хабаровск (habarovsk.ferrum-n.ru)",
+  "url": "https://habarovsk.ferrum-n.ru/catalog/ploskiy-prokat/listy-g-k/",
+  "guess_type": "Лист гладкий",
+  "guess_size": "10 мм, 1500x6000",
+  "extra": "толщина «10» без «,0»; завод «Кармет»"
+ },
+ {
+  "raw": "Лист горячекатаный 10*1500*6000 09Г2С ММК ГОСТ 19281-2014",
+  "supplier": "ГК «ФЕРРУМ», Хабаровск (habarovsk.ferrum-n.ru)",
+  "url": "https://habarovsk.ferrum-n.ru/catalog/ploskiy-prokat/listy-g-k/",
+  "guess_type": "Лист гладкий",
+  "guess_size": "10 мм, 1500x6000",
+  "extra": "ОТЛИЧАЕТСЯ ОТ ПРЕДЫДУЩЕЙ ТОЛЬКО ЗАВОДОМ (ММК vs Кармет) — размер и марка одинаковые"
+ },
+ {
+  "raw": "Лист горячекатаный 10*1500*6000 09Г2С ГОСТ 19281-2014",
+  "supplier": "ГК «ФЕРРУМ», Хабаровск (habarovsk.ferrum-n.ru)",
+  "url": "https://habarovsk.ferrum-n.ru/catalog/ploskiy-prokat/listy-g-k/",
+  "guess_type": "Лист гладкий",
+  "guess_size": "10 мм, 1500x6000",
+  "extra": "третья строка на тот же размер — БЕЗ завода вообще"
+ },
+ {
+  "raw": "Лист горячекатаный 10*1500*3000 ст.3сп Феррум ГОСТ 14637-2024",
+  "supplier": "ГК «ФЕРРУМ», Хабаровск (habarovsk.ferrum-n.ru)",
+  "url": "https://habarovsk.ferrum-n.ru/catalog/ploskiy-prokat/listy-g-k/",
+  "guess_type": "Лист гладкий",
+  "guess_size": "10 мм, 1500x3000",
+  "extra": "ГОСТ 14637-2024 (новая редакция) — рядом в каталоге есть та же позиция с ГОСТ 14637-89"
+ },
+ {
+  "raw": "Лист горячекатаный 8,0*1500*6000 09Г2С ЧМК ГОСТ 19281-2014",
+  "supplier": "ГК «ФЕРРУМ», Хабаровск (habarovsk.ferrum-n.ru)",
+  "url": "https://habarovsk.ferrum-n.ru/catalog/ploskiy-prokat/listy-g-k/",
+  "guess_type": "Лист гладкий",
+  "guess_size": "8 мм, 1500x6000",
+  "extra": "завод ЧМК; длина карты 6000"
+ },
+ {
+  "raw": "Арматура 12 11.7м А500 34028-16",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/armatura/",
+  "guess_type": "Арматура",
+  "guess_size": "d12",
+  "extra": "длина 11.7м; класс А500; ГОСТ 34028-16 (слово ГОСТ опущено, год через дефис); 895,40 ₽/ШТ; 81 400,00 ₽/Т"
+ },
+ {
+  "raw": "Арматура 16 11.7м А500 34028-16",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/armatura/",
+  "guess_type": "Арматура",
+  "guess_size": "d16",
+  "extra": "11.7м; А500; ГОСТ 34028-16; 1 571,70 ₽/ШТ; 80 600,00 ₽/Т"
+ },
+ {
+  "raw": "Арматура 10 11.7м А500 34028-16",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/armatura/",
+  "guess_type": "Арматура",
+  "guess_size": "d10",
+  "extra": "11.7м; А500; 678,40 ₽/ШТ; 84 800,00 ₽/Т"
+ },
+ {
+  "raw": "Арматура 12 11.7м А-3 25Г2С",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/armatura/",
+  "guess_type": "Арматура",
+  "guess_size": "d12",
+  "extra": "класс записан как А-3 (через дефис); марка 25Г2С; 931,70 ₽/ШТ; 84 700,00 ₽/Т"
+ },
+ {
+  "raw": "Арматура 25 11.7м А-3 25Г2С",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/armatura/",
+  "guess_type": "Арматура",
+  "guess_size": "d25",
+  "extra": "А-3; 25Г2С; 3 750,60 ₽/ШТ; 79 800,00 ₽/Т"
+ },
+ {
+  "raw": "Арматура 8 6м А-1 ст3пс/сп",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/armatura/",
+  "guess_type": "Арматура",
+  "guess_size": "d8",
+  "extra": "6м; класс А-1 (гладкая); марка записана двойной 'ст3пс/сп'; 231,66 ₽/ШТ; 89 100,00 ₽/Т"
+ },
+ {
+  "raw": "Арматура 6 6м А-1 ст3пс/сп",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/krug/",
+  "guess_type": "Арматура",
+  "guess_size": "d6",
+  "extra": "6м; А-1; ст3пс/сп; 144,16 ₽/ШТ; 90 100,00 ₽/Т"
+ },
+ {
+  "raw": "Арматура 28 11.7м А500 34028-16",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/armatura/",
+  "guess_type": "Арматура",
+  "guess_size": "d28",
+  "extra": "11.7м; А500; 4 715,10 ₽/ШТ; 80 600,00 ₽/Т"
+ },
+ {
+  "raw": "Арматура 18 11.7м А-1 ст3пс/сп",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/armatura/",
+  "guess_type": "Арматура",
+  "guess_size": "d18",
+  "extra": "11.7м; А-1; 2 075,00 ₽/ШТ; 83 000,00 ₽/Т"
+ },
+ {
+  "raw": "Арматура 22 11.7м А-3 25Г2С",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/armatura/",
+  "guess_type": "Арматура",
+  "guess_size": "d22",
+  "extra": "11.7м; А-3; 25Г2С; 3 016,80 ₽/ШТ; 83 800,00 ₽/Т"
+ },
+ {
+  "raw": "Арматура 14 11.7м А500 34028-16",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/armatura/",
+  "guess_type": "Арматура",
+  "guess_size": "d14",
+  "extra": "11.7м; А500; 1 209,00 ₽/ШТ; 80 600,00 ₽/Т"
+ },
+ {
+  "raw": "Арматура 12 6м А-1 ст3пс/сп",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/krug/",
+  "guess_type": "Арматура",
+  "guess_size": "d12",
+  "extra": "6м; А-1; 521,56 ₽/ШТ; 88 400,00 ₽/Т"
+ },
+ {
+  "raw": "Круг стальной 160 немер ст3пс/сп",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/krug/",
+  "guess_type": "Круг",
+  "guess_size": "d160",
+  "extra": "'немер' = немерная длина; ст3пс/сп; 72 500,00 ₽/Т"
+ },
+ {
+  "raw": "Круг стальной 140 немер ст3пс/сп",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/krug/",
+  "guess_type": "Круг",
+  "guess_size": "d140",
+  "extra": "немер; ст3пс/сп; 72 500,00 ₽/Т"
+ },
+ {
+  "raw": "Круг стальной 20 немер 40х",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/krug/",
+  "guess_type": "Круг",
+  "guess_size": "d20",
+  "extra": "марка 40х — строчными, кириллическая 'х' вместо 'Х' (у нас в справочнике 40Х); 110 000,00 ₽/Т"
+ },
+ {
+  "raw": "Круг стальной 25 немер ст20",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/krug/",
+  "guess_type": "Круг",
+  "guess_size": "d25",
+  "extra": "марка ст20 (у нас Ст20); 1 344,00 ₽/ШТ; 56 000,00 ₽/Т"
+ },
+ {
+  "raw": "Квадрат 10 ст3",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/kvadrat/",
+  "guess_type": "Квадрат",
+  "guess_size": "10",
+  "extra": "ГОСТ 2591; ст3пс/сп; цена «по запросу»"
+ },
+ {
+  "raw": "Квадрат 20 ст3",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/kvadrat/",
+  "guess_type": "Квадрат",
+  "guess_size": "20",
+  "extra": "ГОСТ 2591; цена «по запросу»"
+ },
+ {
+  "raw": "Квадрат 40 ст3",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/kvadrat/",
+  "guess_type": "Квадрат",
+  "guess_size": "40",
+  "extra": "ГОСТ 2591; 2 250,00 ₽/ШТ; 90 000,00 ₽/Т"
+ },
+ {
+  "raw": "Шестигранник 36 ст45",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/shestigrannik/",
+  "guess_type": "Шестигранник",
+  "guess_size": "S36",
+  "extra": "марка ст45; 126 000 ₽/Т; в наличии"
+ },
+ {
+  "raw": "Шестигранник 14 ст45",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/shestigrannik/",
+  "guess_type": "Шестигранник",
+  "guess_size": "S14",
+  "extra": "ст45; 79 000 ₽/Т"
+ },
+ {
+  "raw": "Шестигранник 12 ст45",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/shestigrannik/",
+  "guess_type": "Шестигранник",
+  "guess_size": "S12",
+  "extra": "ст45; 67 000 ₽/Т"
+ },
+ {
+  "raw": "Шестигранник 24 ст35",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/shestigrannik/",
+  "guess_type": "Шестигранник",
+  "guess_size": "S24",
+  "extra": "ст35; 127 000 ₽/Т; «под заказ»"
+ },
+ {
+  "raw": "Шестигранник 55 ст35",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/shestigrannik/",
+  "guess_type": "Шестигранник",
+  "guess_size": "S55",
+  "extra": "ст35; 127 000 ₽/Т; «под заказ»"
+ },
+ {
+  "raw": "Шестигранник 19 ст45",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/shestigrannik/",
+  "guess_type": "Шестигранник",
+  "guess_size": "S19",
+  "extra": "ст45; 89 000 ₽/Т"
+ },
+ {
+  "raw": "Балка 10Б1 12м ст3пс/сп GB/T 706-16",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/balka/",
+  "guess_type": "Двутавр",
+  "guess_size": "10Б1",
+  "extra": "12м; ст3пс/сп; КИТАЙСКИЙ стандарт GB/T 706-16 вместо ГОСТ; 12 344,40 ₽/ШТ; 125 500,00 ₽/Т"
+ },
+ {
+  "raw": "Балка 12 9м ст3пс5/сп5",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/balka/",
+  "guess_type": "Двутавр",
+  "guess_size": "12 (без серии — обычный двутавр ГОСТ 8239, не Б1/Б2)",
+  "extra": "9м; ст3пс5/сп5; 12 834,00 ₽/ШТ; 122 500,00 ₽/Т"
+ },
+ {
+  "raw": "Балка 12Б1 12м ст3пс5/сп5",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/balka/",
+  "guess_type": "Двутавр",
+  "guess_size": "12Б1",
+  "extra": "12м; ст3пс5/сп5; 12 945,60 ₽/ШТ; 122 500,00 ₽/Т"
+ },
+ {
+  "raw": "Балка 14 12м ст3пс5/сп5",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/balka/",
+  "guess_type": "Двутавр",
+  "guess_size": "14 (без серии)",
+  "extra": "12м; 21 224,04 ₽/ШТ; 127 600,00 ₽/Т"
+ },
+ {
+  "raw": "Балка 16Б1 12м С255",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/balka/",
+  "guess_type": "Двутавр",
+  "guess_size": "16Б1",
+  "extra": "12м; марка записана классом прочности С255, а не Ст3сп; 19 202,40 ₽/ШТ; 124 500,00 ₽/Т"
+ },
+ {
+  "raw": "Балка 18 12м С255",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/balka/",
+  "guess_type": "Двутавр",
+  "guess_size": "18 (без серии)",
+  "extra": "12м; С255; 28 262,40 ₽/ШТ; 126 500,00 ₽/Т"
+ },
+ {
+  "raw": "Балка 20Б1 12м ст3пс/сп",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/balka/",
+  "guess_type": "Двутавр",
+  "guess_size": "20Б1",
+  "extra": "12м; ст3пс/сп; 27 349,20 ₽/ШТ; 105 500,00 ₽/Т"
+ },
+ {
+  "raw": "Уголок металлический 63x63x5 12м ст3пс5/сп5",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/ugolok/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "63x63x5",
+  "extra": "слово «металлический»; разделитель — латинская x; 12м; 5 280,00 ₽/ШТ; 87 000,00 ₽/Т"
+ },
+ {
+  "raw": "Уголок металлический 75x75x6 12м ст3пс5/сп5",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/ugolok/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "75x75x6",
+  "extra": "12м; 8 549,76 ₽/ШТ; 96 600,00 ₽/Т"
+ },
+ {
+  "raw": "Уголок металлический 32x32x4 9м ст3пс5/сп5",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/ugolok/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "32x32x4",
+  "extra": "длина 9м; 1 584,00 ₽/ШТ; 87 000,00 ₽/Т"
+ },
+ {
+  "raw": "Уголок металлический 100x100x7 12м ст3пс5/сп5",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/ugolok/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "100x100x7",
+  "extra": "12м; 13 179,00 ₽/ШТ; 94 500,00 ₽/Т"
+ },
+ {
+  "raw": "Уголок металлический 45x45x4 11.7м ст3пс/сп",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/ugolok/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "45x45x4",
+  "extra": "длина 11.7м (точка как десятичный разделитель); 2 904,00 ₽/ШТ; 87 000,00 ₽/Т"
+ },
+ {
+  "raw": "Уголок металлический 50x50x5 12м ст3пс5/сп5",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/ugolok/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "50x50x5",
+  "extra": "12м; 4 230,00 ₽/ШТ; 89 000,00 ₽/Т"
+ },
+ {
+  "raw": "Швеллер 10п 12м ст3пс5/сп5",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/shveller/",
+  "guess_type": "Швеллер",
+  "guess_size": "10П",
+  "extra": "тип полок строчной буквой «п»; 12м; 11 130,50 ₽/ШТ; 97 500,00 ₽/Т"
+ },
+ {
+  "raw": "Швеллер 10у 12м ст3пс5/сп5",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/shveller/",
+  "guess_type": "Швеллер",
+  "guess_size": "10У",
+  "extra": "строчная «у»; 12м; 11 032,00 ₽/ШТ; 97 500,00 ₽/Т"
+ },
+ {
+  "raw": "Швеллер 12п 12м ст3пс5/сп5",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/shveller/",
+  "guess_type": "Швеллер",
+  "guess_size": "12П",
+  "extra": "12м; 13 534,00 ₽/ШТ; 100 000,00 ₽/Т"
+ },
+ {
+  "raw": "Швеллер 20п 12м С255",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/shveller/",
+  "guess_type": "Швеллер",
+  "guess_size": "20П",
+  "extra": "марка классом прочности С255; 30 547,54 ₽/ШТ; 132 200,00 ₽/Т"
+ },
+ {
+  "raw": "Швеллер 24у 12м ст3пс5/сп5",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/shveller/",
+  "guess_type": "Швеллер",
+  "guess_size": "24У",
+  "extra": "12м; 39 578,00 ₽/ШТ; 128 000,00 ₽/Т"
+ },
+ {
+  "raw": "Швеллер 8у 12м ст3пс5/сп5",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/shveller/",
+  "guess_type": "Швеллер",
+  "guess_size": "8У",
+  "extra": "12м; 8 766,50 ₽/ШТ; 97 500,00 ₽/Т"
+ },
+ {
+  "raw": "Швеллер 30п 12м С255",
+  "supplier": "СПК (Сталепромышленная компания), Хабаровск",
+  "url": "https://habarovsk.spk.ru/catalog/shveller/",
+  "guess_type": "Швеллер",
+  "guess_size": "30П",
+  "extra": "С255; 56 822,70 ₽/ШТ; 140 850,00 ₽/Т"
+ },
+ {
+  "raw": "Арматура 6",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/armaturnyy-prokat/",
+  "guess_type": "Арматура",
+  "guess_size": "d6",
+  "extra": "в названии ТОЛЬКО диаметр, класс и марка вынесены в отдельные колонки таблицы; 86 500 ₽/т"
+ },
+ {
+  "raw": "Арматура 8",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/armaturnyy-prokat/",
+  "guess_type": "Арматура",
+  "guess_size": "d8",
+  "extra": "84 700 ₽/т"
+ },
+ {
+  "raw": "Арматура 10",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/armaturnyy-prokat/",
+  "guess_type": "Арматура",
+  "guess_size": "d10",
+  "extra": "три одинаковых названия с разной ценой (89 800 / 85 300 / 82 100 ₽/т) — различаются только скрытыми атрибутами"
+ },
+ {
+  "raw": "Арматура 12",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/armaturnyy-prokat/",
+  "guess_type": "Арматура",
+  "guess_size": "d12",
+  "extra": "86 500 / 82 000 / 78 700 ₽/т — три строки с одинаковым названием"
+ },
+ {
+  "raw": "Арматура 32",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/armaturnyy-prokat/",
+  "guess_type": "Арматура",
+  "guess_size": "d32",
+  "extra": "77 900 ₽/т"
+ },
+ {
+  "raw": "Арматура 6 бухты",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/armaturnyy-prokat/",
+  "guess_type": "Арматура",
+  "guess_size": "d6",
+  "extra": "форма поставки «бухты» приписана к размеру без скобок; цены нет («–»)"
+ },
+ {
+  "raw": "Двутавровая балка (двутавр) 20Б1",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/dvutavr-dvutavrovaya-balka/",
+  "guess_type": "Двутавр",
+  "guess_size": "20Б1",
+  "extra": "синоним в скобках прямо в названии; марка отдельной колонкой Ст3/С255 (119 625 ₽/т) и 09Г2С/С355 (109 200 ₽/т)"
+ },
+ {
+  "raw": "Двутавровая балка (двутавр) 20К1",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/dvutavr-dvutavrovaya-balka/",
+  "guess_type": "Двутавр",
+  "guess_size": "20К1 (серия К — колонная, в нашем справочнике только Б)",
+  "extra": "Ст3/С255 113 825 ₽/т; 09Г2С/С355 119 725 ₽/т"
+ },
+ {
+  "raw": "Двутавровая балка (двутавр) 20Ш1",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/dvutavr-dvutavrovaya-balka/",
+  "guess_type": "Двутавр",
+  "guess_size": "20Ш1 (серия Ш — широкополочная)",
+  "extra": "Ст3/С255 113 225 ₽/т"
+ },
+ {
+  "raw": "Двутавровая балка (двутавр) 24М",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/dvutavr-dvutavrovaya-balka/",
+  "guess_type": "Двутавр",
+  "guess_size": "24М (серия М — монорельс)",
+  "extra": "Ст3/С255 165 125 ₽/т"
+ },
+ {
+  "raw": "Двутавровая балка (двутавр) 25Б2",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/dvutavr-dvutavrovaya-balka/",
+  "guess_type": "Двутавр",
+  "guess_size": "25Б2",
+  "extra": "Ст3/С255 114 325 ₽/т"
+ },
+ {
+  "raw": "Двутавровая балка (двутавр) 30К2",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/dvutavr-dvutavrovaya-balka/",
+  "guess_type": "Двутавр",
+  "guess_size": "30К2",
+  "extra": "Ст3/С255 98 000 ₽/т; 09Г2С/С355 104 300 ₽/т"
+ },
+ {
+  "raw": "Двутавровая балка (двутавр) 30М",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/dvutavr-dvutavrovaya-balka/",
+  "guess_type": "Двутавр",
+  "guess_size": "30М",
+  "extra": "Ст3/С255 166 125 ₽/т"
+ },
+ {
+  "raw": "Уголок 25x25x3",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/ugolok/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "25x25x3",
+  "extra": "три числа, латинская x без пробелов; 121 625 ₽/т"
+ },
+ {
+  "raw": "Уголок 50x50x5",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/ugolok/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "50x50x5",
+  "extra": "две строки с одинаковым названием: Ст3/С255 88 000 ₽/т и 09Г2С/С355 125 625 ₽/т"
+ },
+ {
+  "raw": "Уголок 63x63x5",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/ugolok/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "63x63x5",
+  "extra": "Ст3/С255 89 000 ₽/т; 09Г2С/С355 87 000 ₽/т"
+ },
+ {
+  "raw": "Уголок 100x100x10",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/ugolok/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "100x100x10",
+  "extra": "Ст3/С255 94 000 ₽/т; 09Г2С/С355 124 625 ₽/т"
+ },
+ {
+  "raw": "Уголок 125x125x8",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/ugolok/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "125x125x8",
+  "extra": "126 625 ₽/т"
+ },
+ {
+  "raw": "Уголок 110x110x8",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/ugolok/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "110x110x8",
+  "extra": "117 625 ₽/т"
+ },
+ {
+  "raw": "Уголок 75x75x8",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/ugolok/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "75x75x8",
+  "extra": "124 625 ₽/т"
+ },
+ {
+  "raw": "Круг калиброванный 6",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/krug/",
+  "guess_type": "Круг",
+  "guess_size": "d6",
+  "extra": "уточнение «калиброванный» стоит ПЕРЕД размером; марка Ст10-20 (диапазон марок!); нет в наличии, цена «–»"
+ },
+ {
+  "raw": "Круг стальной г/к 8",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/krug/",
+  "guess_type": "Круг",
+  "guess_size": "d8",
+  "extra": "сокращение «г/к» = горячекатаный; марка Ст1-3 (диапазон); нет в наличии"
+ },
+ {
+  "raw": "Круг стальной г/к 12",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/krug/",
+  "guess_type": "Круг",
+  "guess_size": "d12",
+  "extra": "три строки с одинаковым названием: 09Г2С / Ст10-20 / Ст1-3"
+ },
+ {
+  "raw": "Круг стальной г/к оцинкованный 10",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/krug/",
+  "guess_type": "Круг",
+  "guess_size": "d10",
+  "extra": "два признака подряд перед размером: «г/к» + «оцинкованный»; марка Ст1-3"
+ },
+ {
+  "raw": "Круг стальной г/к 15",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/krug/",
+  "guess_type": "Круг",
+  "guess_size": "d15",
+  "extra": "Ст10-20; нет в наличии"
+ },
+ {
+  "raw": "Шестигранник стальной 14",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/shestigrannik/",
+  "guess_type": "Шестигранник",
+  "guess_size": "S14",
+  "extra": "слово «стальной» в названии; марка Ст45 отдельной колонкой; нет в наличии"
+ },
+ {
+  "raw": "Шестигранник стальной 30",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/shestigrannik/",
+  "guess_type": "Шестигранник",
+  "guess_size": "S30",
+  "extra": "ТРИ строки с одинаковым названием: Ст20 «Стандарт», Ст45 «Спецпредложение (уценка)», Ст45 «Стандарт»"
+ },
+ {
+  "raw": "Шестигранник стальной 55",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/shestigrannik/",
+  "guess_type": "Шестигранник",
+  "guess_size": "S55",
+  "extra": "Ст45; две строки — «Спецпредложение (уценка)» и «Стандарт»"
+ },
+ {
+  "raw": "Шестигранник стальной 41",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/shestigrannik/",
+  "guess_type": "Шестигранник",
+  "guess_size": "S41",
+  "extra": "Ст45; нет в наличии"
+ },
+ {
+  "raw": "Квадрат стальной г/к 5х5",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/kvadrat/",
+  "guess_type": "Квадрат",
+  "guess_size": "5",
+  "extra": "размер УДВОЕН (5х5) хотя квадрат задаётся одним числом; разделитель — КИРИЛЛИЧЕСКАЯ «х» (в уголке того же сайта — латинская x); нет в наличии"
+ },
+ {
+  "raw": "Квадрат стальной г/к 10х10",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/kvadrat/",
+  "guess_type": "Квадрат",
+  "guess_size": "10",
+  "extra": "две строки с одинаковым названием, разные марки; нет в наличии"
+ },
+ {
+  "raw": "Квадрат стальной г/к 16х16",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/kvadrat/",
+  "guess_type": "Квадрат",
+  "guess_size": "16",
+  "extra": "две строки с одинаковым названием; нет в наличии"
+ },
+ {
+  "raw": "Квадрат стальной г/к 25х25",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/kvadrat/",
+  "guess_type": "Квадрат",
+  "guess_size": "25",
+  "extra": "нет в наличии"
+ },
+ {
+  "raw": "Швеллер 8П",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/shveller-goryachekatanyy/",
+  "guess_type": "Швеллер",
+  "guess_size": "8П",
+  "extra": "тип полок ЗАГЛАВНОЙ буквой, слитно; Ст3/С255 121 625 ₽/т; 09Г2С/С355 129 625 ₽/т"
+ },
+ {
+  "raw": "Швеллер 10П",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/shveller-goryachekatanyy/",
+  "guess_type": "Швеллер",
+  "guess_size": "10П",
+  "extra": "Ст3/С255 96 000 ₽/т"
+ },
+ {
+  "raw": "Швеллер 10У",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/shveller-goryachekatanyy/",
+  "guess_type": "Швеллер",
+  "guess_size": "10У",
+  "extra": "Ст3/С255 96 000 ₽/т"
+ },
+ {
+  "raw": "Швеллер 16У",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/shveller-goryachekatanyy/",
+  "guess_type": "Швеллер",
+  "guess_size": "16У",
+  "extra": "09Г2С/С355 130 125 ₽/т"
+ },
+ {
+  "raw": "Швеллер 30П",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/shveller-goryachekatanyy/",
+  "guess_type": "Швеллер",
+  "guess_size": "30П",
+  "extra": "Ст3/С255 165 975 ₽/т; 09Г2С/С355 174 425 ₽/т; цены с НДС, обновлены 20.09.2026"
+ },
+ {
+  "raw": "Швеллер 27П",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/shveller-goryachekatanyy/",
+  "guess_type": "Швеллер",
+  "guess_size": "27П",
+  "extra": "Ст3/С255 165 975 ₽/т"
+ },
+ {
+  "raw": "Полоса 40x4",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/polosa/",
+  "guess_type": "Полоса (в нашем справочнике вида нет)",
+  "guess_size": "40x4",
+  "extra": "БЕЗ «г/к», в отличие от соседних строк; Ст1-3; 84 000 ₽/т; категория «Премиум»"
+ },
+ {
+  "raw": "Полоса г/к 25x4",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/polosa/",
+  "guess_type": "Полоса (в нашем справочнике вида нет)",
+  "guess_size": "25x4",
+  "extra": "Ст1-3; две строки с одинаковым названием — «Спецпредложение (уценка)» и «Стандарт»; нет в наличии"
+ },
+ {
+  "raw": "Полоса г/к 40x5",
+  "supplier": "А ГРУПП, Хабаровск",
+  "url": "https://habarovsk.ag.market/catalog/sortovoy-prokat/polosa/",
+  "guess_type": "Полоса (в нашем справочнике вида нет)",
+  "guess_size": "40x5",
+  "extra": "09Г2С; нет в наличии"
+ },
+ {
+  "raw": "Уголок 25х3",
+  "supplier": "Металлсервис (mc.ru)",
+  "url": "https://mc.ru/metalloprokat/ugolok_ravnopolochnyj",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "25x25x3",
+  "extra": "ДВА числа вместо трёх (ширина полки + толщина), разделитель — кириллическая «х»; Ст3; длина 6000; 97 490 ₽"
+ },
+ {
+  "raw": "Уголок 25х4",
+  "supplier": "Металлсервис (mc.ru)",
+  "url": "https://mc.ru/metalloprokat/ugolok_ravnopolochnyj",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "25x25x4",
+  "extra": "три строки с одинаковым названием: Ст3 и С255, длина 6000; 97 490 ₽"
+ },
+ {
+  "raw": "низколегированный уголок 25х4",
+  "supplier": "Металлсервис (mc.ru)",
+  "url": "https://mc.ru/metalloprokat/ugolok_ravnopolochnyj",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "25x25x4",
+  "extra": "ОБРАТНЫЙ порядок слов и со СТРОЧНОЙ буквы; марка Ст09Г2С-15; длина 6000; 104 990 ₽"
+ },
+ {
+  "raw": "низколегированный уголок 32х4 6м",
+  "supplier": "Металлсервис (mc.ru)",
+  "url": "https://mc.ru/metalloprokat/ugolok_ravnopolochnyj",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "32x32x4",
+  "extra": "длина «6м» вписана в название, у соседних строк — нет; Ст09Г2С-15; 109 990 ₽"
+ },
+ {
+  "raw": "Уголок 50х5 К",
+  "supplier": "Металлсервис (mc.ru)",
+  "url": "https://mc.ru/metalloprokat/ugolok_ravnopolochnyj",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "50x50x5",
+  "extra": "суффикс «К» = кратная/резаная длина; ПЯТЬ строк с этим же названием и разной длиной (2000/3000/4000/5000/5500 мм) и ценой 72 000-80 000 ₽; Ст3"
+ },
+ {
+  "raw": "Уголок 50х5 оцинкованный",
+  "supplier": "Металлсервис (mc.ru)",
+  "url": "https://mc.ru/metalloprokat/ugolok_ravnopolochnyj",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "50x50x5",
+  "extra": "признак покрытия ПОСЛЕ размера; марка не указана; длина 6000; 144 990 ₽"
+ },
+ {
+  "raw": "низколегированный уголок 63х6",
+  "supplier": "Металлсервис (mc.ru)",
+  "url": "https://mc.ru/metalloprokat/ugolok_ravnopolochnyj",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "63x63x6",
+  "extra": "Ст09Г2С-15; длина 12000; 82 490 ₽"
+ },
+ {
+  "raw": "Уголок 63х4",
+  "supplier": "Металлсервис (mc.ru)",
+  "url": "https://mc.ru/metalloprokat/ugolok_ravnopolochnyj",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "63x63x4",
+  "extra": "Ст3; длина 12000; 89 990 ₽"
+ },
+ {
+  "raw": "Уголок 35х3",
+  "supplier": "Металлсервис (mc.ru)",
+  "url": "https://mc.ru/metalloprokat/ugolok_ravnopolochnyj",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "35x35x3",
+  "extra": "Ст3; длина 6000; 102 490 ₽"
+ },
+ {
+  "raw": "Уголок 45х5",
+  "supplier": "Металлсервис (mc.ru)",
+  "url": "https://mc.ru/metalloprokat/ugolok_ravnopolochnyj",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "45x45x5",
+  "extra": "две строки: длина 6000 и 12000; Ст3; 77 490 ₽"
+ },
+ {
+  "raw": "Уголок 50х5, длина 12 м, Ст3",
+  "supplier": "Металлсервис (mc.ru)",
+  "url": "https://mc.ru/metalloprokat/ugolok",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "50x50x5",
+  "extra": "полная форма через ЗАПЯТЫЕ: размер, длина, марка; 330 ₽/м (цена за метр, не за тонну!)"
+ },
+ {
+  "raw": "Уголок 40х4, длина 6 м, Ст3",
+  "supplier": "Металлсервис (mc.ru)",
+  "url": "https://mc.ru/metalloprokat/ugolok",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "40x40x4",
+  "extra": "213 ₽/м"
+ },
+ {
+  "raw": "Полоса горячекатаная 40х4, длина 6 м, Ст3",
+  "supplier": "Металлсервис (mc.ru)",
+  "url": "https://mc.ru/metalloprokat/polosa_kvadrat",
+  "guess_type": "Полоса (в нашем справочнике вида нет)",
+  "guess_size": "40x4",
+  "extra": "«горячекатаная» словом полностью (у А ГРУПП — «г/к»); 112 ₽/м"
+ },
+ {
+  "raw": "Полоса горячекатаная 25х4, длина 6 м, Ст3",
+  "supplier": "Металлсервис (mc.ru)",
+  "url": "https://mc.ru/metalloprokat/polosa_kvadrat",
+  "guess_type": "Полоса (в нашем справочнике вида нет)",
+  "guess_size": "25x4",
+  "extra": "75,59 ₽/м — дробная цена через запятую"
+ },
+ {
+  "raw": "Полоса горячекатаная 20х4, длина 6 м, Ст3",
+  "supplier": "Металлсервис (mc.ru)",
+  "url": "https://mc.ru/metalloprokat/polosa_kvadrat",
+  "guess_type": "Полоса (в нашем справочнике вида нет)",
+  "guess_size": "20x4",
+  "extra": "60,64 ₽/м"
+ },
+ {
+  "raw": "Швеллер 20 П",
+  "supplier": "Металлсервис (mc.ru)",
+  "url": "https://mc.ru/metalloprokat/balka_shveller",
+  "guess_type": "Швеллер",
+  "guess_size": "20П",
+  "extra": "ПРОБЕЛ между номером и типом полок; длина 12 м; С255; 2 397 ₽/м. Есть вторая такая же строка БЕЗ марки"
+ },
+ {
+  "raw": "Швеллер 24 П",
+  "supplier": "Металлсервис (mc.ru)",
+  "url": "https://mc.ru/metalloprokat/balka_shveller",
+  "guess_type": "Швеллер",
+  "guess_size": "24П",
+  "extra": "длина 12 м; С255; 3 124 ₽/м"
+ },
+ {
+  "raw": "Швеллер 18 П",
+  "supplier": "Металлсервис (mc.ru)",
+  "url": "https://mc.ru/metalloprokat/balka_shveller",
+  "guess_type": "Швеллер",
+  "guess_size": "18П",
+  "extra": "длина 12 м; С255; 1 687 ₽/м"
+ },
+ {
+  "raw": "Арматура рифленая А500С А3",
+  "supplier": "Металлсервис (mc.ru)",
+  "url": "https://mc.ru/metalloprokat/armatura_katanka",
+  "guess_type": "Арматура",
+  "guess_size": "—",
+  "extra": "название РАЗДЕЛА каталога, не строка прайса: два обозначения класса подряд (А500С и А3) без разделителя. Фильтр размеров на странице: 5.5, 6, 6.5, 7.5, 8, 10, 12, 14, 16, 18, 20, 22, 25, 28, 32, 36, 40"
+ },
+ {
+  "raw": "Арматура гладкая А240 А1",
+  "supplier": "Металлсервис (mc.ru)",
+  "url": "https://mc.ru/metalloprokat/armatura_katanka",
+  "guess_type": "Арматура",
+  "guess_size": "—",
+  "extra": "название раздела каталога; снова два обозначения класса подряд (А240 и А1)"
+ },
+ {
+  "raw": "Арматура А500СНЕУ А1000",
+  "supplier": "Металлсервис (mc.ru)",
+  "url": "https://mc.ru/metalloprokat/armatura_katanka",
+  "guess_type": "Арматура",
+  "guess_size": "—",
+  "extra": "название раздела каталога; «СНЕУ» без пробелов; два класса подряд"
+ },
+ {
+  "raw": "Уголок неравнополочный",
+  "supplier": "Металлсервис (mc.ru)",
+  "url": "https://mc.ru/metalloprokat/ugolok",
+  "guess_type": "Уголок неравнополочный",
+  "guess_size": "—",
+  "extra": "название раздела каталога — у нас отдельный вид проката"
+ },
+ {
+  "raw": "Швеллер гнутый",
+  "supplier": "Металлсервис (mc.ru)",
+  "url": "https://mc.ru/metalloprokat/balka_shveller",
+  "guess_type": "Швеллер",
+  "guess_size": "—",
+  "extra": "название раздела каталога; гнутый швеллер — не горячекатаный, размер у него задаётся тремя числами, а не номером"
+ },
+ {
+  "raw": "Квадрат горячекатаный",
+  "supplier": "Металлсервис (mc.ru)",
+  "url": "https://mc.ru/metalloprokat/polosa_kvadrat",
+  "guess_type": "Квадрат",
+  "guess_size": "—",
+  "extra": "название раздела каталога; в таблице квадрат задан ОДНИМ числом (8, 10, 12, 14, 16, 18, 20, 22, 25, 30, 40, 50, 60, 70, 90), марка Ст3"
+ },
+ {
+  "raw": "Уголок стальной, 4х25 мм",
+  "supplier": "СтальГрад, Владивосток",
+  "url": "https://stalgrad-dv.ru/products/ugol/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "25x25x4",
+  "extra": "ОБРАТНЫЙ порядок: ТОЛЩИНА первая, ширина полки вторая! Запятая после слова, «мм» в конце; от 94 300 ₽/т; от 146,17 ₽/м.п."
+ },
+ {
+  "raw": "Уголок стальной, 5х50 мм",
+  "supplier": "СтальГрад, Владивосток",
+  "url": "https://stalgrad-dv.ru/products/ugol/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "50x50x5",
+  "extra": "толщина первая; от 88 000 ₽/т; от 341,00 ₽/м.п."
+ },
+ {
+  "raw": "Уголок стальной, 10х140 мм",
+  "supplier": "СтальГрад, Владивосток",
+  "url": "https://stalgrad-dv.ru/products/ugol/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "140x140x10",
+  "extra": "толщина первая — иначе прочитается как уголок 10x10x140, чего не бывает; от 138 500 ₽/т"
+ },
+ {
+  "raw": "Уголок стальной, 7х90 мм",
+  "supplier": "СтальГрад, Владивосток",
+  "url": "https://stalgrad-dv.ru/products/ugol/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "90x90x7",
+  "extra": "от 90 100 ₽/т; от 885,95 ₽/м.п."
+ },
+ {
+  "raw": "Уголок стальной, 8х125 мм",
+  "supplier": "СтальГрад, Владивосток",
+  "url": "https://stalgrad-dv.ru/products/ugol/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "125x125x8",
+  "extra": "от 97 900 ₽/т; от 1 537,03 ₽/м.п."
+ },
+ {
+  "raw": "Уголок стальной, 6х63 мм",
+  "supplier": "СтальГрад, Владивосток",
+  "url": "https://stalgrad-dv.ru/products/ugol/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "63x63x6",
+  "extra": "от 87 500 ₽/т; от 514,06 ₽/м.п."
+ },
+ {
+  "raw": "Швеллер стальной 6,5",
+  "supplier": "СтальГрад, Владивосток",
+  "url": "https://stalgrad-dv.ru/products/shveller/",
+  "guess_type": "Швеллер",
+  "guess_size": "6,5 — тип полок (П/У) НЕ УКАЗАН",
+  "extra": "ДРОБНЫЙ номер через ЗАПЯТУЮ; от 105 200 ₽/т; от 657,50 ₽/м.п.; ст.3, длина 12 м; ГОСТ 8240"
+ },
+ {
+  "raw": "Швеллер стальной 10",
+  "supplier": "СтальГрад, Владивосток",
+  "url": "https://stalgrad-dv.ru/products/shveller/",
+  "guess_type": "Швеллер",
+  "guess_size": "10 — П или У не указано",
+  "extra": "от 91 700 ₽/т; от 823,01 ₽/м.п."
+ },
+ {
+  "raw": "Швеллер стальной 27 (импорт)",
+  "supplier": "СтальГрад, Владивосток",
+  "url": "https://stalgrad-dv.ru/products/shveller/",
+  "guess_type": "Швеллер",
+  "guess_size": "27",
+  "extra": "приписка «(импорт)» в скобках; от 74 400 ₽/т против 158 300 ₽/т у обычного 27 — та же позиция, но другой сорт"
+ },
+ {
+  "raw": "Швеллер стальной 40",
+  "supplier": "СтальГрад, Владивосток",
+  "url": "https://stalgrad-dv.ru/products/shveller/",
+  "guess_type": "Швеллер",
+  "guess_size": "40",
+  "extra": "от 210 600 ₽/т; от 10 171,98 ₽/м.п."
+ },
+ {
+  "raw": "Балка двутавровая 12Б1",
+  "supplier": "СтальГрад, Владивосток",
+  "url": "https://stalgrad-dv.ru/products/balka/",
+  "guess_type": "Двутавр",
+  "guess_size": "12Б1",
+  "extra": "порядок слов «Балка двутавровая» (у А ГРУПП — «Двутавровая балка (двутавр)»); от 1 341 ₽/м.п.; 149 000 ₽/т; ст.3, 12 м; ГОСТ 26020-83 / СТО АСЧМ 20-93"
+ },
+ {
+  "raw": "Балка двутавровая 18",
+  "supplier": "СтальГрад, Владивосток",
+  "url": "https://stalgrad-dv.ru/products/balka/",
+  "guess_type": "Двутавр",
+  "guess_size": "18 (без серии, ГОСТ 8239-89)",
+  "extra": "от 2 999,26 ₽/м.п.; 146 900 ₽/т"
+ },
+ {
+  "raw": "Балка двутавровая 20Ш1",
+  "supplier": "СтальГрад, Владивосток",
+  "url": "https://stalgrad-dv.ru/product/balka-dvutavrovaya-20sh1/",
+  "guess_type": "Двутавр",
+  "guess_size": "20Ш1",
+  "extra": "от 98 400 ₽/т"
+ },
+ {
+  "raw": "Балка двутавровая 20К1",
+  "supplier": "СтальГрад, Владивосток",
+  "url": "https://stalgrad-dv.ru/product/balka-dvutavrovaya-20k1/",
+  "guess_type": "Двутавр",
+  "guess_size": "20К1",
+  "extra": "от 103 100 ₽/т"
+ },
+ {
+  "raw": "Балка двутавровая 35Б1",
+  "supplier": "СтальГрад, Владивосток",
+  "url": "https://stalgrad-dv.ru/products/balka/",
+  "guess_type": "Двутавр",
+  "guess_size": "35Б1",
+  "extra": "от 4 381,75 ₽/м.п.; 103 100 ₽/т"
+ },
+ {
+  "raw": "Квадрат стальной, 10х10 мм",
+  "supplier": "СтальГрад, Владивосток",
+  "url": "https://stalgrad-dv.ru/products/kvadrat/",
+  "guess_type": "Квадрат",
+  "guess_size": "10",
+  "extra": "размер удвоен + «мм» + запятая после слова; ст.3, длина 6 м; от 89 900 ₽/т; 79,38 ₽/м.п."
+ },
+ {
+  "raw": "Квадрат стальной, 20х20 мм",
+  "supplier": "СтальГрад, Владивосток",
+  "url": "https://stalgrad-dv.ru/products/kvadrat/",
+  "guess_type": "Квадрат",
+  "guess_size": "20",
+  "extra": "от 94 600 ₽/т; 315,30 ₽/м.п."
+ },
+ {
+  "raw": "Квадрат стальной, 14х14 мм",
+  "supplier": "СтальГрад, Владивосток",
+  "url": "https://stalgrad-dv.ru/products/kvadrat/",
+  "guess_type": "Квадрат",
+  "guess_size": "14",
+  "extra": "от 89 300 ₽/т; 141,36 ₽/м.п."
+ },
+ {
+  "raw": "Круг стальной, 60 мм",
+  "supplier": "СтальГрад, Владивосток",
+  "url": "https://stalgrad-dv.ru/product/krug-stalnoj-60-mm/",
+  "guess_type": "Круг",
+  "guess_size": "d60",
+  "extra": "марка 09Г2С указана НЕ в названии, а в характеристиках; от 115 700 ₽/т; 2 626,39 ₽/м.п."
+ },
+ {
+  "raw": "Круг стальной, ст. 3, 24 мм",
+  "supplier": "СтальГрад, Владивосток",
+  "url": "https://stalgrad-dv.ru/products/krug-stalnoj/krug-stalnoj-st-3/",
+  "guess_type": "Круг",
+  "guess_size": "d24",
+  "extra": "марка ВНУТРИ названия между запятыми, с пробелом: «ст. 3»; от 101 000 ₽/т; 373,70 ₽/м.п."
+ },
+ {
+  "raw": "Круг стальной, ст. 3, 100 мм",
+  "supplier": "СтальГрад, Владивосток",
+  "url": "https://stalgrad-dv.ru/products/krug-stalnoj/krug-stalnoj-st-3/",
+  "guess_type": "Круг",
+  "guess_size": "d100",
+  "extra": "от 104 200 ₽/т; 6 502,08 ₽/м.п."
+ },
+ {
+  "raw": "Круг стальной, ст. 3, 200 мм",
+  "supplier": "СтальГрад, Владивосток",
+  "url": "https://stalgrad-dv.ru/products/krug-stalnoj/krug-stalnoj-st-3/",
+  "guess_type": "Круг",
+  "guess_size": "d200",
+  "extra": "от 116 700 ₽/т; 28 999,95 ₽/м.п."
+ },
+ {
+  "raw": "Арматура А3, 12 мм",
+  "supplier": "СтальГрад, Владивосток",
+  "url": "https://stalgrad-dv.ru/products/armatura/armatura-aiii/",
+  "guess_type": "Арматура",
+  "guess_size": "d12",
+  "extra": "класс ДО размера, через запятую, «мм» в конце; от 85 900 ₽/т; 80,06 ₽/м.п."
+ },
+ {
+  "raw": "Арматура А3, 8 мм (хлысты)",
+  "supplier": "СтальГрад, Владивосток",
+  "url": "https://stalgrad-dv.ru/products/armatura/armatura-aiii/",
+  "guess_type": "Арматура",
+  "guess_size": "d8",
+  "extra": "форма поставки «(хлысты)» в скобках; от 103 100 ₽/т"
+ },
+ {
+  "raw": "Арматура А3, 10 мм (мотки)",
+  "supplier": "СтальГрад, Владивосток",
+  "url": "https://stalgrad-dv.ru/products/armatura/armatura-aiii/",
+  "guess_type": "Арматура",
+  "guess_size": "d10",
+  "extra": "«(мотки)» — у А ГРУПП то же самое названо «бухты» без скобок; от 93 800 ₽/т"
+ },
+ {
+  "raw": "Арматура А3, 10 мм (хлысты 6 м)",
+  "supplier": "СтальГрад, Владивосток",
+  "url": "https://stalgrad-dv.ru/products/armatura/armatura-aiii/",
+  "guess_type": "Арматура",
+  "guess_size": "d10",
+  "extra": "форма + длина в одних скобках; от 88 500 ₽/т. Рядом есть ПРОСТО «Арматура А3, 10 мм» с той же ценой — дубль"
+ },
+ {
+  "raw": "Арматура А3, 6 мм (мотки)",
+  "supplier": "СтальГрад, Владивосток",
+  "url": "https://stalgrad-dv.ru/products/armatura/armatura-aiii/",
+  "guess_type": "Арматура",
+  "guess_size": "d6",
+  "extra": "от 103 100 ₽/т; 25,78 ₽/м.п."
+ },
+ {
+  "raw": "Арматура А3, 40 мм",
+  "supplier": "СтальГрад, Владивосток",
+  "url": "https://stalgrad-dv.ru/products/armatura/armatura-aiii/",
+  "guess_type": "Арматура",
+  "guess_size": "d40",
+  "extra": "от 84 400 ₽/т; 858,43 ₽/м.п."
+ },
+ {
+  "raw": "Арматура AI",
+  "supplier": "СтальГрад, Владивосток",
+  "url": "https://stalgrad-dv.ru/products/armatura/",
+  "guess_type": "Арматура",
+  "guess_size": "—",
+  "extra": "название раздела; класс РИМСКИМИ цифрами и ЛАТИНСКОЙ буквой A (не кириллической А!); ср. «А3» в строках прайса того же сайта"
+ },
+ {
+  "raw": "Арматура AIII",
+  "supplier": "СтальГрад, Владивосток",
+  "url": "https://stalgrad-dv.ru/products/armatura/",
+  "guess_type": "Арматура",
+  "guess_size": "—",
+  "extra": "название раздела; AIII = А3 = А400 — три написания одного класса"
+ },
+ {
+  "raw": "Арматура A500С",
+  "supplier": "СтальГрад, Владивосток",
+  "url": "https://stalgrad-dv.ru/products/armatura/",
+  "guess_type": "Арматура",
+  "guess_size": "—",
+  "extra": "название раздела; СМЕСЬ алфавитов в одном слове: латинская A + кириллическая С"
+ },
+ {
+  "raw": "Арматура AT800",
+  "supplier": "СтальГрад, Владивосток",
+  "url": "https://stalgrad-dv.ru/products/armatura/",
+  "guess_type": "Арматура",
+  "guess_size": "—",
+  "extra": "название раздела; термоупрочнённая"
+ },
+ {
+  "raw": "Труба профильная 10х10х1,5",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/truby_profilnye/",
+  "guess_type": "Труба профильная квадратная",
+  "guess_size": "10x10x1.5",
+  "extra": "длина 6 м; цена 125,00 руб/м; разделитель — кириллическая «х», дробь через запятую"
+ },
+ {
+  "raw": "Труба профильная 15х15х1,5",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/truby_profilnye/",
+  "guess_type": "Труба профильная квадратная",
+  "guess_size": "15x15x1.5",
+  "extra": "длина «6 метров» (словом, а не «6 м»); 130,00 руб/м"
+ },
+ {
+  "raw": "Труба профильная 20х10х1,5",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/truby_profilnye/",
+  "guess_type": "Труба профильная прямоугольная",
+  "guess_size": "20x10x1.5",
+  "extra": "6 м; 166,67 руб/м"
+ },
+ {
+  "raw": "Труба профильная 20х20х1,5 АКЦИЯ!!!",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/truby_profilnye/",
+  "guess_type": "Труба профильная квадратная",
+  "guess_size": "20x20x1.5",
+  "extra": "маркетинговая приписка «АКЦИЯ!!!» прямо в наименовании; 6 м; 123,50 руб/м"
+ },
+ {
+  "raw": "Труба профильная 20х20х1,5 ОЦИНК.",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/truby_profilnye/",
+  "guess_type": "Труба профильная квадратная",
+  "guess_size": "20x20x1.5",
+  "extra": "покрытие сокращено «ОЦИНК.» с точкой, капсом; 6 м; 250,00 руб/м"
+ },
+ {
+  "raw": "Труба профильная 40х40х1,5 ОЦИНК",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/truby_profilnye/",
+  "guess_type": "Труба профильная квадратная",
+  "guess_size": "40x40x1.5",
+  "extra": "то же сокращение, но БЕЗ точки — «ОЦИНК»; 6 м; 458,33 руб/м"
+ },
+ {
+  "raw": "Труба профильная 20x20x2,0",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/truby_profilnye/",
+  "guess_type": "Труба профильная квадратная",
+  "guess_size": "20x20x2",
+  "extra": "здесь разделитель — ЛАТИНСКАЯ «x», в соседних строках кириллическая «х»; толщина «2,0» с незначащим нулём"
+ },
+ {
+  "raw": "Труба профильная 20x20x3,0",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/truby_profilnye/",
+  "guess_type": "Труба профильная квадратная",
+  "guess_size": "20x20x3",
+  "extra": "латинская «x»; 6 м; 322,50 руб/м"
+ },
+ {
+  "raw": "Труба профильная 60х30х1,5",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/truby_profilnye/",
+  "guess_type": "Труба профильная прямоугольная",
+  "guess_size": "60x30x1.5",
+  "extra": "в колонке длины — «6 м Распродажа» (слово-приписка уехало в поле длины)"
+ },
+ {
+  "raw": "Труба профильная 60х60х3,0",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/truby_profilnye/",
+  "guess_type": "Труба профильная квадратная",
+  "guess_size": "60x60x3",
+  "extra": "длина «6 м ; 12 м» — две длины через точку с запятой"
+ },
+ {
+  "raw": "Труба профильная 80х40х3,0",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/truby_profilnye/",
+  "guess_type": "Труба профильная прямоугольная",
+  "guess_size": "80x40x3",
+  "extra": "длина «6 м; 12 м»"
+ },
+ {
+  "raw": "Труба профильная 100х100х8,0 сталь 09Г2С",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/truby_profilnye/",
+  "guess_type": "Труба профильная квадратная",
+  "guess_size": "100x100x8",
+  "extra": "марка стали дописана словом «сталь 09Г2С» после размера; 12 м; 3962,08 руб/м"
+ },
+ {
+  "raw": "Труба профильная 140х80х5,0 сталь 09Г2С",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/truby_profilnye/",
+  "guess_type": "Труба профильная прямоугольная",
+  "guess_size": "140x80x5",
+  "extra": "длина 9 м (нестандартная); марка 09Г2С"
+ },
+ {
+  "raw": "Трубы профильные 140х100х4,0",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/truby_profilnye/",
+  "guess_type": "Труба профильная прямоугольная",
+  "guess_size": "140x100x4",
+  "extra": "МНОЖЕСТВЕННОЕ число «Трубы профильные» в той же таблице, где выше «Труба профильная»"
+ },
+ {
+  "raw": "Трубы профильные 160 х 80 х 4,0",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/truby_profilnye/",
+  "guess_type": "Труба профильная прямоугольная",
+  "guess_size": "160x80x4",
+  "extra": "ПРОБЕЛЫ вокруг разделителя «160 х 80 х 4,0»; 12 м"
+ },
+ {
+  "raw": "Трубы профильные 160 х 120 х 5,0",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/truby_profilnye/",
+  "guess_type": "Труба профильная прямоугольная",
+  "guess_size": "160x120x5",
+  "extra": "пробелы вокруг «х»"
+ },
+ {
+  "raw": "Трубы профильные 180х180х8,0",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/truby_profilnye/",
+  "guess_type": "Труба профильная квадратная",
+  "guess_size": "180x180x8",
+  "extra": "без пробелов — в той же группе строк, что и вариант с пробелами"
+ },
+ {
+  "raw": "Трубы профильные 150х100х5,0",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/truby_profilnye/",
+  "guess_type": "Труба профильная прямоугольная",
+  "guess_size": "150x100x5",
+  "extra": "длина записана «12м» СЛИТНО (в соседних строках «12 м»)"
+ },
+ {
+  "raw": "Труба профильная 250х250х10,0",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/truby_profilnye/",
+  "guess_type": "Труба профильная квадратная",
+  "guess_size": "250x250x10",
+  "extra": "толщина «10,0» — целое число с дробной частью; 12 м"
+ },
+ {
+  "raw": "Трубы профильные 300х300х10,0",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/truby_profilnye/",
+  "guess_type": "Труба профильная квадратная",
+  "guess_size": "300x300x10",
+  "extra": "цена пустая (позиция без цены)"
+ },
+ {
+  "raw": "Труба профильная 20x20x2 8639 акция",
+  "supplier": "СПК (habarovsk.spk.ru)",
+  "url": "https://habarovsk.spk.ru/catalog/truba-profilnaya/",
+  "guess_type": "Труба профильная квадратная",
+  "guess_size": "20x20x2",
+  "extra": "ГОСТ записан ГОЛЫМ НОМЕРОМ «8639» без слова ГОСТ; приписка «акция» строчными; 76 000,00 ₽/Т"
+ },
+ {
+  "raw": "Труба профильная 20x20x2 х/к 8639 акция",
+  "supplier": "СПК (habarovsk.spk.ru)",
+  "url": "https://habarovsk.spk.ru/catalog/truba-profilnaya/",
+  "guess_type": "Труба профильная квадратная",
+  "guess_size": "20x20x2",
+  "extra": "«х/к» = холоднокатаная, вклинилось МЕЖДУ размером и ГОСТом; совпадает с предыдущей строкой по размеру и цене — различие только в «х/к»"
+ },
+ {
+  "raw": "Труба профильная 40x40x3 8639/30245 акция",
+  "supplier": "СПК (habarovsk.spk.ru)",
+  "url": "https://habarovsk.spk.ru/catalog/truba-profilnaya/",
+  "guess_type": "Труба профильная квадратная",
+  "guess_size": "40x40x3",
+  "extra": "ДВА ГОСТа через слэш «8639/30245»; 74 000,00 ₽/Т"
+ },
+ {
+  "raw": "Труба профильная 40x25x2 8645 акция",
+  "supplier": "СПК (habarovsk.spk.ru)",
+  "url": "https://habarovsk.spk.ru/catalog/truba-profilnaya/",
+  "guess_type": "Труба профильная прямоугольная",
+  "guess_size": "40x25x2",
+  "extra": "ГОСТ 8645 (прямоугольные) голым номером; 76 000,00 ₽/Т"
+ },
+ {
+  "raw": "Труба профильная 50x25x2 8645/30245 акция",
+  "supplier": "СПК (habarovsk.spk.ru)",
+  "url": "https://habarovsk.spk.ru/catalog/truba-profilnaya/",
+  "guess_type": "Труба профильная прямоугольная",
+  "guess_size": "50x25x2",
+  "extra": "два ГОСТа; латинская «x»; цена за тонну"
+ },
+ {
+  "raw": "Труба профильная 60x30x2 8645/30245 акция",
+  "supplier": "СПК (habarovsk.spk.ru)",
+  "url": "https://habarovsk.spk.ru/catalog/truba-profilnaya/",
+  "guess_type": "Труба профильная прямоугольная",
+  "guess_size": "60x30x2",
+  "extra": "76 000,00 ₽/Т"
+ },
+ {
+  "raw": "Труба профильная 50x50x3 8639/30245 акция",
+  "supplier": "СПК (habarovsk.spk.ru)",
+  "url": "https://habarovsk.spk.ru/catalog/truba-profilnaya/",
+  "guess_type": "Труба профильная квадратная",
+  "guess_size": "50x50x3",
+  "extra": "74 000,00 ₽/Т"
+ },
+ {
+  "raw": "Труба квадратная 15*15*1.5",
+  "supplier": "ООО «Восход» (prokat28, Благовещенск)",
+  "url": "http://prokat28.ru/price",
+  "guess_type": "Труба профильная квадратная",
+  "guess_size": "15x15x1.5",
+  "extra": "разделитель ЗВЁЗДОЧКА «*», дробь через ТОЧКУ; вид назван «Труба квадратная», раздел прайса «Профиль»; 120000 руб/т"
+ },
+ {
+  "raw": "Труба квадратная 30*30*1.5",
+  "supplier": "ООО «Восход» (prokat28, Благовещенск)",
+  "url": "http://prokat28.ru/price",
+  "guess_type": "Труба профильная квадратная",
+  "guess_size": "30x30x1.5",
+  "extra": "114000 руб/т"
+ },
+ {
+  "raw": "Труба прямоугольная 30*20*2",
+  "supplier": "ООО «Восход» (prokat28, Благовещенск)",
+  "url": "http://prokat28.ru/price",
+  "guess_type": "Труба профильная прямоугольная",
+  "guess_size": "30x20x2",
+  "extra": "вид назван «Труба прямоугольная» (не «профильная»); 114000 руб/т"
+ },
+ {
+  "raw": "Труба прямоугольная 50*25*1.5",
+  "supplier": "ООО «Восход» (prokat28, Благовещенск)",
+  "url": "http://prokat28.ru/price",
+  "guess_type": "Труба профильная прямоугольная",
+  "guess_size": "50x25x1.5",
+  "extra": "111000 руб/т"
+ },
+ {
+  "raw": "Труба квадратная 25*25*2",
+  "supplier": "ООО «Восход» (prokat28, Благовещенск)",
+  "url": "http://prokat28.ru/price",
+  "guess_type": "Труба профильная квадратная",
+  "guess_size": "25x25x2",
+  "extra": "ДУБЛЬ: в прайсе эта строка встречается ДВАЖДЫ с разными ценами — 115000 и 114000 руб/т"
+ },
+ {
+  "raw": "Труба квадратная 100*100*4",
+  "supplier": "ООО «Восход» (prokat28, Благовещенск)",
+  "url": "http://prokat28.ru/price",
+  "guess_type": "Труба профильная квадратная",
+  "guess_size": "100x100x4",
+  "extra": "105000 руб/т"
+ },
+ {
+  "raw": "Труба прямоугольная 80*40*3",
+  "supplier": "ООО «Восход» (prokat28, Благовещенск)",
+  "url": "http://prokat28.ru/price",
+  "guess_type": "Труба профильная прямоугольная",
+  "guess_size": "80x40x3",
+  "extra": "105000 руб/т"
+ },
+ {
+  "raw": "Уголок 25*25*4",
+  "supplier": "ООО «Восход» (prokat28, Благовещенск)",
+  "url": "http://prokat28.ru/price",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "25x25x4",
+  "extra": "«Уголок», три числа через «*»; 122000 руб/т"
+ },
+ {
+  "raw": "Уголок 45*45*4 (09Г2С)",
+  "supplier": "ООО «Восход» (prokat28, Благовещенск)",
+  "url": "http://prokat28.ru/price",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "45x45x4",
+  "extra": "марка стали В СКОБКАХ после размера; рядом та же позиция без скобок и с другой ценой (95000 vs 105000 руб/т)"
+ },
+ {
+  "raw": "Уголок 125*125*8",
+  "supplier": "ООО «Восход» (prokat28, Благовещенск)",
+  "url": "http://prokat28.ru/price",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "125x125x8",
+  "extra": "127000 руб/т"
+ },
+ {
+  "raw": "Уголок горячекатаный равнополочный 25 х 3",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/ugolok_goryachekatanyi/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "25x25x3",
+  "extra": "ДВА числа вместо трёх — ширина полки опущена; пробелы вокруг «х»; 6 м; 221,67 руб/м"
+ },
+ {
+  "raw": "Уголок горячекатаный равнополочный 63 х 5",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/ugolok_goryachekatanyi/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "63x63x5",
+  "extra": "длина «11,7 и 12 м» — две длины через «и», запятая в 11,7"
+ },
+ {
+  "raw": "Уголок горячекатаный равнополочный 50 х 5 ст. 09Г2С — 15",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/ugolok_goryachekatanyi/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "50x50x5",
+  "extra": "хвост «ст. 09Г2С — 15» с ДЛИННЫМ ТИРЕ (вероятно категория/класс 15); 12 м"
+ },
+ {
+  "raw": "Уголок горячекатаный равнополочный 40 х 4 ст. 09Г2С — 15",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/ugolok_goryachekatanyi/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "40x40x4",
+  "extra": "«ст.» с точкой; 487,50 руб/м"
+ },
+ {
+  "raw": "Уголок горячекатаный равнополочный 75 х 8 ст. 09Г2С",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/ugolok_goryachekatanyi/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "75x75x8",
+  "extra": "здесь марка БЕЗ хвоста «— 15»; 12 м"
+ },
+ {
+  "raw": "Уголок горячекатаный равнополочный 90 х 7",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/ugolok_goryachekatanyi/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "90x90x7",
+  "extra": "длина «11.7 м» — здесь ТОЧКА в дроби, хотя в соседних строках запятая («11,7»)"
+ },
+ {
+  "raw": "Угол горячекатаный равнополочный 160 х 160 х 10",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/ugolok_goryachekatanyi/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "160x160x10",
+  "extra": "в одной таблице переключение «Уголок» → «УГОЛ» и двухчисловой формат → ТРЁХчисловой начиная со 160-го; 12 м"
+ },
+ {
+  "raw": "Угол горячекатаный равнополочный 180х180х12",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/ugolok_goryachekatanyi/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "180x180x12",
+  "extra": "без пробелов — соседние строки с пробелами; 12 м"
+ },
+ {
+  "raw": "Угол горячекатаный равнополочный 200 х 200 х 16",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/ugolok_goryachekatanyi/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "200x200x16",
+  "extra": "12 м; 12531,70 руб/м"
+ },
+ {
+  "raw": "Уголок горячекатаный разнополочный 63х40х5",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/ugolok-neravnopolochnyi/",
+  "guess_type": "Уголок неравнополочный",
+  "guess_size": "63x40x5",
+  "extra": "в наименовании «РАЗНОполочный», хотя URL раздела — ugolok-neravnopolochnyi; 12 м; 982,80 руб"
+ },
+ {
+  "raw": "Уголок горячекатаный разнополочный 100х63х8",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/ugolok-neravnopolochnyi/",
+  "guess_type": "Уголок неравнополочный",
+  "guess_size": "100x63x8",
+  "extra": "12 м; 2436,52 руб"
+ },
+ {
+  "raw": "Уголок горячекатаный разнополочный 200х125х14",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/ugolok-neravnopolochnyi/",
+  "guess_type": "Уголок неравнополочный",
+  "guess_size": "200x125x14",
+  "extra": "марка стали и ГОСТ в таблице не указаны вовсе"
+ },
+ {
+  "raw": "Уголок 63x63x5 12м ст3пс5/сп5",
+  "supplier": "СПК (habarovsk.spk.ru)",
+  "url": "https://habarovsk.spk.ru/catalog/ugolok/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "63x63x5",
+  "extra": "ДЛИНА вшита в наименование «12м» слитно; марка «ст3пс5/сп5» — две марки через слэш, строчными, без пробела; 5280,00 ₽/ШТ и 87000 ₽/Т"
+ },
+ {
+  "raw": "Уголок 45x45x4 11.7м ст3пс/сп",
+  "supplier": "СПК (habarovsk.spk.ru)",
+  "url": "https://habarovsk.spk.ru/catalog/ugolok/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "45x45x4",
+  "extra": "длина «11.7м» с ТОЧКОЙ; марка без цифры класса — «ст3пс/сп» (в соседних строках «ст3пс5/сп5»)"
+ },
+ {
+  "raw": "Уголок 100x100x7 12м ст3пс5/сп5",
+  "supplier": "СПК (habarovsk.spk.ru)",
+  "url": "https://habarovsk.spk.ru/catalog/ugolok/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "100x100x7",
+  "extra": "13179,00 ₽/ШТ"
+ },
+ {
+  "raw": "Уголок 32x32x4 9м ст3пс5/сп5",
+  "supplier": "СПК (habarovsk.spk.ru)",
+  "url": "https://habarovsk.spk.ru/catalog/ugolok/",
+  "guess_type": "Уголок равнополочный",
+  "guess_size": "32x32x4",
+  "extra": "длина 9м; 1584,00 ₽/ШТ"
+ },
+ {
+  "raw": "Швеллер 8",
+  "supplier": "ООО «Восход» (prokat28, Благовещенск)",
+  "url": "http://prokat28.ru/price",
+  "guess_type": "Швеллер",
+  "guess_size": "8 (тип полок НЕ указан)",
+  "extra": "126000 руб/т; ни П, ни У, ни Э — сопоставление неоднозначно"
+ },
+ {
+  "raw": "Швеллер 16",
+  "supplier": "ООО «Восход» (prokat28, Благовещенск)",
+  "url": "http://prokat28.ru/price",
+  "guess_type": "Швеллер",
+  "guess_size": "16 (тип полок НЕ указан)",
+  "extra": "строка ДУБЛИРУЕТСЯ в прайсе с разными ценами: 130000 и 126000 руб/т"
+ },
+ {
+  "raw": "Швеллер 6,5",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/shveller/",
+  "guess_type": "Швеллер",
+  "guess_size": "6.5 (тип полок не указан)",
+  "extra": "номер профиля ДРОБНЫЙ через запятую; 12 м; 1209,00 руб"
+ },
+ {
+  "raw": "Швеллер 10 ст. 09Г2С / С345",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/shveller/",
+  "guess_type": "Швеллер",
+  "guess_size": "10",
+  "extra": "ДВЕ марки через « / » с пробелами — марка стали и класс прочности С345; 12 м"
+ },
+ {
+  "raw": "Швеллер ст. 14 09Г2С / С355",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/shveller/",
+  "guess_type": "Швеллер",
+  "guess_size": "14",
+  "extra": "ПОРЯДОК СЛОВ СЛОМАН: «ст.» стоит ПЕРЕД номером профиля — «Швеллер ст. 14 09Г2С», хотя в строках выше/ниже «Швеллер 10 ст. 09Г2С». Номер 14 легко спутать с маркой"
+ },
+ {
+  "raw": "Швеллер 16 ст. 09Г2С / С355",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/shveller/",
+  "guess_type": "Швеллер",
+  "guess_size": "16",
+  "extra": "в одном прайсе для 10-го профиля С345, для 14/16 — С355; длина «11,7 и 12 м» у соседнего Швеллера 16"
+ },
+ {
+  "raw": "Швеллер 22",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/shveller/",
+  "guess_type": "Швеллер",
+  "guess_size": "22",
+  "extra": "длина «н/м, 12 м» — «н/м» = нет в наличии/нет метража, мусор в поле длины"
+ },
+ {
+  "raw": "Швеллер 5у 11.7м ст3пс5/сп5",
+  "supplier": "СПК (habarovsk.spk.ru)",
+  "url": "https://habarovsk.spk.ru/catalog/shveller/",
+  "guess_type": "Швеллер",
+  "guess_size": "5У",
+  "extra": "тип полок СТРОЧНОЙ буквой слитно с номером — «5у»; длина в наименовании; 5294,72 ₽/ШТ"
+ },
+ {
+  "raw": "Швеллер 6.5п 12м ст3пс/сп",
+  "supplier": "СПК (habarovsk.spk.ru)",
+  "url": "https://habarovsk.spk.ru/catalog/shveller/",
+  "guess_type": "Швеллер",
+  "guess_size": "6.5П",
+  "extra": "дробный номер через ТОЧКУ + строчная «п» слитно; у Град Стали тот же профиль записан «Швеллер 6,5» — через запятую и без типа полок"
+ },
+ {
+  "raw": "Швеллер 10п 12м ст3пс5/сп5",
+  "supplier": "СПК (habarovsk.spk.ru)",
+  "url": "https://habarovsk.spk.ru/catalog/shveller/",
+  "guess_type": "Швеллер",
+  "guess_size": "10П",
+  "extra": "11130,50 ₽/ШТ"
+ },
+ {
+  "raw": "Швеллер 10у 12м ст3пс5/сп5",
+  "supplier": "СПК (habarovsk.spk.ru)",
+  "url": "https://habarovsk.spk.ru/catalog/shveller/",
+  "guess_type": "Швеллер",
+  "guess_size": "10У",
+  "extra": "пара к предыдущей: 10п и 10у отличаются ОДНОЙ строчной буквой и ценой (11032,00 ₽/ШТ)"
+ },
+ {
+  "raw": "Швеллер 12п 12м",
+  "supplier": "СПК (habarovsk.spk.ru)",
+  "url": "https://habarovsk.spk.ru/catalog/shveller/",
+  "guess_type": "Швеллер",
+  "guess_size": "12П",
+  "extra": "БЕЗ марки стали — в соседних строках марка есть; 13534,00 ₽/ШТ"
+ },
+ {
+  "raw": "Балка 10",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/balka/",
+  "guess_type": "Двутавр",
+  "guess_size": "10 (серия не указана — вероятно 10Б1 или двутавр по ГОСТ 8239)",
+  "extra": "вид назван «Балка», не «Двутавр»; 12 м; 2058,00 руб"
+ },
+ {
+  "raw": "Балка 10 сталь 09Г2С",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/balka/",
+  "guess_type": "Двутавр",
+  "guess_size": "10",
+  "extra": "марка словом «сталь 09Г2С» (у швеллера в том же прайсе — «ст. 09Г2С»)"
+ },
+ {
+  "raw": "Балка 20Ш1",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/balka/",
+  "guess_type": "Двутавр",
+  "guess_size": "20Ш1",
+  "extra": "серия Ш слитно, заглавной; 12 м; 6040,21 руб"
+ },
+ {
+  "raw": "Балка 20К1",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/balka/",
+  "guess_type": "Двутавр",
+  "guess_size": "20К1",
+  "extra": "колонная серия К; 8179,80 руб"
+ },
+ {
+  "raw": "Балка 35 Б1",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/balka/",
+  "guess_type": "Двутавр",
+  "guess_size": "35Б1",
+  "extra": "ПРОБЕЛ между номером и серией — «35 Б1», при том что рядом «20Ш1», «30Ш1» слитно"
+ },
+ {
+  "raw": "Балка 24М",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/balka/",
+  "guess_type": "Двутавр",
+  "guess_size": "24М",
+  "extra": "серия М (монорельс) — в нашем справочнике такой серии нет; 9892,29 руб"
+ },
+ {
+  "raw": "Балка 20Ш2, 20Ш3",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/balka/",
+  "guess_type": "Двутавр",
+  "guess_size": "20Ш2 + 20Ш3 (ДВЕ позиции в одной строке)",
+  "extra": "одна строка прайса = два типоразмера через запятую; цена «под заказ» вместо числа"
+ },
+ {
+  "raw": "Балка 40К1, 40К2, 40К3",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/balka/",
+  "guess_type": "Двутавр",
+  "guess_size": "40К1 + 40К2 + 40К3 (ТРИ позиции в одной строке)",
+  "extra": "«под заказ», цены нет; 12 м"
+ },
+ {
+  "raw": "Арматура 10мм",
+  "supplier": "ООО «Восход» (prokat28, Благовещенск)",
+  "url": "http://prokat28.ru/price",
+  "guess_type": "Арматура",
+  "guess_size": "d10",
+  "extra": "«мм» СЛИТНО с числом, без «d» и без класса; цена 1080000 руб/т — похоже на опечатку (лишний ноль), у соседей 108000"
+ },
+ {
+  "raw": "Арматура 12мм",
+  "supplier": "ООО «Восход» (prokat28, Благовещенск)",
+  "url": "http://prokat28.ru/price",
+  "guess_type": "Арматура",
+  "guess_size": "d12",
+  "extra": "108000 руб/т; класс арматуры не указан вообще"
+ },
+ {
+  "raw": "Арматура стальная периодическая класса А-III А400 6 мм",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/armatura-khabarovsk/",
+  "guess_type": "Арматура",
+  "guess_size": "d6",
+  "extra": "ДВА обозначения класса подряд «А-III А400»; марка 25Г2С; длина «6 — 6,1 м» с длинным тире; 101500 руб/т"
+ },
+ {
+  "raw": "Арматура стальная периодическая класса А-III А400 8 мм",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/armatura-khabarovsk/",
+  "guess_type": "Арматура",
+  "guess_size": "d8",
+  "extra": "две строки с одним наименованием: пруток «6,1 м» и «бухты» — одинаковый raw, разная форма поставки и цена"
+ },
+ {
+  "raw": "Арматура В500С 6 мм (мотки)",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/armatura-khabarovsk/",
+  "guess_type": "Арматура",
+  "guess_size": "d6",
+  "extra": "класс В500С; форма поставки «(мотки)» в скобках, при этом в колонке длины стоит «бухты» — два синонима в одной строке"
+ },
+ {
+  "raw": "Арматура стальная холоднотянутая 4 мм",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/armatura-khabarovsk/",
+  "guess_type": "Арматура",
+  "guess_size": "d4",
+  "extra": "«холоднотянутая» вместо класса; 6 м; 27,5 руб/м; 165000 руб/т"
+ },
+ {
+  "raw": "Арматура АI (круг)",
+  "supplier": "ДальКонтинентСталь (Владивосток)",
+  "url": "https://dks-st.ru/catalog/metalloprokat/armatura",
+  "guess_type": "Арматура (или Круг)",
+  "guess_size": "—",
+  "extra": "название категории: арматура А-I ПРИРАВНЕНА к кругу — прямая ловушка при сопоставлении вида проката"
+ },
+ {
+  "raw": "Арматура А3 (А400)",
+  "supplier": "ДальКонтинентСталь (Владивосток)",
+  "url": "https://dks-st.ru/catalog/metalloprokat/armatura",
+  "guess_type": "Арматура",
+  "guess_size": "—",
+  "extra": "«А3» арабской цифрой + «(А400)» в скобках (у Град Стали — «А-III А400»)"
+ },
+ {
+  "raw": "Круг 6мм",
+  "supplier": "ООО «Восход» (prokat28, Благовещенск)",
+  "url": "http://prokat28.ru/price",
+  "guess_type": "Круг",
+  "guess_size": "d6",
+  "extra": "«мм» слитно; 108000 руб/т; марка не указана"
+ },
+ {
+  "raw": "Круг 55мм",
+  "supplier": "ООО «Восход» (prokat28, Благовещенск)",
+  "url": "http://prokat28.ru/price",
+  "guess_type": "Круг",
+  "guess_size": "d55",
+  "extra": "108000 руб/т"
+ },
+ {
+  "raw": "Круг 6 мм (бухты)",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/krug/",
+  "guess_type": "Круг",
+  "guess_size": "d6",
+  "extra": "«мм» через ПРОБЕЛ + форма поставки в скобках; марка «3сп»; в колонке длины «1.3 — 1.4 т» — там ВЕС, а не длина"
+ },
+ {
+  "raw": "Круг 10 мм",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/krug/",
+  "guess_type": "Круг",
+  "guess_size": "d10",
+  "extra": "марка 3сп; длина 11,7 м; 99,15 руб/м"
+ },
+ {
+  "raw": "Круг ст45",
+  "supplier": "ДальКонтинентСталь (Владивосток)",
+  "url": "https://dks-st.ru/catalog/metalloprokat/krug",
+  "guess_type": "Круг",
+  "guess_size": "—",
+  "extra": "категория: марка «ст45» СЛИТНО, строчными; рядом «Круг ст3», «Круг 09Г2С», «Круг оцинкованный»"
+ },
+ {
+  "raw": "Квадрат 10",
+  "supplier": "ООО «Восход» (prokat28, Благовещенск)",
+  "url": "http://prokat28.ru/price",
+  "guess_type": "Квадрат",
+  "guess_size": "10",
+  "extra": "ОДНО число — ровно как у нас в справочнике; 119000 руб/т"
+ },
+ {
+  "raw": "Квадрат 10 х 10",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/kvadrat/",
+  "guess_type": "Квадрат",
+  "guess_size": "10",
+  "extra": "тот же профиль записан ДВУМЯ числами «10 х 10» — у нас в справочнике только «10»; 6 м; 160,42 руб"
+ },
+ {
+  "raw": "Квадрат 50 х 50",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/kvadrat/",
+  "guess_type": "Квадрат",
+  "guess_size": "50",
+  "extra": "длина «нд» (нет данных) — ещё один вариант заглушки наряду с «н/м», «н/ м»"
+ },
+ {
+  "raw": "Шестигранник 10 калибр.",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/shestigrannik/",
+  "guess_type": "Шестигранник",
+  "guess_size": "S10",
+  "extra": "приписка «калибр.» с точкой (калиброванный); марка 45; длина 3,9 м; 259,62 руб/м"
+ },
+ {
+  "raw": "Шестигранник 12",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/shestigrannik/",
+  "guess_type": "Шестигранник",
+  "guess_size": "S12",
+  "extra": "марка 45; длина «3 м, 6м» — в одной ячейке «3 м» с пробелом и «6м» слитно"
+ },
+ {
+  "raw": "Шестигранник 36",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/shestigrannik/",
+  "guess_type": "Шестигранник",
+  "guess_size": "S36",
+  "extra": "ДВЕ строки с идентичным raw: марка 45 (1890,00 руб) и марка 30ХМА (3259,11 руб) — различить можно только по колонке марки"
+ },
+ {
+  "raw": "Шестигранник 65",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/shestigrannik/",
+  "guess_type": "Шестигранник",
+  "guess_size": "S65",
+  "extra": "тоже дубль: марка 45 (5,02 м) и марка 30ХМА (1 м)"
+ },
+ {
+  "raw": "Шестигранник 75",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/shestigrannik/",
+  "guess_type": "Шестигранник",
+  "guess_size": "S75",
+  "extra": "марка «20» — голая цифра, которую легко принять за размер; длина «4.93-4.98 м» через ДЕФИС с точками"
+ },
+ {
+  "raw": "Труба ВГП 15*2.8",
+  "supplier": "ООО «Восход» (prokat28, Благовещенск)",
+  "url": "http://prokat28.ru/price",
+  "guess_type": "Труба ВГП",
+  "guess_size": "Ду15x2.8",
+  "extra": "аббревиатура «ВГП», без слова «Ду»; «*» и точка в дроби; 111000 руб/т"
+ },
+ {
+  "raw": "Труба ВГП40*3.5",
+  "supplier": "ООО «Восход» (prokat28, Благовещенск)",
+  "url": "http://prokat28.ru/price",
+  "guess_type": "Труба ВГП",
+  "guess_size": "Ду40x3.5",
+  "extra": "НЕТ ПРОБЕЛА между «ВГП» и числом — «ВГП40*3.5», в соседних строках пробел есть"
+ },
+ {
+  "raw": "Труба водогазопроводная ДУ 15 х 2,5 (1/2 дюйма), наружный диаметр 21,3 мм",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/truby-vodogazoprovodnye-electrosvarnye/",
+  "guess_type": "Труба ВГП",
+  "guess_size": "Ду15x2.5",
+  "extra": "полное слово + «ДУ» КАПСОМ + ДЮЙМЫ в скобках + наружный диаметр после запятой; ГОСТ 3262-75 указан отдельно от строк; 260,00 руб/м"
+ },
+ {
+  "raw": "Труба водогазопроводная ДУ 32 х 3,2 (1 1/4), наружный диаметр 42,8 мм",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/truby-vodogazoprovodnye-electrosvarnye/",
+  "guess_type": "Труба ВГП",
+  "guess_size": "Ду32x3.2",
+  "extra": "дюймы записаны СМЕШАННОЙ дробью «1 1/4» и БЕЗ слова «дюйма» (у 15-го и 25-го — со словом)"
+ },
+ {
+  "raw": "Труба водогазопроводная Ду 65 х 3",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/truby-vodogazoprovodnye-electrosvarnye/",
+  "guess_type": "Труба ВГП",
+  "guess_size": "Ду65x3",
+  "extra": "в той же таблице «Ду» стало со СТРОЧНЫМИ буквами, дюймы и наружный диаметр пропали; длина «12м» слитно"
+ },
+ {
+  "raw": "Труба водогазопроводная ДУ 50 х 3,5 (2 дюйма), наружный диаметр 60 мм",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/truby-vodogazoprovodnye-electrosvarnye/",
+  "guess_type": "Труба ВГП",
+  "guess_size": "Ду50x3.5",
+  "extra": "длина «6,0 и 10,5 м» — дробные длины через «и»"
+ },
+ {
+  "raw": "Труба Эл. Св. 57*3.5",
+  "supplier": "ООО «Восход» (prokat28, Благовещенск)",
+  "url": "http://prokat28.ru/price",
+  "guess_type": "Труба круглая",
+  "guess_size": "57x3.5",
+  "extra": "«Эл. Св.» — сокращение с ДВУМЯ точками и пробелом внутри, заглавные; 109000 руб/т"
+ },
+ {
+  "raw": "Труба Эл.св. 133*4.5",
+  "supplier": "ООО «Восход» (prokat28, Благовещенск)",
+  "url": "http://prokat28.ru/price",
+  "guess_type": "Труба круглая",
+  "guess_size": "133x4.5",
+  "extra": "ТО ЖЕ сокращение написано иначе — «Эл.св.» без пробела и со строчной «с»; 120000 руб/т"
+ },
+ {
+  "raw": "Труба Эл. Св. 108*3.5",
+  "supplier": "ООО «Восход» (prokat28, Благовещенск)",
+  "url": "http://prokat28.ru/price",
+  "guess_type": "Труба круглая",
+  "guess_size": "108x3.5",
+  "extra": "117000 руб/т"
+ },
+ {
+  "raw": "Труба бесшовная холоднодеформированная 32х3,5",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/truby_goryachekatanye/",
+  "guess_type": "Труба круглая",
+  "guess_size": "32x3.5 бесш",
+  "extra": "способ производства словом; раздел URL — «goryachekatanye», а позиции холоднодеформированные; ГОСТ 8731-74/8731-87, стали 20, 15, 10 указаны только в тексте страницы"
+ },
+ {
+  "raw": "Труба бесшовная холоднодеформированная 30 х 4",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/truby_goryachekatanye/",
+  "guess_type": "Труба круглая",
+  "guess_size": "30x4 бесш",
+  "extra": "С ПРОБЕЛАМИ, а соседние строки (27х4, 28х4, 32х3) — без пробелов, в пределах одной таблицы"
+ },
+ {
+  "raw": "Труба бесшовная холоднодеформированная 25 х 4",
+  "supplier": "Град Сталь (Хабаровск)",
+  "url": "https://gradstal.ru/catalog/truby_goryachekatanye/",
+  "guess_type": "Труба круглая",
+  "guess_size": "25x4 бесш",
+  "extra": "строка встречается ДВАЖДЫ подряд с одинаковым написанием (разные партии/длины)"
+ },
+ {
+  "raw": "Трубы БШХД, трубы БШГД",
+  "supplier": "ДальКонтинентСталь (Владивосток)",
+  "url": "https://dks-st.ru/catalog/metalloprokat/truby-stalnye",
+  "guess_type": "Труба круглая (бесшовная)",
+  "guess_size": "—",
+  "extra": "название категории через ЖАРГОННЫЕ аббревиатуры: БШХД = бесшовная холоднодеформированная, БШГД = горячедеформированная. Ведёт на тот же URL, что и «Трубы бесшовные горячекатаные и холоднокатаные»"
+ },
+ {
+  "raw": "Лист 1.5мм г/к",
+  "supplier": "ООО «Восход» (prokat28, Благовещенск)",
+  "url": "http://prokat28.ru/price",
+  "guess_type": "Лист",
+  "guess_size": "1.5 г/к",
+  "extra": "толщина с ТОЧКОЙ + «мм» слитно + «г/к» ПОСЛЕ размера; 115000 руб/т"
+ },
+ {
+  "raw": "Лист 1,5 мм х/к",
+  "supplier": "ООО «Восход» (prokat28, Благовещенск)",
+  "url": "http://prokat28.ru/price",
+  "guess_type": "Лист",
+  "guess_size": "1.5 х/к",
+  "extra": "СОСЕДНЯЯ строка того же прайса: та же толщина записана через ЗАПЯТУЮ и «мм» через пробел. Точка/запятая и слитно/раздельно меняются внутри двух подряд идущих строк"
+ },
+ {
+  "raw": "Лист горячекатаный Ст3 сп/пс",
+  "supplier": "ДальКонтинентСталь (Владивосток)",
+  "url": "https://dks-st.ru/catalog/metalloprokat/list-stalnoj",
+  "guess_type": "Лист",
+  "guess_size": "—",
+  "extra": "марка «Ст3 сп/пс» — раскислённость через слэш, с пробелом после «Ст3»"
+ },
+ {
+  "raw": "Лист с чечевичным рифлением",
+  "supplier": "ДальКонтинентСталь (Владивосток)",
+  "url": "https://dks-st.ru/catalog/metalloprokat/list-stalnoj/s-chechevichnym-rifleniem",
+  "guess_type": "Лист рифлёный",
+  "guess_size": "—",
+  "extra": "тип рифления словом «чечевичное» вместо привычного «рифлёный»"
+ },
+ {
+  "raw": "Лист просечно-вытяжной (ПВЛ)",
+  "supplier": "ДальКонтинентСталь (Владивосток)",
+  "url": "https://dks-st.ru/catalog/metalloprokat/list-stalnoj/prosechno-vityazhnoy",
+  "guess_type": "Лист",
+  "guess_size": "—",
+  "extra": "полное название + аббревиатура в скобках"
+ },
+ {
+  "raw": "Полоса 25*4",
+  "supplier": "ООО «Восход» (prokat28, Благовещенск)",
+  "url": "http://prokat28.ru/price",
+  "guess_type": "Полоса (в нашем справочнике вида нет)",
+  "guess_size": "25x4",
+  "extra": "115000 руб/т; в нашей таблице видов проката «полоса» отсутствует — потребуется либо новый вид, либо отбраковка"
+ },
+ {
+  "raw": "Проволока Т/О",
+  "supplier": "ДальКонтинентСталь (Владивосток)",
+  "url": "https://dks-st.ru/catalog/metalloprokat/provoloka",
+  "guess_type": "Проволока (в нашем справочнике вида нет)",
+  "guess_size": "—",
+  "extra": "«Т/О» = термически обработанная; у Град Стали тот же признак пишется словами «термически обработанная, ТО» и «термически необработанная, ТН»"
+ }
+]
