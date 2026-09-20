@@ -29,10 +29,26 @@
     Место — второе, сразу после первого пункта раздела: почта не документ,
     поэтому не первая, но открывают её каждый день, поэтому не последняя.
   -->
+  <!--
+    Своя запись действия для Продаж. Тег тот же, что у почтового модуля —
+    отличается только params: по нему кнопка «Лид» понимает, что почта открыта
+    из Продаж. У снабженца в Закупках меню остаётся на родном действии, и
+    кнопки там нет: лид ему не нужен, а случайное нажатие завело бы мусор.
+
+    Признак живёт в данных, а не в догадке о состоянии интерфейса: по текущему
+    приложению определять нельзя — оно протухает при заходе по прямой ссылке
+    и при возврате по хлебным крошкам.
+  -->
+  <record id="action_mail_sale" model="ir.actions.client">
+    <field name="name">Почта</field>
+    <field name="tag">mail_client.inbox</field>
+    <field name="params" eval="{'pmk_crm': True}"/>
+  </record>
+
   <record id="menu_mail_sale" model="ir.ui.menu">
     <field name="name">Почта</field>
     <field name="parent_id" ref="pmk_theme.menu_pmk_sales"/>
-    <field name="action" ref="mail_client.mail_client_inbox_action"/>
+    <field name="action" ref="pmk_mail_ui.action_mail_sale"/>
     <field name="sequence">15</field>
   </record>
 

@@ -13,8 +13,14 @@
 """,
     "category": "Productivity/Mail",
     "author": "ПМК Парк",
-    "depends": ["mail_client", "pmk_theme"],
+    "depends": ["mail_client", "pmk_theme", "crm"],
     "data": ["data/menus.xml"],
+    "assets": {
+        "web.assets_backend": [
+            "pmk_mail_ui/static/src/js/*.js",
+            "pmk_mail_ui/static/src/xml/*.xml",
+        ],
+    },
     "post_init_hook": "post_init_hook",
     "license": "LGPL-3",
     "installable": True,

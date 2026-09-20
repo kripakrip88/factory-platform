@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+  <!--
+    Кнопка встаёт сразу после «Переслать», до разделителя. Якорь — сам
+    разделитель: он в панели ровно один, и промах по нему уронит сборку
+    с внятной ошибкой, а не оставит кнопку молча не появившейся.
+
+    Подпись пишем по-русски прямо здесь: перевод вставленного узла ищется в
+    контексте НАШЕГО модуля, а не mail_client.
+  -->
+  <t t-name="pmk_mail_ui.ReadingPaneLead"
+     t-inherit="mail_client.ReadingPane"
+     t-inherit-mode="extension">
+
+    <xpath expr="//div[hasclass('o_mail_client_toolbar')]/div[hasclass('vr')]" position="before">
+      <button class="btn btn-sm btn-light pmk-mail-lead"
+              t-if="env.pmkCrm"
+              t-att-disabled="pmkLead.busy"
+              title="Создать лида из этого письма"
+              t-on-click="() => this.pmkCreateLead()">
+        <i class="fa" t-att-class="pmkLead.busy ? 'fa-circle-o-notch fa-spin me-1' : 'fa-user-plus me-1'"/>Лид
+      </button>
+    </xpath>
+  </t>
+
+</templates>
