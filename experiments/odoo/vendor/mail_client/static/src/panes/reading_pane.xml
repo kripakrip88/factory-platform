@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="mail_client.ReadingPane">
+        <div class="o_mail_client_reading flex-grow-1 d-flex flex-column overflow-hidden">
+            <t t-if="props.loading">
+                <div class="text-center text-muted p-4">
+                    <i class="fa fa-circle-o-notch fa-spin fa-2x"/>
+                    <div class="small mt-2">Fetching message…</div>
+                </div>
+            </t>
+            <t t-elif="!props.detail">
+                <div class="d-flex flex-column align-items-center justify-content-center h-100 text-muted">
+                    <i class="fa fa-envelope-o fa-3x mb-3 opacity-50"/>
+                    <span>Select a message to read it.</span>
+                </div>
+            </t>
+            <t t-else="">
+                <div class="o_mail_client_toolbar d-flex align-items-center gap-1 px-4 py-2">
+                    <button class="btn btn-sm btn-light" t-on-click="() => props.onReply('reply')">
+                        <i class="fa fa-reply me-1"/>Reply
+                    </button>
+                    <button class="btn btn-sm btn-light" t-on-click="() => props.onReply('reply_all')">
+                        <i class="fa fa-reply-all me-1"/>Reply all
+                    </button>
+                    <button class="btn btn-sm btn-light" t-on-click="() => props.onReply('forward')">
+                        <i class="fa fa-share me-1"/>Forward
+                    </button>
+
+                    <div class="vr mx-1"/>
+
+                    <button class="btn btn-sm btn-light"
+                            t-att-title="props.detail.flag_seen ? 'Mark as unread' : 'Mark as read'"
+                            t-on-click="() => props.onToggleSeen()">
+                        <i class="fa" t-att-class="props.detail.flag_seen ? 'fa-envelope' : 'fa-envelope-open-o'"/>
+                    </button>
+                    <button class="btn btn-sm btn-light" title="Star"
+                            t-on-click="() => props.onToggleFlagged()">
+                        <i class="fa" t-att-class="props.detail.flag_flagged ? 'fa-star text-warning' : 'fa-star-o'"/>
+                    </button>
+
+                    <!-- Hidden on a read-only mailbox: the server refuses both,
+                         so offering them would only produce an error dialog. -->
+                    <div class="position-relative" t-if="props.canAct">
+                        <button class="btn btn-sm btn-light" title="Move to folder"
+                                t-on-click="() => state.showMoveMenu = !state.showMoveMenu">
+                            <i class="fa fa-folder-open-o"/>
+                        </button>
+                        <div class="o_mail_client_move_menu dropdown-menu show"
+                             t-if="state.showMoveMenu">
+                            <button t-foreach="props.moveTargets or []" t-as="folder"
+                                    t-key="folder.id" class="dropdown-item"
+                                    t-on-click="() => this.onMoveTo(folder.id)">
+                                <t t-esc="folder.name"/>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-sm btn-light text-danger" title="Delete"
+                            t-if="props.canAct"
+                            t-on-click="() => props.onDelete()">
+                        <i class="fa fa-trash-o"/>
+                    </button>
+
+                    <div class="flex-grow-1"/>
+
+                    <button class="btn btn-sm btn-light" title="Show contact"
+                            t-if="props.contact"
+                            t-att-class="state.showContact ? 'active' : ''"
+                            t-on-click="() => state.showContact = !state.showContact">
+                        <i class="fa fa-user-o"/>
+                    </button>
+                    <button class="btn btn-sm btn-light" title="Download original (.eml)"
+                            t-on-click="() => props.onDownloadEml()">
+                        <i class="fa fa-download"/>
+                    </button>
+                </div>
+
+                <!-- Contact context, built from res.partner and this module's own
+                     messages: no dependency on any Odoo application. -->
+                <div class="o_mail_client_contact mx-4 mt-3" t-if="state.showContact and props.contact">
+                    <div class="d-flex align-items-start gap-3 p-3">
+                        <img t-if="props.contact.partner"
+                             class="o_mail_client_avatar rounded-circle"
+                             t-att-src="props.contact.partner.image_url" alt=""/>
+                        <div class="flex-grow-1">
+                            <t t-if="props.contact.partner">
+                                <div class="fw-bold"><t t-esc="props.contact.partner.name"/></div>
+                                <div class="small text-muted" t-if="props.contact.partner.company">
+                                    <t t-esc="props.contact.partner.company"/>
+                                </div>
+                                <div class="small text-muted">
+                                    <span t-if="props.contact.partner.phone">
+                                        <i class="fa fa-phone me-1"/><t t-esc="props.contact.partner.phone"/>
+                                    </span>
+                                    <span t-if="props.contact.partner.city" class="ms-2">
+                                        <i class="fa fa-map-marker me-1"/>
+                                        <t t-esc="props.contact.partner.city"/>
+                                        <t t-if="props.contact.partner.country">,
+                                            <t t-esc="props.contact.partner.country"/></t>
+                                    </span>
+                                </div>
+                            </t>
+                            <t t-else="">
+                                <div class="fw-bold"><t t-esc="props.contact.email"/></div>
+                                <div class="small text-muted">Not in your contacts.</div>
+                            </t>
+                            <div class="small text-muted mt-1">
+                                <t t-esc="props.contact.message_count"/> message(s) from this address
+                            </div>
+                        </div>
+                    </div>
+                    <div class="o_mail_client_contact_history" t-if="props.contact.history.length">
+                        <button t-foreach="props.contact.history" t-as="item" t-key="item.id"
+                                class="btn btn-link w-100 text-start d-flex align-items-center px-3 py-1"
+                                t-on-click="() => props.onSelectMessage(item.id)">
+                            <span class="text-truncate flex-grow-1"
+                                  t-att-class="item.flag_seen ? '' : 'fw-bold'">
+                                <t t-esc="item.subject"/>
+                            </span>
+                            <small class="text-muted ms-2"><t t-esc="formatDate(item.date)"/></small>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- The rest of the conversation, shown only when threading is on. -->
+                <div class="o_mail_client_thread mx-4 mt-3" t-if="otherInThread.length">
+                    <div class="o_mail_client_thread_title small text-muted px-3 pt-2">
+                        <i class="fa fa-comments-o me-1"/>
+                        <t t-esc="otherInThread.length"/> more in this conversation
+                    </div>
+                    <button t-foreach="otherInThread" t-as="item" t-key="item.id"
+                            class="btn btn-link w-100 text-start d-flex align-items-center px-3 py-1"
+                            t-on-click="() => props.onSelectMessage(item.id)">
+                        <span class="text-truncate flex-grow-1"
+                              t-att-class="item.flag_seen ? '' : 'fw-bold'">
+                            <t t-esc="item.email_from"/>
+                        </span>
+                        <small class="text-muted ms-2"><t t-esc="formatDate(item.date)"/></small>
+                    </button>
+                </div>
+
+                <div class="o_mail_client_reading_header px-4 py-3">
+                    <h4 class="mb-2"><t t-esc="props.detail.subject"/></h4>
+                    <div class="small text-muted">
+                        <div><strong>From:</strong> <t t-esc="props.detail.email_from"/></div>
+                        <div t-if="props.detail.email_to"><strong>To:</strong> <t t-esc="props.detail.email_to"/></div>
+                        <div t-if="props.detail.email_cc"><strong>Cc:</strong> <t t-esc="props.detail.email_cc"/></div>
+                        <div><t t-esc="formatDate(props.detail.date)"/></div>
+                    </div>
+                </div>
+
+                <div class="alert alert-danger mx-4 py-2 small" role="alert"
+                     t-if="props.detail.is_spam">
+                    <i class="fa fa-exclamation-triangle me-1"/>
+                    Your mail server flagged this message as spam<t t-if="props.detail.spam_score">
+                    (Rspamd score <t t-esc="props.detail.spam_score"/>)</t>. Treat links and
+                    attachments with suspicion.
+                </div>
+
+                <div class="alert alert-warning mx-4 py-2 small d-flex align-items-center"
+                     role="alert" t-if="props.detail.has_blocked_images">
+                    <span class="flex-grow-1">
+                        <i class="fa fa-picture-o me-1"/>
+                        Remote images are blocked. Loading them tells the sender you opened this message.
+                    </span>
+                    <button class="btn btn-sm btn-outline-secondary ms-2"
+                            t-on-click="() => props.onAllowImages()">
+                        Show images
+                    </button>
+                </div>
+
+                <div class="alert alert-warning mx-4 py-2 small" role="alert"
+                     t-if="props.detail.body_state === 'failed'">
+                    This message could not be downloaded from the mail server.
+                </div>
+
+                <div class="px-4 pb-2" t-if="props.detail.attachments.length">
+                    <div class="d-flex flex-wrap gap-2">
+                        <button t-foreach="props.detail.attachments" t-as="attachment"
+                                t-key="attachment.id"
+                                class="btn btn-sm btn-light o_mail_client_chip d-inline-flex align-items-center gap-2"
+                                t-att-disabled="state.downloading === attachment.id"
+                                t-on-click="() => this.onDownload(attachment)">
+                            <i class="fa" t-att-class="state.downloading === attachment.id ? 'fa-circle-o-notch fa-spin' : 'fa-paperclip'"/>
+                            <span t-esc="attachment.name"/>
+                            <small class="text-muted" t-esc="formatSize(attachment.size)"/>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex-grow-1 overflow-hidden px-4 pb-4">
+                    <iframe class="o_mail_client_frame w-100 h-100"
+                            t-att-sandbox="sandbox"
+                            t-att-srcdoc="props.detail.body"
+                            title="Message body"/>
+                </div>
+            </t>
+        </div>
+    </t>
+
+</templates>

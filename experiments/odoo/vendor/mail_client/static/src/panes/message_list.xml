@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="mail_client.MessageList">
+        <div class="o_mail_client_list d-flex flex-column flex-shrink-0">
+            <div class="o_mail_client_list_header d-flex align-items-center gap-2 px-3 py-2">
+                <input type="checkbox" class="form-check-input mt-0 o_mail_client_tick"
+                       t-att-checked="allTicked"
+                       t-att-indeterminate="someTicked"
+                       t-on-change="() => props.onToggleAll()"
+                       title="Select all"/>
+                <span class="fw-bold text-truncate flex-grow-1" t-if="!props.selectedIds.length">
+                    <t t-esc="props.folderName"/>
+                </span>
+                <span class="fw-bold flex-grow-1" t-else="">
+                    <t t-esc="props.selectedIds.length"/> selected
+                </span>
+            </div>
+
+            <div class="o_mail_client_bulkbar d-flex align-items-center gap-1 px-2 py-1"
+                 t-if="props.selectedIds.length">
+                <button class="btn btn-sm btn-light" t-att-disabled="props.busy"
+                        t-att-title="anyUnread ? 'Mark as read' : 'Mark as unread'"
+                        t-on-click="() => props.onBulkSeen(anyUnread)">
+                    <i class="fa" t-att-class="anyUnread ? 'fa-envelope-open-o' : 'fa-envelope'"/>
+                </button>
+                <button class="btn btn-sm btn-light" title="Star" t-att-disabled="props.busy"
+                        t-on-click="() => props.onBulkFlagged(true)">
+                    <i class="fa fa-star-o"/>
+                </button>
+                <button class="btn btn-sm btn-light" title="Remove star" t-att-disabled="props.busy"
+                        t-on-click="() => props.onBulkFlagged(false)">
+                    <i class="fa fa-star-half-o"/>
+                </button>
+                <!-- Hidden on a read-only mailbox: the server refuses both, so
+                     offering them would only produce an error dialog. -->
+                <div class="position-relative" t-if="props.canAct">
+                    <button class="btn btn-sm btn-light" title="Move to folder"
+                            t-att-disabled="props.busy"
+                            t-on-click="() => state.showMoveMenu = !state.showMoveMenu">
+                        <i class="fa fa-folder-open-o"/>
+                    </button>
+                    <div class="o_mail_client_move_menu dropdown-menu show" t-if="state.showMoveMenu">
+                        <button t-foreach="props.moveTargets or []" t-as="folder" t-key="folder.id"
+                                class="dropdown-item" t-on-click="() => this.onMoveTo(folder.id)">
+                            <t t-esc="folder.name"/>
+                        </button>
+                    </div>
+                </div>
+                <button class="btn btn-sm btn-light text-danger" title="Delete"
+                        t-if="props.canAct"
+                        t-att-disabled="props.busy"
+                        t-on-click="() => props.onBulkDelete()">
+                    <i class="fa fa-trash-o"/>
+                </button>
+                <i class="fa fa-circle-o-notch fa-spin text-muted ms-1" t-if="props.busy"/>
+            </div>
+
+            <div class="flex-grow-1 overflow-auto">
+                <t t-if="props.loading and !props.messages.length">
+                    <div class="text-center text-muted p-4">
+                        <i class="fa fa-circle-o-notch fa-spin fa-2x"/>
+                    </div>
+                </t>
+                <t t-elif="!props.messages.length">
+                    <div class="text-center text-muted p-4 small">
+                        <t t-if="props.filterLabel">
+                            <!-- Saying "nothing here" under an active filter
+                                 reads as an empty folder, and the filter is the
+                                 one thing that can be undone from here. -->
+                            No message matches <b><t t-esc="props.filterLabel"/></b>.
+                            <div class="mt-2">
+                                <button class="btn btn-link btn-sm p-0"
+                                        t-on-click="() => props.onClearFilter()">
+                                    Show all messages
+                                </button>
+                            </div>
+                        </t>
+                        <t t-else="">Nothing here.</t>
+                    </div>
+                </t>
+
+                <div t-foreach="props.messages" t-as="message" t-key="message.id"
+                     class="o_mail_client_row d-flex px-3 py-2"
+                     t-att-class="{
+                         'o_unread': !message.flag_seen,
+                         'active': isSelected(message.id),
+                         'o_ticked': isTicked(message.id),
+                     }"
+                     t-on-click="(ev) => this.onRowClick(ev, message.id)">
+                    <input type="checkbox" class="form-check-input mt-1 me-2 o_mail_client_tick"
+                           t-att-checked="isTicked(message.id)"
+                           t-on-change="() => props.onToggleSelected(message.id)"/>
+                    <div class="flex-grow-1 overflow-hidden">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="text-truncate flex-grow-1" t-att-title="message.email_from">
+                                <t t-esc="sender(message)"/>
+                            </span>
+                            <i t-if="message.flag_flagged" class="fa fa-star text-warning small"/>
+                            <i t-if="message.has_attachment" class="fa fa-paperclip text-muted small"/>
+                            <small class="text-muted flex-shrink-0">
+                                <t t-esc="formatDate(message.date)"/>
+                            </small>
+                        </div>
+                        <div class="text-truncate">
+                            <i t-if="message.flag_answered" class="fa fa-reply text-muted me-1 small"/>
+                            <span t-if="message.thread_count > 1"
+                                  class="badge rounded-pill text-bg-secondary me-1"
+                                  t-att-title="message.thread_count + ' messages'">
+                                <t t-esc="message.thread_count"/>
+                            </span>
+                            <span t-att-class="message.flag_seen ? '' : 'fw-bold'">
+                                <t t-esc="message.subject"/>
+                            </span>
+                        </div>
+                        <div class="text-truncate text-muted small" t-if="message.preview">
+                            <t t-esc="message.preview"/>
+                        </div>
+                        <div t-if="message.is_spam">
+                            <span class="badge text-bg-danger">Spam</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-2 text-center" t-if="props.hasMore">
+                    <button class="btn btn-link btn-sm"
+                            t-att-disabled="props.loading"
+                            t-on-click="() => props.onLoadMore()">
+                        Load more
+                    </button>
+                </div>
+            </div>
+        </div>
+    </t>
+
+</templates>

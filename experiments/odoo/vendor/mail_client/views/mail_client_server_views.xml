@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="mail_client_server_view_list" model="ir.ui.view">
+        <field name="name">mail.client.server.list</field>
+        <field name="model">mail.client.server</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="imap_host"/>
+                <field name="imap_port"/>
+                <field name="auth_mode"/>
+                <field name="account_count" string="Accounts"/>
+                <field name="supports_qresync" string="QRESYNC" optional="show"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'connected'"
+                       decoration-danger="state == 'error'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="mail_client_server_view_form" model="ir.ui.view">
+        <field name="name">mail.client.server.form</field>
+        <field name="model">mail.client.server</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_test_connection" type="object" string="Test Connection"
+                            class="btn-primary" icon="fa-plug"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,connected"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_accounts" type="object" class="oe_stat_button"
+                                icon="fa-envelope-o">
+                            <field name="account_count" widget="statinfo" string="Accounts"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="e.g. mailcow - mail.company.co.id"/></h1>
+                    </div>
+                    <div class="alert alert-danger" role="alert" invisible="state != 'error'">
+                        <field name="error_message" readonly="1" nolabel="1"/>
+                    </div>
+                    <group>
+                        <group string="Incoming (IMAP)">
+                            <field name="imap_host" placeholder="mail.company.co.id"/>
+                            <field name="imap_port"/>
+                            <field name="imap_encryption"/>
+                        </group>
+                        <group string="Outgoing (SMTP)">
+                            <field name="smtp_server_id"/>
+                            <div class="text-muted" colspan="2">
+                                Optional fallback. Sending is configured per mailbox,
+                                on the Mail Account itself - mailcow and Gmail both
+                                refuse to let one account send as another.
+                            </div>
+                        </group>
+                    </group>
+                    <group string="Authentication">
+                        <field name="auth_mode" widget="radio"/>
+                        <field name="master_user" invisible="auth_mode != 'master'"
+                               required="auth_mode == 'master'"
+                               placeholder="DOVECOT_MASTER_USER"/>
+                        <field name="master_realm" invisible="auth_mode != 'master'"/>
+                        <field name="master_password" password="True"
+                               invisible="auth_mode != 'master'"/>
+                    </group>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="not smtp_server_id or account_count &lt; 2">
+                        <strong>This default cannot be right for every mailbox.</strong>
+                        <field name="account_count" class="d-inline" readonly="1"/>
+                        mailboxes use this server, but an outgoing server may only send
+                        as its own address. Set the outgoing server on each Mail Account
+                        instead and leave this empty.
+                    </div>
+                    <div class="alert alert-warning" role="alert" invisible="auth_mode != 'master'">
+                        <strong>The master password opens every mailbox on this server.</strong>
+                        It is encrypted with a key stored in <code>odoo.conf</code> rather than in
+                        the database, and every use of it is recorded in the access log. Treat it
+                        with the same care as the server's root password.
+                    </div>
+                    <group string="Server Capabilities" invisible="state == 'draft'">
+                        <field name="supports_qresync" readonly="1"/>
+                        <field name="supports_move" readonly="1"/>
+                        <field name="capabilities" readonly="1"/>
+                    </group>
+                    <group>
+                        <field name="active" invisible="1"/>
+                        <field name="sequence" invisible="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="mail_client_server_action" model="ir.actions.act_window">
+        <field name="name">Mail Servers</field>
+        <field name="res_model">mail.client.server</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Connect your mail server</p>
+            <p>
+                Point Odoo at your mailcow instance. With a Dovecot master user,
+                one credential serves every mailbox and no user ever types their
+                mail password into Odoo.
+            </p>
+        </field>
+    </record>
+
+</odoo>

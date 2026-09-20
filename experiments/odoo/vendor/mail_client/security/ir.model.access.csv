@@ -1,0 +1,21 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_mail_client_server_system,mail.client.server system,model_mail_client_server,base.group_system,1,1,1,1
+access_mail_client_account_user,mail.client.account user,model_mail_client_account,group_mail_client_user,1,1,0,0
+access_mail_client_account_admin,mail.client.account admin,model_mail_client_account,group_mail_client_admin,1,1,1,1
+access_mail_client_folder_user,mail.client.folder user,model_mail_client_folder,group_mail_client_user,1,1,0,0
+access_mail_client_folder_admin,mail.client.folder admin,model_mail_client_folder,group_mail_client_admin,1,1,1,1
+access_mail_client_message_user,mail.client.message user,model_mail_client_message,group_mail_client_user,1,1,0,1
+access_mail_client_message_admin,mail.client.message admin,model_mail_client_message,group_mail_client_admin,1,1,1,1
+access_mail_client_signature_user,mail.client.signature user,model_mail_client_signature,group_mail_client_user,1,1,1,1
+access_mail_client_signature_admin,mail.client.signature admin,model_mail_client_signature,group_mail_client_admin,1,1,1,1
+access_mail_client_tag_user,mail.client.tag user,model_mail_client_tag,group_mail_client_user,1,1,1,0
+access_mail_client_tag_admin,mail.client.tag admin,model_mail_client_tag,group_mail_client_admin,1,1,1,1
+access_mail_client_attachment_user,mail.client.attachment user,model_mail_client_attachment,group_mail_client_user,1,0,0,0
+access_mail_client_attachment_admin,mail.client.attachment admin,model_mail_client_attachment,group_mail_client_admin,1,1,1,1
+access_mail_client_sync_op_user,mail.client.sync.op user,model_mail_client_sync_op,group_mail_client_user,1,0,0,0
+access_mail_client_sync_op_admin,mail.client.sync.op admin,model_mail_client_sync_op,group_mail_client_admin,1,1,1,1
+access_mail_client_compose_user,mail.client.compose user,model_mail_client_compose,group_mail_client_user,1,1,1,1
+access_mail_client_access_user,mail.client.access user,model_mail_client_access,group_mail_client_user,1,0,0,0
+access_mail_client_access_admin,mail.client.access admin,model_mail_client_access,group_mail_client_admin,1,1,1,1
+access_mail_client_audit_admin,mail.client.audit admin,model_mail_client_audit,group_mail_client_admin,1,0,0,0
+access_mail_client_audit_system,mail.client.audit system,model_mail_client_audit,base.group_system,1,0,0,0

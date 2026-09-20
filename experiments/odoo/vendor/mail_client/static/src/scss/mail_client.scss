@@ -1,0 +1,381 @@
+// Three-pane inbox layout.
+// Colours are driven by Bootstrap/Odoo variables so the dark bundle only has
+// to override a handful of tokens (see mail_client.dark.scss).
+
+.o_mail_client {
+    --mc-border: #{$border-color};
+    --mc-panel-bg: #{$white};
+    --mc-hover-bg: #{$gray-100};
+    --mc-active-bg: #{$o-brand-odoo};
+    --mc-active-color: #{$white};
+    --mc-unread-marker: #{$primary};
+    --mc-ticked-bg: #{rgba($primary, .12)};
+
+    background-color: var(--mc-panel-bg);
+}
+
+.o_mail_client_topbar {
+    border-bottom: 1px solid var(--mc-border);
+    gap: .5rem;
+
+    .o_mail_client_search {
+        max-width: 32rem;
+    }
+}
+
+.o_mail_client_folders {
+    width: 15rem;
+    border-right: 1px solid var(--mc-border);
+}
+
+.o_mail_client_account_header {
+    font-size: .8125rem;
+    text-transform: uppercase;
+    letter-spacing: .02em;
+    opacity: .7;
+    color: inherit;
+    text-decoration: none;
+    border-radius: 0;
+
+    &:hover {
+        opacity: 1;
+        background-color: var(--mc-hover-bg);
+        text-decoration: none;
+    }
+
+    // Marks the mailbox whose folder is open, so a folded account still shows
+    // where you are.
+    &.o_reading {
+        opacity: 1;
+        font-weight: 600;
+    }
+}
+
+.o_mail_client_caret {
+    font-size: .75rem;
+    transition: transform .1s ease-in-out;
+}
+
+.o_mail_client_folder {
+    border-radius: 0;
+    padding: .35rem .75rem .35rem 1rem;
+    color: inherit;
+    text-decoration: none;
+
+    &:hover {
+        background-color: var(--mc-hover-bg);
+        text-decoration: none;
+    }
+
+    &.active {
+        background-color: var(--mc-active-bg);
+        color: var(--mc-active-color);
+
+        .badge {
+            background-color: rgba(255, 255, 255, .25) !important;
+        }
+    }
+}
+
+.o_mail_client_list {
+    width: 24rem;
+    border-right: 1px solid var(--mc-border);
+}
+
+.o_mail_client_list_header {
+    border-bottom: 1px solid var(--mc-border);
+}
+
+.o_mail_client_row {
+    border-bottom: 1px solid var(--mc-border);
+    cursor: pointer;
+
+    &:hover {
+        background-color: var(--mc-hover-bg);
+    }
+
+    &.o_ticked {
+        background-color: var(--mc-ticked-bg);
+    }
+
+    // A row can be both open and ticked. The open state has to win: a light
+    // "ticked" tint underneath white "active" text is unreadable, which is
+    // exactly what happens if these two are left to fight on specificity.
+    &.active,
+    &.active.o_ticked {
+        background-color: var(--mc-active-bg);
+        color: var(--mc-active-color);
+
+        .text-muted,
+        .small {
+            color: rgba(255, 255, 255, .75) !important;
+        }
+
+        .badge.text-bg-danger {
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, .5);
+        }
+
+        // Keep the checkbox visible against the dark background.
+        .o_mail_client_tick:not(:checked) {
+            border-color: rgba(255, 255, 255, .6);
+            background-color: transparent;
+        }
+    }
+
+    &.o_unread {
+        border-left: 3px solid var(--mc-unread-marker);
+        padding-left: calc(1rem - 3px);
+    }
+}
+
+.o_mail_client_reading_header {
+    border-bottom: 1px solid var(--mc-border);
+}
+
+.o_mail_client_contact,
+.o_mail_client_thread {
+    border: 1px solid var(--mc-border);
+    border-radius: .375rem;
+    background-color: var(--mc-hover-bg);
+    overflow: hidden;
+}
+
+.o_mail_client_avatar {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.o_mail_client_contact_history,
+.o_mail_client_thread {
+    .btn-link {
+        color: inherit;
+        text-decoration: none;
+        border-radius: 0;
+
+        &:hover {
+            background-color: var(--mc-ticked-bg);
+            text-decoration: none;
+        }
+    }
+}
+
+.o_mail_client_contact_history {
+    border-top: 1px solid var(--mc-border);
+}
+
+.o_mail_client_thread_title {
+    text-transform: uppercase;
+    letter-spacing: .02em;
+    font-size: .75rem;
+}
+
+.o_mail_client_frame {
+    border: 0;
+    background-color: #fff; // email HTML assumes a white canvas
+}
+
+// --- composer and message actions (Phase 2) ---
+
+.o_mail_client_toolbar {
+    border-bottom: 1px solid var(--mc-border);
+    flex-wrap: wrap;
+}
+
+.o_mail_client_move_menu,
+.o_mail_client_filter_menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 1000;
+    max-height: 18rem;
+    overflow-y: auto;
+}
+
+.o_mail_client_filter_menu {
+    min-width: 12rem;
+}
+
+.o_mail_client_chip {
+    max-width: 20rem;
+
+    span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+
+.o_mail_client_composer {
+    border-left: 1px solid var(--mc-border);
+    // Composing takes over the whole area rather than sharing it with the
+    // message list, which is of no use while writing.
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.o_mail_client_bulkbar {
+    border-bottom: 1px solid var(--mc-border);
+    background-color: var(--mc-hover-bg);
+    flex-wrap: wrap;
+}
+
+.o_mail_client_recipient {
+    .o_mail_client_recipient_input,
+    .o-autocomplete {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    input {
+        width: 100%;
+        border: 0;
+        background: transparent;
+        padding: .25rem 0;
+
+        &:focus {
+            outline: 0;
+            box-shadow: none;
+        }
+    }
+}
+
+.o_mail_client_composer_header,
+.o_mail_client_composer_footer {
+    border-bottom: 1px solid var(--mc-border);
+}
+
+.o_mail_client_composer_footer {
+    border-bottom: 0;
+    border-top: 1px solid var(--mc-border);
+}
+
+// The composer reads as one bordered document rather than floating text:
+// without visible field boundaries there is nothing to tell the eye where
+// "To" ends and "Subject" begins.
+.o_mail_client_compose_card {
+    border: 1px solid var(--mc-border);
+    border-radius: .375rem;
+    overflow: hidden;
+    background-color: var(--mc-panel-bg);
+}
+
+.o_mail_client_field {
+    border-bottom: 1px solid var(--mc-border);
+    padding: .25rem .75rem;
+    min-height: 2.5rem;
+
+    &:focus-within {
+        background-color: var(--mc-hover-bg);
+    }
+}
+
+.o_mail_client_composer_label {
+    width: 4.5rem;
+    flex-shrink: 0;
+    margin-bottom: 0;
+    font-size: .8125rem;
+    font-weight: 600;
+    opacity: .65;
+}
+
+.o_mail_client_plain_input {
+    border: 0;
+    background: transparent;
+    padding: .35rem 0;
+    min-width: 0;
+
+    &:focus {
+        outline: 0;
+        box-shadow: none;
+    }
+}
+
+.o_mail_client_editor_bar {
+    border-bottom: 1px solid var(--mc-border);
+    background-color: var(--mc-hover-bg);
+    padding: .25rem .5rem;
+}
+
+.o_mail_client_codeview {
+    font-family: $font-family-monospace;
+    font-size: .8125rem;
+    line-height: 1.5;
+    border: 1px solid var(--mc-border);
+    border-radius: .25rem;
+    padding: .5rem;
+    resize: none;
+    width: 100%;
+    min-height: 12rem;
+    background-color: var(--mc-panel-bg);
+    color: inherit;
+
+    &:focus {
+        outline: 0;
+        border-color: var(--mc-unread-marker);
+    }
+}
+
+.o_mail_client_editor_toolbar {
+    .btn {
+        --#{$prefix}btn-bg: transparent;
+        --#{$prefix}btn-border-color: transparent;
+        width: 2rem;
+    }
+}
+
+.o_mail_client_toolbar_sep {
+    width: 1px;
+    align-self: stretch;
+    margin: .15rem .25rem;
+    background-color: var(--mc-border);
+}
+
+// The body fills whatever height is left: an editor that stops short leaves a
+// dead white band, and clicking it does not put the cursor in the message.
+.o_mail_client_editor_wrap {
+    padding: .75rem;
+    min-height: 12rem;
+    cursor: text;
+}
+
+.o_mail_client_editor {
+    min-height: 100%;
+
+    .odoo-editor-editable {
+        min-height: 100%;
+    }
+}
+
+.o_mail_client_attachments {
+    border-top: 1px solid var(--mc-border);
+    background-color: var(--mc-hover-bg);
+}
+
+.o_mail_client_attachments_title {
+    padding: .4rem .75rem 0;
+    text-transform: uppercase;
+    letter-spacing: .02em;
+    font-size: .75rem;
+}
+
+.o_mail_client_composer .o_mail_client_chip {
+    border: 1px solid var(--mc-border);
+    border-radius: 1rem;
+    background-color: var(--mc-panel-bg);
+    padding: .2rem .6rem;
+}
+
+// Below the medium breakpoint the three panes stop fitting side by side.
+// Phase 4 turns this into proper drill-down navigation; for now the panes
+// simply shrink so nothing is unreachable.
+@include media-breakpoint-down(lg) {
+    .o_mail_client_folders {
+        width: 11rem;
+    }
+
+    .o_mail_client_list {
+        width: 18rem;
+    }
+}

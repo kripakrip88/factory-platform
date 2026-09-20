@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="mail_client.RecipientInput">
+        <div class="d-flex align-items-center flex-grow-1 o_mail_client_recipient">
+            <label class="o_mail_client_composer_label" t-if="props.label">
+                <t t-esc="props.label"/>
+            </label>
+            <AutoComplete
+                value="props.value"
+                sources="sources"
+                placeholder="props.placeholder or ''"
+                onInput.bind="onInput"
+                onChange.bind="onChange"
+                resetOnSelect="false"
+                autoSelect="false"
+                class="'o_mail_client_recipient_input flex-grow-1'"/>
+        </div>
+    </t>
+
+</templates>

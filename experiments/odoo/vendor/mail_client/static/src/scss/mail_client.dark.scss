@@ -1,0 +1,20 @@
+// Served only when the color_scheme cookie is "dark".
+// Overriding the tokens is enough; the layout rules are shared.
+
+.o_mail_client {
+    --mc-border: #{$border-color};
+    --mc-panel-bg: #{$body-bg};
+    --mc-hover-bg: #{rgba($white, .06)};
+    --mc-active-bg: #{$o-brand-odoo};
+    --mc-active-color: #{$white};
+    --mc-unread-marker: #{$primary};
+    // Stronger than in light mode: a 12% tint is invisible on a dark surface.
+    --mc-ticked-bg: #{rgba($primary, .28)};
+}
+
+// Email HTML nearly always assumes a light background, so the frame keeps its
+// white canvas in dark mode. Forcing it dark makes most real messages
+// unreadable rather than elegant.
+.o_mail_client_frame {
+    background-color: #fff;
+}

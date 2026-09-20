@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="module_category_mail_client" model="ir.module.category">
+        <field name="name">Mail Client</field>
+        <field name="description">Access level for the in-Odoo email client.</field>
+        <field name="sequence">20</field>
+    </record>
+
+    <!--
+        Odoo 19 groups hang off a res.groups.privilege, not directly off an
+        ir.module.category: the privilege is what the user form renders as a
+        single selection.
+    -->
+    <record id="res_groups_privilege_mail_client" model="res.groups.privilege">
+        <field name="name">Mail Client</field>
+        <field name="description">Access level for the in-Odoo email client.</field>
+        <field name="category_id" ref="module_category_mail_client"/>
+        <field name="sequence">20</field>
+    </record>
+
+    <record id="group_mail_client_user" model="res.groups">
+        <field name="name">User</field>
+        <field name="sequence">10</field>
+        <field name="privilege_id" ref="res_groups_privilege_mail_client"/>
+        <field name="comment">Can use their own mailboxes.</field>
+    </record>
+
+    <record id="group_mail_client_agent" model="res.groups">
+        <field name="name">Shared Mailbox Agent</field>
+        <field name="sequence">20</field>
+        <field name="privilege_id" ref="res_groups_privilege_mail_client"/>
+        <field name="implied_ids" eval="[(4, ref('group_mail_client_user'))]"/>
+        <field name="comment">Can also open shared mailboxes they were granted access to.</field>
+    </record>
+
+    <record id="group_mail_client_admin" model="res.groups">
+        <field name="name">Administrator</field>
+        <field name="sequence">30</field>
+        <field name="privilege_id" ref="res_groups_privilege_mail_client"/>
+        <field name="implied_ids" eval="[(4, ref('group_mail_client_agent'))]"/>
+        <field name="comment">Can configure mailboxes for other users and read the access log.</field>
+        <field name="user_ids" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
+    </record>
+
+    <!--
+        Note: mail.client.server is deliberately absent from these groups.
+        It holds the Dovecot master password and is reachable only by
+        base.group_system, enforced through ir.model.access.csv.
+    -->
+
+    <!--
+        Record rules. These are the single most important files in the module:
+        a mistake here leaks one person's email to another. Every rule below is
+        covered by tests in tests/test_access_rights.py - keep it that way.
+    -->
+
+    <!--
+        Read and write are split throughout, because the shared-mailbox roles
+        are meaningless otherwise: a Viewer that can delete mail is not a
+        viewer. Roles map to the flattened lists on the account:
+          allowed_user_ids    - viewer, agent, manager  (read)
+          allowed_writer_ids  - agent, manager          (flag/move/delete/reply)
+          allowed_manager_ids - manager                 (change the mailbox)
+    -->
+
+    <record id="rule_mail_client_account_own" model="ir.rule">
+        <field name="name">Mail Account: read own and shared mailboxes</field>
+        <field name="model_id" ref="model_mail_client_account"/>
+        <field name="domain_force">
+            ['|', ('user_id', '=', user.id), ('allowed_user_ids', 'in', user.ids)]
+        </field>
+        <field name="groups" eval="[(4, ref('group_mail_client_user'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="rule_mail_client_account_manage" model="ir.rule">
+        <field name="name">Mail Account: only owners and managers may change it</field>
+        <field name="model_id" ref="model_mail_client_account"/>
+        <field name="domain_force">
+            ['|', ('user_id', '=', user.id), ('allowed_manager_ids', 'in', user.ids)]
+        </field>
+        <field name="groups" eval="[(4, ref('group_mail_client_user'))]"/>
+        <field name="perm_read" eval="False"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="rule_mail_client_account_admin" model="ir.rule">
+        <field name="name">Mail Account: administrators see all</field>
+        <field name="model_id" ref="model_mail_client_account"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_mail_client_admin'))]"/>
+    </record>
+
+    <record id="rule_mail_client_folder_own" model="ir.rule">
+        <field name="name">Mail Folder: read what the account allows</field>
+        <field name="model_id" ref="model_mail_client_folder"/>
+        <field name="domain_force">
+            ['|', ('account_id.user_id', '=', user.id),
+                  ('account_id.allowed_user_ids', 'in', user.ids)]
+        </field>
+        <field name="groups" eval="[(4, ref('group_mail_client_user'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="rule_mail_client_folder_manage" model="ir.rule">
+        <field name="name">Mail Folder: only owners and managers change subscriptions</field>
+        <field name="model_id" ref="model_mail_client_folder"/>
+        <field name="domain_force">
+            ['|', ('account_id.user_id', '=', user.id),
+                  ('account_id.allowed_manager_ids', 'in', user.ids)]
+        </field>
+        <field name="groups" eval="[(4, ref('group_mail_client_user'))]"/>
+        <field name="perm_read" eval="False"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="rule_mail_client_folder_admin" model="ir.rule">
+        <field name="name">Mail Folder: administrators see all</field>
+        <field name="model_id" ref="model_mail_client_folder"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_mail_client_admin'))]"/>
+    </record>
+
+    <record id="rule_mail_client_message_own" model="ir.rule">
+        <field name="name">Mail Message: read what the account allows</field>
+        <field name="model_id" ref="model_mail_client_message"/>
+        <field name="domain_force">
+            ['|', ('account_id.user_id', '=', user.id),
+                  ('account_id.allowed_user_ids', 'in', user.ids)]
+        </field>
+        <field name="groups" eval="[(4, ref('group_mail_client_user'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="rule_mail_client_message_act" model="ir.rule">
+        <field name="name">Mail Message: viewers may not change anything</field>
+        <field name="model_id" ref="model_mail_client_message"/>
+        <field name="domain_force">
+            ['|', ('account_id.user_id', '=', user.id),
+                  ('account_id.allowed_writer_ids', 'in', user.ids)]
+        </field>
+        <field name="groups" eval="[(4, ref('group_mail_client_user'))]"/>
+        <field name="perm_read" eval="False"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <record id="rule_mail_client_message_admin" model="ir.rule">
+        <field name="name">Mail Message: administrators see all</field>
+        <field name="model_id" ref="model_mail_client_message"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_mail_client_admin'))]"/>
+    </record>
+
+    <record id="rule_mail_client_signature_own" model="ir.rule">
+        <field name="name">Signature: follows its account</field>
+        <field name="model_id" ref="model_mail_client_signature"/>
+        <field name="domain_force">
+            ['|', ('account_id.user_id', '=', user.id),
+                  ('account_id.allowed_writer_ids', 'in', user.ids)]
+        </field>
+        <field name="groups" eval="[(4, ref('group_mail_client_user'))]"/>
+    </record>
+
+    <record id="rule_mail_client_signature_admin" model="ir.rule">
+        <field name="name">Signature: administrators see all</field>
+        <field name="model_id" ref="model_mail_client_signature"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_mail_client_admin'))]"/>
+    </record>
+
+    <record id="rule_mail_client_tag_own" model="ir.rule">
+        <field name="name">Mail Tag: follows its account</field>
+        <field name="model_id" ref="model_mail_client_tag"/>
+        <field name="domain_force">
+            ['|', ('account_id.user_id', '=', user.id),
+                  ('account_id.allowed_user_ids', 'in', user.ids)]
+        </field>
+        <field name="groups" eval="[(4, ref('group_mail_client_user'))]"/>
+    </record>
+
+    <record id="rule_mail_client_tag_admin" model="ir.rule">
+        <field name="name">Mail Tag: administrators see all</field>
+        <field name="model_id" ref="model_mail_client_tag"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_mail_client_admin'))]"/>
+    </record>
+
+    <record id="rule_mail_client_attachment_own" model="ir.rule">
+        <field name="name">Mail Attachment: follows its message</field>
+        <field name="model_id" ref="model_mail_client_attachment"/>
+        <field name="domain_force">
+            ['|', ('account_id.user_id', '=', user.id),
+                  ('account_id.allowed_user_ids', 'in', user.ids)]
+        </field>
+        <field name="groups" eval="[(4, ref('group_mail_client_user'))]"/>
+    </record>
+
+    <record id="rule_mail_client_attachment_admin" model="ir.rule">
+        <field name="name">Mail Attachment: administrators see all</field>
+        <field name="model_id" ref="model_mail_client_attachment"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_mail_client_admin'))]"/>
+    </record>
+
+    <record id="rule_mail_client_sync_op_own" model="ir.rule">
+        <field name="name">Pending Operation: follows its account</field>
+        <field name="model_id" ref="model_mail_client_sync_op"/>
+        <field name="domain_force">
+            ['|', ('account_id.user_id', '=', user.id),
+                  ('account_id.allowed_user_ids', 'in', user.ids)]
+        </field>
+        <field name="groups" eval="[(4, ref('group_mail_client_user'))]"/>
+    </record>
+
+    <record id="rule_mail_client_sync_op_admin" model="ir.rule">
+        <field name="name">Pending Operation: administrators see all</field>
+        <field name="model_id" ref="model_mail_client_sync_op"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_mail_client_admin'))]"/>
+    </record>
+
+    <!-- A draft belongs to whoever is writing it, full stop. -->
+    <record id="rule_mail_client_compose_own" model="ir.rule">
+        <field name="name">Composer: own drafts only</field>
+        <field name="model_id" ref="model_mail_client_compose"/>
+        <field name="domain_force">[('user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_mail_client_user'))]"/>
+    </record>
+
+    <record id="rule_mail_client_access_own" model="ir.rule">
+        <field name="name">Mailbox Access: own entries</field>
+        <field name="model_id" ref="model_mail_client_access"/>
+        <field name="domain_force">
+            ['|', ('user_id', '=', user.id), ('account_id.user_id', '=', user.id)]
+        </field>
+        <field name="groups" eval="[(4, ref('group_mail_client_user'))]"/>
+    </record>
+
+    <record id="rule_mail_client_access_admin" model="ir.rule">
+        <field name="name">Mailbox Access: administrators see all</field>
+        <field name="model_id" ref="model_mail_client_access"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_mail_client_admin'))]"/>
+    </record>
+
+</odoo>

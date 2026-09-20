@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="mail_client.EditorToolbar">
+        <div class="o_mail_client_editor_toolbar d-flex align-items-center flex-wrap gap-1">
+            <t t-foreach="buttons" t-as="button" t-key="button_index">
+                <div t-if="button.separator" class="o_mail_client_toolbar_sep"/>
+                <button t-else="" type="button" class="btn btn-sm btn-light"
+                        t-att-title="button.title"
+                        t-on-mousedown.prevent="() => this.run(button.command)">
+                    <i class="fa" t-att-class="button.icon"/>
+                </button>
+            </t>
+        </div>
+    </t>
+
+</templates>

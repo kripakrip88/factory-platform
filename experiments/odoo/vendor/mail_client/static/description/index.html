@@ -1,0 +1,552 @@
+<div class="mail-client-desc" style="width: 100%; font-family: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b;">
+
+    <!-- ============================ HERO ============================ -->
+    <section class="oe_container" style="padding: 0;">
+        <div style="background-color: #0b1f3a; padding: 55px 15px 45px;">
+            <div class="text-center">
+                <div style="display: inline-block; background-color: #15346b; border: 1px solid #2a4a7f; padding: 8px 20px; border-radius: 50px; margin-bottom: 22px;">
+                    <i class="fa fa-envelope" style="color: #38bdf8; font-size: 18px;"></i>
+                    <span style="color: #e2e8f0; font-size: 14px; font-weight: 600; letter-spacing: 0.5px;">&nbsp;by ALBIRRU SOLUTIONS</span>
+                </div>
+
+                <h1 style="color: #ffffff; font-weight: 800; font-size: 44px; margin: 0 0 14px; line-height: 1.1;">
+                    Mail Client
+                </h1>
+                <p style="color: #cbd5e1; font-weight: 400; font-size: 20px; max-width: 740px; margin: 0 auto 26px; line-height: 1.5;">
+                    A real email client inside Odoo. Read, write and organise mail without leaving
+                    the browser tab you already work in &mdash; built first for your own mail server.
+                </p>
+
+                <div style="text-align: center; margin-bottom: 34px;">
+                    <span style="display: inline-block; background-color: #10b981; color: #ffffff; padding: 9px 20px; border-radius: 50px; font-size: 15px; font-weight: 700; margin: 5px;">
+                        <i class="fa fa-gift"></i>&nbsp; 100% Free
+                    </span>
+                    <span style="display: inline-block; background-color: #15346b; border: 1px solid #2a4a7f; color: #ffffff; padding: 9px 20px; border-radius: 50px; font-size: 15px; font-weight: 700; margin: 5px;">
+                        <i class="fa fa-code-fork"></i>&nbsp; Open Source
+                    </span>
+                    <span style="display: inline-block; background-color: #15346b; border: 1px solid #2a4a7f; color: #ffffff; padding: 9px 20px; border-radius: 50px; font-size: 15px; font-weight: 700; margin: 5px;">
+                        <i class="fa fa-balance-scale"></i>&nbsp; LGPL-3 License
+                    </span>
+                    <span style="display: inline-block; background-color: #15346b; border: 1px solid #2a4a7f; color: #ffffff; padding: 9px 20px; border-radius: 50px; font-size: 15px; font-weight: 700; margin: 5px;">
+                        <i class="fa fa-server"></i>&nbsp; mailcow &amp; Dovecot
+                    </span>
+                </div>
+
+                <img src="banner.png" alt="Mail Client"
+                    style="margin: 0 auto; display: block; border-radius: 14px; max-width: 100%; border: 1px solid #2a4a7f;">
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== THE STORAGE POINT ===================== -->
+    <section class="oe_container" style="padding: 55px 15px;">
+        <h2 class="text-center" style="font-size: 34px; color:#0f172a; font-weight: 800; margin-bottom: 12px;">
+            Your Inbox, Not a Second Copy of It
+        </h2>
+        <p class="text-center" style="font-size: 18px; color: #64748b; max-width: 720px; margin: 0 auto 45px;">
+            Mirroring every message into Postgres costs you twice &mdash; once in the
+            database, and again in every backup from then on. This one stores headers
+            and fetches a body only when you open it.
+        </p>
+
+        <div class="row">
+            <div class="col-12 col-md-6" style="margin-bottom: 28px;">
+                <div style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 30px; height: 100%;">
+                    <h4 style="font-weight: 700; color: #991b1b; margin-bottom: 14px;">
+                        <i class="fa fa-database"></i>&nbsp; Mirror everything
+                    </h4>
+                    <div style="font-size: 40px; font-weight: 800; color: #b91c1c; line-height: 1;">~1.6 GB</div>
+                    <p style="color: #7f1d1d; margin-top: 12px; line-height: 1.6;">
+                        20,000 messages at an assumed average of 80&nbsp;KB, copied into
+                        Postgres whether or not anyone ever reads them.
+                    </p>
+                </div>
+            </div>
+            <div class="col-12 col-md-6" style="margin-bottom: 28px;">
+                <div style="background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 12px; padding: 30px; height: 100%;">
+                    <h4 style="font-weight: 700; color: #065f46; margin-bottom: 14px;">
+                        <i class="fa fa-bolt"></i>&nbsp; Headers first
+                    </h4>
+                    <div style="font-size: 40px; font-weight: 800; color: #047857; line-height: 1;">~40 MB</div>
+                    <p style="color: #065f46; margin-top: 12px; line-height: 1.6;">
+                        The same 20,000 messages after a full sync: headers, flags and MIME
+                        structure, roughly 2&nbsp;KB a row once indexes are counted.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 22px 26px; max-width: 900px; margin: 4px auto 0;">
+            <p style="color: #475569; margin: 0; line-height: 1.7; font-size: 14px;">
+                <strong style="color:#0f172a;">How to read these numbers.</strong>
+                Both are estimates for a 20,000-message mailbox; the first one moves with
+                your own average message size. The 40&nbsp;MB is the state right after a
+                sync, before anything is opened &mdash; a body you read is then cached in
+                Odoo, and a downloaded attachment is kept as well. So a mailbox in daily
+                use sits between the two figures and grows by what you have actually read,
+                not by everything that ever arrived.
+            </p>
+        </div>
+    </section>
+
+    <!-- ===================== KEY FEATURES ===================== -->
+    <section class="oe_container" style="padding: 0 15px 55px;">
+        <h2 class="text-center" style="font-size: 34px; color:#0f172a; font-weight: 800; margin-bottom: 45px;">
+            What You Get
+        </h2>
+        <div class="row">
+            <div class="col-12 col-md-4" style="margin-bottom: 28px;">
+                <div style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 30px; text-align: center; height: 100%;">
+                    <div style="background-color: #2563eb; width: 70px; height: 70px; border-radius: 14px; margin: 0 auto 18px; padding-top: 18px;">
+                        <i class="fa fa-columns fa-2x" style="color: #ffffff;"></i>
+                    </div>
+                    <h4 style="font-weight: 700; color: #0f172a; margin-bottom: 10px;">Three-Pane Inbox</h4>
+                    <p style="color: #64748b; line-height: 1.6;">Folders, message list and reading pane. Keyset pagination keeps a mailbox of tens of thousands responsive, with no OFFSET for the database to count past.</p>
+                </div>
+            </div>
+            <div class="col-12 col-md-4" style="margin-bottom: 28px;">
+                <div style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 30px; text-align: center; height: 100%;">
+                    <div style="background-color: #10b981; width: 70px; height: 70px; border-radius: 14px; margin: 0 auto 18px; padding-top: 18px;">
+                        <i class="fa fa-exchange fa-2x" style="color: #ffffff;"></i>
+                    </div>
+                    <h4 style="font-weight: 700; color: #0f172a; margin-bottom: 10px;">Real Two-Way Sync</h4>
+                    <p style="color: #64748b; line-height: 1.6;">Read, star, tag, move and delete travel back to the server through a resumable outbox. Odoo and your phone never disagree.</p>
+                </div>
+            </div>
+            <div class="col-12 col-md-4" style="margin-bottom: 28px;">
+                <div style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 30px; text-align: center; height: 100%;">
+                    <div style="background-color: #f59e0b; width: 70px; height: 70px; border-radius: 14px; margin: 0 auto 18px; padding-top: 18px;">
+                        <i class="fa fa-key fa-2x" style="color: #ffffff;"></i>
+                    </div>
+                    <h4 style="font-weight: 700; color: #0f172a; margin-bottom: 10px;">No User Passwords</h4>
+                    <p style="color: #64748b; line-height: 1.6;">With a Dovecot master user, one admin credential reaches every mailbox. Nobody types their mail password into Odoo.</p>
+                </div>
+            </div>
+            <div class="col-12 col-md-4" style="margin-bottom: 28px;">
+                <div style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 30px; text-align: center; height: 100%;">
+                    <div style="background-color: #8b5cf6; width: 70px; height: 70px; border-radius: 14px; margin: 0 auto 18px; padding-top: 18px;">
+                        <i class="fa fa-users fa-2x" style="color: #ffffff;"></i>
+                    </div>
+                    <h4 style="font-weight: 700; color: #0f172a; margin-bottom: 10px;">Shared Team Mailboxes</h4>
+                    <p style="color: #64748b; line-height: 1.6;">info@, sales@ and support@ with viewer / agent / manager roles, enforced by Odoo record rules.</p>
+                </div>
+            </div>
+            <div class="col-12 col-md-4" style="margin-bottom: 28px;">
+                <div style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 30px; text-align: center; height: 100%;">
+                    <div style="background-color: #ec4899; width: 70px; height: 70px; border-radius: 14px; margin: 0 auto 18px; padding-top: 18px;">
+                        <i class="fa fa-tags fa-2x" style="color: #ffffff;"></i>
+                    </div>
+                    <h4 style="font-weight: 700; color: #0f172a; margin-bottom: 10px;">Tags Are IMAP Keywords</h4>
+                    <p style="color: #64748b; line-height: 1.6;">A label set in Odoo shows up in SOGo and on your phone, and labels set there show up here. Not a private list.</p>
+                </div>
+            </div>
+            <div class="col-12 col-md-4" style="margin-bottom: 28px;">
+                <div style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 30px; text-align: center; height: 100%;">
+                    <div style="background-color: #0ea5e9; width: 70px; height: 70px; border-radius: 14px; margin: 0 auto 18px; padding-top: 18px;">
+                        <i class="fa fa-paperclip fa-2x" style="color: #ffffff;"></i>
+                    </div>
+                    <h4 style="font-weight: 700; color: #0f172a; margin-bottom: 10px;">Attachments On Demand</h4>
+                    <p style="color: #64748b; line-height: 1.6;">Name, type and size come free from BODYSTRUCTURE. Only the part you click is ever downloaded.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== SCREENSHOTS ===================== -->
+    <section class="oe_container" style="padding: 0 15px 55px;">
+        <h2 class="text-center" style="font-size: 34px; color:#0f172a; font-weight: 800; margin-bottom: 12px;">
+            See It in Action
+        </h2>
+        <p class="text-center" style="font-size: 18px; color: #64748b; max-width: 720px; margin: 0 auto 45px;">
+            A mail client, not a list view with an email flavour.
+        </p>
+
+        <div style="margin-bottom: 40px;">
+            <img src="screenshot-inbox.png" alt="Three-pane inbox"
+                 style="width: 100%; border-radius: 14px; border: 1px solid #e2e8f0; display: block;">
+            <p style="color: #64748b; font-size: 15px; text-align: center; margin: 14px 0 0;">
+                Folders, message list and reading pane. Every mailbox you can reach lives in
+                one sidebar, with <strong>All Inboxes</strong> on top.
+            </p>
+        </div>
+
+        <div class="row">
+            <div class="col-12 col-md-4" style="margin-bottom: 30px;">
+                <img src="screenshot-composer.png" alt="Composer"
+                     style="width: 100%; border-radius: 12px; border: 1px solid #e2e8f0; display: block;">
+                <h5 style="font-weight: 700; color: #0f172a; margin: 16px 0 6px;">Rich composer</h5>
+                <p style="color: #64748b; line-height: 1.6; margin: 0; font-size: 15px;">
+                    To, Cc and Bcc with contact autocomplete, attachments, and the
+                    <code>&lt;/&gt;</code> toggle that drops you into raw HTML.
+                </p>
+            </div>
+            <div class="col-12 col-md-4" style="margin-bottom: 30px;">
+                <img src="screenshot-conversation.png" alt="Conversation threading"
+                     style="width: 100%; border-radius: 12px; border: 1px solid #e2e8f0; display: block;">
+                <h5 style="font-weight: 700; color: #0f172a; margin: 16px 0 6px;">Conversations</h5>
+                <p style="color: #64748b; line-height: 1.6; margin: 0; font-size: 15px;">
+                    Threaded by the RFC&nbsp;5322 reference chain. The row carries a count, and
+                    the rest of the thread is linked above the message.
+                </p>
+            </div>
+            <div class="col-12 col-md-4" style="margin-bottom: 30px;">
+                <img src="screenshot-filters.png" alt="Quick filters"
+                     style="width: 100%; border-radius: 12px; border: 1px solid #e2e8f0; display: block;">
+                <h5 style="font-weight: 700; color: #0f172a; margin: 16px 0 6px;">Quick filters</h5>
+                <p style="color: #64748b; line-height: 1.6; margin: 0; font-size: 15px;">
+                    Unread, read, starred, carrying attachments, or from a known contact &mdash;
+                    on its own or on top of a search.
+                </p>
+            </div>
+        </div>
+
+        <div style="margin-top: 8px;">
+            <img src="screenshot-account.png" alt="Mail accounts"
+                 style="width: 100%; border-radius: 12px; border: 1px solid #e2e8f0; display: block;">
+            <p style="color: #64748b; font-size: 15px; text-align: center; margin: 14px 0 0;">
+                A self-hosted mailcow mailbox and a Gmail one, side by side &mdash; same inbox,
+                same sync, per-mailbox unread count and connection state.
+            </p>
+        </div>
+    </section>
+
+    <!-- ===================== SECURITY ===================== -->
+    <section class="oe_container" style="padding: 0 15px 55px;">
+        <div style="background-color: #0f172a; border-radius: 14px; padding: 45px 35px;">
+            <h2 class="text-center" style="font-size: 32px; color: #ffffff; font-weight: 800; margin-bottom: 12px;">
+                Opening a Message Should Not Cost You Anything
+            </h2>
+            <p class="text-center" style="font-size: 17px; color: #94a3b8; max-width: 700px; margin: 0 auto 38px;">
+                Email is untrusted HTML from strangers. It is treated that way.
+            </p>
+            <div class="row">
+                <div class="col-12 col-md-6" style="margin-bottom: 22px;">
+                    <div style="color: #e2e8f0; line-height: 1.7;">
+                        <h5 style="color: #38bdf8; font-weight: 700;"><i class="fa fa-eye-slash"></i>&nbsp; Tracking pixels blocked</h5>
+                        <p style="color: #94a3b8;">Remote images are blocked by default &mdash; including the ones hidden in CSS backgrounds and srcset, which most blockers miss. One button loads them when you decide to.</p>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6" style="margin-bottom: 22px;">
+                    <div style="color: #e2e8f0; line-height: 1.7;">
+                        <h5 style="color: #38bdf8; font-weight: 700;"><i class="fa fa-shield"></i>&nbsp; Sandboxed rendering</h5>
+                        <p style="color: #94a3b8;">Sanitised server-side, then rendered in an iframe with neither scripting nor same-origin access.</p>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6" style="margin-bottom: 22px;">
+                    <div style="color: #e2e8f0; line-height: 1.7;">
+                        <h5 style="color: #38bdf8; font-weight: 700;"><i class="fa fa-lock"></i>&nbsp; Credentials outside the database</h5>
+                        <p style="color: #94a3b8;">Mail server passwords are encrypted with a key held in odoo.conf, so a database dump alone reveals nothing.</p>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6" style="margin-bottom: 22px;">
+                    <div style="color: #e2e8f0; line-height: 1.7;">
+                        <h5 style="color: #38bdf8; font-weight: 700;"><i class="fa fa-list-alt"></i>&nbsp; Every access logged</h5>
+                        <p style="color: #94a3b8;">Each mailbox opened with the master credential is recorded in an append-only log that cannot be edited or deleted from the interface.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== SELF-HOSTED ===================== -->
+    <section class="oe_container" style="padding: 0 15px 55px;">
+        <h2 class="text-center" style="font-size: 34px; color:#0f172a; font-weight: 800; margin-bottom: 12px;">
+            Built for Servers You Control
+        </h2>
+        <p class="text-center" style="font-size: 18px; color: #64748b; max-width: 720px; margin: 0 auto 40px;">
+            Dovecot always advertises QRESYNC, CONDSTORE, MOVE and SPECIAL-USE, so the fast
+            path is the normal path &mdash; not an optimisation that may or may not apply.
+        </p>
+        <div class="row">
+            <div class="col-12 col-md-4" style="margin-bottom: 22px;">
+                <div style="border-left: 4px solid #2563eb; padding: 6px 0 6px 18px;">
+                    <h5 style="font-weight: 700; color: #0f172a;">Incremental by design</h5>
+                    <p style="color: #64748b; line-height: 1.6;">QRESYNC returns changed flags and deletions in a single round trip, and UIDVALIDITY changes trigger a correct resync instead of showing stale mail.</p>
+                </div>
+            </div>
+            <div class="col-12 col-md-4" style="margin-bottom: 22px;">
+                <div style="border-left: 4px solid #10b981; padding: 6px 0 6px 18px;">
+                    <h5 style="font-weight: 700; color: #0f172a;">Spam banners from Rspamd</h5>
+                    <p style="color: #64748b; line-height: 1.6;">Your antispam already scored the message. That verdict is shown as-is &mdash; no AI, no extra cost, and more accurate than either.</p>
+                </div>
+            </div>
+            <div class="col-12 col-md-4" style="margin-bottom: 22px;">
+                <div style="border-left: 4px solid #f59e0b; padding: 6px 0 6px 18px;">
+                    <h5 style="font-weight: 700; color: #0f172a;">Push instead of polling</h5>
+                    <p style="color: #64748b; line-height: 1.6;">A token-protected endpoint lets your server trigger a sync the moment mail lands. It only accepts a trigger &mdash; never message content.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== COMPATIBILITY ===================== -->
+    <section class="oe_container" style="padding: 0 15px 55px;">
+        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 38px 32px;">
+            <h3 style="font-weight: 800; color: #0f172a; margin-bottom: 18px;">Works With</h3>
+            <div class="row">
+                <div class="col-12 col-md-6">
+                    <ul style="color: #475569; line-height: 2; padding-left: 20px;">
+                        <li><strong>mailcow / Dovecot</strong> &mdash; master user or per-account passwords</li>
+                        <li><strong>Any IMAP server</strong> &mdash; per-account passwords</li>
+                        <li><strong>Gmail</strong> &mdash; OAuth2, or an app password</li>
+                        <li><strong>Microsoft 365</strong> &mdash; OAuth2, or an app password</li>
+                    </ul>
+                </div>
+                <div class="col-12 col-md-6">
+                    <p style="color: #64748b; line-height: 1.7;">
+                        Sending reuses Odoo's own outgoing mail servers, including per-user
+                        servers, so a mailbox always sends as its own address on hosts that
+                        enforce sender identity &mdash; mailcow and Gmail both do.
+                    </p>
+                    <p style="color: #94a3b8; font-size: 14px; line-height: 1.6; margin-bottom: 0;">
+                        Gmail and Microsoft 365 sign in with OAuth2 through Odoo's own
+                        connectors, so no password is stored. An app password works too
+                        if you prefer not to grant OAuth access.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== SETUP ===================== -->
+    <section class="oe_container" style="padding: 0 15px 55px;">
+        <h2 class="text-center" style="font-size: 34px; color:#0f172a; font-weight: 800; margin-bottom: 40px;">
+            Getting Started
+        </h2>
+        <div class="row">
+            <div class="col-12 col-md-4" style="margin-bottom: 22px;">
+                <div style="text-align: center;">
+                    <div style="background-color: #0b1f3a; color: #ffffff; width: 46px; height: 46px; border-radius: 50%; margin: 0 auto 14px; font-weight: 800; font-size: 20px; padding-top: 10px;">1</div>
+                    <h5 style="font-weight: 700; color: #0f172a;">Add the encryption key</h5>
+                    <p style="color: #64748b; line-height: 1.6;">One line in <code>odoo.conf</code>. Credentials are never encrypted with a key that lives in the database.</p>
+                </div>
+            </div>
+            <div class="col-12 col-md-4" style="margin-bottom: 22px;">
+                <div style="text-align: center;">
+                    <div style="background-color: #0b1f3a; color: #ffffff; width: 46px; height: 46px; border-radius: 50%; margin: 0 auto 14px; font-weight: 800; font-size: 20px; padding-top: 10px;">2</div>
+                    <h5 style="font-weight: 700; color: #0f172a;">Connect the mail server</h5>
+                    <p style="color: #64748b; line-height: 1.6;">Host, port and how to authenticate. Test Connection reports the capabilities it found.</p>
+                </div>
+            </div>
+            <div class="col-12 col-md-4" style="margin-bottom: 22px;">
+                <div style="text-align: center;">
+                    <div style="background-color: #0b1f3a; color: #ffffff; width: 46px; height: 46px; border-radius: 50%; margin: 0 auto 14px; font-weight: 800; font-size: 20px; padding-top: 10px;">3</div>
+                    <h5 style="font-weight: 700; color: #0f172a;">Add mailboxes</h5>
+                    <p style="color: #64748b; line-height: 1.6;">Give a mailbox an owner for a personal inbox, or leave it empty to make it a shared one.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== RELEASE NOTES ===================== -->
+    <section class="oe_container" style="padding: 0 15px 55px;">
+        <h2 class="text-center" style="font-size: 34px; color:#0f172a; font-weight: 800; margin-bottom: 12px;">
+            Release Notes
+        </h2>
+        <p class="text-center" style="font-size: 18px; color: #64748b; max-width: 720px; margin: 0 auto 40px;">
+            What is in the box, and what is honestly not, as of the first public release.
+        </p>
+
+        <div style="border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden;">
+            <div style="background-color: #0b1f3a; padding: 22px 28px;">
+                <span style="display: inline-block; background-color: #10b981; color: #ffffff; padding: 5px 14px; border-radius: 50px; font-size: 12px; font-weight: 700; letter-spacing: 0.5px; vertical-align: middle;">
+                    FIRST RELEASE
+                </span>
+                <span style="color: #ffffff; font-weight: 800; font-size: 21px; margin-left: 12px; vertical-align: middle;">19.0.1.0.0</span>
+                <span style="color: #94a3b8; font-size: 15px; margin-left: 10px; vertical-align: middle;">&mdash; Odoo 19.0, LGPL-3</span>
+            </div>
+
+            <div style="padding: 32px 28px;">
+                <div class="row">
+                    <div class="col-12 col-md-6" style="margin-bottom: 26px;">
+                        <h5 style="font-weight: 700; color: #0f172a; margin-bottom: 12px;">
+                            <i class="fa fa-inbox" style="color: #2563eb;"></i>&nbsp; Reading and organising
+                        </h5>
+                        <ul style="color: #475569; line-height: 1.9; padding-left: 20px; margin: 0;">
+                            <li>Three-pane inbox as an OWL client action, with a foldable sidebar</li>
+                            <li>Unified <strong>All Inboxes</strong> across every mailbox you can reach</li>
+                            <li>Conversation threading by In-Reply-To / References</li>
+                            <li>Quick filters: unread, read, starred, has attachments, from a contact</li>
+                            <li>Bulk mark, star, move and delete from the list</li>
+                            <li>Tags backed by real IMAP keywords</li>
+                            <li>Search in Odoo, or on the mail server for anything outside the sync window</li>
+                            <li>Download the original message as <code>.eml</code></li>
+                        </ul>
+                    </div>
+                    <div class="col-12 col-md-6" style="margin-bottom: 26px;">
+                        <h5 style="font-weight: 700; color: #0f172a; margin-bottom: 12px;">
+                            <i class="fa fa-pencil" style="color: #10b981;"></i>&nbsp; Writing
+                        </h5>
+                        <ul style="color: #475569; line-height: 1.9; padding-left: 20px; margin: 0;">
+                            <li>Composer on Odoo's <code>html_editor</code>, with an HTML source toggle</li>
+                            <li>Recipient autocomplete against your contacts</li>
+                            <li>Reply, Reply All and Forward with correct RFC 5322 threading</li>
+                            <li>Drafts kept in Odoo and mirrored to the server's Drafts folder</li>
+                            <li>Sent mail APPENDed to Sent, so it shows up in every other client</li>
+                            <li>Per-mailbox signatures, optionally suppressed on replies</li>
+                        </ul>
+                    </div>
+                    <div class="col-12 col-md-6" style="margin-bottom: 26px;">
+                        <h5 style="font-weight: 700; color: #0f172a; margin-bottom: 12px;">
+                            <i class="fa fa-refresh" style="color: #f59e0b;"></i>&nbsp; Synchronisation
+                        </h5>
+                        <ul style="color: #475569; line-height: 1.9; padding-left: 20px; margin: 0;">
+                            <li>Incremental sync over QRESYNC/CONDSTORE, with a generic fallback</li>
+                            <li>Two-way sync of flags, tags, moves and deletes through a resumable outbox</li>
+                            <li>Correct <code>UIDVALIDITY</code> handling on migration or backup restore</li>
+                            <li>Header-first storage; bodies and attachments fetched on demand</li>
+                            <li>Token-protected push endpoint for near-instant delivery</li>
+                            <li>Cron covers self-hosted, Gmail and Microsoft 365 mailboxes alike</li>
+                        </ul>
+                    </div>
+                    <div class="col-12 col-md-6" style="margin-bottom: 26px;">
+                        <h5 style="font-weight: 700; color: #0f172a; margin-bottom: 12px;">
+                            <i class="fa fa-shield" style="color: #8b5cf6;"></i>&nbsp; Administration and security
+                        </h5>
+                        <ul style="color: #475569; line-height: 1.9; padding-left: 20px; margin: 0;">
+                            <li>Dovecot master user, so no user password is stored in Odoo</li>
+                            <li>Shared mailboxes with viewer / agent / manager record rules</li>
+                            <li>Credentials encrypted with a key held in <code>odoo.conf</code></li>
+                            <li>Bodies sanitised server-side and rendered in a sandboxed iframe</li>
+                            <li>Remote images blocked by default, CSS backgrounds included</li>
+                            <li>Append-only audit log of every master-credential access</li>
+                            <li>Spam banners read from existing Rspamd headers</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div style="background-color: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; padding: 22px 26px; margin-top: 6px;">
+                    <h5 style="font-weight: 700; color: #92400e; margin-bottom: 10px;">
+                        <i class="fa fa-info-circle"></i>&nbsp; Known limitations in this release
+                    </h5>
+                    <ul style="color: #78350f; line-height: 1.9; padding-left: 20px; margin: 0;">
+                        <li><strong>Read-only mailboxes are read-only both ways.</strong> Under <em>Read only</em> sync mode, move and delete are not offered &mdash; removing a message from Odoo while it stays on the server would lose it locally for good.</li>
+                        <li><strong>No IMAP IDLE.</strong> New mail arrives on the cron interval, or immediately if you wire up the push URL.</li>
+                        <li><strong>OAuth2 for Gmail and Microsoft 365 is verified for reading and syncing.</strong> Sending over OAuth is covered by unit tests but has had less real-world exposure than the app-password route.</li>
+                        <li><strong>No calendar, contacts or CalDAV/CardDAV sync.</strong> This module is about mail.</li>
+                        <li><strong>Not an archive.</strong> It mirrors a mailbox and follows it, deletions included. For legal retention, archive at the MTA level.</li>
+                        <li><strong>No Chatter bridge.</strong> Logging mail against Odoo records stays Odoo's own job, deliberately.</li>
+                    </ul>
+                </div>
+
+                <p style="color: #94a3b8; font-size: 14px; margin: 20px 0 0;">
+                    Tested against mailcow/Dovecot and Gmail on Odoo 19.0 Community.
+                    228 Python tests and a JavaScript suite ship with the module &mdash; run them with
+                    <code>--test-enable --test-tags /mail_client</code>.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ BROUGHT TO YOU BY ALBIRRU ============ -->
+    <section class="oe_container" style="padding: 0;">
+        <div style="background-color: #0b1f3a; padding: 50px 15px; color: #ffffff;">
+            <div class="text-center" style="max-width: 880px; margin: 0 auto;">
+                <span style="display: inline-block; background-color: #10b981; color: #ffffff; padding: 6px 18px; border-radius: 50px; font-size: 13px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 18px;">
+                    <i class="fa fa-heart"></i>&nbsp; FREE FOR THE COMMUNITY
+                </span>
+                <h2 style="font-size: 32px; font-weight: 800; color: #ffffff; margin-bottom: 16px;">Brought to You by Albirru Solutions</h2>
+                <p style="font-size: 17px; color: #cbd5e1; line-height: 1.7; margin-bottom: 8px;">
+                    We released Mail Client as <strong style="color:#fff;">free and open-source software (LGPL-3)</strong>.
+                    Use it, modify it, and ship it in your own projects &mdash; no license fee, ever.
+                </p>
+                <p style="font-size: 15px; color: #94a3b8; line-height: 1.7;">
+                    Albirru Solutions is a Jakarta-based IT services company helping businesses get more out of Odoo.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== ALBIRRU SERVICES ===================== -->
+    <section class="oe_container" style="padding: 55px 15px;">
+        <h2 class="text-center" style="font-size: 32px; color:#0f172a; font-weight: 800; margin-bottom: 10px;">Integrated IT Solutions for Enterprise</h2>
+        <p class="text-center" style="font-size: 17px; color: #64748b; max-width: 720px; margin: 0 auto 45px;">
+            Credibility rooted in experience &mdash; end-to-end technology services under one partner.
+        </p>
+        <div class="row">
+            <div class="col-12 col-md-6 col-lg-3" style="margin-bottom: 24px;">
+                <div style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 26px; height: 100%;">
+                    <div style="background-color: #2563eb; width: 56px; height: 56px; border-radius: 12px; padding-top: 15px; text-align: center; margin-bottom: 16px;">
+                        <i class="fa fa-laptop fa-2x" style="color: #ffffff;"></i>
+                    </div>
+                    <h4 style="font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">Software Development</h4>
+                    <p style="color: #64748b; line-height: 1.6; font-size: 14px; margin: 0;">Custom apps, ERP &amp; Odoo implementation, API integration, and Flutter mobile apps.</p>
+                </div>
+            </div>
+            <div class="col-12 col-md-6 col-lg-3" style="margin-bottom: 24px;">
+                <div style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 26px; height: 100%;">
+                    <div style="background-color: #0ea5e9; width: 56px; height: 56px; border-radius: 12px; padding-top: 15px; text-align: center; margin-bottom: 16px;">
+                        <i class="fa fa-cloud fa-2x" style="color: #ffffff;"></i>
+                    </div>
+                    <h4 style="font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">Cloud &amp; Infrastructure</h4>
+                    <p style="color: #64748b; line-height: 1.6; font-size: 14px; margin: 0;">Cloud migration, high-availability design, server management, backups, and network design.</p>
+                </div>
+            </div>
+            <div class="col-12 col-md-6 col-lg-3" style="margin-bottom: 24px;">
+                <div style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 26px; height: 100%;">
+                    <div style="background-color: #10b981; width: 56px; height: 56px; border-radius: 12px; padding-top: 15px; text-align: center; margin-bottom: 16px;">
+                        <i class="fa fa-life-ring fa-2x" style="color: #ffffff;"></i>
+                    </div>
+                    <h4 style="font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">IT Managed Services</h4>
+                    <p style="color: #64748b; line-height: 1.6; font-size: 14px; margin: 0;">IT outsourcing, helpdesk support, 24/7 monitoring, maintenance, and procurement consulting.</p>
+                </div>
+            </div>
+            <div class="col-12 col-md-6 col-lg-3" style="margin-bottom: 24px;">
+                <div style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 26px; height: 100%;">
+                    <div style="background-color: #ef4444; width: 56px; height: 56px; border-radius: 12px; padding-top: 15px; text-align: center; margin-bottom: 16px;">
+                        <i class="fa fa-shield fa-2x" style="color: #ffffff;"></i>
+                    </div>
+                    <h4 style="font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">Cybersecurity</h4>
+                    <p style="color: #64748b; line-height: 1.6; font-size: 14px; margin: 0;">Security audits, vulnerability assessments, firewall management, data protection, and training.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== CONTACT / CTA ===================== -->
+    <section class="oe_container" style="padding: 0;">
+        <div style="background-color: #0f172a; padding: 55px 15px; color: #ffffff;">
+            <div class="text-center">
+                <h2 style="font-size: 32px; font-weight: 800; margin-bottom: 14px; color: #ffffff;">Running Your Own Mail Server?</h2>
+                <p style="font-size: 17px; max-width: 760px; margin: 0 auto 32px; color: #cbd5e1;">
+                    The module is free &mdash; our expertise makes it work for you. We deploy and
+                    maintain mailcow, Dovecot and Rspamd, and handle the Odoo implementation,
+                    customization, training and support around it.
+                </p>
+
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <a href="https://wa.me/6287710520104" target="_blank" style="display: inline-block; background-color: #25D366; color: #ffffff; padding: 13px 30px; border-radius: 50px; font-size: 17px; font-weight: 700; text-decoration: none; margin: 6px;">
+                        <i class="fa fa-whatsapp fa-lg" style="color: #ffffff;"></i><span style="color: #ffffff;">&nbsp; Free Consultation</span>
+                    </a>
+                    <a href="https://www.albirru.com/" target="_blank" style="display: inline-block; background-color: #2563eb; color: #ffffff; padding: 13px 30px; border-radius: 50px; font-size: 17px; font-weight: 700; text-decoration: none; margin: 6px;">
+                        <i class="fa fa-globe fa-lg" style="color: #ffffff;"></i><span style="color: #ffffff;">&nbsp; Visit albirru.com</span>
+                    </a>
+                </div>
+
+                <div class="mt-4 pt-4" style="border-top: 1px solid #334155; max-width: 760px; margin: 0 auto;">
+                    <div class="row text-center">
+                        <div class="col-12 col-md-4 mb-3">
+                            <i class="fa fa-whatsapp" style="color: #34d399; font-size: 22px; display: block; margin-bottom: 6px;"></i>
+                            <div style="color: #94a3b8; font-size: 13px;">WhatsApp</div>
+                            <div style="color: #e2e8f0; font-weight: 600;">+62 877-1052-0104</div>
+                        </div>
+                        <div class="col-12 col-md-4 mb-3">
+                            <i class="fa fa-envelope" style="color: #60a5fa; font-size: 22px; display: block; margin-bottom: 6px;"></i>
+                            <div style="color: #94a3b8; font-size: 13px;">Email</div>
+                            <div style="color: #e2e8f0; font-weight: 600;">1rw4n.5y4h1919@gmail.com</div>
+                        </div>
+                        <div class="col-12 col-md-4 mb-3">
+                            <i class="fa fa-map-marker" style="color: #f472b6; font-size: 22px; display: block; margin-bottom: 6px;"></i>
+                            <div style="color: #94a3b8; font-size: 13px;">Location</div>
+                            <div style="color: #e2e8f0; font-weight: 600;">Jakarta, Indonesia</div>
+                        </div>
+                    </div>
+                    <p style="color: #64748b; font-size: 13px; margin-top: 22px; margin-bottom: 0;">
+                        Mail Client &middot; Free &amp; Open Source (LGPL-3) &middot; &copy; Albirru Solutions (Irwan Syah)
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</div>

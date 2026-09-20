@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="mail_client.Inbox">
+        <div class="o_mail_client d-flex flex-column h-100">
+            <div class="o_mail_client_topbar d-flex align-items-center gap-2 px-3 py-2">
+                <button class="btn btn-light btn-sm"
+                        t-att-title="state.sidebarPinned ? 'Hide folders' : 'Show folders'"
+                        t-on-click="() => this.toggleSidebar()">
+                    <i class="fa" t-att-class="state.sidebarPinned ? 'fa-angle-double-left' : 'fa-bars'"/>
+                </button>
+                <button class="btn btn-primary btn-sm"
+                        t-att-disabled="!activeAccount"
+                        t-on-click="() => this.compose('new')">
+                    <i class="fa fa-pencil me-1"/>
+                    Compose
+                </button>
+                <button class="btn btn-light btn-sm"
+                        t-on-click="() => this.syncNow()"
+                        t-att-disabled="state.syncing or !activeAccount">
+                    <i class="fa fa-refresh me-1" t-att-class="state.syncing ? 'fa-spin' : ''"/>
+                    Sync
+                </button>
+                <button class="btn btn-light btn-sm"
+                        t-att-class="state.threaded ? 'active' : ''"
+                        title="Group messages into conversations"
+                        t-on-click="() => this.toggleThreaded()">
+                    <i class="fa fa-comments-o"/>
+                </button>
+                <div class="position-relative">
+                    <button class="btn btn-light btn-sm"
+                            t-att-class="state.filter !== 'all' ? 'active' : ''"
+                            title="Filter messages"
+                            t-on-click="() => state.showFilterMenu = !state.showFilterMenu">
+                        <i class="fa fa-filter me-1"/>
+                        <t t-esc="activeFilter.label"/>
+                    </button>
+                    <div class="o_mail_client_filter_menu dropdown-menu show"
+                         t-if="state.showFilterMenu">
+                        <button t-foreach="filters" t-as="item" t-key="item.id"
+                                class="dropdown-item d-flex align-items-center gap-2"
+                                t-att-class="item.id === state.filter ? 'active' : ''"
+                                t-on-click="() => this.setFilter(item.id)">
+                            <i class="fa fa-fw" t-att-class="item.icon"/>
+                            <t t-esc="item.label"/>
+                        </button>
+                    </div>
+                </div>
+                <div class="o_mail_client_search flex-grow-1 d-flex gap-1">
+                    <input type="text" class="form-control form-control-sm"
+                           placeholder="Search subject, sender or preview…"
+                           t-att-value="state.search"
+                           t-on-change="(ev) => this.onSearch(ev.target.value)"/>
+                    <button class="btn btn-light btn-sm flex-shrink-0"
+                            t-if="state.search and state.activeFolderId"
+                            t-att-disabled="state.searchingServer"
+                            title="Search on the mail server, including messages not stored here"
+                            t-on-click="() => this.searchOnServer()">
+                        <i class="fa" t-att-class="state.searchingServer ? 'fa-circle-o-notch fa-spin' : 'fa-server'"/>
+                        Server
+                    </button>
+                </div>
+                <span class="text-muted small" t-if="activeAccount">
+                    <t t-esc="activeAccount.email"/>
+                </span>
+            </div>
+
+            <div class="o_mail_client_body d-flex flex-grow-1 overflow-hidden">
+                <t t-if="state.sidebarPinned">
+                    <FolderTree accounts="state.accounts"
+                                activeFolderId="state.activeFolderId"
+                                unified="state.unified"
+                                drafts="state.drafts"
+                                onSelectFolder.bind="selectFolder"
+                                onSelectUnified.bind="selectUnified"
+                                onResumeDraft.bind="resumeDraft"/>
+                </t>
+
+                <t t-if="state.draft">
+                    <!-- Writing gets the full width: the message list is of no
+                         use while composing, and a cramped editor is the single
+                         most common complaint about in-app mail clients. -->
+                    <Composer draft="state.draft"
+                              onClose.bind="closeComposer"
+                              onSent.bind="onSent"/>
+                </t>
+                <t t-else="">
+                    <MessageList messages="state.messages"
+                                 selectedMessageId="state.selectedMessageId"
+                                 selectedIds="state.selectedIds"
+                                 moveTargets="state.bulkMoveTargets"
+                                 hasMore="state.hasMore"
+                                 loading="state.loadingList"
+                                 busy="state.bulkBusy"
+                                 canAct="canAct"
+                                 folderName="activeFolder ? activeFolder.name : ''"
+                                 filterLabel="filterLabel"
+                                 onClearFilter="() => this.setFilter('all')"
+                                 onSelectMessage.bind="selectMessage"
+                                 onLoadMore.bind="loadMore"
+                                 onToggleSelected.bind="toggleSelected"
+                                 onToggleAll.bind="toggleAll"
+                                 onBulkSeen.bind="bulkSeen"
+                                 onBulkFlagged.bind="bulkFlagged"
+                                 onBulkMove.bind="bulkMove"
+                                 onBulkDelete.bind="bulkDelete"/>
+                    <ReadingPane detail="state.detail"
+                                 loading="state.loadingDetail"
+                                 moveTargets="state.moveTargets"
+                                 canAct="canAct"
+                                 thread="state.thread"
+                                 contact="state.contact"
+                                 onSelectMessage.bind="selectMessage"
+                                 onDownloadEml.bind="downloadEml"
+                                 onAllowImages.bind="allowImages"
+                                 onToggleSeen.bind="toggleSeen"
+                                 onToggleFlagged.bind="toggleFlagged"
+                                 onMove.bind="moveMessage"
+                                 onDelete.bind="deleteMessage"
+                                 onReply.bind="compose"
+                                 onDownloadAttachment.bind="downloadAttachment"/>
+                </t>
+            </div>
+        </div>
+    </t>
+
+</templates>

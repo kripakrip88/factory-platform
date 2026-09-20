@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="mail_client.FolderTree">
+        <div class="o_mail_client_folders flex-shrink-0 overflow-auto">
+            <t t-if="!props.accounts.length">
+                <div class="text-muted p-3 small">
+                    No mailbox is available to you yet. Ask an administrator to add one.
+                </div>
+            </t>
+
+            <!-- Only worth showing once there is more than one mailbox to unify. -->
+            <ul class="list-unstyled mb-2" t-if="props.accounts.length > 1">
+                <li>
+                    <button class="o_mail_client_folder btn btn-link w-100 text-start d-flex align-items-center"
+                            t-att-class="props.unified ? 'active' : ''"
+                            t-on-click="() => props.onSelectUnified()">
+                        <i class="fa fa-fw fa-inbox me-2"/>
+                        <span class="text-truncate flex-grow-1">All Inboxes</span>
+                        <span t-if="totalInboxUnread"
+                              class="badge rounded-pill text-bg-primary ms-2">
+                            <t t-esc="totalInboxUnread"/>
+                        </span>
+                    </button>
+                </li>
+            </ul>
+
+            <t t-foreach="props.accounts" t-as="account" t-key="account.id">
+                <button class="o_mail_client_account_header btn btn-link w-100 text-start d-flex align-items-center px-3 py-2"
+                        t-att-class="{ 'o_reading': holdsActiveFolder(account) }"
+                        t-on-click="() => this.toggleAccount(account.id)">
+                    <i class="fa fa-fw me-1 o_mail_client_caret"
+                       t-att-class="isCollapsed(account.id) ? 'fa-caret-right' : 'fa-caret-down'"/>
+                    <span class="text-truncate flex-grow-1" t-att-title="account.email">
+                        <t t-esc="account.name"/>
+                    </span>
+                    <i t-if="account.is_shared" class="fa fa-users ms-1 small opacity-50"
+                       title="Shared mailbox"/>
+                    <i t-if="account.state === 'error'"
+                       class="fa fa-exclamation-triangle ms-1 text-danger"
+                       t-att-title="account.error_message"/>
+                    <span t-if="isCollapsed(account.id) and unreadFor(account)"
+                          class="badge rounded-pill text-bg-primary ms-1">
+                        <t t-esc="unreadFor(account)"/>
+                    </span>
+                </button>
+
+                <ul class="list-unstyled mb-2" t-if="!isCollapsed(account.id)">
+                    <li t-foreach="account.folders" t-as="folder" t-key="folder.id">
+                        <button class="o_mail_client_folder btn btn-link w-100 text-start d-flex align-items-center"
+                                t-att-class="isActive(folder.id) ? 'active' : ''"
+                                t-on-click="() => props.onSelectFolder(folder.id)">
+                            <i class="fa fa-fw me-2" t-att-class="iconFor(folder.role)"/>
+                            <span class="text-truncate flex-grow-1"><t t-esc="folder.name"/></span>
+                            <span t-if="folder.unread"
+                                  class="badge rounded-pill text-bg-primary ms-2">
+                                <t t-esc="folder.unread"/>
+                            </span>
+                        </button>
+                    </li>
+                </ul>
+            </t>
+
+            <!-- Unsent drafts live in Odoo, not on the IMAP server, so they are
+                 listed separately rather than pretending to be the Drafts folder. -->
+            <t t-if="props.drafts and props.drafts.length">
+                <div class="o_mail_client_account_header px-3 py-2">Unsent drafts</div>
+                <ul class="list-unstyled mb-2">
+                    <li t-foreach="props.drafts" t-as="draft" t-key="draft.id">
+                        <button class="o_mail_client_folder btn btn-link w-100 text-start d-flex align-items-center"
+                                t-on-click="() => props.onResumeDraft(draft.id)">
+                            <i class="fa fa-fw fa-pencil-square-o me-2"/>
+                            <span class="text-truncate flex-grow-1" t-att-title="draft.email_to">
+                                <t t-esc="draft.subject"/>
+                            </span>
+                            <i t-if="draft.attachment_count" class="fa fa-paperclip small ms-1"/>
+                        </button>
+                    </li>
+                </ul>
+            </t>
+        </div>
+    </t>
+
+</templates>

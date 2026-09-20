@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="mail_client_account_view_list" model="ir.ui.view">
+        <field name="name">mail.client.account.list</field>
+        <field name="model">mail.client.account</field>
+        <field name="arch" type="xml">
+            <list decoration-muted="not active_sync">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="email"/>
+                <field name="user_id"/>
+                <field name="is_shared" string="Shared" optional="show"/>
+                <field name="server_id"/>
+                <field name="unread_count" string="Unread"/>
+                <field name="last_sync_date"/>
+                <field name="active_sync" string="Auto Sync" widget="boolean_toggle"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'connected'"
+                       decoration-danger="state == 'error'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="mail_client_account_view_form" model="ir.ui.view">
+        <field name="name">mail.client.account.form</field>
+        <field name="model">mail.client.account</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_sync_now" type="object" string="Sync Now"
+                            class="btn-primary" icon="fa-refresh"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,connected"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="e.g. Sales Inbox"/></h1>
+                        <h2><field name="email" placeholder="sales@company.co.id"/></h2>
+                    </div>
+                    <div class="alert alert-danger" role="alert" invisible="state != 'error'">
+                        <field name="error_message" readonly="1" nolabel="1"/>
+                    </div>
+                    <group>
+                        <group string="Mailbox">
+                            <field name="account_type"/>
+                            <field name="server_id"
+                                   required="account_type in ('mailcow', 'imap')"
+                                   invisible="account_type in ('gmail', 'outlook')"/>
+                            <field name="user_id"/>
+                            <field name="is_shared" invisible="1"/>
+                            <field name="server_auth_mode" invisible="1"/>
+                            <!-- Only meaningful when the server does not use a
+                                 master user; otherwise there is no password to give. -->
+                            <field name="login" invisible="server_auth_mode != 'per_account'"/>
+                            <field name="password" password="True"
+                                   groups="base.group_system"
+                                   invisible="server_auth_mode != 'per_account'"/>
+                        </group>
+                        <group string="Sending">
+                            <field name="smtp_server_id" groups="base.group_system"
+                                   placeholder="Leave empty to use the default below"/>
+                            <field name="smtp_source"/>
+                            <div class="text-muted" colspan="2">
+                                mailcow refuses to let one account send as another, so
+                                each mailbox needs an outgoing server allowed to use its
+                                address. A server with an <em>Owner</em> is personal to
+                                that user and is never used for ordinary Odoo notifications.
+                            </div>
+                        </group>
+                        <group string="Synchronisation">
+                            <field name="active_sync"/>
+                            <field name="sync_mode"/>
+                            <field name="sync_window_days"/>
+                            <field name="last_sync_date" readonly="1"/>
+                        </group>
+                    </group>
+                    <field name="oauth_state" invisible="1"/>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="oauth_state != 'pending'">
+                        <strong>This mailbox is not authorised yet.</strong>
+                        Gmail and Microsoft 365 sign in with OAuth2 instead of a
+                        password, so no mail server is needed, but you have to
+                        grant access once.
+                        <div class="mt-2">
+                            <button name="action_authorise_oauth" type="object"
+                                    string="Authorise" class="btn-primary" icon="fa-unlock"/>
+                        </div>
+                        <div class="mt-2 small">
+                            Prefer not to use OAuth? Set <em>Account Type</em> to
+                            <strong>Generic IMAP</strong> and connect with an app password
+                            against <code>imap.gmail.com:993</code> or
+                            <code>outlook.office365.com:993</code>.
+                        </div>
+                    </div>
+                    <div class="alert alert-success" role="alert"
+                         invisible="oauth_state != 'linked'">
+                        <!-- Decorative: the sentence beside it already says this.
+                             aria-hidden keeps a screen reader from announcing
+                             "Authorised" twice; the title is what the view
+                             validator looks for. -->
+                        <i class="fa fa-check me-1" title="Authorised" aria-hidden="true"/>
+                        <strong>Authorised.</strong> This mailbox signs in with OAuth2;
+                        no password is stored in Odoo.
+                        <button name="action_revoke_oauth" type="object"
+                                string="Revoke" class="btn-link text-danger p-0 ms-2"/>
+                    </div>
+                    <div class="alert alert-info" role="alert" invisible="not is_shared">
+                        This mailbox has no owner, so it is a <strong>shared mailbox</strong>.
+                        Grant access below; nobody sees it until they are listed there.
+                    </div>
+                    <notebook>
+                        <page string="Access" name="access">
+                            <field name="access_ids">
+                                <list editable="bottom">
+                                    <field name="user_id"/>
+                                    <field name="role"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Push Notifications" name="push" groups="base.group_system">
+                            <div class="text-muted mb-3">
+                                The cron syncs every two minutes. Because this mail server
+                                is yours, it can instead tell Odoo the moment mail arrives.
+                                Generate a token and call the URL below from a delivery
+                                script on the server. The endpoint only triggers a sync -
+                                it never receives message content.
+                            </div>
+                            <group>
+                                <button name="action_generate_notify_token" type="object"
+                                        string="Generate Token" class="btn-primary"
+                                        icon="fa-key"/>
+                                <button name="action_revoke_notify_token" type="object"
+                                        string="Revoke" icon="fa-ban"
+                                        invisible="not notify_token"/>
+                            </group>
+                            <group invisible="not notify_token">
+                                <field name="notify_token" readonly="1"/>
+                                <field name="notify_url" readonly="1" widget="CopyClipboardChar"/>
+                            </group>
+                        </page>
+                        <page string="Signatures" name="signatures">
+                            <div class="text-muted mb-2">
+                                Signatures belong to the mailbox, not the person:
+                                answering from sales@ is rarely signed the same way as
+                                answering from your own address.
+                            </div>
+                            <field name="signature_ids">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="name"/>
+                                    <field name="is_default" widget="boolean_toggle"/>
+                                    <field name="use_on_reply" widget="boolean_toggle"/>
+                                </list>
+                                <form>
+                                    <group>
+                                        <field name="name"/>
+                                        <field name="is_default"/>
+                                        <field name="use_on_reply"/>
+                                    </group>
+                                    <field name="body_html" widget="html"
+                                           placeholder="Your signature…"/>
+                                </form>
+                            </field>
+                        </page>
+                        <page string="Tags" name="tags">
+                            <div class="text-muted mb-2">
+                                Tags are real IMAP keywords, so they also appear in SOGo and
+                                on your phone - and labels applied there show up here.
+                            </div>
+                            <field name="tag_ids" readonly="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="imap_keyword"/>
+                                    <field name="message_count" string="Messages"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Folders" name="folders">
+                            <div class="text-muted mb-2">
+                                Folders appear here after the first synchronisation.
+                                Untick <em>Subscribed</em> to stop mirroring a folder into
+                                Odoo. The inbox is re-enabled on every synchronisation:
+                                many servers leave it out of their subscription list even
+                                though it always exists.
+                            </div>
+                            <field name="folder_ids">
+                                <list editable="bottom" create="false" delete="false">
+                                    <field name="name" readonly="1"/>
+                                    <field name="imap_path" readonly="1" optional="show"/>
+                                    <field name="role" readonly="1"/>
+                                    <field name="subscribed" widget="boolean_toggle"/>
+                                    <field name="total_count" string="Messages" readonly="1"/>
+                                    <field name="unread_count" string="Unread" readonly="1"/>
+                                    <field name="last_sync_date" readonly="1"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                    <group>
+                        <field name="active" invisible="1"/>
+                        <field name="sequence" invisible="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="mail_client_account_view_search" model="ir.ui.view">
+        <field name="name">mail.client.account.search</field>
+        <field name="model">mail.client.account</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="email"/>
+                <field name="user_id"/>
+                <field name="server_id"/>
+                <filter name="filter_shared" string="Shared Mailboxes" domain="[('is_shared', '=', True)]"/>
+                <filter name="filter_error" string="In Error" domain="[('state', '=', 'error')]"/>
+                <separator/>
+                <filter name="filter_inactive" string="Archived" domain="[('active', '=', False)]"/>
+                <group>
+                    <filter name="group_server" string="Server" context="{'group_by': 'server_id'}"/>
+                    <filter name="group_user" string="Owner" context="{'group_by': 'user_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="mail_client_account_action" model="ir.actions.act_window">
+        <field name="name">Mail Accounts</field>
+        <field name="res_model">mail.client.account</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="mail_client_account_view_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Add a mailbox</p>
+            <p>
+                Give the mailbox an owner for a personal inbox, or leave the owner
+                empty to create a shared mailbox such as info@ or sales@.
+            </p>
+        </field>
+    </record>
+
+</odoo>

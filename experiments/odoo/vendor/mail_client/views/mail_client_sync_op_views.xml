@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="mail_client_sync_op_view_list" model="ir.ui.view">
+        <field name="name">mail.client.sync.op.list</field>
+        <field name="model">mail.client.sync.op</field>
+        <field name="arch" type="xml">
+            <list create="false" decoration-danger="state == 'failed'"
+                  decoration-muted="state == 'done'">
+                <field name="create_date" string="Queued"/>
+                <field name="account_id"/>
+                <field name="imap_path" string="Folder"/>
+                <field name="imap_uid" string="UID"/>
+                <field name="op_type"/>
+                <field name="retry_count" string="Tries"/>
+                <field name="last_error" optional="show"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'done'"
+                       decoration-danger="state == 'failed'"/>
+                <button name="action_retry" type="object" string="Retry"
+                        icon="fa-repeat" invisible="state != 'failed'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="mail_client_sync_op_view_search" model="ir.ui.view">
+        <field name="name">mail.client.sync.op.search</field>
+        <field name="model">mail.client.sync.op</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="account_id"/>
+                <field name="imap_path"/>
+                <filter name="filter_pending" string="Pending" domain="[('state', '=', 'pending')]"/>
+                <filter name="filter_failed" string="Failed" domain="[('state', '=', 'failed')]"/>
+                <group>
+                    <filter name="group_account" string="Mailbox" context="{'group_by': 'account_id'}"/>
+                    <filter name="group_type" string="Operation" context="{'group_by': 'op_type'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="mail_client_sync_op_action" model="ir.actions.act_window">
+        <field name="name">Pending Operations</field>
+        <field name="res_model">mail.client.sync.op</field>
+        <field name="view_mode">list</field>
+        <field name="search_view_id" ref="mail_client_sync_op_view_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Nothing is waiting to be sent</p>
+            <p>
+                Marking a message read, starring, moving or deleting it is recorded
+                here first and pushed to the mail server on the next synchronisation.
+                That keeps the interface instant and lets a change survive a dropped
+                connection.
+            </p>
+        </field>
+    </record>
+
+</odoo>
