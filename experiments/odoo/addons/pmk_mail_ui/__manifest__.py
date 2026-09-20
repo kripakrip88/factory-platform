@@ -12,7 +12,8 @@
 серверная конфигурация, и туда не заходят каждый день.
 """,
     "category": "Productivity/Mail",
-    "depends": ["mail_client", "sale", "purchase"],
+    "author": "ПМК Парк",
+    "depends": ["mail_client", "pmk_theme"],
     "data": ["data/menus.xml"],
     "post_init_hook": "post_init_hook",
     "license": "LGPL-3",

@@ -22,21 +22,25 @@
   </record>
 
   <!--
-    Сам ящик — вторым пунктом после заказов в обоих приложениях: письмо
-    почти всегда читают до или сразу после заказа, а не в конце дня.
+    Вешаем на корни из pmk_theme, а не на родные sale/purchase: родные на
+    стенде скрыты, вся видимая навигация собрана в теме. Пункт, повешенный
+    на скрытый корень, просто не показывается — проверено.
+
+    Место — второе, сразу после первого пункта раздела: почта не документ,
+    поэтому не первая, но открывают её каждый день, поэтому не последняя.
   -->
   <record id="menu_mail_sale" model="ir.ui.menu">
     <field name="name">Почта</field>
-    <field name="parent_id" ref="sale.sale_menu_root"/>
+    <field name="parent_id" ref="pmk_theme.menu_pmk_sales"/>
     <field name="action" ref="mail_client.mail_client_inbox_action"/>
     <field name="sequence">15</field>
   </record>
 
   <record id="menu_mail_purchase" model="ir.ui.menu">
     <field name="name">Почта</field>
-    <field name="parent_id" ref="purchase.menu_purchase_root"/>
+    <field name="parent_id" ref="pmk_theme.menu_pmk_purchase"/>
     <field name="action" ref="mail_client.mail_client_inbox_action"/>
-    <field name="sequence">3</field>
+    <field name="sequence">15</field>
   </record>
 
 </odoo>
