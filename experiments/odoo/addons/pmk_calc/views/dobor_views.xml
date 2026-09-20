@@ -13,25 +13,47 @@
         </header>
         <sheet>
           <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
-          <group>
+          <!--
+            Шапка тем же приёмом, что и в спецификации: ввод слева, итоги
+            справа карточками. Ведущее число здесь — планки: это то, что
+            цех делает. Материал (площадь и вес) собран во второй карточке.
+          -->
+          <div class="pmk-doc-head">
             <group>
               <field name="customer" placeholder="Кому или на какое изделие"/>
               <field name="order_date"/>
             </group>
-            <group>
-              <field name="total_positions"/>
-              <field name="total_qty"/>
-              <field name="total_area"/>
-              <field name="total_weight"/>
-            </group>
-          </group>
+
+            <div class="pmk-kpi">
+              <div class="pmk-kpi__card">
+                <div class="pmk-kpi__label">К изготовлению</div>
+                <div class="pmk-kpi__value">
+                  <field name="total_qty"/><span class="pmk-kpi__unit">планок</span>
+                </div>
+                <div class="pmk-kpi__sub">
+                  <span>в</span><field name="total_positions"/><span>позициях</span>
+                </div>
+              </div>
+
+              <div class="pmk-kpi__card">
+                <div class="pmk-kpi__row">
+                  <span class="pmk-kpi__label">Площадь, м²</span>
+                  <field name="total_area"/>
+                </div>
+                <div class="pmk-kpi__row">
+                  <span class="pmk-kpi__label">Вес, кг</span>
+                  <field name="total_weight"/>
+                </div>
+              </div>
+            </div>
+          </div>
           <!--
             Список НЕ редактируемый в строке намеренно: у доборки каждая
             позиция требует нарисовать профиль, а построитель живёт в форме.
             В editable-режиме Odoo правит ячейки и форму не открывает — тогда
             до построителя просто не добраться.
           -->
-          <field name="line_ids">
+          <field name="line_ids" class="pmk-rows">
             <list>
               <field name="sequence" widget="handle"/>
               <!-- Эскиз первым: профиль узнают по силуэту быстрее, чем по названию. -->
@@ -48,6 +70,9 @@
               <field name="weight_total" readonly="1" sum="Итого, кг"/>
               <!-- Снимок профиля правится построителем, руками в него не лезут. -->
               <field name="profile_snapshot_json" column_invisible="1"/>
+              <control>
+                <create string="Добавить позицию"/>
+              </control>
             </list>
             <!--
               Раскладка в две колонки: слева холст, справа параметры. Именно

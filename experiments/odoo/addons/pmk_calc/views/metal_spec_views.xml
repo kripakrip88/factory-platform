@@ -8,19 +8,44 @@
       <form string="Спецификация">
         <sheet>
           <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
-          <group>
+          <!--
+            Шапка: ввод слева, итоги справа карточками. Итог документа — его
+            главное число, а раньше он был набран тем же кеглем, что
+            примечание. Сетка 2/1 вместо штатных 50/50: полям ввода нужна
+            ширина, числам нет. Оформление приёмом темы (.pmk-kpi), чтобы
+            доборка и будущие документы выглядели так же.
+          -->
+          <div class="pmk-doc-head">
             <group>
               <field name="partner_id"/>
               <field name="date"/>
               <field name="note" placeholder="Примечание…"/>
             </group>
-            <group>
-              <field name="total_products"/>
-              <field name="total_details"/>
-              <field name="total_weight"/>
-              <field name="total_weight_t"/>
-            </group>
-          </group>
+
+            <div class="pmk-kpi">
+              <div class="pmk-kpi__card">
+                <div class="pmk-kpi__label">Итого</div>
+                <div class="pmk-kpi__value">
+                  <field name="total_weight"/><span class="pmk-kpi__unit">кг</span>
+                </div>
+                <!-- Тонны под килограммами: то же число в других единицах. -->
+                <div class="pmk-kpi__sub">
+                  <field name="total_weight_t"/><span>т</span>
+                </div>
+              </div>
+
+              <div class="pmk-kpi__card">
+                <div class="pmk-kpi__row">
+                  <span class="pmk-kpi__label">Изделий</span>
+                  <field name="total_products"/>
+                </div>
+                <div class="pmk-kpi__row">
+                  <span class="pmk-kpi__label">Деталей</span>
+                  <field name="total_details"/>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <!--
             Изделия раскрываются в форму: внутри у каждого две таблицы деталей,
@@ -44,7 +69,7 @@
             понимал, что это состав, а не отдельное свойство изделия.
             Разметка внутри задаёт, что читать и что править.
           -->
-          <field name="product_ids" widget="pmk_product_lines">
+          <field name="product_ids" widget="pmk_product_lines" class="pmk-rows">
             <list>
               <field name="line_linear_ids" optional="hide" string="Состав: прокат">
                 <list>
@@ -102,6 +127,11 @@
               <field name="weight_one" readonly="1"/>
               <field name="weight_total" readonly="1" sum="Итого, кг"/>
               <field name="note" optional="hide"/>
+              <!-- Своя подпись вместо штатного «Добавить строку»: строка
+                   документа здесь — изделие, так и называем. -->
+              <control>
+                <create string="Добавить изделие"/>
+              </control>
             </list>
             <form string="Изделие">
               <group>

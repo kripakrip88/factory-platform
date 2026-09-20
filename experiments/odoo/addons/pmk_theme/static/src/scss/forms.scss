@@ -216,3 +216,172 @@
   // Кнопки внутри тоже не должны торчать за подложку.
   overflow: hidden;
 }
+
+
+// ─── Ширина листа: возвращаем место, отданное боковому чату ───────────────
+//
+// Ядро Odoo ограничивает лист 1400px ($o-form-view-sheet-max-width,
+// web/static/src/views/form/form.variables.scss:4) и СВЕРХ ТОГО резервирует
+// 440px справа — там жил боковой чат. Чат мы перенесли вниз, а отступ
+// остался: замер при мониторе 1900px дал лист 1324px и таблицу изделий
+// 1262px, то есть пустовало около трети экрана.
+//
+// Потолок поднимаем до 1920px, а не снимаем совсем. Число не произвольное:
+// 1400 + 440 = 1840 — ровно столько лист занимал вместе с чатом. То есть мы
+// возвращаем прежний след документа, а не растягиваем его без меры: на
+// сверхшироком мониторе строка текста не должна уезжать за читаемую длину.
+.o_form_view .o_form_sheet_bg {
+  max-width: 1920px;
+}
+
+// Отступ под чат снимаем только там, где чата сбоку действительно нет.
+// Пишем оба свойства: логическое и физическое — ядро задаёт отступ
+// логическим, а перебить надёжнее сразу обоими.
+.o_form_renderer:has(> .o-mail-Form-chatter:not(.o-aside)) > .o_form_sheet_bg {
+  margin-right: 0 !important;
+  margin-inline-end: 0 !important;
+}
+
+
+// ─── Шапка документа: ввод слева, итоги справа ────────────────────────────
+//
+// Штатный <group> из двух <group> даёт ровно 50/50, а содержимое у колонок
+// разное: слева поля ввода, справа числа. Полям нужна ширина, числам — нет.
+.pmk-doc-head {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  align-items: start;
+
+  // На узком экране колонки встают друг под друга: 1fr под итоги — это
+  // меньше 300px, туда не помещается ни одно значение с подписью.
+  @media (max-width: 1100px) {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+
+// ─── Карточка показателя ──────────────────────────────────────────────────
+//
+// Итог документа — его главное число, но набран он был тем же кеглем, что
+// примечание. Выносим в карточку.
+//
+// Рецепт карточки не новый: ровно теми же токенами оформлен блок истории
+// (фон 0.03, рамка 0.10, радиус 16). Один приём на всю систему — иначе
+// каждая новая плашка заводит собственный вид.
+.pmk-kpi {
+  display: grid;
+  gap: 10px;
+}
+
+.pmk-kpi__card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 16px;
+  padding: 12px 16px;
+}
+
+.pmk-kpi__label {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.55);
+  white-space: nowrap;
+}
+
+// Главное число. Моноширинные цифры — чтобы при пересчёте в реальном
+// времени число не дёргалось по ширине (правило number-tabular).
+.pmk-kpi__value {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  margin-top: 2px;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+
+  .o_field_widget { font-size: inherit; font-weight: inherit; }
+}
+
+.pmk-kpi__unit {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+// Тонны под килограммами, а не рядом: это то же число в других единицах,
+// а не второй показатель. Рядом они читались бы как два разных итога.
+.pmk-kpi__sub {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-top: 3px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.55);
+  font-variant-numeric: tabular-nums;
+
+  .o_field_widget { font-size: inherit; }
+}
+
+// Счётчики: подпись слева, число справа — так столбец чисел читается
+// столбцом, а не рваным краем.
+.pmk-kpi__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 2px 0;
+  font-size: 12.5px;
+
+  + .pmk-kpi__row { border-top: 1px solid rgba(255, 255, 255, 0.06); }
+
+  .o_field_widget {
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.85);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+
+// ─── Добавление строки в таблицу документа ────────────────────────────────
+//
+// Штатная ссылка «Добавить строку» — мелкий текст, прижатый к левому краю
+// под таблицей; её ищут глазами. Делаем зоной во всю ширину таблицы.
+//
+// Намеренно ПРИГЛУШЕННОЙ: пунктир 0.18 и серый текст. Внутри раскрытого
+// состава есть свои кнопки добавления деталей, и добавляют детали чаще, чем
+// изделия. Яркая кнопка здесь перевернула бы иерархию — заметнее оказалось
+// бы редкое действие.
+//
+// Класс, а не имя поля: под темой живут все документы системы, и правило по
+// line_ids задело бы чужие таблицы.
+.pmk-rows .o_field_x2many_list_row_add {
+  padding: 10px 0 0 !important;
+
+  a {
+    display: block;
+    padding: 9px 12px;
+    border: 1px dashed rgba(255, 255, 255, 0.18);
+    border-radius: 10px;
+    color: rgba(255, 255, 255, 0.58);
+    text-align: center;
+    text-decoration: none;
+    transition: border-color 150ms ease-out, color 150ms ease-out;
+
+    &:hover {
+      border-color: rgba(255, 255, 255, 0.38);
+      color: #fff;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    &:focus-visible {
+      outline: 2px solid rgba(255, 255, 255, 0.85);
+      outline-offset: 2px;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pmk-rows .o_field_x2many_list_row_add a { transition: none; }
+}
