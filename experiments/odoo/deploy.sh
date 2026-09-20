@@ -14,7 +14,7 @@ DEST="$STAND/addons-extra"
 BRANCH="${BRANCH:-feature/experiment-carbon}"
 
 # Наши модули — обновляются через -u на каждом деплое.
-OURS="pmk_calc pmk_theme pmk_pdf pmk_cut pmk_mail_ui pmk_partner pmk_purchase pmk_dadata"
+OURS="pmk_calc pmk_theme pmk_pdf pmk_cut pmk_mail_ui pmk_partner pmk_purchase pmk_dadata pmk_laser"
 # Вендорские — только раскладываются. -u им не нужен: мы правим в них код и
 # переводы, а не данные, а лишнее обновление перезапускает их data-файлы.
 VENDOR="mail_client"
