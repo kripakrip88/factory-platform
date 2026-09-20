@@ -45,11 +45,18 @@ function enhance(el) {
     if (el.dataset[DONE]) {
         return;
     }
-    const title = el.querySelector(":scope > .o_horizontal_separator");
+    // Заголовок лежит по-разному: у группы с подгруппами — прямым потомком,
+    // у группы с одним полем Odoo заворачивает его в колонку сетки.
+    const title = el.querySelector(":scope > .o_horizontal_separator")
+        || el.querySelector(":scope > * > .o_horizontal_separator");
     if (!title) {
         return;                       // секция без заголовка — сворачивать не за что
     }
     el.dataset[DONE] = "1";
+    // Помечаем ветку с заголовком, чтобы стили прятали всё, кроме неё:
+    // иначе при сворачивании исчезает и сам заголовок.
+    const head = title.parentElement === el ? title : title.parentElement;
+    head.classList.add("pmk-section__head");
 
     const key = sectionKey(el);
     const state = readState();
@@ -87,8 +94,7 @@ function revealInvalid(root) {
             continue;
         }
         section.classList.remove("pmk-section--closed");
-        section.querySelector(":scope > .o_horizontal_separator")
-            ?.setAttribute("aria-expanded", "true");
+        section.querySelector(".pmk-section__head")?.setAttribute("aria-expanded", "true");
         const saved = readState();
         saved[sectionKey(section)] = false;
         writeState(saved);

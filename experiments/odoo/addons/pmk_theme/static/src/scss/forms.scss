@@ -706,7 +706,8 @@
     // Заголовок работает кнопкой, значит должен вести себя как кнопка:
     // курсор, отклик на наведение, видимая рамка фокуса и высота, в которую
     // попадают и мышью, и пальцем.
-    > .o_horizontal_separator {
+    > .o_horizontal_separator,
+    > .pmk-section__head > .o_horizontal_separator {
       display: flex;
       align-items: center;
       gap: .5rem;
@@ -745,19 +746,21 @@
       }
     }
 
-    // Содержимое: всё, кроме заголовка.
-    > *:not(.o_horizontal_separator) {
-      transition: opacity .15s ease;
+    // Ветку с заголовком помечает JS: у группы с подгруппами заголовок —
+    // прямой потомок, у группы с одним полем он завёрнут в колонку сетки.
+    > .pmk-section__head > .o_horizontal_separator {
+      margin-top: 0;
     }
 
     &.pmk-section--closed {
       margin-bottom: .5rem;
 
-      > .o_horizontal_separator::before {
+      > .o_horizontal_separator::before,
+      > .pmk-section__head > .o_horizontal_separator::before {
         transform: rotate(0deg);
       }
 
-      > *:not(.o_horizontal_separator) {
+      > *:not(.pmk-section__head):not(.o_horizontal_separator) {
         display: none;
       }
     }
