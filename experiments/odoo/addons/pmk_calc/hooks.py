@@ -20,8 +20,13 @@ def post_init_hook(env):
     sheets = env["pmk.metal.sheet"]
     filled = 0
     for line in lines:
-        sheet = sheets.search([("thickness_mm", "=", line.thickness)],
-                              order="sheet_type", limit=1)
+        # Только оцинковка: доборку гнут из неё, и в выборе позиции с
+        # 21.09.2026 ничего другого нет. Без этого условия поиск брал первый
+        # лист по алфавиту видов, а «Гладкий» стоит раньше «Оцинкованного» —
+        # значит позиция толщиной 1 мм (она есть у обоих видов) молча получала
+        # бы гладкий лист, которого в выпадашке уже не покажут.
+        sheet = sheets.search([("sheet_type", "=", "Оцинкованный"),
+                               ("thickness_mm", "=", line.thickness)], limit=1)
         if sheet:
             line.sheet_id = sheet.id
             filled += 1
