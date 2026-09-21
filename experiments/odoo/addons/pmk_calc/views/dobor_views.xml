@@ -89,7 +89,15 @@
               и гибы → Параметры доборки» — CHANGELOG модуля), и при рисовании
               это удобнее: рука с мышью на чертеже, глаз сверяет числа сбоку.
             -->
-            <form string="Доборка" class="pmk-dobor-form">
+            <!--
+              pmk-dialog-fullscreen — метка для static/src/js/dobor_dialog_fullscreen.js:
+              окно позиции открывается во весь экран штатным размером диалога
+              Odoo (size="fullscreen" → класс modal-fullscreen). В обычном окне
+              холсту оставалось ~270 px и чертёж мельчал до нечитаемого. Задать
+              размер прямо в разметке нельзя: диалог строки one2many
+              (X2ManyFieldDialog) размер из вьюхи и контекста не читает.
+            -->
+            <form string="Доборка" class="pmk-dobor-form pmk-dialog-fullscreen">
               <div class="pmk-dobor-grid">
                 <div class="pmk-dobor-grid__main">
                   <field name="profile_snapshot_json" widget="pmk_dobor_builder" nolabel="1"/>

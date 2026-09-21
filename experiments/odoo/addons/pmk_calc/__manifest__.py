@@ -46,6 +46,7 @@
         "web.assets_backend": [
             "pmk_calc/static/src/scss/dobor_builder.scss",
             "pmk_calc/static/src/js/dobor_builder.js",
+            "pmk_calc/static/src/js/dobor_dialog_fullscreen.js",
             "pmk_calc/static/src/js/svg_field.js",
             "pmk_calc/static/src/js/product_lines_field.js",
             "pmk_calc/static/src/xml/dobor_builder.xml",

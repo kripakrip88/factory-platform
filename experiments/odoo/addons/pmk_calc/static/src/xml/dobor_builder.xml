@@ -5,15 +5,15 @@
     <div class="pmk-dobor" t-ref="wrap">
 
       <div class="pmk-dobor__bar">
-        <button type="button" class="btn btn-sm btn-secondary"
+        <button type="button" class="btn btn-sm btn-secondary pmk-dobor__grow"
                 t-on-click="() => this.toggle('growEnd')"
                 t-att-title="state.growEnd ? 'Полки добавляются в конец — нажмите, чтобы в начало' : 'Полки добавляются в начало — нажмите, чтобы в конец'">
           <t t-esc="state.growEnd ? 'в конец' : 'в начало'"/>
         </button>
         <!-- Вращение живёт ручкой на холсте (ниже), в панели его кнопок нет. -->
-        <button type="button" class="btn btn-sm btn-secondary" t-on-click="alignFlat"
+        <button type="button" class="btn btn-sm btn-secondary pmk-dobor__glyph" t-on-click="alignFlat"
                 title="Выровнять эскиз: длинную полку — горизонтально, симметричный домик — по оси симметрии">▭</button>
-        <button type="button" class="btn btn-sm btn-secondary" t-on-click="mirror" title="Зеркало: завальцовка и сторона окраски тоже меняются">⇋</button>
+        <button type="button" class="btn btn-sm btn-secondary pmk-dobor__glyph" t-on-click="mirror" title="Зеркало: завальцовка и сторона окраски тоже меняются">⇋</button>
 
         <span class="pmk-dobor__sep"/>
 
@@ -24,10 +24,17 @@
           сдвигаются (правило content-jumping: под условный элемент место
           резервируют заранее).
         -->
+        <!--
+          «завальц.», а не «завальцовка»: панель должна лечь в одну строку на
+          окне владельца (панель 878 px), и с полным словом сумма элементов
+          выходит ≈874 px — на грани, любой шрифт с другой шириной переносит
+          «Очистить» на вторую строку. Сокращение даёт ≈849. Слово то же, что
+          холст пишет у самой завальцовки («завальц. 15»); полное — в title.
+        -->
         <span class="pmk-dobor__unit">
-          <label class="pmk-dobor__check">
+          <label class="pmk-dobor__check" title="Завальцовка слева">
             <input type="checkbox" t-att-checked="state.hemLeft" t-on-change="() => this.toggle('hemLeft')"/>
-            завальцовка слева
+            завальц. слева
           </label>
           <button type="button" class="btn btn-sm btn-secondary pmk-dobor__flip"
                   t-att-class="{ 'pmk-dobor__flip--off': !state.hemLeft }"
@@ -36,7 +43,7 @@
         </span>
 
         <span class="pmk-dobor__unit">
-          <label class="pmk-dobor__check">
+          <label class="pmk-dobor__check" title="Завальцовка справа">
             <input type="checkbox" t-att-checked="state.hemRight" t-on-change="() => this.toggle('hemRight')"/>
             справа
           </label>
