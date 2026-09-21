@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!-- Single tier: no label management or extra settings surface in Basic
+       that would need a Manager/Admin split — Pro has that. -->
+  <record id="module_category_teaminboxbasic" model="ir.module.category">
+    <field name="name">Team Inbox</field>
+    <field name="sequence">21</field>
+  </record>
+
+  <!-- Odoo 19: groups link to a privilege, which links to the category. -->
+  <record id="privilege_teaminboxbasic" model="res.groups.privilege">
+    <field name="name">Access Level</field>
+    <field name="category_id" ref="module_category_teaminboxbasic"/>
+  </record>
+
+  <record id="group_teaminboxbasic_user" model="res.groups">
+    <field name="name">User</field>
+    <field name="privilege_id" ref="privilege_teaminboxbasic"/>
+    <field name="comment">Can open Team Inbox and view messages they have access to.</field>
+  </record>
+</odoo>

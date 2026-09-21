@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<!-- ── Icons ── -->
+<t t-name="northlight_teaminbox.Icon">
+  <t t-if="name === 'inbox'">
+    <svg viewBox="0 -960 960 960" fill="currentColor"><path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-120H640q-30 38-71.5 59T480-240q-47 0-88.5-21T320-320H200v120Zm349-142q31-22 43-58h168v-360H200v360h168q12 36 43 58t69 22q38 0 69-22ZM200-200h560-560Z"/></svg>
+  </t>
+  <t t-elif="name === 'outgoing'">
+    <svg viewBox="0 -960 960 960" fill="currentColor"><path d="M480-440 160-640v400h360v80H160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720v280h-80v-200L480-440Zm0-80 320-200H160l320 200ZM760-40l-56-56 63-64H600v-80h167l-64-64 57-56 160 160L760-40ZM160-640v440-240 3-283 80Z"/></svg>
+  </t>
+  <t t-elif="name === 'search'">
+    <svg viewBox="0 -960 960 960" fill="currentColor"><path d="M784-120 532-372q-30 24-69 38t-83 14q-109 0-184.5-75.5T120-580q0-109 75.5-184.5T380-840q109 0 184.5 75.5T640-580q0 44-14 83t-38 69l252 252-56 56ZM380-400q75 0 127.5-52.5T560-580q0-75-52.5-127.5T380-760q-75 0-127.5 52.5T200-580q0 75 52.5 127.5T380-400Z"/></svg>
+  </t>
+  <t t-elif="name === 'refresh'">
+    <svg viewBox="0 -960 960 960" fill="currentColor"><path d="M480-160q-134 0-227-93t-93-227q0-134 93-227t227-93q69 0 132 28.5T720-690v-110h80v280H520v-80h168q-32-56-87.5-88T480-720q-100 0-170 70t-70 170q0 100 70 170t170 70q77 0 139-44t87-116h84q-28 106-114 173t-196 67Z"/></svg>
+  </t>
+  <t t-elif="name === 'filter'">
+    <svg viewBox="0 -960 960 960" fill="currentColor"><path d="M400-240v-80h160v80H400ZM240-440v-80h480v80H240ZM120-640v-80h720v80H120Z"/></svg>
+  </t>
+  <t t-elif="name === 'attach'">
+    <svg viewBox="0 -960 960 960" fill="currentColor"><path d="M720-330q0 104-73 177T470-80q-104 0-177-73t-73-177v-370q0-75 52.5-127.5T400-880q75 0 127.5 52.5T580-700v350q0 46-32 78t-78 32q-46 0-78-32t-32-78v-370h80v370q0 13 8.5 21.5T470-320q13 0 21.5-8.5T500-350v-350q-1-42-29.5-71T400-800q-42 0-71 29t-29 71v370q-1 71 49 120.5T470-160q70 0 119-49.5T640-330v-390h80v390Z"/></svg>
+  </t>
+  <t t-elif="name === 'close'">
+    <svg viewBox="0 -960 960 960" fill="currentColor"><path d="M256-200l-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z"/></svg>
+  </t>
+  <t t-elif="name === 'mail'">
+    <svg viewBox="0 -960 960 960" fill="currentColor"><path d="M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720v480q0 33-23.5 56.5T800-160H160Zm320-280L160-640v400h640v-400L480-440Zm0-80 320-200H160l320 200ZM160-640v-80 480-400Z"/></svg>
+  </t>
+</t>
+
+<!-- ── Main component ── -->
+<t t-name="northlight_teaminbox.TeamInboxBasic">
+<div t-att-class="rootClass">
+<div class="ntib_sheet">
+
+  <!-- ═══ Sidebar ═══ -->
+  <aside class="ntib_side">
+    <div class="ntib_brand">
+      <div class="ntib_mark"><t t-call="northlight_teaminbox.Icon"><t t-set="name" t-value="'mail'"/></t></div>
+      <span class="ntib_brand_name">Team Inbox</span>
+    </div>
+
+    <button t-att-class="'ntib_nitem' + (state.tab === 'in' ? ' active' : '')"
+            t-on-click="() => this.setTab('in')">
+      <t t-call="northlight_teaminbox.Icon"><t t-set="name" t-value="'inbox'"/></t>
+      <span class="ntib_nitem_label">Incoming</span>
+      <span class="ntib_count" t-esc="state.stats.total_in"/>
+    </button>
+    <button t-att-class="'ntib_nitem' + (state.tab === 'out' ? ' active' : '')"
+            t-on-click="() => this.setTab('out')">
+      <t t-call="northlight_teaminbox.Icon"><t t-set="name" t-value="'outgoing'"/></t>
+      <span class="ntib_nitem_label">Outgoing</span>
+      <span class="ntib_count" t-esc="state.stats.total_out"/>
+    </button>
+  </aside>
+
+  <!-- ═══ List column ═══ -->
+  <section class="ntib_listcol">
+    <div class="ntib_lc_head">
+      <div class="ntib_search">
+        <t t-call="northlight_teaminbox.Icon"><t t-set="name" t-value="'search'"/></t>
+        <input type="text" placeholder="Search by subject, sender or company"
+               t-att-value="state.search" t-on-input="onSearch"/>
+      </div>
+      <div class="ntib_titlerow">
+        <span/>
+        <div class="ntib_tools">
+          <button t-att-class="'ntib_tbtn' + (hasActiveFilter ? ' flagged' : '')"
+                  title="Filter" t-on-click="openFilter">
+            <span class="ntib_fdot"/>
+            <t t-call="northlight_teaminbox.Icon"><t t-set="name" t-value="'filter'"/></t>
+          </button>
+          <button class="ntib_tbtn" title="Refresh" t-on-click="refresh">
+            <t t-call="northlight_teaminbox.Icon"><t t-set="name" t-value="'refresh'"/></t>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="ntib_rows" t-on-scroll="onRowsScroll">
+      <t t-if="state.loadingList">
+        <div class="ntib_empty">Loading…</div>
+      </t>
+      <t t-elif="!state.messages.length">
+        <div class="ntib_empty">No messages found.</div>
+      </t>
+      <t t-else="">
+        <t t-foreach="groupedMessages" t-as="grp" t-key="grp.group">
+          <div class="ntib_grp" t-esc="grp.group"/>
+          <t t-foreach="grp.items" t-as="msg" t-key="msg.id">
+            <div t-att-class="'ntib_mail' + (state.selected and state.selected.id === msg.id ? ' sel' : '')"
+                 t-on-click="() => this.selectMessage(msg)">
+              <div class="ntib_ava" t-esc="initials(senderName(msg))"/>
+              <div class="ntib_mid">
+                <div class="ntib_l1">
+                  <span class="ntib_from" t-esc="senderName(msg)"/>
+                  <span class="ntib_time" t-esc="fmtTime(msg.date)"/>
+                </div>
+                <div class="ntib_subj" t-esc="subjectOf(msg)"/>
+                <div class="ntib_prev" t-esc="msg.preview"/>
+                <div class="ntib_meta">
+                  <t t-foreach="msg.linked_records" t-as="rec" t-key="rec.model + ':' + rec.res_id">
+                    <span class="ntib_doc" t-att-title="rec.name"
+                          t-on-click="(ev) => this.openRecord(ev, rec.model, rec.res_id)"
+                          t-esc="clip(rec.name)"/>
+                  </t>
+                </div>
+              </div>
+            </div>
+          </t>
+        </t>
+      </t>
+      <t t-if="state.hasMore and !state.loadingList">
+        <div class="ntib_loadmore"><span class="ntib_spin"/><t>Loading more…</t></div>
+      </t>
+    </div>
+  </section>
+
+  <!-- ═══ Reader ═══ -->
+  <section class="ntib_reader">
+    <t t-if="!state.selected">
+      <div class="ntib_r_empty">Select a message to read it</div>
+    </t>
+    <t t-else="">
+      <div class="ntib_r_main">
+        <header class="ntib_r_head">
+          <div class="ntib_r_subject" t-esc="subjectOf(state.selected)"/>
+          <div class="ntib_r_line">
+            <div class="ntib_r_ava" t-esc="initials(senderName(state.selected))"/>
+            <div>
+              <div class="ntib_r_name" t-esc="senderName(state.selected)"/>
+              <div class="ntib_r_addr" t-esc="fmtFull(state.selected.date)"/>
+            </div>
+            <div class="ntib_r_actions">
+              <t t-if="state.attachments.length">
+                <button class="ntib_iconact" title="Attachments on the linked record"
+                        t-on-click="toggleAtt">
+                  <t t-call="northlight_teaminbox.Icon"><t t-set="name" t-value="'attach'"/></t>
+                  <span class="ntib_attn" t-esc="state.attachments.length"/>
+                </button>
+              </t>
+            </div>
+          </div>
+          <div class="ntib_rmeta">
+            <span class="ntib_k">From</span><span class="ntib_v" t-esc="state.selected.email_from"/>
+            <t t-if="state.selected.email_to">
+              <span class="ntib_k">To</span><span class="ntib_v" t-esc="state.selected.email_to"/>
+            </t>
+            <t t-if="state.selected.email_cc">
+              <span class="ntib_k">CC</span><span class="ntib_v" t-esc="state.selected.email_cc"/>
+            </t>
+          </div>
+          <div class="ntib_r_tags">
+            <t t-foreach="state.selected.linked_records" t-as="rec" t-key="rec.model + ':' + rec.res_id">
+              <span class="ntib_doc" t-att-title="rec.name"
+                    t-on-click="(ev) => this.openRecord(ev, rec.model, rec.res_id)"
+                    t-esc="clip(rec.name, 34)"/>
+            </t>
+          </div>
+        </header>
+        <div class="ntib_r_body">
+          <t t-if="state.loadingBody">
+            <div class="ntib_empty">Loading message…</div>
+          </t>
+          <t t-elif="state.selected.body">
+            <iframe class="ntib_frame" sandbox="allow-same-origin"
+                    t-att-srcdoc="frameHtml(state.selected.body)"
+                    t-on-load="autoSizeFrame"/>
+          </t>
+          <t t-else="">
+            <div class="ntib_empty">No content.</div>
+          </t>
+        </div>
+      </div>
+      <!-- Attachments drawer -->
+      <t t-if="state.attOpen and state.attachments.length">
+        <div class="ntib_drawerov" t-on-click="toggleAtt"/>
+        <aside class="ntib_attpanel">
+          <div class="ntib_ap_head">
+            <t>Attachments</t>
+            <button class="ntib_ap_x" t-on-click="toggleAtt">
+              <t t-call="northlight_teaminbox.Icon"><t t-set="name" t-value="'close'"/></t>
+            </button>
+          </div>
+          <div class="ntib_ap_sub">
+            <t t-if="state.selected.linked_records.length">
+              <t>On</t> <t t-esc="state.selected.linked_records[0].name"/>
+            </t>
+            <t t-else="">On the linked record</t>
+          </div>
+          <div class="ntib_ap_list">
+            <t t-foreach="state.attachments" t-as="att" t-key="att.id">
+              <a class="ntib_aprow" t-att-href="attachmentUrl(att.id)" t-att-title="att.name">
+                <span class="ntib_ext" t-esc="fileExt(att.name)"/>
+                <span class="ntib_apnm" t-esc="att.name"/>
+                <span class="ntib_apsz" t-esc="formatFileSize(att.file_size)"/>
+              </a>
+            </t>
+          </div>
+        </aside>
+      </t>
+    </t>
+  </section>
+
+</div>
+</div>
+
+<!-- ═══ Filter popup — a glimpse of Pro's filtering (sort + date range only) ═══ -->
+<t t-if="state.showFilter">
+  <div class="ntib_overlay" t-on-click="closeFilter">
+    <div class="ntib_popup" t-on-click.stop="">
+      <div class="ntib_pop_titlerow">
+        <h2 class="ntib_pop_title">Filter</h2>
+        <button class="ntib_iconbtn" t-on-click="closeFilter">
+          <t t-call="northlight_teaminbox.Icon"><t t-set="name" t-value="'close'"/></t>
+        </button>
+      </div>
+      <div class="ntib_field">
+        <span class="ntib_flabel">Sort</span>
+        <div class="ntib_seg">
+          <button t-att-class="'ntib_segbtn' + (state.sort === 'desc' ? ' on' : '')"
+                  t-on-click="() => this.setSort('desc')">Newest first</button>
+          <button t-att-class="'ntib_segbtn' + (state.sort === 'asc' ? ' on' : '')"
+                  t-on-click="() => this.setSort('asc')">Oldest first</button>
+        </div>
+      </div>
+      <div class="ntib_fieldrow">
+        <div class="ntib_field">
+          <span class="ntib_flabel">From date</span>
+          <input type="date" class="ntib_input" t-att-value="state.filterDraft.dateFrom"
+                 t-on-change="(ev) => this.setDraft('dateFrom', ev)"/>
+        </div>
+        <div class="ntib_field">
+          <span class="ntib_flabel">To date</span>
+          <input type="date" class="ntib_input" t-att-value="state.filterDraft.dateTo"
+                 t-on-change="(ev) => this.setDraft('dateTo', ev)"/>
+        </div>
+      </div>
+      <div class="ntib_upsell">
+        This is a glimpse of filtering — Team Inbox Pro adds full-text
+        search, address filters, connected-record lookup and more.
+      </div>
+      <div class="ntib_popact">
+        <button class="ntib_pbtn" t-on-click="clearFilter">Clear all</button>
+        <button class="ntib_pbtn ink" t-on-click="applyFilter">Apply</button>
+      </div>
+    </div>
+  </div>
+</t>
+
+<!-- ═══ Toast ═══ -->
+<t t-if="state.toast">
+  <div class="ntib_toast" t-esc="state.toast"/>
+</t>
+
+</t>
+</templates>

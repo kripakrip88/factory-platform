@@ -17,7 +17,12 @@ BRANCH="${BRANCH:-feature/experiment-carbon}"
 OURS="pmk_calc pmk_theme pmk_pdf pmk_cut pmk_mail_ui pmk_partner pmk_purchase pmk_dadata pmk_laser"
 # Вендорские — только раскладываются. -u им не нужен: мы правим в них код и
 # переводы, а не данные, а лишнее обновление перезапускает их data-файлы.
-VENDOR="mail_client"
+#
+# Тема, Team Inbox и tracking_manager добавлены 21.09.2026: до этого они жили
+# ТОЛЬКО в addons-extra на сервере, вне git и вне этого списка. Одна неудачная
+# команда — и тема, на которой стоит весь вид стенда, исчезла бы без следа.
+# Теперь источник истины — репозиторий, как и у mail_client.
+VENDOR="mail_client theme_liquid_glass northlight_teaminbox tracking_manager"
 # Модули, которые надо ПОСТАВИТЬ, а не обновить (через переменную окружения).
 INSTALL="${INSTALL:-}"
 

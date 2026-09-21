@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="action_teaminboxbasic" model="ir.actions.client">
+        <field name="name">Team Inbox</field>
+        <field name="tag">northlight_teaminbox.TeamInboxBasic</field>
+    </record>
+
+    <menuitem
+        id="menu_teaminboxbasic_root"
+        name="Team Inbox"
+        sequence="100"
+        web_icon="northlight_teaminbox,static/description/icon.png"
+        action="action_teaminboxbasic"
+        groups="group_teaminboxbasic_user"
+    />
+</odoo>
