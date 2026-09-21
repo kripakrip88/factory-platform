@@ -11,7 +11,7 @@
 и работает как «все приложения». Так ничего не становится недостижимым,
 когда модулей больше, чем влезает по ширине.
     """,
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.1.0",
     "category": "Theme/Backend",
     "author": "ПМК Парк",
     "license": "LGPL-3",
@@ -22,7 +22,15 @@
         "mrp", "account", "repair", "maintenance", "hr",
         "mail", "calendar", "project", "contacts", "project_todo", "spreadsheet_dashboard",
     ],
-    "data": ["data/menus.xml", "data/hide_menus.xml"],
+    "data": [
+        "data/menus.xml",
+        "data/hide_menus.xml",
+        # Порядок в бандле: наши стили последними. Подробно — в самом файле.
+        "data/assets_order.xml",
+        # Язык страницы и запрет автоперевода: браузер принимал русский за
+        # другой язык и переводил интерфейс («Сохранить» -> «чувак»).
+        "views/webclient_lang.xml",
+    ],
     "assets": {
         "web.assets_backend": [
             "pmk_theme/static/src/scss/navbar.scss",

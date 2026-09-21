@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+  <!--
+    НАШИ СТИЛИ ГРУЗЯТСЯ ПОСЛЕДНИМИ.
+
+    ЧТО БЫЛО. Odoo собирает бандл web.assets_backend по модулям, и среди
+    независимых друг от друга сортирует их по имени. `pmk_theme` идёт раньше
+    `theme_liquid_glass`, поэтому чужая тема всегда оказывалась НИЖЕ нашей и при
+    равном весе правил всегда выигрывала. Отсюда и жалоба владельца, что правку
+    вида приходится переделывать по три-четыре раза: у чужой темы 183 правила с
+    !important, и каждое наше правило приходилось перебивать встречным. Дошло до
+    того, что фирменный лайм #C8F000 не доехал до кнопок — их красит чужая тема
+    своим бирюзовым с !important.
+
+    ПОЧЕМУ НЕ ЧЕРЕЗ МАНИФЕСТ. В манифесте есть директива ('after', цель, путь),
+    но она не сработает: манифесты обрабатываются по порядку модулей, наш —
+    раньше чужого, и в этот момент целевого файла в списке ЕЩЁ НЕТ. Сборка тогда
+    падает с ошибкой (ir_asset.py, AssetPaths.index → _raise_not_found), то есть
+    стенд просто не поднимется.
+
+    ПОЧЕМУ ИМЕННО ТАК. Записи ir.asset с sequence >= 16 (DEFAULT_SEQUENCE)
+    обрабатываются ПОСЛЕ всех манифестов (ir_asset.py, шаг 3 в _fill_asset_paths).
+    К этому моменту в списке уже лежит всё, включая чужую тему. Сначала убираем
+    наши файлы с их прежнего места, потом дописываем в самый конец — и они
+    оказываются ниже всех.
+
+    Почему «убрать и дописать», а не «переставить»: вставка молча пропускает
+    путь, который уже есть в списке (проверка `if path not in self.memo` в
+    AssetPaths.insert). Без предварительного remove наши файлы остались бы на
+    старом месте, а запись не дала бы никакого эффекта — и это было бы незаметно.
+    Remove чистит memo, поэтому следующий append проходит.
+
+    ПОЧЕМУ БЕЗ ССЫЛКИ НА ЧУЖУЮ ТЕМУ. Можно было написать ('after', файл чужой
+    темы), но тогда в день, когда тему снимут (а мы собираемся), цель исчезнет и
+    сборка упадёт. Здесь чужая тема не упоминается вовсе: наши файлы просто
+    последние в бандле. После снятия темы эти записи останутся верными, их можно
+    будет убрать спокойно, а не в аварийном порядке.
+
+    ЧТО ЭТО НЕ РЕШАЕТ. Чужие 183 !important никуда не делись: правило с
+    !important бьёт наше обычное правило независимо от порядка. Выигрыш в том,
+    что теперь при РАВНОМ весе побеждаем мы, и наши собственные !important
+    работают надёжно. Полное слияние тем это не отменяет — отменяет только
+    спешку.
+
+    ⚠️ ЕСЛИ ДОБАВЛЯЕШЬ НОВЫЙ SCSS в манифест — допиши его и сюда отдельной
+    записью append, иначе remove ниже снимет его с места, а обратно не вернёт, и
+    файл пропадёт из бандла целиком.
+  -->
+
+  <record id="asset_scss_off" model="ir.asset">
+    <field name="name">ПМК: снять свои стили с их места в бандле</field>
+    <field name="bundle">web.assets_backend</field>
+    <field name="directive">remove</field>
+    <field name="path">pmk_theme/static/src/scss/*.scss</field>
+    <!-- Больше 16 (DEFAULT_SEQUENCE) — значит после всех манифестов.
+         Порядок между этими записями задаётся полем sequence (_order модели —
+         'sequence, id'), поэтому снятие гарантированно идёт первым. -->
+    <field name="sequence">20</field>
+  </record>
+
+  <!--
+    Дальше — в том же порядке, в каком они стояли в манифесте: navbar задаёт
+    навигацию и переменные акцентов, forms опирается на них, third_party
+    подгоняет чужие модули и должен идти последним из наших.
+  -->
+  <record id="asset_scss_navbar" model="ir.asset">
+    <field name="name">ПМК: navbar.scss в конец бандла</field>
+    <field name="bundle">web.assets_backend</field>
+    <field name="directive">append</field>
+    <field name="path">pmk_theme/static/src/scss/navbar.scss</field>
+    <field name="sequence">21</field>
+  </record>
+
+  <record id="asset_scss_forms" model="ir.asset">
+    <field name="name">ПМК: forms.scss в конец бандла</field>
+    <field name="bundle">web.assets_backend</field>
+    <field name="directive">append</field>
+    <field name="path">pmk_theme/static/src/scss/forms.scss</field>
+    <field name="sequence">22</field>
+  </record>
+
+  <record id="asset_scss_third_party" model="ir.asset">
+    <field name="name">ПМК: third_party.scss в конец бандла</field>
+    <field name="bundle">web.assets_backend</field>
+    <field name="directive">append</field>
+    <field name="path">pmk_theme/static/src/scss/third_party.scss</field>
+    <field name="sequence">23</field>
+  </record>
+
+</odoo>
