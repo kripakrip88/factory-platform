@@ -67,9 +67,10 @@ services/ai-assistant/
 | Сервер | ✅ Бегет VPS, Ubuntu 24.04, IP: 155.212.143.179 |
 | Docker + автодеплой | ✅ работает, GitHub Actions настроен |
 | Docker Compose | ✅ проверен на сервере |
-| ERPNext | ✅ запущен: prod `erppark.ru` (:8080), staging `d.erppark.ru` (:8081) |
+| **Odoo 19** | ✅ **боевой адрес `erppark.ru`** (:8084) — с 21.09.2026 |
+| ERPNext | ⏹ **ОСТАНОВЛЕН 21.09.2026** (контейнеры `erp-*` и `erp-staging-*` stop, тома целы) |
 | n8n | ✅ запущен, `n8n.erppark.ru` |
-| Домены + TLS | ✅ erppark.ru / d. / n8n. — Let's Encrypt с автопродлением, 80→443, www→apex |
+| Домены + TLS | ✅ erppark.ru / n8n. — Let's Encrypt с автопродлением, 80→443, www→apex. `d.erppark.ru` не отвечает: за ним стоял тестовый ERPNext |
 | PostgreSQL + Redis | ✅ работают |
 | Nginx | ✅ health check + reverse proxy |
 | GitHub Secrets | ✅ SERVER_HOST, SERVER_USER, SERVER_SSH_KEY |
@@ -127,12 +128,22 @@ services/ai-assistant/
 
 ## Деплой и среды
 
-Две изолированные среды на одном сервере (подробно — `docs/environments.md`):
+⚠️ **21.09.2026 ERPNext остановлен, боевой адрес `erppark.ru` отдан Odoo.**
+Решение Антона: «ерпнекст пользуюсь только я». Основание — замер: за трое суток
+19 обращений к системе и ни одного входа, единственный почтовый ящик настроен
+только на отправку. Контейнеры остановлены (`docker stop`), **тома и данные
+целы**, бэкап снят перед остановкой (дамп боевой базы 52 МБ).
+
+**Как вернуть ERPNext** (минуты): в `infra/nginx/nginx.conf` поменять в блоке
+`erppark.ru` порт `8084` обратно на `8080`, запушить в `develop` (автодеплой
+инфры), затем `docker start` для контейнеров `erp-*`. Таблица ниже описывает
+эти среды на случай возврата.
 
 | Среда | Ветка | Порт | Проект docker | Контейнеры | Compose |
 |-------|-------|------|---------------|-----------|---------|
-| **PROD** (боевая, сотрудники) | `main` | `:8080` | `erp` | `erp-*` | `docker-compose.yml` |
-| **STAGING** (тесты Claude/Антона) | `develop` | `:8081` | `erp-staging` | `erp-staging-*` | `docker-compose.staging.yml` |
+| **PROD** ERPNext (остановлен) | `main` | `:8080` | `erp` | `erp-*` | `docker-compose.yml` |
+| **STAGING** ERPNext (остановлен) | `develop` | `:8081` | `erp-staging` | `erp-staging-*` | `docker-compose.staging.yml` |
+| **Odoo 19** (боевой) | `feature/experiment-carbon` | `:8084` | `odoo` | `odoo-*` | `experiments/odoo/docker-compose.yml` |
 
 - Раздельные тома/БД/redis/сеть → эксперименты staging НЕ трогают данные prod.
 - Пуш в `develop` → автодеплой **staging** (не может задеть prod). Пуш в `main` →
