@@ -15,6 +15,7 @@ compute из dobor/api.py, которая и в исходнике была чи
 """
 
 import json
+import re
 
 from markupsafe import Markup
 
@@ -23,6 +24,45 @@ from odoo.exceptions import ValidationError
 
 MM_IN_M = 1000.0
 STEEL_DENSITY_FACTOR = 7.85  # кг на м² при толщине 1 мм
+
+_HEX_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
+
+
+def normalize_hex(value):
+    """ЕДИНСТВЕННОЕ правило разбора цвета покрытия. Живёт здесь.
+
+    Профиль рисуют ДВА разных куска кода: живой холст построителя
+    (static/src/js/dobor_builder.js) и серверный эскиз для списка и печати
+    (dobor_report.sketch_svg). Цвет покрытия заводят руками в справочнике
+    pmk.dobor.coating, и решётку там недолго забыть — «b9c2cc» вместо
+    «#b9c2cc». Раньше на таком значении рисователи расходились: сервер решётку
+    дописывал сам и красил, а регулярка в холсте значение отвергала и рисовала
+    служебный розовый «покрытие не выбрано». Одна запись справочника — лист в
+    цвете и экран без цвета.
+
+    Правило:
+      — срезать пробелы по краям;
+      — дописать решётку, если её нет;
+      — принять только шесть hex-цифр, всё остальное — None, «цвета нет».
+
+    Сокращённую запись (#abc) НЕ разворачиваем намеренно: в справочнике её нет
+    (все 8 записей на стенде — #rrggbb), а лишнее правило пришлось бы дословно
+    повторять во втором рисователе.
+
+    Кто этим пользуется:
+      — DoborOrderLine._sync_snapshot_coating кладёт в снимок профиля уже
+        нормализованное значение, поэтому серверный эскиз получает готовый hex;
+      — холст читает справочник напрямую (иначе не перекрасится до сохранения)
+        и повторяет ровно эту нормализацию в dobor_builder.js, функция
+        normalizeHex — там стоит ссылка сюда.
+    Третьего места быть не должно: заведёте — экран и печать снова разъедутся.
+    """
+    text = (value or "").strip()
+    if not text:
+        return None
+    if not text.startswith("#"):
+        text = "#" + text
+    return text if _HEX_RE.match(text) else None
 
 
 def compute_dobor(flanges, hem_left, hem_right, hem_len, mass_per_sqm,
@@ -185,7 +225,33 @@ class DoborOrderLine(models.Model):
     # Не обязательное: пока профиль рисуют, название придумывать рано, а
     # форма не должна этого требовать. Пустое заполняется само — см. create().
     title = fields.Char("Название доборки")
-    coating_id = fields.Many2one("pmk.dobor.coating", "Покрытие")
+
+    def _default_coating(self):
+        """Цинк по умолчанию — как стояло в ERPNext.
+
+        Там выпадашка «Цвет / покрытие» всегда была на чём-то: список
+        заполнялся, и первым делом в нём выбирался Цинк. Здесь поле пустое
+        по умолчанию, и позиция, заведённая 21.09, уехала без покрытия —
+        у всех строк от 17-18.09 оно проставлено.
+
+        Ищем сначала по внешнему ключу (запись из data/pmk.dobor.coating.csv),
+        потом по названию: справочник открыт на правку, запись могли завести
+        руками. Пустой справочник ошибкой не считаем — вернём False, поле
+        просто останется пустым, как сейчас.
+        """
+        zinc = self.env.ref("pmk_calc.coating_zinc", raise_if_not_found=False)
+        if zinc:
+            return zinc.id
+        return self.env["pmk.dobor.coating"].search([("name", "=ilike", "Цинк")], limit=1).id
+
+    coating_id = fields.Many2one(
+        "pmk.dobor.coating", "Покрытие", default=lambda self: self._default_coating())
+    # Цвет выбранного покрытия рядом с самим покрытием: им построитель красит
+    # слой краски на холсте. Поле related и НЕ хранимое — колонки в базе не
+    # появляется, значение приходит вместе с записью и обновляется тем же
+    # onchange, что и остальные поля вида, поэтому холст перекрашивается сразу
+    # при смене покрытия, до сохранения.
+    coating_hex = fields.Char("Цвет покрытия", related="coating_id.hex_color", readonly=True)
     # Металл берём из ОБЩЕГО справочника, того же, что у калькулятора
     # металлопроката: иначе толщина и масса живут в двух местах и расходятся.
     # НЕ required на уровне модели: поле добавлено позже, и обязательность
@@ -302,13 +368,56 @@ class DoborOrderLine(models.Model):
             line.strips = res["strips"]
             line.strip_waste = res["strip_waste"]
 
+    def _sync_snapshot_coating(self):
+        """Вписать цвет покрытия в снимок профиля (ключ paintHex).
+
+        Цвет ЗАМОРАЖИВАЕТСЯ в снимке, а не читается из справочника в момент
+        рисования эскиза. Справочник покрытий живой: RAL в нём правят и
+        добавляют, — и чтение задним числом перекрасило бы эскизы в уже
+        отпечатанных заказах. В снимке лежит тот цвет, который был у покрытия,
+        когда позицию заводили или когда ей в последний раз меняли покрытие
+        или профиль.
+
+        Пишет сервер, а не построитель, хотя рисует цвет именно построитель:
+        покрытие выбирают в колонке справа, холста при этом не касаются, и
+        saveToField() в построителе не вызывается — цвет бы до снимка не
+        доехал. Один ключ — один писатель.
+
+        В снимок кладётся НОРМАЛИЗОВАННЫЙ hex (normalize_hex в начале файла) —
+        там же описано, почему правило разбора одно на оба рисователя.
+        """
+        for line in self:
+            try:
+                snapshot = json.loads(line.profile_snapshot_json or "{}")
+            except (ValueError, TypeError):
+                continue
+            if not isinstance(snapshot, dict):
+                continue  # старый формат — голый список полок, ключ класть некуда
+            want = normalize_hex(line.coating_id.hex_color)
+            if snapshot.get("paintHex") == want:
+                continue
+            snapshot["paintHex"] = want
+            # Запись поля снова зайдёт в write() — но второй проход увидит уже
+            # нужный цвет и ничего не запишет, рекурсия обрывается сама.
+            line.profile_snapshot_json = json.dumps(snapshot, ensure_ascii=False)
+
     @api.model_create_multi
     def create(self, vals_list):
         lines = super().create(vals_list)
         for line in lines:
             if not (line.title or "").strip():
                 line.title = line._default_title()
+        lines._sync_snapshot_coating()
         return lines
+
+    def write(self, vals):
+        res = super().write(vals)
+        # Перештамповываем цвет, только когда меняли покрытие или сам профиль.
+        # Правка количества не должна затягивать в старую позицию сегодняшний
+        # цвет из справочника — снимок на то и снимок.
+        if "coating_id" in vals or "profile_snapshot_json" in vals:
+            self._sync_snapshot_coating()
+        return res
 
     def _default_title(self):
         """Имя по умолчанию: «Доборка N» с номером по порядку внутри заказа.

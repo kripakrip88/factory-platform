@@ -17,13 +17,96 @@
 
 import { registry } from "@web/core/registry";
 import { standardFieldProps } from "@web/views/fields/standard_field_props";
-import { Component, useRef, useState, onMounted, onWillUnmount } from "@odoo/owl";
+import { Component, useRef, useState, onMounted, onPatched, onWillUnmount } from "@odoo/owl";
 
 const SVGNS = "http://www.w3.org/2000/svg";
 const GRAB = 14;        // радиус захвата вершины, px
 const FOLD_GAP = 8;     // зазор подгиба 180°, имитирует толщину металла
+// Порог свободного вращения: пока курсор ближе ROT_FREE_R к центру ручки,
+// это ещё клик, а не «кручу». Радиус, а не пройденный путь, потому что он
+// закрывает сразу две беды:
+//   1) дрожание руки при клике — это 1-3 px, до 24 px ему далеко (а на
+//      планшете палец гуляет заметно сильнее мыши);
+//   2) угол вокруг центра ручки у самого центра считается неустойчиво: на
+//      8 px от центра сдвиг на один пиксель — это уже ~7°, планку швыряет.
+//      На 24 px тот же пиксель даёт ~2.4° — так ей можно управлять.
+// Сама ручка 42 px в поперечнике (scss .pmk-dobor__rot), её радиус 21, то есть
+// порог — это «палец ушёл с ручки». Внутри порога вращение не применяется.
+const ROT_FREE_R = 24;
 const VIEW_W = 760;
 const VIEW_H = 440;
+// Шаг ручки вращения, в градусах dir. Минус здесь не опечатка: в verts()
+// y = cur.y - len*sin(dir), то есть с ростом dir точка уходит ВВЕРХ по экрану
+// (ось Y в SVG направлена вниз). Значит рост dir — это поворот ПРОТИВ часовой
+// стрелки, а глиф ⟳ на ручке обещает ПО часовой — отсюда отрицательный шаг.
+// В построителе ERPNext та же ручка делала ровно это же (s.dir -= 5).
+const ROT_STEP = -5;
+// Полоса внизу холста под знак замка. Отдавать её знаку обязательно: без
+// резерва контур вписывается во всю высоту, и нижняя полка вместе с подписью
+// размера ложится прямо на плашку. Серверный генератор эскиза резервирует
+// такую же полосу (dobor_report.LOCK_BAND) — само ПРАВИЛО обязано совпадать,
+// иначе на экране и в печати профиль вписан по-разному. Числа при этом разные
+// и совпадать не могут: холсты разного размера (здесь 760x440, там 470x300).
+// 100 = 68 (от низа холста до центра знака) + 22 (полвысоты плашки) + 10 воздуха.
+const LOCK_BAND = 100;
+// Цвет слоя краски, когда покрытие у позиции не выбрано. Служебный, а не
+// «какой-нибудь металлический»: по нему сразу видно, что цвет НЕ выбран, и
+// никто не примет его за покрытие. В серверном эскизе для того же случая свой
+// цвет (dobor_report.NO_COATING_STROKE) — совпадать они не обязаны, совпадать
+// должны настоящие цвета покрытий.
+const PAINT_NO_COATING = "#f08fb0";
+// Ниже этой яркости (0-255) цвет на тёмном холсте не читается — см.
+// liftForDarkCanvas.
+const PAINT_MIN_LUMA = 110;
+
+/**
+ * Разбор цвета покрытия. Зеркало серверного normalize_hex.
+ *
+ * ЕДИНСТВЕННОЕ правило разбора описано и реализовано в models/dobor.py,
+ * функция normalize_hex — там же написано, почему оно обязано быть одно.
+ * Здесь не второе правило, а его повторение: холст читает справочник
+ * покрытий напрямую (иначе не перекрасится до сохранения), а серверный эскиз
+ * получает уже нормализованный hex из снимка профиля. Пока правил было два,
+ * значение без решётки («b9c2cc») красило печать и НЕ красило холст — тот
+ * рисовал служебный «покрытие не выбрано». Правите здесь — правьте и там.
+ *
+ * Правило: срезать пробелы, дописать решётку если её нет, принять только
+ * шесть hex-цифр, всё остальное — null, то есть «цвета нет».
+ */
+function normalizeHex(value) {
+    let text = (value || "").trim();
+    if (!text) {
+        return null;
+    }
+    if (!text.startsWith("#")) {
+        text = "#" + text;
+    }
+    return /^#[0-9a-f]{6}$/i.test(text) ? text : null;
+}
+
+/**
+ * Поднять тёмный цвет покрытия до различимого на тёмном холсте.
+ *
+ * Холст построителя тёмный, и тёмные покрытия на нём пропадают: у RAL 8017
+ * «Шоколад» это #3a2419, яркость 40 из 255 — тонкий пунктир сливается с фоном.
+ * Тон сохраняем, подмешивая белый ровно до порога; светлые покрытия (Цинк
+ * #b9c2cc, RAL 9003 #f1f0ea) не трогаем вовсе.
+ *
+ * В печати задача обратная — там лист белый, и цвет наоборот притушается
+ * (dobor_report._darken, множитель из ERPNext). Один и тот же цвет, разные
+ * фоны: подгонять их под одно число нельзя, иначе одна из сторон ослепнет.
+ */
+function liftForDarkCanvas(hex) {
+    const rgb = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+    const luma = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+    if (luma >= PAINT_MIN_LUMA) {
+        return hex;
+    }
+    const t = (PAINT_MIN_LUMA - luma) / (255 - luma);
+    return "#" + rgb
+        .map((c) => Math.round(c + (255 - c) * t).toString(16).padStart(2, "0"))
+        .join("");
+}
 
 export class DoborBuilder extends Component {
     static template = "pmk_calc.DoborBuilder";
@@ -33,6 +116,7 @@ export class DoborBuilder extends Component {
         this.svgRef = useRef("svg");
         this.wrapRef = useRef("wrap");
         this.editRef = useRef("edit");
+        this.rotRef = useRef("rot");
 
         this.state = useState({
             hemLeft: false, hemRight: false, hemLen: 15,
@@ -49,14 +133,30 @@ export class DoborBuilder extends Component {
             hemLeftDir: 1, hemRightDir: -1,
             paintSide: 1,
         };
-        this.view = { k: 1, cx: VIEW_W / 2, cy: VIEW_H / 2 };
+        this.view = { k: 1, cx: VIEW_W / 2, cy: VIEW_H / 2, areaH: VIEW_H };
         this.dragIdx = -1;
         this.editKind = null;
         this.editIdx = -1;
+        // Ключи снимка, которых построитель не знает (их пишет сервер).
+        // Заполняется в loadFromField, переносится в saveToField.
+        this.snapExtra = {};
+        // Состояние свободного вращения: {cx, cy, prev, free} или null.
+        // Тоже вне реактивности — меняется на каждое движение указателя.
+        this.rot = null;
 
         onMounted(() => {
             this.loadFromField();
             this.redraw();
+        });
+        onPatched(() => {
+            // Покрытие выбирают НЕ в построителе, а в карточке позиции справа.
+            // OWL перерисует шаблон, но SVG мы строим руками, и сам он не
+            // обновится — перерисовываем, когда цвет приехал новый. Сравнение
+            // с уже нарисованным отсекает все прочие перерисовки формы: их
+            // много, а холст тяжёлый.
+            if (this.paintDrawn !== this.paintStroke()) {
+                this.redraw();
+            }
         });
         onWillUnmount(() => this.flushEdit());
     }
@@ -70,6 +170,13 @@ export class DoborBuilder extends Component {
         } catch {
             snap = null;
         }
+        // Снимок несёт ключи, которых построитель не знает: paintHex туда
+        // пишет сервер (DoborOrderLine._sync_snapshot_coating), а печатный
+        // лист читает из снимка ещё и comment — его клал построитель ERPNext.
+        // Держим исходный объект,
+        // чтобы saveToField() не стирал чужое — см. там же. Старый формат
+        // (голый массив полок) не берём: складывать в него ключи некуда.
+        this.snapExtra = snap && !Array.isArray(snap) && typeof snap === "object" ? snap : {};
         if (!snap || !Array.isArray(snap.segs)) {
             return;
         }
@@ -87,6 +194,11 @@ export class DoborBuilder extends Component {
 
     saveToField() {
         const snap = {
+            // Чужие ключи снимка — первыми, чтобы свои их перекрывали.
+            // Собирать снимок с нуля нельзя: он терял paintHex, сервер в том же
+            // write() вписывал цвет обратно — лишняя запись в базу и мигание
+            // цвета на холсте, пока запись перечитывается.
+            ...this.snapExtra,
             start: { ...this.geom.start },
             segs: this.geom.segs.map((s) => ({ ...s })),
             hemLeft: this.state.hemLeft,
@@ -98,6 +210,7 @@ export class DoborBuilder extends Component {
             paintOn: this.state.paintOn,
             paintSide: this.geom.paintSide,
         };
+        this.snapExtra = snap;  // следующее сохранение опять унесёт чужие ключи
         this.props.record.update({ [this.props.name]: JSON.stringify(snap) });
     }
 
@@ -146,7 +259,7 @@ export class DoborBuilder extends Component {
     computeFit() {
         const v = this.verts();
         if (!v.length) {
-            this.view = { k: 1, cx: VIEW_W / 2, cy: VIEW_H / 2 };
+            this.view = { k: 1, cx: VIEW_W / 2, cy: VIEW_H / 2, areaH: VIEW_H };
             return;
         }
         let minx = 1e9, miny = 1e9, maxx = -1e9, maxy = -1e9;
@@ -154,17 +267,26 @@ export class DoborBuilder extends Component {
             minx = Math.min(minx, p.x); maxx = Math.max(maxx, p.x);
             miny = Math.min(miny, p.y); maxy = Math.max(maxy, p.y);
         }
+        // При включённом замке низ холста занят знаком, и вписывать контур
+        // нужно в высоту НАД ним. Условие ровно то же, что на сервере
+        // (dobor_report: band = LOCK_BAND if lock else 0) — иначе экран и
+        // печать расходятся по вписыванию, как расходились до этой правки.
+        const areaH = VIEW_H - (this.state.lock ? LOCK_BAND : 0);
         const bw = Math.max(1, maxx - minx), bh = Math.max(1, maxy - miny), pad = 100;
-        let k = Math.min((VIEW_W - pad) / bw, (VIEW_H - pad) / bh);
+        let k = Math.min((VIEW_W - pad) / bw, (areaH - pad) / bh);
         k = Math.max(0.05, Math.min(1.8, k));
-        this.view = { k, cx: (minx + maxx) / 2, cy: (miny + maxy) / 2 };
+        this.view = { k, cx: (minx + maxx) / 2, cy: (miny + maxy) / 2, areaH };
     }
 
     /** Мир → холст. */
     D(p) {
         return {
             x: VIEW_W / 2 + (p.x - this.view.cx) * this.view.k,
-            y: VIEW_H / 2 + (p.y - this.view.cy) * this.view.k,
+            // По вертикали центр — середина ОСТАВШЕЙСЯ площади, а не всего
+            // холста: иначе резерв под замок съедался бы поровну сверху и
+            // снизу и знак снова оказался бы под контуром. Так же в
+            // dobor_report (там центрируют по area_h / 2).
+            y: this.view.areaH / 2 + (p.y - this.view.cy) * this.view.k,
         };
     }
 
@@ -172,7 +294,7 @@ export class DoborBuilder extends Component {
     W(p) {
         return {
             x: this.view.cx + (p.x - VIEW_W / 2) / this.view.k,
-            y: this.view.cy + (p.y - VIEW_H / 2) / this.view.k,
+            y: this.view.cy + (p.y - this.view.areaH / 2) / this.view.k,
         };
     }
 
@@ -204,6 +326,27 @@ export class DoborBuilder extends Component {
 
     // ── рисование ──────────────────────────────────────────────────────────
 
+    /**
+     * Цвет слоя краски — цвет выбранного покрытия.
+     *
+     * Hex берём из записи (coating_hex → coating_id.hex_color), а не из снимка
+     * профиля: покрытие меняют в колонке справа, и холст должен перекраситься
+     * сразу, не дожидаясь сохранения. В снимок тот же цвет вписывает сервер
+     * (DoborOrderLine._sync_snapshot_coating) — так у ключа один писатель, а
+     * печатный лист и список рисуют ровно то, что было выбрано.
+     *
+     * Формат разбираем общей функцией normalizeHex — справочник покрытий
+     * открыт на правку, и в поле цвета может оказаться что угодно, но принять
+     * или отвергнуть значение холст и печать обязаны ОДИНАКОВО.
+     */
+    paintStroke() {
+        const hex = normalizeHex(this.props.record.data.coating_hex);
+        if (!hex) {
+            return PAINT_NO_COATING;
+        }
+        return liftForDarkCanvas(hex);
+    }
+
     mk(tag, attrs) {
         const el = document.createElementNS(SVGNS, tag);
         for (const k in attrs) {
@@ -227,6 +370,10 @@ export class DoborBuilder extends Component {
         const segs = this.geom.segs;
         const v = this.verts().map((p) => this.D(p));
         const INK = "#f0f4f8";
+        // Считаем цвет краски всегда, даже когда слой выключен: по нему
+        // onPatched понимает, что покрытие сменили и холст пора перерисовать.
+        const paint = this.paintStroke();
+        this.paintDrawn = paint;
 
         if (v.length >= 2) {
             const unitv = (a, b) => {
@@ -249,7 +396,7 @@ export class DoborBuilder extends Component {
                     return `${p.x + (nx / l) * 6 * this.geom.paintSide},${p.y + (ny / l) * 6 * this.geom.paintSide}`;
                 }).join(" ");
                 svg.appendChild(this.mk("polyline", {
-                    points: off, fill: "none", stroke: "#f08fb0",
+                    points: off, fill: "none", stroke: paint,
                     "stroke-width": "1.8", "stroke-dasharray": "4 3", "stroke-linejoin": "round",
                 }));
             }
@@ -567,6 +714,136 @@ export class DoborBuilder extends Component {
 
     rotate(deg) {
         for (const s of this.geom.segs) { s.dir += deg; }
+        this.redraw();
+        this.saveToField();
+    }
+
+    // ── вращение ──────────────────────────────────────────────────────────
+    //
+    // Ручка одна и работает как верньер приёмника: зажал и повёл вокруг неё —
+    // планка идёт за курсором на произвольный угол, отпустил не сдвинувшись —
+    // шаг ROT_STEP. Так было в построителе ERPNext, и владелец крутит эскиз
+    // именно так, когда ему нужен угол «на глаз», а не кратный пяти.
+    //
+    // Отдельных кнопок «влево/вправо» нет намеренно: при переносе их завели, и
+    // обе показывали стрелку в сторону, ПРОТИВОПОЛОЖНУЮ реальному повороту (см.
+    // ROT_STEP), а клик по ручке повторял одну из них. Кнопка, которая крутит
+    // не туда, куда нарисована, хуже отсутствующей кнопки.
+    //
+    // Указатель захватывается (setPointerCapture), поэтому вести можно куда
+    // угодно — хоть за пределы окна: события всё равно придут ручке.
+
+    /** Угол курсора относительно центра ручки, в градусах экрана. */
+    rotAngle(ev) {
+        return (Math.atan2(ev.clientY - this.rot.cy, ev.clientX - this.rot.cx) * 180) / Math.PI;
+    }
+
+    startRotate(ev) {
+        if (!this.geom.segs.length) { return; }
+        // Без preventDefault браузер начинает своё: выделение текста мышью и
+        // подтаскивание страницы пальцем (прокрутку глушит ещё touch-action
+        // на самой ручке, но одного CSS мало — ниже есть и pointercancel).
+        ev.preventDefault();
+        const el = this.rotRef.el;
+        const r = el.getBoundingClientRect();
+        this.rot = {
+            cx: r.left + r.width / 2,
+            cy: r.top + r.height / 2,
+            prev: null,   // базовый угол; ставится в момент выхода за порог
+            free: false,  // было ли настоящее вращение (тогда клик не считаем)
+        };
+        el.setPointerCapture?.(ev.pointerId);
+    }
+
+    onRotateMove(ev) {
+        if (!this.rot) { return; }
+        const dx = ev.clientX - this.rot.cx, dy = ev.clientY - this.rot.cy;
+        if (Math.hypot(dx, dy) < ROT_FREE_R) {
+            // Вернулись к центру — сбрасываем базу, чтобы при следующем выходе
+            // за порог планка не прыгнула на угол, «накопленный» в мёртвой зоне.
+            this.rot.prev = null;
+            return;
+        }
+        const a = this.rotAngle(ev);
+        if (this.rot.prev === null) {
+            this.rot.prev = a;
+            this.rot.free = true;
+            return;
+        }
+        let d = a - this.rot.prev;
+        // Через ±180° разность скачет на 360°: без нормализации один пиксель
+        // движения обернулся бы полным оборотом в dir. Геометрию это не
+        // испортило бы (синус с косинусом периодичны), но в снимке профиля
+        // копились бы числа вида 3700°, а их потом читать людям.
+        while (d > 180) { d -= 360; }
+        while (d < -180) { d += 360; }
+        this.rot.prev = a;
+        // Экранный угол растёт по часовой стрелке (ось Y вниз), а dir — против
+        // (в verts() y = cur.y - len*sin). Поэтому вычитаем: планка идёт ЗА
+        // курсором, а не против него.
+        for (const s of this.geom.segs) { s.dir -= d; }
+        this.redraw();
+    }
+
+    endRotate() {
+        const rot = this.rot;
+        if (!rot) { return; }
+        this.rot = null;
+        if (rot.free) {
+            this.saveToField();   // рисовали уже по ходу, осталось сохранить
+            return;
+        }
+        // Зажали и отпустили на месте — обычный шаг. Направление задано
+        // знаком ROT_STEP, там же разобрано, почему он отрицательный.
+        this.rotate(ROT_STEP);
+    }
+
+    /** Жест перехватила система (звонок, свайп ОС) — просто закрываем сессию. */
+    cancelRotate() {
+        const rot = this.rot;
+        this.rot = null;
+        if (rot?.free) { this.saveToField(); }
+    }
+
+    /**
+     * Клавиатура: Enter/Space на ручке дают click с detail === 0. У клика
+     * мышью detail >= 1, и его мы игнорируем — поворот уже сделал endRotate,
+     * иначе вышло бы два шага за одно нажатие. Ручка осталась <button> (а не
+     * <div>, как в ERPNext) именно ради этого: с клавиатуры её тоже крутят.
+     */
+    onRotateClick(ev) {
+        if (ev.detail === 0) { this.rotate(ROT_STEP); }
+    }
+
+    /**
+     * Выравнивание: самую длинную полку — горизонтально. Перенесено из
+     * построителя ERPNext (alignMinBox) вместе с особым случаем симметрии.
+     */
+    alignFlat() {
+        const segs = this.geom.segs;
+        if (!segs.length) { return; }
+        let maxLen = -1;
+        for (const s of segs) { maxLen = Math.max(maxLen, s.len); }
+        // Допуск 0.5 мм: длины приходят и из перетаскивания (там целые), и из
+        // ручного ввода (там дробные), строгое равенство ловило бы не всё.
+        const long = [];
+        segs.forEach((s, i) => { if (Math.abs(s.len - maxLen) < 0.5) { long.push(i); } });
+
+        if (long.length === 2 && long[1] === long[0] + 1) {
+            // Две одинаковые длинные полки подряд — это симметричный «домик»
+            // (конёк). Класть его длинной полкой горизонтально бессмысленно:
+            // ставим по оси симметрии — биссектриса между полками смотрит
+            // вниз (-90° в dir), конёк оказывается сверху.
+            const i = long[0];
+            const a1 = ((segs[i].dir + 180) * Math.PI) / 180;   // первая полка — от вершины
+            const a2 = (segs[i + 1].dir * Math.PI) / 180;
+            const bx = Math.cos(a1) + Math.cos(a2), by = Math.sin(a1) + Math.sin(a2);
+            const delta = -90 - (Math.atan2(by, bx) * 180) / Math.PI;
+            for (const s of segs) { s.dir += delta; }
+        } else {
+            const degr = segs[long[0]].dir;
+            for (const s of segs) { s.dir -= degr; }
+        }
         this.redraw();
         this.saveToField();
     }

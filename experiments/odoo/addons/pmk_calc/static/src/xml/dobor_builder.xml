@@ -10,8 +10,9 @@
                 t-att-title="state.growEnd ? 'Полки добавляются в конец — нажмите, чтобы в начало' : 'Полки добавляются в начало — нажмите, чтобы в конец'">
           <t t-esc="state.growEnd ? 'в конец' : 'в начало'"/>
         </button>
-        <button type="button" class="btn btn-sm btn-secondary" t-on-click="() => this.rotate(-5)" title="Повернуть влево">↺</button>
-        <button type="button" class="btn btn-sm btn-secondary" t-on-click="() => this.rotate(5)" title="Повернуть вправо">↻</button>
+        <!-- Вращение живёт ручкой на холсте (ниже), в панели его кнопок нет. -->
+        <button type="button" class="btn btn-sm btn-secondary" t-on-click="alignFlat"
+                title="Выровнять эскиз: длинную полку — горизонтально, симметричный домик — по оси симметрии">▭</button>
         <button type="button" class="btn btn-sm btn-secondary" t-on-click="mirror" title="Зеркало: завальцовка и сторона окраски тоже меняются">⇋</button>
 
         <span class="pmk-dobor__sep"/>
@@ -74,15 +75,44 @@
       </div>
 
       <!--
-        Холст фиксированного размера 760x440: чертёж вписывается в него
-        пересчётом масштаба, поэтому миллиметры профиля не зависят от того,
-        насколько широким получилось окно.
+        Сцена = холст плюс ручка вращения поверх него. Обёртка нужна только
+        ручке: она позиционируется по углу ХОЛСТА, а не диалога, и без своего
+        относительного родителя уехала бы к краю всего построителя.
       -->
-      <svg t-ref="svg" class="pmk-dobor__canvas" viewBox="0 0 760 440"
-           t-on-pointerdown="onCanvasPointerDown"
-           t-on-pointermove="onCanvasPointerMove"
-           t-on-pointerup="onCanvasPointerUp"
-           t-on-pointerleave="onCanvasPointerUp"/>
+      <div class="pmk-dobor__stage">
+        <!--
+          Холст фиксированного размера 760x440: чертёж вписывается в него
+          пересчётом масштаба, поэтому миллиметры профиля не зависят от того,
+          насколько широким получилось окно.
+        -->
+        <svg t-ref="svg" class="pmk-dobor__canvas" viewBox="0 0 760 440"
+             t-on-pointerdown="onCanvasPointerDown"
+             t-on-pointermove="onCanvasPointerMove"
+             t-on-pointerup="onCanvasPointerUp"
+             t-on-pointerleave="onCanvasPointerUp"/>
+
+        <!--
+          Ручка вращения. Стоит на холсте, а не в панели инструментов, и это
+          не про красоту: ей нужен touch-action:none, чтобы жест достался нам
+          целиком, — а в панели палец, начавший прокрутку диалога и попавший на
+          кнопку, вместо прокрутки крутанул бы профиль. Холст жест и так забрал
+          себе (там тянут вершины), поэтому над ним ручка ни у кого ничего не
+          отнимает. В построителе ERPNext она жила ровно там же.
+
+          Обработчики висят на самой ручке: на pointerdown она захватывает
+          указатель, поэтому движение и отпускание приходят сюда же, даже если
+          увели курсор за пределы окна. t-on-click нужен только клавиатуре
+          (Enter/Space) — мышиный клик отсекается по detail в onRotateClick,
+          иначе шаг удвоился бы.
+        -->
+        <button type="button" class="btn btn-secondary pmk-dobor__rot" t-ref="rot"
+                t-on-pointerdown="startRotate"
+                t-on-pointermove="onRotateMove"
+                t-on-pointerup="endRotate"
+                t-on-pointercancel="cancelRotate"
+                t-on-click="onRotateClick"
+                title="Повернуть добор: клик — на 5° по часовой, зажать и вести вокруг ручки — на любой угол">⟳</button>
+      </div>
 
       <!-- Правка размера по месту: клик по числу на чертеже. -->
       <input type="number" t-ref="edit" class="pmk-dobor__edit"
