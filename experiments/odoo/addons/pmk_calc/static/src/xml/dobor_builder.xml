@@ -89,7 +89,9 @@
              t-on-pointerdown="onCanvasPointerDown"
              t-on-pointermove="onCanvasPointerMove"
              t-on-pointerup="onCanvasPointerUp"
-             t-on-pointerleave="onCanvasPointerUp"/>
+             t-on-pointerleave="onCanvasPointerUp"
+             t-on-pointercancel="onCanvasPointerUp"
+             t-on-lostpointercapture="onCanvasPointerUp"/>
 
         <!--
           Ручка вращения. Стоит на холсте, а не в панели инструментов, и это

@@ -583,7 +583,17 @@ export class DoborBuilder extends Component {
         const idx = this.nearestVertex(p);
         if (idx >= 0) {
             this.dragIdx = idx;
-            ev.target.setPointerCapture?.(ev.pointerId);
+            // Захват ставим на САМ ХОЛСТ, а не на кружок вершины (ev.target).
+            // Кружок живёт до первого же движения: redraw() стирает всё
+            // содержимое svg и рисует заново, элемент с захватом исчезает, и
+            // браузер захват снимает. Дальше палец или мышь уходят за край
+            // холста — «отпустил» не приходит никуда, dragIdx остаётся
+            // взведённым, полка продолжает тянуться за курсором БЕЗ нажатия,
+            // а вписывание при взведённом dragIdx намеренно пропускается
+            // (см. redraw). Снаружи это выглядит как «полка уехала за окно и
+            // с ней ничего не сделаешь». Холст не пересоздаётся никогда,
+            // поэтому захват на нём переживает любую перерисовку.
+            this.svgRef.el?.setPointerCapture?.(ev.pointerId);
             return;
         }
         this.addPoint(this.W(p));
@@ -591,6 +601,17 @@ export class DoborBuilder extends Component {
 
     onCanvasPointerMove(ev) {
         if (this.dragIdx < 0) {
+            return;
+        }
+        // Страховка от залипшего перетаскивания. Если кнопка уже не нажата
+        // (buttons === 0), а мы всё ещё «тащим» — значит «отпустил» до нас не
+        // доехало: отпустили за пределами холста, окно потеряло фокус, жест
+        // отменила система. Без этой проверки полка молча ходит за курсором и
+        // не вписывается обратно, потому что вписывание при взведённом dragIdx
+        // пропускается. Захват на холсте (см. onCanvasPointerDown) закрывает
+        // главный случай, но не все — этот выход закрывает остальные.
+        if (ev.buttons === 0) {
+            this.onCanvasPointerUp();
             return;
         }
         const w = this.W(this.svgPoint(ev));
@@ -616,9 +637,22 @@ export class DoborBuilder extends Component {
         this.redraw();
     }
 
-    onCanvasPointerUp() {
+    onCanvasPointerUp(ev) {
         if (this.dragIdx >= 0) {
             this.dragIdx = -1;
+            // Отпускаем захват явно. Браузер снял бы его и сам, но тогда
+            // прилетит lostpointercapture и зайдёт сюда второй раз — лишняя
+            // перерисовка и лишняя запись в поле. Здесь dragIdx уже сброшен,
+            // поэтому повторный заход просто ничего не сделает.
+            const svg = this.svgRef.el;
+            if (svg && ev?.pointerId !== undefined && svg.hasPointerCapture?.(ev.pointerId)) {
+                // Проверка обязательна: releasePointerCapture на незахваченном
+                // указателе бросает NotFoundError, а сюда приходят и события
+                // без захвата (pointerleave, наша страховка по buttons === 0).
+                svg.releasePointerCapture(ev.pointerId);
+            }
+            // Вписывание считается именно здесь: пока тащат, оно намеренно
+            // пропускается, чтобы чертёж не дёргался под рукой.
             this.redraw();
             this.saveToField();
         }
