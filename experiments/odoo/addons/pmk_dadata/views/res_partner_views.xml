@@ -68,7 +68,11 @@
             </group>
           </group>
 
-          <group string="Банковские счета" name="pmk_g_bank">
+          <!-- Без string: эту группу целиком переносят в секцию «Банковские
+               счета», у которой заголовок уже есть. Со своим заголовком
+               получалось два одинаковых подряд (замер на карточке
+               поставщика 23.09.2026). -->
+          <group name="pmk_g_bank">
             <field name="bank_ids" nolabel="1" colspan="2">
               <list editable="bottom">
                 <field name="acc_number" string="Расчётный счёт"/>
