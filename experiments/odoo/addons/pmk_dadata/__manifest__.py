@@ -22,12 +22,7 @@
     "category": "Productivity",
     "author": "ПМК Парк",
     "depends": ["pmk_partner", "l10n_ru_doc", "l10n_ru_contract"],
-    "data": [
-        "views/res_partner_views.xml",
-        # Шапка по образцу карточки товара. ПОСЛЕ res_partner_views.xml:
-        # переносит поля на страницу «Реквизиты», которую тот создаёт.
-        "views/res_partner_header_views.xml",
-    ],
+    "data": ["views/res_partner_views.xml"],
     "license": "LGPL-3",
     "installable": True,
     "application": False,
