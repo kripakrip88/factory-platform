@@ -144,6 +144,7 @@
   gap: 10px;
   width: 100%;
   padding: 7px 12px;
+  min-height: 44px;              // правило touch-target-size: попадать пальцем, не только мышью
   border: 1px solid #eae6dc !important;
   border-radius: 10px;
   background: #faf9f6 !important;
@@ -173,6 +174,41 @@
     margin-left: auto;
     transition: transform .18s ease-out;
   }
+}
+
+// ─── Свёрнутое состояние ──────────────────────────────────────────────────
+//
+// МЕХАНИКА. Скрипт только переключает состояние и ставит на блок чата атрибут
+// data-pmk-collapsed. Само скрытие делает CSS — и именно поэтому кнопка
+// «История» щёлкала впустую: атрибут менялся (проверено замером: 1 → 0, выбор
+// писался в память браузера), а правил, которые на него смотрят, в светлой
+// теме не было. Они остались в выключенном forms.scss.
+//
+// Свёрнуто = видна только полоса с кнопкой и счётчиками. Содержимое скрыто,
+// но НЕ удалено: разворачивание не должно дёргать раскладку страницы.
+.o-mail-Chatter[data-pmk-collapsed="1"] {
+  height: auto !important;
+  flex-grow: 0 !important;
+
+  > *:not(.o-mail-Chatter-top) {
+    display: none !important;
+  }
+
+  .o-mail-Chatter-top {
+    position: static;
+    box-shadow: none;
+  }
+}
+
+// Стрелка вниз, когда развёрнуто; вбок — когда свёрнуто. Направление говорит,
+// что произойдёт при нажатии (правило motion-meaning).
+.o-mail-Chatter[data-pmk-collapsed="1"] .pmk-chatter-toggle__arrow {
+  transform: rotate(-90deg);
+}
+
+// Счётчики нужны, только когда история свёрнута: развёрнутую видно и так.
+.o-mail-Chatter:not([data-pmk-collapsed="1"]) .pmk-chatter-badge {
+  display: none;
 }
 
 // Счётчики: сообщения, вложения, активности.
