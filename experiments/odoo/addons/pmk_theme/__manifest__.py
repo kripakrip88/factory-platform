@@ -63,9 +63,9 @@
             # "pmk_theme/static/src/xml/vendor/apps_sidebar.xml",
             # "pmk_theme/static/src/js/collapsible_sections.js",
             "pmk_theme/static/src/js/navbar_active_section.js",
-            # "pmk_theme/static/src/js/chatter_inline.js",
+            "pmk_theme/static/src/js/chatter_inline.js",
             "pmk_theme/static/src/xml/navbar.xml",
-            # "pmk_theme/static/src/xml/chatter.xml",
+            "pmk_theme/static/src/xml/chatter.xml",
         ],
         # ⚠️ ОТЛОЖЕННЫЙ БАНДЛ, И ЭТО НЕ ВКУСОВЩИНА.
         # canvas_text.js красит подписи осей и легенду графика: до них CSS не

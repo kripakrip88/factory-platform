@@ -46,3 +46,124 @@
     grid-column: 1 / -1 !important;
   }
 }
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ЧАТ ДОКУМЕНТА ВНИЗУ — СВЕТЛЫЙ ВИД.
+//
+// Раскладку задаёт js/chatter_inline.js: он патчит штатный метод ядра
+// FormRenderer.mailLayout и возвращает нижнюю раскладку вместо боковой.
+// Разметку Odoo при этом не трогает, поэтому обновление ядра ему не страшно.
+//
+// ЗАЧЕМ ВНИЗ, А НЕ СБОКУ. Дело не только в месте: боковой чат создаёт ВТОРУЮ
+// область прокрутки рядом с первой, и колесо мыши работает по-разному в
+// зависимости от того, где курсор (правило scroll-behavior запрещает
+// конкурирующие области прокрутки). Внизу чат живёт в общем потоке: шапка →
+// поля → история, одна прокрутка сверху вниз, как у бумажного документа.
+// Плюс форме возвращается треть ширины, которую забирал боковой чат, — и та
+// самая сетка группы перестаёт ужиматься.
+//
+// Здесь только светлая палитра для свёрнутой полосы. Развёрнутый чат красит
+// чужая тема.
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Полоса свёрнутого чата: нажимаемая строка со счётчиками.
+.pmk-chatter-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 12px;
+  border: 1px solid #eae6dc;
+  border-radius: 10px;
+  background: #faf9f6;
+  color: #4b4f58;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color .15s ease-out, border-color .15s ease-out;
+
+  &:hover {
+    background: #fff;
+    border-color: #dad5c8;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #16171b;
+    outline-offset: 2px;
+  }
+
+  &__label {
+    font-weight: 600;
+    color: #16171b;
+  }
+
+  // Стрелка поворачивается — направление сообщает, развернётся блок или
+  // свернётся (правило motion-meaning: движение объясняет причину и следствие).
+  &__arrow {
+    margin-left: auto;
+    transition: transform .18s ease-out;
+  }
+}
+
+// Счётчики: сообщения, вложения, активности.
+.pmk-chatter-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(22, 23, 27, 0.06);
+  color: #4b4f58;
+  font-size: 12px;
+
+  &__word {
+    color: #8a8d96;
+  }
+
+  // Просроченные активности. Помечены И цветом, И словом рядом с числом —
+  // одного красного мало (правило color-not-only: цветовая слепота, плохой
+  // монитор, печать).
+  &--overdue {
+    background: rgba(224, 85, 74, 0.12);
+    color: #b3392f;
+
+    .pmk-chatter-badge__word { color: #b3392f; }
+  }
+}
+
+// В тёмном режиме чужой темы — её поверхности.
+body.o_nexus_dark {
+  .pmk-chatter-toggle {
+    border-color: rgba(255, 255, 255, 0.10);
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(244, 241, 234, 0.72);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.18);
+    }
+
+    &:focus-visible { outline-color: rgba(255, 255, 255, 0.85); }
+
+    &__label { color: #f4f1ea; }
+  }
+
+  .pmk-chatter-badge {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(244, 241, 234, 0.72);
+
+    &__word { color: rgba(244, 241, 234, 0.52); }
+
+    &--overdue {
+      background: rgba(224, 85, 74, 0.18);
+      color: #f0a49c;
+
+      .pmk-chatter-badge__word { color: #f0a49c; }
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pmk-chatter-toggle,
+  .pmk-chatter-toggle__arrow { transition: none; }
+}
