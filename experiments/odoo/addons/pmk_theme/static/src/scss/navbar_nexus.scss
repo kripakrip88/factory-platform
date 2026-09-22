@@ -216,8 +216,19 @@ header.o_navbar .o_menu_sections {
   .dropdown-toggle {
     color: $pmk-nx-slate !important;
     border-radius: 6px;
-    padding: 3px 9px;
     font-size: 13px;
+
+    // ⚠️ ВЫСОТУ ЗАДАЁМ ЯВНО. Ядро даёт пунктам свои отступы, и строка
+    // разделов получалась 46 px против 26 px у строки модулей — подчинённый
+    // уровень выходил вдвое массивнее главного, и иерархия читалась наоборот.
+    // Правило visual-hierarchy: вес уровня задаётся размером, а не только
+    // цветом. Высота 26 px уравнивает строки; !important нужен, потому что
+    // исходные отступы тоже с !important.
+    height: 26px !important;
+    min-height: 26px !important;
+    padding: 0 10px !important;
+    display: inline-flex !important;
+    align-items: center;
 
     &:hover {
       background-color: rgba(22, 23, 27, 0.05) !important;
@@ -230,11 +241,31 @@ header.o_navbar .o_menu_sections {
     }
   }
 
-  // Текущий пункт: цвет раздела плюс полоса снизу — снова цвет И форма.
+  // ─── Текущий пункт ──────────────────────────────────────────────────────
+  //
+  // ТОЧКА, А НЕ ПЛАШКА И НЕ ПОДЧЁРКИВАНИЕ — решение по правилу nav-hierarchy:
+  // первичная и вторичная навигация должны различаться ФОРМОЙ метки, иначе
+  // уровни сливаются. Сверху активный модуль помечен заливкой-плашкой;
+  // повтори мы её здесь — оба уровня стали бы одного веса. Подчёркивание
+  // снято по той же причине: им уже помечен модуль сверху.
+  //
+  // Точка даёт три признака сразу — цвет раздела, форму и позицию слева от
+  // текста (правило color-not-only: одним цветом состояние обозначать
+  // нельзя), и при этом легче плашки, то есть честно читается как
+  // подчинённый уровень.
   .pmk_section--active {
     color: $pmk-nx-ink !important;
     font-weight: 600;
-    box-shadow: inset 0 -2px 0 var(--pmk-section-accent, #{$pmk-nx-ink});
+
+    &::before {
+      content: "";
+      flex: 0 0 auto;
+      width: 6px;
+      height: 6px;
+      margin-right: 7px;
+      border-radius: 50%;
+      background: var(--pmk-section-accent, #{$pmk-nx-ink});
+    }
   }
 }
 
