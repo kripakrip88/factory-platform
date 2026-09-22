@@ -67,17 +67,47 @@
 // чужая тема.
 // ═══════════════════════════════════════════════════════════════════════════
 
+// ─── Раскладка: чат под формой, а не сбоку ────────────────────────────────
+//
+// Скрипт говорит ядру «чат внизу», и ядро снимает с него признак бокового
+// режима. Но раскладку задаёт не он: контейнер формы несёт от Odoo класс
+// d-flex, то есть выкладывает детей В СТРОКУ, и чат всё равно встаёт справа,
+// отбирая у листа две трети ширины. Замер до правки: лист 588 px, чат 812.
+//
+// Переключаем контейнер в колонку — но только когда чат действительно внизу.
+// :has() проверяет это по самому чату: останется он сбоку (узкий экран,
+// настройка ядра) — правило не сработает и боковая раскладка уцелеет.
+.o_form_renderer:has(> .o-mail-Form-chatter:not(.o-aside)) {
+  flex-direction: column !important;
+
+  // Листу возвращаем полную ширину: в строке он делил её с чатом, и именно
+  // из-за этого сетка групп ужимала колонку значений до нуля.
+  > .o_form_sheet_bg {
+    width: 100% !important;
+  }
+}
+
+.o_form_renderer > .o-mail-Form-chatter:not(.o-aside) {
+  width: 100% !important;
+  flex: 0 0 auto !important;      // по содержимому, а не на всю высоту
+  margin-top: 16px;
+}
+
 // Полоса свёрнутого чата: нажимаемая строка со счётчиками.
+// ⚠️ .btn в селекторе обязателен. Кнопку Odoo отдаёт с классами btn btn-link,
+// а Bootstrap красит .btn-link прозрачным фоном — без утяжеления селектора
+// наши цвета проигрывают, и полоса выглядит неоформленной (проверено замером).
+.pmk-chatter-toggle.btn,
 .pmk-chatter-toggle {
   display: flex;
   align-items: center;
   gap: 10px;
   width: 100%;
   padding: 7px 12px;
-  border: 1px solid #eae6dc;
+  border: 1px solid #eae6dc !important;
   border-radius: 10px;
-  background: #faf9f6;
-  color: #4b4f58;
+  background: #faf9f6 !important;
+  color: #4b4f58 !important;
   font-size: 13px;
   cursor: pointer;
   transition: background-color .15s ease-out, border-color .15s ease-out;
