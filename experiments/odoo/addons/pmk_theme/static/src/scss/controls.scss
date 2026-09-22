@@ -145,14 +145,23 @@
 
 button:focus-visible,
 a:focus-visible,
-[tabindex]:focus-visible,
+// ⚠️ [tabindex] БЕЗ tabindex="-1", и это не перестраховка. В Odoo -1 висит на
+// КОНТЕЙНЕРАХ, которым фокус ставят из кода, — прежде всего на корне диалога
+// (core/dialog/dialog.xml:7). Браузер зажигает :focus-visible и при
+// программном переводе фокуса, если предыдущий шаг был с клавиатуры: открыл
+// диалог с Enter — и получил белую рамку вокруг ВСЕГО окна. Ячейки списка и
+// кнопки внутри диалога тоже носят -1, но они не теряются: ячейки покрыты
+// строкой .o_data_cell ниже, кнопки — селектором button выше.
+[tabindex]:not([tabindex="-1"]):focus-visible,
 .o_button_icon:focus-visible,
 .dropdown-item:focus-visible,
 .dropdown-toggle:focus-visible,
 .o_notebook .nav-link:focus-visible,
 .form-check-input:focus-visible,
 .o_kanban_record:focus-visible,
-.o_data_row:focus-visible,
+// .o_data_row здесь НЕТ намеренно: <tr class="o_data_row"> в Odoo 19 не несёт
+// tabindex и фокус не принимает — правило было бы мёртвым. По списку ходят
+// по ЯЧЕЙКАМ, они строкой ниже.
 .o_data_cell:focus-visible,
 .o_searchview_input:focus-visible,
 .o_optional_columns_dropdown_toggle:focus-visible {
