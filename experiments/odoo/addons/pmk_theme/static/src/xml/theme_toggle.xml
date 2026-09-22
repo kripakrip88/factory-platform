@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+  <!--
+    ПЕРЕКЛЮЧАТЕЛЬ СВЕТЛОЙ И ТЁМНОЙ ТЕМЫ В ШАПКЕ.
+
+    ЗАЧЕМ. Сам механизм переключения приходит из чужой темы: она держит
+    состояние в nexusDarkState, пишет его в localStorage и вешает класс
+    o_nexus_dark на body. Но её собственная кнопка живёт в подвале боковой
+    панели приложений, а панель мы убрали — при горизонтальном меню она
+    дублирует строку модулей. Без этого шаблона переключатель стал бы
+    недоступен вовсе: другой точки входа у него нет.
+
+    ⚠️ ПОЧЕМУ ОТДЕЛЬНЫЙ ФАЙЛ, А НЕ СТРОЧКА В navbar.xml. Наш navbar.xml
+    работает и сам по себе, без чужой темы. Вызов её метода оттуда означал бы,
+    что при возврате на нашу тёмную тему шапка ломается на несуществующем
+    методе. Здесь же файл включается отдельной записью ir.asset — ровно в паре
+    со светлой темой, и выключается вместе с ней.
+
+    ⚠️ ПРОВЕРКА t-if ОБЯЗАТЕЛЬНА. Метод toggleNexusDarkMode добавляет патч
+    чужой темы. Если её снять, а этот файл забыть выключить, без проверки
+    шапка упадёт с ошибкой Owl и веб-клиент покажет белый экран; с проверкой
+    кнопка просто не отрисуется.
+  -->
+  <t t-inherit="web.NavBar" t-inherit-mode="extension">
+    <xpath expr="//div[hasclass('o_menu_systray')]" position="before">
+      <button t-if="this.toggleNexusDarkMode"
+              type="button"
+              class="pmk_theme_switch"
+              t-att-class="{ 'pmk_theme_switch--on': this.nexusDarkState and this.nexusDarkState.isDark }"
+              t-att-aria-pressed="this.nexusDarkState and this.nexusDarkState.isDark ? 'true' : 'false'"
+              t-att-title="this.nexusDarkState and this.nexusDarkState.isDark ? 'Тёмная тема включена — нажмите, чтобы вернуть светлую' : 'Светлая тема — нажмите, чтобы включить тёмную'"
+              t-on-click="() => this.toggleNexusDarkMode()">
+        <!--
+          Значок рядом с ползунком: одного положения ручки мало, состояние
+          должно читаться и формой тоже. Солнце в светлой теме, месяц в
+          тёмной — шрифтовые, из набора, который Odoo уже грузит.
+        -->
+        <i class="fa pmk_theme_switch__glyph" aria-hidden="true"/>
+        <span class="pmk_theme_switch__track"/>
+        <!-- Подпись для экранного диктора: кнопка иначе осталась бы безымянной. -->
+        <span class="visually-hidden">Переключить тему</span>
+      </button>
+    </xpath>
+  </t>
+
+</templates>

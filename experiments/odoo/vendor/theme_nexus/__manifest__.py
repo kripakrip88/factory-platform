@@ -64,11 +64,23 @@ Features
             'theme_nexus/static/src/scss/kanban.scss',
             'theme_nexus/static/src/scss/modals.scss',
             'theme_nexus/static/src/scss/navbar.scss',
-            'theme_nexus/static/src/scss/sidebar.scss',
+            # ── БОКОВАЯ ПАНЕЛЬ ВЫКЛЮЧЕНА (ПМК, 22.09.2026) ─────────────
+            # При горизонтальном меню ПМК она дублирует строку модулей.
+            #
+            # ⚠️ ГАСИТЬ ТОЛЬКО ТРОЙКОЙ. JS без XML вешает на body класс
+            # o_nexus_sidebar_pinned, и контент уезжает вправо на 240 px в
+            # пустоту; XML без JS роняет Owl на неизвестных ему именах —
+            # белый экран. Поэтому три строки ниже выключаются вместе.
+            #
+            # dark_mode.js и dark_mode.scss ОСТАВЛЕНЫ: в них механизм
+            # переключения тем. Его кнопка жила в подвале этой панели, и
+            # вместо неё теперь ползунок в шапке — pmk_theme/static/src/xml/
+            # theme_toggle.xml.
+            # 'theme_nexus/static/src/scss/sidebar.scss',
             'theme_nexus/static/src/scss/theme_nexus.scss',
             'theme_nexus/static/src/scss/dark_mode.scss',
-            'theme_nexus/static/src/xml/navbar.xml',
-            'theme_nexus/static/src/js/navbar.js',
+            # 'theme_nexus/static/src/xml/navbar.xml',
+            # 'theme_nexus/static/src/js/navbar.js',
             'theme_nexus/static/src/js/dark_mode.js',
         ],
     },

@@ -272,4 +272,15 @@
     <field name="sequence">39</field>
   </record>
 
+  <!-- Разметка переключателя тем в шапке. Идёт В ПАРЕ со светлой темой:
+       механизм переключения приходит из чужой темы, и без неё кнопка не
+       отрисуется (в шаблоне стоит проверка на наличие её метода). -->
+  <record id="asset_xml_theme_toggle" model="ir.asset">
+    <field name="name">ПМК: переключатель тем в шапке</field>
+    <field name="bundle">web.assets_backend</field>
+    <field name="directive">append</field>
+    <field name="path">pmk_theme/static/src/xml/theme_toggle.xml</field>
+    <field name="sequence">40</field>
+  </record>
+
 </odoo>

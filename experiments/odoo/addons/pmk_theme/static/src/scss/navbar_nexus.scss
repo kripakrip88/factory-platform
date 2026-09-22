@@ -304,3 +304,98 @@ body.o_nexus_dark {
     transition: none;
   }
 }
+
+
+// ─── Переключатель светлой и тёмной темы ──────────────────────────────────
+//
+// Разметку даёт xml/theme_toggle.xml, логику — чужая тема (её патч держит
+// состояние и пишет его в localStorage). Здесь только вид.
+//
+// Свой класс, а не переиспользование её .o_nexus_switch: её ползунок написан
+// под подвал тёмной боковой панели (светлый кружок на полупрозрачной дорожке)
+// и на белой шапке выглядел бы выцветшим. Плюс независимость: снимем её тему —
+// правила ниже просто перестанут находить свой узел, а не покрасят чужой.
+.pmk_theme_switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-right: 8px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  transition: background-color .15s ease-out;
+
+  &:hover {
+    background-color: rgba(22, 23, 27, 0.05);
+  }
+
+  &:focus-visible {
+    outline: 2px solid $pmk-nx-ink;
+    outline-offset: -2px;
+  }
+
+  // Значок состояния: солнце на светлой теме, месяц на тёмной. Состояние
+  // помечено И положением ручки, И значком — одного признака мало.
+  &__glyph::before {
+    content: "\f185";          // солнце
+    font-family: FontAwesome;
+    font-size: 13px;
+    color: $pmk-nx-slate;
+  }
+
+  // Дорожка ползунка.
+  &__track {
+    position: relative;
+    width: 34px;
+    height: 18px;
+    border-radius: 999px;
+    background: rgba(22, 23, 27, 0.18);
+    transition: background-color .18s ease-out;
+    flex: none;
+
+    // Ручка.
+    &::after {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: $pmk-nx-white;
+      box-shadow: 0 1px 2px rgba(22, 23, 27, 0.3);
+      transition: left .18s ease-out;
+    }
+  }
+
+  // Включённое состояние — оранжевый темы.
+  &--on {
+    .pmk_theme_switch__glyph::before {
+      content: "\f186";        // месяц
+      color: rgba(244, 241, 234, 0.72);
+    }
+
+    .pmk_theme_switch__track {
+      background: #ff6a1a;
+
+      &::after { left: 18px; }
+    }
+  }
+
+  // В тёмном режиме сама кнопка живёт на тёмной шапке.
+  body.o_nexus_dark & {
+    &:hover { background-color: rgba(255, 255, 255, 0.08); }
+    &:focus-visible { outline-color: rgba(255, 255, 255, 0.85); }
+  }
+}
+
+// Ручка не ездит, если система просит меньше движения.
+@media (prefers-reduced-motion: reduce) {
+  .pmk_theme_switch,
+  .pmk_theme_switch__track,
+  .pmk_theme_switch__track::after {
+    transition: none;
+  }
+}
