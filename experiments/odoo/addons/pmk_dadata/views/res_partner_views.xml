@@ -163,7 +163,13 @@
     <field name="model">res.partner</field>
     <field name="inherit_id" ref="base.view_partner_form"/>
     <field name="priority">100</field>
-    <field name="active">True</field>
+    <!--
+      ВЫКЛЮЧЕНО 23.09.2026 вместе с плоским видом pmk_partner: этот вид
+      переносит реквизиты и банковские счета в его секции, а на вкладках
+      они остаются на своей странице «Реквизиты» и переносить их некуда.
+      Включать только в паре — см. комментарий там.
+    -->
+    <field name="active">False</field>
     <field name="arch" type="xml">
 
       <xpath expr="//group[@name='pmk_s_requisites']" position="replace" mode="inner">
