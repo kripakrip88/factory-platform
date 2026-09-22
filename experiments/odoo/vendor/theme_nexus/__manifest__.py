@@ -50,6 +50,12 @@ Features
     'license': 'LGPL-3',
     'depends': ['web', 'base'],
     'assets': {
+        # Переменные фирменной палитры Odoo — ОТДЕЛЬНЫМ бандлом и обязательно
+        # prepend: они объявлены в ядре с !default, и файл, попавший в конец,
+        # опоздал бы. Подробности и замеры — в самом primary_variables.scss.
+        'web._assets_primary_variables': [
+            ('prepend', 'theme_nexus/static/src/scss/primary_variables.scss'),
+        ],
         'web.assets_backend': [
             'theme_nexus/static/src/scss/variables.scss',
             'theme_nexus/static/src/scss/buttons.scss',
