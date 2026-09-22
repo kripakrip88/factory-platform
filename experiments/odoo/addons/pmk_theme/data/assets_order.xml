@@ -90,12 +90,101 @@
          задействует бандлы, о которых при правке не думаешь.
   -->
 
+  <!--
+    ━━━ КОПИЯ ЧУЖОЙ ТЕМЫ (vendor/) ━━━
+    Это theme_liquid_glass целиком, скопированная к нам 22.09.2026 файл в файл.
+
+    ЗАЧЕМ. Сначала мы попробовали перенести её вид выборочно — своими файлами
+    (tokens, base, surfaces, controls, chatter, charts). Сняли чужую тему и
+    получили, дословно от владельца: «всё стало помесью стандартной темы одоо и
+    нашей, выглядит омерзительно». Выборочный перенос неизбежно что-то упускает,
+    и упущенное вылезает всё разом в момент, когда подпорка исчезает.
+
+    ПОЭТОМУ ДРУГОЙ ПОРЯДОК. Сначала копия целиком: вид гарантированно тот же,
+    потому что стили буквально те же. Потом чужой модуль снимается — менять
+    нечего. И только потом чистка по одному куску, с проверкой после каждого.
+
+    Наши собственные файлы (ниже, с 30) идут ПОСЛЕ копии и постепенно её
+    вытесняют: что уже переписано у нас — можно удалять отсюда.
+
+    Пути к картинкам внутри скопированных файлов переписаны на наш модуль
+    (/pmk_theme/static/src/img/), иначе после снятия чужого модуля фон и иконки
+    отвалились бы вместе с ним.
+
+    Порядок внутри копии — ровно тот, что был в их манифесте: variables задаёт
+    переменные, остальные их читают.
+  -->
+
+  <record id="asset_vendor_variables" model="ir.asset">
+    <field name="name">ПМК копия чужой темы: variables.scss</field>
+    <field name="bundle">web.assets_backend</field>
+    <field name="directive">append</field>
+    <field name="path">pmk_theme/static/src/scss/vendor/variables.scss</field>
+    <field name="sequence">17</field>
+  </record>
+
+  <record id="asset_vendor_glass_theme" model="ir.asset">
+    <field name="name">ПМК копия чужой темы: glass_theme.scss</field>
+    <field name="bundle">web.assets_backend</field>
+    <field name="directive">append</field>
+    <field name="path">pmk_theme/static/src/scss/vendor/glass_theme.scss</field>
+    <field name="sequence">18</field>
+  </record>
+
+  <record id="asset_vendor_buttons" model="ir.asset">
+    <field name="name">ПМК копия чужой темы: buttons.scss</field>
+    <field name="bundle">web.assets_backend</field>
+    <field name="directive">append</field>
+    <field name="path">pmk_theme/static/src/scss/vendor/buttons.scss</field>
+    <field name="sequence">19</field>
+  </record>
+
+  <record id="asset_vendor_forms" model="ir.asset">
+    <field name="name">ПМК копия чужой темы: forms.scss</field>
+    <field name="bundle">web.assets_backend</field>
+    <field name="directive">append</field>
+    <field name="path">pmk_theme/static/src/scss/vendor/forms.scss</field>
+    <field name="sequence">20</field>
+  </record>
+
+  <record id="asset_vendor_lists" model="ir.asset">
+    <field name="name">ПМК копия чужой темы: lists.scss</field>
+    <field name="bundle">web.assets_backend</field>
+    <field name="directive">append</field>
+    <field name="path">pmk_theme/static/src/scss/vendor/lists.scss</field>
+    <field name="sequence">21</field>
+  </record>
+
+  <record id="asset_vendor_kanban" model="ir.asset">
+    <field name="name">ПМК копия чужой темы: kanban.scss</field>
+    <field name="bundle">web.assets_backend</field>
+    <field name="directive">append</field>
+    <field name="path">pmk_theme/static/src/scss/vendor/kanban.scss</field>
+    <field name="sequence">22</field>
+  </record>
+
+  <record id="asset_vendor_modals" model="ir.asset">
+    <field name="name">ПМК копия чужой темы: modals.scss</field>
+    <field name="bundle">web.assets_backend</field>
+    <field name="directive">append</field>
+    <field name="path">pmk_theme/static/src/scss/vendor/modals.scss</field>
+    <field name="sequence">23</field>
+  </record>
+
+  <record id="asset_vendor_navbar" model="ir.asset">
+    <field name="name">ПМК копия чужой темы: navbar.scss</field>
+    <field name="bundle">web.assets_backend</field>
+    <field name="directive">append</field>
+    <field name="path">pmk_theme/static/src/scss/vendor/navbar.scss</field>
+    <field name="sequence">24</field>
+  </record>
+
   <record id="asset_scss_tokens" model="ir.asset">
     <field name="name">ПМК: tokens.scss в конец бандла</field>
     <field name="bundle">web.assets_backend</field>
     <field name="directive">append</field>
     <field name="path">pmk_theme/static/src/scss/tokens.scss</field>
-    <field name="sequence">21</field>
+    <field name="sequence">30</field>
   </record>
 
   <record id="asset_scss_base" model="ir.asset">
@@ -103,7 +192,7 @@
     <field name="bundle">web.assets_backend</field>
     <field name="directive">append</field>
     <field name="path">pmk_theme/static/src/scss/base.scss</field>
-    <field name="sequence">22</field>
+    <field name="sequence">31</field>
   </record>
 
   <record id="asset_scss_navbar" model="ir.asset">
@@ -111,7 +200,7 @@
     <field name="bundle">web.assets_backend</field>
     <field name="directive">append</field>
     <field name="path">pmk_theme/static/src/scss/navbar.scss</field>
-    <field name="sequence">23</field>
+    <field name="sequence">32</field>
   </record>
 
   <record id="asset_scss_surfaces" model="ir.asset">
@@ -119,7 +208,7 @@
     <field name="bundle">web.assets_backend</field>
     <field name="directive">append</field>
     <field name="path">pmk_theme/static/src/scss/surfaces.scss</field>
-    <field name="sequence">24</field>
+    <field name="sequence">33</field>
   </record>
 
   <record id="asset_scss_controls" model="ir.asset">
@@ -127,7 +216,7 @@
     <field name="bundle">web.assets_backend</field>
     <field name="directive">append</field>
     <field name="path">pmk_theme/static/src/scss/controls.scss</field>
-    <field name="sequence">25</field>
+    <field name="sequence">34</field>
   </record>
 
   <record id="asset_scss_chatter" model="ir.asset">
@@ -135,7 +224,7 @@
     <field name="bundle">web.assets_backend</field>
     <field name="directive">append</field>
     <field name="path">pmk_theme/static/src/scss/chatter.scss</field>
-    <field name="sequence">26</field>
+    <field name="sequence">35</field>
   </record>
 
   <record id="asset_scss_charts" model="ir.asset">
@@ -143,7 +232,7 @@
     <field name="bundle">web.assets_backend</field>
     <field name="directive">append</field>
     <field name="path">pmk_theme/static/src/scss/charts.scss</field>
-    <field name="sequence">27</field>
+    <field name="sequence">36</field>
   </record>
 
   <record id="asset_scss_forms" model="ir.asset">
@@ -151,7 +240,7 @@
     <field name="bundle">web.assets_backend</field>
     <field name="directive">append</field>
     <field name="path">pmk_theme/static/src/scss/forms.scss</field>
-    <field name="sequence">28</field>
+    <field name="sequence">37</field>
   </record>
 
   <record id="asset_scss_third_party" model="ir.asset">
@@ -159,7 +248,7 @@
     <field name="bundle">web.assets_backend</field>
     <field name="directive">append</field>
     <field name="path">pmk_theme/static/src/scss/third_party.scss</field>
-    <field name="sequence">29</field>
+    <field name="sequence">38</field>
   </record>
 
 </odoo>

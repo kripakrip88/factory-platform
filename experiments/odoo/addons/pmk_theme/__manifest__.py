@@ -11,7 +11,7 @@
 и работает как «все приложения». Так ничего не становится недостижимым,
 когда модулей больше, чем влезает по ширине.
     """,
-    "version": "19.0.1.2.0",
+    "version": "19.0.2.0.0",
     "category": "Theme/Backend",
     "author": "ПМК Парк",
     "license": "LGPL-3",
@@ -40,6 +40,11 @@
             # Добавляешь новый scss — добавляй туда же, иначе он окажется в
             # середине бандла. Порядок файлов и его обоснование — в шапке
             # data/assets_order.xml.
+            # Копия чужой темы: её боковая панель приложений и переключатель.
+            # Идут ПЕРВЫМИ, чтобы наш navbar_active_section.js правил уже
+            # готовую разметку. Подробности — в data/assets_order.xml.
+            "pmk_theme/static/src/js/vendor/navbar_sidebar.js",
+            "pmk_theme/static/src/xml/vendor/apps_sidebar.xml",
             "pmk_theme/static/src/js/collapsible_sections.js",
             "pmk_theme/static/src/js/navbar_active_section.js",
             "pmk_theme/static/src/js/chatter_inline.js",
