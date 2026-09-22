@@ -44,6 +44,9 @@
         "views/res_partner_views.xml",
         "views/purchase_views.xml",
         "views/res_partner_flat_views.xml",
+        # Карточка на вкладках по образцу карточки товара: переносит группу,
+        # висевшую между шапкой и вкладками, на первую страницу.
+        "views/res_partner_tabs_views.xml",
     ],
     "license": "LGPL-3",
     "installable": True,
