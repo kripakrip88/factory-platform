@@ -283,4 +283,15 @@
     <field name="sequence">40</field>
   </record>
 
+  <!-- Геометрия форм для светлой темы: только вёрстка, без цветов.
+       Без неё сетка группы схлопывает колонку значений в ноль и содержимое
+       вываливается поверх соседей. Подробности и замеры — в самом файле. -->
+  <record id="asset_scss_forms_light" model="ir.asset">
+    <field name="name">ПМК: forms_nexus.scss — геометрия форм в светлой теме</field>
+    <field name="bundle">web.assets_backend</field>
+    <field name="directive">append</field>
+    <field name="path">pmk_theme/static/src/scss/forms_nexus.scss</field>
+    <field name="sequence">41</field>
+  </record>
+
 </odoo>
