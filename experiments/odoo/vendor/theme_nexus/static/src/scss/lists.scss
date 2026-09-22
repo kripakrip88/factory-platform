@@ -1,0 +1,72 @@
+// =============================================================
+// NEXUS — List / Table Views
+// =============================================================
+
+.o_list_renderer {
+    background: $nx-white !important;
+    border-radius: $nx-radius-lg;
+    border: 1px solid $nx-border;
+    overflow: hidden;
+    margin: 4px;
+}
+
+.o_list_table {
+    thead {
+        background: $nx-offwhite !important;
+
+        th {
+            font-weight: 700;
+            font-size: 12px;
+            letter-spacing: 0.02em;
+            color: $nx-slate;
+            text-transform: uppercase;
+            border-bottom: 1px solid $nx-border !important;
+        }
+    }
+
+    tbody {
+        tr {
+            border-bottom: 1px solid $nx-border !important;
+            transition: $nx-transition;
+
+            &:hover {
+                background: $nx-orange-softer !important;
+            }
+
+            &.o_selected_row {
+                background: $nx-orange-soft !important;
+            }
+        }
+
+        td {
+            padding: 11px 12px;
+        }
+    }
+}
+
+.o_list_sortable_caret {
+    color: $nx-slate-2;
+}
+
+.list-group-item-action {
+    border-radius: $nx-radius-md;
+    margin-bottom: 4px;
+    border: none !important;
+    transition: $nx-transition;
+
+    &:hover,
+    &.active {
+        background: $nx-orange-soft !important;
+        color: $nx-charcoal !important;
+    }
+}
+
+.table-info {
+    --table-hover-bg: #{$nx-orange-softer} !important;
+    --table-striped-bg: #{$nx-offwhite} !important;
+}
+
+.o_input:focus,
+.o_list_renderer .o_data_row.o_selected_row > .o_data_cell.o_required_modifier:not(.o_readonly_modifier) {
+    border-bottom: 2px solid $nx-orange !important;
+}

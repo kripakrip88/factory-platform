@@ -1,0 +1,89 @@
+// =============================================================
+// NEXUS — Buttons
+// =============================================================
+
+button,
+.btn,
+input[type="button"],
+input[type="submit"],
+.o_button {
+    border-radius: $nx-radius-sm;
+    font-weight: 600;
+    transition: $nx-transition;
+    outline: none !important;
+
+    &:focus-visible {
+        @include nx-focus-ring;
+    }
+}
+
+.btn-primary,
+.o_form_button_create {
+    background: $nx-orange !important;
+    border: 1px solid $nx-orange !important;
+    color: $nx-white !important;
+    box-shadow: 0 4px 14px rgba(255, 106, 26, 0.28);
+
+    &:hover {
+        background: darken($nx-orange, 6%) !important;
+        border-color: darken($nx-orange, 6%) !important;
+        box-shadow: 0 6px 18px rgba(255, 106, 26, 0.36);
+    }
+
+    &:disabled {
+        background: $nx-slate-2 !important;
+        border-color: $nx-slate-2 !important;
+        box-shadow: none;
+    }
+}
+
+.btn-secondary,
+.o_form_button_edit {
+    background: $nx-white !important;
+    border: 1px solid $nx-border-strong !important;
+    color: $nx-charcoal !important;
+
+    &:hover {
+        background: $nx-offwhite !important;
+        border-color: $nx-orange !important;
+        color: $nx-orange !important;
+    }
+}
+
+.btn-link {
+    color: $nx-orange !important;
+    font-weight: 600;
+
+    &:hover {
+        color: darken($nx-orange, 8%) !important;
+        text-decoration: underline;
+    }
+}
+
+.btn-light {
+    background: $nx-offwhite !important;
+    border: 1px solid $nx-border !important;
+    color: $nx-slate !important;
+
+    &:hover {
+        background: $nx-orange-softer !important;
+        color: $nx-orange !important;
+    }
+}
+
+.o_control_panel_actions .oe_stat_button {
+    border: 1px solid $nx-border !important;
+    border-radius: $nx-radius-md;
+    transition: $nx-transition;
+
+    &:hover {
+        border-color: $nx-orange !important;
+        background: $nx-orange-softer !important;
+    }
+}
+
+.o-form-buttonbox .oe_stat_button .o_button_icon,
+.o_form_view .o_form_uri,
+.alert-link {
+    color: $nx-orange !important;
+}

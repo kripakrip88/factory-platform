@@ -1,0 +1,92 @@
+// =============================================================
+// NEXUS — Top Navbar
+// =============================================================
+
+.o_main_navbar {
+    background: $nx-white !important;
+    border-bottom: 1px solid $nx-border !important;
+    box-shadow: none !important;
+    min-height: 52px;
+    transition: $nx-transition-slow;
+
+    .o_menu_brand,
+    .o_menu_sections .dropdown-toggle,
+    .o_menu_sections .o_nav_entry {
+        color: $nx-slate !important;
+        font-weight: 600;
+        transition: $nx-transition;
+
+        &:hover {
+            color: $nx-orange !important;
+        }
+    }
+
+    .o_menu_sections {
+        .dropdown-toggle.show,
+        .o_nav_entry.active {
+            color: $nx-orange !important;
+        }
+    }
+
+    // systray icons (messages, activities, notifications, user avatar…)
+    .o_menu_systray {
+        .dropdown-toggle,
+        button {
+            border-radius: $nx-radius-sm;
+            transition: $nx-transition;
+
+            &:hover {
+                background: $nx-orange-softer !important;
+                color: $nx-orange !important;
+            }
+        }
+
+        .o-mail-DiscussSystray-class,
+        .o_bell_icon,
+        .fa {
+            color: $nx-slate !important;
+        }
+
+        .badge {
+            background: $nx-orange !important;
+            border: 2px solid $nx-white;
+        }
+    }
+}
+
+.o_breadcrumb {
+    .o_breadcrumb_item {
+        color: $nx-slate-2;
+        font-weight: 600;
+
+        &:last-child {
+            color: $nx-charcoal;
+        }
+    }
+}
+
+.o_control_panel {
+    background: $nx-offwhite !important;
+    border-bottom: 1px solid $nx-border !important;
+
+    .o_cp_top { padding: 10px 20px; }
+}
+
+.o_searchview {
+    background: $nx-white !important;
+    border: 1px solid $nx-border !important;
+    border-radius: $nx-radius-pill !important;
+    padding: 4px 14px !important;
+    transition: $nx-transition;
+
+    &:focus-within {
+        border-color: $nx-orange !important;
+        box-shadow: 0 0 0 3px $nx-orange-soft;
+    }
+
+    .o_searchview_facet {
+        background: $nx-orange-softer !important;
+        border-radius: $nx-radius-pill !important;
+        border: 1px solid $nx-orange-soft !important;
+    }
+}

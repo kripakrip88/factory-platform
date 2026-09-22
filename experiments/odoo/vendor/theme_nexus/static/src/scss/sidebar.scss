@@ -1,0 +1,212 @@
+// =============================================================
+// NEXUS — Application Sidebar
+// Pinned rail on desktop (>= $nx-sidebar-breakpoint), slide-in
+// drawer with a backdrop on smaller screens.
+// =============================================================
+
+.o_apps_sidebar {
+    position: fixed;
+    top: 0;
+    left: -($nx-sidebar-width + 40px);
+    width: $nx-sidebar-width;
+    height: 100vh;
+    z-index: 1001;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(180deg, $nx-charcoal 0%, #101114 100%);
+    box-shadow: $nx-shadow-lg;
+    transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-y: auto;
+    overflow-x: hidden;
+    @include nx-scrollbar(transparent, rgba(255, 255, 255, 0.15));
+
+    &.o_sidebar_open {
+        left: 0;
+    }
+
+    .o_nexus_sidebar_header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 22px 18px;
+        flex: none;
+
+        .o_nexus_brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+
+            .o_nexus_mark {
+                width: 24px;
+                height: 24px;
+                border-radius: 7px;
+                background: $nx-orange;
+                flex: none;
+            }
+
+            span {
+                font-weight: 800;
+                font-size: 14px;
+                letter-spacing: 0.16em;
+                color: $nx-text-on-dark;
+            }
+        }
+
+        .o_sidebar_close {
+            display: none; // only relevant on drawer / mobile mode
+            color: $nx-text-muted-dark;
+            cursor: pointer;
+            font-size: 16px;
+            transition: $nx-transition;
+
+            &:hover {
+                color: $nx-orange;
+                transform: rotate(90deg);
+            }
+        }
+    }
+
+    .o_nexus_sidebar_content {
+        flex: 1;
+        padding: 6px 12px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .o_nexus_sidebar_item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 12px;
+        border-radius: $nx-radius-md;
+        cursor: pointer;
+        position: relative;
+        transition: $nx-transition;
+
+        &:hover {
+            background: rgba(255, 255, 255, 0.06);
+
+            .o_nexus_icon_wrap { background: rgba(255, 255, 255, 0.1); }
+            .o_nexus_app_name { color: $nx-text-on-dark; }
+        }
+
+        &.o_nexus_active {
+            background: $nx-orange-soft;
+
+            &::before {
+                content: "";
+                position: absolute;
+                left: -12px;
+                top: 8px;
+                bottom: 8px;
+                width: 3px;
+                border-radius: 3px;
+                background: $nx-orange;
+            }
+
+            .o_nexus_icon_wrap { background: $nx-orange; }
+            .o_nexus_app_name { color: $nx-white; font-weight: 700; }
+        }
+
+        .o_nexus_icon_wrap {
+            width: 30px;
+            height: 30px;
+            min-width: 30px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.06);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            transition: $nx-transition;
+
+            img.o_nexus_icon {
+                width: 20px;
+                height: 20px;
+                object-fit: contain;
+            }
+
+            i {
+                color: $nx-text-muted-dark;
+                font-size: 14px;
+            }
+        }
+
+        .o_nexus_app_name {
+            font-size: 13.5px;
+            font-weight: 600;
+            color: $nx-text-muted-dark;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: $nx-transition;
+        }
+    }
+
+    .o_nexus_sidebar_footer {
+        flex: none;
+        padding: 14px 20px 20px;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+
+        span {
+            font-size: 10px;
+            letter-spacing: 0.14em;
+            font-weight: 700;
+            color: rgba(244, 241, 234, 0.35);
+            text-transform: uppercase;
+        }
+    }
+}
+
+.o_navbar_sidebar_toggle {
+    background: transparent !important;
+    border: 1px solid $nx-border !important;
+    color: $nx-slate !important;
+    border-radius: $nx-radius-sm;
+    padding: 7px 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: $nx-transition;
+
+    &:hover {
+        background: $nx-orange-softer !important;
+        border-color: $nx-orange !important;
+        color: $nx-orange !important;
+    }
+}
+
+// Backdrop shown only in drawer (mobile) mode
+.o_nexus_sidebar_overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(16, 17, 20, 0.45);
+    backdrop-filter: blur(2px);
+    z-index: 1000;
+    cursor: pointer;
+}
+
+// ---- Desktop: pin the sidebar and push the app content over -------------
+@media (min-width: $nx-sidebar-breakpoint) {
+    body.o_nexus_sidebar_pinned {
+        .o_action_manager,
+        .o_main_navbar {
+            margin-left: $nx-sidebar-width;
+            transition: $nx-transition-slow;
+        }
+    }
+}
+
+// ---- Small screens: sidebar always behaves as an overlay drawer ---------
+@media (max-width: ($nx-sidebar-breakpoint - 1px)) {
+    .o_apps_sidebar {
+        width: 82vw;
+        max-width: $nx-sidebar-width;
+        z-index: 1101;
+    }
+
+    .o_nexus_sidebar_header .o_sidebar_close {
+        display: block;
+    }
+}

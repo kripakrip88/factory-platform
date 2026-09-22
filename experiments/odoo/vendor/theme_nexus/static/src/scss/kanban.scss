@@ -1,0 +1,54 @@
+// =============================================================
+// NEXUS — Kanban Views
+// =============================================================
+
+.o_kanban_view {
+    background: $nx-bg;
+
+    .o_kanban_renderer {
+        padding: 8px;
+    }
+
+    .o_kanban_record {
+        @include nx-card($nx-radius-md, $nx-shadow-sm);
+        @include nx-card-hover;
+        margin-bottom: 12px !important;
+        padding: 14px !important;
+    }
+
+    .o_kanban_group {
+        background: transparent;
+
+        .o_column_title {
+            font-weight: 700;
+            font-size: 13px;
+            letter-spacing: 0.02em;
+            color: $nx-slate;
+            text-transform: uppercase;
+        }
+
+        .o_kanban_header {
+            padding: 12px 10px;
+        }
+    }
+
+    .o_kanban_quick_create {
+        @include nx-card($nx-radius-lg, $nx-shadow-md);
+        padding: 14px;
+    }
+
+    .o_kanban_ungrouped .o_kanban_record {
+        @include nx-card($nx-radius-md, $nx-shadow-sm);
+        @include nx-card-hover;
+    }
+}
+
+.o_kanban_status {
+    &.o_status_green { background: $nx-green !important; }
+    &.o_status_red { background: $nx-red !important; }
+}
+
+.badge, .o_tag {
+    border-radius: $nx-radius-pill;
+    font-weight: 600;
+}

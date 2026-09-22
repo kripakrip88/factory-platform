@@ -1,0 +1,120 @@
+// =============================================================
+// NEXUS — Dark Mode
+// Toggled via body.o_nexus_dark (see js/dark_mode.js).
+// The application sidebar is already dark by default, so this
+// layer only needs to re-theme the bright content area.
+// =============================================================
+
+body.o_nexus_dark {
+    background: $nx-charcoal !important;
+
+    .o_content,
+    .o_action_manager {
+        background: $nx-charcoal !important;
+    }
+
+    .o_main_navbar,
+    .o_control_panel {
+        background: $nx-charcoal-2 !important;
+        border-color: rgba(255, 255, 255, 0.08) !important;
+    }
+
+    .o_menu_brand,
+    .o_menu_sections .dropdown-toggle,
+    .o_menu_sections .o_nav_entry,
+    .o_breadcrumb .o_breadcrumb_item:last-child {
+        color: $nx-text-on-dark !important;
+    }
+
+    .o_breadcrumb .o_breadcrumb_item {
+        color: $nx-text-muted-dark;
+    }
+
+    .o_searchview {
+        background: $nx-charcoal-soft !important;
+        border-color: rgba(255, 255, 255, 0.1) !important;
+        color: $nx-text-on-dark;
+    }
+
+    .o_form_sheet,
+    .o_list_renderer,
+    .o_kanban_record,
+    .modal-content,
+    .o_kanban_quick_create {
+        background: $nx-charcoal-soft !important;
+        border-color: rgba(255, 255, 255, 0.08) !important;
+        color: $nx-text-on-dark;
+    }
+
+    .o_list_table thead {
+        background: $nx-charcoal-2 !important;
+
+        th { color: $nx-text-muted-dark !important; }
+    }
+
+    .o_list_table tbody tr {
+        border-color: rgba(255, 255, 255, 0.08) !important;
+
+        &:hover { background: rgba(255, 106, 26, 0.1) !important; }
+    }
+
+    .form-control,
+    .o_input {
+        background: $nx-charcoal-2 !important;
+        border-color: rgba(255, 255, 255, 0.12) !important;
+        color: $nx-text-on-dark !important;
+    }
+
+    .o_notebook .nav-tabs .nav-link {
+        color: $nx-text-muted-dark !important;
+
+        &.active { color: $nx-orange !important; }
+    }
+
+    .o_cell:hover { background: rgba(255, 106, 26, 0.12) !important; }
+
+    ::selection { background: rgba(255, 106, 26, 0.35); color: $nx-text-on-dark; }
+}
+
+// ---- Toggle switch UI (sits in the sidebar footer) -----------------------
+.o_nexus_dark_toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 4px;
+    cursor: pointer;
+
+    span.o_nexus_dark_label {
+        font-size: 12px;
+        font-weight: 600;
+        color: $nx-text-muted-dark;
+    }
+
+    .o_nexus_switch {
+        width: 34px;
+        height: 19px;
+        border-radius: $nx-radius-pill;
+        background: rgba(255, 255, 255, 0.12);
+        position: relative;
+        transition: $nx-transition;
+        flex: none;
+
+        &::after {
+            content: "";
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: $nx-text-on-dark;
+            transition: $nx-transition;
+        }
+
+        &.o_nexus_switch_on {
+            background: $nx-orange;
+
+            &::after { left: 17px; background: $nx-white; }
+        }
+    }
+}

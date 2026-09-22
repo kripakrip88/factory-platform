@@ -1,0 +1,107 @@
+// =============================================================
+// NEXUS — Forms
+// =============================================================
+
+.o_content {
+    background: $nx-bg;
+}
+
+.o_form_sheet_bg {
+    background: transparent !important;
+    padding: 18px 0;
+}
+
+.o_form_sheet {
+    @include nx-card($nx-radius-lg, $nx-shadow-sm);
+    padding: 26px 30px !important;
+    margin: 0 auto;
+}
+
+.o_form_statusbar {
+    background: $nx-white !important;
+    border-bottom: 1px solid $nx-border !important;
+    padding: 10px 16px;
+
+    .o_statusbar_status {
+        .o_arrow_button {
+            border-radius: $nx-radius-sm;
+            font-weight: 600;
+            transition: $nx-transition;
+
+            &.btn-secondary {
+                background: $nx-offwhite !important;
+                color: $nx-slate-2 !important;
+            }
+
+            &.btn-primary,
+            &.o_arrow_button_current {
+                background: $nx-orange !important;
+                color: $nx-white !important;
+            }
+        }
+    }
+}
+
+.form-control,
+.o_input {
+    border: 1px solid $nx-border-strong !important;
+    border-radius: $nx-radius-sm !important;
+    transition: $nx-transition;
+
+    &:focus {
+        @include nx-focus-ring;
+    }
+}
+
+.o_cell {
+    border-radius: $nx-radius-sm;
+    transition: $nx-transition;
+
+    &:hover {
+        background: $nx-orange-softer !important;
+    }
+}
+
+.o_notebook {
+    .nav-tabs {
+        border-bottom: 1px solid $nx-border !important;
+        gap: 4px;
+
+        .nav-link {
+            color: $nx-slate-2 !important;
+            font-weight: 600;
+            border: none !important;
+            border-radius: $nx-radius-sm $nx-radius-sm 0 0;
+            padding: 10px 16px;
+            transition: $nx-transition;
+
+            &:hover {
+                color: $nx-orange !important;
+                background: $nx-orange-softer !important;
+            }
+
+            &.active {
+                color: $nx-orange !important;
+                background: transparent !important;
+                box-shadow: inset 0 -2px 0 $nx-orange;
+            }
+        }
+    }
+}
+
+.o_field_highlight .o_field_widget .o_input,
+.o_field_highlight.o_field_widget .o_input {
+    border-color: $nx-orange !important;
+}
+
+// Chatter panel
+.o-mail-Chatter,
+.o_ChatterContainer {
+    background: $nx-white;
+    border-left: 1px solid $nx-border;
+}
+
+.o-mail-Message,
+.o-mail-Composer {
+    border-radius: $nx-radius-md;
+}

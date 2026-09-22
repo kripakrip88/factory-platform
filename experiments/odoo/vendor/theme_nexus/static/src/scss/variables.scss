@@ -1,0 +1,91 @@
+// =============================================================
+// NEXUS Backend Theme — Design Tokens
+// =============================================================
+
+// ---- Core palette --------------------------------------------------------
+$nx-charcoal:        #16171B;
+$nx-charcoal-2:       #1E2025;
+$nx-charcoal-soft:    #2A2C33;
+
+$nx-white:            #FFFFFF;
+$nx-offwhite:         #FAF9F6;
+$nx-bg:               #F5F3EE;
+
+$nx-slate:            #4B4F58;
+$nx-slate-2:          #8A8D96;
+$nx-border:           #EAE6DC;
+$nx-border-strong:    #DAD5C8;
+
+$nx-orange:           #FF6A1A;
+$nx-orange-2:         #FF8A4C;
+$nx-orange-soft:      rgba(255, 106, 26, 0.14);
+$nx-orange-softer:    rgba(255, 106, 26, 0.07);
+
+$nx-green:            #2FB673;
+$nx-blue:             #4C7EFF;
+$nx-red:              #E0554A;
+$nx-yellow:           #E7B93B;
+
+$nx-text-on-dark:     #F4F1EA;
+$nx-text-muted-dark:  rgba(244, 241, 234, 0.62);
+
+// ---- Radii -----------------------------------------------------------
+$nx-radius-sm:   8px;
+$nx-radius-md:   12px;
+$nx-radius-lg:   18px;
+$nx-radius-xl:   24px;
+$nx-radius-pill: 999px;
+
+// ---- Shadows -----------------------------------------------------------
+$nx-shadow-sm: 0 2px 8px rgba(20, 20, 25, 0.05);
+$nx-shadow-md: 0 8px 24px rgba(20, 20, 25, 0.08);
+$nx-shadow-lg: 0 24px 60px rgba(20, 20, 25, 0.18);
+
+// ---- Layout -----------------------------------------------------------
+$nx-sidebar-width: 240px;
+$nx-sidebar-breakpoint: 1200px; // >= this width: sidebar is pinned, not an overlay drawer
+
+// ---- Motion -----------------------------------------------------------
+$nx-transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+$nx-transition-slow: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+
+// ---- Typography ---------------------------------------------------------
+// System-first stack: no external font request, so the theme keeps working
+// on air-gapped / offline Odoo installs. Swap in a self-hosted @font-face
+// here if you want to add "Inter" or "Archivo Condensed" for real.
+$nx-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+// ---- Mixins ---------------------------------------------------------
+@mixin nx-card($radius: $nx-radius-lg, $shadow: $nx-shadow-sm) {
+    background: $nx-white;
+    border: 1px solid $nx-border;
+    border-radius: $radius;
+    box-shadow: $shadow;
+}
+
+@mixin nx-card-hover {
+    transition: $nx-transition;
+
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: $nx-shadow-md;
+        border-color: $nx-border-strong;
+    }
+}
+
+@mixin nx-focus-ring {
+    outline: none !important;
+    box-shadow: 0 0 0 3px $nx-orange-soft !important;
+    border-color: $nx-orange !important;
+}
+
+@mixin nx-scrollbar($track: transparent, $thumb: $nx-border-strong) {
+    &::-webkit-scrollbar { width: 8px; height: 8px; }
+    &::-webkit-scrollbar-track { background: $track; }
+    &::-webkit-scrollbar-thumb {
+        background: $thumb;
+        border-radius: $nx-radius-pill;
+
+        &:hover { background: $nx-orange; }
+    }
+}

@@ -1,0 +1,55 @@
+// =============================================================
+// NEXUS — Modals / Dialogs
+// =============================================================
+
+.modal .modal-dialog .modal-content,
+.o_dialog .modal-content {
+    border: none;
+    border-radius: $nx-radius-lg;
+    box-shadow: $nx-shadow-lg;
+    overflow: hidden;
+
+    .modal-header {
+        background: $nx-white;
+        border-bottom: 1px solid $nx-border;
+        padding: 16px 22px;
+
+        .modal-title {
+            font-weight: 700;
+            color: $nx-charcoal;
+        }
+
+        .btn-close {
+            opacity: 0.6;
+            transition: $nx-transition;
+
+            &:hover {
+                opacity: 1;
+                filter: sepia(1) saturate(6) hue-rotate(-10deg);
+            }
+        }
+    }
+
+    .modal-body {
+        background: $nx-white;
+        padding: 20px 22px;
+
+        .o_form_sheet {
+            box-shadow: none;
+            border: none;
+            margin: 0;
+            padding: 0 !important;
+        }
+    }
+
+    .modal-footer {
+        background: $nx-offwhite;
+        border-top: 1px solid $nx-border;
+        padding: 12px 22px;
+    }
+}
+
+.modal.show .modal-backdrop,
+.modal-backdrop.show {
+    background: rgba(16, 17, 20, 0.55);
+}

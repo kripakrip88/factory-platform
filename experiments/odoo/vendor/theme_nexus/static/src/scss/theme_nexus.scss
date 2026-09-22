@@ -1,0 +1,65 @@
+// =============================================================
+// NEXUS — Global Polish
+// =============================================================
+
+body {
+    font-family: $nx-font-family;
+    background: $nx-bg;
+    @include nx-scrollbar($nx-offwhite, $nx-border-strong);
+}
+
+::selection {
+    background: $nx-orange-soft;
+    color: $nx-charcoal;
+}
+
+a {
+    color: $nx-orange;
+
+    &:hover {
+        color: darken($nx-orange, 8%);
+    }
+}
+
+// Calendar view accents
+.o_calendar_view {
+    .fc-daygrid-day.fc-day-today,
+    .fc-timegrid-col.fc-day-today {
+        background: $nx-orange-softer !important;
+    }
+
+    .fc-event {
+        border-radius: $nx-radius-sm;
+        border: none;
+        background: $nx-orange;
+    }
+}
+
+// Activity / progress accents
+.o_activity_color_planned { color: $nx-blue !important; }
+.o_activity_color_today { color: $nx-orange !important; }
+.o_activity_color_overdue { color: $nx-red !important; }
+
+.progress-bar { background-color: $nx-orange !important; }
+
+// Home menu / apps grid (default Odoo grid, kept as a fallback entry point
+// alongside the pinned sidebar — e.g. reachable via the "Home" hotkey)
+.o_home_menu {
+    background: $nx-charcoal !important;
+
+    .o_app {
+        .o_caption { color: $nx-text-on-dark !important; }
+    }
+}
+
+// Loading indicator
+.o_loading_indicator {
+    background: $nx-orange !important;
+}
+
+// Notification / toast
+.o_notification {
+    border-radius: $nx-radius-md;
+    box-shadow: $nx-shadow-md;
+    border-left: 3px solid $nx-orange;
+}
