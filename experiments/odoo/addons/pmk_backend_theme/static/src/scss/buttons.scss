@@ -1,0 +1,67 @@
+button,
+.btn,
+input[type="button"],
+input[type="submit"],
+.o_button {
+  border-radius: $radius-sm;
+  padding: 8px 16px;
+  font-weight: 500;
+  transition: $transition-base;
+}
+
+// Основная кнопка — фирменный акцент везде, независимо от цвета раздела:
+// один цвет действия на всю систему, цвета разделов остаются только
+// вспомогательной навигацией (правило primary-action — на экране должно
+// быть понятно одно главное действие).
+.btn-primary {
+  background: $accent !important;
+  color: $accent-ink !important;
+  border: none !important;
+
+  &:hover { background: $accent-hover !important; }
+}
+
+.btn-secondary,
+.o_form_button_edit {
+  background: $bg-field;
+  color: $ink;
+  border: 1px solid $border-strong !important;
+
+  &:hover { background: $bg-field-focus; }
+}
+
+.btn-link {
+  background: transparent !important;
+  color: $accent !important;
+  border: none !important;
+}
+
+.btn-light {
+  background: transparent !important;
+  color: $ink-muted !important;
+
+  &:hover { color: $ink !important; }
+}
+
+.o_form_button_create {
+  background: $bg-field;
+  color: $ink;
+  border: 1px solid $border-strong;
+
+  &:hover {
+    background: $accent;
+    color: $accent-ink;
+  }
+}
+
+.oe_stat_button {
+  background: transparent;
+  border: 1px solid $border !important;
+  border-radius: $radius-md;
+
+  &:hover { background: $bg-field; }
+}
+
+.o-form-buttonbox .oe_stat_button .o_button_icon {
+  color: $accent;
+}

@@ -1,0 +1,41 @@
+.o_kanban_view {
+  background: transparent;
+}
+
+.o_kanban_renderer {
+  background: transparent;
+  border-top: 1px solid $border;
+}
+
+.o_kanban_record {
+  background: $bg-surface;
+  border: 1px solid $border;
+  border-radius: $radius-md;
+  margin-bottom: 8px !important;
+  transition: $transition-base;
+
+  &:hover {
+    border-color: $border-strong;
+    box-shadow: $shadow-card;
+  }
+}
+
+.o_kanban_quick_create {
+  background: $bg-surface-2;
+  border: 1px dashed $border-strong;
+  border-radius: $radius-lg;
+}
+
+.o_kanban_group {
+  background: transparent;
+
+  .o_kanban_record {
+    background: $bg-surface;
+    border: 1px solid $border;
+  }
+}
+
+.o_kanban_ungrouped .o_kanban_record {
+  border-color: transparent;
+  background: $bg-surface;
+}

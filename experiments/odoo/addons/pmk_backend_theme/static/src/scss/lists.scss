@@ -1,0 +1,43 @@
+.list-group-item-action {
+  background: transparent;
+  color: $ink;
+  border-radius: $radius-sm;
+
+  &:hover,
+  &.active {
+    background: $bg-field;
+  }
+}
+
+.o_list_renderer {
+  background: $bg-surface;
+  border-radius: $radius-md;
+  padding: 8px;
+}
+
+.o_list_table {
+  thead {
+    border-bottom: 1px solid $border-strong;
+    background: $bg-surface-2;
+
+    th {
+      color: $ink-muted;
+      font-weight: 600;
+    }
+  }
+
+  tbody tr {
+    border-bottom: 1px solid $border;
+
+    &:hover { background: $bg-field; }
+
+    td {
+      padding: 10px 12px;
+      color: $ink;
+    }
+  }
+}
+
+.o_list_sortable_icon {
+  background: transparent;
+}

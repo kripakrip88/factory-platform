@@ -1,0 +1,103 @@
+.o_content {
+  margin: 24px;
+}
+
+.o_form_statusbar {
+  background: $bg-surface-2;
+  border-radius: $radius-md;
+  padding: 8px 12px;
+
+  .o_arrow_button.btn-secondary {
+    background: transparent;
+    color: $ink-muted;
+  }
+
+  .o_arrow_button.btn-primary,
+  .o_arrow_button.o_arrow_button_current {
+    background: $accent;
+    color: $accent-ink;
+  }
+}
+
+.o_form_sheet_bg {
+  background: $bg-surface;
+  border: 1px solid $border;
+  border-radius: $radius-lg;
+
+  .o_form_sheet {
+    background: transparent;
+    border: none;
+    margin: 16px;
+  }
+}
+
+.o_form_renderer {
+  background: transparent;
+}
+
+.form-control {
+  background: $bg-field;
+  border: 1px solid $border-strong !important;
+  color: $ink;
+
+  &:focus {
+    background: $bg-field-focus;
+    border-color: $accent !important;
+  }
+}
+
+// Ячейка формы — рамка у самого поля, подпись обычным текстом рядом.
+// Тот же вывод, что уже сделан в pmk_theme/forms.scss про капсулы
+// Liquid Glass: отдельная плашка на подпись и отдельная на значение рвёт
+// пару подпись→значение (правило whitespace-balance).
+.o_cell {
+  background: $bg-field;
+  border: 1px solid $border;
+  border-radius: $radius-sm;
+  padding: 8px 10px;
+
+  &:hover {
+    background: $bg-field-focus;
+    border-color: $border-strong;
+  }
+}
+
+.o_notebook {
+  .nav-tabs {
+    background: transparent;
+    border-bottom: 1px solid $border;
+
+    .nav-link {
+      color: $ink-muted;
+      background: transparent;
+      border-radius: $radius-sm;
+      margin-right: 4px;
+      margin-bottom: 8px;
+
+      &:hover {
+        color: $ink;
+        background: $bg-field;
+      }
+
+      &.active {
+        color: $ink;
+        background: $bg-surface-2;
+        font-weight: 600;
+      }
+    }
+  }
+}
+
+.o_form_uri {
+  color: $accent !important;
+}
+
+.o_input:focus,
+.o_list_renderer .o_data_row.o_selected_row > .o_data_cell.o_required_modifier:not(.o_readonly_modifier) {
+  border-bottom: 1px solid $accent;
+}
+
+.o_field_highlight .o_field_widget .o_input,
+.o_field_highlight.o_field_widget .o_input {
+  border-color: $accent;
+}

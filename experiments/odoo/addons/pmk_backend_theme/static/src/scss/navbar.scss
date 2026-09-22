@@ -1,0 +1,44 @@
+// Панель — плоская карточка, не «таблетка со стеклом». Скругление умеренное
+// (radius-md), не половина высоты: на купленной теме радиус-таблетка на
+// одной строке навбара читался нормально, но у pmk_theme навбар растёт на
+// вторую строку (подменю разделов) и та же форма превращается в овал,
+// наезжающий на крайние пункты (см. pmk_theme/navbar.scss, тот же вывод).
+.o_navbar {
+  background: $bg-surface;
+  border: 1px solid $border;
+  border-radius: $radius-md;
+  margin: 10px;
+  padding: 6px 10px;
+}
+
+.o_main_navbar {
+  background: transparent;
+  border-bottom: none;
+
+  .o_menu_sections {
+    .o-dropdown,
+    .o_nav_entry {
+      background: transparent;
+      color: $ink-muted;
+
+      &:hover {
+        background: $bg-field;
+        color: $ink;
+      }
+    }
+  }
+}
+
+.o_navbar_apps_menu .dropdown-menu,
+.o-dropdown--menu {
+  background: $bg-surface-2;
+  border: 1px solid $border-strong;
+}
+
+// Намеренно не тронуто: боковой выезжающий ящик приложений (.o_apps_sidebar,
+// navbar_sidebar.js) из купленной темы. Это отдельный JS-компонент, а не
+// только CSS, и он дублирует то, что уже даёт постоянно видимая горизонтальная
+// навигация pmk_theme (модуль-бар + подменю) — второй способ переключаться
+// между разделами тут не нужен. Если pmk_theme на стенде не установлен,
+// штатный переключатель приложений Odoo останется нестилизованным — это не
+// ломает интерфейс, просто не в цвет темы.

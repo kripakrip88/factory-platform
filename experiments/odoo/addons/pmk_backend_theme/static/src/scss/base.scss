@@ -1,0 +1,42 @@
+// Фон страницы — собственный тёмный цвет компании, не фотография из купленной
+// темы (theme_liquid_glass грузит static/src/img/bg-img.svg — затемнённое
+// стоковое фото, которое и читалось как «фиолетовый фон»).
+.o_web_client {
+  background: $bg-page;
+  color: $ink;
+  font-family: $pmk-font;
+}
+
+body,
+.o_web_client,
+label,
+.o_form_label,
+.o_field_widget,
+.text-muted,
+h1, h2, h3, h4, h5,
+span, div, p {
+  font-family: $pmk-font;
+}
+
+// Цифры в столбик не должны прыгать по ширине при обновлении (правило
+// number-tabular).
+.o_field_widget[name*="amount"],
+.o_field_widget[name*="total"],
+.o_field_widget[name*="qty"],
+.o_data_cell .o_field_float,
+.o_data_cell .o_field_monetary {
+  font-variant-numeric: tabular-nums;
+}
+
+a, .btn, button, [tabindex] {
+  @include focus-ring;
+}
+
+// Системная настройка «меньше движения» — уважаем её, а не только
+// декларируем (правило respects-reduced-motion).
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}

@@ -1,0 +1,48 @@
+.modal .modal-dialog .modal-content {
+  background: $bg-surface;
+  border: 1px solid $border-strong;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-card;
+
+  .modal-header {
+    background: transparent;
+    border-bottom: 1px solid $border;
+
+    .modal-title { color: $ink; }
+
+    .btn-close {
+      filter: invert(1);
+      opacity: 0.7;
+
+      &:hover { opacity: 1; }
+    }
+  }
+
+  .modal-body {
+    background: transparent;
+    color: $ink;
+
+    .o_form_sheet,
+    .o_form_sheet_bg {
+      background: transparent;
+      border: none;
+      margin: 0;
+    }
+  }
+
+  .modal-footer {
+    background: transparent;
+    border-top: 1px solid $border;
+  }
+}
+
+.modal.show .modal-backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.o_dialog .modal-content {
+  background: $bg-surface;
+  border: 1px solid $border-strong;
+
+  .modal-body { color: $ink; }
+}
