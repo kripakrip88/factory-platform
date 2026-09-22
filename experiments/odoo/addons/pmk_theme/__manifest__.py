@@ -43,17 +43,28 @@
             # Копия чужой темы: её боковая панель приложений и переключатель.
             # Идут ПЕРВЫМИ, чтобы наш navbar_active_section.js правил уже
             # готовую разметку. Подробности — в data/assets_order.xml.
-            # ── ВРЕМЕННО ВЫКЛЮЧЕНО на время примерки techy_backend_theme ──
-            # SCSS темы гасится в базе (ir_asset.active=false), а JS и XML живут
-            # в манифесте и в базе не выключаются. Без этого примерка показала бы
-            # нашу горизонтальную навигацию без её стилей, а не чужую тему.
-            # Вернуть: revert коммита + деплой.
+            # ── ГИБРИД С ЧУЖОЙ ТЕМОЙ (22.09.2026) ──────────────────────
+            # Включены ровно два файла: разметка строки модулей и скрипт,
+            # который помечает текущий раздел. Вместе со светлым
+            # navbar_nexus.scss они дают нашу горизонтальную навигацию поверх
+            # чужой светлой темы.
+            #
+            # Остальное намеренно выключено:
+            #   • vendor/* — боковая панель из купленной темы, её место сейчас
+            #     занимает панель чужой темы, две сразу не нужны;
+            #   • collapsible_sections.js — сворачиваемые секции ФОРМЫ, к
+            #     навигации отношения не имеет, тянет за собой стили форм;
+            #   • chatter_* — переписка, её оформление идёт из чужой темы.
+            #
+            # Вернуть нашу тему целиком: включить 17 записей ir.asset
+            # (active=true), выключить asset_scss_navbar_light, раскомментировать
+            # строки ниже.
             # "pmk_theme/static/src/js/vendor/navbar_sidebar.js",
             # "pmk_theme/static/src/xml/vendor/apps_sidebar.xml",
             # "pmk_theme/static/src/js/collapsible_sections.js",
-            # "pmk_theme/static/src/js/navbar_active_section.js",
+            "pmk_theme/static/src/js/navbar_active_section.js",
             # "pmk_theme/static/src/js/chatter_inline.js",
-            # "pmk_theme/static/src/xml/navbar.xml",
+            "pmk_theme/static/src/xml/navbar.xml",
             # "pmk_theme/static/src/xml/chatter.xml",
         ],
         # ⚠️ ОТЛОЖЕННЫЙ БАНДЛ, И ЭТО НЕ ВКУСОВЩИНА.

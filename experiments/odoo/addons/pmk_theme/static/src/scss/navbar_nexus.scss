@@ -1,0 +1,306 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// ГОРИЗОНТАЛЬНАЯ НАВИГАЦИЯ ПМК В СВЕТЛОЙ ТЕМЕ.
+//
+// ЗАЧЕМ ОТДЕЛЬНЫЙ ФАЙЛ, А НЕ ПРАВКА navbar.scss. Тот написан под тёмную
+// стеклянную шапку: белый текст, полупрозрачные поверхности, размытие. Здесь
+// шапка белая, и почти каждое его правило пришлось бы выворачивать наизнанку.
+// Два файла вместо одного вывернутого дают простой откат: вернуть тёмную тему —
+// это переключить две записи ir.asset, а не разбирать перемешанные правила.
+//
+// ⚠️ ОБА ФАЙЛА ОДНОВРЕМЕННО ВКЛЮЧАТЬ НЕЛЬЗЯ. Они красят одни и те же узлы в
+// противоположные цвета; кто победит, решит порядок sequence, и результат будет
+// зависеть от того, какой файл правили последним.
+//
+// ЧТО ЭТОТ ФАЙЛ НЕ ДЕЛАЕТ. Разметку первой строки создаёт xml/navbar.xml,
+// подсветку текущего раздела — js/navbar_active_section.js. Вторая строка —
+// это штатный .o_menu_sections ядра, файл лишь переносит его на новую строку.
+// Без этих двух файлов правила ниже красить будет нечего.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─── Цвета разделов ───────────────────────────────────────────────────────
+//
+// ⚠️ ЭТО НЕ ТЕ ЖЕ ЦВЕТА, ЧТО В ТЁМНОЙ ТЕМЕ, И ЭТО ВЫНУЖДЕННО.
+// Прежний набор подбирался под тёмную шапку, где светлый цвет читается. На
+// белой шапке те же значения дают контраст 1,32-2,39 при норме 3,0 для
+// нетекстовых элементов — то есть значок раздела виден хуже, чем должен.
+// Каждый цвет затемнён ровно настолько, чтобы дать 3,5 к самой светлой
+// поверхности темы (#FAF9F6): тон и насыщенность сохранены, менялась только
+// светлота, поэтому цвета узнаются как те же самые.
+//
+// Отдельно про «Продажи». Фирменный лайм #C8F000 на белом даёт 1,32 и
+// вытягивается только превращением в оливковый — фирменным он после этого
+// быть перестаёт. Поэтому на светлой шапке у Продаж приглушённый оливковый
+// оттенок лайма, а сам фирменный лайм живёт там, где он работает: на кнопках
+// с тёмным текстом (13,4) и на тёмной шапке (10,3).
+//
+// Лазерная резка добавлена: в тёмной теме её в карте не было — раздел появился
+// позже неё и до сих пор остаётся без значка и без цвета.
+$pmk-accents-light: (
+  "pmk_theme.menu_pmk_sales":      #768e00,
+  "pmk_theme.menu_pmk_production": #c66e11,
+  "pmk_theme.menu_pmk_purchase":   #27957b,
+  "pmk_theme.menu_pmk_stock":      #1087eb,
+  "pmk_theme.menu_pmk_money":      #549439,
+  "pmk_theme.menu_pmk_reports":    #7186a2,
+  "pmk_theme.menu_pmk_people":     #e74a7f,
+  "pmk_laser.menu_pmk_laser":      #b764cb,
+  "pmk_calc.menu_pmk_calc":        #6f85ae,
+  "base.menu_administration":      #7186a2,
+);
+
+$pmk-nx-ink:        #16171b;   // основной текст темы
+$pmk-nx-slate:      #4b4f58;   // приглушённый текст
+$pmk-nx-border:     #eae6dc;   // рамки
+$pmk-nx-white:      #ffffff;
+$pmk-nx-surface:    #faf9f6;   // светлая поверхность второй строки
+
+// ─── Геометрия: шапка в две строки ────────────────────────────────────────
+//
+// Ядро задаёт шапке жёсткую высоту (--o-navbar-height), Nexus добавляет
+// min-height: 52px. Обе строки в такую высоту не влезут, поэтому высота
+// становится авто, а прежнее значение — минимумом. Специфичность у всех троих
+// одинаковая, выигрываем порядком: этот файл дописывается в бандл последним.
+.o_main_navbar {
+  flex-wrap: wrap;
+  height: auto !important;
+  min-height: var(--o-navbar-height);
+
+  // Переменные ядра объявляем ЗДЕСЬ, на том же узле, что и Nexus
+  // (vendor/theme_nexus/static/src/scss/navbar.scss). Объявление на header
+  // выше по дереву до пунктов не доедет: ближе к ним лежит чужое.
+  --NavBar-entry-color: #{$pmk-nx-slate};
+  --NavBar-entry-backgroundColor: transparent;
+}
+
+// Вторая строка: штатные разделы ядра переезжают под первую.
+// flex: 1 0 100% заставляет блок занять всю ширину и перенестись, order: 10
+// ставит его после системного трея.
+.o_menu_sections {
+  flex: 1 0 100% !important;
+  width: auto !important;
+  order: 10;
+
+  margin-top: 2px;
+  padding: 2px 4px;
+  border-top: 1px solid $pmk-nx-border;
+  gap: 2px;
+  min-height: 34px;
+  align-items: center;
+  background: $pmk-nx-surface;
+}
+
+// ─── Первая строка: модули ────────────────────────────────────────────────
+.pmk_apps_bar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 4px;
+  min-width: 0;        // чтобы контейнер мог сжиматься, а не распирать шапку
+  overflow: hidden;    // что не влезло — остаётся в штатном меню приложений
+  flex: 1 1 auto;
+
+  // На узких экранах строка модулей только мешает: там работает штатное
+  // мобильное меню, которое Odoo показывает само.
+  @media (max-width: 1100px) {
+    display: none;
+  }
+}
+
+.pmk_app {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 8px;          // радиус темы ($nx-radius-sm)
+  color: $pmk-nx-slate;
+  text-decoration: none;
+  white-space: nowrap;
+  font-size: 13px;
+  line-height: 1.2;
+  transition: background-color .15s ease-out, color .15s ease-out;
+
+  // Значок раздела. Шрифт FontAwesome, который Odoo грузит сам: не эмодзи и
+  // не свои SVG — набор должен быть единым со всем остальным интерфейсом.
+  &::before {
+    font-family: FontAwesome;
+    font-size: 14px;
+    line-height: 1;
+    width: 16px;
+    text-align: center;
+  }
+
+  &:hover {
+    background-color: rgba(22, 23, 27, 0.05);
+    color: $pmk-nx-ink;
+  }
+
+  // Рамка фокуса: по шапке ходят с клавиатуры, и на светлом фоне белая рамка
+  // не видна — берём тёмную.
+  &:focus-visible {
+    outline: 2px solid $pmk-nx-ink;
+    outline-offset: -2px;
+  }
+}
+
+.pmk_app__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// Цвет значка у каждого раздела свой, привязка по идентификатору меню, а не
+// по порядку: переставим пункты — ничего не поедет.
+@each $xmlid, $accent in $pmk-accents-light {
+  .pmk_app[data-menu-xmlid="#{$xmlid}"]::before { color: $accent; }
+
+  // Текущий раздел помечаем И цветом, И формой — одного цвета мало
+  // (правило nav-state-active: цветом одним обозначать нельзя, его не видят
+  // при цветовой слепоте и на плохом мониторе).
+  .pmk_app--active[data-menu-xmlid="#{$xmlid}"] {
+    background-color: mix($accent, $pmk-nx-white, 12%);
+    color: $pmk-nx-ink;
+    font-weight: 600;
+    box-shadow: inset 0 -2px 0 $accent;
+  }
+
+  // Цвет текущего раздела отдаём всей шапке одной переменной — им красится
+  // метка активного пункта второй строки. Атрибут ставит
+  // navbar_active_section.js.
+  .o_navbar[data-pmk-app="#{$xmlid}"],
+  header[data-pmk-app="#{$xmlid}"] {
+    --pmk-section-accent: #{$accent};
+  }
+}
+
+// Значки разделов. Коды FontAwesome те же, что в тёмной теме, — иконки
+// остаются прежними, меняется только их цвет.
+.pmk_app[data-menu-xmlid="pmk_theme.menu_pmk_sales"]::before      { content: "\f201"; }
+.pmk_app[data-menu-xmlid="pmk_theme.menu_pmk_production"]::before { content: "\f085"; }
+.pmk_app[data-menu-xmlid="pmk_theme.menu_pmk_purchase"]::before   { content: "\f07a"; }
+.pmk_app[data-menu-xmlid="pmk_theme.menu_pmk_stock"]::before      { content: "\f1b3"; }
+.pmk_app[data-menu-xmlid="pmk_theme.menu_pmk_money"]::before      { content: "\f0d6"; }
+.pmk_app[data-menu-xmlid="pmk_theme.menu_pmk_reports"]::before    { content: "\f080"; }
+.pmk_app[data-menu-xmlid="pmk_theme.menu_pmk_people"]::before     { content: "\f0c0"; }
+.pmk_app[data-menu-xmlid="base.menu_administration"]::before      { content: "\f0ad"; }
+.pmk_app[data-menu-xmlid="pmk_calc.menu_pmk_calc"]::before        { content: "\f1ec"; }
+// Лазерная резка — молния: раздел про станок, а не про документы.
+.pmk_app[data-menu-xmlid="pmk_laser.menu_pmk_laser"]::before      { content: "\f0e7"; }
+
+// ─── Вторая строка: пункты текущего раздела ───────────────────────────────
+//
+// ⚠️ !important ЗДЕСЬ ОБЯЗАТЕЛЕН, и это не небрежность. Nexus красит пункты
+// правилом с !important (vendor/theme_nexus/static/src/scss/navbar.scss), а
+// !important перебивается только !important — порядок файлов тут не помогает.
+// Префикс header.o_navbar добавлен, чтобы наш вес был заведомо выше.
+//
+// .dropdown-toggle перечислен рядом с .o_nav_entry намеренно: пункт, у
+// которого есть подпункты, ядро рисует кнопкой-раскрывашкой, а не ссылкой.
+header.o_navbar .o_menu_sections {
+  .o_nav_entry,
+  .dropdown-toggle {
+    color: $pmk-nx-slate !important;
+    border-radius: 6px;
+    padding: 3px 9px;
+    font-size: 13px;
+
+    &:hover {
+      background-color: rgba(22, 23, 27, 0.05) !important;
+      color: $pmk-nx-ink !important;
+    }
+
+    &:focus-visible {
+      outline: 2px solid $pmk-nx-ink;
+      outline-offset: -2px;
+    }
+  }
+
+  // Текущий пункт: цвет раздела плюс полоса снизу — снова цвет И форма.
+  .pmk_section--active {
+    color: $pmk-nx-ink !important;
+    font-weight: 600;
+    box-shadow: inset 0 -2px 0 var(--pmk-section-accent, #{$pmk-nx-ink});
+  }
+}
+
+// Название приложения слева от строки модулей дублирует активный модуль —
+// прячем. !important нужен: у узла свой bootstrap-класс d-flex.
+.o_main_navbar .o_menu_brand {
+  display: none !important;
+}
+
+// ─── Тёмный режим темы ────────────────────────────────────────────────────
+//
+// Nexus переключает тёмный режим классом на body. Специфичность правил ниже
+// подобрана НЕ на глаз: светлые правила выше идут с префиксом header.o_navbar
+// и !important, поэтому тёмные должны весить столько же или больше — иначе
+// вторая строка останется светлой на тёмной шапке.
+body.o_nexus_dark {
+  .o_menu_sections {
+    background: transparent;
+    border-top-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .o_main_navbar {
+    --NavBar-entry-color: #{rgba(244, 241, 234, 0.72)};
+  }
+
+  &.o_web_client header.o_navbar .o_menu_sections {
+    .o_nav_entry,
+    .dropdown-toggle {
+      color: rgba(244, 241, 234, 0.72) !important;
+
+      &:hover {
+        background-color: rgba(255, 255, 255, 0.08) !important;
+        color: #f4f1ea !important;
+      }
+
+      &:focus-visible {
+        outline-color: rgba(255, 255, 255, 0.85);
+      }
+    }
+
+    .pmk_section--active {
+      color: #f4f1ea !important;
+    }
+  }
+
+  .pmk_app {
+    color: rgba(244, 241, 234, 0.72);
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.08);
+      color: #f4f1ea;
+    }
+
+    &:focus-visible {
+      outline-color: rgba(255, 255, 255, 0.85);
+    }
+  }
+
+  // На тёмной шапке светлые цвета читаются, поэтому здесь возвращаются
+  // ИСХОДНЫЕ значения — те, под которые они и подбирались, включая фирменный
+  // лайм у Продаж.
+  .pmk_app[data-menu-xmlid="pmk_theme.menu_pmk_sales"]::before      { color: #c8f000; }
+  .pmk_app[data-menu-xmlid="pmk_theme.menu_pmk_production"]::before { color: #f0a04b; }
+  .pmk_app[data-menu-xmlid="pmk_theme.menu_pmk_purchase"]::before   { color: #4dd0b1; }
+  .pmk_app[data-menu-xmlid="pmk_theme.menu_pmk_stock"]::before      { color: #6bb6f5; }
+  .pmk_app[data-menu-xmlid="pmk_theme.menu_pmk_money"]::before      { color: #86c66b; }
+  .pmk_app[data-menu-xmlid="pmk_theme.menu_pmk_reports"]::before    { color: #9aa9bd; }
+  .pmk_app[data-menu-xmlid="pmk_theme.menu_pmk_people"]::before     { color: #f08fb0; }
+  .pmk_app[data-menu-xmlid="pmk_laser.menu_pmk_laser"]::before      { color: #c98bd8; }
+  .pmk_app[data-menu-xmlid="pmk_calc.menu_pmk_calc"]::before        { color: #d8dee9; }
+  .pmk_app[data-menu-xmlid="base.menu_administration"]::before      { color: #9aa9bd; }
+
+  .pmk_app--active {
+    background-color: rgba(255, 255, 255, 0.10);
+    color: #f4f1ea;
+  }
+}
+
+// Движение только там, где оно что-то объясняет, и по просьбе системы —
+// никакого.
+@media (prefers-reduced-motion: reduce) {
+  .pmk_app,
+  header.o_navbar .o_menu_sections .o_nav_entry {
+    transition: none;
+  }
+}
