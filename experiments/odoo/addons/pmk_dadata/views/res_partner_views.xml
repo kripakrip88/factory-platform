@@ -20,8 +20,16 @@
         Если понадобится приземляться на «Реквизиты» — снять autofocus там
         и поставить сюда; пока поведение оставлено родным.
       -->
+      <!-- Карточка должна открываться на «Реквизитах»: это первое, за чем
+           сюда заходят. Autofocus в Odoo ровно один на форму, и штатно он
+           стоит у страницы контактов (base/views/res_partner_views.xml:200) —
+           поэтому сначала снимаем его там, иначе наш не сработает. -->
+      <xpath expr="//page[@name='contact_addresses']" position="attributes">
+        <attribute name="autofocus"/>
+      </xpath>
+
       <xpath expr="//notebook/page[1]" position="before">
-        <page string="Реквизиты" name="pmk_requisites">
+        <page string="Реквизиты" name="pmk_requisites" autofocus="autofocus">
           <!-- Имена нужны, чтобы плоская раскладка могла сослаться на группы:
                выбирать узел по заголовку Odoo не разрешает. -->
           <group name="pmk_g_requisites">
