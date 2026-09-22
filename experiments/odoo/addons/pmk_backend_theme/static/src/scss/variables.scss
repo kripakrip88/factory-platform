@@ -12,7 +12,16 @@
 // а не CSS custom properties — добавить светлую тему позже можно вторым
 // набором значений и `[data-theme="light"]`, без переписывания структуры.
 
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+// Точки с запятой в URL закодированы (%3B) НАМЕРЕННО. Odoo при сборке бандла
+// выносит @import в начало файла и режет строку по первой ';' — а у Google
+// Fonts они внутри самого адреса (wght@400;500;600). Без кодирования бандл
+// рвётся пополам, весь CSS ниже разрыва браузер выбрасывает, и интерфейс
+// открывается голым HTML. Проверено на стенде 22.09.2026.
+//
+// Внешний адрес здесь временный: шрифт надо положить в модуль и объявить
+// @font-face — завод не обязан иметь выход в интернет, а каждый рендер ждёт
+// чужой домен (прецедент с wkhtmltopdf: печать 122 секунды).
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400%3B500%3B600%3B700%3B800&display=swap');
 
 $pmk-font: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
 
