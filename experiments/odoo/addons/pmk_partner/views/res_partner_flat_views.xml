@@ -101,6 +101,21 @@
         <attribute name="invisible">1</attribute>
       </notebook>
 
+      <!-- Шаг 4: пустые заголовки штатных групп.
+           Содержимое из них мы разнесли по своим секциям выше, но сами
+           заголовки остались висеть в карточке — замер на боевой карточке
+           поставщика: «Фискальная информация» и «Прочее» без единого поля
+           внутри. Прячем их тем же способом, что и блокнот: атрибутом, а не
+           удалением узла, чтобы xpath чужих модулей продолжали находить свои
+           места и обновление account не падало. -->
+      <xpath expr="//group[@name='fiscal_information']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+
+      <xpath expr="//group[@name='misc']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+
     </field>
   </record>
 
