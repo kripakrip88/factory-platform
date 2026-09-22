@@ -63,3 +63,57 @@ a {
     box-shadow: $nx-shadow-md;
     border-left: 3px solid $nx-orange;
 }
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ПРАВКИ ПМК (22.09.2026): остатки фирменного фиолетового Odoo.
+//
+// Тема портирована с Odoo 18 и перекрасила крупные поверхности, но мелкие
+// элементы ядро красит СВОИМИ правилами, литералом #71639e — это фирменный
+// фиолетовый Odoo, к тёплой оранжево-белой палитре темы отношения не имеющий.
+// Найдено сканированием живого интерфейса: обход DOM с проверкой каждого
+// элемента на цвета чужой палитры.
+//
+// Каждое правило ниже — ответ на конкретное правило ядра, найденное в
+// собранном бандле, а не профилактика «на всякий случай».
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ─── Флажки и переключатели ────────────────────────────────────────────────
+// Ядро: .form-check-input:checked { background-color: #71639e; border-color: … }
+// Видно на каждой карточке контрагента: переключатель «Физлицо / Компания»
+// горел фиолетовым посреди оранжевой темы.
+.form-check-input:checked {
+    background-color: $nx-orange !important;
+    border-color: $nx-orange !important;
+}
+
+.form-check-input:focus {
+    border-color: $nx-orange !important;
+    box-shadow: 0 0 0 .2rem $nx-orange-soft !important;
+}
+
+.form-check:hover .form-check-input:not(:disabled) {
+    border-color: $nx-orange-2 !important;
+}
+
+// ─── Поле с копированием и элементы управления картинкой ───────────────────
+// Ядро: .o_field_widget.o_field_copy { color: #71639e }
+//       .o_field_widget.o_field_image .o_form_image_controls { background: #71639e }
+.o_field_widget.o_field_copy {
+    color: $nx-orange !important;
+}
+
+.o_field_widget.o_field_image .o_form_image_controls,
+.o_field_widget.o_field_image_url .o_form_image_controls {
+    background-color: rgba(22, 23, 27, 0.78) !important;
+}
+
+// ─── Бейджи-счётчики ───────────────────────────────────────────────────────
+// Счётчик непрочитанных в системном трее и счётчики на кнопках приходят из
+// Bootstrap с фирменным фоном Odoo.
+.badge.bg-primary,
+.badge.text-bg-primary,
+.o_menu_systray .badge {
+    background-color: $nx-orange !important;
+    color: #fff !important;
+}

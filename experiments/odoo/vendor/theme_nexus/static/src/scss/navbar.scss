@@ -19,6 +19,16 @@
     // (navbar.scss, блок «Переменные ядра вместо драки за фон пунктов»).
     --NavBar-entry-backgroundColor: transparent;
 
+    // Вторая протечка того же рода: ядро красит НАЗВАНИЕ ОТКРЫТОЙ ЗАПИСИ и имя
+    // приложения через свою переменную, по умолчанию почти белым —
+    //     .o_main_navbar .o_menu_brand,
+    //     .o_main_navbar .o_navbar_breadcrumbs { color: var(--NavBar-brand-color,
+    //                                                   rgba(255,255,255,.9)); }
+    // — расчёт на фиолетовую шапку Odoo. Тема сделала шапку белой, и название
+    // записи стало белым по белому: контраст 1,0, текста не видно вовсе.
+    // Замер на карточке контрагента 22.09.2026.
+    --NavBar-brand-color: #{$nx-charcoal};
+
     background: $nx-white !important;
     border-bottom: 1px solid $nx-border !important;
     box-shadow: none !important;
