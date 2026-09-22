@@ -38,12 +38,29 @@
             # записями append, чтобы попасть в САМЫЙ КОНЕЦ бандла и не проигрывать
             # чужой теме (она грузится после нас: модули сортируются по имени).
             # Добавляешь новый scss — добавляй туда же, иначе он окажется в
-            # середине бандла. Причина и история — в шапке того файла.
+            # середине бандла. Порядок файлов и его обоснование — в шапке
+            # data/assets_order.xml.
             "pmk_theme/static/src/js/collapsible_sections.js",
             "pmk_theme/static/src/js/navbar_active_section.js",
             "pmk_theme/static/src/js/chatter_inline.js",
             "pmk_theme/static/src/xml/navbar.xml",
             "pmk_theme/static/src/xml/chatter.xml",
+        ],
+        # ⚠️ ОТЛОЖЕННЫЙ БАНДЛ, И ЭТО НЕ ВКУСОВЩИНА.
+        # canvas_text.js красит подписи осей и легенду графика: до них CSS не
+        # достаёт, цвет задаёт JS (ядро выбирает его ОДИН РАЗ при загрузке
+        # модуля и в светлой схеме берёт почти чёрный — на нашей тёмной
+        # карточке графика подписи пропадают).
+        #
+        # Патчить надо @web/views/graph/graph_renderer, а вид «График» лежит в
+        # ОТЛОЖЕННОМ бандле: web/__manifest__.py сначала исключает
+        # 'web/static/src/views/graph/**' из web.assets_backend и включает в
+        # web.assets_backend_lazy. Положишь патч в обычный бандл — импорт там
+        # не разрешится, патч молча не применится, и узнаешь об этом только
+        # когда кто-нибудь откроет график. Чужая тема подключала свой такой же
+        # файл ровно сюда же.
+        "web.assets_backend_lazy": [
+            "pmk_theme/static/src/js/canvas_text.js",
         ],
     },
     "installable": True,

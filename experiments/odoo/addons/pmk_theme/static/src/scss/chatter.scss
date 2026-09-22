@@ -1,0 +1,413 @@
+// Почта: чат документа, лента сообщений, композер и Discuss.
+//
+// ЗАЧЕМ ЭТОТ ФАЙЛ. Сейчас весь тёмный вид переписки держится на чужой теме
+// theme_liquid_glass (vendor/theme_liquid_glass/static/src/scss/glass_theme.scss,
+// строки 237-348). Её собираются снять. Ядро Odoo при этом вернёт СВЕТЛЫЕ
+// значения (бандл собирается в светлой схеме: cookie color_scheme не тёмный),
+// и переписка станет белыми плашками на тёмной странице. Поэтому всё, на чём
+// держится вид, переносим сюда ЗАРАНЕЕ — до снятия.
+//
+// ПОКА ОБЕ ТЕМЫ СТОЯТ эффект от этого файла ЧАСТИЧНЫЙ, и это надо понимать
+// точно. Наши scss дописаны в САМЫЙ КОНЕЦ бандла (data/assets_order.xml),
+// то есть ПОСЛЕ чужой темы. Значит:
+//   * там, где у них !important, выигрывают они — изменений не будет;
+//   * там, где у них обычное правило, выигрываем МЫ, и изменение видно сразу.
+// В этом файле ко второй группе относятся отступы сообщения, скругления
+// (у них $radius-xl 26px и $radius-sm 12px, у нас 16px и 8px) и рамка
+// .o-mail-DiscussContent (2px → 1px). Список сверен машинно, целиком он в
+// отчёте интегратора.
+//
+// ГРАНИЦА С forms.scss. forms.scss — НАДСТРОЙКА: он опускает чат вниз, даёт
+// ему собственную карточку, сворачивает историю, прячет кнопки по типу
+// документа. Этот файл — БАЗОВЫЙ ВИД: как выглядит сообщение, пузырь, поле
+// ввода, боковая панель Discuss. Селекторы подобраны так, чтобы два файла не
+// спорили, поэтому порядок их подключения не критичен. Если всё же будете
+// выбирать — этот файл логичнее ставить ПЕРЕД forms.scss (база, потом
+// надстройка).
+//
+// ПОЧЕМУ ТУТ МАЛО !important. Наши файлы дописываются в САМЫЙ КОНЕЦ бандла
+// (data/assets_order.xml), поэтому обычное правило равной специфичности уже
+// побеждает правило ядра. !important нужен ровно в двух случаях:
+//   а) перебиваем утилиту Bootstrap (у них у всех !important);
+//   б) перебиваем правило ядра, которое само написано с !important.
+// Каждый такой случай ниже подписан ссылкой на файл и строку ядра.
+//
+// КОНТРАСТ (посчитан для тёмной подложки #22262A — это примерная светлота
+// затемнённой на 69% фоновой картинки; поверхность = --pmk-surface поверх неё,
+// то есть ~#2E3236, относительная яркость 0.0313):
+//   --pmk-text       (белый 85%) → 9.8:1  — основной текст, с запасом;
+//   --pmk-text-muted (белый 55%) → 5.1:1  — подписи и даты, проходит AA;
+//   --pmk-text-faint (белый 38%) → 3.2:1  — только декор, текстом не ставим;
+//   --pmk-accent #C8F000 как РАМКА  → 9.9:1 к поверхности, годится в фокус;
+//   --pmk-accent-ink #16191C ПО акценту → 13.5:1 (белым по акценту было бы
+//   1.3:1 — поэтому акцент фоном всегда только с тёмным текстом).
+
+
+// ─── Контейнер чата прозрачный ────────────────────────────────────────────
+//
+// Источник: glass_theme.scss:237-242. Контейнер — просто обёртка, свой фон ей
+// не нужен: под ней либо лист документа, либо наша карточка из forms.scss.
+//
+// .bg-inherit — своя утилита Odoo (web/static/src/scss/bootstrap_review_backend.scss:268),
+// и она БЕЗ !important, поэтому наше правило обходится без него: хватает
+// специфичности 0,2,0 против их 0,1,0.
+.o-mail-ChatterContainer,
+.o-mail-Form-chatter {
+  background: transparent;
+
+  .bg-inherit {
+    background-color: transparent;
+  }
+}
+
+// ─── Карточка чата — только там, где её не даёт forms.scss ────────────────
+//
+// Источник: glass_theme.scss:244-252 (@include glass-card + border 2px +
+// margin-left 30px).
+//
+// ВАЖНОЕ ОТЛИЧИЕ ОТ ОРИГИНАЛА. Чужая тема вешала карточку на .o-mail-Chatter
+// ВСЕГДА. У нас чат в основном режиме опущен вниз и уже завёрнут в собственную
+// карточку (forms.scss, правило .o_form_renderer > .o-mail-Form-chatter:not(.o-aside)).
+// Повторить карточку внутри карточки — это двойная рамка и двойное скругление.
+// Поэтому даём её только в тех раскладках, где нашей обёртки нет:
+//   * .o-aside — режим EXTERNAL_COMBO_XXL, ядро оставляет чат сбоку
+//     (mail/chatter/web/form_compiler.js:111);
+//   * .o-mail-ChatterContainer — чат вне формы (боковая панель канбана и т.п.).
+.o-mail-Form-chatter.o-aside .o-mail-Chatter,
+.o-mail-ChatterContainer > .o-mail-Chatter {
+  background: var(--pmk-surface);
+  backdrop-filter: blur(var(--pmk-blur)) saturate(180%);
+  border: 1px solid var(--pmk-border);
+  border-radius: var(--pmk-radius-card);
+}
+
+// Отступ от листа документа — только в боковой раскладке. В нижней его роль
+// играет margin-top нашей карточки, а лишние 30px слева сдвинули бы историю
+// относительно содержимого документа.
+.o-mail-Form-chatter.o-aside .o-mail-Chatter {
+  margin-left: 30px;
+}
+
+// ─── Верхняя полоса чата ──────────────────────────────────────────────────
+//
+// Источник: glass_theme.scss:249-252. Ядро красит её в цвет фона вебклиента
+// (mail/chatter/web_portal/chatter.scss:5-7, $o-webclient-background-color) —
+// в светлом бандле это почти белый, поперёк тёмной карточки. Гасим.
+//
+// Полоса залипающая (position-sticky в chatter.xml:6), поэтому фон должен быть
+// именно прозрачным, а не «таким же цветом»: под ней проезжают сообщения, и
+// плашка своего цвета смотрелась бы заплаткой.
+.o-mail-Chatter .o-mail-Chatter-top {
+  background-color: transparent;
+  margin: 10px;
+
+  // В залипшем состоянии ядро подкладывает светлый градиент
+  // (chatter.scss:9-11) — на тёмном он читается как белая полоса поперёк.
+  &.shadow-sm {
+    background-image: none;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+  }
+}
+
+// ─── Сообщение ────────────────────────────────────────────────────────────
+//
+// Источник: glass_theme.scss:254-265.
+//
+// Про отступы. padding/margin переносим БЕЗ !important — ровно как у них.
+// Ядро вешает на сообщение утилиты Bootstrap (mail/core/common/message.js:265,
+// attClass: pt-1 / mt-1 / mb-1 / mx-1 / px-1), а у утилит !important, и они
+// перебивают часть сторон и сейчас. Если добавить !important, вид ИЗМЕНИТСЯ —
+// а задача обратная: после снятия чужой темы ничего не должно дёрнуться.
+//
+// Область действия РОВНО как в оригинале — только внутри чата документа.
+// В Discuss сообщения оформлены пузырями (см. ниже), и если распространить
+// это правило туда, каждая реплика получит карточку с отступом 20px, которой
+// сейчас нет. Задача — перенести, а не переоформить.
+.o-mail-Chatter .o-mail-Message {
+  padding: 20px;
+  margin: 10px;
+  background: rgba(255, 255, 255, 0.10);
+  backdrop-filter: blur(var(--pmk-blur)) saturate(180%);
+  border: 1px solid var(--pmk-border);
+
+  // !important №1: ядро ставит на корень сообщения утилиту `rounded-0`
+  // (mail/core/common/message.xml:7), а это border-radius: 0 !important.
+  // Без встречного !important скругления не будет вовсе.
+  border-radius: var(--pmk-radius-card) !important;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.15);
+  }
+}
+
+// Сообщение-карточка (лента «Входящие», предпросмотр): источник
+// glass_theme.scss:538-545, из общего перечня взята только почтовая часть.
+// !important №2: та же причина — у ядра утилита `rounded-2`
+// (message.js:269), то есть border-radius со своим !important.
+.o-mail-Message.o-card {
+  background: rgba(255, 255, 255, 0.10);
+  backdrop-filter: blur(var(--pmk-blur)) saturate(180%);
+  border: 1px solid var(--pmk-border);
+  border-radius: var(--pmk-radius-control) !important;
+  gap: 5px;
+  box-shadow: none;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  // !important №3: `.text-body` — утилита Bootstrap, а у утилит цвета
+  // !important в самом определении. Без встречного !important текст карточки
+  // останется цветом $body-color светлого бандла, то есть почти чёрным на
+  // тёмной подложке. Источник: glass_theme.scss:550-552.
+  .text-body {
+    color: var(--pmk-text) !important;
+  }
+}
+
+// Источник: glass_theme.scss:267-270. Утилит выравнивания на этом узле нет
+// (message.xml:21 — только position-relative d-flex flex-shrink-0 bg-inherit),
+// поэтому !important из оригинала не нужен.
+.o-mail-Message-core {
+  align-items: center;
+  padding-top: 15px;
+}
+
+// Источник: glass_theme.scss:272-274 — у них дата становилась чисто белой.
+//
+// ОСОЗНАННОЕ ОТЛИЧИЕ: ставим --pmk-text-muted, а не белый. Белая дата — не
+// решение оформителя, а побочный эффект их общего «уравнителя»
+// (glass_theme.scss:13-21 красит белым вообще все span/div/p). Мы уравнитель
+// не переносим, поэтому дату назначаем осознанно: время отправки — сведение
+// второго плана, ему место в приглушённом токене. Контраст 5.1:1 — AA пройден.
+// Ядро красит её в $text-muted одним классом и без !important
+// (mail/core/common/message.scss:21-23), нам хватает равной специфичности.
+.o-mail-Message-date {
+  color: var(--pmk-text-muted);
+}
+
+// Иконки действий над сообщением. Источник: glass_theme.scss:108-110.
+// Ядро вынесло цвет наведения в переменную со значением по умолчанию `black`
+// (mail/core/common/message.scss:137) — на тёмном её не видно. Переопределяем
+// переменную, а не цвет: тогда работают и все производные правила ядра.
+.o-mail-Message-actions {
+  --mail-Message-actionIconHoveredColor: #{rgba(255, 255, 255, 0.95)};
+}
+
+// ─── Пузыри сообщений (Discuss, чаты) ─────────────────────────────────────
+//
+// Источник: glass_theme.scss:276-285.
+//
+// ВАЖНО: ядро красит пузырь С !important, но ЧЕРЕЗ переменные
+// (mail/core/common/message.scss:68-70):
+//     background-color: var(--o-message-bubble-bg) !important;
+//     border-color: var(--o-message-bubble-border-color) !important;
+// Значит правильный способ — переопределить сами переменные, и тогда никакого
+// встречного !important не нужно. Бонусом сам собой перекрашивается «хвостик»
+// пузыря: он берёт те же переменные (message.scss:83-88).
+.o-mail-Message-bubble.o-blue,
+.o-mail-Message-bubble.o-green,
+.o-mail-Message-bubbleTail.o-blue,
+.o-mail-Message-bubbleTail.o-green {
+  --o-message-bubble-bg: #{rgba(255, 255, 255, 0.05)};
+  --o-message-bubble-border-color: #{rgba(255, 255, 255, 0.18)};
+}
+
+.o-mail-Message-bubble.o-blue,
+.o-mail-Message-bubble.o-green {
+  backdrop-filter: blur(var(--pmk-blur)) saturate(180%);
+}
+
+// Приглушённый пузырь.
+// !important №4: здесь переменной нет — ядро вписывает цвет напрямую и с
+// !important (mail/core/common/message.scss:72-74:
+// `&.o-muted { background-color: $o-view-background-color !important }`).
+// В светлом бандле это почти белый прямоугольник поверх тёмной ленты, обойти
+// его иначе нельзя.
+.o-mail-Message-bubble.o-blue.o-muted,
+.o-mail-Message-bubble.o-green.o-muted {
+  background-color: var(--pmk-surface-raised) !important;
+  border-color: var(--pmk-border);
+}
+
+// ─── Поле ввода ───────────────────────────────────────────────────────────
+//
+// Источник: glass_theme.scss:295-301. Ядро берёт фон композера из переменной
+// с запасным значением (mail/core/common/composer.scss:103-105:
+// `background-color: var(--mail-Composer-bg, $o-view-background-color)`),
+// и БЕЗ !important — значит достаточно задать переменную.
+.o-mail-Composer-bg {
+  --mail-Composer-bg: transparent;
+}
+
+.o-mail-Composer-inputContainer:has(textarea:focus),
+.o-mail-Composer-inputContainer:focus-within {
+  // Акцент здесь идёт РАМКОЙ, а не заливкой, поэтому текст внутри остаётся
+  // светлым и ничего пересчитывать не нужно: контраст лайма к поверхности
+  // 9.9:1, видно с запасом (порог для нетекстовых индикаторов — 3:1).
+  border-color: var(--pmk-accent);
+}
+
+// Команды бота в поле ввода — источник glass_theme.scss:291-293.
+.o_odoobot_command {
+  background: transparent;
+}
+
+// Встроенные поля-переименования (тема письма, название канала).
+// Источник: glass_theme.scss:287-289.
+.o-mail-AutoresizeInput {
+  color: var(--pmk-text);
+  background-color: transparent;
+}
+
+// !important №5: в фокусе ядро принудительно возвращает тёмный цвет текста
+// (mail/core/common/autoresize_input.scss:18:
+// `&:focus { color: $body-color !important; // Reset eventual text-muted }`),
+// и селектор там ТРЁХЗВЕННЫЙ. Правило чужой темы (один класс + !important)
+// по специфичности ему проигрывает — то есть у них этот баг не вылечен:
+// кликаешь в поле, и текст становится почти чёрным на тёмном. Чиним как надо:
+// повторяем специфичность ядра и бьём его !important встречным.
+.o-mail-AutoresizeInput:not([disabled]):focus {
+  color: var(--pmk-text-strong) !important;
+  // Рамка фокуса — акцентом. Ядро задаёт её переменной без !important
+  // (autoresize_input.scss:16), поэтому переменной и перебиваем.
+  --o-input-border-color: var(--pmk-accent);
+}
+
+// ─── Выпадающее меню сообщений (колокольчик) ──────────────────────────────
+//
+// Источник: glass_theme.scss:303-310.
+.o-mail-MessagingMenu,
+.o-mail-MessagingMenu-list {
+  background-color: transparent;
+}
+
+.o-mail-MessagingMenu-navbar button.o-active {
+  background: transparent;
+}
+
+.o-mail-NotificationItem:hover.o-important {
+  background-color: rgba(255, 255, 255, 0.10);
+}
+
+// ─── Discuss ──────────────────────────────────────────────────────────────
+//
+// Источник: glass_theme.scss:312-348.
+// Оригинал (glass_theme.scss:312-314) написан как `border-top: transparent`.
+// Это шорткат с одним только цветом: ширина и стиль сбрасываются в initial,
+// то есть style становится none и рамки нет вовсе. Пишем то, что там реально
+// получается, — так понятнее и не зависит от порядка сброса.
+.o-mail-Discuss {
+  border-top: none;
+}
+
+.o-mail-DiscussSidebar {
+  background: var(--pmk-surface);
+  backdrop-filter: blur(var(--pmk-blur)) saturate(180%);
+  border: 1px solid var(--pmk-border);
+  border-radius: var(--pmk-radius-card);
+  margin-right: 5px;
+
+  .o-mail-DiscussSidebar-top,
+  .o-mail-DiscussSidebar-item,
+  .o-mail-discussSidebarBgColor,
+  .o-mail-DiscussSidebarCategory {
+    background: transparent;
+
+    // Выбранный канал и наведение — подсветка поверхностью, не акцентом.
+    // Лайм заливкой потребовал бы тёмного текста внутри (белым по нему 1.3:1),
+    // а здесь внутри лежат аватарки и значки статуса, которые перекрасить
+    // нельзя. Поэтому активность показываем светлотой.
+    &.active,
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.10);
+    }
+  }
+}
+
+.o-mail-DiscussContent {
+  background: var(--pmk-surface);
+  backdrop-filter: blur(var(--pmk-blur)) saturate(180%);
+  border: 1px solid var(--pmk-border);
+  border-radius: var(--pmk-radius-card);
+
+  .o-mail-DiscussContent-header,
+  .o-mail-DiscussContent-core {
+    background: transparent;
+    border-bottom: 1px solid var(--pmk-border-soft);
+  }
+}
+
+.o-mail-Discuss-core,
+.o-mail-ActionPanel {
+  background: transparent;
+}
+
+// Поиск по сообщениям и строка поиска боковой панели.
+// Источник: glass_theme.scss:595-599 и 725-727 (взята только почтовая часть
+// их общих перечней).
+.o-mail-SearchMessageInput {
+  .o_searchview_input,
+  .btn {
+    background: var(--pmk-surface-sunken);
+    backdrop-filter: blur(var(--pmk-blur)) saturate(180%);
+  }
+}
+
+.o-mail-DiscussSearch-inputContainer,
+.o-mail-DiscussSearch-inputContainer:has(.o-mail-DiscussSearch-inputClickable:hover),
+.o-mail-DiscussSearch-inputContainer:has(.o-mail-DiscussSearch-inputClickable:hover) input {
+  background-color: transparent;
+}
+
+// Список подсказок при вводе @упоминания и /команды.
+// Источник: glass_theme.scss:605-614 и 708-710.
+.o-mail-NavigableList {
+  background: var(--pmk-surface-raised);
+  backdrop-filter: blur(var(--pmk-blur)) saturate(180%);
+  border: 1px solid var(--pmk-border);
+  border-radius: var(--pmk-radius-control);
+
+  .o-mail-NavigableList-active,
+  .o-mail-NavigableList-item:hover {
+    background: rgba(255, 255, 255, 0.10);
+  }
+}
+
+// Подсказки композера всплывают над всем — им нужна почти непрозрачная
+// подложка, иначе сквозь список читается текст под ним.
+// Источник: glass_theme.scss:708-710, у них $glass-dropdown. Наш
+// --pmk-surface-raised несёт ровно то же значение rgba(70,80,90,.85)
+// (tokens.scss:95), так что перенос точный.
+.o-mail-Composer-suggestionList {
+  background: var(--pmk-surface-raised);
+}
+
+// Участники и приглашения в канал. Источник: glass_theme.scss:631-641, 662-669
+// (почтовая часть общих перечней).
+.o-mail-SubChannelPreview,
+.o-discuss-ChannelInvitation-selectable.o-selected {
+  border: none;
+  background: transparent;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.10);
+  }
+}
+
+.o-discuss-ChannelMember:hover,
+.o-discuss-ChannelInvitation-selectable:hover,
+.o-mail-DiscussSidebarCallParticipants-participant.o-active:hover {
+  background-color: rgba(255, 255, 255, 0.10);
+}
+
+// Кнопки в строке действий сообщения: у ядра они secondary, то есть со своей
+// заливкой. Источник: glass_theme.scss:671-674.
+.o-mail-ActionList-button.btn-secondary {
+  background: transparent;
+  backdrop-filter: none;
+}
+
+.o-mail-ActionList button.o-inline:where(:has(i:first-child:last-child)) {
+  color: var(--pmk-text);
+}

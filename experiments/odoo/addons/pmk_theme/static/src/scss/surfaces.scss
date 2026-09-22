@@ -1,0 +1,714 @@
+// ═══════════════════════════════════════════════════════════════════════════
+// ПОВЕРХНОСТИ ШТАТНЫХ ЭКРАНОВ
+//
+// ЗАЧЕМ ЭТОТ ФАЙЛ. Сейчас тёмный вид системы держится на ЧУЖОЙ теме
+// theme_liquid_glass. Мы уходим на одну тему — свою, поэтому всё, на чём
+// стоит вид штатных экранов (лист формы, список, канбан, диалоги, панели
+// поиска, выпадающие меню), переносим сюда. Снятие чужой темы — ОТДЕЛЬНЫЙ
+// шаг, с бэкапом; этот файл только готовит почву, чтобы после снятия ничего
+// не поехало.
+//
+// ЧТО ЗДЕСЬ НЕ ЛЕЖИТ. Надстройки над формой (шапка документа .pmk-doc-head,
+// сворачиваемые секции .pmk-section, карточка истории, поля .pmk-field) —
+// в forms.scss. Он написан ПОВЕРХ этого базового вида и местами намеренно
+// его отменяет; там, где правила пересекаются, выигрывает forms.scss, и
+// пересечения отмечены ниже словом ПЕРЕСЕЧЕНИЕ.
+//
+// ОТКУДА ЗНАЧЕНИЯ. Каждое правило снабжено ссылкой на файл и строку чужой
+// темы, откуда оно взято: vendor/theme_liquid_glass/static/src/scss/…
+// Цвета берём НЕ их литералами, а токенами --pmk-* (tokens.scss): один
+// словарь на всю тему, иначе через месяц у каждой плашки будет свой оттенок.
+//
+// ПОРЯДОК В БАНДЛЕ. Наши scss дописываются в САМЫЙ КОНЕЦ бандла
+// (data/assets_order.xml), то есть ПОСЛЕ чужой темы. Значит при равном весе
+// правил выигрываем мы, а проигрываем только их правилам с !important
+// (их 183). Поэтому !important здесь почти не нужен — вместо него работает
+// порядок и специфичность. Каждый оставшийся !important объяснён на месте.
+// ═══════════════════════════════════════════════════════════════════════════
+
+
+// Ступень «наведение». В словаре токенов её нет: есть поверхность (.055) и
+// приподнятая поверхность (модалка/поповер), а тонкой подсветки под курсором
+// между ними нет. У чужой темы это $hover-bg = rgba(255,255,255,.18)
+// (variables.scss:15) — для нашей более тихой палитры это слишком громко,
+// берём ступень над --pmk-surface. Локальная переменная файла, а не токен:
+// заводить второй словарь нельзя, а повторять литерал в двадцати местах —
+// значит потерять его при первой же правке.
+$pmk-surfaces-hover: rgba(255, 255, 255, 0.08);
+
+// Тени. Токена тени в словаре нет, оставляем значения чужой темы как есть
+// (variables.scss:26-27) — тень не цвет, от смены палитры не зависит.
+$pmk-surfaces-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+$pmk-surfaces-shadow-heavy: 0 20px 70px rgba(0, 0, 0, 0.5);
+
+
+// ─── Воздух вокруг содержимого ─────────────────────────────────────────────
+//
+// forms.scss:1-3 чужой темы. Штатная Odoo прижимает содержимое к краям окна;
+// на тёмном фоне это выглядит как экран без полей. Отступ держит всю
+// систему — снимешь, и поедут все экраны разом.
+.o_content {
+  margin: 30px;
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ФОРМА
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ─── Статусбар ─────────────────────────────────────────────────────────────
+//
+// forms.scss:5-20. У них подложка — непрозрачный шифер rgba(70,80,90,.85).
+// По словарю токенов статусбар назван утопленной поверхностью, берём её:
+// полоса состояний должна читаться как углубление в листе, а не как ещё одна
+// плашка поверх него.
+//
+// ПЕРЕСЕЧЕНИЕ: скругление и overflow статусбара задаёт forms.scss:218-224
+// (там объяснено, почему 14px) — здесь их намеренно нет.
+.o_form_statusbar {
+  background: var(--pmk-surface-sunken);
+  backdrop-filter: blur(var(--pmk-blur)) saturate(180%);
+
+  // Пройденные и будущие этапы — тихие.
+  .o_arrow_button.btn-secondary {
+    background: transparent;
+    backdrop-filter: none;
+    color: var(--pmk-text-muted);
+  }
+
+  // Текущий этап — единственное место в форме, где акцент идёт ФОНОМ.
+  //
+  // ЦВЕТ ТЕКСТА ЗДЕСЬ НЕ БЕЛЫЙ, И ЭТО НЕ ОПЕЧАТКА. У них было
+  // `@include text-white-color` поверх бирюзового rgba(6,190,160):
+  // белый на их бирюзовом даёт контраст 2.36:1 — уже плохо, но буквы
+  // различимы. Наш лайм #C8F000 светлее втрое (относительная яркость 0.746
+  // против 0.394), белый на нём даёт 1.32:1 — текста не видно вовсе.
+  // Поэтому на акцентном фоне текст — чернильный #16191C: контраст
+  //   (0.746 + 0.05) / (0.0095 + 0.05) = 13.4:1, запас даже по AAA.
+  //
+  // Их градиент (variables.scss:14) не переносим: он был из бирюзового в
+  // бирюзовый с прозрачностью .6/.5, то есть просто приглушал цвет. Лайм
+  // приглушать незачем — он и так светлый, а полупрозрачный лайм поверх
+  // тёмного фона опустил бы контраст с чернильным текстом до 8.4:1 без
+  // всякой пользы для глаза.
+  .o_arrow_button.o_arrow_button_current {
+    background: var(--pmk-accent);
+    color: var(--pmk-accent-ink);
+  }
+}
+
+
+// ─── Лист документа ────────────────────────────────────────────────────────
+//
+// forms.scss:22-38. Две вложенные поверхности: подложка и сам лист. Разница
+// у них была 2% (.08 и .10) — на глаз неразличима, а вложение всё равно
+// читается, потому что полупрозрачные слои складываются. Поэтому обеим
+// даём одну поверхность: эффект тот же, а оттенка на один меньше.
+//
+// ПЕРЕСЕЧЕНИЕ: ширину листа (max-width 1920px) и снятие правого отступа под
+// боковой чат задаёт forms.scss:237-250 — здесь только вид.
+.o_form_sheet_bg {
+  background: var(--pmk-surface);
+  backdrop-filter: blur(var(--pmk-blur)) saturate(180%);
+  // Рамка 2px — как у них: на полупрозрачной поверхности тонкая рамка
+  // теряется, край листа перестаёт читаться.
+  border: 2px solid var(--pmk-border);
+  border-radius: var(--pmk-radius-card);
+
+  .o_form_sheet {
+    background: var(--pmk-surface);
+    backdrop-filter: blur(var(--pmk-blur)) saturate(180%);
+    border: 2px solid var(--pmk-border);
+    border-radius: var(--pmk-radius-card);
+    margin: 20px;
+  }
+}
+
+.o_form_renderer {
+  background: var(--pmk-surface);
+  backdrop-filter: blur(var(--pmk-blur)) saturate(180%);
+  border-radius: var(--pmk-radius-control);
+}
+
+// forms.scss:40-43. Из их правила берём только цвет текста: строку
+// `border: $glass-border !important` не переносим — в переменной лежит ЦВЕТ,
+// а не сокращение рамки, и правило молча сбрасывает стиль рамки в none
+// (подробнее — в отчёте, раздел «мёртвые правила»).
+//
+// Фон объявляем прозрачным ЯВНО: светлый текст требует тёмной подложки, а
+// ядро на части полей красит .form-control в белый — там текст пропадал бы.
+.form-control {
+  background-color: transparent;
+  color: var(--pmk-text);
+}
+
+// ─── Вкладки блокнота ──────────────────────────────────────────────────────
+//
+// forms.scss:57-81. Вкладки-пилюли: без скругления и фона они превращаются
+// в обычные ссылки, и становится непонятно, какая открыта.
+.o_notebook {
+  .nav-tabs {
+    background: transparent;
+    border-bottom: transparent;
+
+    .nav-link {
+      color: var(--pmk-text-muted);
+      background: var(--pmk-surface);
+      border-radius: var(--pmk-radius-control);
+      margin-bottom: 18px;
+      margin-right: 18px;
+
+      // У них наведение ТЕМНЕЕ покоя (.08 против .15) — вкладка под курсором
+      // выглядела отключённой. Разворачиваем: наведение светлее покоя.
+      &:hover {
+        color: var(--pmk-text-strong);
+        background: $pmk-surfaces-hover;
+        backdrop-filter: blur(var(--pmk-blur)) saturate(180%);
+        border: 1px solid var(--pmk-border);
+      }
+
+      &.active {
+        color: var(--pmk-text-strong);
+        background: $pmk-surfaces-hover;
+        backdrop-filter: blur(var(--pmk-blur)) saturate(180%);
+      }
+    }
+  }
+}
+
+// forms.scss:83-85. Ссылка на другой документ — акцентом, но ТЕКСТОМ, не
+// фоном: лайм на тёмной поверхности даёт около 10:1, читается отлично.
+.o_form_uri {
+  color: var(--pmk-accent);
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// СПИСКИ
+// ═══════════════════════════════════════════════════════════════════════════
+
+// lists.scss:1-14. Пункты боковых списков (настройки, выбор из перечня).
+// `border: none !important` у них не переносим: наш файл идёт в бандле после
+// Bootstrap, обычного правила хватает.
+.list-group-item-action {
+  background: transparent;
+  color: var(--pmk-text);
+  border: none;
+  border-radius: var(--pmk-radius-card);
+  margin-bottom: 5px;
+
+  &:hover,
+  &.active {
+    background: $pmk-surfaces-hover;
+    border-radius: var(--pmk-radius-control);
+    color: var(--pmk-text-strong);
+  }
+}
+
+// lists.scss:20-31. Подложка таблицы.
+.o_list_renderer {
+  padding: 10px;
+  background: var(--pmk-surface);
+  border-radius: var(--pmk-radius-control);
+  margin: 3px;
+}
+
+.o_list_renderer .o_list_table {
+
+  // Шапка таблицы: фон плюс жирная нижняя рамка. Без рамки шапка сливается
+  // со строками — именно она отделяет заголовки колонок от данных.
+  //
+  // !important №1 — ВЫНУЖДЕННЫЙ. Чужая тема гасит фон всех таблиц целиком:
+  // glass_theme.scss:31-36 `table { thead,tbody,tr,th,td { background:
+  // transparent !important } }`. Такое же правило переносится в базовый файл
+  // нашей темы (оно нужно, чтобы ядро не рисовало светлые таблицы на тёмном).
+  // Правило с !important бьёт обычное независимо от порядка в бандле, поэтому
+  // шапку возвращаем встречным !important — ровно так же, как это сделано у
+  // них в lists.scss:36. Специфичность у нас выше (0,2,1 против 0,0,2), так
+  // что конфликт разрешается в нашу пользу.
+  > thead {
+    background: var(--pmk-surface) !important;
+    backdrop-filter: blur(var(--pmk-blur)) saturate(180%);
+    border-bottom: 2px solid var(--pmk-border);
+
+    &:hover {
+      background: $pmk-surfaces-hover !important; // см. !important №1 выше — тот же случай
+    }
+  }
+
+  // Ячейки шапки ядро красит само; гасим, иначе фон шапки под ними не виден.
+  // Здесь !important не нужен: правило ядра идёт раньше нашего в бандле.
+  > thead > tr > th {
+    background-color: transparent;
+  }
+
+  tbody {
+    tr {
+      border-bottom: 1px solid var(--pmk-border);
+
+      // !important №2 — тот же случай, что №1: без него подсветку строки
+      // съедает глобальное «все таблицы прозрачные».
+      //
+      // ПЕРЕСЕЧЕНИЕ: в форме подсветку даёт forms.scss:398 (фон на td, а не
+      // на tr) — td рисуется поверх tr, так что там выигрывает он. Это
+      // намеренно: в форме подсветка тише, чем в полноэкранном списке.
+      &:hover {
+        background: $pmk-surfaces-hover !important;
+      }
+    }
+
+    td {
+      padding: 12px;
+    }
+  }
+}
+
+// lists.scss:59-61.
+.o_list_sortable_icon {
+  background: transparent;
+}
+
+// lists.scss:63-67. Odoo читает эти переменные при отрисовке таблицы.
+.table-info {
+  --table-hover-bg: transparent;
+  --table-striped-bg: #{$pmk-surfaces-hover};
+  color: var(--pmk-text-strong);
+}
+
+// lists.scss:69-77. Акцент как рамка — фоном он здесь не идёт, поэтому
+// чернильный текст не нужен.
+.o_input:focus,
+.o_list_renderer .o_data_row.o_selected_row > .o_data_cell.o_required_modifier:not(.o_readonly_modifier) {
+  border-bottom: 1px solid var(--pmk-accent);
+}
+
+.o_field_highlight .o_field_widget .o_input,
+.o_field_highlight.o_field_widget .o_input {
+  border-color: var(--pmk-accent);
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// КАНБАН
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// kanban.scss целиком. Карточка канбана — единственное, что отделяет одну
+// сделку от другой: без поверхности и скругления доска превращается в
+// сплошной текст.
+.o_kanban_view {
+  background: transparent;
+
+  .o_kanban_renderer {
+    background: transparent;
+    border-top: 1px solid var(--pmk-border);
+
+    .o_kanban_record {
+      background: var(--pmk-surface);
+      backdrop-filter: blur(var(--pmk-blur)) saturate(180%);
+      border-radius: var(--pmk-radius-card);
+      // У них здесь стоял !important. Не переносим: наш файл идёт последним
+      // в бандле, обычного правила достаточно.
+      margin-bottom: 10px;
+    }
+
+    .o_kanban_quick_create {
+      background: transparent;
+      backdrop-filter: blur(var(--pmk-blur)) saturate(180%);
+      // Рамка 3px — как у них: форма быстрого создания должна быть заметно
+      // «толще» обычной карточки, это временный слой поверх доски.
+      border: 3px solid var(--pmk-border);
+      border-radius: var(--pmk-radius-card);
+    }
+  }
+
+  .o_kanban_group {
+    background: transparent;
+
+    .o_kanban_record {
+      background: var(--pmk-surface);
+      backdrop-filter: blur(var(--pmk-blur)) saturate(180%);
+      margin-bottom: 5px;
+      // Строку `border: $glass-bg-light !important` (kanban.scss:28) не
+      // переносим: в переменной цвет, а не сокращение рамки — правило
+      // невалидно как рамка и лишь сбрасывает её в none.
+
+      &:hover {
+        background: $pmk-surfaces-hover;
+        transform: translateY(-2px);
+        box-shadow: $pmk-surfaces-shadow;
+      }
+    }
+  }
+
+  .o_kanban_ungrouped {
+    .o_kanban_record {
+      background: var(--pmk-surface);
+      backdrop-filter: blur(var(--pmk-blur)) saturate(180%);
+      border: transparent;
+      margin-top: 5px;
+
+      &:hover {
+        background: $pmk-surfaces-hover;
+      }
+    }
+  }
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ДИАЛОГИ
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// modals.scss. ВАЖНО ПРО ТОКЕНЫ: диалоги, поповеры и подсказки Odoo рисует
+// в body > .o-overlay-container, ВНЕ .o_web_client. Поэтому токены --pmk-*
+// объявлены на :root — иначе сюда они бы не доехали и все диалоги остались
+// бы без цветов.
+.modal .modal-dialog .modal-content {
+  // Фон у них задан только для .o_dialog (modals.scss:71-79) — а это
+  // большинство диалогов Odoo. Даём поверхность и обычной .modal-content:
+  // без неё Bootstrap рисует белый лист, а текст на нём светлый.
+  background-color: var(--pmk-surface-raised);
+  backdrop-filter: blur(var(--pmk-blur)) saturate(180%);
+  border: 1px solid var(--pmk-border);
+  border-radius: var(--pmk-radius-card);
+  box-shadow: $pmk-surfaces-shadow-heavy;
+
+  .modal-header {
+    background: transparent;
+    border-bottom: 1px solid var(--pmk-border);
+
+    .modal-title {
+      color: var(--pmk-text-strong);
+    }
+
+    // Крестик Bootstrap — тёмная картинка; на тёмной шапке её не видно.
+    // Инверсия делает её светлой.
+    .btn-close {
+      filter: invert(1);
+      opacity: 0.7;
+
+      &:hover {
+        opacity: 1;
+      }
+    }
+  }
+
+  .modal-body {
+    background: transparent;
+    color: var(--pmk-text);
+
+    // Лист документа внутри диалога не должен рисовать вторую карточку:
+    // рамка в рамке и двойное скругление — самая заметная поломка при
+    // открытии формы в окне.
+    .o_form_sheet,
+    .o_form_sheet_bg {
+      background: transparent;
+      backdrop-filter: none;
+      border: none;
+      margin: 0;
+    }
+  }
+
+  .modal-footer {
+    background: transparent;
+    border-top: 1px solid var(--pmk-border);
+
+    // Наведение на «второстепенную» кнопку диалога. Акцент идёт ФОНОМ,
+    // поэтому текст — чернильный: белый на лайме даёт 1.32:1 (не видно),
+    // чернильный — 13.4:1.
+    .btn-outline-primary:hover {
+      background-color: var(--pmk-accent);
+      color: var(--pmk-accent-ink);
+    }
+  }
+}
+
+// modals.scss:71-80. Диалоги Odoo (почти все) приходят с классом o_dialog.
+.o_dialog .modal-content {
+  background: var(--pmk-surface-raised);
+  backdrop-filter: blur(var(--pmk-blur)) saturate(180%);
+  border: 1px solid var(--pmk-border);
+
+  .modal-body {
+    color: var(--pmk-text);
+  }
+}
+
+// modals.scss:82-84. Выбор изображения: у диалога своя панель управления,
+// которая иначе рисует светлую полосу поперёк тёмного окна.
+.modal .o_select_media_dialog .o_we_file_selector_control_panel {
+  background: transparent;
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ПАНЕЛЬ УПРАВЛЕНИЯ, ПОИСК, ПАГИНАТОР
+// ═══════════════════════════════════════════════════════════════════════════
+
+// glass_theme.scss:43-63. Строка поиска.
+.o_searchview,
+.o_searchview_dropdown_toggler {
+  background: var(--pmk-surface);
+  border: 1px solid var(--pmk-border);
+  border-radius: var(--pmk-radius-control);
+
+  .o_searchview_input_container {
+
+    // Фильтр-«фасет»: активный фильтр должен читаться как отдельная плашка,
+    // иначе строка поиска превращается в кашу из слов.
+    .o_searchview_facet {
+      background: $pmk-surfaces-hover;
+      backdrop-filter: blur(var(--pmk-blur)) saturate(180%);
+      color: var(--pmk-text-strong);
+
+      &:hover {
+        background: transparent;
+      }
+    }
+
+    .o_searchview_input {
+      color: var(--pmk-text-strong);
+    }
+  }
+}
+
+// glass_theme.scss:65-105. Панель управления над списком.
+.o_control_panel {
+  border: none;
+  background: var(--pmk-surface);
+
+  .o_breadcrumb,
+  .breadcrumb {
+    background: transparent;
+
+    .breadcrumb-item,
+    li {
+      color: var(--pmk-text-strong);
+      font-size: 15px;
+
+      // Пройденный путь тише текущего документа — иначе непонятно, где ты.
+      a {
+        color: var(--pmk-text-muted);
+
+        &:hover {
+          color: var(--pmk-text-strong);
+        }
+      }
+    }
+  }
+
+  // Переключатель вида (список/канбан/календарь). Активный вид обязан
+  // отличаться, иначе кнопки выглядят одинаково нажатыми.
+  .o_cp_switch_buttons {
+    .btn,
+    button {
+      background: transparent;
+
+      &:hover {
+        background: $pmk-surfaces-hover;
+      }
+
+      &.active {
+        background: var(--pmk-surface);
+        backdrop-filter: blur(var(--pmk-blur)) saturate(180%);
+        border: 1px solid var(--pmk-border);
+        color: var(--pmk-text-strong);
+      }
+    }
+  }
+}
+
+// glass_theme.scss:112-121. Листалка страниц.
+.o_pager {
+  button {
+    background: transparent;
+    border: none;
+
+    &:hover:not(:disabled) {
+      background: $pmk-surfaces-hover;
+      backdrop-filter: blur(var(--pmk-blur)) saturate(180%);
+    }
+  }
+}
+
+// glass_theme.scss:123-133. Переключатель вида графика.
+.btn-group {
+  .o_graph_button {
+    background: transparent;
+    color: var(--pmk-text-strong);
+
+    &:hover,
+    &.active {
+      background: var(--pmk-surface);
+      backdrop-filter: blur(var(--pmk-blur)) saturate(180%);
+    }
+  }
+}
+
+// glass_theme.scss:135-150. Боковая панель фильтров.
+.o_search_panel_section {
+  background: var(--pmk-surface);
+  backdrop-filter: blur(var(--pmk-blur)) saturate(180%);
+  border: 1px solid var(--pmk-border);
+  border-radius: var(--pmk-radius-control);
+  margin-bottom: 5px;
+  padding: 18px;
+
+  .o_search_panel_category_value {
+    background: transparent;
+    color: var(--pmk-text);
+
+    // У них по этому пункту два противоречащих правила: glass_theme.scss:146
+    // даёт фон при наведении, а lists.scss:16-18 его тут же отменяет
+    // (`background: transparent !important`, файл грузится позже). То есть
+    // ЖИВОГО наведения у них нет. Оставляем подсветку: пункт кликабельный,
+    // и он должен отзываться — иначе непонятно, что по нему можно нажать.
+    &:hover {
+      background: $pmk-surfaces-hover;
+    }
+  }
+}
+
+// glass_theme.scss:152-155. Вертикальная линейка справа от панели фильтров:
+// ядро рисует её светлой, на тёмном фоне она бьёт по глазам.
+//
+// !important №3 — ВЫНУЖДЕННЫЙ. Границу ставит утилита Bootstrap `.border-end`,
+// а все утилиты Bootstrap объявлены с !important; обычным правилом её не
+// перебить ничем, кроме !important.
+//
+// СУЖЕНО НАМЕРЕННО. У них правило глобальное — `.border-end` без контекста,
+// то есть правая граница гасилась ВЕЗДЕ в системе. Это ровно тот случай,
+// когда чужое правило трогает больше, чем должно. Оставляем только панель
+// поиска. Если после снятия темы где-то вылезет светлая вертикальная линия —
+// это та самая штатная граница Odoo, и гасить её надо адресно, а не оптом.
+//
+// Сокращение (`border-right: transparent`), а не `border-right-color`:
+// сокращение сбрасывает и стиль в none, поэтому граница не просто становится
+// невидимой, а перестаёт занимать свой пиксель. Иначе раскладка сдвинется.
+.o_search_panel,
+.o_search_panel.border-end {
+  border-right: transparent !important;
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// СЛОИ ПОВЕРХ СОДЕРЖИМОГО
+// ═══════════════════════════════════════════════════════════════════════════
+
+// glass_theme.scss:157-180. Выпадающие меню, поповеры, подсказки.
+//
+// ВНИМАНИЕ К ПРОЗРАЧНОСТИ. Это единственные поверхности, которые ложатся
+// ПОВЕРХ текста и чисел. У них фон почти непрозрачный — rgba(70,80,90,.85);
+// если --pmk-surface-raised окажется полупрозрачным белым, сквозь меню будет
+// просвечивать список, и оба слоя станут нечитаемыми. Размытие помогает, но
+// не спасает. Требование к токену: непрозрачность не ниже .85.
+.dropdown-menu,
+.o_popover,
+.o-tooltip {
+  background: var(--pmk-surface-raised);
+  backdrop-filter: blur(var(--pmk-blur)) saturate(180%);
+  border: 1px solid var(--pmk-border);
+  border-radius: var(--pmk-radius-control);
+
+  .dropdown-item,
+  a,
+  button {
+    color: var(--pmk-text);
+    background: transparent;
+
+    // Подсветку выбранного пункта берём и на :focus — по меню ходят
+    // стрелками с клавиатуры, не только мышью.
+    &:hover,
+    &:focus {
+      background: $pmk-surfaces-hover;
+      color: var(--pmk-text-strong);
+    }
+  }
+
+  .dropdown-header {
+    color: var(--pmk-text-muted);
+  }
+}
+
+// glass_theme.scss:182-184. Уголок поповера: без него стрелка остаётся
+// светлой и торчит чужеродным треугольником под тёмным окном.
+.bs-popover-bottom > .popover-arrow::after {
+  border-bottom-color: var(--pmk-surface-raised);
+}
+
+// glass_theme.scss:186-188. Подсказки автодополнения приходят с классом
+// .dropdown-menu, поэтому фон и рамку они получают правилом выше — здесь
+// добавляется только размытие.
+.ui-autocomplete {
+  backdrop-filter: blur(var(--pmk-blur)) saturate(180%);
+}
+
+// glass_theme.scss:461-466. Всплывающее уведомление.
+.o_notification {
+  background: var(--pmk-surface-raised);
+  backdrop-filter: blur(var(--pmk-blur)) saturate(180%);
+  border: 1px solid var(--pmk-border);
+  border-radius: 14px;
+  color: var(--pmk-text-strong);
+}
+
+// glass_theme.scss:468-473. Информационная плашка внутри формы.
+//
+// Строку `border-left: $glass-border` не переносим: в переменной цвет, а не
+// сокращение рамки — правило сбрасывает стиль в none и ничего не рисует.
+//
+// ЦВЕТ ТЕКСТА — РЕШЕНИЕ, А НЕ КОПИЯ. В их файле по этой плашке два правила:
+// здесь белый, а в glass_theme.scss:529 `.alert p, .alert { color: black
+// !important }`. Побеждает второе, то есть сейчас текст плашки ЧЁРНЫЙ на
+// полупрозрачном светлом фоне поверх тёмного — читается плохо. Чёрное
+// правило было компенсацией их же «уравнителя», который красил всё белым;
+// уравнитель мы не переносим, значит и компенсация не нужна. Ставим светлый
+// текст, как задумано в самой .alert-info.
+.alert-info {
+  background: var(--pmk-surface);
+  border-radius: 14px;
+  color: var(--pmk-text);
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// НАСТРОЙКИ
+// ═══════════════════════════════════════════════════════════════════════════
+
+// glass_theme.scss:190-213. Экран настроек: слева вкладки-модули, справа
+// карточки с группами параметров. Без поверхностей экран разваливается в
+// сплошной список переключателей.
+.settings_tab {
+  background: var(--pmk-surface);
+  backdrop-filter: blur(var(--pmk-blur)) saturate(180%);
+  border: 1px solid var(--pmk-border);
+  border-radius: var(--pmk-radius-control);
+  margin-right: 5px;
+  border-right: transparent;
+
+  .tab {
+    background: var(--pmk-surface);
+    backdrop-filter: blur(var(--pmk-blur)) saturate(180%);
+    box-shadow: $pmk-surfaces-shadow;
+  }
+}
+
+.settings {
+  background: var(--pmk-surface);
+  backdrop-filter: blur(var(--pmk-blur)) saturate(180%);
+  border: 1px solid var(--pmk-border);
+  border-radius: var(--pmk-radius-card);
+
+  // Заголовок группы параметров — полоса чуть тише карточки.
+  h2 {
+    background: var(--pmk-surface);
+    backdrop-filter: blur(var(--pmk-blur)) saturate(180%);
+  }
+}
+
+// glass_theme.scss:211-213. Шапка поиска по настройкам — отдельным правилом
+// из-за длинной цепочки селекторов ядра.
+.o_base_settings_view .o_form_renderer .o_setting_container .settings .settingSearchHeader {
+  background: var(--pmk-surface);
+  backdrop-filter: blur(var(--pmk-blur)) saturate(180%);
+}
