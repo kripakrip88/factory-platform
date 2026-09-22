@@ -22,7 +22,7 @@ OURS="pmk_calc pmk_theme pmk_pdf pmk_cut pmk_mail_ui pmk_partner pmk_purchase pm
 # ТОЛЬКО в addons-extra на сервере, вне git и вне этого списка. Одна неудачная
 # команда — и тема, на которой стоит весь вид стенда, исчезла бы без следа.
 # Теперь источник истины — репозиторий, как и у mail_client.
-VENDOR="mail_client theme_liquid_glass northlight_teaminbox tracking_manager"
+VENDOR="mail_client theme_liquid_glass northlight_teaminbox tracking_manager techy_backend_theme"
 # Модули, которые надо ПОСТАВИТЬ, а не обновить (через переменную окружения).
 INSTALL="${INSTALL:-}"
 

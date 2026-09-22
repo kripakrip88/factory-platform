@@ -43,13 +43,18 @@
             # Копия чужой темы: её боковая панель приложений и переключатель.
             # Идут ПЕРВЫМИ, чтобы наш navbar_active_section.js правил уже
             # готовую разметку. Подробности — в data/assets_order.xml.
-            "pmk_theme/static/src/js/vendor/navbar_sidebar.js",
-            "pmk_theme/static/src/xml/vendor/apps_sidebar.xml",
-            "pmk_theme/static/src/js/collapsible_sections.js",
-            "pmk_theme/static/src/js/navbar_active_section.js",
-            "pmk_theme/static/src/js/chatter_inline.js",
-            "pmk_theme/static/src/xml/navbar.xml",
-            "pmk_theme/static/src/xml/chatter.xml",
+            # ── ВРЕМЕННО ВЫКЛЮЧЕНО на время примерки techy_backend_theme ──
+            # SCSS темы гасится в базе (ir_asset.active=false), а JS и XML живут
+            # в манифесте и в базе не выключаются. Без этого примерка показала бы
+            # нашу горизонтальную навигацию без её стилей, а не чужую тему.
+            # Вернуть: revert коммита + деплой.
+            # "pmk_theme/static/src/js/vendor/navbar_sidebar.js",
+            # "pmk_theme/static/src/xml/vendor/apps_sidebar.xml",
+            # "pmk_theme/static/src/js/collapsible_sections.js",
+            # "pmk_theme/static/src/js/navbar_active_section.js",
+            # "pmk_theme/static/src/js/chatter_inline.js",
+            # "pmk_theme/static/src/xml/navbar.xml",
+            # "pmk_theme/static/src/xml/chatter.xml",
         ],
         # ⚠️ ОТЛОЖЕННЫЙ БАНДЛ, И ЭТО НЕ ВКУСОВЩИНА.
         # canvas_text.js красит подписи осей и легенду графика: до них CSS не

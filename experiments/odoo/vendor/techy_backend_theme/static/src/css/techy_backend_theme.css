@@ -1,0 +1,691 @@
+/* ==========================================================================
+   Techy Backend Theme — Odoo 19
+   --------------------------------------------------------------------------
+   Elegant, fancy and professional backend design.
+   Pure CSS implementation: no JavaScript, no SCSS compilation.
+
+   Loaded in the `web.assets_backend` bundle, after the core assets, so all
+   rules below safely override the default Odoo look & feel.
+   ========================================================================== */
+
+/* ==========================================================================
+   1. Design tokens
+   ========================================================================== */
+
+.o_web_client {
+    /* Brand palette */
+    --ty-primary: #4f46e5;
+    --ty-primary-dark: #4338ca;
+    --ty-primary-darker: #3730a3;
+    --ty-primary-soft: #eef2ff;
+    --ty-primary-softer: #f6f7ff;
+    --ty-primary-glow: rgba(79, 70, 229, 0.28);
+    --ty-accent: #7c3aed;
+    --ty-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+
+    /* Surfaces */
+    --ty-bg-app: #eef1f6;
+    --ty-bg-surface: #ffffff;
+    --ty-bg-muted: #f4f6fa;
+    --ty-border: #e5e9f2;
+    --ty-border-strong: #d8dee9;
+
+    /* Text */
+    --ty-text: #1e293b;
+    --ty-text-muted: #64748b;
+
+    /* Navbar */
+    --ty-navbar-bg: linear-gradient(90deg, #0f172a 0%, #1e1b4b 55%, #312e81 100%);
+    --ty-navbar-text: rgba(255, 255, 255, 0.86);
+
+    /* Elevation */
+    --ty-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 6px rgba(15, 23, 42, 0.04);
+    --ty-shadow-md: 0 2px 6px rgba(15, 23, 42, 0.07), 0 10px 24px rgba(15, 23, 42, 0.07);
+    --ty-shadow-lg: 0 6px 18px rgba(15, 23, 42, 0.13), 0 20px 44px rgba(15, 23, 42, 0.12);
+    --ty-shadow-navbar: 0 2px 14px rgba(2, 6, 23, 0.35);
+
+    /* Motion & shape */
+    --ty-ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+    --ty-radius-sm: 6px;
+    --ty-radius: 10px;
+    --ty-radius-lg: 14px;
+}
+
+/* ==========================================================================
+   2. Global polish
+   ========================================================================== */
+
+.o_web_client {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+}
+
+.o_web_client ::selection {
+    background: rgba(79, 70, 229, 0.22);
+}
+
+/* Slim, elegant scrollbars (WebKit) */
+.o_web_client ::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+}
+
+.o_web_client ::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.o_web_client ::-webkit-scrollbar-thumb {
+    background: rgba(100, 116, 139, 0.35);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+
+.o_web_client ::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(100, 116, 139, 0.55);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .o_web_client *,
+    .o_web_client *::before,
+    .o_web_client *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+    }
+}
+
+/* ==========================================================================
+   3. Top navbar
+   ========================================================================== */
+
+.o_main_navbar {
+    background: var(--ty-navbar-bg);
+    border-bottom: 0;
+    box-shadow: var(--ty-shadow-navbar);
+    position: relative;
+    z-index: 1030;
+
+    /* Core Odoo paints every inactive section entry with the default purple
+       via var(--NavBar-entry-backgroundColor, $o-navbar-background). Make them
+       transparent instead so the navbar gradient shows through, and use
+       translucent whites for the focus/open states. */
+    --NavBar-entry-backgroundColor: transparent;
+    --NavBar-entry-backgroundColor--hover: rgba(255, 255, 255, 0.12);
+    --NavBar-entry-backgroundColor--focus: rgba(255, 255, 255, 0.12);
+    --NavBar-entry-backgroundColor--active: rgba(255, 255, 255, 0.18);
+    --NavBar-entry-color: var(--ty-navbar-text);
+    --NavBar-entry-color--hover: #ffffff;
+    --NavBar-entry-color--active: #ffffff;
+    --NavBar-brand-color: #ffffff;
+}
+
+/* Subtle glossy highlight along the top edge */
+.o_main_navbar::after {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+    pointer-events: none;
+}
+
+.o_main_navbar .o_menu_toggle,
+.o_main_navbar .o_nav_entry,
+.o_main_navbar .o_menu_brand,
+.o_main_navbar .o_navbar_breadcrumbs,
+.o_main_navbar .dropdown-toggle {
+    color: var(--ty-navbar-text);
+}
+
+.o_main_navbar .o_menu_toggle:hover,
+.o_main_navbar .o_nav_entry:hover,
+.o_main_navbar .dropdown-toggle:hover {
+    color: #ffffff;
+}
+
+/* Rounded hover pills for navbar entries */
+.o_main_navbar .o_menu_sections .o_nav_entry,
+.o_main_navbar .o_menu_sections .dropdown-toggle,
+.o_main_navbar .o_navbar_apps_menu .dropdown-toggle,
+.o_main_navbar .o_menu_systray .o_nav_entry,
+.o_main_navbar .o_menu_systray .dropdown-toggle {
+    border-radius: var(--ty-radius-sm);
+    transition: background-color 0.2s var(--ty-ease), color 0.2s var(--ty-ease);
+}
+
+.o_main_navbar .o_menu_sections .o_nav_entry:hover,
+.o_main_navbar .o_menu_sections .dropdown-toggle:hover,
+.o_main_navbar .o_navbar_apps_menu .dropdown-toggle:hover,
+.o_main_navbar .o_menu_systray .o_nav_entry:hover,
+.o_main_navbar .o_menu_systray .dropdown-toggle:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.o_main_navbar .o_menu_sections .dropdown.show.dropdown-toggle,
+.o_main_navbar .o_navbar_apps_menu .dropdown.show > .dropdown-toggle,
+.o_main_navbar .o_menu_systray .dropdown.show > .dropdown-toggle {
+    background: rgba(255, 255, 255, 0.18) !important;
+    color: #ffffff !important;
+    border-color: transparent !important;
+}
+
+/* Notification badges pop on the dark bar */
+.o_main_navbar .o_menu_systray {
+    --o-navbar-badge-bg: #f43f5e;
+    --o-navbar-badge-text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+/* Dropdowns spawned from the navbar keep the light theme */
+.o_main_navbar .dropdown-menu {
+    background-color: var(--ty-bg-surface);
+    color: var(--ty-text);
+}
+
+/* ==========================================================================
+   4. Dropdown menus (global)
+   ========================================================================== */
+
+.o_web_client .dropdown-menu {
+    border: 1px solid var(--ty-border);
+    border-radius: var(--ty-radius);
+    box-shadow: var(--ty-shadow-md);
+    padding: 6px;
+    animation-duration: 0.18s;
+}
+
+.o_web_client .dropdown-item {
+    border-radius: var(--ty-radius-sm);
+    padding: 6px 10px;
+    transition: background-color 0.15s var(--ty-ease), color 0.15s var(--ty-ease);
+}
+
+.o_web_client .dropdown-item:hover,
+.o_web_client .dropdown-item:focus,
+.o_web_client .dropdown-item.focus {
+    background-color: var(--ty-primary-soft);
+    color: var(--ty-primary-dark);
+}
+
+.o_web_client .dropdown-item.active,
+.o_web_client .dropdown-item.selected {
+    background-color: var(--ty-primary-soft);
+    color: var(--ty-primary-dark);
+}
+
+/* Odoo 19 dropdown menus (apps menu, section menus, ...) are portaled
+   popovers that drive highlighting through the .focus class and reset
+   backgrounds for non-focused items; make sure the themed highlight and a
+   readable text color always win inside them. */
+.o_web_client .o-dropdown--menu .dropdown-item:not(.disabled) {
+    color: var(--ty-text);
+}
+
+.o_web_client .o-dropdown--menu .dropdown-item.focus {
+    background-color: var(--ty-primary-soft) !important;
+    color: var(--ty-primary-dark) !important;
+}
+
+.o_web_client .dropdown-divider {
+    border-color: var(--ty-border);
+    margin: 6px 4px;
+}
+
+.o_web_client .dropdown-header {
+    color: var(--ty-text-muted);
+    font-size: 0.78em;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+/* ==========================================================================
+   5. Control panel & breadcrumbs
+   ========================================================================== */
+
+.o_control_panel {
+    background-color: var(--ty-bg-surface);
+    border-bottom: 1px solid var(--ty-border);
+    box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02);
+}
+
+.o_control_panel .o_breadcrumb .btn {
+    border-radius: var(--ty-radius-sm);
+    transition: background-color 0.15s var(--ty-ease), color 0.15s var(--ty-ease);
+}
+
+.o_control_panel .o_breadcrumb .btn:hover {
+    background-color: var(--ty-primary-soft);
+    color: var(--ty-primary-dark);
+}
+
+.o_control_panel .o_breadcrumb .active {
+    color: var(--ty-text);
+    font-weight: 600;
+}
+
+/* View switcher buttons */
+.o_control_panel .o_cp_view_switcher .btn {
+    border-radius: var(--ty-radius-sm);
+    color: var(--ty-text-muted);
+}
+
+.o_control_panel .o_cp_view_switcher .btn.active,
+.o_control_panel .o_cp_view_switcher .btn:hover {
+    color: var(--ty-primary);
+    background-color: var(--ty-primary-soft);
+}
+
+/* Search bar & filter facets */
+.o_searchview {
+    border-radius: var(--ty-radius);
+}
+
+.o_searchview .o_searchview_facet {
+    background-color: var(--ty-primary-soft);
+    border-color: rgba(79, 70, 229, 0.2);
+    color: var(--ty-primary-dark);
+    border-radius: 999px;
+    padding: 0 8px;
+}
+
+.o_searchview .o_searchview_facet .o_searchview_facet_label {
+    color: var(--ty-primary);
+}
+
+/* ==========================================================================
+   6. Buttons
+   ========================================================================== */
+
+.o_web_client .btn {
+    border-radius: var(--ty-radius-sm);
+    transition: color 0.18s var(--ty-ease),
+                background-color 0.18s var(--ty-ease),
+                border-color 0.18s var(--ty-ease),
+                box-shadow 0.18s var(--ty-ease),
+                transform 0.18s var(--ty-ease);
+}
+
+/* Primary: signature gradient with glow on hover */
+.o_web_client .btn-primary:not(:disabled):not(.disabled),
+.o_web_client .btn-primary:disabled {
+    background: var(--ty-gradient);
+    border: 0;
+    color: #ffffff;
+}
+
+.o_web_client .btn-primary:not(:disabled):not(.disabled):hover {
+    box-shadow: 0 6px 16px var(--ty-primary-glow);
+    transform: translateY(-1px);
+    filter: brightness(1.06);
+}
+
+.o_web_client .btn-primary:not(:disabled):not(.disabled):active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px var(--ty-primary-glow);
+    filter: brightness(0.96);
+}
+
+.o_web_client .btn-primary:focus-visible,
+.o_web_client .btn-secondary:focus-visible,
+.o_web_client .btn-light:focus-visible {
+    box-shadow: 0 0 0 3px var(--ty-primary-glow);
+}
+
+/* Secondary & light: soft neutral surfaces */
+.o_web_client .btn-secondary {
+    background-color: var(--ty-bg-muted);
+    border-color: var(--ty-border);
+    color: var(--ty-text);
+}
+
+.o_web_client .btn-secondary:hover {
+    background-color: #eaeef5;
+    border-color: var(--ty-border-strong);
+    color: var(--ty-text);
+}
+
+.o_web_client .btn-light:not(:disabled):not(.disabled):hover {
+    background-color: var(--ty-bg-muted);
+    border-color: var(--ty-border);
+}
+
+.o_web_client .btn-link {
+    color: var(--ty-primary);
+    text-decoration: none;
+}
+
+.o_web_client .btn-link:hover {
+    color: var(--ty-primary-dark);
+    text-decoration: underline;
+}
+
+/* ==========================================================================
+   7. Badges & status pills
+   ========================================================================== */
+
+.o_web_client .badge {
+    border-radius: 999px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+.o_web_client .badge.text-bg-primary,
+.o_web_client .badge.bg-primary {
+    background: var(--ty-gradient) !important;
+}
+
+.o_web_client .badge.text-bg-light,
+.o_web_client .badge.bg-light,
+.o_web_client .badge.text-bg-default,
+.o_web_client .badge.bg-default {
+    background-color: var(--ty-bg-muted) !important;
+    color: var(--ty-text-muted) !important;
+    outline: 1px solid var(--ty-border) !important;
+}
+
+/* ==========================================================================
+   8. Form views
+   ========================================================================== */
+
+/* Canvas behind the sheet */
+.o_form_view .o_form_sheet_bg {
+    background-color: var(--ty-bg-app);
+    background-image: radial-gradient(rgba(15, 23, 42, 0.035) 1px, transparent 1px);
+    background-size: 22px 22px;
+}
+
+/* The sheet becomes an elevated card */
+.o_form_view .o_form_sheet_bg > .o_form_sheet {
+    background-color: var(--ty-bg-surface);
+    border: 1px solid var(--ty-border);
+    border-radius: var(--ty-radius-lg);
+    box-shadow: var(--ty-shadow-md);
+}
+
+/* Statusbar: floating action strip */
+.o_form_statusbar {
+    border-bottom: 1px solid var(--ty-border);
+    background-color: var(--ty-bg-surface);
+}
+
+.o_statusbar_status .o_arrow_button {
+    background-color: transparent;
+    border-color: var(--ty-border);
+    color: var(--ty-text-muted);
+}
+
+.o_statusbar_status .o_arrow_button:not(.disabled):hover {
+    color: var(--ty-primary-dark);
+    background-color: var(--ty-primary-soft);
+}
+
+/* Current step: gradient filled */
+.o_statusbar_status .o_arrow_button.disabled {
+    background: var(--ty-gradient);
+    border-color: transparent;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.o_statusbar_status .o_arrow_button.disabled::before,
+.o_statusbar_status .o_arrow_button.disabled::after {
+    border-left-color: var(--ty-primary-dark);
+}
+
+/* Buttons row under the statusbar */
+.o_form_statusbar .o_statusbar_buttons .btn {
+    margin: 2px 4px 2px 0;
+}
+
+/* Section labels */
+.o_form_view .o_group .o_td_label,
+.o_form_view .o_group label,
+.o_form_view .o_form_label {
+    color: var(--ty-text-muted);
+    font-weight: 500;
+}
+
+.o_form_view h1,
+.o_form_view .o_form_title {
+    color: var(--ty-text);
+}
+
+/* Inputs: clean underline with glowing focus */
+.o_web_client .o_input {
+    border-radius: var(--ty-radius-sm);
+    transition: border-color 0.18s var(--ty-ease), box-shadow 0.18s var(--ty-ease);
+}
+
+.o_web_client .o_field_widget.o_field_editable input.o_input:focus,
+.o_web_client .o_field_widget.o_field_editable textarea.o_input:focus,
+.o_web_client .o_field_widget.o_field_editable select.o_input:focus,
+.o_web_client .o_input:focus {
+    border-color: var(--ty-primary);
+    box-shadow: 0 0 0 3px var(--ty-primary-glow);
+    outline: none;
+}
+
+/* Stat buttons */
+.oe_button_box .o_stat_button {
+    border-radius: var(--ty-radius);
+    transition: background-color 0.18s var(--ty-ease), transform 0.18s var(--ty-ease);
+}
+
+.oe_button_box .o_stat_button:hover {
+    background-color: var(--ty-primary-softer);
+    transform: translateY(-1px);
+}
+
+/* Notebook tabs */
+.o_notebook .nav-tabs {
+    border-bottom: 1px solid var(--ty-border);
+}
+
+.o_notebook .nav-tabs .nav-link {
+    border: 0;
+    border-radius: 0;
+    color: var(--ty-text-muted);
+    font-weight: 500;
+    position: relative;
+    transition: color 0.18s var(--ty-ease);
+}
+
+.o_notebook .nav-tabs .nav-link:hover {
+    color: var(--ty-primary);
+}
+
+.o_notebook .nav-tabs .nav-link.active {
+    background-color: transparent;
+    border: 0;
+    color: var(--ty-primary);
+    font-weight: 600;
+}
+
+.o_notebook .nav-tabs .nav-link.active::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 2px;
+    background: var(--ty-gradient);
+    border-radius: 2px;
+}
+
+/* ==========================================================================
+   9. List views
+   ========================================================================== */
+
+.o_content .o_list_renderer {
+    background-color: var(--ty-bg-surface);
+}
+
+.o_list_view .o_list_table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.o_list_view .o_list_table thead {
+    background-color: var(--ty-bg-muted);
+    box-shadow: inset 0 -1px 0 var(--ty-border);
+}
+
+.o_list_view .o_list_table thead th {
+    color: var(--ty-text-muted);
+    font-weight: 600;
+    font-size: 0.85em;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 0;
+}
+
+.o_list_view .o_list_table tbody tr {
+    transition: background-color 0.12s var(--ty-ease);
+}
+
+.o_list_view .o_list_table tbody tr:hover {
+    background-color: var(--ty-primary-softer);
+}
+
+.o_list_view .o_list_table td,
+.o_list_view .o_list_table th {
+    border-bottom: 1px solid var(--ty-border);
+}
+
+.o_list_view .o_list_table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.o_list_view .o_list_table .o_data_cell:not(:disabled):hover {
+    box-shadow: inset 0 -2px 0 var(--ty-primary);
+}
+
+/* ==========================================================================
+   10. Kanban views
+   ========================================================================== */
+
+.o_kanban_renderer {
+    background-color: var(--ty-bg-app);
+}
+
+.o_kanban_view .o_kanban_record {
+    background-color: var(--ty-bg-surface);
+    border: 1px solid var(--ty-border);
+    border-radius: var(--ty-radius);
+    box-shadow: var(--ty-shadow-sm);
+    transition: transform 0.2s var(--ty-ease), box-shadow 0.2s var(--ty-ease),
+                border-color 0.2s var(--ty-ease);
+}
+
+.o_kanban_view .o_kanban_record:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--ty-shadow-md);
+    border-color: rgba(79, 70, 229, 0.35);
+}
+
+.o_kanban_view .o_kanban_record .o_kanban_record_title {
+    font-weight: 600;
+    color: var(--ty-text);
+}
+
+.o_kanban_view .o_kanban_record .o_kanban_record_subtitle,
+.o_kanban_view .o_kanban_record .text-muted {
+    color: var(--ty-text-muted);
+}
+
+/* Grouped columns */
+.o_kanban_view.o_kanban_grouped .o_kanban_group {
+    background-color: rgba(15, 23, 42, 0.028);
+    border-radius: var(--ty-radius);
+}
+
+.o_kanban_view .o_kanban_header .o_kanban_header_title,
+.o_kanban_view .o_column_header .o_kanban_header_title {
+    color: var(--ty-text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.8em;
+    letter-spacing: 0.05em;
+}
+
+/* Column drag handle & quick create */
+.o_kanban_view .o_kanban_quick_create .o_form_sheet {
+    border-radius: var(--ty-radius);
+    box-shadow: var(--ty-shadow-md);
+}
+
+/* ==========================================================================
+   11. Chatter
+   ========================================================================== */
+
+.o-mail-Chatter-top {
+    border-bottom: 1px solid var(--ty-border);
+}
+
+.o-mail-Composer-input textarea,
+.o-mail-Composer-input .o-mail-Composer-inputRichText {
+    border-radius: var(--ty-radius);
+}
+
+.o-mail-Message {
+    border-radius: var(--ty-radius);
+}
+
+/* ==========================================================================
+   12. Dialogs & modals
+   ========================================================================== */
+
+.o_web_client .modal-content {
+    border: 0;
+    border-radius: var(--ty-radius-lg);
+    box-shadow: var(--ty-shadow-lg);
+}
+
+.o_web_client .modal-header {
+    border-bottom: 1px solid var(--ty-border);
+    background-color: var(--ty-bg-muted);
+    border-radius: var(--ty-radius-lg) var(--ty-radius-lg) 0 0;
+}
+
+.o_web_client .modal-header .modal-title {
+    font-weight: 600;
+    color: var(--ty-text);
+}
+
+.o_web_client .modal-footer {
+    border-top: 1px solid var(--ty-border);
+}
+
+/* ==========================================================================
+   13. Notifications
+   ========================================================================== */
+
+.o_notification_manager .o_notification {
+    border-radius: var(--ty-radius);
+    box-shadow: var(--ty-shadow-md);
+    overflow: hidden;
+}
+
+/* ==========================================================================
+   14. Progress bars & misc widgets
+   ========================================================================== */
+
+.o_web_client .progress {
+    border-radius: 999px;
+    background-color: var(--ty-bg-muted);
+}
+
+.o_web_client .progress-bar {
+    background: var(--ty-gradient);
+}
+
+.o_web_client .o_checkbox_boolean_field input:checked + label,
+.o_web_client .form-check-input:checked {
+    background-color: var(--ty-primary);
+    border-color: var(--ty-primary);
+}
+
+/* Sample-data empty states get a softer look */
+.o_view_sample_data {
+    opacity: 0.75;
+}
