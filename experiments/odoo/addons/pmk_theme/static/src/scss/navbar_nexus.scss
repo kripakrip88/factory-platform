@@ -447,3 +447,93 @@ body.o_nexus_dark {
     transition: none;
   }
 }
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// СТРОКА ПОИСКА.
+//
+// ЧТО БЫЛО. Три контура друг в друге: поле ввода рисовало собственную рамку
+// с радиусом 8 px, капсула вокруг него — свою с радиусом 999 px, и поверх
+// всего лежало постоянное оранжевое свечение 3 px. Плюс кнопка-раскрывашка
+// справа стояла отдельным прямоугольником с третьим радиусом.
+//
+// ПРАВИЛА, ПО КОТОРЫМ ЭТО ЧИНИТСЯ (навык ui-ux-pro-max):
+//   • один элемент — один контур: вложенные рамки одного цвета читаются как
+//     дефект отрисовки, а не как замысел;
+//   • state-clarity — покой не должен выглядеть как фокус. Свечение обязано
+//     появляться при фокусе, иначе оно перестаёт что-либо означать;
+//   • elevation-consistent / icon-style-consistent — согласованная шкала
+//     радиусов: в одном составном элементе не может быть трёх разных.
+// ═══════════════════════════════════════════════════════════════════════════
+
+.o_searchview {
+  // Капсула — единственный контур. Свечение снимаем из состояния покоя.
+  box-shadow: none !important;
+  border-color: $pmk-nx-border !important;
+  transition: border-color .15s ease-out, box-shadow .15s ease-out;
+
+  // Поле внутри капсулы своего контура не имеет: оно и есть её содержимое.
+  .o_searchview_input,
+  input.o_searchview_input {
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+  }
+
+  // Фокус показываем ОДИН раз и на капсуле — там, где человек видит границу
+  // элемента. Рамка фокуса внутри капсулы была бы вторым контуром.
+  &:focus-within {
+    border-color: #ff6a1a !important;
+    box-shadow: 0 0 0 3px rgba(255, 106, 26, 0.14) !important;
+  }
+
+  // Лупа слева — приглушённая: это указатель назначения поля, а не действие.
+  .o_searchview_icon {
+    color: $pmk-nx-slate;
+  }
+}
+
+// Кнопка «Фильтры / Группировать / Избранное» справа от поиска. Примыкает к
+// капсуле и повторяет её скругление с правой стороны — вместе они читаются
+// одним составным элементом, а не двумя разными.
+.o_cp_searchview + .o_searchview_dropdown_toggler,
+.o_searchview_dropdown_toggler {
+  border: 1px solid $pmk-nx-border !important;
+  border-left: 0 !important;
+  border-radius: 0 999px 999px 0 !important;
+  margin-left: -1px;              // рамки не удваиваются на стыке
+  background: transparent !important;
+  color: $pmk-nx-slate !important;
+
+  &:hover {
+    background: rgba(22, 23, 27, 0.05) !important;
+    color: $pmk-nx-ink !important;
+  }
+
+  &.show,
+  &:focus-visible {
+    border-color: #ff6a1a !important;
+    color: #ff6a1a !important;
+  }
+}
+
+// В тёмном режиме темы — те же правила на её поверхностях.
+body.o_nexus_dark {
+  .o_searchview {
+    border-color: rgba(255, 255, 255, 0.12) !important;
+
+    .o_searchview_icon { color: rgba(244, 241, 234, 0.62); }
+  }
+
+  .o_searchview_dropdown_toggler {
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    color: rgba(244, 241, 234, 0.72) !important;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.08) !important;
+      color: #f4f1ea !important;
+    }
+  }
+}
