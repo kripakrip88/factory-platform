@@ -555,3 +555,133 @@ body.o_nexus_dark {
     width: 100% !important;
   }
 }
+
+
+// ─── Шапка документа: поля слева, итоги карточками справа ─────────────────
+//
+// ЗАЧЕМ ЗДЕСЬ. Разметка расчёта металлопроката (pmk_calc) опирается на классы
+// pmk-doc-head, pmk-kpi и pmk-field, а оформлены они были в тёмном forms.scss
+// — том самом, что выключен вместе с прежней темой. Классы остались, стили
+// исчезли: шапка рассыпалась в один столбик, и «Общий вес» шёл тем же кеглем,
+// что примечание.
+//
+// Замечено 23.09.2026, когда в шапку добавились денежные итоги: столбик стал
+// заметно длиннее (460 px), хотя разъехался он раньше — правка только сделала
+// это очевидным.
+//
+// Переносим геометрию и даём светлые цвета. Оформление то же, что у прочих
+// поверхностей темы: белая плашка, рамка #EAE6DC, скругление 12.
+.pmk-doc-head {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  align-items: start;
+
+  // Узкий экран: в 1fr итог с подписью не помещается, колонки встают друг
+  // под друга.
+  @media (max-width: 1100px) {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+.pmk-doc-head__fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 20px;
+  align-content: start;
+
+  @media (max-width: 700px) {
+    grid-template-columns: 1fr;
+  }
+
+  .o_inner_group { max-width: 100%; }
+}
+
+.pmk-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+
+  // Примечание — во всю ширину: строка текста в половину колонки обрывается
+  // на середине фразы.
+  &--wide { grid-column: 1 / -1; }
+
+  > label {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 400;
+    color: #6b6f76;
+  }
+
+  > .o_field_widget {
+    display: flex;
+    // Направление задаём явно: у .o_field_widget оно приходит column, и
+    // единственный потомок вставал по центру рамки.
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+.pmk-kpi {
+  display: grid;
+  // В ряд, а не стопкой: плашки одна под другой растягивают шапку выше блока
+  // полей, и правая колонка тянет вниз весь документ.
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.pmk-kpi__card {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  background: #fff;
+  border: 1px solid #eae6dc;
+  border-radius: 12px;
+  padding: 10px 14px;
+  min-width: 0;
+}
+
+.pmk-kpi__label {
+  font-size: 11px;
+  color: #6b6f76;
+  white-space: nowrap;
+}
+
+// Главное число. Моноширинные цифры, чтобы при пересчёте оно не дёргалось
+// по ширине.
+.pmk-kpi__value {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  margin-top: 2px;
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1.15;
+  color: #14141a;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+
+  .o_field_widget { font-size: inherit; font-weight: inherit; }
+}
+
+// Строка под плашками: счётчики и предупреждение о позициях без цены.
+.pmk-kpi__note {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 5px;
+  padding: 0 4px;
+  font-size: 12px;
+  color: #6b6f76;
+  font-variant-numeric: tabular-nums;
+
+  .o_field_widget { color: #14141a; font-weight: 500; }
+}
+
+.pmk-kpi__dot { opacity: 0.4; }
