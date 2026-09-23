@@ -433,7 +433,8 @@ class MetalSpecLineCost(models.Model):
         self.price_ton = 0.0
 
     @api.depends("calc_mode", "spec_id.utilization_sheet_pct",
-                 "spec_id.utilization_linear_pct")
+                 "spec_id.utilization_linear_pct",
+                 "layout_utilization_pct", "layout_state")
     def _compute_utilization(self):
         for line in self:
             if line.utilization_pct:
@@ -442,7 +443,14 @@ class MetalSpecLineCost(models.Model):
                 continue
             spec = line.spec_id
             if line.calc_mode == "sheet":
-                line.utilization_pct = spec.utilization_sheet_pct or 100.0
+                # Посчитанная раскладка бьёт умолчание документа: она знает
+                # размеры этой конкретной заготовки, а коэффициент — нет.
+                # Именно это отвечает на «от 50 до 97% бывает»: доля считается,
+                # а не угадывается.
+                if line.layout_state in ("ok", "exact") and line.layout_utilization_pct:
+                    line.utilization_pct = line.layout_utilization_pct
+                else:
+                    line.utilization_pct = spec.utilization_sheet_pct or 100.0
             elif line.calc_mode == "linear":
                 line.utilization_pct = spec.utilization_linear_pct or 100.0
             else:

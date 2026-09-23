@@ -94,11 +94,9 @@
         отправленное клиенту КП не должно менять сумму само по себе после
         заливки нового прайса.
       -->
-      <xpath expr="//div[hasclass('oe_title')]" position="before">
-        <header>
-          <button name="action_refresh_prices" type="object"
-                  string="Перечитать цены" class="btn-secondary"/>
-        </header>
+      <xpath expr="//header" position="inside">
+        <button name="action_refresh_prices" type="object"
+                string="Перечитать цены" class="btn-secondary"/>
       </xpath>
 
       <!--

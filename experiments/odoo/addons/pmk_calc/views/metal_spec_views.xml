@@ -6,6 +6,16 @@
     <field name="model">pmk.metal.spec</field>
     <field name="arch" type="xml">
       <form string="Спецификация">
+        <!--
+          Кнопка раскладки в шапке листа. Считает ЧЕРНОВУЮ укладку: сколько
+          заготовок влезает в лист и сколько листов покупать. Нажатие —
+          осознанный шаг: увидел число листов и решаешь, нести технологу или
+          закладывать как есть.
+        -->
+        <header>
+          <button name="action_draft_layout" type="object"
+                  string="Черновая раскладка" class="btn-secondary"/>
+        </header>
         <sheet>
           <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
           <!--
@@ -35,6 +45,18 @@
               <div class="pmk-field pmk-field--wide">
                 <label for="note"/>
                 <field name="note" nolabel="1" placeholder="Примечание…"/>
+              </div>
+              <!--
+                Из какого листа считаем и сколько съедает рез. Стоят рядом:
+                оба нужны только раскладке и меняются вместе.
+              -->
+              <div class="pmk-field">
+                <label for="layout_sheet_size"/>
+                <field name="layout_sheet_size" nolabel="1"/>
+              </div>
+              <div class="pmk-field">
+                <label for="layout_kerf_mm"/>
+                <field name="layout_kerf_mm" nolabel="1"/>
               </div>
             </div>
 
@@ -102,6 +124,13 @@
               </field>
               <field name="line_sheet_ids" optional="hide" string="Состав: лист">
                 <list>
+                  <!-- Раскладка: объявлены, чтобы данные читались; показываются
+                       по выбору пользователя через настройку колонок. -->
+                  <field name="layout_state" optional="hide"/>
+                  <field name="layout_per_sheet" optional="hide"/>
+                  <field name="layout_sheets" optional="hide" sum="Листов"/>
+                  <field name="layout_scheme" optional="hide"/>
+                  <field name="layout_utilization_pct" optional="hide"/>
                   <field name="sequence"/>
                   <field name="calc_mode"/>
                   <field name="detail_name"/>
