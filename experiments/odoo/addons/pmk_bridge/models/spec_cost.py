@@ -432,6 +432,20 @@ class MetalSpecLineCost(models.Model):
         self.price_kg = 0.0
         self.price_ton = 0.0
 
+    def _apply_draft_layout(self, width, length, kerf_mm):
+        """После раскладки её доля становится рабочей.
+
+        Расчёт доли в строке намеренно не перетирает непустое значение: иначе
+        пропадала бы ручная правка. Но нажатие кнопки — это и есть просьба
+        посчитать заново, поэтому здесь пишем результат прямо, минуя то
+        правило. Без этого раскладка считалась, показывала 56%, а деньги
+        продолжали считаться по умолчанию документа — 52%.
+        """
+        super()._apply_draft_layout(width, length, kerf_mm)
+        for line in self:
+            if line.layout_state in ("ok", "exact") and line.layout_utilization_pct:
+                line.utilization_pct = line.layout_utilization_pct
+
     @api.depends("calc_mode", "spec_id.utilization_sheet_pct",
                  "spec_id.utilization_linear_pct",
                  "layout_utilization_pct", "layout_state")
