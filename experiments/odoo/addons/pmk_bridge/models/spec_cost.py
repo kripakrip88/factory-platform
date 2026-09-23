@@ -467,12 +467,21 @@ class MetalSpecLineCost(models.Model):
 
             share = (line.utilization_pct or 100.0) / 100.0
             qty = line.qty or 0
+            fact_one = (clean_one / share) if share else 0.0
+            weight_fact = (line.weight_one / share) if share else 0.0
+
+            # ⚠️ ИТОГ СЧИТАЕТСЯ ОТ ЛОКАЛЬНОГО ЧИСЛА, А НЕ ОТ ПОЛЯ. Monetary
+            # округляет значение до копеек при записи, и `line.cost_fact_one`
+            # сразу после присваивания вернёт уже округлённое. Умножение
+            # такого числа на количество разъезжается с чистой стоимостью:
+            # замер на живой строке (850 мм × 10 шт) дал 2909,10 против
+            # 2909,14 — четыре копейки из ниоткуда.
             line.cost_clean_one = clean_one
             line.cost_clean_total = clean_one * qty
-            line.cost_fact_one = clean_one / share if share else 0.0
-            line.cost_fact_total = line.cost_fact_one * qty
-            line.weight_fact_one = (line.weight_one / share) if share else 0.0
-            line.weight_fact_total = line.weight_fact_one * qty
+            line.cost_fact_one = fact_one
+            line.cost_fact_total = fact_one * qty
+            line.weight_fact_one = weight_fact
+            line.weight_fact_total = weight_fact * qty
 
 
 class PaintCoatingNotMaterial(models.Model):
