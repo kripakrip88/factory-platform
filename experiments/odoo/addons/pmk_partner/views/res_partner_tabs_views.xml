@@ -39,6 +39,21 @@
         нельзя: pmk_dadata зависит от pmk_partner, и во время загрузки этого
         файла её ещё не существует — xpath упадёт и уронит базу целиком.
       -->
+      <!--
+        Подпись над названием — как «Товар» в карточке товара
+        (product_views.xml: <div class="oe_title"><label for="name"/><h1>…).
+        У контрагента её не было: название начиналось сразу, и две карточки
+        читались по-разному с первого взгляда.
+
+        Ставим перед переключателем «Гость / Компания», внутри той же колонки
+        шапки. Ограничение (//sheet)[1] обязательно: во вложенной форме
+        контактного лица есть своё поле company_type, и без него подпись
+        уехала бы туда.
+      -->
+      <xpath expr="(//sheet)[1]//field[@name='company_type']" position="before">
+        <label for="name" string="Контрагент" class="fw-bold text-muted small"/>
+      </xpath>
+
       <xpath expr="//notebook/page[@name='contact_addresses']" position="before">
         <page string="Основная информация" name="pmk_main"/>
       </xpath>
