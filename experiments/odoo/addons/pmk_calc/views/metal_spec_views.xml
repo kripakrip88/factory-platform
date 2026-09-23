@@ -51,15 +51,7 @@
                 <label for="note"/>
                 <field name="note" nolabel="1" placeholder="Примечание…"/>
               </div>
-              <!--
-                Ширина реза — свойство станка, поэтому одна на документ.
-                Габарит листа, наоборот, у каждой детали свой и стоит в строке
-                состава: в заказе режут листы разной толщины и размера.
-              -->
-              <div class="pmk-field">
-                <label for="layout_kerf_mm"/>
-                <field name="layout_kerf_mm" nolabel="1"/>
-              </div>
+
             </div>
 
             <!--

@@ -24,10 +24,10 @@ from .sheeting import DEFAULT_KERF_MM, plan_sheets
 class MetalSpecLayout(models.Model):
     _inherit = "pmk.metal.spec"
 
-    layout_kerf_mm = fields.Float(
-        "Ширина реза, мм", default=DEFAULT_KERF_MM, digits=(4, 2),
-        help="Сколько металла съедает рез. Лазер — 0,2 мм; у плазмы больше, "
-             "у гильотины реза нет вовсе.")
+    # ШИРИНЫ РЕЗА НА ФОРМЕ НЕТ. Она была, и владелец убрал её как лишнюю —
+    # справедливо: рез лазера 0,2 мм тонет в допуске на ряд (5 мм), и на число
+    # листов почти не влияет. Значение берётся константой из sheeting.py.
+    # Появится станок с заметным резом — плазма режет до 2 мм — поле вернём.
 
     def action_draft_layout(self):
         """Предварительный расчёт металла: сколько листов покупать.
@@ -43,7 +43,7 @@ class MetalSpecLayout(models.Model):
         """
         for spec in self:
             for line in spec.mapped("product_ids.line_sheet_ids"):
-                line._apply_draft_layout(kerf_mm=spec.layout_kerf_mm)
+                line._apply_draft_layout()
         return True
 
 
