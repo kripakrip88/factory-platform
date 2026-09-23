@@ -53,6 +53,15 @@
     # соответствие уже лежит в ir_model_data, хук переносит его в поле.
     # Работает ТОЛЬКО при install, при -u не вызывается — см. hooks.py.
     "post_init_hook": "link_reference_products",
+    # Колонка «Закупка» в составе изделия. Файлы лежат здесь, а не в
+    # pmk_calc: без моста поля cost_fact_total нет, и калькулятор,
+    # обещающий работу без номенклатуры, упал бы при открытии расчёта.
+    "assets": {
+        "web.assets_backend": [
+            "pmk_bridge/static/src/js/product_lines_cost.js",
+            "pmk_bridge/static/src/xml/product_lines_cost.xml",
+        ],
+    },
     "installable": True,
     "application": False,
     "auto_install": False,
