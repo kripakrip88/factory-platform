@@ -45,6 +45,10 @@
         "data/product_category.xml",
         "data/product_attribute.xml",
     ],
+    # Разовое заполнение связи «справочник → карточка» при установке: готовое
+    # соответствие уже лежит в ir_model_data, хук переносит его в поле.
+    # Работает ТОЛЬКО при install, при -u не вызывается — см. hooks.py.
+    "post_init_hook": "link_reference_products",
     "installable": True,
     "application": False,
     "auto_install": False,

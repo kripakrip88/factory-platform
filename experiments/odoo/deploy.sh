@@ -14,7 +14,11 @@ DEST="$STAND/addons-extra"
 BRANCH="${BRANCH:-feature/experiment-carbon}"
 
 # Наши модули — обновляются через -u на каждом деплое.
-OURS="pmk_calc pmk_theme pmk_pdf pmk_cut pmk_mail_ui pmk_partner pmk_purchase pmk_dadata pmk_laser"
+# pmk_bridge добавлен 23.09.2026. До этого он жил ТОЛЬКО в репозитории: на
+# сервере файлов не было, в ir_module_module записи не было, а 790 служебных
+# строк связи «справочник → карточка» в базе создали скрипты, запущенные
+# руками. Связь держалась на данных модуля, которого Odoo не знает.
+OURS="pmk_calc pmk_theme pmk_pdf pmk_cut pmk_mail_ui pmk_partner pmk_purchase pmk_dadata pmk_laser pmk_bridge"
 # Вендорские — только раскладываются. -u им не нужен: мы правим в них код и
 # переводы, а не данные, а лишнее обновление перезапускает их data-файлы.
 #
