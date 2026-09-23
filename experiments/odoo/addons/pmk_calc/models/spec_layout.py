@@ -24,40 +24,41 @@ from .sheeting import DEFAULT_KERF_MM, plan_sheets
 class MetalSpecLayout(models.Model):
     _inherit = "pmk.metal.spec"
 
-    # Габарит листа, из которого считаем. Три значения — те, что заведены
-    # характеристикой номенклатуры; 1500×6000 стоит по умолчанию, потому что
-    # цены в прайсах заведены именно на него.
-    layout_sheet_size = fields.Selection(
-        [("1500x6000", "1500 × 6000"),
-         ("1500x3000", "1500 × 3000"),
-         ("1000x4000", "1000 × 4000")],
-        "Габарит листа", default="1500x6000",
-        help="Из какого листа считаем раскладку. По умолчанию 1500×6000 — "
-             "на него заведены цены поставщика.")
-
     layout_kerf_mm = fields.Float(
         "Ширина реза, мм", default=DEFAULT_KERF_MM, digits=(4, 2),
         help="Сколько металла съедает рез. Лазер — 0,2 мм; у плазмы больше, "
              "у гильотины реза нет вовсе.")
 
-    def _layout_sheet_dims(self):
-        """Габарит листа числами: (ширина, длина) в миллиметрах."""
-        self.ensure_one()
-        raw = (self.layout_sheet_size or "1500x6000").split("x")
-        return float(raw[0]), float(raw[1])
-
     def action_draft_layout(self):
-        """Посчитать черновую раскладку по всем листовым строкам."""
+        """Предварительный расчёт металла: сколько листов покупать.
+
+        ⚠️ ГАБАРИТ БЕРЁТСЯ ИЗ СТРОКИ, А НЕ ИЗ ДОКУМЕНТА. Сначала он стоял на
+        документе — один на весь заказ, и владелец сразу указал, что так
+        неверно: в заказе листы разной толщины и разного размера, и резать их
+        будут из разного проката.
+
+        ⚠️ РЕЗУЛЬТАТ НЕ ИДЁТ В СЕБЕСТОИМОСТЬ. Она считается по чистому весу
+        справочника. Этот расчёт — заготовка для технолога: он проверяет,
+        подтверждает и отдаёт в закупку.
+        """
         for spec in self:
-            width, length = spec._layout_sheet_dims()
-            lines = spec.mapped("product_ids.line_sheet_ids")
-            for line in lines:
-                line._apply_draft_layout(width, length, spec.layout_kerf_mm)
+            for line in spec.mapped("product_ids.line_sheet_ids"):
+                line._apply_draft_layout(kerf_mm=spec.layout_kerf_mm)
         return True
 
 
 class MetalSpecLineLayout(models.Model):
     _inherit = "pmk.metal.spec.line"
+
+    # Габарит листа у КАЖДОЙ строки свой: деталь 3 мм режут из одного листа,
+    # деталь 10 мм — из другого, и размер проката может отличаться.
+    layout_sheet_size = fields.Selection(
+        [("1500x6000", "1500 × 6000"),
+         ("1500x3000", "1500 × 3000"),
+         ("1000x4000", "1000 × 4000")],
+        "Габарит листа", default="1500x6000",
+        help="Из какого листа режем эту деталь. По умолчанию 1500×6000 — "
+             "на него заведены цены поставщика.")
 
     layout_per_sheet = fields.Integer(
         "Заготовок в листе", readonly=True,
@@ -84,11 +85,18 @@ class MetalSpecLineLayout(models.Model):
         help="Площадь нужных заготовок к площади купленных листов. "
              "На малом заказе доля низкая честно: лист покупается целиком.")
 
-    def _apply_draft_layout(self, width, length, kerf_mm):
+    def _layout_sheet_dims(self):
+        """Габарит листа этой строки числами: (ширина, длина) в миллиметрах."""
+        self.ensure_one()
+        raw = (self.layout_sheet_size or "1500x6000").split("x")
+        return float(raw[0]), float(raw[1])
+
+    def _apply_draft_layout(self, kerf_mm=None):
         """Посчитать раскладку одной строки и записать результат."""
         self.ensure_one()
         if self.calc_mode != "sheet":
             return
+        width, length = self._layout_sheet_dims()
 
         # Количество заготовок — на ВСЕ изделия: qty в строке задано на одно
         # изделие, а лист покупается под заказ целиком.
@@ -103,7 +111,7 @@ class MetalSpecLineLayout(models.Model):
         self.layout_state = plan["state"]
         self.layout_utilization_pct = plan["utilization_pct"]
 
-    @api.onchange("a_mm", "b_mm", "qty", "sheet_id")
+    @api.onchange("a_mm", "b_mm", "qty", "sheet_id", "layout_sheet_size")
     def _onchange_layout_stale(self):
         """Размеры поменяли — прежняя раскладка больше не про эту деталь.
 
