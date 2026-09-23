@@ -58,6 +58,7 @@
     # обещающий работу без номенклатуры, упал бы при открытии расчёта.
     "assets": {
         "web.assets_backend": [
+            "pmk_bridge/static/src/scss/spec_cost.scss",
             "pmk_bridge/static/src/js/product_lines_cost.js",
             "pmk_bridge/static/src/xml/product_lines_cost.xml",
         ],
