@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+  <!--
+    Деньги в форме расчёта металлопроката.
+
+    Вид наследуется, а не переписывается: разметка калькулятора живёт в
+    pmk_calc и продолжает работать без моста. Установлен мост — появляются
+    поля цены, не установлен — форма прежняя.
+  -->
+  <record id="view_metal_spec_form_cost" model="ir.ui.view">
+    <field name="name">pmk.metal.spec.form.cost</field>
+    <field name="model">pmk.metal.spec</field>
+    <field name="inherit_id" ref="pmk_calc.view_metal_spec_form"/>
+    <field name="arch" type="xml">
+
+      <!--
+        Настройки расчёта — рядом с клиентом и датой, в той же колонке ввода.
+        Поставщик и дата цен стоят вместе: это одна мысль «чей прайс и на
+        какое число», разносить их по разным углам формы незачем.
+      -->
+      <xpath expr="//div[hasclass('pmk-doc-head__fields')]" position="inside">
+        <div class="pmk-field">
+          <label for="supplier_id"/>
+          <field name="supplier_id" nolabel="1"
+                 placeholder="Любой, по рейтингу…"/>
+        </div>
+        <div class="pmk-field">
+          <label for="price_date"/>
+          <field name="price_date" nolabel="1"/>
+        </div>
+        <!--
+          Коэффициенты использования стоят здесь, а не в отдельной вкладке:
+          менеджер меняет их в момент расчёта, а не при настройке документа.
+          Доля листа спрашивается всегда, доля проката — только когда в
+          составе есть прокат: лишнее поле на экране хуже отсутствующего.
+        -->
+        <div class="pmk-field">
+          <label for="utilization_sheet_pct"/>
+          <field name="utilization_sheet_pct" nolabel="1"/>
+        </div>
+        <div class="pmk-field">
+          <label for="utilization_linear_pct"/>
+          <field name="utilization_linear_pct" nolabel="1"/>
+        </div>
+      </xpath>
+
+      <!--
+        Итоги в деньгах — теми же карточками, что и вес. Закупка стоит первой:
+        это число, которое ляжет в себестоимость, а «металл в деталях» рядом
+        показывает, сколько из него дошло до изделия.
+      -->
+      <xpath expr="//div[hasclass('pmk-kpi')]" position="inside">
+        <div class="pmk-kpi__card">
+          <div class="pmk-kpi__label">Металл к закупке</div>
+          <div class="pmk-kpi__value">
+            <field name="total_cost_fact" widget="monetary"/>
+          </div>
+        </div>
+        <div class="pmk-kpi__card">
+          <div class="pmk-kpi__label">Из них в деталях</div>
+          <div class="pmk-kpi__value">
+            <field name="total_cost_clean" widget="monetary"/>
+          </div>
+        </div>
+        <!--
+          Цена раскроя — разница между закупкой и тем, что вошло в деталь.
+          Отдельной строкой, потому что это единственное место, где видно
+          стоимость отхода: в сумме заказа она растворяется.
+        -->
+        <div class="pmk-kpi__note">
+          <span>Цена раскроя:</span>
+          <field name="total_cost_waste" widget="monetary"/>
+          <span class="pmk-kpi__dot">·</span>
+          <span>Купить, т:</span>
+          <field name="total_weight_fact_t" digits="[12,3]"/>
+          <!--
+            Предупреждение показывается только когда есть что показать.
+            Молчаливый ноль в итоге опаснее любой ошибки: КП уходит клиенту
+            с бесплатным металлом, и замечают это после отгрузки.
+          -->
+          <span class="pmk-kpi__dot" invisible="not price_incomplete">·</span>
+          <span class="text-danger" invisible="not price_incomplete">
+            Без цены позиций: <field name="no_price_count" nolabel="1"/>
+          </span>
+        </div>
+        <field name="price_incomplete" invisible="1"/>
+        <field name="currency_id" invisible="1"/>
+      </xpath>
+
+      <!--
+        Кнопка обновления цен — в шапке листа, рядом с номером документа.
+        Пересчёт ручной по замыслу: спецификация считается НА ДАТУ, и
+        отправленное клиенту КП не должно менять сумму само по себе после
+        заливки нового прайса.
+      -->
+      <xpath expr="//div[hasclass('oe_title')]" position="before">
+        <header>
+          <button name="action_refresh_prices" type="object"
+                  string="Перечитать цены" class="btn-secondary"/>
+        </header>
+      </xpath>
+
+      <!--
+        Деньги в составе изделия.
+
+        ⚠️ ПОЛЯ ОБЪЯВЛЯЮТСЯ ВО ВСЕХ ЧЕТЫРЁХ НАБОРАХ. Состав правится в четырёх
+        вкладках — прокат, лист, метизы, покрытия, — и у каждой своя разметка.
+        Объявить поле в одной значит получить пустые суммы в трёх остальных:
+        Odoo не запрашивает у сервера то, чего нет в разметке списка.
+
+        ⚠️ БЕЗ column_invisible. На этом стенде уже обжигались: постоянно
+        невидимая колонка вырезается из запроса (getFieldsSpec её пропускает),
+        и поле приходит нулём. Прячем пользовательской настройкой
+        optional="hide" — колонка скрыта, а данные читаются.
+      -->
+      <xpath expr="//field[@name='line_linear_ids']/list" position="inside">
+        <field name="price_state" optional="hide"/>
+        <field name="price_unit" optional="hide"/>
+        <field name="utilization_pct" optional="hide"/>
+        <field name="cost_clean_total" optional="hide"/>
+        <field name="cost_fact_total" optional="show" sum="Закупка"/>
+        <field name="currency_id" column_invisible="1"/>
+      </xpath>
+
+      <xpath expr="//field[@name='line_sheet_ids']/list" position="inside">
+        <field name="price_state" optional="hide"/>
+        <field name="price_unit" optional="hide"/>
+        <field name="utilization_pct" optional="show"/>
+        <field name="cost_clean_total" optional="hide"/>
+        <field name="cost_fact_total" optional="show" sum="Закупка"/>
+        <field name="currency_id" column_invisible="1"/>
+      </xpath>
+
+      <xpath expr="//field[@name='line_fastener_ids']/list" position="inside">
+        <field name="price_state" optional="hide"/>
+        <field name="price_unit" optional="hide"/>
+        <field name="cost_fact_total" optional="show" sum="Закупка"/>
+        <field name="currency_id" column_invisible="1"/>
+      </xpath>
+
+      <xpath expr="//field[@name='line_paint_ids']/list" position="inside">
+        <field name="price_state" optional="hide"/>
+        <field name="price_unit" optional="hide"/>
+        <field name="cost_fact_total" optional="show" sum="Закупка"/>
+        <field name="currency_id" column_invisible="1"/>
+      </xpath>
+
+    </field>
+  </record>
+
+  <!--
+    Рейтинг поставщика — на карточке контрагента, во вкладке закупок нет
+    смысла: её может не быть. Ставим рядом с реквизитами, одной строкой.
+  -->
+  <record id="view_partner_form_supplier_rank" model="ir.ui.view">
+    <field name="name">res.partner.form.supplier.rank</field>
+    <field name="model">res.partner</field>
+    <field name="inherit_id" ref="base.view_partner_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="(//sheet)[1]//field[@name='vat']" position="after">
+        <field name="pmk_supplier_rank"/>
+      </xpath>
+    </field>
+  </record>
+
+</odoo>
