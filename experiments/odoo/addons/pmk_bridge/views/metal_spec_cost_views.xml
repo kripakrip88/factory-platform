@@ -54,6 +54,8 @@
           — было <field name="cost_prev_total" nolabel="1" widget="monetary"/>,
           стало <field name="total_cost_fact" nolabel="1" widget="monetary"/>.
           Проверьте цену в предложении клиенту.
+          <span class="ms-2 opacity-75">Пересчитано
+            <field name="price_refreshed_on" nolabel="1" widget="date"/>.</span>
         </div>
         <div class="alert alert-success mb-2" role="alert"
              invisible="not price_changed or cost_change_pct &gt;= 0">
@@ -61,6 +63,8 @@
                                      class="fw-bold"/>%
           — было <field name="cost_prev_total" nolabel="1" widget="monetary"/>,
           стало <field name="total_cost_fact" nolabel="1" widget="monetary"/>.
+          <span class="ms-2 opacity-75">Пересчитано
+            <field name="price_refreshed_on" nolabel="1" widget="date"/>.</span>
         </div>
         <field name="price_changed" invisible="1"/>
       </xpath>

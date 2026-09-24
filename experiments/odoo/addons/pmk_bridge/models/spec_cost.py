@@ -154,6 +154,12 @@ class MetalSpecCost(models.Model):
     price_changed = fields.Boolean(
         "Цены изменились", readonly=True, copy=False,
         help="После последнего пересчёта сумма стала другой.")
+    # Дата пересчёта нужна, чтобы плашка не врала по смыслу. Она живёт в
+    # документе до следующего пересчёта, и через неделю «металл подорожал»
+    # читается как новость сегодняшнего дня. С датой это уже факт, а не тревога.
+    price_refreshed_on = fields.Datetime(
+        "Цены перечитаны", readonly=True, copy=False,
+        help="Когда последний раз нажимали «Перечитать цены».")
 
     no_price_count = fields.Integer(
         "Позиций без цены", compute="_compute_cost_totals", store=True)
@@ -208,7 +214,12 @@ class MetalSpecCost(models.Model):
             now = spec.total_cost_fact
 
             spec.cost_prev_total = was
-            spec.price_changed = abs(now - was) >= 0.01
+            spec.price_refreshed_on = fields.Datetime.now()
+            # ПЕРВЫЙ ПЕРЕСЧЁТ — НЕ ИЗМЕНЕНИЕ. Когда прежней суммы не было
+            # (расчёт только завели, цены не подтягивались), сравнивать не с
+            # чем: «подорожало с нуля» — неправда, металл просто впервые
+            # посчитан. Сигналим только когда было с чем сравнить.
+            spec.price_changed = bool(was) and abs(now - was) >= 0.01
             spec.cost_change_pct = ((now - was) / was * 100.0) if was else 0.0
         return True
 
