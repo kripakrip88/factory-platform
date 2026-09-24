@@ -26,7 +26,11 @@ OURS="pmk_calc pmk_theme pmk_pdf pmk_cut pmk_mail_ui pmk_partner pmk_purchase pm
 # ТОЛЬКО в addons-extra на сервере, вне git и вне этого списка. Одна неудачная
 # команда — и тема, на которой стоит весь вид стенда, исчезла бы без следа.
 # Теперь источник истины — репозиторий, как и у mail_client.
-VENDOR="mail_client theme_liquid_glass northlight_teaminbox tracking_manager techy_backend_theme theme_nexus"
+# codeerts_transaction_flow_visualizer добавлен 24.09.2026: схема связей
+# документов по кнопке. Код прочитан перед установкой (правило проекта):
+# ни sudo(), ни обращений наружу, права только на чтение, граф строится
+# от имени текущего пользователя и ограничен тремя уровнями и 60 узлами.
+VENDOR="mail_client theme_liquid_glass northlight_teaminbox tracking_manager techy_backend_theme theme_nexus codeerts_transaction_flow_visualizer"
 # Модули, которые надо ПОСТАВИТЬ, а не обновить (через переменную окружения).
 INSTALL="${INSTALL:-}"
 

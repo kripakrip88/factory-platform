@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="codeerts_transaction_flow_visualizer.FlowMap">
+        <div class="o_flow_map">
+            <div t-if="state.loading" class="o_flow_loading">Loading flow map...</div>
+            <div t-if="state.truncated" class="o_flow_truncated">
+                Graph truncated, showing the closest related documents only.
+            </div>
+            <svg t-if="!state.loading" class="o_flow_svg"
+                 t-att-width="state.width" t-att-height="state.height">
+                <line t-foreach="state.edges" t-as="e" t-key="e_index"
+                      t-att-x1="e.x1" t-att-y1="e.y1" t-att-x2="e.x2" t-att-y2="e.y2"
+                      class="o_flow_edge"/>
+                <g t-foreach="state.nodes" t-as="n" t-key="n.id"
+                   t-att-transform="'translate(' + n.x + ',' + n.y + ')'"
+                   class="o_flow_node" t-on-click="() => this.openRecord(n)">
+                    <rect width="160" height="44" rx="6" t-att-fill="n.hex"/>
+                    <text x="10" y="20" class="o_flow_label"><t t-esc="n.label"/></text>
+                    <text x="10" y="36" class="o_flow_state"><t t-esc="n.state"/></text>
+                </g>
+            </svg>
+        </div>
+    </t>
+</templates>

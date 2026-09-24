@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"/><title>Transaction Flow Visualizer</title></head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background-color:#eef9f7;color:#1b2a4a;line-height:1.6;">
+<div style="max-width:1140px;margin:0 auto;">
+
+<!-- HERO -->
+<div style="background:linear-gradient(150deg,#f0fbfa 0%,#eef4f9 55%,#f3f8fc 100%);padding:48px 44px 40px;text-align:center;border-bottom:3px solid #15a89b;">
+  <div style="display:inline-block;background-color:#e2f6f3;border:1px solid #9ad9d0;border-radius:30px;padding:5px 18px;margin-bottom:20px;">
+    <span style="font-size:.75rem;color:#0e8377;text-transform:uppercase;letter-spacing:.18em;font-weight:700;">CODEerts &nbsp;&middot;&nbsp; Odoo 19</span>
+  </div>
+  <h1 style="font-size:2.7rem;font-weight:900;color:#0b1a2e;margin:0 0 14px;letter-spacing:-.6px;line-height:1.2;">Transaction Flow Visualizer</h1>
+  <p style="font-size:1.22rem;color:#0e8377;font-weight:600;margin:0 0 14px;line-height:1.5;">See the whole chain of a transaction on one screen.<br/>A Flow Map button on every order, invoice and transfer.</p>
+  <p style="font-size:1.09rem;color:#5a6b7f;margin:0 0 28px;font-style:italic;max-width:600px;margin-left:auto;margin-right:auto;">Trace a Sales Order to its Purchases, Receipts, Deliveries and Invoices without clicking through menu after menu.</p>
+  <div>
+    <span style="display:inline-block;padding:6px 16px;background-color:#e2f6f3;color:#0e8377;border:1px solid #aadcd4;border-radius:30px;font-size:.8rem;font-weight:600;margin:4px 3px;">Free</span>
+    <span style="display:inline-block;padding:6px 16px;background-color:#e2f6f3;color:#0e8377;border:1px solid #aadcd4;border-radius:30px;font-size:.8rem;font-weight:600;margin:4px 3px;">One-Click Flow Map</span>
+    <span style="display:inline-block;padding:6px 16px;background-color:#e2f6f3;color:#0e8377;border:1px solid #aadcd4;border-radius:30px;font-size:.8rem;font-weight:600;margin:4px 3px;">Status Colours</span>
+    <span style="display:inline-block;padding:6px 16px;background-color:#e2f6f3;color:#0e8377;border:1px solid #aadcd4;border-radius:30px;font-size:.8rem;font-weight:600;margin:4px 3px;">Click to Open</span>
+    <span style="display:inline-block;padding:6px 16px;background-color:#e2f6f3;color:#0e8377;border:1px solid #aadcd4;border-radius:30px;font-size:.8rem;font-weight:600;margin:4px 3px;">Odoo 19</span>
+  </div>
+</div>
+
+<!-- STATS BAND -->
+<div style="background-color:#dceee9;border-top:2px solid #9ad9d0;border-bottom:2px solid #9ad9d0;">
+  <table style="width:100%;border-collapse:collapse;text-align:center;">
+    <tr>
+      <td style="padding:20px 10px;border-right:1px solid #b9e0d8;">
+        <div style="font-size:1.85rem;font-weight:900;color:#0e8377;line-height:1;">5</div>
+        <div style="font-size:.78rem;color:#5a6b7f;margin-top:4px;text-transform:uppercase;letter-spacing:.1em;">Document Types</div>
+      </td>
+      <td style="padding:20px 10px;border-right:1px solid #b9e0d8;">
+        <div style="font-size:1.85rem;font-weight:900;color:#0e8377;line-height:1;">1 Click</div>
+        <div style="font-size:.78rem;color:#5a6b7f;margin-top:4px;text-transform:uppercase;letter-spacing:.1em;">From the Record</div>
+      </td>
+      <td style="padding:20px 10px;border-right:1px solid #b9e0d8;">
+        <div style="font-size:1.85rem;font-weight:900;color:#0e8377;line-height:1;">0</div>
+        <div style="font-size:.78rem;color:#5a6b7f;margin-top:4px;text-transform:uppercase;letter-spacing:.1em;">Data Stored</div>
+      </td>
+      <td style="padding:20px 10px;border-right:1px solid #b9e0d8;">
+        <div style="font-size:1.85rem;font-weight:900;color:#0e8377;line-height:1;">Free</div>
+        <div style="font-size:.78rem;color:#5a6b7f;margin-top:4px;text-transform:uppercase;letter-spacing:.1em;">LGPL-3</div>
+      </td>
+      <td style="padding:20px 10px;">
+        <div style="font-size:1.85rem;font-weight:900;color:#0e8377;line-height:1;">v19</div>
+        <div style="font-size:.78rem;color:#5a6b7f;margin-top:4px;text-transform:uppercase;letter-spacing:.1em;">Compatible</div>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<!-- WHAT IT DOES -->
+<div style="padding:36px 44px 32px;">
+  <p style="font-size:.72rem;color:#0e8377;text-transform:uppercase;letter-spacing:.22em;font-weight:700;margin:0 0 14px;">What this module does</p>
+  <div style="border-left:3px solid #15a89b;padding-left:20px;">
+    <p style="font-size:1.14rem;line-height:1.8;color:#415062;margin:0 0 12px;">
+      Odoo links your documents through smart buttons and origin fields, but once a chain grows, a Sale Order that creates a Purchase Order, a Receipt, a Manufacturing Order and several Invoices, there is no single screen that shows the whole picture.
+    </p>
+    <p style="font-size:1.14rem;line-height:1.8;color:#415062;margin:0;">
+      <strong style="color:#0b1a2e;">Transaction Flow Visualizer</strong> adds a <strong style="color:#0b1a2e;">Flow Map</strong> button to Sales Orders, Purchase Orders, Manufacturing Orders, Invoices and Deliveries. Click it and the module draws an interactive chart of every related document, colour coded by status, with one click to open any record. Nothing is stored, the map is built live each time.
+    </p>
+  </div>
+</div>
+
+<!-- 3 HERO CARDS -->
+<div style="padding:0 44px 12px;">
+  <table style="width:100%;border-collapse:separate;border-spacing:10px;">
+    <tr style="vertical-align:top;">
+      <td style="width:33%;padding:22px;background-color:#fafdfd;border:1px solid #d7e6e3;border-left:4px solid #15a89b;border-radius:12px;">
+        <div style="width:44px;height:44px;background-color:#e2f6f3;border:1.5px solid #9ad9d0;border-radius:10px;line-height:44px;text-align:center;font-size:1.45rem;margin-bottom:14px;">&#x1F5FA;</div>
+        <strong style="font-size:1.12rem;color:#0b1a2e;display:block;margin-bottom:8px;">One-Click Flow Map</strong>
+        <p style="font-size:1.0rem;line-height:1.65;color:#5a6b7f;margin:0;">A Flow Map button on the record draws the full web of linked documents at once, so you can trace where an order stands in a single glance.</p>
+      </td>
+      <td style="width:33%;padding:22px;background-color:#fafdfd;border:1px solid #d7e6e3;border-left:4px solid #15a89b;border-radius:12px;">
+        <div style="width:44px;height:44px;background-color:#e2f6f3;border:1.5px solid #9ad9d0;border-radius:10px;line-height:44px;text-align:center;font-size:1.45rem;margin-bottom:14px;">&#x1F7E2;</div>
+        <strong style="font-size:1.12rem;color:#0b1a2e;display:block;margin-bottom:8px;">Status at a Glance</strong>
+        <p style="font-size:1.0rem;line-height:1.65;color:#5a6b7f;margin:0;">Every box is colour coded by status, draft, in progress, done or paid, so delays and bottlenecks stand out immediately.</p>
+      </td>
+      <td style="width:33%;padding:22px;background-color:#fafdfd;border:1px solid #d7e6e3;border-left:4px solid #15a89b;border-radius:12px;">
+        <div style="width:44px;height:44px;background-color:#e2f6f3;border:1.5px solid #9ad9d0;border-radius:10px;line-height:44px;text-align:center;font-size:1.45rem;margin-bottom:14px;">&#x1F512;</div>
+        <strong style="font-size:1.12rem;color:#0b1a2e;display:block;margin-bottom:8px;">Read-Only and Secure</strong>
+        <p style="font-size:1.0rem;line-height:1.65;color:#5a6b7f;margin:0;">The map only reads data and stores nothing. Every document is read as the logged-in user, so access rights always apply.</p>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<!-- FEATURE GRID -->
+<div style="padding:12px 44px 32px;">
+  <table style="width:100%;border-collapse:separate;border-spacing:10px;">
+    <tr style="vertical-align:top;">
+      <td style="width:50%;padding:16px 18px;background-color:#f6fafb;border:1px solid #e1eaef;border-left:3px solid #15a89b;border-radius:8px;">
+        <strong style="font-size:1.04rem;color:#0e8377;display:block;margin-bottom:5px;">&#x1F4CB; Five Document Types</strong>
+        <p style="font-size:1.0rem;color:#5a6b7f;margin:0;line-height:1.55;">A Flow Map button on Sales Orders, Purchase Orders, Manufacturing Orders, Invoices and Deliveries.</p>
+      </td>
+      <td style="width:50%;padding:16px 18px;background-color:#f6fafb;border:1px solid #e1eaef;border-left:3px solid #15a89b;border-radius:8px;">
+        <strong style="font-size:1.04rem;color:#0e8377;display:block;margin-bottom:5px;">&#x1F517; Click to Open</strong>
+        <p style="font-size:1.0rem;color:#5a6b7f;margin:0;line-height:1.55;">Click any box to open the underlying record, then return to the map to keep tracing the chain.</p>
+      </td>
+    </tr>
+    <tr style="vertical-align:top;">
+      <td style="padding:16px 18px;background-color:#f6fafb;border:1px solid #e1eaef;border-left:3px solid #15a89b;border-radius:8px;">
+        <strong style="font-size:1.04rem;color:#0e8377;display:block;margin-bottom:5px;">&#x1F4C1; Project and Task Nodes</strong>
+        <p style="font-size:1.0rem;color:#5a6b7f;margin:0;line-height:1.55;">When the Project app is installed, linked Projects and Tasks appear on the map automatically.</p>
+      </td>
+      <td style="padding:16px 18px;background-color:#f6fafb;border:1px solid #e1eaef;border-left:3px solid #15a89b;border-radius:8px;">
+        <strong style="font-size:1.04rem;color:#0e8377;display:block;margin-bottom:5px;">&#x1F3E2; Multi-Company Aware</strong>
+        <p style="font-size:1.0rem;color:#5a6b7f;margin:0;line-height:1.55;">Because the map reads as the current user, documents the user cannot see simply do not appear.</p>
+      </td>
+    </tr>
+    <tr style="vertical-align:top;">
+      <td style="padding:16px 18px;background-color:#f6fafb;border:1px solid #e1eaef;border-left:3px solid #15a89b;border-radius:8px;">
+        <strong style="font-size:1.04rem;color:#0e8377;display:block;margin-bottom:5px;">&#x1F4E6; Nothing Stored</strong>
+        <p style="font-size:1.0rem;color:#5a6b7f;margin:0;line-height:1.55;">The map is built live on demand. It adds no tables, no background jobs and no load on normal screens.</p>
+      </td>
+      <td style="padding:16px 18px;background-color:#f6fafb;border:1px solid #e1eaef;border-left:3px solid #15a89b;border-radius:8px;">
+        <strong style="font-size:1.04rem;color:#0e8377;display:block;margin-bottom:5px;">&#x2728; Want More Control</strong>
+        <p style="font-size:1.0rem;color:#5a6b7f;margin:0;line-height:1.55;">Flow Visualizer Pro adds no-code configuration for any model, grouping, zoom, filters and export.</p>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<!-- HOW IT WORKS -->
+<div style="padding:32px 44px 36px;">
+  <p style="font-size:.72rem;color:#0e8377;text-transform:uppercase;letter-spacing:.22em;font-weight:700;margin:0 0 22px;">How it works</p>
+  <table style="width:100%;border-collapse:collapse;">
+    <tr style="vertical-align:top;">
+      <td style="width:44px;padding:0 0 20px;"><div style="width:32px;height:32px;border:2px solid #0e8377;border-radius:50%;line-height:28px;text-align:center;font-weight:800;font-size:.96rem;color:#0e8377;">1</div></td>
+      <td style="padding:0 0 20px 4px;">
+        <strong style="color:#0b1a2e;font-size:1.09rem;">Open a record</strong>
+        <p style="color:#5a6b7f;font-size:1.04rem;margin:4px 0 0;line-height:1.6;">Go to any Sales Order, Purchase Order, Manufacturing Order, Invoice or Delivery.</p>
+      </td>
+    </tr>
+    <tr style="vertical-align:top;">
+      <td style="padding:0 0 20px;"><div style="width:32px;height:32px;border:2px solid #0e8377;border-radius:50%;line-height:28px;text-align:center;font-weight:800;font-size:.96rem;color:#0e8377;">2</div></td>
+      <td style="padding:0 0 20px 4px;">
+        <strong style="color:#0b1a2e;font-size:1.09rem;">Click the Flow Map button</strong>
+        <p style="color:#5a6b7f;font-size:1.04rem;margin:4px 0 0;line-height:1.6;">The button sits with the other stat buttons at the top of the record.</p>
+      </td>
+    </tr>
+    <tr style="vertical-align:top;">
+      <td style="padding:0 0 0;"><div style="width:32px;height:32px;border:2px solid #0e8377;border-radius:50%;line-height:28px;text-align:center;font-weight:800;font-size:.96rem;color:#0e8377;">3</div></td>
+      <td style="padding:0 0 0 4px;">
+        <strong style="color:#0b1a2e;font-size:1.09rem;">Read the chain and jump in</strong>
+        <p style="color:#5a6b7f;font-size:1.04rem;margin:4px 0 0;line-height:1.6;">The map lays out every linked document with status colours. Click any box to open that record.</p>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<!-- SCREENSHOTS -->
+<div style="background-color:#e8f6f3;padding:28px 44px 36px;border-top:1px solid #e1eaef;border-bottom:1px solid #e1eaef;">
+  <p style="font-size:.72rem;color:#0e8377;text-transform:uppercase;letter-spacing:.22em;font-weight:700;margin:0 0 24px;">Screenshots</p>
+  <div style="margin-bottom:28px;">
+    <p style="font-size:.96rem;font-weight:700;color:#0e8377;text-transform:uppercase;letter-spacing:.4px;margin:0 0 10px;">THE WHOLE CHAIN ON ONE SCREEN: linked orders, receipts, invoices, project and tasks</p>
+    <img src="01_flow_map.png" alt="Transaction flow map" style="width:100%;max-width:1000px;display:block;margin:0 auto;border-radius:10px;border:1px solid #dbe5ec;"/>
+  </div>
+  <div>
+    <p style="font-size:.96rem;font-weight:700;color:#0e8377;text-transform:uppercase;letter-spacing:.4px;margin:0 0 10px;">ONE CLICK FROM THE RECORD: a Flow Map button on every order, invoice and transfer</p>
+    <img src="02_smart_button.png" alt="Flow Map button on a Sales Order" style="width:100%;max-width:1000px;display:block;margin:0 auto;border-radius:10px;border:1px solid #dbe5ec;"/>
+  </div>
+</div>
+
+<!-- TECHNICAL INFO -->
+<div style="padding:32px 44px 36px;">
+  <p style="font-size:.72rem;color:#0e8377;text-transform:uppercase;letter-spacing:.22em;font-weight:700;margin:0 0 18px;">Technical information</p>
+  <table style="width:100%;border-collapse:separate;border-spacing:10px;">
+    <tr style="vertical-align:top;">
+      <td style="width:25%;padding:14px 16px;background-color:#f6fafb;border:1px solid #e1eaef;border-top:3px solid #15a89b;border-radius:10px;">
+        <div style="font-size:.7rem;color:#8a98a8;text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px;">Version</div>
+        <div style="font-size:1.06rem;color:#0b1a2e;font-weight:700;">19.0</div>
+      </td>
+      <td style="width:25%;padding:14px 16px;background-color:#f6fafb;border:1px solid #e1eaef;border-top:3px solid #15a89b;border-radius:10px;">
+        <div style="font-size:.7rem;color:#8a98a8;text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px;">License</div>
+        <div style="font-size:1.06rem;color:#0b1a2e;font-weight:700;">LGPL-3 (Free)</div>
+      </td>
+      <td style="width:25%;padding:14px 16px;background-color:#f6fafb;border:1px solid #e1eaef;border-top:3px solid #15a89b;border-radius:10px;">
+        <div style="font-size:.7rem;color:#8a98a8;text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px;">Editions</div>
+        <div style="font-size:1.06rem;color:#0b1a2e;font-weight:700;">Community &amp; Enterprise</div>
+      </td>
+      <td style="width:25%;padding:14px 16px;background-color:#f6fafb;border:1px solid #e1eaef;border-top:3px solid #15a89b;border-radius:10px;">
+        <div style="font-size:.7rem;color:#8a98a8;text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px;">Apps Covered</div>
+        <div style="font-size:1.06rem;color:#0b1a2e;font-weight:700;">Sales, Purchase, MRP, Stock, Accounting</div>
+      </td>
+    </tr>
+  </table>
+  <p style="font-size:.96rem;color:#8a98a8;margin:14px 2px 0;line-height:1.6;">
+    <strong style="color:#5a6b7f;">Technical name:</strong> codeerts_transaction_flow_visualizer &nbsp;&nbsp;&middot;&nbsp;&nbsp;
+    <strong style="color:#5a6b7f;">Data stored:</strong> none, the map is built live and read-only
+  </p>
+</div>
+
+<!-- FAQ (auto-added, matches website module page) -->
+<div style="padding:32px 44px 36px;">
+  <p style="font-size:.72rem;color:#0e8377;text-transform:uppercase;letter-spacing:.22em;font-weight:700;margin:0 0 18px;">Frequently asked questions</p>
+  <div style="background-color:#f6fafb;border:1px solid #e1eaef;border-left:3px solid #15a89b;border-radius:10px;padding:16px 20px;margin-bottom:10px;"><strong style="display:block;font-size:.92rem;color:#0b1a2e;margin-bottom:6px;">How do I see all documents linked to a sales order in Odoo?</strong><p style="font-size:.86rem;color:#5a6b7f;line-height:1.65;margin:0;">Open the order and click the Flow Map button. The module draws an interactive chart of the linked purchase orders, receipts, deliveries and invoices on one screen.</p></div>
+  <div style="background-color:#f6fafb;border:1px solid #e1eaef;border-left:3px solid #15a89b;border-radius:10px;padding:16px 20px;margin-bottom:10px;"><strong style="display:block;font-size:.92rem;color:#0b1a2e;margin-bottom:6px;">Does the flow visualizer store or change any data?</strong><p style="font-size:.86rem;color:#5a6b7f;line-height:1.65;margin:0;">No. The map is read-only and stores nothing. It is built live each time you open it.</p></div>
+  <div style="background-color:#f6fafb;border:1px solid #e1eaef;border-left:3px solid #15a89b;border-radius:10px;padding:16px 20px;margin-bottom:10px;"><strong style="display:block;font-size:.92rem;color:#0b1a2e;margin-bottom:6px;">Does it work in Odoo Community and Enterprise?</strong><p style="font-size:.86rem;color:#5a6b7f;line-height:1.65;margin:0;">Yes, it runs on both Community and Enterprise. Each Odoo Apps Store listing shows the exact version it supports.</p></div>
+  <div style="background-color:#f6fafb;border:1px solid #e1eaef;border-left:3px solid #15a89b;border-radius:10px;padding:16px 20px;margin-bottom:10px;"><strong style="display:block;font-size:.92rem;color:#0b1a2e;margin-bottom:6px;">Which Odoo documents show the Flow Map button?</strong><p style="font-size:.86rem;color:#5a6b7f;line-height:1.65;margin:0;">The Flow Map button appears on Sales Orders, Purchase Orders, Manufacturing Orders, Invoices and Deliveries. From any of these you can trace the full chain of related records in one view.</p></div>
+  <div style="background-color:#f6fafb;border:1px solid #e1eaef;border-left:3px solid #15a89b;border-radius:10px;padding:16px 20px;margin-bottom:10px;"><strong style="display:block;font-size:.92rem;color:#0b1a2e;margin-bottom:6px;">Does the flow map respect Odoo user access rights?</strong><p style="font-size:.86rem;color:#5a6b7f;line-height:1.65;margin:0;">Yes. The map only draws records the current user is allowed to see, because it reads live through Odoo's own security. It never bypasses access rules or exposes restricted documents.</p></div>
+  <div style="background-color:#f6fafb;border:1px solid #e1eaef;border-left:3px solid #15a89b;border-radius:10px;padding:16px 20px;margin-bottom:0;"><strong style="display:block;font-size:.92rem;color:#0b1a2e;margin-bottom:6px;">Can I open a linked purchase order or invoice directly from the map?</strong><p style="font-size:.86rem;color:#5a6b7f;line-height:1.65;margin:0;">Yes. Every node on the chart is clickable and opens the underlying record instantly, so you can jump from a sales order to its purchase, receipt, delivery or invoice without searching through menus.</p></div>
+</div>
+
+<!-- ABOUT CODEERTS -->
+<div style="background-color:#e3f5f1;padding:44px 44px;border-top:1px solid #b9e0d8;border-bottom:1px solid #b9e0d8;">
+  <div style="text-align:center;margin-bottom:32px;">
+    <p style="font-size:.72rem;color:#0e8377;text-transform:uppercase;letter-spacing:.22em;font-weight:700;margin:0 0 12px;">The team behind this module</p>
+    <h2 style="font-size:1.7rem;font-weight:900;color:#0b1a2e;margin:0 0 10px;letter-spacing:-.4px;">About CODEerts</h2>
+    <p style="font-size:1.12rem;color:#5a6b7f;margin:0 0 20px;">Full-Service Odoo ERP Agency &nbsp;&middot;&nbsp; Solutions That Scale</p>
+    <p style="font-size:1.09rem;color:#415062;line-height:1.8;max-width:640px;margin:0 auto;">
+      Every module in our store is built from real client work, tested in production and maintained long-term
+      by a team of Odoo certified consultants. When you need more than an app, we deliver the full solution.
+    </p>
+  </div>
+  <table style="width:100%;border-collapse:separate;border-spacing:10px;margin-bottom:24px;">
+    <tr style="vertical-align:top;">
+      <td style="width:33%;padding:18px;background-color:#ffffff;border:1px solid #b9e0d8;border-left:3px solid #15a89b;border-radius:10px;">
+        <strong style="font-size:1.04rem;color:#0e8377;display:block;margin-bottom:7px;">&#x1F3D7;&#xFE0F; Implementation</strong>
+        <p style="font-size:.96rem;color:#5a6b7f;margin:0;line-height:1.6;">Full Odoo roll-outs from requirements to go-live, across any industry and company size.</p>
+      </td>
+      <td style="width:33%;padding:18px;background-color:#ffffff;border:1px solid #b9e0d8;border-left:3px solid #15a89b;border-radius:10px;">
+        <strong style="font-size:1.04rem;color:#0e8377;display:block;margin-bottom:7px;">&#x1F9E9; Custom Development</strong>
+        <p style="font-size:.96rem;color:#5a6b7f;margin:0;line-height:1.6;">Bespoke modules, OWL components and business logic built precisely to your workflow.</p>
+      </td>
+      <td style="width:33%;padding:18px;background-color:#ffffff;border:1px solid #b9e0d8;border-left:3px solid #15a89b;border-radius:10px;">
+        <strong style="font-size:1.04rem;color:#0e8377;display:block;margin-bottom:7px;">&#x1F504; Migrations</strong>
+        <p style="font-size:.96rem;color:#5a6b7f;margin:0;line-height:1.6;">Zero-data-loss upgrades from older Odoo versions with full custom module porting.</p>
+      </td>
+    </tr>
+    <tr style="vertical-align:top;">
+      <td style="padding:18px;background-color:#ffffff;border:1px solid #b9e0d8;border-left:3px solid #15a89b;border-radius:10px;">
+        <strong style="font-size:1.04rem;color:#0e8377;display:block;margin-bottom:7px;">&#x1F50C; Integrations</strong>
+        <p style="font-size:.96rem;color:#5a6b7f;margin:0;line-height:1.6;">Payment gateways, shipping carriers, biometric devices, eCommerce and third-party APIs.</p>
+      </td>
+      <td style="padding:18px;background-color:#ffffff;border:1px solid #b9e0d8;border-left:3px solid #15a89b;border-radius:10px;">
+        <strong style="font-size:1.04rem;color:#0e8377;display:block;margin-bottom:7px;">&#x1F50D; Odoo Audits</strong>
+        <p style="font-size:.96rem;color:#5a6b7f;margin:0;line-height:1.6;">Performance, security and code-quality reviews that surface risks before they become problems.</p>
+      </td>
+      <td style="padding:18px;background-color:#ffffff;border:1px solid #b9e0d8;border-left:3px solid #15a89b;border-radius:10px;">
+        <strong style="font-size:1.04rem;color:#0e8377;display:block;margin-bottom:7px;">&#x1F9D1;&#x200D;&#x1F4BB; Support &amp; Training</strong>
+        <p style="font-size:.96rem;color:#5a6b7f;margin:0;line-height:1.6;">Ongoing helpdesk, user training and monthly retainers so your team stays productive.</p>
+      </td>
+    </tr>
+  </table>
+  <div style="border-top:1px solid #cde9e3;padding-top:18px;">
+    <table style="width:100%;border-collapse:collapse;text-align:center;">
+      <tr>
+        <td style="padding:8px;"><div style="font-size:1.35rem;font-weight:800;color:#0e8377;">Odoo</div><div style="font-size:.75rem;color:#5a6b7f;margin-top:2px;">Certified</div></td>
+        <td style="padding:8px;"><div style="font-size:1.35rem;font-weight:800;color:#0e8377;">6+</div><div style="font-size:.75rem;color:#5a6b7f;margin-top:2px;">Years</div></td>
+        <td style="padding:8px;"><div style="font-size:1.35rem;font-weight:800;color:#0e8377;">150+</div><div style="font-size:.75rem;color:#5a6b7f;margin-top:2px;">Projects</div></td>
+        <td style="padding:8px;"><div style="font-size:1.35rem;font-weight:800;color:#0e8377;">10+</div><div style="font-size:.75rem;color:#5a6b7f;margin-top:2px;">Industries</div></td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- CODEERTS_XSELL_START -->
+<div style="background-color:#e3f5f1;padding:40px 28px;border-radius:14px;margin:28px 0;"><div style="text-align:center;margin-bottom:8px;"><span style="display:inline-block;background-color:#dceee9;color:#0e8377;border:1px solid #9ad9d0;font-size:11px;font-weight:800;letter-spacing:1.5px;padding:6px 16px;border-radius:20px;">CODEERTS APPS</span></div><h2 style="text-align:center;font-size:26px;font-weight:800;color:#0b1a2e;margin:12px 0 6px 0;">More from CODEerts</h2><p style="text-align:center;font-size:14px;color:#5a6b7f;margin:0 0 26px 0;">Other apps we build to make Odoo do more. Tap any card to open it on the Odoo Apps Store.</p><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;border-spacing:14px;"><tr><td width="25%" valign="top" style="background-color:#fafdfd;border:1px solid #d4ebe6;border-radius:12px;"><a href="https://apps.odoo.com/apps/modules/19.0/codeerts_archive_anything" style="text-decoration:none;color:inherit;display:block;padding:18px 14px;text-align:center;"><img src="xsell_icon_codeerts_archive_anything.png" width="64" height="64" style="border-radius:14px;display:block;margin:0 auto 10px auto;"/><div style="margin-bottom:4px;"><span style="display:inline-block;background-color:#dceee9;color:#0e8377;font-size:10px;font-weight:800;letter-spacing:0.5px;padding:2px 9px;border-radius:10px;margin-bottom:6px;">FREE</span></div><div style="font-size:14px;font-weight:650;color:#0b1a2e;line-height:1.3;">Archive Anything</div></a></td><td width="25%" valign="top" style="background-color:#fafdfd;border:1px solid #d4ebe6;border-radius:12px;"><a href="https://apps.odoo.com/apps/modules/19.0/ma_smart_mail_rebrand" style="text-decoration:none;color:inherit;display:block;padding:18px 14px;text-align:center;"><img src="xsell_icon_ma_smart_mail_rebrand.png" width="64" height="64" style="border-radius:14px;display:block;margin:0 auto 10px auto;"/><div style="margin-bottom:4px;"><span style="display:inline-block;background-color:#dceee9;color:#0e8377;font-size:10px;font-weight:800;letter-spacing:0.5px;padding:2px 9px;border-radius:10px;margin-bottom:6px;">FREE</span></div><div style="font-size:14px;font-weight:650;color:#0b1a2e;line-height:1.3;">Smart Mail Rebrand</div></a></td><td width="25%" valign="top" style="background-color:#fafdfd;border:1px solid #d4ebe6;border-radius:12px;"><a href="https://apps.odoo.com/apps/modules/19.0/ma_duplicate_detector" style="text-decoration:none;color:inherit;display:block;padding:18px 14px;text-align:center;"><img src="xsell_icon_ma_duplicate_detector.png" width="64" height="64" style="border-radius:14px;display:block;margin:0 auto 10px auto;"/><div style="margin-bottom:4px;"><span style="display:inline-block;background-color:#dceee9;color:#0e8377;font-size:10px;font-weight:800;letter-spacing:0.5px;padding:2px 9px;border-radius:10px;margin-bottom:6px;">FREE</span></div><div style="font-size:14px;font-weight:650;color:#0b1a2e;line-height:1.3;">Duplicate Record Detector</div></a></td><td width="25%" valign="top" style="background-color:#fafdfd;border:1px solid #d4ebe6;border-radius:12px;"><a href="https://apps.odoo.com/apps/modules/19.0/ma_audit_log_viewer" style="text-decoration:none;color:inherit;display:block;padding:18px 14px;text-align:center;"><img src="xsell_icon_ma_audit_log_viewer.png" width="64" height="64" style="border-radius:14px;display:block;margin:0 auto 10px auto;"/><div style="margin-bottom:4px;"><span style="display:inline-block;background-color:#dceee9;color:#0e8377;font-size:10px;font-weight:800;letter-spacing:0.5px;padding:2px 9px;border-radius:10px;margin-bottom:6px;">FREE</span></div><div style="font-size:14px;font-weight:650;color:#0b1a2e;line-height:1.3;">Audit Log Viewer</div></a></td></tr><tr><td width="25%" valign="top" style="background-color:#fafdfd;border:1px solid #d4ebe6;border-radius:12px;"><a href="https://apps.odoo.com/apps/modules/19.0/ma_ai_dashboard_builder" style="text-decoration:none;color:inherit;display:block;padding:18px 14px;text-align:center;"><img src="xsell_icon_ma_ai_dashboard_builder.png" width="64" height="64" style="border-radius:14px;display:block;margin:0 auto 10px auto;"/><div style="margin-bottom:4px;"><span style="display:inline-block;height:21px;">&#8203;</span></div><div style="font-size:14px;font-weight:650;color:#0b1a2e;line-height:1.3;">AI Dashboard Builder</div></a></td><td width="25%" valign="top" style="background-color:#fafdfd;border:1px solid #d4ebe6;border-radius:12px;"><a href="https://apps.odoo.com/apps/modules/19.0/codeerts_advance_payment_pro" style="text-decoration:none;color:inherit;display:block;padding:18px 14px;text-align:center;"><img src="xsell_icon_codeerts_advance_payment_pro.png" width="64" height="64" style="border-radius:14px;display:block;margin:0 auto 10px auto;"/><div style="margin-bottom:4px;"><span style="display:inline-block;height:21px;">&#8203;</span></div><div style="font-size:14px;font-weight:650;color:#0b1a2e;line-height:1.3;">Advance Payment Pro</div></a></td><td width="25%" valign="top" style="background-color:#fafdfd;border:1px solid #d4ebe6;border-radius:12px;"><a href="https://apps.odoo.com/apps/modules/19.0/ma_account_asset_tax" style="text-decoration:none;color:inherit;display:block;padding:18px 14px;text-align:center;"><img src="xsell_icon_ma_account_asset_tax.png" width="64" height="64" style="border-radius:14px;display:block;margin:0 auto 10px auto;"/><div style="margin-bottom:4px;"><span style="display:inline-block;height:21px;">&#8203;</span></div><div style="font-size:14px;font-weight:650;color:#0b1a2e;line-height:1.3;">Dual Book &amp; Tax Depreciation</div></a></td><td width="25%" valign="top" style="background-color:#fafdfd;border:1px solid #d4ebe6;border-radius:12px;"><a href="https://apps.odoo.com/apps/modules/19.0/ma_duplicate_detector_advance" style="text-decoration:none;color:inherit;display:block;padding:18px 14px;text-align:center;"><img src="xsell_icon_ma_duplicate_detector_advance.png" width="64" height="64" style="border-radius:14px;display:block;margin:0 auto 10px auto;"/><div style="margin-bottom:4px;"><span style="display:inline-block;height:21px;">&#8203;</span></div><div style="font-size:14px;font-weight:650;color:#0b1a2e;line-height:1.3;">Smart Duplicate Detector</div></a></td></tr></table><p style="text-align:center;font-size:13px;margin:22px 0 0 0;"><a href="https://apps.odoo.com/apps/modules/browse?author=CODEerts" style="color:#0e8377;font-weight:700;text-decoration:none;">See every CODEerts app on the Odoo Apps Store.</a></p></div>
+<!-- CODEERTS_XSELL_END -->
+<!-- NEED HELP FOOTER -->
+<div style="background-color:#e8f6f3;padding:40px 44px;text-align:center;border-top:1px solid #e1eaef;">
+  <h3 style="font-size:1.32rem;font-weight:800;color:#0b1a2e;margin:0 0 10px;letter-spacing:-.3px;">Need Help?</h3>
+  <p style="font-size:1.06rem;color:#5a6b7f;margin:0 0 24px;max-width:400px;margin-left:auto;margin-right:auto;">
+    Questions, customization requests, or bug reports. We respond fast.
+  </p>
+  <div style="display:inline-block;border:2px solid #0e8377;border-radius:8px;padding:13px 40px;">
+    <a href="mailto:sales@codeerts.com" style="color:#0e8377;font-size:1.12rem;font-weight:800;text-decoration:none;letter-spacing:.5px;">Email Us</a>
+  </div>
+  <div style="display:inline-block;border:2px solid #0e8377;border-radius:8px;padding:13px 40px;margin-left:12px;">
+    <a href="mailto:support@codeerts.com" style="color:#0e8377;font-size:1.12rem;font-weight:800;text-decoration:none;letter-spacing:.5px;">Support</a>
+  </div>
+  <p style="margin:20px 0 0;font-size:.8rem;color:#8a98a8;">CODEerts &nbsp;&middot;&nbsp; Response within 1-2 business days</p>
+</div>
+
+</div>
+</body>
+</html>
