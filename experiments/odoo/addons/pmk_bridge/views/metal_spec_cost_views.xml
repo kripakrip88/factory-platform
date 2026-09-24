@@ -187,7 +187,8 @@
           </div>
           <field name="price_line_ids" readonly="1">
             <list create="0" delete="0" edit="0">
-              <field name="detail_name"/>
+              <field name="detail_name" string="Деталь"/>
+              <field name="position_label" string="Позиция"/>
               <field name="calc_mode" optional="hide"/>
               <field name="price_partner_id" string="Поставщик" optional="show"/>
               <field name="price_compare_unit" string="Было" digits="[16,2]"/>

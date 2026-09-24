@@ -320,10 +320,13 @@ class MetalSpecCost(models.Model):
         for spec in self:
             spec.cost_change_abs_pct = abs(spec.cost_change_pct)
             # Разница в копейку — это округление Monetary, а не правка состава.
+            # Снимка «стало» может не быть вовсе — у расчётов, пересчитанных
+            # до того, как поле появилось. Это не «устарело», это «неизвестно»:
+            # гореть предупреждением тут нечему.
             spec.price_signal_stale = bool(
-                spec.price_refreshed_on
+                spec.price_refreshed_on and spec.cost_new_total
                 and abs(spec.total_cost_fact - spec.cost_new_total) >= 0.01)
-            if not spec.price_refreshed_on:
+            if not spec.price_refreshed_on or not spec.cost_new_total:
                 spec.cost_change_label = "—"
             elif spec.price_signal_stale:
                 spec.cost_change_label = "устарело"
@@ -538,6 +541,10 @@ class MetalSpecLineCost(models.Model):
         help="На сколько подорожала эта позиция в деньгах ЭТОГО расчёта. "
              "Процент говорит, что подорожало, рубли — насколько это важно: "
              "лист вырос слабее трубы, а в деньгах — в тридцать раз сильнее.")
+    position_label = fields.Char(
+        "Позиция", compute="_compute_position_label",
+        help="Что за материал в строке. Без этого в таблице цен видны одни "
+             "номера деталей, и понять, о чём речь, нельзя.")
     price_compare_state = fields.Selection(
         [("ok", "Есть обе цены"),
          ("no_old", "Не было в том прайсе"),
@@ -653,6 +660,13 @@ class MetalSpecLineCost(models.Model):
             "fastener": self.fastener_id,
             "paint": self.paint_id,
         }.get(self.calc_mode)
+
+    @api.depends("profile_id", "sheet_id", "fastener_id", "paint_id")
+    def _compute_position_label(self):
+        for line in self:
+            item = (line.profile_id or line.sheet_id
+                    or line.fastener_id or line.paint_id)
+            line.position_label = item.display_name if item else ""
 
     @api.depends("price_unit", "price_state", "cost_fact_total",
                  "spec_id.compare_effective_date", "spec_id.supplier_id",
