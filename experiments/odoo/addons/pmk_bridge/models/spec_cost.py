@@ -161,6 +161,66 @@ class MetalSpecCost(models.Model):
         "Цены перечитаны", readonly=True, copy=False,
         help="Когда последний раз нажимали «Перечитать цены».")
 
+    # Снимок «стало» нужен, чтобы плашка не врала после правки состава.
+    # Без него на экране соседствуют замороженное «было» и живой итог: добавил
+    # деталь — и текст «подорожал на 6%» стоит над числами, которые показывают
+    # совсем другое. Сравнивая снимок с текущим итогом, видно, что расчёт
+    # трогали после пересчёта, и сигнал гасится.
+    cost_new_total = fields.Monetary(
+        "Закупка после пересчёта", readonly=True, copy=False)
+    cost_change_abs_pct = fields.Float(
+        "Изменение по модулю, %", compute="_compute_change_labels",
+        digits=(6, 1),
+        help="Знак несёт текст «подорожал/подешевел»: «подешевел на −5,7%» "
+             "читается как двойное отрицание.")
+    cost_change_label = fields.Char(
+        "Изм., %", compute="_compute_change_labels",
+        help="Для списка: прочерк, пока расчёт не пересчитывали. Ноль в этой "
+             "колонке читается как «проверено, изменений нет».")
+    price_signal_stale = fields.Boolean(
+        "Сигнал устарел", compute="_compute_change_labels",
+        help="Состав или количества правили после пересчёта — цифры «было» и "
+             "«стало» больше не про этот расчёт.")
+
+    # Позиции, потерявшие цену при пересчёте, — это НЕ удешевление.
+    # Без отдельного счётчика выпавшая из прайса позиция попадает в общий
+    # итог нулём, и документ радостно сообщает «металл подешевел на 100%».
+    price_lost_count = fields.Integer(
+        "Позиций выпало из прайса", readonly=True, copy=False,
+        help="Сколько позиций потеряли цену при последнем пересчёте.")
+
+    # ─── Вкладка «Цены»: что изменилось и за какой период ─────────────────
+    #
+    # Замысел владельца 25.09.2026: «мониторить что из цен изменилось и за
+    # какой период». Кнопка отвечает только на вопрос «изменилось ли сейчас»,
+    # а прайсы лежат рядами по датам — значит можно сравнить с любым из них,
+    # а не только с предыдущим нажатием.
+    #
+    # Всё считается на лету, ничего не хранится: история уже есть в прайсах,
+    # дублировать её в документе значило бы заводить второй источник правды.
+    price_line_ids = fields.One2many(
+        "pmk.metal.spec.line", "spec_id", string="Позиции с ценами")
+
+    compare_price_date = fields.Date(
+        "Сравнить с ценами на", compute="_compute_compare_date",
+        store=True, readonly=False,
+        help="С каким прайсом сравниваем текущие цены. По умолчанию — "
+             "предыдущий по дате.")
+    latest_price_date = fields.Date(
+        "Последний прайс", compute="_compute_price_freshness",
+        help="Самая свежая дата прайса по позициям этого расчёта.")
+    price_stale = fields.Boolean(
+        "Есть прайс свежее", compute="_compute_price_freshness",
+        help="Цены взяты на дату старее последнего прайса: пересчёт по "
+             "текущей дате ничего не изменит, потому что смотрит в архив.")
+
+    compare_total_cost = fields.Monetary(
+        "Было по тому прайсу", compute="_compute_compare_totals")
+    compare_delta = fields.Monetary(
+        "Разница", compute="_compute_compare_totals")
+    compare_pct = fields.Float(
+        "Разница, %", compute="_compute_compare_totals", digits=(6, 1))
+
     no_price_count = fields.Integer(
         "Позиций без цены", compute="_compute_cost_totals", store=True)
     price_incomplete = fields.Boolean(
@@ -184,6 +244,87 @@ class MetalSpecCost(models.Model):
             spec.no_price_count = sum(spec.product_ids.mapped("no_price_count"))
             spec.price_incomplete = spec.no_price_count > 0
 
+    def _price_dates(self):
+        """Даты прайсов, которые вообще касаются позиций этого расчёта.
+
+        Смотрим только по своим позициям, а не по всей базе: расчёт из одного
+        листа не должен реагировать на заливку прайса по метизам.
+        """
+        self.ensure_one()
+        tmpls = self.env["product.template"]
+        for line in self.price_line_ids:
+            tmpls |= line._cost_product()
+        dates = tmpls.mapped("seller_ids.date_start")
+        return sorted({d for d in dates if d})
+
+    @api.depends("price_date", "price_refreshed_on")
+    def _compute_compare_date(self):
+        """По умолчанию сравниваем с прайсом, который действовал до нынешнего."""
+        for spec in self:
+            if spec.compare_price_date:
+                continue
+            base = spec.price_date or fields.Date.context_today(spec)
+            earlier = [d for d in spec._price_dates() if d < base]
+            spec.compare_price_date = earlier[-1] if earlier else False
+
+    @api.depends("price_date", "price_line_ids")
+    def _compute_price_freshness(self):
+        """Есть ли прайс свежее того, на который смотрит расчёт.
+
+        ⚠️ ЭТО НЕ ПРИДИРКА, А ТИХИЙ ОТКАЗ. Дата цен ставится при создании и
+        сама не двигается, а выбор строки прайса идёт по ней. Значит после
+        заливки нового прайса кнопка «Перечитать цены» на старом расчёте
+        честно перечитает СТАРЫЕ цены и промолчит — а молчание читается как
+        «нас не задело». Поэтому о свежем прайсе говорим явно.
+        """
+        for spec in self:
+            dates = spec._price_dates()
+            spec.latest_price_date = dates[-1] if dates else False
+            spec.price_stale = bool(
+                spec.latest_price_date and spec.price_date
+                and spec.latest_price_date > spec.price_date)
+
+    @api.depends("price_line_ids.cost_compare_delta", "total_cost_fact")
+    def _compute_compare_totals(self):
+        for spec in self:
+            delta = sum(spec.price_line_ids.mapped("cost_compare_delta"))
+            spec.compare_delta = delta
+            was = spec.total_cost_fact - delta
+            spec.compare_total_cost = was
+            spec.compare_pct = (delta / was * 100.0) if was else 0.0
+
+    @api.depends("cost_change_pct", "price_refreshed_on", "cost_new_total",
+                 "total_cost_fact", "price_changed")
+    def _compute_change_labels(self):
+        for spec in self:
+            spec.cost_change_abs_pct = abs(spec.cost_change_pct)
+            # Разница в копейку — это округление Monetary, а не правка состава.
+            spec.price_signal_stale = bool(
+                spec.price_refreshed_on
+                and abs(spec.total_cost_fact - spec.cost_new_total) >= 0.01)
+            if not spec.price_refreshed_on:
+                spec.cost_change_label = "—"
+            elif spec.price_signal_stale:
+                spec.cost_change_label = "устарело"
+            elif not spec.price_changed:
+                spec.cost_change_label = "без изменений"
+            else:
+                sign = "+" if spec.cost_change_pct > 0 else "−"
+                spec.cost_change_label = "%s%.1f%%" % (
+                    sign, abs(spec.cost_change_pct))
+
+    def action_use_latest_prices(self):
+        """Перейти на самый свежий прайс и пересчитать.
+
+        Отдельной кнопкой, а не внутри «Перечитать цены»: расчёт НА ДАТУ —
+        осмысленная вещь (по нему разговаривали с клиентом), и молча двигать
+        дату нельзя. Здесь пользователь говорит это явно.
+        """
+        for spec in self:
+            if spec.latest_price_date:
+                spec.price_date = spec.latest_price_date
+        return self.action_refresh_prices()
+
     def action_refresh_prices(self):
         """Перечитать цены из прайсов.
 
@@ -194,6 +335,7 @@ class MetalSpecCost(models.Model):
         """
         for spec in self:
             was = spec.total_cost_fact
+            was_no_price = spec.no_price_count
             lines = spec.mapped("product_ids.line_ids")
             # Снимок цен ДО обнуления: после него прежнего значения уже не
             # узнать, а именно оно отвечает на вопрос «из-за чего подорожало».
@@ -210,11 +352,16 @@ class MetalSpecCost(models.Model):
                     if was_unit else 0.0)
             # Пересчёт полей идёт отложенно, а сумму надо сравнить сразу —
             # поэтому читаем её заново, сбросив кэш.
-            spec.invalidate_recordset(["total_cost_fact"])
+            spec.invalidate_recordset(["total_cost_fact", "no_price_count"])
             now = spec.total_cost_fact
 
             spec.cost_prev_total = was
+            spec.cost_new_total = now
             spec.price_refreshed_on = fields.Datetime.now()
+            # Позиции, потерявшие цену, — отдельная новость. Без этого счётчика
+            # исчезновение позиции из прайса выглядит как удешевление: сумма
+            # упала, значит «подешевело».
+            spec.price_lost_count = max(0, spec.no_price_count - was_no_price)
             # ПЕРВЫЙ ПЕРЕСЧЁТ — НЕ ИЗМЕНЕНИЕ. Когда прежней суммы не было
             # (расчёт только завели, цены не подтягивались), сравнивать не с
             # чем: «подорожало с нуля» — неправда, металл просто впервые
@@ -354,6 +501,28 @@ class MetalSpecLineCost(models.Model):
     # поставщиком по уголку или по листу.
     price_prev_unit = fields.Float(
         "Цена до пересчёта", readonly=True, digits=(16, 4), copy=False)
+
+    # ─── Сравнение с другим прайсом (вкладка «Цены») ──────────────────────
+    #
+    # Считается на лету и не хранится: это не свойство строки, а ответ на
+    # вопрос «что было на выбранную дату». Смени дату сравнения — ответ
+    # другой, и хранить его негде.
+    price_compare_unit = fields.Float(
+        "Было", compute="_compute_price_compare", digits=(16, 4),
+        help="Цена той же позиции по прайсу, с которым сравниваем.")
+    price_compare_pct = fields.Float(
+        "Изм., %", compute="_compute_price_compare", digits=(6, 1))
+    cost_compare_delta = fields.Monetary(
+        "В сумме, ₽", compute="_compute_price_compare",
+        help="На сколько подорожала эта позиция в деньгах ЭТОГО расчёта. "
+             "Процент говорит, что подорожало, рубли — насколько это важно: "
+             "лист вырос слабее трубы, а в деньгах — в тридцать раз сильнее.")
+    price_compare_state = fields.Selection(
+        [("ok", "Есть обе цены"),
+         ("no_old", "Не было в том прайсе"),
+         ("no_new", "Выпала из прайса"),
+         ("none", "Цены нет")],
+        "Состояние сравнения", compute="_compute_price_compare")
     price_change_pct = fields.Float(
         "Изменение цены, %", readonly=True, digits=(6, 1), copy=False)
 
@@ -464,10 +633,55 @@ class MetalSpecLineCost(models.Model):
             "paint": self.paint_id,
         }.get(self.calc_mode)
 
-    def _cost_find_seller(self, tmpl):
-        """Строка прайса: у заданного поставщика или у лучшего по рейтингу."""
+    @api.depends("price_unit", "price_state", "cost_fact_total",
+                 "spec_id.compare_price_date", "spec_id.supplier_id",
+                 "profile_id", "sheet_id", "fastener_id", "paint_id")
+    def _compute_price_compare(self):
+        """Цена этой позиции по прайсу, с которым сравниваем.
+
+        Стоимость линейна по цене единицы, поэтому вклад в сумму считается
+        долей, а не пересчётом всей цепочки: cost × (новая − старая) / новая.
+        Так число совпадает с итогом документа до копейки, и не приходится
+        второй раз воспроизводить правила расчёта массы и количества.
+        """
+        for line in self:
+            date = line.spec_id.compare_price_date
+            tmpl = line._cost_product()
+            seller = line._cost_find_seller(tmpl, date=date) if (date and tmpl) else False
+            old = seller.price_discounted if seller else 0.0
+            new = line.price_unit if line.price_state == "ok" else 0.0
+
+            line.price_compare_unit = old
+            if old and new:
+                line.price_compare_state = "ok"
+                line.price_compare_pct = (new - old) / old * 100.0
+                line.cost_compare_delta = line.cost_fact_total * (new - old) / new
+            elif old and not new:
+                # Позиция была в прайсе и пропала. Деньги «сэкономлены» только
+                # на бумаге: металл всё равно придётся купить, просто цена
+                # теперь неизвестна.
+                line.price_compare_state = "no_new"
+                line.price_compare_pct = 0.0
+                line.cost_compare_delta = 0.0
+            elif new and not old:
+                line.price_compare_state = "no_old"
+                line.price_compare_pct = 0.0
+                line.cost_compare_delta = 0.0
+            else:
+                line.price_compare_state = "none"
+                line.price_compare_pct = 0.0
+                line.cost_compare_delta = 0.0
+
+    def _cost_find_seller(self, tmpl, date=None):
+        """Строка прайса: у заданного поставщика или у лучшего по рейтингу.
+
+        Дата приходит параметром, чтобы тем же кодом отвечать на вопрос «а
+        сколько это стоило в июне»: вкладка «Цены» сравнивает два прайса, и
+        расхождение в правилах выбора поставщика сделало бы сравнение
+        бессмысленным — разница показывала бы не цену, а другой алгоритм.
+        """
         self.ensure_one()
-        date = self.spec_id.price_date or fields.Date.context_today(self)
+        date = date or self.spec_id.price_date or fields.Date.context_today(self)
         sellers = tmpl.seller_ids.filtered(
             lambda s: (not s.date_start or s.date_start <= date)
             and (not s.date_end or s.date_end >= date))

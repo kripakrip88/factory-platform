@@ -27,7 +27,23 @@
         </div>
         <div class="pmk-field">
           <label for="price_date"/>
-          <field name="price_date" nolabel="1"/>
+          <div class="d-flex align-items-center gap-2">
+            <field name="price_date" nolabel="1"/>
+            <!--
+              Сигнал о том, что расчёт смотрит в архив. Дата цен замораживается
+              при создании, а строка прайса выбирается по ней: после заливки
+              нового прайса кнопка честно перечитает старые цены и промолчит.
+              Молчание читается как «нас не задело» — поэтому говорим явно,
+              красным, и рядом даём кнопку перехода.
+            -->
+            <span class="badge text-bg-danger" invisible="not price_stale"
+                  title="Есть прайс свежее — текущие цены взяты из архива">!</span>
+            <button name="action_use_latest_prices" type="object"
+                    class="btn btn-sm btn-link p-0" invisible="not price_stale"
+                    string="Взять свежий прайс"/>
+            <field name="price_stale" invisible="1"/>
+            <field name="latest_price_date" invisible="1"/>
+          </div>
         </div>
         <!--
           Коэффициентов использования на форме НЕТ. Себестоимость считается по
@@ -47,26 +63,42 @@
         признак, рядом стоит знак и процент, чтобы это читалось и без цвета.
       -->
       <xpath expr="//div[hasclass('oe_title')]" position="before">
+        <!--
+          ⚠️ В ПЛАШКЕ ТОЛЬКО СНИМКИ, НИ ОДНОГО ЖИВОГО ПОЛЯ. Живой итог рядом с
+          замороженным «было» разъезжается от первой же правки состава: текст
+          «подорожал на 6%» встаёт над числами, показывающими обратное.
+          Поэтому «стало» — тоже снимок, а при расхождении снимка с итогом
+          сигнал гасится целиком (price_signal_stale).
+        -->
+        <div class="alert alert-warning mb-2" role="alert"
+             invisible="price_lost_count == 0 or price_signal_stale">
+          <i class="fa fa-exclamation-triangle me-1" aria-hidden="true"/>
+          Позиций выпало из прайса: <field name="price_lost_count" nolabel="1"
+                                           class="fw-bold"/>.
+          Металл всё равно придётся купить — итог занижен, а не уменьшился.
+        </div>
         <div class="alert alert-danger mb-2" role="alert"
-             invisible="not price_changed or cost_change_pct &lt;= 0">
-          Металл подорожал на <field name="cost_change_pct" nolabel="1"
+             invisible="not price_changed or cost_change_pct &lt;= 0 or price_signal_stale">
+          Металл подорожал на <field name="cost_change_abs_pct" nolabel="1"
                                      class="fw-bold"/>%
           — было <field name="cost_prev_total" nolabel="1" widget="monetary"/>,
-          стало <field name="total_cost_fact" nolabel="1" widget="monetary"/>.
+          стало <field name="cost_new_total" nolabel="1" widget="monetary"/>.
           Проверьте цену в предложении клиенту.
           <span class="ms-2 opacity-75">Пересчитано
-            <field name="price_refreshed_on" nolabel="1" widget="date"/>.</span>
+            <field name="price_refreshed_on" nolabel="1"/>.</span>
         </div>
         <div class="alert alert-success mb-2" role="alert"
-             invisible="not price_changed or cost_change_pct &gt;= 0">
-          Металл подешевел на <field name="cost_change_pct" nolabel="1"
+             invisible="not price_changed or cost_change_pct &gt;= 0 or price_signal_stale or price_lost_count &gt; 0">
+          Металл подешевел на <field name="cost_change_abs_pct" nolabel="1"
                                      class="fw-bold"/>%
           — было <field name="cost_prev_total" nolabel="1" widget="monetary"/>,
-          стало <field name="total_cost_fact" nolabel="1" widget="monetary"/>.
+          стало <field name="cost_new_total" nolabel="1" widget="monetary"/>.
           <span class="ms-2 opacity-75">Пересчитано
-            <field name="price_refreshed_on" nolabel="1" widget="date"/>.</span>
+            <field name="price_refreshed_on" nolabel="1"/>.</span>
         </div>
         <field name="price_changed" invisible="1"/>
+        <field name="price_signal_stale" invisible="1"/>
+        <field name="cost_change_pct" invisible="1"/>
       </xpath>
 
       <!--
@@ -124,6 +156,71 @@
       </xpath>
 
       <!--
+        ВКЛАДКА «ЦЕНЫ»: что изменилось и за какой период.
+
+        Замысел владельца 25.09.2026. Колонка процента в составе не подошла:
+        таблицу состава рисует свой виджет с прошитой шапкой, и место там
+        занято — пять колонок уже есть. А главное, в строке состава не
+        помещается то, ради чего всё затевалось: с каким прайсом сравниваем.
+
+        Здесь сравнение с ЛЮБЫМ прайсом, а не только с последним нажатием
+        кнопки: прайсы лежат рядами по датам, и «что изменилось с июня»
+        считается той же арифметикой, что «что изменилось вчера».
+      -->
+      <xpath expr="//notebook" position="inside">
+        <page string="Цены" name="prices">
+          <div class="d-flex align-items-center gap-2 mb-3">
+            <label for="compare_price_date" class="mb-0"/>
+            <field name="compare_price_date" nolabel="1"/>
+            <span class="text-muted ms-3" invisible="not price_refreshed_on">
+              Перечитано <field name="price_refreshed_on" nolabel="1"
+                                readonly="1"/>
+            </span>
+          </div>
+          <field name="price_line_ids" readonly="1">
+            <list create="0" delete="0" edit="0">
+              <field name="detail_name"/>
+              <field name="calc_mode" optional="hide"/>
+              <field name="price_partner_id" string="Поставщик" optional="show"/>
+              <field name="price_compare_unit" string="Было" digits="[16,2]"/>
+              <field name="price_unit" string="Стало" digits="[16,2]"/>
+              <field name="price_compare_pct" string="Изм., %"
+                     decoration-danger="price_compare_pct &gt; 0"
+                     decoration-success="price_compare_pct &lt; 0"/>
+              <field name="cost_compare_delta" string="В сумме, ₽"
+                     sum="Разница" widget="monetary"
+                     decoration-danger="cost_compare_delta &gt; 0"
+                     decoration-success="cost_compare_delta &lt; 0"/>
+              <field name="cost_fact_total" string="Закупка" widget="monetary"
+                     sum="Итого" optional="show"/>
+              <field name="price_compare_state" string="Состояние"
+                     decoration-danger="price_compare_state in ('no_new', 'none')"/>
+              <field name="currency_id" column_invisible="1"/>
+            </list>
+          </field>
+          <group class="mt-3">
+            <group>
+              <field name="compare_total_cost" widget="monetary"/>
+              <field name="total_cost_fact" string="Стало сейчас"
+                     widget="monetary" readonly="1"/>
+            </group>
+            <group>
+              <field name="compare_delta" widget="monetary"/>
+              <field name="compare_pct"/>
+            </group>
+          </group>
+          <div class="alert alert-warning mt-2" role="alert"
+               invisible="not price_incomplete">
+            <i class="fa fa-exclamation-triangle me-1" aria-hidden="true"/>
+            Позиций без цены: <field name="no_price_count" nolabel="1"
+                                     class="fw-bold"/>.
+            Их нет в прайсах — значит в городе позиции нет, и везти придётся
+            из другого региона. Итог расчёта на эту сумму занижен.
+          </div>
+        </page>
+      </xpath>
+
+      <!--
         Деньги в составе изделия.
 
         ⚠️ ПОЛЯ ОБЪЯВЛЯЮТСЯ ВО ВСЕХ ЧЕТЫРЁХ НАБОРАХ. Состав правится в четырёх
@@ -137,9 +234,6 @@
         optional="hide" — колонка скрыта, а данные читаются.
       -->
       <xpath expr="//field[@name='line_linear_ids']/list" position="inside">
-        <field name="price_change_pct" optional="hide"
-               decoration-danger="price_change_pct &gt; 0"
-               decoration-success="price_change_pct &lt; 0"/>
         <field name="price_state" optional="hide"/>
         <field name="price_unit" optional="hide"/>
         <field name="utilization_pct" optional="hide"/>
@@ -149,9 +243,6 @@
       </xpath>
 
       <xpath expr="//field[@name='line_sheet_ids']/list" position="inside">
-        <field name="price_change_pct" optional="hide"
-               decoration-danger="price_change_pct &gt; 0"
-               decoration-success="price_change_pct &lt; 0"/>
         <field name="price_state" optional="hide"/>
         <field name="price_unit" optional="hide"/>
         <field name="utilization_pct" optional="show"/>
@@ -161,9 +252,6 @@
       </xpath>
 
       <xpath expr="//field[@name='line_fastener_ids']/list" position="inside">
-        <field name="price_change_pct" optional="hide"
-               decoration-danger="price_change_pct &gt; 0"
-               decoration-success="price_change_pct &lt; 0"/>
         <field name="price_state" optional="hide"/>
         <field name="price_unit" optional="hide"/>
         <field name="cost_fact_total" optional="show" sum="Закупка"/>
@@ -171,9 +259,6 @@
       </xpath>
 
       <xpath expr="//field[@name='line_paint_ids']/list" position="inside">
-        <field name="price_change_pct" optional="hide"
-               decoration-danger="price_change_pct &gt; 0"
-               decoration-success="price_change_pct &lt; 0"/>
         <field name="price_state" optional="hide"/>
         <field name="price_unit" optional="hide"/>
         <field name="cost_fact_total" optional="show" sum="Закупка"/>
@@ -206,9 +291,17 @@
       <xpath expr="//field[@name='total_weight_t']" position="after">
         <field name="total_cost_fact" optional="show" sum="Металл"
                widget="monetary"/>
-        <field name="cost_change_pct" optional="show" string="Изм., %"
-               decoration-danger="cost_change_pct &gt; 0"
-               decoration-success="cost_change_pct &lt; 0"/>
+        <!--
+          Текстом, а не числом: у расчёта, который ни разу не пересчитывали,
+          числовая колонка показывает 0,0 — и это читается как «проверено,
+          цены не менялись», хотя проверки не было.
+        -->
+        <field name="cost_change_label" optional="show" string="Изм., %"
+               decoration-danger="cost_change_pct &gt; 0 and not price_signal_stale"
+               decoration-success="cost_change_pct &lt; 0 and not price_signal_stale"
+               decoration-muted="price_signal_stale"/>
+        <field name="cost_change_pct" column_invisible="1"/>
+        <field name="price_signal_stale" column_invisible="1"/>
         <field name="price_incomplete" optional="hide"/>
         <field name="currency_id" column_invisible="1"/>
       </xpath>

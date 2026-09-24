@@ -101,167 +101,206 @@
             понимал, что это состав, а не отдельное свойство изделия.
             Разметка внутри задаёт, что читать и что править.
           -->
-          <field name="product_ids" widget="pmk_product_lines" class="pmk-rows">
-            <list>
-              <field name="line_linear_ids" optional="hide" string="Состав: прокат">
+          <notebook>
+            <page string="Состав" name="composition">
+              <field name="product_ids" widget="pmk_product_lines" class="pmk-rows">
                 <list>
-                  <field name="sequence"/>
-                  <field name="calc_mode"/>
-                  <field name="detail_name"/>
-                  <field name="type_id"/>
-                  <field name="profile_id"/>
-                  <field name="length_mm"/>
-                  <field name="qty"/>
-                  <field name="weight_one" readonly="1"/>
-                  <field name="weight_total" readonly="1"/>
-                </list>
-              </field>
-              <field name="line_sheet_ids" optional="hide" string="Состав: лист">
-                <list>
-                  <!-- Раскладка: объявлены, чтобы данные читались; показываются
-                       по выбору пользователя через настройку колонок. -->
-                  <field name="layout_sheet_size" optional="show"/>
-                  <field name="layout_state" optional="hide"/>
-                  <field name="layout_per_sheet" optional="hide"/>
-                  <field name="layout_sheets" optional="hide" sum="Листов"/>
-                  <field name="layout_scheme" optional="hide"/>
-                  <field name="layout_utilization_pct" optional="hide"/>
-                  <field name="sequence"/>
-                  <field name="calc_mode"/>
-                  <field name="detail_name"/>
-                  <field name="sheet_id"/>
-                  <field name="a_mm"/>
-                  <field name="b_mm"/>
-                  <field name="qty"/>
-                  <field name="weight_one" readonly="1"/>
-                  <field name="weight_total" readonly="1"/>
-                </list>
-              </field>
-              <field name="line_fastener_ids" optional="hide" string="Состав: метизы">
-                <list>
-                  <field name="sequence"/>
-                  <field name="calc_mode"/>
-                  <field name="detail_name"/>
-                  <field name="fastener_id"/>
-                  <field name="qty"/>
-                  <field name="weight_one" readonly="1"/>
-                  <field name="weight_total" readonly="1"/>
-                </list>
-              </field>
-              <field name="line_paint_ids" optional="hide" string="Состав: покрытие">
-                <list>
-                  <field name="sequence"/>
-                  <field name="calc_mode"/>
-                  <field name="detail_name"/>
-                  <field name="paint_id"/>
-                  <field name="area_m2"/>
-                  <field name="paint_thickness_um"/>
-                  <field name="qty"/>
-                  <field name="weight_one" readonly="1"/>
-                  <field name="weight_total" readonly="1"/>
-                </list>
-              </field>
-              <field name="sequence" widget="handle"/>
-              <field name="name"/>
-              <field name="qty"/>
-              <field name="weight_one" readonly="1"/>
-              <field name="weight_total" readonly="1" sum="Итого, кг"/>
-              <field name="note" optional="hide"/>
-              <!-- Своя подпись вместо штатного «Добавить строку»: строка
-                   документа здесь — изделие, так и называем. -->
-              <control>
-                <create string="Добавить изделие"/>
-              </control>
-            </list>
-            <form string="Изделие">
-              <group>
-                <group>
-                  <field name="name" placeholder="Например: Ферма ФС-1"/>
-                  <field name="qty"/>
-                </group>
-                <group>
-                  <field name="weight_one" readonly="1"/>
-                  <field name="weight_total" readonly="1"/>
-                  <field name="note"/>
-                </group>
-              </group>
-
-              <notebook>
-                <page string="Прокат" name="linear">
-                  <field name="line_linear_ids" context="{'default_calc_mode': 'linear'}">
-                    <list editable="bottom">
-                      <field name="sequence" widget="handle"/>
-                      <field name="calc_mode" column_invisible="1"/>
+                  <field name="line_linear_ids" optional="hide" string="Состав: прокат">
+                    <list>
+                      <field name="sequence"/>
+                      <field name="calc_mode"/>
                       <field name="detail_name"/>
-                      <field name="type_id" options="{'no_create': True}"/>
-                      <!-- Типоразмеры показываем только выбранного вида -->
-                      <field name="profile_id" options="{'no_create': True}"
-                             domain="[('type_id', '=', type_id)]"/>
+                      <field name="type_id"/>
+                      <field name="profile_id"/>
                       <field name="length_mm"/>
                       <field name="qty"/>
-                      <field name="grade_id" options="{'no_create': True}" optional="hide"/>
                       <field name="weight_one" readonly="1"/>
-                      <field name="weight_total" readonly="1" sum="Итого, кг"/>
+                      <field name="weight_total" readonly="1"/>
                     </list>
                   </field>
-                </page>
-
-                <page string="Метизы" name="fastener">
-                  <field name="line_fastener_ids" context="{'default_calc_mode': 'fastener'}">
-                    <list editable="bottom">
-                      <field name="sequence" widget="handle"/>
-                      <field name="calc_mode" column_invisible="1"/>
+                  <field name="line_sheet_ids" optional="hide" string="Состав: лист">
+                    <list>
+                      <!-- Раскладка: объявлены, чтобы данные читались; показываются
+                           по выбору пользователя через настройку колонок. -->
+                      <field name="layout_sheet_size" optional="show"/>
+                      <field name="layout_state" optional="hide"/>
+                      <field name="layout_per_sheet" optional="hide"/>
+                      <field name="layout_sheets" optional="hide" sum="Листов"/>
+                      <field name="layout_scheme" optional="hide"/>
+                      <field name="layout_utilization_pct" optional="hide"/>
+                      <field name="sequence"/>
+                      <field name="calc_mode"/>
                       <field name="detail_name"/>
-                      <field name="fastener_id" options="{'no_create': True}"/>
-                      <field name="qty"/>
-                      <field name="weight_one" readonly="1"/>
-                      <field name="weight_total" readonly="1" sum="Итого, кг"/>
-                    </list>
-                  </field>
-                </page>
-
-                <page string="Покрытие" name="paint">
-                  <!--
-                    Площадь подставляется из состава изделия по площади
-                    погонного метра сортамента. Пока эта характеристика не
-                    заполнена, площадь можно ввести руками — поле открыто.
-                  -->
-                  <field name="line_paint_ids" context="{'default_calc_mode': 'paint'}">
-                    <list editable="bottom">
-                      <field name="sequence" widget="handle"/>
-                      <field name="calc_mode" column_invisible="1"/>
-                      <field name="detail_name" string="Участок"/>
-                      <field name="paint_id" options="{'no_create': True}"/>
-                      <field name="area_m2"/>
-                      <!-- Базовая подставляется из справочника; правят, когда
-                           заказчик требует другую толщину плёнки. -->
-                      <field name="paint_thickness_um"/>
-                      <field name="qty" column_invisible="1"/>
-                      <field name="weight_one" string="Расход, кг" readonly="1"/>
-                      <field name="weight_total" readonly="1" sum="Итого, кг"/>
-                    </list>
-                  </field>
-                </page>
-
-                <page string="Лист" name="sheet">
-                  <field name="line_sheet_ids" context="{'default_calc_mode': 'sheet'}">
-                    <list editable="bottom">
-                      <field name="sequence" widget="handle"/>
-                      <field name="calc_mode" column_invisible="1"/>
-                      <field name="detail_name"/>
-                      <field name="sheet_id" options="{'no_create': True}"/>
+                      <field name="sheet_id"/>
                       <field name="a_mm"/>
                       <field name="b_mm"/>
                       <field name="qty"/>
-                      <field name="grade_id" options="{'no_create': True}" optional="hide"/>
                       <field name="weight_one" readonly="1"/>
-                      <field name="weight_total" readonly="1" sum="Итого, кг"/>
+                      <field name="weight_total" readonly="1"/>
                     </list>
                   </field>
-                </page>
-              </notebook>
-            </form>
-          </field>
+                  <field name="line_fastener_ids" optional="hide" string="Состав: метизы">
+                    <list>
+                      <field name="sequence"/>
+                      <field name="calc_mode"/>
+                      <field name="detail_name"/>
+                      <field name="fastener_id"/>
+                      <field name="qty"/>
+                      <field name="weight_one" readonly="1"/>
+                      <field name="weight_total" readonly="1"/>
+                    </list>
+                  </field>
+                  <field name="line_paint_ids" optional="hide" string="Состав: покрытие">
+                    <list>
+                      <field name="sequence"/>
+                      <field name="calc_mode"/>
+                      <field name="detail_name"/>
+                      <field name="paint_id"/>
+                      <field name="area_m2"/>
+                      <field name="paint_thickness_um"/>
+                      <field name="qty"/>
+                      <field name="weight_one" readonly="1"/>
+                      <field name="weight_total" readonly="1"/>
+                    </list>
+                  </field>
+                  <field name="sequence" widget="handle"/>
+                  <field name="name"/>
+                  <field name="qty"/>
+                  <field name="weight_one" readonly="1"/>
+                  <field name="weight_total" readonly="1" sum="Итого, кг"/>
+                  <field name="note" optional="hide"/>
+                  <!-- Своя подпись вместо штатного «Добавить строку»: строка
+                       документа здесь — изделие, так и называем. -->
+                  <control>
+                    <create string="Добавить изделие"/>
+                  </control>
+                </list>
+                <form string="Изделие">
+                  <group>
+                    <group>
+                      <field name="name" placeholder="Например: Ферма ФС-1"/>
+                      <field name="qty"/>
+                    </group>
+                    <group>
+                      <field name="weight_one" readonly="1"/>
+                      <field name="weight_total" readonly="1"/>
+                      <field name="note"/>
+                    </group>
+                  </group>
+
+                  <notebook>
+                    <page string="Прокат" name="linear">
+                      <field name="line_linear_ids" context="{'default_calc_mode': 'linear'}">
+                        <list editable="bottom">
+                          <field name="sequence" widget="handle"/>
+                          <field name="calc_mode" column_invisible="1"/>
+                          <field name="detail_name"/>
+                          <field name="type_id" options="{'no_create': True}"/>
+                          <!-- Типоразмеры показываем только выбранного вида -->
+                          <field name="profile_id" options="{'no_create': True}"
+                                 domain="[('type_id', '=', type_id)]"/>
+                          <field name="length_mm"/>
+                          <field name="qty"/>
+                          <field name="grade_id" options="{'no_create': True}" optional="hide"/>
+                          <field name="weight_one" readonly="1"/>
+                          <field name="weight_total" readonly="1" sum="Итого, кг"/>
+                        </list>
+                      </field>
+                    </page>
+
+                    <page string="Метизы" name="fastener">
+                      <field name="line_fastener_ids" context="{'default_calc_mode': 'fastener'}">
+                        <list editable="bottom">
+                          <field name="sequence" widget="handle"/>
+                          <field name="calc_mode" column_invisible="1"/>
+                          <field name="detail_name"/>
+                          <field name="fastener_id" options="{'no_create': True}"/>
+                          <field name="qty"/>
+                          <field name="weight_one" readonly="1"/>
+                          <field name="weight_total" readonly="1" sum="Итого, кг"/>
+                        </list>
+                      </field>
+                    </page>
+
+                    <page string="Покрытие" name="paint">
+                      <!--
+                        Площадь подставляется из состава изделия по площади
+                        погонного метра сортамента. Пока эта характеристика не
+                        заполнена, площадь можно ввести руками — поле открыто.
+                      -->
+                      <field name="line_paint_ids" context="{'default_calc_mode': 'paint'}">
+                        <list editable="bottom">
+                          <field name="sequence" widget="handle"/>
+                          <field name="calc_mode" column_invisible="1"/>
+                          <field name="detail_name" string="Участок"/>
+                          <field name="paint_id" options="{'no_create': True}"/>
+                          <field name="area_m2"/>
+                          <!-- Базовая подставляется из справочника; правят, когда
+                               заказчик требует другую толщину плёнки. -->
+                          <field name="paint_thickness_um"/>
+                          <field name="qty" column_invisible="1"/>
+                          <field name="weight_one" string="Расход, кг" readonly="1"/>
+                          <field name="weight_total" readonly="1" sum="Итого, кг"/>
+                        </list>
+                      </field>
+                    </page>
+
+                    <page string="Лист" name="sheet">
+                      <field name="line_sheet_ids" context="{'default_calc_mode': 'sheet'}">
+                        <list editable="bottom">
+                          <field name="sequence" widget="handle"/>
+                          <field name="calc_mode" column_invisible="1"/>
+                          <field name="detail_name"/>
+                          <field name="sheet_id" options="{'no_create': True}"/>
+                          <field name="a_mm"/>
+                          <field name="b_mm"/>
+                          <field name="qty"/>
+                          <field name="grade_id" options="{'no_create': True}" optional="hide"/>
+                          <field name="weight_one" readonly="1"/>
+                          <field name="weight_total" readonly="1" sum="Итого, кг"/>
+                        </list>
+                      </field>
+                    </page>
+                  </notebook>
+                </form>
+              </field>
+            </page>
+
+            <!--
+              РАСКЛАДКА ОТДЕЛЬНОЙ ВКЛАДКОЙ, А НЕ КОЛОНКАМИ В СОСТАВЕ.
+              Раньше предварительный расчёт писал результат в колонки списка,
+              скрытые по умолчанию: кнопка отрабатывала, а на экране не
+              менялось ничего — и выглядела неработающей. Решение владельца
+              25.09.2026: дополнительные сведения о документе живут вкладками.
+
+              Здесь только листовые детали: у проката своя задача — раскрой
+              хлыстов, он считается другим калькулятором.
+            -->
+            <page string="Раскладка" name="layout">
+              <div class="text-muted mb-2">
+                Сколько листов придётся купить под этот заказ. Верхняя оценка:
+                технолог кладёт детали плотнее и объединяет позиции на одном
+                листе — за счёт этого и появляется экономия.
+              </div>
+              <field name="sheet_line_ids" readonly="0">
+                <list editable="bottom" create="0" delete="0">
+                  <field name="product_id" readonly="1"/>
+                  <field name="detail_name" readonly="1"/>
+                  <field name="sheet_id" readonly="1"/>
+                  <field name="a_mm" readonly="1"/>
+                  <field name="b_mm" readonly="1"/>
+                  <field name="qty" readonly="1"/>
+                  <field name="layout_sheet_size"/>
+                  <field name="layout_per_sheet" readonly="1"/>
+                  <field name="layout_sheets" readonly="1" sum="Листов"/>
+                  <field name="layout_scheme" readonly="1"/>
+                  <field name="layout_utilization_pct" readonly="1"
+                         widget="percentage" optional="show"/>
+                  <field name="layout_state" readonly="1" optional="hide"/>
+                </list>
+              </field>
+            </page>
+          </notebook>
 
           <!--
             Состав всех изделий сразу, с раскрытием. Список изделий выше
