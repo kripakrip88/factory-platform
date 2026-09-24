@@ -290,12 +290,14 @@
                   <field name="a_mm" readonly="1"/>
                   <field name="b_mm" readonly="1"/>
                   <field name="qty" readonly="1"/>
-                  <field name="layout_sheet_size"/>
-                  <field name="layout_per_sheet" readonly="1"/>
-                  <field name="layout_sheets" readonly="1" sum="Листов"/>
-                  <field name="layout_scheme" readonly="1"/>
+                  <field name="layout_sheet_size" string="Габарит"/>
+                  <field name="layout_per_sheet" readonly="1" string="В листе"/>
+                  <field name="layout_sheets" readonly="1" sum="Листов" string="Листов"/>
+                  <field name="layout_scheme" readonly="1" string="Схема"/>
+                  <!-- Без widget="percentage": в поле уже проценты, виджет умножал
+                       их ещё на сто и показывал 5600% вместо 56%. -->
                   <field name="layout_utilization_pct" readonly="1"
-                         widget="percentage" optional="show"/>
+                         string="Использование, %" optional="show"/>
                   <field name="layout_state" readonly="1" optional="hide"/>
                 </list>
               </field>

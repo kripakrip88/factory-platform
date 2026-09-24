@@ -261,10 +261,20 @@ class MetalSpecCost(models.Model):
     def _compute_compare_date(self):
         """По умолчанию сравниваем с прайсом, который действовал до нынешнего."""
         for spec in self:
-            if spec.compare_price_date:
-                continue
             base = spec.price_date or fields.Date.context_today(spec)
-            earlier = [d for d in spec._price_dates() if d < base]
+            dates = spec._price_dates()
+            # ⚠️ СРАВНИВАТЬ НАДО С ПРЕДЫДУЩИМ ПРАЙСОМ, А НЕ С ПРЕДЫДУЩЕЙ ДАТОЙ.
+            # Расчёт на 23 сентября берёт цены из прайса от 21-го, и «последняя
+            # дата раньше 23-го» — это он же. Сравнение самого с собой давало
+            # ровные нули во всей таблице: было равно стало.
+            current = [d for d in dates if d <= base]
+            current = current[-1] if current else None
+            earlier = [d for d in dates if current and d < current]
+            # Выбор пользователя уважаем — но только осмысленный. Дата, равная
+            # действующему прайсу, осмысленной не бывает: это сравнение самого
+            # с собой, ровные нули во всей таблице. Такое значение заменяем.
+            if spec.compare_price_date and spec.compare_price_date != current:
+                continue
             spec.compare_price_date = earlier[-1] if earlier else False
 
     @api.depends("price_date", "price_line_ids")
