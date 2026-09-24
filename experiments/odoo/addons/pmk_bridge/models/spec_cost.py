@@ -201,11 +201,20 @@ class MetalSpecCost(models.Model):
     price_line_ids = fields.One2many(
         "pmk.metal.spec.line", "spec_id", string="Позиции с ценами")
 
+    # ⚠️ ОБЫЧНОЕ ПОЛЕ, А НЕ ВЫЧИСЛЯЕМОЕ. Сначала дата подставлялась хранимым
+    # compute — и это дважды вышло боком: значение посчиталось один раз по
+    # неверному правилу и больше не пересчитывалось, а после миграции, которая
+    # его обнулила, осталось пустым навсегда (обнулённое поле Odoo пересчитать
+    # не просит). Теперь пусто значит «предыдущий прайс», и это состояние
+    # честное: его видно в подсказке рядом с полем.
     compare_price_date = fields.Date(
-        "Сравнить с ценами на", compute="_compute_compare_date",
-        store=True, readonly=False,
-        help="С каким прайсом сравниваем текущие цены. По умолчанию — "
-             "предыдущий по дате.")
+        "Сравнить с ценами на", copy=False,
+        help="С каким прайсом сравниваем. Пусто — с предыдущим по дате.")
+    compare_effective_date = fields.Date(
+        "Дата сравнения", compute="_compute_compare_date",
+        help="Что реально взято за точку отсчёта.")
+    compare_hint = fields.Char(
+        "Сравниваем с", compute="_compute_compare_date")
     latest_price_date = fields.Date(
         "Последний прайс", compute="_compute_price_freshness",
         help="Самая свежая дата прайса по позициям этого расчёта.")
@@ -257,9 +266,9 @@ class MetalSpecCost(models.Model):
         dates = tmpls.mapped("seller_ids.date_start")
         return sorted({d for d in dates if d})
 
-    @api.depends("price_date", "price_refreshed_on")
+    @api.depends("price_date", "compare_price_date", "price_line_ids")
     def _compute_compare_date(self):
-        """По умолчанию сравниваем с прайсом, который действовал до нынешнего."""
+        """С каким прайсом сравниваем на самом деле."""
         for spec in self:
             base = spec.price_date or fields.Date.context_today(spec)
             dates = spec._price_dates()
@@ -270,12 +279,14 @@ class MetalSpecCost(models.Model):
             current = [d for d in dates if d <= base]
             current = current[-1] if current else None
             earlier = [d for d in dates if current and d < current]
-            # Выбор пользователя уважаем — но только осмысленный. Дата, равная
-            # действующему прайсу, осмысленной не бывает: это сравнение самого
-            # с собой, ровные нули во всей таблице. Такое значение заменяем.
-            if spec.compare_price_date and spec.compare_price_date != current:
-                continue
-            spec.compare_price_date = earlier[-1] if earlier else False
+            auto = earlier[-1] if earlier else False
+            spec.compare_effective_date = spec.compare_price_date or auto
+            if spec.compare_price_date:
+                spec.compare_hint = ""
+            elif auto:
+                spec.compare_hint = "предыдущий прайс от %s" % auto.strftime("%d.%m.%Y")
+            else:
+                spec.compare_hint = "сравнивать не с чем: прайс только один"
 
     @api.depends("price_date", "price_line_ids")
     def _compute_price_freshness(self):
@@ -644,7 +655,7 @@ class MetalSpecLineCost(models.Model):
         }.get(self.calc_mode)
 
     @api.depends("price_unit", "price_state", "cost_fact_total",
-                 "spec_id.compare_price_date", "spec_id.supplier_id",
+                 "spec_id.compare_effective_date", "spec_id.supplier_id",
                  "profile_id", "sheet_id", "fastener_id", "paint_id")
     def _compute_price_compare(self):
         """Цена этой позиции по прайсу, с которым сравниваем.
@@ -655,7 +666,7 @@ class MetalSpecLineCost(models.Model):
         второй раз воспроизводить правила расчёта массы и количества.
         """
         for line in self:
-            date = line.spec_id.compare_price_date
+            date = line.spec_id.compare_effective_date
             tmpl = line._cost_product()
             seller = line._cost_find_seller(tmpl, date=date) if (date and tmpl) else False
             old = seller.price_discounted if seller else 0.0

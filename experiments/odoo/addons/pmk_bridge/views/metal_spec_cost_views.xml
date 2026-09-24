@@ -171,7 +171,15 @@
         <page string="Цены" name="prices">
           <div class="d-flex align-items-center gap-2 mb-3">
             <label for="compare_price_date" class="mb-0"/>
-            <field name="compare_price_date" nolabel="1"/>
+            <field name="compare_price_date" nolabel="1"
+                   placeholder="предыдущий прайс"/>
+            <!-- Пустое поле не молчит: рядом сказано, что взято по умолчанию.
+                 Иначе «сравнить с ценами на ____» оставляет гадать, с чем
+                 именно сравнили числа в таблице. -->
+            <span class="text-muted" invisible="not compare_hint">
+              <field name="compare_hint" nolabel="1" readonly="1"/>
+            </span>
+            <field name="compare_effective_date" invisible="1"/>
             <span class="text-muted ms-3" invisible="not price_refreshed_on">
               Перечитано <field name="price_refreshed_on" nolabel="1"
                                 readonly="1"/>
