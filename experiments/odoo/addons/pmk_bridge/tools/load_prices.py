@@ -883,9 +883,10 @@ def selftest_guard(env, book):
     except PriceUnitError as exc:
         print("  " + str(exc).replace("\n", "\n  "))
     mass = 102.26 / 12.0
-    good = to_product_unit(net_of_vat(raw, book.vat_rate), RUB_M, mass, "проверка")
-    print("\n  Тот же прайс через пересчёт: %.2f / %.2f / 1000 * %.4f = %s"
-          % (raw.amount, 1 + book.vat_rate / 100.0, mass, money_str(good)))
+    # Пересчёт БЕЗ снятия НДС: в базе цена лежит такой же, как в прайсе.
+    good = to_product_unit(raw, RUB_M, mass, "проверка")
+    print("\n  Тот же прайс через пересчёт: %.2f / 1000 * %.4f = %s"
+          % (raw.amount, mass, money_str(good)))
     assert_price_unit(product, good, env=env)
     print("  эта цена проверку проходит: единица «%s» совпала с единицей карточки"
           % good.unit)
@@ -1061,7 +1062,13 @@ def main():
             if not gross.amount:
                 made["уровень без цены"] += 1
                 continue
-            price = to_product_unit(net_of_vat(gross, book.vat_rate), item.unit,
+            # ⚠️ БЕЗ net_of_vat. Цена хранится КАК В БУМАГЕ, с НДС (решение
+            # владельца 24.09.2026). Очистка снималась в двух местах, и правка
+            # 24.09 задела только разбор: здесь, в записи, деление осталось —
+            # следующая заливка положила бы в базу цену на 22% ниже и того,
+            # что показал отчёт человеку. Найдено разбором до того, как
+            # заливка состоялась.
+            price = to_product_unit(gross, item.unit,
                                     item.mass, "строка %s" % item.row.excel_row)
             assert_price_unit(product, price, env=env)   # дверь одна
             min_qty = min_qty_in_product_unit(tier.qty_from, item.mass, item.unit, digits)
