@@ -141,6 +141,35 @@
   </record>
 
   <!--
+    Массовый пересчёт из списка: отметил расчёты, нажал — цены перечитаны.
+
+    ЗАЧЕМ ОТДЕЛЬНО ОТ КНОПКИ НА ФОРМЕ. После заливки нового прайса обновить
+    нужно сразу несколько расчётов, а открывать каждый — работа ради работы.
+    Автоматический пересчёт при заливке сознательно НЕ делаем: спецификация
+    считается на дату, и суммы в уже названных клиенту расчётах не должны
+    меняться сами.
+  -->
+  <record id="view_metal_spec_list_cost" model="ir.ui.view">
+    <field name="name">pmk.metal.spec.list.cost</field>
+    <field name="model">pmk.metal.spec</field>
+    <field name="inherit_id" ref="pmk_calc.view_metal_spec_list"/>
+    <field name="arch" type="xml">
+      <xpath expr="//list" position="inside">
+        <header>
+          <button name="action_refresh_prices" type="object"
+                  string="Перечитать цены" class="btn-secondary"/>
+        </header>
+      </xpath>
+      <xpath expr="//field[@name='total_weight_t']" position="after">
+        <field name="total_cost_fact" optional="show" sum="Металл"
+               widget="monetary"/>
+        <field name="price_incomplete" optional="hide"/>
+        <field name="currency_id" column_invisible="1"/>
+      </xpath>
+    </field>
+  </record>
+
+  <!--
     Рейтинг поставщика — на карточке контрагента, во вкладке закупок нет
     смысла: её может не быть. Ставим рядом с реквизитами, одной строкой.
   -->
