@@ -350,8 +350,52 @@ def parse_tiers(cells):
     return tiers
 
 
-def read_price_xls(path):
-    """Прочитать .xls Металлсервиса. Возвращает (строки, разделы, диагностика)."""
+def _open_metal_sheet(path):
+    """Лист «Металл» из прайса: читалка выбирается по формату файла.
+
+    ⚠️ ДВА ФОРМАТА, ДВЕ БИБЛИОТЕКИ. Июньский прайс пришёл в .xls, сентябрьский
+    в .xlsx — а xlrd с версии 2.0 старый формат читает, новый нет, и падает
+    внятным «Excel xlsx file; not supported». Пересохранять присланный файл
+    руками нельзя: это лишний шаг, о котором забудут, и заливка пойдёт из
+    файла, которого никто не проверял.
+
+    Возвращает (доступ к ячейке, число строк, число колонок, найденные даты).
+    """
+    suffix = os.path.splitext(path)[1].lower()
+
+    if suffix == ".xlsx" or suffix == ".xlsm":
+        try:
+            import openpyxl
+        except ImportError:                    # pragma: no cover
+            raise SystemExit("нужен openpyxl (в контейнере он есть)")
+        book = openpyxl.load_workbook(path, read_only=True, data_only=True)
+        if "Металл" not in book.sheetnames:
+            raise SystemExit("в файле нет листа «Металл»: %s" % book.sheetnames)
+        sheet = book["Металл"]
+        grid = [list(r) for r in sheet.iter_rows(values_only=True)]
+        book.close()
+
+        dates = []
+        for row in grid:
+            for v in row:
+                if isinstance(v, datetime.datetime):
+                    dates.append(v.date())
+                elif isinstance(v, datetime.date):
+                    dates.append(v)
+
+        def cell(r, c):
+            if r >= len(grid) or c >= len(grid[r]):
+                return ""
+            v = grid[r][c]
+            if v is None:
+                return ""
+            if isinstance(v, float) and v == int(v):
+                v = int(v)
+            return str(v).strip()
+
+        ncols = max((len(r) for r in grid), default=0)
+        return cell, len(grid), ncols, dates
+
     try:
         import xlrd
     except ImportError:                        # pragma: no cover
@@ -360,22 +404,38 @@ def read_price_xls(path):
     # Второй лист «Сервис» — услуги резки и доставки, не номенклатура.
     sheet = book.sheet_by_name("Металл")
 
+    dates = []
+    for r in range(sheet.nrows):
+        for c in range(sheet.ncols):
+            if sheet.cell(r, c).ctype == 3:    # XL_CELL_DATE
+                from xlrd.xldate import xldate_as_datetime
+                dates.append(xldate_as_datetime(
+                    sheet.cell(r, c).value, book.datemode).date())
+
     def cell(r, c):
         v = sheet.cell_value(r, c)
         if isinstance(v, float) and v == int(v):
             v = int(v)
         return str(v).strip()
 
+    return cell, sheet.nrows, sheet.ncols, dates
+
+
+def read_price_xls(path):
+    """Прочитать прайс Металлсервиса. Возвращает (строки, разделы, диагностика)."""
+    cell, nrows, _ncols, date_cells = _open_metal_sheet(path)
+
     rows, sections = [], []
     section, tiers = "", []
-    date_cells = []
-    for r in range(sheet.nrows):
-        for c in range(sheet.ncols):
-            if sheet.cell(r, c).ctype == 3:    # XL_CELL_DATE
-                from xlrd.xldate import xldate_as_datetime
-                date_cells.append(xldate_as_datetime(
-                    sheet.cell(r, c).value, book.datemode).date())
+    # Вид проката поставщик пишет только в первой строке серии: у 89х4, 89х4,5
+    # и 89х5 колонка «Профиль» заполнена лишь однажды, дальше пусто. Ячейки при
+    # этом НЕ объединены, так что читалка видит пустоту и строка терялась —
+    # в сентябрьском прайсе 16 штук, в июньском 31. Тянем последний вид вниз.
+    last_profile = ""
+    for r in range(nrows):
         a, b = cell(r, 0), cell(r, 1)
+        if b and not a and last_profile and not SECTION_RE.match(b):
+            a = last_profile
         if a and not b:
             if SECTION_RE.match(a) and not a.startswith(SKIP_PREFIX):
                 section, tiers = a, []
@@ -389,6 +449,7 @@ def read_price_xls(path):
             continue
         if not (a and b) or a.startswith(SKIP_PREFIX):
             continue
+        last_profile = a
         rows.append(PriceRow(
             excel_row=r + 1, section=section, profile=a, size=b,
             grade=cell(r, 2), length=cell(r, 3), weight=cell(r, 7),
