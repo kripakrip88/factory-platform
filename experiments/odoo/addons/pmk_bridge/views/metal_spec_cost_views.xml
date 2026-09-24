@@ -39,6 +39,33 @@
       </xpath>
 
       <!--
+        Сигнал об изменении цен. Показывается ТОЛЬКО после пересчёта и только
+        если сумма действительно поменялась: постоянная плашка перестаёт
+        читаться на третий день.
+
+        Красная при росте, зелёная при удешевлении — цвет не единственный
+        признак, рядом стоит знак и процент, чтобы это читалось и без цвета.
+      -->
+      <xpath expr="//div[hasclass('oe_title')]" position="before">
+        <div class="alert alert-danger mb-2" role="alert"
+             invisible="not price_changed or cost_change_pct &lt;= 0">
+          Металл подорожал на <field name="cost_change_pct" nolabel="1"
+                                     class="fw-bold"/>%
+          — было <field name="cost_prev_total" nolabel="1" widget="monetary"/>,
+          стало <field name="total_cost_fact" nolabel="1" widget="monetary"/>.
+          Проверьте цену в предложении клиенту.
+        </div>
+        <div class="alert alert-success mb-2" role="alert"
+             invisible="not price_changed or cost_change_pct &gt;= 0">
+          Металл подешевел на <field name="cost_change_pct" nolabel="1"
+                                     class="fw-bold"/>%
+          — было <field name="cost_prev_total" nolabel="1" widget="monetary"/>,
+          стало <field name="total_cost_fact" nolabel="1" widget="monetary"/>.
+        </div>
+        <field name="price_changed" invisible="1"/>
+      </xpath>
+
+      <!--
         Итоги в деньгах — теми же карточками, что и вес. Закупка стоит первой:
         это число, которое ляжет в себестоимость, а «металл в деталях» рядом
         показывает, сколько из него дошло до изделия.
@@ -106,6 +133,9 @@
         optional="hide" — колонка скрыта, а данные читаются.
       -->
       <xpath expr="//field[@name='line_linear_ids']/list" position="inside">
+        <field name="price_change_pct" optional="hide"
+               decoration-danger="price_change_pct &gt; 0"
+               decoration-success="price_change_pct &lt; 0"/>
         <field name="price_state" optional="hide"/>
         <field name="price_unit" optional="hide"/>
         <field name="utilization_pct" optional="hide"/>
@@ -115,6 +145,9 @@
       </xpath>
 
       <xpath expr="//field[@name='line_sheet_ids']/list" position="inside">
+        <field name="price_change_pct" optional="hide"
+               decoration-danger="price_change_pct &gt; 0"
+               decoration-success="price_change_pct &lt; 0"/>
         <field name="price_state" optional="hide"/>
         <field name="price_unit" optional="hide"/>
         <field name="utilization_pct" optional="show"/>
@@ -124,6 +157,9 @@
       </xpath>
 
       <xpath expr="//field[@name='line_fastener_ids']/list" position="inside">
+        <field name="price_change_pct" optional="hide"
+               decoration-danger="price_change_pct &gt; 0"
+               decoration-success="price_change_pct &lt; 0"/>
         <field name="price_state" optional="hide"/>
         <field name="price_unit" optional="hide"/>
         <field name="cost_fact_total" optional="show" sum="Закупка"/>
@@ -131,6 +167,9 @@
       </xpath>
 
       <xpath expr="//field[@name='line_paint_ids']/list" position="inside">
+        <field name="price_change_pct" optional="hide"
+               decoration-danger="price_change_pct &gt; 0"
+               decoration-success="price_change_pct &lt; 0"/>
         <field name="price_state" optional="hide"/>
         <field name="price_unit" optional="hide"/>
         <field name="cost_fact_total" optional="show" sum="Закупка"/>
@@ -163,6 +202,9 @@
       <xpath expr="//field[@name='total_weight_t']" position="after">
         <field name="total_cost_fact" optional="show" sum="Металл"
                widget="monetary"/>
+        <field name="cost_change_pct" optional="show" string="Изм., %"
+               decoration-danger="cost_change_pct &gt; 0"
+               decoration-success="cost_change_pct &lt; 0"/>
         <field name="price_incomplete" optional="hide"/>
         <field name="currency_id" column_invisible="1"/>
       </xpath>

@@ -133,6 +133,28 @@ class MetalSpecCost(models.Model):
     total_weight_fact_t = fields.Float(
         "Купить металла, т", compute="_compute_cost_totals", store=True, digits=(12, 4))
 
+    # ─── Что изменилось после пересчёта ───────────────────────────────────
+    #
+    # ЗАЧЕМ. Пересчёт по новому прайсу меняет сумму молча: менеджер нажал
+    # кнопку, число поменялось, и на глаз не видно ни что оно поменялось, ни
+    # насколько. А разница бывает большой: сентябрьский прайс поднял уголок на
+    # 38%, арматуру на 27%, и при этом трубы подешевели.
+    #
+    # Поэтому запоминаем сумму ДО пересчёта и показываем разницу. Цифра живёт
+    # до следующего пересчёта — это не история цен, а ответ на вопрос «что
+    # изменилось сейчас».
+    cost_prev_total = fields.Monetary(
+        "Закупка до пересчёта", readonly=True, copy=False,
+        help="Сколько стоил металл по прежним ценам. Заполняется кнопкой "
+             "«Перечитать цены».")
+    cost_change_pct = fields.Float(
+        "Изменение, %", readonly=True, digits=(6, 1), copy=False,
+        help="На сколько изменилась стоимость металла после пересчёта. "
+             "Плюс — подорожало.")
+    price_changed = fields.Boolean(
+        "Цены изменились", readonly=True, copy=False,
+        help="После последнего пересчёта сумма стала другой.")
+
     no_price_count = fields.Integer(
         "Позиций без цены", compute="_compute_cost_totals", store=True)
     price_incomplete = fields.Boolean(
@@ -164,11 +186,30 @@ class MetalSpecCost(models.Model):
         сами, вчерашнее КП молча меняло бы сумму после заливки нового прайса,
         и разговор с клиентом расходился бы с документом.
         """
-        lines = self.mapped("product_ids.line_ids")
-        # Снимаем ручные правки цены: пользователь нажал «перечитать» —
-        # значит хочет то, что в прайсе сейчас.
-        lines.write({"price_unit": 0.0})
-        lines._compute_price_from_supplier()
+        for spec in self:
+            was = spec.total_cost_fact
+            lines = spec.mapped("product_ids.line_ids")
+            # Снимок цен ДО обнуления: после него прежнего значения уже не
+            # узнать, а именно оно отвечает на вопрос «из-за чего подорожало».
+            for line in lines:
+                line.price_prev_unit = line.price_unit
+            # Снимаем ручные правки цены: пользователь нажал «перечитать» —
+            # значит хочет то, что в прайсе сейчас.
+            lines.write({"price_unit": 0.0})
+            lines._compute_price_from_supplier()
+            for line in lines:
+                was_unit = line.price_prev_unit
+                line.price_change_pct = (
+                    (line.price_unit - was_unit) / was_unit * 100.0
+                    if was_unit else 0.0)
+            # Пересчёт полей идёт отложенно, а сумму надо сравнить сразу —
+            # поэтому читаем её заново, сбросив кэш.
+            spec.invalidate_recordset(["total_cost_fact"])
+            now = spec.total_cost_fact
+
+            spec.cost_prev_total = was
+            spec.price_changed = abs(now - was) >= 0.01
+            spec.cost_change_pct = ((now - was) / was * 100.0) if was else 0.0
         return True
 
 
@@ -297,6 +338,14 @@ class MetalSpecLineCost(models.Model):
     cost_fact_total = fields.Monetary(
         "Закупка в изделии", compute="_compute_cost", store=True)
 
+    # Изменение по строке: сумма документа говорит «стало дороже», а строка —
+    # из-за чего именно. Без этого менеджер видит рост и не знает, спорить с
+    # поставщиком по уголку или по листу.
+    price_prev_unit = fields.Float(
+        "Цена до пересчёта", readonly=True, digits=(16, 4), copy=False)
+    price_change_pct = fields.Float(
+        "Изменение цены, %", readonly=True, digits=(6, 1), copy=False)
+
     # ─────────────────────────────────────────────────────────────────────
     def _cost_product(self):
         """Карточка товара, соответствующая позиции строки."""
@@ -381,6 +430,10 @@ class MetalSpecLineCost(models.Model):
 
             price = seller.price_discounted
             if not line.price_unit:
+                # Прежняя цена запоминается ровно в тот момент, когда её
+                # заменяют: кнопка обнуляет price_unit, и здесь ещё доступно
+                # то, что стояло до обнуления — через снимок в price_prev_unit
+                # его пишет сама кнопка (см. action_refresh_prices).
                 line.price_unit = price
             line.price_state = "ok"
             line.price_partner_id = seller.partner_id
