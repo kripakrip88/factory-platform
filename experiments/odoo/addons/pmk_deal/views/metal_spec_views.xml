@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+  <!--
+    Сделка в шапке расчёта — первым полем, перед клиентом: сначала отвечаем
+    «по какой заявке считаем», и клиент подставляется уже из неё.
+  -->
+  <record id="view_metal_spec_form_deal" model="ir.ui.view">
+    <field name="name">pmk.metal.spec.form.deal</field>
+    <field name="model">pmk.metal.spec</field>
+    <field name="inherit_id" ref="pmk_calc.view_metal_spec_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//div[hasclass('pmk-doc-head__fields')]" position="inside">
+        <div class="pmk-field">
+          <label for="opportunity_id"/>
+          <field name="opportunity_id" nolabel="1"
+                 options="{'no_create': True}"
+                 placeholder="Без сделки…"/>
+        </div>
+      </xpath>
+    </field>
+  </record>
+
+  <!--
+    Сделка в списке расчётов: по ней чаще всего и ищут, когда клиент звонит
+    и спрашивает «а что там с нашим ангаром».
+  -->
+  <record id="view_metal_spec_list_deal" model="ir.ui.view">
+    <field name="name">pmk.metal.spec.list.deal</field>
+    <field name="model">pmk.metal.spec</field>
+    <field name="inherit_id" ref="pmk_calc.view_metal_spec_list"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='partner_id']" position="after">
+        <field name="opportunity_id" optional="show"/>
+      </xpath>
+    </field>
+  </record>
+
+</odoo>

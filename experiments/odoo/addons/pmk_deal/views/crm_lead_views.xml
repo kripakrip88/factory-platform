@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+  <!--
+    Кнопка-счётчик «Расчёты» в шапке сделки. Рядом с остальными счётчиками:
+    менеджер ищет расчёт там же, где смотрит предложения и письма.
+  -->
+  <record id="view_crm_lead_form_specs" model="ir.ui.view">
+    <field name="name">crm.lead.form.specs</field>
+    <field name="model">crm.lead</field>
+    <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//div[@name='button_box']" position="inside">
+        <button name="action_open_specs" type="object"
+                class="oe_stat_button" icon="fa-calculator">
+          <field name="spec_count" widget="statinfo" string="Расчёты"/>
+        </button>
+      </xpath>
+    </field>
+  </record>
+
+</odoo>

@@ -18,7 +18,7 @@ BRANCH="${BRANCH:-feature/experiment-carbon}"
 # сервере файлов не было, в ir_module_module записи не было, а 790 служебных
 # строк связи «справочник → карточка» в базе создали скрипты, запущенные
 # руками. Связь держалась на данных модуля, которого Odoo не знает.
-OURS="pmk_calc pmk_theme pmk_pdf pmk_cut pmk_mail_ui pmk_partner pmk_purchase pmk_dadata pmk_laser pmk_bridge"
+OURS="pmk_calc pmk_theme pmk_pdf pmk_cut pmk_mail_ui pmk_partner pmk_purchase pmk_dadata pmk_laser pmk_bridge pmk_deal"
 # Вендорские — только раскладываются. -u им не нужен: мы правим в них код и
 # переводы, а не данные, а лишнее обновление перезапускает их data-файлы.
 #
