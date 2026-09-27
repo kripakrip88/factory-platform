@@ -150,6 +150,7 @@
 
   <template id="report_metal_spec_quotation">
     <t t-call="web.html_container">
+      <t t-set="docs" t-value="docs.with_context(lang='ru_RU')"/>
       <t t-foreach="docs" t-as="doc">
         <t t-call="pmk_bridge.report_metal_spec_quotation_document"/>
       </t>
