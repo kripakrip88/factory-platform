@@ -766,14 +766,23 @@ class MetalSpecLineCost(models.Model):
                 line.price_state = "no_price"
                 continue
 
-            if seller.currency_id != line.spec_id.currency_id:
+            # ⚠️ ВАЛЮТА НОВОГО РАСЧЁТА ДО СОХРАНЕНИЯ ПУСТАЯ. Поле с умолчанием
+            # на документе, но деталь заводится в диалоге изделия, и там
+            # документ ещё не записан — валюта приходит False. Проверка
+            # валют роняла форму на ПЕРВОЙ же детали с ценой: «расчёт
+            # ведётся в False». Найдено прогоном реальной заявки 27.09.2026;
+            # на сохранённых расчётах, где шли все проверки, не проявлялось.
+            spec_currency = (line.spec_id.currency_id
+                             or line.spec_id.company_id.currency_id
+                             or self.env.company.currency_id)
+            if seller.currency_id != spec_currency:
                 # Громкий отказ вместо тихой конвертации: без курса пересчёт
                 # прошёл бы один к одному и ошибку заметили бы в деньгах.
                 raise UserError(
                     "Цена поставщика %s указана в валюте %s, а расчёт ведётся в %s. "
                     "Пересчёт валют не делаем — заведите цену в рублях."
                     % (seller.partner_id.display_name, seller.currency_id.name,
-                       line.spec_id.currency_id.name))
+                       spec_currency.name))
 
             price = seller.price_discounted
             if not line.price_unit:
