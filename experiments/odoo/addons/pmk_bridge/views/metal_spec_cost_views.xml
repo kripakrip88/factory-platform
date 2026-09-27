@@ -279,6 +279,18 @@
         Цена изделия правится там же, где количество: менеджер видит вес и
         ставит цену, не уходя в другой экран.
       -->
+      <!--
+        ⚠️ ЦЕНА НУЖНА И В КАРТОЧКЕ ИЗДЕЛИЯ, НЕ ТОЛЬКО В СПИСКЕ. Список изделий
+        не редактируется на месте: клик открывает карточку. Колонка без поля в
+        карточке означала «вижу, но не ввести» — поймано при проверке глазами.
+      -->
+      <xpath expr="//field[@name='product_ids']/form//field[@name='qty']"
+             position="after">
+        <field name="price_customer_unit" widget="monetary"/>
+        <field name="price_customer_total" widget="monetary" readonly="1"/>
+        <field name="currency_id" invisible="1"/>
+      </xpath>
+
       <xpath expr="//field[@name='product_ids']/list/field[@name='weight_total']"
              position="after">
         <field name="price_customer_unit" string="Цена за шт" widget="monetary"/>
