@@ -113,7 +113,15 @@
             <field name="total_cost_fact" widget="monetary"/>
           </div>
         </div>
-        <div class="pmk-kpi__card">
+        <!--
+          ⚠️ ВТОРАЯ КАРТОЧКА ПОКАЗЫВАЕТСЯ, ТОЛЬКО ЕСЛИ ЕСТЬ ОТХОД.
+          Себестоимость сейчас считается по чистому весу (решение владельца
+          24.09.2026), поэтому «к закупке» и «в деталях» — одно и то же число,
+          а «цена раскроя» всегда ноль. Два одинаковых числа рядом читаются как
+          поломка: владелец так и прочитал — «такого не может быть».
+          Появится отход — карточка вернётся сама.
+        -->
+        <div class="pmk-kpi__card" invisible="total_cost_waste == 0">
           <div class="pmk-kpi__label">Из них в деталях</div>
           <div class="pmk-kpi__value">
             <field name="total_cost_clean" widget="monetary"/>
@@ -125,9 +133,10 @@
           стоимость отхода: в сумме заказа она растворяется.
         -->
         <div class="pmk-kpi__note">
-          <span>Цена раскроя:</span>
-          <field name="total_cost_waste" widget="monetary"/>
-          <span class="pmk-kpi__dot">·</span>
+          <span invisible="total_cost_waste == 0">Цена раскроя:</span>
+          <field name="total_cost_waste" widget="monetary"
+                 invisible="total_cost_waste == 0"/>
+          <span class="pmk-kpi__dot" invisible="total_cost_waste == 0">·</span>
           <span>Купить, т:</span>
           <field name="total_weight_fact_t" digits="[12,3]"/>
           <!--
@@ -190,7 +199,7 @@
               <field name="detail_name" string="Деталь"/>
               <field name="position_label" string="Позиция"/>
               <field name="calc_mode" optional="hide"/>
-              <field name="price_partner_id" string="Поставщик" optional="show"/>
+              <field name="price_partner_id" string="Поставщик" optional="hide"/>
               <field name="price_compare_unit" string="Было" digits="[16,2]"/>
               <field name="price_unit" string="Стало" digits="[16,2]"/>
               <field name="price_compare_pct" string="Изм., %"
@@ -202,8 +211,8 @@
                      decoration-success="cost_compare_delta &lt; 0"/>
               <field name="cost_fact_total" string="Закупка" widget="monetary"
                      sum="Итого" optional="show"/>
-              <field name="price_compare_state" string="Состояние"
-                     decoration-danger="price_compare_state in ('no_new', 'none')"/>
+              <field name="price_compare_note" string="Замечание"
+                     decoration-danger="price_compare_note != False"/>
               <field name="currency_id" column_invisible="1"/>
             </list>
           </field>

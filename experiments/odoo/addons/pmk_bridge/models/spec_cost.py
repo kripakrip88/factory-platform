@@ -545,12 +545,11 @@ class MetalSpecLineCost(models.Model):
         "Позиция", compute="_compute_position_label",
         help="Что за материал в строке. Без этого в таблице цен видны одни "
              "номера деталей, и понять, о чём речь, нельзя.")
-    price_compare_state = fields.Selection(
-        [("ok", "Есть обе цены"),
-         ("no_old", "Не было в том прайсе"),
-         ("no_new", "Выпала из прайса"),
-         ("none", "Цены нет")],
-        "Состояние сравнения", compute="_compute_price_compare")
+    # Текстом, а не выбором: колонка должна МОЛЧАТЬ, когда всё в порядке.
+    # «Есть обе цены» в каждой строке — шум, среди которого «выпала из
+    # прайса» перестаёт бросаться в глаза.
+    price_compare_note = fields.Char(
+        "Замечание", compute="_compute_price_compare")
     price_change_pct = fields.Float(
         "Изменение цены, %", readonly=True, digits=(6, 1), copy=False)
 
@@ -688,22 +687,22 @@ class MetalSpecLineCost(models.Model):
 
             line.price_compare_unit = old
             if old and new:
-                line.price_compare_state = "ok"
+                line.price_compare_note = False
                 line.price_compare_pct = (new - old) / old * 100.0
                 line.cost_compare_delta = line.cost_fact_total * (new - old) / new
             elif old and not new:
                 # Позиция была в прайсе и пропала. Деньги «сэкономлены» только
                 # на бумаге: металл всё равно придётся купить, просто цена
                 # теперь неизвестна.
-                line.price_compare_state = "no_new"
+                line.price_compare_note = "выпала из прайса"
                 line.price_compare_pct = 0.0
                 line.cost_compare_delta = 0.0
             elif new and not old:
-                line.price_compare_state = "no_old"
+                line.price_compare_note = "не было в том прайсе"
                 line.price_compare_pct = 0.0
                 line.cost_compare_delta = 0.0
             else:
-                line.price_compare_state = "none"
+                line.price_compare_note = "цены нет"
                 line.price_compare_pct = 0.0
                 line.cost_compare_delta = 0.0
 
