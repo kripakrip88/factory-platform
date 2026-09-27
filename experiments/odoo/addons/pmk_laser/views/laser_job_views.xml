@@ -76,6 +76,9 @@
               <field name="date"/>
               <field name="partner_id"/>
               <field name="sale_order_id"/>
+              <!-- Расчёт рядом с заказом: заказов в базе пока нет, режут по
+                   расчёту, и по этой ссылке задание видно на схеме связей. -->
+              <field name="spec_id" options="{'no_create': True}"/>
               <field name="machine_id"/>
               <field name="note" placeholder="Примечание…"/>
             </group>
@@ -275,6 +278,7 @@
       <search string="Задания на резку">
         <field name="name"/>
         <field name="partner_id"/>
+        <field name="spec_id"/>
         <field name="machine_id"/>
         <field name="sheet_id"/>
         <filter name="today" string="Сегодня" domain="[('date', '=', context_today().strftime('%Y-%m-%d'))]"/>

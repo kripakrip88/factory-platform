@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        ВКЛАДКА «СВЯЗИ» — как «Раскладка» и «Цены» у расчёта (решение владельца
+        25.09.2026: дополнительные сведения о документе живут вкладками).
+
+        ⚠️ ВИДЖЕТ, А НЕ КЛИЕНТСКОЕ ДЕЙСТВИЕ. Кнопки на штатных формах открывают
+        схему действием (ir.actions.client), но действие во вкладку формы не
+        вставить. <widget name="pmk_flow_map"/> компилируется в любом месте
+        разметки, в том числе внутри page, и получает запись формы.
+        Вкладку Odoo рисует только открытую — схема строится по клику на неё,
+        а не при каждом открытии документа.
+
+        ⚠️ priority 99 — ЧТОБЫ ВКЛАДКА ШЛА ПОСЛЕДНЕЙ. Наследования одного вида
+        применяются по (priority, id). Вкладку «Цены» добавляет pmk_bridge, от
+        которого этот модуль не зависит: на чистой базе он может встать позже
+        нас, и «Связи» оказались бы перед «Ценами».
+    -->
+
+    <record id="view_metal_spec_form_pmk_flow" model="ir.ui.view">
+        <field name="name">pmk.metal.spec.form.pmk.flow</field>
+        <field name="model">pmk.metal.spec</field>
+        <field name="inherit_id" ref="pmk_calc.view_metal_spec_form"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <!-- Путь от корня, а не //notebook: в форме изделия внутри состава
+                 есть свой notebook (Прокат/Метизы/Покрытие/Лист). Сейчас он
+                 идёт вторым и //notebook берёт верхний, но это держится только
+                 на порядке разметки. -->
+            <xpath expr="/form/sheet/notebook" position="inside">
+                <page string="Связи" name="pmk_flow">
+                    <widget name="pmk_flow_map"/>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_crm_lead_form_pmk_flow" model="ir.ui.view">
+        <field name="name">crm.lead.form.pmk.flow</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet/notebook" position="inside">
+                <page string="Связи" name="pmk_flow">
+                    <widget name="pmk_flow_map"/>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

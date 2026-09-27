@@ -1,25 +1,180 @@
-.o_flow_map {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background: #f6f9fd;
+// ─── Схема связей документов (pmk_flow) ──────────────────────────────────
+//
+// ЗАЧЕМ СВОИ ЦВЕТА, А НЕ АВТОРСКИЕ. У автора модуля схема жила на отдельной
+// странице: светлый фон #f6f9fd, высота от 600 px, узлы залиты насыщенным
+// цветом с белым текстом. Во вкладке формы это смотрелось бы чужеродной
+// плашкой, а в тёмной теме — светлым пятном посреди экрана. Здесь фон
+// прозрачный (схема лежит на листе формы), высота по содержимому, а узлы —
+// спокойные заливки с тёмным текстом, как значки в списках.
+//
+// ⚠️ ЦВЕТА — СВОИ ПЕРЕМЕННЫЕ, А НЕ --pmk-* ИЗ ТЕМЫ. Словарь pmk_theme
+// (tokens.scss) собран под тёмный вид чужой темы: текст там белый, поверхности
+// полупрозрачные. Для светлого листа эти значения не годятся, а тёмный режим
+// включается классом на body — под ним переменные ниже и переопределяются.
+//
+// ⚠️ КЛАССЫ С ПРЕФИКСОМ o_pmk_flow. Пока на стенде стоит исходный модуль,
+// его стили (o_flow_*) грузятся в тот же бандл. Общее имя класса — и одна
+// схема перекрашивала бы другую.
 
-    .o_flow_loading, .o_flow_truncated {
-        padding: 12px 16px;
-        font-size: 13px;
-        color: #1B2A4A;
+.o_pmk_flow {
+  // Светлая тема — по умолчанию.
+  --pmk-flow-grey-bg: #f1f3f6;
+  --pmk-flow-grey-line: #b9c1cc;
+  --pmk-flow-grey-ink: #2b3440;
+  --pmk-flow-blue-bg: #e8f0fb;
+  --pmk-flow-blue-line: #82a6d4;
+  --pmk-flow-blue-ink: #1d3a61;
+  --pmk-flow-green-bg: #e6f4ea;
+  --pmk-flow-green-line: #80bf95;
+  --pmk-flow-green-ink: #1c4a2c;
+  --pmk-flow-red-bg: #fcebe8;
+  --pmk-flow-red-line: #e29a90;
+  --pmk-flow-red-ink: #6e1f16;
+  --pmk-flow-edge: #bcc4cf;
+  --pmk-flow-edge-on: #4d5b6e;
+  --pmk-flow-head: #6b7685;
+  --pmk-flow-anchor: #1b2a4a;
+  --pmk-flow-frame: rgba(0, 0, 0, 0.08);
+
+  position: relative;
+  width: 100%;
+  background: transparent;
+}
+
+// Тёмный режим темы Nexus: класс на body. Заливки НЕПРОЗРАЧНЫЕ — линии
+// проходят под узлами, и сквозь полупрозрачный узел они читались бы как
+// зачёркнутый текст.
+body.o_nexus_dark .o_pmk_flow {
+  --pmk-flow-grey-bg: #262c34;
+  --pmk-flow-grey-line: #4b5461;
+  --pmk-flow-grey-ink: #e6e9ee;
+  --pmk-flow-blue-bg: #1c2d44;
+  --pmk-flow-blue-line: #5383bb;
+  --pmk-flow-blue-ink: #d6e6fa;
+  --pmk-flow-green-bg: #1d3325;
+  --pmk-flow-green-line: #5f9c70;
+  --pmk-flow-green-ink: #d5eedc;
+  --pmk-flow-red-bg: #3b2224;
+  --pmk-flow-red-line: #b8675d;
+  --pmk-flow-red-ink: #f6d9d5;
+  --pmk-flow-edge: rgba(255, 255, 255, 0.24);
+  --pmk-flow-edge-on: rgba(255, 255, 255, 0.75);
+  --pmk-flow-head: rgba(244, 241, 234, 0.6);
+  --pmk-flow-anchor: #f4f1ea;
+  --pmk-flow-frame: rgba(255, 255, 255, 0.1);
+}
+
+.o_pmk_flow_bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.o_pmk_flow_note {
+  font-size: 13px;
+}
+
+.o_pmk_flow_refresh {
+  flex: none;
+}
+
+.o_pmk_flow_msg {
+  padding: 8px 0;
+  font-size: 13px;
+}
+
+// Высота по содержимому, но в рамках: короткая цепочка не растягивает
+// вкладку на пол-экрана, длинная не выталкивает форму за край — прокрутка
+// внутри рамки, по обеим осям.
+.o_pmk_flow_scroll {
+  overflow: auto;
+  min-height: 260px;
+  max-height: 560px;
+  border: 1px solid var(--pmk-flow-frame);
+  border-radius: 8px;
+}
+
+// Отдельная страница сама прокручивается целиком — потолок высоты не нужен.
+.o_pmk_flow--page .o_pmk_flow_scroll {
+  max-height: none;
+}
+
+.o_pmk_flow_page {
+  height: 100%;
+  overflow: auto;
+  padding: 16px;
+}
+
+.o_pmk_flow_svg {
+  display: block;
+  font-family: inherit;
+}
+
+.o_pmk_flow_head {
+  fill: var(--pmk-flow-head);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.o_pmk_flow_edge {
+  fill: none;
+  stroke: var(--pmk-flow-edge);
+  stroke-width: 1.5;
+}
+
+.o_pmk_flow_edge--on {
+  stroke: var(--pmk-flow-edge-on);
+  stroke-width: 2;
+}
+
+.o_pmk_flow_node {
+  rect {
+    stroke-width: 1;
+  }
+
+  .o_pmk_flow_label {
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .o_pmk_flow_state {
+    font-size: 11px;
+    opacity: 0.8;
+  }
+
+  &:focus {
+    outline: none;
+  }
+}
+
+@each $color in grey, blue, green, red {
+  .o_pmk_flow_node--#{$color} {
+    rect {
+      fill: var(--pmk-flow-#{$color}-bg);
+      stroke: var(--pmk-flow-#{$color}-line);
     }
-    .o_flow_truncated { color: #c0392b; }
 
-    .o_flow_svg { display: block; min-height: 600px; }
-
-    .o_flow_edge { stroke: #9aa7b8; stroke-width: 2; }
-
-    .o_flow_node {
-        cursor: pointer;
-        .o_flow_label { fill: #ffffff; font-size: 12px; font-weight: 600; }
-        .o_flow_state { fill: #eef3fb; font-size: 10px; }
-        &:hover rect { stroke: #1B2A4A; stroke-width: 2; }
+    text {
+      fill: var(--pmk-flow-#{$color}-ink);
     }
+  }
+}
+
+// ⚠️ ПОСЛЕ ЦИКЛА ЦВЕТОВ. Вес селекторов одинаковый, побеждает тот, что ниже:
+// выше рамка открытого документа проиграла бы цвету узла.
+.o_pmk_flow_node--link {
+  cursor: pointer;
+
+  &:hover rect,
+  &:focus-visible rect {
+    stroke: var(--pmk-flow-edge-on);
+    stroke-width: 2;
+  }
+}
+
+.o_pmk_flow_node--anchor rect {
+  stroke: var(--pmk-flow-anchor);
+  stroke-width: 2.5;
 }

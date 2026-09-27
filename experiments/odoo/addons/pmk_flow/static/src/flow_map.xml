@@ -1,24 +1,97 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
+
+    <!--
+        Сама схема. Порядок слоёв в SVG — подписи колонок, линии, узлы: узел
+        рисуется поверх линии, иначе связь через колонку перечёркивает текст.
+    -->
     <t t-name="pmk_flow.FlowMap">
-        <div class="o_flow_map">
-            <div t-if="state.loading" class="o_flow_loading">Loading flow map...</div>
-            <div t-if="state.truncated" class="o_flow_truncated">
-                Graph truncated, showing the closest related documents only.
+        <div t-attf-class="o_pmk_flow {{ props.page ? 'o_pmk_flow--page' : '' }}">
+            <div class="o_pmk_flow_bar">
+                <span class="o_pmk_flow_note text-muted">
+                    <t t-if="state.loading and !state.loaded">Строю схему…</t>
+                    <t t-elif="state.loaded and state.nodes.length &lt;= 1">
+                        Связанных документов нет. Это не сбой схемы: документ
+                        ни на что не ссылается, и на него никто не ссылается.
+                    </t>
+                    <t t-elif="state.loaded">
+                        Документов на схеме: <t t-esc="state.nodes.length"/>.
+                        Нажмите на документ, чтобы открыть его.
+                    </t>
+                </span>
+                <button type="button" class="btn btn-sm btn-secondary o_pmk_flow_refresh"
+                        title="Перестроить схему по текущим данным"
+                        t-att-disabled="state.loading"
+                        t-on-click="() => this.load()">
+                    <i t-attf-class="fa fa-refresh me-1 {{ state.loading ? 'fa-spin' : '' }}"
+                       aria-hidden="true"/>Обновить
+                </button>
             </div>
-            <svg t-if="!state.loading" class="o_flow_svg"
-                 t-att-width="state.width" t-att-height="state.height">
-                <line t-foreach="state.edges" t-as="e" t-key="e_index"
-                      t-att-x1="e.x1" t-att-y1="e.y1" t-att-x2="e.x2" t-att-y2="e.y2"
-                      class="o_flow_edge"/>
-                <g t-foreach="state.nodes" t-as="n" t-key="n.id"
-                   t-att-transform="'translate(' + n.x + ',' + n.y + ')'"
-                   class="o_flow_node" t-on-click="() => this.openRecord(n)">
-                    <rect width="160" height="44" rx="6" t-att-fill="n.hex"/>
-                    <text x="10" y="20" class="o_flow_label"><t t-esc="n.label"/></text>
-                    <text x="10" y="36" class="o_flow_state"><t t-esc="n.state"/></text>
-                </g>
-            </svg>
+
+            <div t-if="state.error" class="o_pmk_flow_msg text-danger">
+                Схему построить не удалось: <t t-esc="state.error"/>
+            </div>
+
+            <div t-if="state.nodes.length" class="o_pmk_flow_scroll">
+                <svg class="o_pmk_flow_svg" role="img" aria-label="Схема связей документов"
+                     t-att-width="state.width" t-att-height="state.height">
+                    <text t-foreach="state.heads" t-as="h" t-key="h.key"
+                          class="o_pmk_flow_head"
+                          t-att-x="h.x" t-att-y="geo.pad + 12">
+                        <title><t t-esc="h.full"/></title>
+                        <t t-esc="h.label"/>
+                    </text>
+                    <path t-foreach="state.edges" t-as="e" t-key="e.id"
+                          t-att-d="e.d" t-att-class="edgeClass(e)"/>
+                    <g t-foreach="state.nodes" t-as="n" t-key="n.id"
+                       t-att-class="n.cls"
+                       t-att-transform="'translate(' + n.x + ',' + n.y + ')'"
+                       t-att-tabindex="n.clickable ? '0' : '-1'"
+                       t-att-role="n.clickable ? 'link' : 'img'"
+                       t-att-aria-label="n.hint"
+                       t-on-click="() => this.openNode(n)"
+                       t-on-keydown="(ev) => this.onNodeKeydown(ev, n)"
+                       t-on-mouseenter="() => this.setHover(n.id)"
+                       t-on-mouseleave="() => this.setHover(null)">
+                        <title><t t-esc="n.hint"/></title>
+                        <rect t-att-width="geo.nodeW" t-att-height="geo.nodeH" rx="8"/>
+                        <text x="12" y="21" class="o_pmk_flow_label"><t t-esc="n.shortLabel"/></text>
+                        <text x="12" y="38" class="o_pmk_flow_state"><t t-esc="n.shortState"/></text>
+                    </g>
+                </svg>
+            </div>
+
+            <div t-if="state.truncated" class="o_pmk_flow_msg text-warning">
+                Схема обрезана: связанных документов больше, чем помещается на
+                одном экране. Показаны ближайшие к открытому документу.
+            </div>
+            <div t-if="state.restricted" class="o_pmk_flow_msg text-muted">
+                Часть связей скрыта: на эти документы у вас нет прав.
+            </div>
         </div>
     </t>
+
+    <!-- Вкладка «Связи» в форме документа. -->
+    <t t-name="pmk_flow.FlowMapWidget">
+        <div class="o_pmk_flow_widget">
+            <PmkFlowMap t-if="props.record.resId"
+                        resModel="props.record.resModel"
+                        resId="props.record.resId"/>
+            <div t-else="" class="o_pmk_flow_msg text-muted">
+                Сохраните документ, чтобы увидеть связи.
+            </div>
+        </div>
+    </t>
+
+    <!-- Отдельная страница: кнопка «Связи» на штатных формах. -->
+    <t t-name="pmk_flow.FlowMapAction">
+        <div class="o_action o_pmk_flow_page">
+            <PmkFlowMap t-if="resModel and resId" resModel="resModel" resId="resId" page="true"/>
+            <div t-else="" class="o_pmk_flow_msg text-muted">
+                Схема открывается из документа — кнопкой «Связи» в его шапке.
+                После перезагрузки страницы откройте её оттуда ещё раз.
+            </div>
+        </div>
+    </t>
+
 </templates>

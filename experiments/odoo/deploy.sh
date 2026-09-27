@@ -18,7 +18,10 @@ BRANCH="${BRANCH:-feature/experiment-carbon}"
 # сервере файлов не было, в ir_module_module записи не было, а 790 служебных
 # строк связи «справочник → карточка» в базе создали скрипты, запущенные
 # руками. Связь держалась на данных модуля, которого Odoo не знает.
-OURS="pmk_calc pmk_theme pmk_pdf pmk_cut pmk_mail_ui pmk_partner pmk_purchase pmk_dadata pmk_laser pmk_bridge pmk_deal"
+# pmk_flow добавлен 27.09.2026 — схема связей документов, форк чужого
+# визуализатора (см. ниже). Ставится первый раз через INSTALL="pmk_flow":
+# -u на неустановленный модуль Odoo молча пропускает.
+OURS="pmk_calc pmk_theme pmk_pdf pmk_cut pmk_mail_ui pmk_partner pmk_purchase pmk_dadata pmk_laser pmk_bridge pmk_deal pmk_flow"
 # Вендорские — только раскладываются. -u им не нужен: мы правим в них код и
 # переводы, а не данные, а лишнее обновление перезапускает их data-файлы.
 #
@@ -26,11 +29,14 @@ OURS="pmk_calc pmk_theme pmk_pdf pmk_cut pmk_mail_ui pmk_partner pmk_purchase pm
 # ТОЛЬКО в addons-extra на сервере, вне git и вне этого списка. Одна неудачная
 # команда — и тема, на которой стоит весь вид стенда, исчезла бы без следа.
 # Теперь источник истины — репозиторий, как и у mail_client.
-# codeerts_transaction_flow_visualizer добавлен 24.09.2026: схема связей
-# документов по кнопке. Код прочитан перед установкой (правило проекта):
-# ни sudo(), ни обращений наружу, права только на чтение, граф строится
-# от имени текущего пользователя и ограничен тремя уровнями и 60 узлами.
-VENDOR="mail_client theme_liquid_glass northlight_teaminbox tracking_manager techy_backend_theme theme_nexus codeerts_transaction_flow_visualizer"
+# codeerts_transaction_flow_visualizer добавлен 24.09.2026 и УБРАН отсюда
+# 27.09.2026: решение владельца — не обновлять чужой модуль, а взять код себе.
+# Теперь это наш pmk_flow (addons/pmk_flow, README там же).
+# ⚠️ Убрать из списка ≠ удалить со стенда. Скрипт стирает в addons-extra
+# только то, что раскладывает, поэтому папка старого модуля там остаётся и
+# установленный модуль продолжает работать. Удаляется он руками: Приложения →
+# «Transaction Flow Visualizer» → Удалить, потом папку из addons-extra.
+VENDOR="mail_client theme_liquid_glass northlight_teaminbox tracking_manager techy_backend_theme theme_nexus"
 # Модули, которые надо ПОСТАВИТЬ, а не обновить (через переменную окружения).
 INSTALL="${INSTALL:-}"
 

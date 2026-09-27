@@ -7,6 +7,12 @@
 
 ### Transaction Flow Visualizer (CODEerts)
 
+> **27.09.2026: заменён нашим форком `pmk_flow`** (`addons/pmk_flow`, README
+> там же). Решение владельца — не обновлять чужой модуль, а взять код себе.
+> В форке есть письмо, сделка, расчёт, раскрой и лазер, раскладка по этапам и
+> вкладка «Связи» в расчёте и сделке. Исходный модуль убран из `deploy.sh`;
+> удалить его со стенда — руками, порядок в README `pmk_flow`.
+
 - Техническое имя: `codeerts_transaction_flow_visualizer`
 - https://apps.odoo.com/apps/modules/19.0/codeerts_transaction_flow_visualizer
 - Лицензия **LGPL-3, бесплатный**. Версии 17/18/19. Загрузок на 20.09.2026 — 89.
