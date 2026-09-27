@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Стили печати отдельным файлом: в отчёте они не могут лежать в общей теме
+    (печать рендерится вне интерфейса, ассетов темы там нет).
+    Ширины и размеры подобраны под А4 книжной ориентации.
+  -->
+  <template id="quotation_styles" inherit_id="web.report_layout" name="ПМК: стили КП">
+    <xpath expr="//head" position="inside">
+      <style>
+        .pmk-quote { font-family: Arial, sans-serif; font-size: 11pt; color: #1a1a1a; }
+        .pmk-quote__head { border-bottom: 1.5pt solid #1a1a1a; padding-bottom: 6pt; }
+        .pmk-quote__seller-name { font-size: 13pt; font-weight: bold; }
+        .pmk-quote__seller div { line-height: 1.35; }
+        .pmk-quote__title { font-size: 14pt; text-align: center; margin: 14pt 0 10pt; }
+        .pmk-quote__parties { width: 100%; margin-bottom: 10pt; }
+        .pmk-quote__parties td { padding: 2pt 0; vertical-align: top; }
+        .pmk-quote__label { width: 90pt; color: #555; }
+        .pmk-quote__items { width: 100%; border-collapse: collapse; }
+        .pmk-quote__items th, .pmk-quote__items td {
+          border: 0.5pt solid #999; padding: 4pt 6pt; vertical-align: top;
+        }
+        .pmk-quote__items th { background: #f2f2f2; font-weight: bold; text-align: left; }
+        .pmk-quote__num { text-align: right; white-space: nowrap; }
+        .pmk-quote__unit { text-align: center; white-space: nowrap; }
+        .pmk-quote__note { color: #666; font-size: 9.5pt; }
+        .pmk-quote__totals { width: 100%; margin-top: 8pt; }
+        .pmk-quote__totals td { padding: 2pt 6pt; }
+        .pmk-quote__totals .pmk-quote__label { width: auto; text-align: right; }
+        .pmk-quote__totals .pmk-quote__num { width: 120pt; }
+        .pmk-quote__grand td { font-weight: bold; font-size: 12pt; border-top: 1pt solid #1a1a1a; }
+        .pmk-quote__foot { margin-top: 18pt; font-size: 10pt; line-height: 1.5; }
+        .pmk-quote__sign { margin-top: 22pt; }
+        .pmk-quote__sign-line {
+          display: inline-block; width: 150pt; border-bottom: 0.5pt solid #1a1a1a;
+          margin-left: 12pt;
+        }
+      </style>
+    </xpath>
+  </template>
+</odoo>

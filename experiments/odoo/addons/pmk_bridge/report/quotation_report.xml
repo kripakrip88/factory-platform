@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+  <!--
+    Коммерческое предложение из расчёта металлопроката.
+
+    ОБРАЗЕЦ — форма заказа из МойСклада, которой завод пользуется сегодня
+    (файл прислал владелец 27.09.2026): шапка исполнителя, номер и дата,
+    заказчик, таблица «№ / Наименование / Цена / Кол-во / Ед. изм. / Сумма»,
+    итог. Менять привычный вид на «как принято в Odoo» незачем: менеджер и
+    клиент читают этот бланк не первый год.
+
+    ⚠️ РЕКВИЗИТЫ БЕРУТСЯ ИЗ ОРГАНИЗАЦИИ ДОКУМЕНТА, А НЕ ИЗ ТЕКУЩЕЙ КОМПАНИИ.
+    Организация выбирается в расчёте (решение владельца: «чтоб если заведём
+    потом ещё компанию, можно было менять, от кого выставляем»). Печать
+    обязана слушаться этого выбора, иначе поле окажется декорацией.
+  -->
+  <template id="report_metal_spec_quotation_document">
+    <t t-call="web.basic_layout">
+      <t t-set="company" t-value="doc.company_id"/>
+      <t t-set="vat_rate" t-value="22.0"/>
+      <div class="page pmk-quote">
+
+        <div class="pmk-quote__head">
+          <div class="pmk-quote__seller">
+            <div class="pmk-quote__seller-name"><span t-field="company.name"/></div>
+            <div t-if="company.street or company.city">
+              <span t-esc="', '.join(filter(None, [company.city, company.street]))"/>
+            </div>
+            <div>
+              <span t-if="company.phone">тел. <span t-field="company.phone"/></span>
+              <span t-if="company.email"> · <span t-field="company.email"/></span>
+            </div>
+            <div t-if="company.vat">ИНН <span t-field="company.vat"/><span
+                 t-if="company.company_registry">, ОГРНИП <span
+                 t-field="company.company_registry"/></span></div>
+          </div>
+        </div>
+
+        <h2 class="pmk-quote__title">
+          Коммерческое предложение № <span t-field="doc.name"/>
+          от <span t-field="doc.date" t-options='{"format": "dd.MM.yyyy"}'/>
+        </h2>
+
+        <table class="pmk-quote__parties">
+          <tr>
+            <td class="pmk-quote__label">Заказчик:</td>
+            <td>
+              <span t-if="doc.partner_id" t-field="doc.partner_id.name"/>
+              <span t-else="">—</span>
+            </td>
+          </tr>
+          <tr t-if="doc.note">
+            <td class="pmk-quote__label">Предмет:</td>
+            <td><span t-field="doc.note"/></td>
+          </tr>
+        </table>
+
+        <table class="pmk-quote__items">
+          <thead>
+            <tr>
+              <th class="pmk-quote__num">№</th>
+              <th>Наименование</th>
+              <th class="pmk-quote__num">Цена</th>
+              <th class="pmk-quote__num">Кол-во</th>
+              <th class="pmk-quote__unit">Ед. изм.</th>
+              <th class="pmk-quote__num">Сумма</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!--
+              В предложение идут ТОЛЬКО изделия с ценой. Строка с нулём — это
+              не «бесплатно», а «менеджер ещё не поставил цену»; в документе
+              для клиента ей не место.
+            -->
+            <t t-set="n" t-value="0"/>
+            <tr t-foreach="doc.product_ids.filtered(lambda p: p.price_customer_unit)"
+                t-as="item">
+              <t t-set="n" t-value="n + 1"/>
+              <td class="pmk-quote__num"><span t-esc="n"/></td>
+              <td>
+                <span t-field="item.name"/>
+                <div t-if="item.note" class="pmk-quote__note"><span t-field="item.note"/></div>
+              </td>
+              <td class="pmk-quote__num">
+                <span t-field="item.price_customer_unit"
+                      t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
+              </td>
+              <td class="pmk-quote__num"><span t-field="item.qty"/></td>
+              <td class="pmk-quote__unit">шт</td>
+              <td class="pmk-quote__num">
+                <span t-field="item.price_customer_total"
+                      t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <table class="pmk-quote__totals">
+          <tr>
+            <td class="pmk-quote__label">Итого:</td>
+            <td class="pmk-quote__num">
+              <span t-field="doc.price_customer_total"
+                    t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
+            </td>
+          </tr>
+          <tr>
+            <!--
+              НДС показан отдельной строкой, но НЕ прибавляется: цена уже с
+              налогом. Завод на ОСН, ставка 22% (реквизиты от 27.09.2026), и
+              все суммы в системе хранятся как в бумаге поставщика — с НДС.
+            -->
+            <td class="pmk-quote__label">в том числе НДС <span t-esc="vat_rate"/>%:</td>
+            <td class="pmk-quote__num">
+              <span t-esc="doc.price_customer_total * vat_rate / (100 + vat_rate)"
+                    t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
+            </td>
+          </tr>
+          <tr class="pmk-quote__grand">
+            <td class="pmk-quote__label">Итого к оплате:</td>
+            <td class="pmk-quote__num">
+              <span t-field="doc.price_customer_total"
+                    t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
+            </td>
+          </tr>
+        </table>
+
+        <div class="pmk-quote__foot">
+          <div t-if="company.partner_id.bank_ids">
+            <t t-set="bank" t-value="company.partner_id.bank_ids[0]"/>
+            Реквизиты для оплаты: р/с <span t-field="bank.acc_number"/>,
+            <span t-field="bank.bank_id.name"/>,
+            БИК <span t-field="bank.bank_id.bic"/><span t-if="bank.bank_id.corr_acc">,
+            к/с <span t-field="bank.bank_id.corr_acc"/></span>
+          </div>
+          <div class="pmk-quote__sign">
+            <span t-field="company.name"/>
+            <span class="pmk-quote__sign-line"/>
+          </div>
+        </div>
+      </div>
+    </t>
+  </template>
+
+  <template id="report_metal_spec_quotation">
+    <t t-call="web.html_container">
+      <t t-foreach="docs" t-as="doc">
+        <t t-call="pmk_bridge.report_metal_spec_quotation_document"/>
+      </t>
+    </t>
+  </template>
+
+  <record id="action_report_metal_spec_quotation" model="ir.actions.report">
+    <field name="name">Коммерческое предложение</field>
+    <field name="model">pmk.metal.spec</field>
+    <field name="report_type">qweb-pdf</field>
+    <field name="report_name">pmk_bridge.report_metal_spec_quotation</field>
+    <field name="report_file">pmk_bridge.report_metal_spec_quotation</field>
+    <field name="print_report_name">'КП %s' % (object.name)</field>
+    <field name="binding_model_id" ref="pmk_calc.model_pmk_metal_spec"/>
+    <field name="binding_type">report</field>
+  </record>
+
+</odoo>
