@@ -21,6 +21,10 @@
       -->
       <xpath expr="//div[hasclass('pmk-doc-head__fields')]" position="inside">
         <div class="pmk-field">
+          <label for="company_id"/>
+          <field name="company_id" nolabel="1" options="{'no_create': True}"/>
+        </div>
+        <div class="pmk-field">
           <label for="supplier_id"/>
           <field name="supplier_id" nolabel="1"
                  placeholder="Любой, по рейтингу…"/>
@@ -107,6 +111,26 @@
         показывает, сколько из него дошло до изделия.
       -->
       <xpath expr="//div[hasclass('pmk-kpi')]" position="inside">
+        <!--
+          Цена клиенту стоит ПЕРЕД металлом: для менеджера это главное число
+          документа, а себестоимость — то, что он проверяет. Маржа рядом,
+          потому что смысл имеет только их разница.
+        -->
+        <div class="pmk-kpi__card">
+          <div class="pmk-kpi__label">Цена клиенту</div>
+          <div class="pmk-kpi__value">
+            <field name="price_customer_total" widget="monetary"/>
+          </div>
+        </div>
+        <div class="pmk-kpi__card" invisible="price_customer_total == 0">
+          <div class="pmk-kpi__label">Маржа над металлом</div>
+          <div class="pmk-kpi__value">
+            <field name="margin_amount" widget="monetary"/>
+            <span class="fs-6 text-muted ms-1">
+              <field name="margin_pct" nolabel="1"/>%
+            </span>
+          </div>
+        </div>
         <div class="pmk-kpi__card">
           <div class="pmk-kpi__label">Металл к закупке</div>
           <div class="pmk-kpi__value">
@@ -251,6 +275,18 @@
         и поле приходит нулём. Прячем пользовательской настройкой
         optional="hide" — колонка скрыта, а данные читаются.
       -->
+      <!--
+        Цена изделия правится там же, где количество: менеджер видит вес и
+        ставит цену, не уходя в другой экран.
+      -->
+      <xpath expr="//field[@name='product_ids']/list/field[@name='weight_total']"
+             position="after">
+        <field name="price_customer_unit" string="Цена за шт" widget="monetary"/>
+        <field name="price_customer_total" string="Сумма" widget="monetary"
+               sum="Цена клиенту" readonly="1"/>
+        <field name="currency_id" column_invisible="1"/>
+      </xpath>
+
       <xpath expr="//field[@name='line_linear_ids']/list" position="inside">
         <field name="price_state" optional="hide"/>
         <field name="price_unit" optional="hide"/>

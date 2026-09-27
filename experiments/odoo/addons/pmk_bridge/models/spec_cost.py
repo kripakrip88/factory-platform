@@ -101,6 +101,19 @@ class MetalSpecCost(models.Model):
     # одного домена нельзя, иначе установка калькулятора начнёт требовать
     # половину системы. Отбор оставляем пользователю: список поставщиков он
     # знает лучше фильтра.
+    # ─── От кого выставляем ───────────────────────────────────────────────
+    #
+    # Решение владельца 27.09.2026: «в документах должен идти Чулков В.В.
+    # однозначно, можно сделать вообще выпадашку для выбора… чтоб если заведём
+    # потом ещё компанию, можно было менять, от кого выставляем предложение».
+    #
+    # Организация сейчас одна, но поле заводим сразу: когда появится вторая,
+    # менять придётся печатные формы и заказы, а не спешно доделывать выбор.
+    company_id = fields.Many2one(
+        "res.company", "Организация", required=True,
+        default=lambda self: self.env.company,
+        help="От чьего имени пойдут предложение и счёт.")
+
     supplier_id = fields.Many2one(
         "res.partner", "Поставщик для цен",
         help="Чьи цены берём в расчёт. Пусто — берётся поставщик с лучшим "
@@ -258,6 +271,29 @@ class MetalSpecCost(models.Model):
     compare_pct = fields.Float(
         "Разница, %", compute="_compute_compare_totals", digits=(6, 1))
 
+    # ─── Цена для клиента ─────────────────────────────────────────────────
+    #
+    # ⚠️ ВВОДИТСЯ РУКАМИ, И ЭТО НЕ ВРЕМЕННО ПО ЛЕНИ. Владелец 27.09.2026:
+    # «выбор цены за изделие работа очень творческая, поэтому можно пока что
+    # сделать ввод цены вручную, а после прогона станет понятно, как лучше
+    # работать». Наценка процентом от металла тут неверна: в цену входят
+    # переделы, сложность, срочность и отношения с заказчиком — формулы для
+    # этого пока нет ни у кого на заводе.
+    #
+    # Себестоимость считается рядом и не спорит с ценой: она показывает, что
+    # осталось, а не диктует, сколько просить.
+    price_customer_total = fields.Monetary(
+        "Цена клиенту", compute="_compute_customer_totals", store=True,
+        help="Сумма по изделиям. Складывается из цен, которые менеджер "
+             "поставил каждому изделию.")
+    margin_amount = fields.Monetary(
+        "Маржа", compute="_compute_customer_totals", store=True,
+        help="Цена клиенту минус металл. Работа и переделы сюда ещё не "
+             "входят — это не прибыль, а то, из чего её платят.")
+    margin_pct = fields.Float(
+        "Маржа, %", compute="_compute_customer_totals", store=True,
+        digits=(6, 1))
+
     no_price_count = fields.Integer(
         "Позиций без цены", compute="_compute_cost_totals", store=True)
     price_incomplete = fields.Boolean(
@@ -280,6 +316,15 @@ class MetalSpecCost(models.Model):
             spec.total_weight_fact_t = spec.total_weight_fact / KG_IN_TON
             spec.no_price_count = sum(spec.product_ids.mapped("no_price_count"))
             spec.price_incomplete = spec.no_price_count > 0
+
+    @api.depends("product_ids.price_customer_total", "total_cost_fact")
+    def _compute_customer_totals(self):
+        for spec in self:
+            total = sum(spec.product_ids.mapped("price_customer_total"))
+            spec.price_customer_total = total
+            spec.margin_amount = total - spec.total_cost_fact
+            spec.margin_pct = (
+                (total - spec.total_cost_fact) / total * 100.0) if total else 0.0
 
     def _price_dates(self):
         """Даты прайсов, которые вообще касаются позиций этого расчёта.
@@ -469,6 +514,13 @@ class MetalSpecProductCost(models.Model):
     currency_id = fields.Many2one(
         related="spec_id.currency_id", store=True, readonly=True, string="Валюта")
 
+    price_customer_unit = fields.Monetary(
+        "Цена клиенту за шт", help="Сколько просим за одно изделие. Ставит "
+        "менеджер: цена зависит от переделов, сроков и заказчика, а не от "
+        "веса металла.")
+    price_customer_total = fields.Monetary(
+        "Цена клиенту, всего", compute="_compute_customer_line", store=True)
+
     cost_clean_one = fields.Monetary(
         "Металл в изделии", compute="_compute_product_cost", store=True)
     cost_clean_total = fields.Monetary(
@@ -483,6 +535,12 @@ class MetalSpecProductCost(models.Model):
         "Купить на все, кг", compute="_compute_product_cost", store=True, digits=(12, 3))
     no_price_count = fields.Integer(
         "Позиций без цены", compute="_compute_product_cost", store=True)
+
+    @api.depends("price_customer_unit", "qty")
+    def _compute_customer_line(self):
+        for product in self:
+            product.price_customer_total = (
+                product.price_customer_unit or 0.0) * (product.qty or 0)
 
     # Зависимости перечислены по ЧЕТЫРЁМ отфильтрованным наборам, а не по
     # line_ids: на этом уже обжигались при расчёте веса — правка во вкладке
