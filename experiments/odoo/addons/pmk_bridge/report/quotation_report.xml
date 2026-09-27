@@ -53,7 +53,15 @@
             <td class="pmk-quote__label">Заказчик:</td>
             <td>
               <t t-if="doc.partner_id">
-                <t t-set="p" t-value="doc.partner_id"/>
+                <!--
+                  ⚠️ ЗАКАЗЧИК — КОМПАНИЯ, А НЕ ЧЕЛОВЕК. Из сделки в расчёт
+                  приходит контакт компании («Арестак-Строй, Цыганов М.А.»), и
+                  без этой строки в КП заказчиком печаталось имя инженера.
+                  Найдено прогоном реальной заявки 27.09.2026. Реквизиты берём у
+                  коммерческого партнёра, человека выводим отдельной строкой.
+                -->
+                <t t-set="p" t-value="doc.partner_id.commercial_partner_id"/>
+                <t t-set="contact" t-value="doc.partner_id if doc.partner_id != p else False"/>
                 <!--
                   Реквизиты заказчика — одной строкой, через разделители: в
                   бланке МойСклада их не было вовсе, но по КП без ИНН нельзя
@@ -78,6 +86,11 @@
                   <span t-if="p.phone">тел. <span t-field="p.phone"/></span>
                   <span t-if="p.email"><span t-if="p.phone"> · </span><span
                         t-field="p.email"/></span>
+                </div>
+                <div t-if="contact">
+                  Контактное лицо: <span t-field="contact.name"/><span
+                    t-if="contact.function">, <span t-field="contact.function"/></span><span
+                    t-if="contact.phone">, тел. <span t-field="contact.phone"/></span>
                 </div>
               </t>
               <span t-else="">—</span>
@@ -113,7 +126,13 @@
               <td class="pmk-quote__num"><span t-esc="n"/></td>
               <td>
                 <span t-field="item.name"/>
-                <div t-if="item.note" class="pmk-quote__note"><span t-field="item.note"/></div>
+                <!--
+                  ⚠️ ПРИМЕЧАНИЕ ИЗДЕЛИЯ В КП НЕ ПЕЧАТАЕТСЯ. Это рабочее поле:
+                  менеджер пишет туда, как считал, что уточнить у технолога,
+                  откуда взял размеры. На прогоне 27.09.2026 в предложение
+                  клиенту ушла внутренняя пометка о способе ввода позиций.
+                  Отдельное поле «описание для клиента» — после обсуждения.
+                -->
               </td>
               <td class="pmk-quote__num">
 <span t-esc="doc.pmk_money(item.price_customer_unit)"/>
