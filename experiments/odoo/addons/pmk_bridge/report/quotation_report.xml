@@ -17,8 +17,14 @@
   -->
   <template id="report_metal_spec_quotation_document">
     <t t-call="web.basic_layout">
+      <!--
+        ⚠️ ЯЗЫК ЗАДАЁТСЯ ЯВНО. Без него отчёт форматирует числа по-английски:
+        «4,500.00 руб» вместо «4 500,00 руб». В интерфейсе всё правильно, и
+        дефект виден только на печати — поймано глазами на первом же КП.
+      -->
+      <t t-set="doc" t-value="doc.with_context(lang=doc.partner_id.lang or 'ru_RU')"/>
       <t t-set="company" t-value="doc.company_id"/>
-      <t t-set="vat_rate" t-value="22.0"/>
+      <t t-set="vat_rate" t-value="22"/>
       <div class="page pmk-quote">
 
         <div class="pmk-quote__head">
