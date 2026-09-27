@@ -1,0 +1,2 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_pmk_flow_builder_user,pmk.flow.builder.user,model_pmk_flow_builder,base.group_user,1,0,0,0
