@@ -839,7 +839,8 @@ def resolve_target(env, item, sheet_sizes):
         % (grade, item.gabarit, tmpl.default_code or tmpl.name))
 
 
-def upsert_supplierinfo(env, book, tmpl, variant, tier, price, min_qty, vendor_name):
+def upsert_supplierinfo(env, book, tmpl, variant, tier, price, min_qty, vendor_name,
+                        bar_length_mm=0.0):
     """Записать цену уровня, НЕ затирая прошлую: ряд копится по date_start.
 
     Ключ ряда — (поставщик, товар, номер уровня). Номер уровня держим в
@@ -871,6 +872,10 @@ def upsert_supplierinfo(env, book, tmpl, variant, tier, price, min_qty, vendor_n
         # Единицу проставляем ЯВНО, хотя Odoo подставил бы её сам: явная
         # запись означает «цена уже в единице товара», и её видно в форме.
         "product_uom_id": (variant or tmpl).uom_id.id,
+        # Длина хлыста нужна раскрою сортамента: сколько шестиметровых или
+        # двенадцатиметровых палок взять под заказ. Раньше её читали ради
+        # массы метра и выбрасывали.
+        "pmk_bar_length_mm": bar_length_mm or 0.0,
     }
     same_date = series.filtered(lambda r: r.date_start == book.date)
     if same_date:
@@ -1138,8 +1143,10 @@ def main():
                                     item.mass, "строка %s" % item.row.excel_row)
             assert_price_unit(product, price, env=env)   # дверь одна
             min_qty = min_qty_in_product_unit(tier.qty_from, item.mass, item.unit, digits)
+            length_m = _num(item.row.length) or 0.0
             rec, what = upsert_supplierinfo(env, book, tmpl, variant, tier,
-                                            price, min_qty, item.vendor_name)
+                                            price, min_qty, item.vendor_name,
+                                            bar_length_mm=length_m * 1000.0)
             verify_written(rec, price)
             made[what] += 1
     for what, n in made.most_common():
