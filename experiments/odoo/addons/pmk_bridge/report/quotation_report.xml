@@ -65,9 +65,15 @@
                   ИНН <span t-field="p.vat"/><span t-if="p.kpp">, КПП <span
                        t-field="p.kpp"/></span>
                 </div>
-                <div t-if="p.contact_address_complete">
-                  <span t-field="p.contact_address_complete"/>
-                </div>
+                <!--
+                  Адрес собираем сами: contact_address у Odoo многострочный и
+                  тянет за собой название и страну, а contact_address_complete
+                  в 19-й версии нет вовсе — печать упала именно на нём.
+                  У нас в карточке есть и юридический адрес, он вернее.
+                -->
+                <t t-set="addr" t-value="p.pmk_legal_address or ', '.join(
+                    [x for x in [p.zip, p.city, p.street, p.street2] if x])"/>
+                <div t-if="addr"><span t-esc="addr"/></div>
                 <div t-if="p.phone or p.email">
                   <span t-if="p.phone">тел. <span t-field="p.phone"/></span>
                   <span t-if="p.email"><span t-if="p.phone"> · </span><span
