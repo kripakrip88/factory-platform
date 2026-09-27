@@ -882,6 +882,13 @@ def upsert_supplierinfo(env, book, tmpl, variant, tier, price, min_qty, vendor_n
         rec = same_date[0]
         if (abs(rec.price - price.amount) < 0.005
                 and abs(rec.min_qty - min_qty) < 1e-9):
+            # ⚠️ ЦЕНА ТА ЖЕ — НЕ ЗНАЧИТ «НИЧЕГО НЕ ДЕЛАТЬ». Сравнение смотрит
+            # только на цену и объём, и когда в строке прайса появилось новое
+            # поле (длина хлыста), повторная заливка молча уходила в «без
+            # изменений»: 774 записи, ноль дописанных длин. Дописываем.
+            if abs((rec.pmk_bar_length_mm or 0.0) - (bar_length_mm or 0.0)) > 0.5:
+                rec.pmk_bar_length_mm = bar_length_mm or 0.0
+                return rec, "дописана длина хлыста"
             return rec, "без изменений"
         rec.write(vals)
         return rec, "исправлено"
