@@ -52,7 +52,28 @@
           <tr>
             <td class="pmk-quote__label">Заказчик:</td>
             <td>
-              <span t-if="doc.partner_id" t-field="doc.partner_id.name"/>
+              <t t-if="doc.partner_id">
+                <t t-set="p" t-value="doc.partner_id"/>
+                <!--
+                  Реквизиты заказчика — одной строкой, через разделители: в
+                  бланке МойСклада их не было вовсе, но по КП без ИНН нельзя
+                  выставить счёт, и менеджер всё равно дописывал их руками.
+                  Печатаем то, что заполнено, и не оставляем пустых подписей.
+                -->
+                <div class="pmk-quote__customer-name"><span t-field="p.name"/></div>
+                <div t-if="p.vat or p.kpp">
+                  ИНН <span t-field="p.vat"/><span t-if="p.kpp">, КПП <span
+                       t-field="p.kpp"/></span>
+                </div>
+                <div t-if="p.contact_address_complete">
+                  <span t-field="p.contact_address_complete"/>
+                </div>
+                <div t-if="p.phone or p.email">
+                  <span t-if="p.phone">тел. <span t-field="p.phone"/></span>
+                  <span t-if="p.email"><span t-if="p.phone"> · </span><span
+                        t-field="p.email"/></span>
+                </div>
+              </t>
               <span t-else="">—</span>
             </td>
           </tr>

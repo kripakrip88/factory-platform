@@ -14,7 +14,8 @@
         .pmk-quote__seller div { line-height: 1.35; }
         .pmk-quote__title { font-size: 14pt; text-align: center; margin: 14pt 0 10pt; }
         .pmk-quote__parties { width: 100%; margin-bottom: 10pt; }
-        .pmk-quote__parties td { padding: 2pt 0; vertical-align: top; }
+        .pmk-quote__parties td { padding: 2pt 0; vertical-align: top; line-height: 1.35; }
+        .pmk-quote__customer-name { font-weight: bold; }
         .pmk-quote__label { width: 90pt; color: #555; }
         .pmk-quote__items { width: 100%; border-collapse: collapse; }
         .pmk-quote__items th, .pmk-quote__items td {
