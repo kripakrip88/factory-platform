@@ -10,6 +10,12 @@
 документа по связям из _neighbors, от имени текущего пользователя, без sudo.
 Чего человек не видит в системе, того нет и на схеме.
 
+СКРЫТОЕ ПРАВАМИ — НЕ ТО ЖЕ, ЧТО ОТСУТСТВУЮЩЕЕ. Документ без прав на схему не
+попадает, но сам факт, что связь есть, схема сообщает (restricted). Иначе
+технолог без CRM видел бы у расчёта со сделкой «связанных документов нет» —
+а это неправда. sudo здесь только считает: ни имени, ни номера скрытого
+документа наружу не уходит.
+
 ЭТАПЫ. Колонку на схеме задаёт не расстояние от открытого документа, а место
 документа в жизни заказа (словарь _STAGES). Раньше колонка равнялась шагу
 обхода, и сделка (шаг назад) вставала в одну колонку с раскроем (шаг вперёд):
@@ -275,14 +281,20 @@ class PmkFlowBuilder(models.AbstractModel):
     # ------------------------------------------------------------------
 
     @api.model
-    def _optional_rel(self, record, fname):
+    def _optional_rel(self, record, fname, hidden=None):
         """Read an OPTIONAL relation, tolerating a field this user is not allowed to read.
 
         `fname in record._fields` proves the field EXISTS, not that the current user may READ it. A field
         declared with `groups=` raises AccessError on access for anyone outside those groups, so the
         presence test is not a sufficient guard. The Flow Map is a read-only overview: a relation the user
-        cannot see is simply left out of the graph, which is what they would see anyway. Returns an EMPTY
+        cannot see is left out of the graph, which is what they would see anyway. Returns an EMPTY
         recordset (never None) so every caller can append unconditionally.
+
+        hidden — список-копилка из _neighbors: сюда пишется, что связь скрыта
+        правами. ⚠️ ТОЛЬКО ЕСЛИ ПОЛЕ НЕ ПУСТОЕ. Закрытое группой поле ещё не
+        значит, что за ним что-то есть: project_ids закрыт для всех вне
+        Проектов, и без проверки через sudo каждый заказ у такого человека
+        жаловался бы на скрытые связи, которых нет.
         """
         field = record._fields.get(fname)
         if field is None:
@@ -290,32 +302,54 @@ class PmkFlowBuilder(models.AbstractModel):
         try:
             return record[fname]
         except AccessError:
+            if hidden is not None and record.sudo()[fname]:
+                hidden.append(record._name + '.' + fname)
             comodel = getattr(field, 'comodel_name', None)
             return self.env[comodel].browse() if comodel else record.browse()
 
     @api.model
-    def _referrers(self, model_name, fname, record_id):
-        """Документы модели model_name, которые ссылаются на record_id полем fname.
+    def _search_linked(self, model_name, domain, hidden=None):
+        """Документы модели model_name по domain — те, что человек может читать.
 
         ⚠️ ПРАВО НА МОДЕЛЬ ПРОВЕРЯЕТСЯ ДО ПОИСКА. search от имени человека без
         прав на модель падает AccessError, а таких людей на заводе большинство:
-        у технолога нет почты и CRM, у менеджера нет почтовых ящиков соседа.
-        Обычный случай, а не авария — значит, связей этого вида просто нет.
-        Модуля может не быть вовсе (проекты), и поля тоже — например, ссылки
-        лазера на расчёт до обновления pmk_laser.
+        у технолога нет почты и CRM. Обычный случай, а не авария — поиск
+        пропускаем.
+
+        Но «не нашли» и «не имеете права видеть» — разные ответы. search
+        молча отбрасывает и то, что закрыто правилами записей (чужой почтовый
+        ящик, «только свои» заказы). Поэтому тот же поиск считаем через sudo:
+        если там больше, связи есть, но скрыты, — отмечаем в hidden. limit —
+        чтобы не пересчитывать тысячи, когда достаточно знать «больше или нет».
         """
         if model_name not in self.env:
             return []
         Model = self.env[model_name]
-        if fname not in Model._fields or not Model.has_access('read'):
-            return Model.browse()
-        return Model.search([(fname, '=', record_id)])
+        found = Model.search(domain) if Model.has_access('read') else Model.browse()
+        if hidden is not None and \
+                Model.sudo().search_count(domain, limit=len(found) + 1) > len(found):
+            hidden.append(model_name)
+        return found
 
     @api.model
-    def _neighbors(self, record) -> list:
+    def _referrers(self, model_name, fname, record_id, hidden=None):
+        """Документы модели model_name, которые ссылаются на record_id полем fname.
+
+        Права и скрытые связи — в _search_linked. Модуля может не быть вовсе
+        (проекты), и поля тоже — например, ссылки лазера на расчёт до
+        обновления pmk_laser: тогда связей этого вида действительно нет.
+        """
+        if model_name not in self.env or fname not in self.env[model_name]._fields:
+            return []
+        return self._search_linked(model_name, [(fname, '=', record_id)], hidden)
+
+    @api.model
+    def _neighbors(self, record):
+        """Соседи документа: (список видимых записей, есть ли скрытые правами)."""
         model = record._name
-        env = self.env
         linked = []
+        # Копилка скрытых связей: что в ней — неважно, важно, что не пусто.
+        hidden = []
         if model == 'sale.order':
             if 'invoice_ids' in record._fields:
                 linked.append(record.invoice_ids)
@@ -327,11 +361,11 @@ class PmkFlowBuilder(models.AbstractModel):
             # Read these via _optional_rel, NEVER directly. Core declares them with `groups=`, so a direct
             # read raises AccessError for anyone outside Project: `project_ids` on every supported version,
             # and `tasks_ids` from 19.0 onward (17.0/18.0 sale_project declare it without `groups=`).
-            linked.append(self._optional_rel(record, 'project_ids'))
-            linked.append(self._optional_rel(record, 'tasks_ids'))
+            linked.append(self._optional_rel(record, 'project_ids', hidden))
+            linked.append(self._optional_rel(record, 'tasks_ids', hidden))
             # Наше: заказ ← сделка (поле sale_crm) и заказ → задания лазеру.
-            linked.append(self._optional_rel(record, 'opportunity_id'))
-            linked.append(self._referrers('pmk.laser.job', 'sale_order_id', record.id))
+            linked.append(self._optional_rel(record, 'opportunity_id', hidden))
+            linked.append(self._referrers('pmk.laser.job', 'sale_order_id', record.id, hidden))
         elif model == 'project.project':
             if 'sale_order_id' in record._fields and record.sale_order_id:
                 linked.append(record.sale_order_id)
@@ -367,52 +401,58 @@ class PmkFlowBuilder(models.AbstractModel):
             # non-collection value and logs "should have a list value". On 17.0/18.0 there is no such
             # normalisation and sale/models/sale_order.py feeds it straight to list(value), so a bare int
             # raised TypeError: 'int' object is not iterable and the Flow Map died on any invoice.
-            if env['sale.order'].has_access('read'):
-                linked.append(env['sale.order'].search([('invoice_ids', 'in', [record.id])]))
-            if env['purchase.order'].has_access('read'):
-                linked.append(env['purchase.order'].search([('invoice_ids', 'in', [record.id])]))
+            linked.append(self._search_linked(
+                'sale.order', [('invoice_ids', 'in', [record.id])], hidden))
+            linked.append(self._search_linked(
+                'purchase.order', [('invoice_ids', 'in', [record.id])], hidden))
 
         # ─── Документы завода ────────────────────────────────────────────
         elif model == 'mail.client.message':
             # Письмо знает свой лид: поле ставит кнопка «Создать лида»
             # (pmk_mail_ui/models/mail_client_message.py).
-            linked.append(self._optional_rel(record, 'pmk_lead_id'))
+            linked.append(self._optional_rel(record, 'pmk_lead_id', hidden))
         elif model == 'crm.lead':
             # Письма, из которых сделан лид. Лиды, пришедшие на алиас zakaz@
             # без кнопки, этой ссылки не имеют — их письмо лежит в чате лида.
-            linked.append(self._referrers('mail.client.message', 'pmk_lead_id', record.id))
+            linked.append(self._referrers('mail.client.message', 'pmk_lead_id', record.id, hidden))
             # Расчёты металлопроката висят на сделке (модуль pmk_deal).
-            linked.append(self._optional_rel(record, 'spec_ids'))
+            linked.append(self._optional_rel(record, 'spec_ids', hidden))
             # Заказы клиента из сделки (sale_crm). Поле opportunity_id у
             # заказа появляется только с sale_crm — отсюда проверка поля.
-            linked.append(self._referrers('sale.order', 'opportunity_id', record.id))
+            linked.append(self._referrers('sale.order', 'opportunity_id', record.id, hidden))
         elif model == 'pmk.metal.spec':
-            linked.append(self._optional_rel(record, 'opportunity_id'))
+            linked.append(self._optional_rel(record, 'opportunity_id', hidden))
             # Раскрой сортамента ссылается на расчёт полем «Из спецификации».
-            linked.append(self._referrers('pmk.cut.plan', 'spec_id', record.id))
+            linked.append(self._referrers('pmk.cut.plan', 'spec_id', record.id, hidden))
             # Задание лазеру ссылается на расчёт с 27.09.2026 (pmk_laser, spec_id).
-            linked.append(self._referrers('pmk.laser.job', 'spec_id', record.id))
+            linked.append(self._referrers('pmk.laser.job', 'spec_id', record.id, hidden))
         elif model == 'pmk.cut.plan':
-            linked.append(self._optional_rel(record, 'spec_id'))
+            linked.append(self._optional_rel(record, 'spec_id', hidden))
         elif model == 'pmk.laser.job':
-            linked.append(self._optional_rel(record, 'spec_id'))
-            linked.append(self._optional_rel(record, 'sale_order_id'))
+            linked.append(self._optional_rel(record, 'spec_id', hidden))
+            linked.append(self._optional_rel(record, 'sale_order_id', hidden))
 
         seen, out = set(), []
         for rs in linked:
             # ⚠️ ФИЛЬТР ПО ПРАВАМ ОБЯЗАТЕЛЕН И ДЛЯ ССЫЛОК. Прочитать поле
             # «Сделка» у расчёта может любой, а вот имя самой сделки человек
             # без CRM прочитать не может — и display_name узла уронил бы всю
-            # схему. Отсекаем здесь, одним местом для всех веток.
+            # схему. Отсекаем здесь, одним местом для всех веток. Отсечённое
+            # отмечаем: связь есть, её просто не показать.
+            # Разность, а не сравнение длин: _filtered_access возвращает
+            # набор без повторов, и повтор в rs выглядел бы как скрытая запись.
             if isinstance(rs, models.BaseModel) and rs:
-                rs = rs._filtered_access('read')
+                allowed = rs._filtered_access('read')
+                if rs - allowed:
+                    hidden.append(rs._name)
+                rs = allowed
             for rec in rs:
                 key = (rec._name, rec.id)
                 if not rec.id or key in seen or (rec._name == model and rec.id == record.id):
                     continue
                 seen.add(key)
                 out.append(rec)
-        return out
+        return out, bool(hidden)
 
     @api.model
     def get_flow_graph(self, res_model, res_id, max_depth: int = 4,
@@ -443,13 +483,15 @@ class PmkFlowBuilder(models.AbstractModel):
             if depth >= max_depth:
                 continue
             try:
-                neighbours = self._neighbors(record)
+                neighbours, hidden = self._neighbors(record)
             except AccessError:
                 # Штатные ветки ходят по складским движениям и счетам. Кто к
                 # ним не допущен, увидит схему без этого куска — и пометку,
                 # что кусок скрыт правами, а не отсутствует.
                 restricted = True
                 continue
+            if hidden:
+                restricted = True
             for neigh in neighbours:
                 nid = self._node_id(neigh)
                 ekey = tuple(sorted((self._node_id(record), nid)))

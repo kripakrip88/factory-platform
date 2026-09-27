@@ -10,6 +10,14 @@
             <div class="o_pmk_flow_bar">
                 <span class="o_pmk_flow_note text-muted">
                     <t t-if="state.loading and !state.loaded">Строю схему…</t>
+                    <!--
+                        Один узел и скрытые связи — не «связей нет». Фразу
+                        «ни на что не ссылается» при restricted писать нельзя:
+                        технолог без CRM прочёл бы её у расчёта со сделкой.
+                    -->
+                    <t t-elif="state.loaded and state.nodes.length &lt;= 1 and state.restricted">
+                        Связанные документы есть, но у вас нет на них прав.
+                    </t>
                     <t t-elif="state.loaded and state.nodes.length &lt;= 1">
                         Связанных документов нет. Это не сбой схемы: документ
                         ни на что не ссылается, и на него никто не ссылается.
@@ -65,7 +73,8 @@
                 Схема обрезана: связанных документов больше, чем помещается на
                 одном экране. Показаны ближайшие к открытому документу.
             </div>
-            <div t-if="state.restricted" class="o_pmk_flow_msg text-muted">
+            <!-- При одном узле то же самое уже сказано в строке сверху. -->
+            <div t-if="state.restricted and state.nodes.length &gt; 1" class="o_pmk_flow_msg text-muted">
                 Часть связей скрыта: на эти документы у вас нет прав.
             </div>
         </div>
