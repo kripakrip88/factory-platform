@@ -89,14 +89,12 @@
                 <div t-if="item.note" class="pmk-quote__note"><span t-field="item.note"/></div>
               </td>
               <td class="pmk-quote__num">
-                <span t-field="item.price_customer_unit"
-                      t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
+<span t-esc="doc.pmk_money(item.price_customer_unit)"/>
               </td>
               <td class="pmk-quote__num"><span t-field="item.qty"/></td>
               <td class="pmk-quote__unit">шт</td>
               <td class="pmk-quote__num">
-                <span t-field="item.price_customer_total"
-                      t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
+<span t-esc="doc.pmk_money(item.price_customer_total)"/>
               </td>
             </tr>
           </tbody>
@@ -106,8 +104,7 @@
           <tr>
             <td class="pmk-quote__label">Итого:</td>
             <td class="pmk-quote__num">
-              <span t-field="doc.price_customer_total"
-                    t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
+<span t-esc="doc.pmk_money(doc.price_customer_total)"/>
             </td>
           </tr>
           <tr>
@@ -118,15 +115,13 @@
             -->
             <td class="pmk-quote__label">в том числе НДС <span t-esc="vat_rate"/>%:</td>
             <td class="pmk-quote__num">
-              <span t-esc="doc.price_customer_total * vat_rate / (100 + vat_rate)"
-                    t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
+<span t-esc="doc.pmk_money(doc.price_customer_total * vat_rate / (100 + vat_rate))"/>
             </td>
           </tr>
           <tr class="pmk-quote__grand">
             <td class="pmk-quote__label">Итого к оплате:</td>
             <td class="pmk-quote__num">
-              <span t-field="doc.price_customer_total"
-                    t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
+<span t-esc="doc.pmk_money(doc.price_customer_total)"/>
             </td>
           </tr>
         </table>

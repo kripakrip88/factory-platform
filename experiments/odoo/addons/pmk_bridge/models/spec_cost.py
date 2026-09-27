@@ -29,6 +29,8 @@ product.template и product.supplierinfo, поэтому живут в мост�
 
 from odoo import api, fields, models
 from markupsafe import Markup
+
+from odoo.tools import format_amount
 from odoo.exceptions import UserError
 
 MM_IN_M = 1000.0
@@ -325,6 +327,20 @@ class MetalSpecCost(models.Model):
             spec.margin_amount = total - spec.total_cost_fact
             spec.margin_pct = (
                 (total - spec.total_cost_fact) / total * 100.0) if total else 0.0
+
+    def pmk_money(self, amount):
+        """Сумма по-русски: «54 000,00 руб».
+
+        ⚠️ ЗАЧЕМ СВОЙ МЕТОД, ЕСЛИ ЕСТЬ widget="monetary". Виджет в печати
+        форматирует по-английски — «54,000.00 руб», — и язык, заданный
+        контекстом шаблона, на него не влияет (проверено: то же число на
+        ru_RU и en_US). В интерфейсе формат правильный, поэтому дефект видно
+        только на бумаге у клиента. Здесь формат задаётся явно и работает
+        одинаково во всех печатных формах.
+        """
+        self.ensure_one()
+        env = self.env(context=dict(self.env.context, lang="ru_RU"))
+        return format_amount(env, amount or 0.0, self.currency_id)
 
     def _price_dates(self):
         """Даты прайсов, которые вообще касаются позиций этого расчёта.
