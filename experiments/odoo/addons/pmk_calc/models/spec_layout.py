@@ -23,6 +23,21 @@ from odoo import api, fields, models
 from .sheeting import DEFAULT_KERF_MM, plan_sheets
 
 
+def _plural(number, one, few, many):
+    """Русское склонение при числе: 1 лист, 2 листа, 5 листов.
+
+    В истории документа число листов встречается в каждой записи, и «1 листов»
+    выдаёт машину. Мелочь, но читать такое каждый день.
+    """
+    number = abs(int(number))
+    if number % 10 == 1 and number % 100 != 11:
+        return one
+    if 2 <= number % 10 <= 4 and not 12 <= number % 100 <= 14:
+        return few
+    return many
+
+
+
 class MetalSpecLayout(models.Model):
     _inherit = "pmk.metal.spec"
 
@@ -73,17 +88,20 @@ class MetalSpecLayout(models.Model):
                                    "нечего — листовых деталей с размерами нет.")
             return
         rows = "".join(
-            "<li>%s: %s листов %s, по %s заготовок в листе, использование "
-            "%.0f%%</li>" % (
+            "<li>%s: %s %s %s, по %s %s в листе, использование %.0f%%</li>" % (
                 line.display_name, line.layout_sheets,
+                _plural(line.layout_sheets, "лист", "листа", "листов"),
                 dict(line._fields["layout_sheet_size"].selection).get(
                     line.layout_sheet_size, line.layout_sheet_size),
-                line.layout_per_sheet, line.layout_utilization_pct)
+                line.layout_per_sheet,
+                _plural(line.layout_per_sheet, "заготовка", "заготовки", "заготовок"),
+                line.layout_utilization_pct)
             for line in done)
         total = sum(done.mapped("layout_sheets"))
         self.message_post(body=Markup(
-            "<p>Предварительный расчёт металла: купить листов — %s. "
-            "Верхняя оценка, технолог уплотнит.</p><ul>%s</ul>" % (total, rows)))
+            "<p>Предварительный расчёт металла: купить %s %s. "
+            "Верхняя оценка, технолог уплотнит.</p><ul>%s</ul>" % (
+                total, _plural(total, "лист", "листа", "листов"), rows)))
 
 
 class MetalSpecLineLayout(models.Model):
