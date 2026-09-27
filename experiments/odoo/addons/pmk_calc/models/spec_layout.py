@@ -16,6 +16,8 @@
 Поэтому сумма листов по строкам всегда не меньше того, что выйдет у технолога.
 """
 
+from markupsafe import Markup
+
 from odoo import api, fields, models
 
 from .sheeting import DEFAULT_KERF_MM, plan_sheets
@@ -51,9 +53,37 @@ class MetalSpecLayout(models.Model):
         подтверждает и отдаёт в закупку.
         """
         for spec in self:
-            for line in spec.mapped("product_ids.line_sheet_ids"):
+            lines = spec.mapped("product_ids.line_sheet_ids")
+            for line in lines:
                 line._apply_draft_layout()
+            spec._log_draft_layout(lines)
         return True
+
+    def _log_draft_layout(self, lines):
+        """Запись в историю: что насчитала кнопка.
+
+        Результат раскладки живёт на вкладке и переписывается при следующем
+        нажатии. В истории он остаётся: по ней видно, из какой цифры исходили,
+        когда называли клиенту срок и цену.
+        """
+        self.ensure_one()
+        done = lines.filtered(lambda l: l.layout_state == "ok")
+        if not done:
+            self.message_post(body="Предварительный расчёт металла: считать "
+                                   "нечего — листовых деталей с размерами нет.")
+            return
+        rows = "".join(
+            "<li>%s: %s листов %s, по %s заготовок в листе, использование "
+            "%.0f%%</li>" % (
+                line.display_name, line.layout_sheets,
+                dict(line._fields["layout_sheet_size"].selection).get(
+                    line.layout_sheet_size, line.layout_sheet_size),
+                line.layout_per_sheet, line.layout_utilization_pct)
+            for line in done)
+        total = sum(done.mapped("layout_sheets"))
+        self.message_post(body=Markup(
+            "<p>Предварительный расчёт металла: купить листов — %s. "
+            "Верхняя оценка, технолог уплотнит.</p><ul>%s</ul>" % (total, rows)))
 
 
 class MetalSpecLineLayout(models.Model):

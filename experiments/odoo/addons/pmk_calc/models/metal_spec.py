@@ -155,6 +155,40 @@ class MetalSpecLine(models.Model):
 
     product_id = fields.Many2one("pmk.metal.spec.product", "Изделие", required=True, ondelete="cascade")
     spec_id = fields.Many2one(related="product_id.spec_id", store=True, string="Спецификация")
+
+    def _compute_display_name(self):
+        """Человеческое имя детали — для истории документа и ссылок.
+
+        ⚠️ БЕЗ ЭТОГО ИСТОРИЯ НЕЧИТАЕМА. Odoo сам пишет в чаттер, что состав
+        изменился, и подставляет имена записей. Без своего имени он печатает
+        служебное представление — «pmk.metal.spec.line(56, 57, 58)», и по
+        такой записи невозможно понять, что именно поменяли. Замечание
+        владельца 27.09.2026: «хранение ревизий документа, кто и что в нём
+        поменял понятным языком».
+        """
+        for line in self:
+            item = (line.profile_id or line.sheet_id
+                    or line.fastener_id or line.paint_id)
+            parts = []
+            if line.detail_name:
+                parts.append(line.detail_name)
+            if item:
+                parts.append(item.display_name)
+            size = line._size_label()
+            if size:
+                parts.append(size)
+            if line.qty:
+                parts.append("%s шт" % line.qty)
+            line.display_name = ", ".join(parts) or "деталь"
+
+    def _size_label(self):
+        """Размеры детали одной строкой, как их вводил менеджер."""
+        self.ensure_one()
+        if self.calc_mode == "linear" and self.length_mm:
+            return "%g мм" % self.length_mm
+        if self.calc_mode == "sheet" and (self.a_mm or self.b_mm):
+            return "%g×%g мм" % (self.a_mm or 0, self.b_mm or 0)
+        return ""
     sequence = fields.Integer("№", default=10)
     detail_name = fields.Char("Деталь")
 

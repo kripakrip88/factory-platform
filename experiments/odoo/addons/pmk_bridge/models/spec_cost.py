@@ -28,10 +28,16 @@ product.template и product.supplierinfo, поэтому живут в мост�
 """
 
 from odoo import api, fields, models
+from markupsafe import Markup
 from odoo.exceptions import UserError
 
 MM_IN_M = 1000.0
 KG_IN_TON = 1000.0
+
+
+def _money(value):
+    """Сумма с разрядами и запятой — как её пишут в документах завода."""
+    return "{:,.2f}".format(value).replace(",", "\u00a0").replace(".", ",")
 
 
 class ResPartnerSupplierRank(models.Model):
@@ -392,7 +398,45 @@ class MetalSpecCost(models.Model):
             # посчитан. Сигналим только когда было с чем сравнить.
             spec.price_changed = bool(was) and abs(now - was) >= 0.01
             spec.cost_change_pct = ((now - was) / was * 100.0) if was else 0.0
+            spec._log_price_refresh(was, now, lines)
         return True
+
+    def _log_price_refresh(self, was, now, lines):
+        """Запись в историю документа — человеческим языком.
+
+        Odoo сам пишет, ЧТО поменялось в полях, но не пишет, ПОЧЕМУ: после
+        пересчёта в истории остаются голые числа. Здесь один абзац, из
+        которого через месяц понятно, на какой прайс переехали, насколько
+        изменилась сумма и какие позиции её сдвинули.
+        """
+        self.ensure_one()
+        changed = lines.filtered(lambda l: l.price_change_pct)
+        top = changed.sorted(lambda l: -abs(l.price_change_pct))[:3]
+
+        head = "Цены перечитаны на %s." % (
+            self.price_date.strftime("%d.%m.%Y") if self.price_date else "сегодня")
+        if not was:
+            body = "%s Металл посчитан впервые: %s ₽." % (head, _money(now))
+        elif abs(now - was) < 0.01:
+            body = "%s Сумма не изменилась: %s ₽." % (head, _money(now))
+        else:
+            word = "подорожал" if now > was else "подешевел"
+            body = "%s Металл %s на %.1f%%: %s → %s ₽." % (
+                head, word, abs((now - was) / was * 100.0), _money(was), _money(now))
+
+        if top:
+            rows = "".join(
+                "<li>%s: %+.1f%%</li>" % (line.position_label or line.detail_name or "позиция",
+                                          line.price_change_pct)
+                for line in top)
+            body += "<ul>%s</ul>" % rows
+        if self.price_lost_count:
+            body += "<p>Выпало из прайса позиций: %s — металл всё равно придётся купить.</p>" % (
+                self.price_lost_count)
+        elif self.no_price_count:
+            body += "<p>Позиций без цены: %s.</p>" % self.no_price_count
+
+        self.message_post(body=Markup(body))
 
 
 class MetalSpecProductCost(models.Model):
