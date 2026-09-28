@@ -185,6 +185,12 @@ class LaserJob(models.Model):
         help="Загрузка и разгрузка стола на каждый лист плюс резка по "
              "нормативу. Пока по толщине нет ни одного замера, план остаётся "
              "пустым — среднее по соседним толщинам не подставляется.")
+    # Счётчик для сводной таблицы «Загрузки участка»: рядом с «План, мин» видно,
+    # сколько заданий в этом дне ещё без плана. Без него ноль минут читается
+    # как «станок свободен» (разбор UX, решение Антона 28.09.2026).
+    plan_missing = fields.Integer(
+        "Заданий без плана", compute="_compute_plan", store=True,
+        help="1, если у задания нет норматива или не разобрана длина реза.")
     actual_minutes = fields.Float("Факт, мин", compute="_compute_fact", store=True, digits=(10, 1))
     measure_state = fields.Selection(
         [("none", "Замеров нет"), ("partial", "Замерена часть листов"), ("done", "Все листы замерены")],
@@ -256,6 +262,7 @@ class LaserJob(models.Model):
             if job.cut_length_m <= 0.0:
                 job.plan_state = "no_drawing"
                 job.planned_minutes = 0.0
+                job.plan_missing = 1
                 continue
             norm = norms._lookup(job.machine_id, job.sheet_type, job.thickness_mm)
             cutting = timing.estimate_minutes(
@@ -267,9 +274,11 @@ class LaserJob(models.Model):
                 # отсутствующего — по нему поставят срок заказчику.
                 job.plan_state = "no_norm"
                 job.planned_minutes = 0.0
+                job.plan_missing = 1
                 continue
             job.plan_state = "ok" if norm.mode == timing.MODE_FULL else "rough"
             job.planned_minutes = handling + cutting
+            job.plan_missing = 0
 
     @api.depends("sheet_ids.actual_minutes", "sheet_ids.measure_ids.state",
                  "sheet_ids.measure_ids.excluded")

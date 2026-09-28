@@ -10,6 +10,11 @@
     сводной таблице рядом с минутами всегда стоит состояние плана, а в фильтрах
     первым идёт «без норматива»: пустое должно быть видно, а не тихо
     складываться с настоящими минутами.
+
+    Открывается СПИСКОМ (решение Антона 28.09.2026, разбор UX): в нём у каждого
+    задания значок «Норматива нет» стоит прямо в строке. Сводная таблица —
+    вторым видом, и в ней рядом с минутами «Заданий без плана»: ноль минут при
+    трёх заданиях без плана — это «не мерили», а не «станок свободен».
   -->
 
   <record id="view_laser_load_pivot" model="ir.ui.view">
@@ -20,6 +25,7 @@
         <field name="date" type="row" interval="day"/>
         <field name="machine_id" type="col"/>
         <field name="planned_minutes" type="measure"/>
+        <field name="plan_missing" type="measure"/>
         <field name="actual_minutes" type="measure"/>
         <field name="sheet_count" type="measure"/>
         <field name="useful_mass_kg" type="measure"/>
@@ -64,7 +70,7 @@
   <record id="action_laser_load" model="ir.actions.act_window">
     <field name="name">Загрузка участка</field>
     <field name="res_model">pmk.laser.job</field>
-    <field name="view_mode">pivot,graph,list</field>
+    <field name="view_mode">list,pivot,graph</field>
     <field name="search_view_id" ref="view_laser_job_search"/>
     <field name="context">{'group_by': ['date', 'machine_id']}</field>
     <field name="help" type="html">
@@ -77,21 +83,21 @@
   </record>
 
   <record id="action_laser_load_pivot_view" model="ir.actions.act_window.view">
-    <field name="sequence">1</field>
+    <field name="sequence">2</field>
     <field name="view_mode">pivot</field>
     <field name="view_id" ref="view_laser_load_pivot"/>
     <field name="act_window_id" ref="action_laser_load"/>
   </record>
 
   <record id="action_laser_load_graph_view" model="ir.actions.act_window.view">
-    <field name="sequence">2</field>
+    <field name="sequence">3</field>
     <field name="view_mode">graph</field>
     <field name="view_id" ref="view_laser_load_graph"/>
     <field name="act_window_id" ref="action_laser_load"/>
   </record>
 
   <record id="action_laser_load_list_view" model="ir.actions.act_window.view">
-    <field name="sequence">3</field>
+    <field name="sequence">1</field>
     <field name="view_mode">list</field>
     <field name="view_id" ref="view_laser_load_list"/>
     <field name="act_window_id" ref="action_laser_load"/>
