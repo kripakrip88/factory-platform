@@ -313,15 +313,19 @@
 }
 
 // В тёмном режиме чужой темы — её поверхности.
+// ⚠️ .btn и !important обязательны, как у светлой пары выше: без них
+// тёмная пара применялась наполовину — подпись светлела, а фон оставался
+// светлым (контраст 1,07, найдено 29.09.2026).
 body.o_nexus_dark {
+  .pmk-chatter-toggle.btn,
   .pmk-chatter-toggle {
-    border-color: rgba(255, 255, 255, 0.10);
-    background: rgba(255, 255, 255, 0.04);
-    color: rgba(244, 241, 234, 0.72);
+    border-color: rgba(255, 255, 255, 0.10) !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    color: rgba(244, 241, 234, 0.72) !important;
 
     &:hover {
-      background: rgba(255, 255, 255, 0.08);
-      border-color: rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.08) !important;
+      border-color: rgba(255, 255, 255, 0.18) !important;
     }
 
     &:focus-visible { outline-color: rgba(255, 255, 255, 0.85); }
@@ -1138,6 +1142,11 @@ $pmk-stage-tones: (
 // Тона стадий — CSS-переменными: ими пользуются модули, до SCSS-карты
 // которых не дотянуться (полоска маржи в pmk_bridge собирается раньше).
 :root {
+  // Подписи осей и легенды графиков (js/canvas_text.js). Токен жил только в
+  // выключенном tokens.scss, и график брал запасной белый — в светлой теме
+  // подписи были невидимы (найдено 29.09.2026). Тёмная пара — в dark.scss.
+  --pmk-text-strong: #16191c;
+
   @each $tone, $pair in $pmk-stage-tones {
     --pmk-tone-#{$tone}-bg: #{nth($pair, 1)};
     --pmk-tone-#{$tone}-bd: #{nth($pair, 2)};

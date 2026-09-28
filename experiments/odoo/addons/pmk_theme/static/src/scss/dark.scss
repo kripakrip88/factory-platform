@@ -1,0 +1,567 @@
+// ═══════════════════════════════════════════════════════════════════════
+// ТЁМНАЯ ТЕМА — «смотреть можно» (этап 1, 29.09.2026)
+// ═══════════════════════════════════════════════════════════════════════
+//
+// ЗАЧЕМ. Тёмный режим — это класс o_nexus_dark на <body>, его ставит
+// переключатель в шапке (скрипт чужой темы theme_nexus). Тёмные правила
+// чужой темы и наших файлов закрывали только шапку и лист формы, а на главных
+// экранах пропадал текст. Замер по собранному бандлу, контраст при норме 4,5:
+//   • строки любого списка — 1,13 (светлый текст на белых ячейках);
+//   • подписи полей формы — 1,11;
+//   • номер документа в строке пути, числа на кнопках-счётчиках — 1,13;
+//   • текст диалогов — 1,13;
+//   • пункты выпадающих меню и подсказки выбора клиента или товара — лайм
+//     по белому, 1,25–1,32;
+//   • полоса «История» под документом — 1,07.
+// Этот файл поднимает все 188 проверенных элементов до 4,5 и выше. Исключения
+// намеренные: бледные нули (3,1) и белый лист самого письма в почте.
+//
+// ПОЧЕМУ ВСЁ ПОД body.o_nexus_dark. Стили общие для обеих тем (отдельного
+// тёмного бандла у нас пока нет), поэтому каждое правило начинается с
+// класса режима и в светлой теме не срабатывает. Модалки и меню рисуются вне
+// .o_web_client (body > .o-overlay-container), от body до них достаёт.
+//
+// ПОЧЕМУ СТОЛЬКО !important. Светлые правила чужой темы и forms_nexus.scss
+// написаны с !important. Тёмная пара обязана повторять важность и быть не
+// слабее по специфичности — иначе она применяется наполовину. Так было с
+// полосой «История»: подпись стала светлой, а фон остался светлым.
+//
+// ГРАБЛИ ODOO 19, из-за которых правила именно такие:
+//   • у переменных Bootstrap НЕТ префикса bs-: --table-bg, --dropdown-bg;
+//   • ячейки таблиц не красят текст сами (color: unset) — берут его от
+//     контейнера, поэтому светлый текст контейнера плюс белый --table-bg ядра
+//     давали невидимый список;
+//   • DropdownItem со ссылкой рисуется тегом <a>, любое правило для «a»
+//     ложится на все меню (так лайм чужой темы попал в меню и автодополнение);
+//   • таблица внутри формы красит шапку правилом ядра со специфичностью
+//     0,3,0 — наше правило должно быть сильнее.
+//
+// ЧТО ДАЛЬШЕ (этап 2, не здесь): штатный механизм Odoo — кука color_scheme,
+// класс ставит сервер (нет вспышки белого при загрузке), этот файл уезжает в
+// web.assets_web_dark и светлая тема перестаёт его скачивать.
+//
+// Подключение — запись asset_scss_dark в data/assets_order.xml (sequence 42,
+// после forms_nexus.scss). Печать: всё под @media screen, иначе Ctrl+P из
+// тёмного режима дал бы светлый текст на белой бумаге.
+// ═══════════════════════════════════════════════════════════════════════
+
+// Тона стадий и плашек в тёмной паре: фон, рамка, текст. Посчитаны от
+// светлых тонов forms_nexus.scss ($pmk-stage-tones), текст на фоне 7,2–8,0.
+// Имена в кавычках: без них yellow, red, green и т. п. — это ЦВЕТА, и сжатая
+// сборка выводит в селектор #ff0 вместо слова yellow.
+$pmk-dark-tones: (
+  "grey": (#404143, #696866, #e6e4dd),
+  "red": (#4b383b, #805554, #f3d2cd),
+  "orange": (#4a3b36, #7e5b49, #f4d8bd),
+  "yellow": (#473f30, #77633d, #efe0aa),
+  "cyan": (#314348, #476b71, #c2e6ea),
+  "purple": (#3e3b51, #635a84, #e0cfec),
+  "almond": (#45403c, #726656, #eaddcb),
+  "teal": (#304342, #446b63, #bee2d6),
+  "blue": (#334050, #4b6583, #cbdbf2),
+  "raspberry": (#493842, #7c5363, #f0cad9),
+  "green": (#364336, #526c4a, #c8e4c5),
+  "violet": (#3c3b52, #5f5a86, #d6cef0),
+);
+
+// Плашки статусов: класс ядра → тон. Тот же словарь, что в forms_nexus.scss
+// ($pmk-badge-tones), продублирован: файлы темы не должны зависеть от
+// переменных друг друга.
+$pmk-dark-badge-tones: (
+  "text-bg-300": "grey", "text-bg-secondary": "grey", "text-bg-light": "grey",
+  "text-bg-info": "blue", "text-bg-primary": "blue",
+  "text-bg-warning": "yellow",
+  "text-bg-success": "green",
+  "text-bg-danger": "red",
+  "o_badge_color_0": "grey", "o_badge_color_1": "red", "o_badge_color_2": "orange",
+  "o_badge_color_3": "yellow", "o_badge_color_4": "cyan", "o_badge_color_5": "purple",
+  "o_badge_color_6": "almond", "o_badge_color_7": "teal", "o_badge_color_8": "blue",
+  "o_badge_color_9": "raspberry", "o_badge_color_10": "green", "o_badge_color_11": "violet",
+);
+
+// Плашки Bootstrap (alert-*) в наших видах: 16 штук (лазер 7, мост 4,
+// закупки 3, раскрой 1, PDF 1) и 3 в почте. Цвет берут из переменных
+// --<тон>-bg-subtle / -border-subtle / -text-emphasis.
+$pmk-dark-alerts: (
+  "warning": "yellow",
+  "info": "blue",
+  "success": "green",
+  "danger": "red",
+  "secondary": "grey",
+);
+
+@media screen {
+
+  // ─── 0. Словарь тёмного режима ─────────────────────────────────────────
+  body.o_nexus_dark {
+    --pmk-bg: #16171b;
+    --pmk-surface: #1e2025;
+    --pmk-surface-2: #25272d;
+    --pmk-surface-3: #2a2c33;
+    --pmk-border: #33363d;
+    --pmk-border-strong: #464a52;
+    --pmk-ink: #f4f1ea;
+    --pmk-ink-2: #c9c6bf;
+    --pmk-ink-3: #a3a29f;
+    --pmk-ink-faint: #6a6c73;
+    --pmk-hover: rgba(255, 255, 255, 0.06);
+    --pmk-accent: #d4e57a;
+    --pmk-accent-ink: #16191c;
+    --pmk-fill: #3d451e;
+    --pmk-fill-soft: #2e3420;
+    // Подписи осей и легенды графиков (js/canvas_text.js читает с body).
+    --pmk-text-strong: #f4f1ea;
+
+    // Переменные ядра и Bootstrap, которые читаются через var().
+    --body-color: #f4f1ea;
+    --body-bg: #16171b;
+    --emphasis-color: #f4f1ea;
+    --emphasis-color-rgb: 244, 241, 234;
+    --border-color: #33363d;
+    --secondary-color: rgba(244, 241, 234, 0.62);
+    --o-message-bubble-bg: #25272d;
+
+    --primary-bg-subtle: #2e3420;
+    --primary-border-subtle: #3d451e;
+    --primary-text-emphasis: #f4f1ea;
+
+    // Полосы прокрутки и системные поля браузера — тёмные.
+    color-scheme: dark;
+    color: #f4f1ea;
+
+    @each $tone, $t in $pmk-dark-tones {
+      --pmk-tone-#{$tone}-bg: #{nth($t, 1)};
+      --pmk-tone-#{$tone}-bd: #{nth($t, 2)};
+      --pmk-tone-#{$tone}-ink: #{nth($t, 3)};
+    }
+
+    @each $name, $tone in $pmk-dark-alerts {
+      $t: map-get($pmk-dark-tones, $tone);
+      --#{$name}-bg-subtle: #{nth($t, 1)};
+      --#{$name}-border-subtle: #{nth($t, 2)};
+      --#{$name}-text-emphasis: #{nth($t, 3)};
+    }
+  }
+
+  // Лист письма и просмотр вложения в почте намеренно белые в обеих темах.
+  // Без этого письмо со своим <meta name="color-scheme" content="light dark">
+  // приняло бы тёмную схему: прозрачный холст на белом и белый текст.
+  body.o_nexus_dark .o_mail_client_frame,
+  body.o_nexus_dark .o_mail_client_preview_frame {
+    color-scheme: light;
+  }
+
+  // ─── 1. Ссылки: цвет текста, а не лайм ─────────────────────────────────
+  // Как в светлой теме: ссылки там чёрные. Лайм остаётся главной кнопке и
+  // тонким меткам «где я» (черта вкладки, ползунок).
+  body.o_nexus_dark a:not(.btn):not(.nav-link):not(.dropdown-item):not(.pmk_app) {
+    color: var(--pmk-ink) !important;
+  }
+
+  body.o_nexus_dark .btn-link:not(.btn-primary) {
+    color: var(--pmk-ink-2) !important;
+  }
+
+  body.o_nexus_dark .o_form_view .o_form_uri,
+  body.o_nexus_dark .o_field_widget.o_field_copy {
+    color: var(--pmk-ink) !important;
+  }
+
+  // ─── 2. Утилиты ядра с зашитым тёмным текстом и белым фоном ────────────
+  // Подпись поля формы несёт text-900 — ядро красит её с !important через
+  // --color, поэтому меняем именно переменную.
+  body.o_nexus_dark .text-900,
+  body.o_nexus_dark .text-800,
+  body.o_nexus_dark .text-dark,
+  body.o_nexus_dark .text-black,
+  body.o_nexus_dark .text-action {
+    --color: #f4f1ea;
+  }
+
+  body.o_nexus_dark .text-700,
+  body.o_nexus_dark .text-600 {
+    --color: #c9c6bf;
+  }
+
+  body.o_nexus_dark .text-body {
+    color: var(--pmk-ink) !important;
+  }
+
+  body.o_nexus_dark .text-muted {
+    color: var(--pmk-ink-3) !important;
+  }
+
+  body.o_nexus_dark .bg-view,
+  body.o_nexus_dark .bg-white {
+    --background-color: #1e2025;
+  }
+
+  body.o_nexus_dark .bg-100,
+  body.o_nexus_dark .bg-200,
+  body.o_nexus_dark .bg-light {
+    --background-color: #25272d;
+  }
+
+  // Заголовки h1–h6 ядро красит чёрным ($o-black).
+  body.o_nexus_dark h1, body.o_nexus_dark h2, body.o_nexus_dark h3,
+  body.o_nexus_dark h4, body.o_nexus_dark h5, body.o_nexus_dark h6,
+  body.o_nexus_dark .h1, body.o_nexus_dark .h2, body.o_nexus_dark .h3,
+  body.o_nexus_dark .h4, body.o_nexus_dark .h5, body.o_nexus_dark .h6 {
+    color: var(--pmk-ink);
+  }
+
+  // Смысловые цвета текста — светлые оттенки, читаемые на тёмном.
+  body.o_nexus_dark .text-primary { --color: #d4e57a; }
+  body.o_nexus_dark .text-success { --color: #7fd08f; }
+  body.o_nexus_dark .text-info { --color: #7cc7e0; }
+  body.o_nexus_dark .text-warning { --color: #f0c35a; }
+  body.o_nexus_dark .text-danger { --color: #f08a85; }
+
+  // Подсказка: чёрная, как в светлой (цвет берётся из --emphasis-color).
+  body.o_nexus_dark .tooltip {
+    --tooltip-bg: #000000;
+    --tooltip-color: #f4f1ea;
+  }
+
+  // ─── 3. Шапка, панель над видом, строка пути, счётчики ─────────────────
+  body.o_nexus_dark .o_main_navbar .o_menu_systray .fa {
+    color: var(--pmk-ink-2) !important;
+  }
+
+  // Счётчик записей «1-80 / 120» наследовал тёмный цвет body.
+  body.o_nexus_dark .o_control_panel {
+    color: var(--pmk-ink);
+  }
+
+  // Строка пути: без белой плашки, прошлые шаги приглушённые, текущий — ярко.
+  body.o_nexus_dark .breadcrumb {
+    --breadcrumb-bg: transparent;
+  }
+
+  body.o_nexus_dark .o_control_panel .o_breadcrumb .breadcrumb-item > a {
+    color: var(--pmk-ink-3) !important;
+  }
+
+  body.o_nexus_dark .o_control_panel .o_breadcrumb .o_last_breadcrumb_item,
+  body.o_nexus_dark .o_control_panel .o_breadcrumb .o_last_breadcrumb_item span {
+    color: var(--pmk-ink) !important;
+  }
+
+  // Кнопки-счётчики: светлые правила forms_nexus.scss — с !important.
+  body.o_nexus_dark .o-form-buttonbox .oe_stat_button {
+    color: var(--pmk-ink);
+  }
+
+  body.o_nexus_dark .o-form-buttonbox .oe_stat_button .o_stat_value {
+    color: var(--pmk-ink) !important;
+  }
+
+  body.o_nexus_dark .o-form-buttonbox .oe_stat_button .o_button_icon {
+    color: var(--pmk-ink-2) !important;
+  }
+
+  body.o_nexus_dark .o-form-buttonbox .oe_stat_button.o_pmk_stat_zero .o_stat_value {
+    color: var(--pmk-ink-faint) !important;
+  }
+
+  body.o_nexus_dark .o_control_panel_actions .oe_stat_button {
+    border-color: var(--pmk-border) !important;
+  }
+
+  // ─── 4. Кнопки ─────────────────────────────────────────────────────────
+  // Второстепенные кнопки чужая тема делает белыми с !important: листалка,
+  // переключатель видов, «Заметка», «Отметить проигранной».
+  body.o_nexus_dark .btn-secondary,
+  body.o_nexus_dark .btn-light {
+    background: var(--pmk-surface-2) !important;
+    border-color: var(--pmk-border-strong) !important;
+    color: var(--pmk-ink) !important;
+  }
+
+  // Главная кнопка — приглушённый лайм под тёмным текстом (чистый #C8F000
+  // заливкой режет глаз — решение владельца).
+  body.o_nexus_dark .btn-primary,
+  body.o_nexus_dark .o_form_button_create {
+    background: var(--pmk-accent) !important;
+    border-color: var(--pmk-accent) !important;
+    color: var(--pmk-accent-ink) !important;
+  }
+
+  // ─── 5. Списки ─────────────────────────────────────────────────────────
+  body.o_nexus_dark .o_list_renderer {
+    background: var(--pmk-surface) !important;
+  }
+
+  body.o_nexus_dark .o_list_renderer .o_list_table {
+    --table-bg: #1e2025;
+    --table-color: #f4f1ea;
+    --table-hover-bg: rgba(255, 255, 255, 0.04);
+    --table-striped-bg: rgba(255, 255, 255, 0.02);
+    --table-border-color: #33363d;
+    --ListRenderer-thead-bg-color: #25272d;
+    --ListRenderer-tfoot-bg-color: #25272d;
+  }
+
+  // Таблица внутри формы: шапку ядро красит правилом 0,3,0 — наше сильнее.
+  body.o_nexus_dark .o_form_view .o_field_widget .o_list_renderer {
+    --ListRenderer-thead-bg-color: #25272d;
+    --ListRenderer-tfoot-bg-color: #25272d;
+  }
+
+  // Строка группы: светлая тема даёт бледный лайм, здесь — его тёмная пара.
+  body.o_nexus_dark .o_list_renderer tr.o_group_header {
+    --table-bg: #2e3420;
+  }
+
+  body.o_nexus_dark .o_list_renderer .o_data_row:not([class*="text-"]) > td.o_pmk_zero {
+    color: var(--pmk-ink-faint);
+  }
+
+  // Выбранные строки: вместо голубого ядра — тёмный лайм.
+  body.o_nexus_dark .o_list_renderer .table-info {
+    --table-bg: #3d451e;
+    --table-color: #f4f1ea;
+  }
+
+  // Плашка «N выбрано» над списком: у ядра светло-голубая с чёрным текстом,
+  // на тёмной панели — светлое пятно (найдено глазами 29.09.2026).
+  body.o_nexus_dark .o_selection_box .list-group-item.active {
+    background-color: var(--pmk-fill) !important;
+    border-color: var(--pmk-fill) !important;
+    color: var(--pmk-ink) !important;
+  }
+
+  // ─── 6. Форма ──────────────────────────────────────────────────────────
+  body.o_nexus_dark .o_form_view .oe_title {
+    color: var(--pmk-ink);
+  }
+
+  body.o_nexus_dark .o_form_view .o_form_uri > span,
+  body.o_nexus_dark .o_form_view .o_form_uri > span:first-child {
+    color: var(--pmk-ink);
+  }
+
+  body.o_nexus_dark .o_form_view.o_form_nosheet,
+  body.o_nexus_dark .o_form_view .o_form_nosheet {
+    background-color: transparent;
+  }
+
+  body.o_nexus_dark .pmk-field > label,
+  body.o_nexus_dark .pmk-kpi__label,
+  body.o_nexus_dark .pmk-kpi__note,
+  body.o_nexus_dark .pmk-kpi__sub {
+    color: var(--pmk-ink-3);
+  }
+
+  body.o_nexus_dark .pmk-kpi__card {
+    background: var(--pmk-surface-2);
+    border-color: var(--pmk-border);
+  }
+
+  body.o_nexus_dark .pmk-kpi__value,
+  body.o_nexus_dark .pmk-kpi__note .o_field_widget {
+    color: var(--pmk-ink);
+  }
+
+  // Неполный расчёт: карточка и плашка — жёлтые в тёмной паре.
+  body.o_nexus_dark .pmk-kpi__card--warn,
+  body.o_nexus_dark .pmk-price-alert {
+    background: var(--pmk-tone-yellow-bg);
+    border-color: var(--pmk-tone-yellow-bd);
+    color: var(--pmk-tone-yellow-ink);
+  }
+
+  body.o_nexus_dark .pmk-kpi__card--warn .pmk-kpi__sub {
+    color: var(--pmk-tone-yellow-ink);
+  }
+
+  // Денежное поле («Ожидаемый доход», суммы): рамку рисует span.o_input,
+  // наложенный ПОВЕРХ поля ввода (position-absolute, pe-none). Чужая тема
+  // красит все .o_input тёмным непрозрачным фоном с !important — слой
+  // закрывал сумму, на экране оставалось одно «руб» (найдено глазами
+  // 29.09.2026). Слою — прозрачный фон, фон даёт само поле под ним.
+  body.o_nexus_dark .o_field_widget span.o_input.pe-none {
+    background: transparent !important;
+  }
+
+  // ─── 7. Кнопка стадии, меню стадий, плашки статусов ────────────────────
+  body.o_nexus_dark .o_form_view .o_statusbar_status > .btn.o_pmk_stage_toggle:not(.d-none) {
+    background: var(--pmk-surface-2) !important;
+    border-color: var(--pmk-border-strong) !important;
+    color: var(--pmk-ink) !important;
+  }
+
+  body.o_nexus_dark .o_form_view .o_statusbar_status > .btn.o_pmk_stage_toggle .o_pmk_stage_time {
+    color: var(--pmk-ink-2);
+  }
+
+  body.o_nexus_dark .o-dropdown--menu .dropdown-item.o_pmk_stage_item {
+    color: var(--pmk-ink) !important;
+  }
+
+  body.o_nexus_dark .o-dropdown--menu .dropdown-item.o_pmk_stage_item.active {
+    background: var(--pmk-surface-3) !important;
+
+    &::before { color: var(--pmk-ink); }
+  }
+
+  @each $tone, $t in $pmk-dark-tones {
+    body.o_nexus_dark .o_form_view .o_statusbar_status > .btn.o_pmk_stage_toggle[data-pmk-tone="#{$tone}"]:not(.d-none) {
+      background: nth($t, 1) !important;
+      border-color: nth($t, 2) !important;
+    }
+
+    body.o_nexus_dark .o-dropdown--menu .dropdown-item.o_pmk_stage_item.active.o_pmk_tone_#{$tone} {
+      background: nth($t, 1) !important;
+      box-shadow: inset 0 0 0 1px nth($t, 2);
+    }
+  }
+
+  @each $cls, $tone in $pmk-dark-badge-tones {
+    $t: map-get($pmk-dark-tones, $tone);
+
+    body.o_nexus_dark .o_field_badge > .badge.#{$cls},
+    body.o_nexus_dark .o_field_pmk_stage_badge > .badge.#{$cls} {
+      border-color: nth($t, 2) !important;
+      background-color: nth($t, 1) !important;
+      color: nth($t, 3) !important;
+    }
+  }
+
+  // ─── 8. Полоска маржи ──────────────────────────────────────────────────
+  body.o_nexus_dark .o_pmk_margin__track {
+    background: #3a3d44;
+  }
+
+  body.o_nexus_dark .o_pmk_margin[data-state="incomplete"] .o_pmk_margin__label {
+    color: #f09a95;
+  }
+
+  body.o_nexus_dark .o_pmk_margin[data-state="none"] .o_pmk_margin__label {
+    color: var(--pmk-ink-3);
+  }
+
+  // ─── 9. Выпадающие меню, поповеры, автодополнение ──────────────────────
+  body.o_nexus_dark .dropdown-menu,
+  body.o_nexus_dark .popover {
+    --dropdown-bg: #25272d;
+    --dropdown-color: #f4f1ea;
+    --dropdown-link-color: #f4f1ea;
+    --dropdown-link-hover-color: #f4f1ea;
+    --dropdown-link-hover-bg: rgba(255, 255, 255, 0.06);
+    --dropdown-border-color: #33363d;
+    --dropdown-header-color: #a3a29f;
+    --dropdown-divider-bg: #33363d;
+    --popover-bg: #25272d;
+    --popover-body-color: #f4f1ea;
+    --popover-border-color: #33363d;
+  }
+
+  body.o_nexus_dark .dropdown-menu .dropdown-item {
+    color: var(--pmk-ink);
+  }
+
+  body.o_nexus_dark .pmk_apps_more_menu .pmk_app--item {
+    color: var(--pmk-ink) !important;
+  }
+
+  // ─── 10. Диалоги ───────────────────────────────────────────────────────
+  // Чужая тема красит шапку, тело и подвал белыми правилом 0,4,0.
+  body.o_nexus_dark .modal .modal-dialog .modal-content .modal-header,
+  body.o_nexus_dark .modal .modal-dialog .modal-content .modal-body {
+    background: var(--pmk-surface);
+    color: var(--pmk-ink);
+  }
+
+  body.o_nexus_dark .modal .modal-dialog .modal-content .modal-footer {
+    background: var(--pmk-surface-2);
+    border-color: var(--pmk-border);
+  }
+
+  body.o_nexus_dark .modal .modal-dialog .modal-content .modal-header .modal-title {
+    color: var(--pmk-ink);
+  }
+
+  // ─── 11. Лента документа ───────────────────────────────────────────────
+  body.o_nexus_dark .o-mail-Chatter,
+  body.o_nexus_dark .o-mail-Form-chatter,
+  body.o_nexus_dark .o-mail-ChatterContainer,
+  body.o_nexus_dark .o-mail-Chatter-top {
+    background: var(--pmk-surface) !important;
+  }
+
+  body.o_nexus_dark .o-mail-Message.o-card,
+  body.o_nexus_dark .o-mail-Composer-bg {
+    background-color: var(--pmk-surface-2);
+    --mail-Composer-bg: #25272d;
+  }
+
+  // ─── 12. Канбан, пустой список, настройки, календарь ───────────────────
+  body.o_nexus_dark .o_kanban_view,
+  body.o_nexus_dark .o_kanban_renderer {
+    background: var(--pmk-bg) !important;
+  }
+
+  body.o_nexus_dark .o_kanban_renderer.o_kanban_grouped .o_kanban_group {
+    background-color: transparent;
+  }
+
+  body.o_nexus_dark .o_view_nocontent .o_nocontent_help,
+  body.o_nexus_dark .o_view_nocontent .o_nocontent_help > p:first-of-type {
+    color: var(--pmk-ink);
+  }
+
+  body.o_nexus_dark .o_base_settings_view .o_form_renderer .o_setting_container .settings {
+    background-color: var(--pmk-surface);
+  }
+
+  body.o_nexus_dark .o_base_settings_view .o_form_renderer .o_setting_container {
+    --settings__tab-bg: #25272d;
+    --settings__tab-bg--active: #3d451e;
+    --settings__tab-color: #c9c6bf;
+    --settings__title-bg: #25272d;
+  }
+
+  body.o_nexus_dark .o_base_settings_view .o_form_renderer .o_setting_container .settings_tab .tab.selected,
+  body.o_nexus_dark .o_base_settings_view .o_form_renderer .o_setting_container .settings > .app_settings_block h2 {
+    color: var(--pmk-ink);
+  }
+
+  body.o_nexus_dark .o_calendar_view .fc-daygrid-day.fc-day-today {
+    background: var(--pmk-fill-soft) !important;
+  }
+
+  // ─── 13. Почта (mail_client) ───────────────────────────────────────────
+  // Свой тёмный файл модуля (mail_client.dark.scss) лежит в штатном тёмном
+  // бандле, который у нас не собирается, — поэтому его переменные здесь.
+  body.o_nexus_dark .o_mail_client {
+    --mc-panel-bg: #1e2025;
+    --mc-hover-bg: rgba(255, 255, 255, 0.06);
+    --mc-border: #33363d;
+    --mc-active-bg: #3d451e;
+    --mc-active-color: #f4f1ea;
+    --mc-ticked-bg: rgba(200, 240, 0, 0.14);
+  }
+
+  body.o_nexus_dark .o_mail_client .o_mail_client_folder.btn {
+    color: var(--pmk-ink) !important;
+  }
+
+  body.o_nexus_dark .o_mail_client_row.active .text-muted,
+  body.o_nexus_dark .o_mail_client_row.active .small {
+    color: var(--pmk-ink-2) !important;
+  }
+
+  // Счётчики папок: чужая тема заливает их ярким лаймом #C8F000, и «Спам
+  // 3287» кричит громче всего. Лайм заливкой — только приглушённый и только
+  // у открытой папки (решение владельца); остальные счётчики — серые.
+  body.o_nexus_dark .o_mail_client .o_mail_client_folder .badge {
+    background-color: var(--pmk-surface-3) !important;
+    color: var(--pmk-ink-2) !important;
+  }
+
+  body.o_nexus_dark .o_mail_client .o_mail_client_folder.active .badge {
+    background-color: var(--pmk-accent) !important;
+    color: var(--pmk-accent-ink) !important;
+  }
+}

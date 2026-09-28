@@ -294,4 +294,17 @@
     <field name="sequence">41</field>
   </record>
 
+  <!-- Тёмная тема, этап 1 «смотреть можно» (29.09.2026). Все правила под
+       body.o_nexus_dark, в светлой теме не срабатывают. Sequence 42 — ПОСЛЕ
+       forms_nexus.scss: светлые правила там с !important, тёмная пара должна
+       идти ниже, чтобы при равном весе выигрывать. Разбор и замеры — в шапке
+       самого файла. -->
+  <record id="asset_scss_dark" model="ir.asset">
+    <field name="name">ПМК: dark.scss — тёмная тема поверх светлой</field>
+    <field name="bundle">web.assets_backend</field>
+    <field name="directive">append</field>
+    <field name="path">pmk_theme/static/src/scss/dark.scss</field>
+    <field name="sequence">42</field>
+  </record>
+
 </odoo>

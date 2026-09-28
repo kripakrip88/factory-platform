@@ -52,28 +52,34 @@ import { patch } from "@web/core/utils/patch";
 import { GraphRenderer } from "@web/views/graph/graph_renderer";
 
 /**
- * Цвет подписей берём из нашего словаря токенов (tokens.scss, :root),
- * а не зашиваем числом: сменится тема — сменятся и подписи, руками ничего
- * править не придётся.
+ * Цвет подписей берём из токена --pmk-text-strong, а не зашиваем числом:
+ * сменится тема — сменятся и подписи. Светлое значение объявлено в
+ * forms_nexus.scss (:root), тёмное — в dark.scss (body.o_nexus_dark).
  *
- * Запасное значение обязательно. Стили и этот файл живут в РАЗНЫХ бандлах
+ * ⚠️ ЧИТАЕМ С <body>, А НЕ С <html> (исправлено 29.09.2026). Тёмное значение
+ * висит на body.o_nexus_dark, а <html> от body не наследует: чтение с
+ * documentElement дало бы в тёмной теме светлое значение — тёмные подписи на
+ * тёмной карточке. До этого токен жил только в выключенном tokens.scss, и в
+ * светлой теме график брал запасной белый — подписи были невидимы.
+ *
+ * Запасное значение обязательно: стили и этот файл живут в РАЗНЫХ бандлах
  * (стили — в web.assets_backend, патч — в web.assets_backend_lazy), и если
- * токены по какой-то причине не доехали, getPropertyValue вернёт пустую
- * строку. Пустую строку Chart.js принял бы за «цвет не задан» и нарисовал бы
- * подписи цветом по умолчанию — снова тёмным. Поэтому падаем на белый:
- * именно его ставила чужая тема, так что вид не дёрнется.
+ * токен не доехал, getPropertyValue вернёт пустую строку. Запасной цвет
+ * выбираем по режиму, иначе одна из тем получит невидимые подписи.
  */
-const FALLBACK_COLOR = "#ffffff";
+function fallbackColor() {
+    return document.body?.classList.contains("o_nexus_dark") ? "#f4f1ea" : "#16191c";
+}
 
 function fontColor() {
     try {
-        const value = getComputedStyle(document.documentElement)
+        const value = getComputedStyle(document.body)
             .getPropertyValue("--pmk-text-strong")
             .trim();
-        return value || FALLBACK_COLOR;
+        return value || fallbackColor();
     } catch {
         // Ни при каких обстоятельствах не роняем отрисовку графика из-за цвета.
-        return FALLBACK_COLOR;
+        return fallbackColor();
     }
 }
 
