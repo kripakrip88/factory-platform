@@ -109,21 +109,35 @@ class MailClientMessage(models.Model):
         # НЕ создаёт его, если не нашёл. Так же ведёт себя и почтовый шлюз
         # ядра. Автосоздание контакта здесь было бы вредно: ящик собирает
         # рассылки, и каждый промах кнопки оседал бы мусором в базе клиентов.
+        # МЕНЕДЖЕР — ТОТ, КТО НАЖАЛ «ЛИД» (решение Антона 28.09.2026, разбор UX).
+        # Раньше заявка рождалась без менеджера, а воронка открывается с
+        # фильтром «Моя воронка» — и новая заявка в ней не показывалась, пока
+        # кто-то не впишет себя руками. Правило завода: менеджер сам переводит
+        # письмо в заявку, значит, он её и ведёт.
+        #
+        # Системного пользователя (OdooBot, запуск из крона или shell) не
+        # ставим: для такого случая остаётся штатное распределение на
+        # руководителя команды ниже.
+        user = self.env.user
+        assignee = user if user._is_internal() and not user._is_superuser() else False
         lead = (
             self.env["crm.lead"]
             .with_context(
                 mail_create_nosubscribe=True,
                 mail_create_nolog=True,
-                default_user_id=False,
+                default_user_id=assignee.id if assignee else False,
             )
             .create(
                 {
                     "name": self.subject or _("Без темы"),
                     "email_from": self.email_from,
                     "partner_id": self.partner_id.id or False,
+                    "user_id": assignee.id if assignee else False,
                 }
             )
         )
+        # Срабатывает только для заявки без менеджера, то есть при системном
+        # запуске.
         lead._assign_userless_lead_in_team(_("письмо из почты"))
 
         lead.message_post(
