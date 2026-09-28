@@ -853,7 +853,9 @@ body.o_nexus_dark {
   align-self: center;
   align-items: center;
   gap: 8px;
-  max-width: 360px;
+  // 440 px — влезает самое длинное штатное «Запрос на коммерческое
+  // предложение» у закупки; длиннее — многоточие и полный текст в подсказке.
+  max-width: 440px;
   margin: 0 !important;
   padding-right: 12px !important;
   padding-left: 12px !important;
