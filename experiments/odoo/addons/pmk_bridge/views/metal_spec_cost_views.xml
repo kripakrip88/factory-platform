@@ -354,6 +354,12 @@
                   string="Перечитать цены" class="btn-secondary"/>
         </header>
       </xpath>
+      <!-- «Итого, т» — по умолчанию скрыта: повторяет «Итого, кг», а после
+           колонок цены клиенту и маржи номер расчёта обрезался до «СМ-00…».
+           Вернуть — в меню колонок списка (29.09.2026). -->
+      <xpath expr="//field[@name='total_weight_t']" position="attributes">
+        <attribute name="optional">hide</attribute>
+      </xpath>
       <xpath expr="//field[@name='total_weight_t']" position="after">
         <field name="total_cost_fact" optional="show" sum="Металл"
                widget="monetary"/>

@@ -91,6 +91,9 @@ registry.category("fields").add("pmk_margin_bar", {
     component: MarginBarField,
     displayName: _t("Полоска маржи"),
     supportedTypes: ["float"],
+    // Ширина колонки: полоска 48 px + «≤ 63,9 %». Без неё Odoo давал колонке
+    // ширину числа по умолчанию, и подпись обрезалась до «≤ 6».
+    listViewWidth: [130, 160],
     extractProps: ({ options }) => ({
         incompleteField: options.incomplete_field,
         baseField: options.base_field,
