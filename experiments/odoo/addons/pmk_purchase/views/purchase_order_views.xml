@@ -2,7 +2,8 @@
 <odoo>
   <!--
     Заголовок над номером закупки: «Запрос КП» вместо «Запрос на
-    коммерческое предложение» (Антон, 28.09.2026). Статусы, меню и название
+    коммерческое предложение», кнопка «Отправить запрос КП» вместо
+    «Отправить запрос котировок» (Антон, 28.09.2026). Статусы, меню и название
     списка переименованы миграцией migrations/19.0.1.0.1.
 
     ⚠️ XPATH ПО АТРИБУТУ, А НЕ ПО ТЕКСТУ: разметка вида хранится переведённой,
@@ -15,6 +16,14 @@
     <field name="arch" type="xml">
       <xpath expr="//span[hasclass('o_form_label')][@invisible=&quot;state not in ('draft', 'sent')&quot;]" position="replace">
         <span class="o_form_label" invisible="state not in ('draft', 'sent')">Запрос КП </span>
+      </xpath>
+      <!-- «Отправить запрос КП» вместо «Отправить запрос котировок»: две
+           кнопки ядра — у черновика и у уже отправленного запроса. -->
+      <xpath expr="//button[@name='action_rfq_send'][@invisible=&quot;state != 'draft'&quot;]" position="attributes">
+        <attribute name="string">Отправить запрос КП</attribute>
+      </xpath>
+      <xpath expr="//button[@name='action_rfq_send'][@invisible=&quot;state != 'sent'&quot;]" position="attributes">
+        <attribute name="string">Отправить запрос КП</attribute>
       </xpath>
     </field>
   </record>

@@ -54,7 +54,7 @@
               parent="menu_pmk_production" action="repair.action_repair_order_tree" sequence="60"/>
 
     <!-- ─── Закупки ──────────────────────────────────────────────────── -->
-    <menuitem id="menu_pmk_purch_rfq" name="Запросы цен"
+    <menuitem id="menu_pmk_purch_rfq" name="Запросы КП"
               parent="menu_pmk_purchase" action="purchase.purchase_rfq" sequence="10"/>
     <menuitem id="menu_pmk_purch_orders" name="Заказы поставщикам"
               parent="menu_pmk_purchase" action="purchase.purchase_form_action" sequence="20"/>
