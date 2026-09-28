@@ -2,19 +2,48 @@
 <odoo>
 
   <!--
-    Кнопка-счётчик «Расчёты» в шапке сделки. Рядом с остальными счётчиками:
-    менеджер ищет расчёт там же, где смотрит предложения и письма.
+    Кнопка-счётчик «Расчёты» в шапке сделки — ПЕРВОЙ. Расчёт и КП из него —
+    главный шаг завода по сделке (разбор UX, шаг 3, решение Антона
+    28.09.2026; скрин 31). Показывается и при нуле: ноль значит «шаг ещё не
+    сделан», это наблюдение. Серым ноль красит тема (stat_buttons.js).
+
+    Встреча — только когда назначена: пустая кнопка «Нет встречи» висела на
+    каждой сделке и сдвигала название.
   -->
   <record id="view_crm_lead_form_specs" model="ir.ui.view">
     <field name="name">crm.lead.form.specs</field>
     <field name="model">crm.lead</field>
     <field name="inherit_id" ref="crm.crm_lead_view_form"/>
     <field name="arch" type="xml">
-      <xpath expr="//div[@name='button_box']" position="inside">
+      <xpath expr="//button[@name='action_schedule_meeting']" position="before">
         <button name="action_open_specs" type="object"
                 class="oe_stat_button" icon="fa-calculator">
           <field name="spec_count" widget="statinfo" string="Расчёты"/>
         </button>
+      </xpath>
+      <xpath expr="//button[@name='action_schedule_meeting']" position="attributes">
+        <attribute name="invisible">not id or type == 'lead' or not meeting_display_date</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <!--
+    Штатные КП Odoo (sale.order) — только когда они есть. Наше КП печатается
+    из расчёта, штатным завод не пользуется, и «Коммерческие предложения 0»
+    путало: главное КП сделки не там (прогон 27.09, П-13).
+
+    ⚠️ ОТДЕЛЬНЫЙ ВИД НАД ВИДОМ sale_crm, А НЕ ПРАВКА В ВИДЕ ВЫШЕ. Кнопку
+    добавляет модуль sale_crm; xpath на его узел из вида над crm упал бы при
+    загрузке, если бы наш вид применился раньше (грабли 23.09.2026 —
+    project_odoo_view_load_order). Поэтому sale_crm — в зависимостях.
+  -->
+  <record id="view_crm_lead_form_hide_empty_quotations" model="ir.ui.view">
+    <field name="name">crm.lead.form.hide.empty.quotations</field>
+    <field name="model">crm.lead</field>
+    <field name="inherit_id" ref="sale_crm.crm_case_form_view_oppor"/>
+    <field name="arch" type="xml">
+      <xpath expr="//button[@name='action_view_sale_quotation']" position="attributes">
+        <attribute name="invisible">type == 'lead' or quotation_count == 0</attribute>
       </xpath>
     </field>
   </record>

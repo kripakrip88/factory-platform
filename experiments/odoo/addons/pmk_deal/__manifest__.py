@@ -8,12 +8,14 @@
     # цены, CRM его не касается. Поэтому связка «сделка ↔ расчёт» живёт своим
     # модулем: не установлен — обе стороны работают как раньше.
     "name": "ПМК: сделка и расчёт",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.0.1",
     "summary": "Расчёт металлопроката привязан к сделке CRM",
     "category": "Sales/CRM",
     "author": "ПМК Парк",
     "license": "LGPL-3",
-    "depends": ["crm", "pmk_calc"],
+    # sale_crm — ради вида, который прячет пустую кнопку штатных КП
+    # (views/crm_lead_views.xml): xpath идёт по её узлу.
+    "depends": ["crm", "sale_crm", "pmk_calc"],
     "data": [
         "views/crm_lead_views.xml",
         "views/metal_spec_views.xml",
