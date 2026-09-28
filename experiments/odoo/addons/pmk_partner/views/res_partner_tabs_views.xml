@@ -155,6 +155,12 @@
              position="attributes">
         <attribute name="invisible">1</attribute>
       </xpath>
+      <!-- У компании на «Основной информации» после этого ничего не остаётся:
+           сайт и теги pmk_dadata переносит на «Реквизиты». У физлица здесь
+           компания, должность и поля ИП — вкладка нужна. -->
+      <xpath expr="//page[@name='pmk_main']" position="attributes">
+        <attribute name="invisible">is_company</attribute>
+      </xpath>
 
       <!--
         Вкладка «Заметки» — убрана (Антон, 28.09.2026: «заметки убираем, если
