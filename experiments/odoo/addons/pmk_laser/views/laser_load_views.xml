@@ -58,6 +58,9 @@
         <field name="cut_length_m" sum="Рез, м"/>
         <field name="pierce_count" sum="Проколов"/>
         <field name="planned_minutes" sum="План, мин"/>
+        <!-- Сумма в строке группы: «0 минут, 1 без плана» видно, не раскрывая
+             день. Без неё свёрнутая группа снова читается как «станок свободен». -->
+        <field name="plan_missing" string="Без плана" sum="Без плана"/>
         <field name="actual_minutes" sum="Факт, мин"/>
         <field name="plan_state" widget="badge"
                decoration-success="plan_state == 'ok'"
@@ -72,7 +75,7 @@
     <field name="res_model">pmk.laser.job</field>
     <field name="view_mode">list,pivot,graph</field>
     <field name="search_view_id" ref="view_laser_job_search"/>
-    <field name="context">{'group_by': ['date', 'machine_id']}</field>
+    <field name="context">{'group_by': ['date:day', 'machine_id']}</field>
     <field name="help" type="html">
       <p class="o_view_nocontent_smiling_face">Пока нечего планировать</p>
       <p>Минуты появятся, когда у заданий будут разобраны чертежи (метры реза и
