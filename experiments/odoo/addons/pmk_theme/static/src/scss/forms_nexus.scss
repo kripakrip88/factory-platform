@@ -749,3 +749,80 @@ body.o_nexus_dark {
     flex: 0 0 auto;
   }
 }
+
+// Кнопки-счётчики: зазор, кнопка «Ещё» и её выпадашка.
+//
+// Замечания Антона к шагу 3 (28.09.2026): «кнопки стоят вплотную друг к
+// другу»; у «Ещё» — лишний прямоугольник; в выпадашке «Правила отхода» и
+// «Емкости для хранения» — «белое на белом».
+//
+// • Вплотную: ядро собирает кнопки в сплошную ленту и скругляет только края
+//   ленты (4 px слева, 12 px справа). Даём зазор 6 px и одинаковое
+//   скругление каждой кнопке.
+// • «Ещё» — кнопка ВНУТРИ обёртки .oe_stat_button.border-0. Тема рисовала
+//   рамку и обёртке (правило с !important), и нашей отступ 12 px — выходил
+//   второй прямоугольник вокруг. Обёртку делаем прозрачной, саму «Ещё» — как
+//   соседние кнопки; открытая — серым, не оранжевым (оранжевый — главное
+//   действие экрана).
+// • Выпадашка «Ещё» носит тот же класс .o-form-buttonbox, поэтому правило
+//   «надпись — в подсказку» спрятало в ней надписи, и остались голые значки.
+//   В меню надписи нужны: это строки списка, подсказка там неудобна.
+.o_control_panel .o-form-buttonbox {
+  gap: 6px;
+
+  .oe_stat_button {
+    border-radius: 8px !important;
+  }
+
+  .oe_stat_button:has(> .o_button_more) {
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+  }
+
+  .o_button_more {
+    height: 100%;
+    padding: 0 12px;
+    border: 1px solid rgb(234, 230, 220) !important;
+    border-radius: 8px !important;
+    background: transparent !important;
+    color: #4b4f58 !important;
+    font-weight: 600;
+
+    &:hover,
+    &.show,
+    &[aria-expanded="true"] {
+      border-color: #9aa0a6 !important;
+      background: #f3f2ef !important;
+      color: #14141a !important;
+    }
+  }
+}
+
+.o_dropdown_more.o-form-buttonbox {
+  padding: 4px !important;
+  border: 1px solid rgb(234, 230, 220) !important;
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(20, 20, 26, 0.12);
+
+  .oe_stat_button {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 6px 10px !important;
+    border: 0 !important;
+    border-radius: 6px !important;
+    background: transparent !important;
+
+    &:hover {
+      background: #f3f2ef !important;
+    }
+  }
+
+  .o_stat_text {
+    display: inline !important;
+    color: #14141a !important;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+}
