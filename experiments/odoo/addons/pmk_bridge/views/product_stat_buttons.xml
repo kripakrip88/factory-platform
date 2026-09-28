@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Подписи кнопок-счётчиков карточки товара человеческим языком.
+    Разбор UX, шаг 3 (Антон, 28.09.2026): «в: вон сразу сделай нормальную».
+
+    «In:» / «Out:» переведены в Odoo как «В:» / «Вон:» — смысла не несут;
+    «Putaway Rules» — как «Правила отхода», хотя это правила размещения на
+    складе. Надписи показываются во всплывающей подсказке кнопки
+    (pmk_theme, stat_buttons.js): «Приход / Расход».
+
+    ⚠️ XPATH ПО ПОЛОЖЕНИЮ, А НЕ ПО ТЕКСТУ. В Odoo 19 разметка вида хранится
+    переведённой: в русской версии там «В:», а не «In:». Выражение по тексту
+    не нашло бы узел в русском интерфейсе, и форма товара перестала бы
+    открываться.
+
+    Две записи: карточка шаблона товара (её открывает «Номенклатура») и
+    карточка варианта — у них одинаковые кнопки из двух разных видов склада.
+  -->
+  <record id="view_product_template_stat_buttons_ru" model="ir.ui.view">
+    <field name="name">product.template.stat.buttons.ru</field>
+    <field name="model">product.template</field>
+    <field name="inherit_id" ref="stock.product_template_form_view_procurement_button"/>
+    <field name="arch" type="xml">
+      <xpath expr="//button[@name='action_view_stock_move_lines']/div/div[1]/span[hasclass('o_stat_text')]" position="replace">
+        <span class="o_stat_text">Приход</span>
+      </xpath>
+      <xpath expr="//button[@name='action_view_stock_move_lines']/div/div[2]/span[hasclass('o_stat_text')]" position="replace">
+        <span class="o_stat_text">Расход</span>
+      </xpath>
+      <xpath expr="//button[@name='action_view_related_putaway_rules']//span[hasclass('o_stat_text')]" position="replace">
+        <span class="o_stat_text">Правила размещения</span>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="view_product_product_stat_buttons_ru" model="ir.ui.view">
+    <field name="name">product.product.stat.buttons.ru</field>
+    <field name="model">product.product</field>
+    <field name="inherit_id" ref="stock.product_form_view_procurement_button"/>
+    <field name="arch" type="xml">
+      <xpath expr="//button[@name='action_view_stock_move_lines']/div/div[1]/span[hasclass('o_stat_text')]" position="replace">
+        <span class="o_stat_text">Приход</span>
+      </xpath>
+      <xpath expr="//button[@name='action_view_stock_move_lines']/div/div[2]/span[hasclass('o_stat_text')]" position="replace">
+        <span class="o_stat_text">Расход</span>
+      </xpath>
+      <xpath expr="//button[@name='action_view_related_putaway_rules']//span[hasclass('o_stat_text')]" position="replace">
+        <span class="o_stat_text">Правила размещения</span>
+      </xpath>
+    </field>
+  </record>
+</odoo>

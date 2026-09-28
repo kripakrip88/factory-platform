@@ -48,4 +48,21 @@
     </field>
   </record>
 
+  <!--
+    Кнопка-счётчик в карточке клиента: «Сделки», а не «Возможности».
+    Разбор UX, шаг 3 (Антон, 28.09.2026: «адаптацию сделай человеческую»).
+    У завода — сделка, «возможность» — слово штатного CRM. Кнопку добавляет
+    модуль crm, поэтому правка здесь: модуль зависит от crm.
+  -->
+  <record id="view_partner_form_deals_label" model="ir.ui.view">
+    <field name="name">res.partner.form.deals.label</field>
+    <field name="model">res.partner</field>
+    <field name="inherit_id" ref="crm.view_partners_form_crm1"/>
+    <field name="arch" type="xml">
+      <xpath expr="//button[@name='action_view_opportunity']/field[@name='opportunity_count']" position="attributes">
+        <attribute name="string">Сделки</attribute>
+      </xpath>
+    </field>
+  </record>
+
 </odoo>

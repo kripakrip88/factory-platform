@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Разные значки у «Выставлено счетов» и «Договоров» в карточке контрагента.
+    Разбор UX, шаг 3 (Антон, 28.09.2026): после того как надписи ушли в
+    подсказки, эти две кнопки различались только подсказкой — у обеих в
+    Odoo значок-карандаш. Счетам — значок документа, договорам карандаш
+    остаётся.
+  -->
+  <record id="view_partner_invoices_button_icon" model="ir.ui.view">
+    <field name="name">res.partner.invoices.button.icon</field>
+    <field name="model">res.partner</field>
+    <field name="inherit_id" ref="account.partner_view_buttons"/>
+    <field name="arch" type="xml">
+      <xpath expr="//button[@name='action_view_partner_invoices']" position="attributes">
+        <attribute name="icon">fa-file-text-o</attribute>
+      </xpath>
+    </field>
+  </record>
+</odoo>
