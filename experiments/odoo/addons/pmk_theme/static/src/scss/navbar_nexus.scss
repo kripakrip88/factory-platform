@@ -202,6 +202,63 @@ $pmk-nx-surface:    #faf9f6;   // светлая поверхность втор
 // Лазерная резка — молния: раздел про станок, а не про документы.
 .pmk_app[data-menu-xmlid="pmk_laser.menu_pmk_laser"]::before      { content: "\f0e7"; }
 
+// ─── «Ещё»: остальные разделы ─────────────────────────────────────────────
+//
+// Разбор UX, шаг 5 (28.09.2026): Производство, Склад, Деньги, Отчёты,
+// Сотрудники — в выпадашке, наверху пять рабочих разделов. Какие — в
+// js/navbar_more.js.
+//
+// Кнопка — такой же пункт строки, со стрелкой списка. Открыт раздел из
+// «Ещё» — на кнопке его имя, значок и подсветка: правила .pmk_app--active и
+// значков выше срабатывают сами, шаблон кладёт на кнопку data-menu-xmlid
+// текущего раздела.
+.pmk_app--more {
+  border: 0;
+  background: transparent;
+
+  // Стрелка своя: Dropdown вешает на кнопку .dropdown-toggle, и Bootstrap
+  // рисовал бы свой уголок рамками — гасим рамки, ставим значок шрифта.
+  &::after {
+    margin-left: 2px;
+    border: 0 !important;
+    content: "\f107";
+    color: $pmk-nx-slate;
+    font-family: FontAwesome;
+    font-size: 12px;
+    vertical-align: 0;
+  }
+}
+
+// Список «Ещё» — всплывающий слой вне шапки (меню ядра рисует его в общем
+// слое), поэтому селектор по своему классу меню, а не от шапки.
+.pmk_apps_more_menu {
+  min-width: 200px;
+  padding: 4px !important;
+  border: 1px solid $pmk-nx-border !important;
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(20, 20, 26, 0.12);
+
+  .pmk_app--item {
+    display: flex;
+    width: 100%;
+    padding: 6px 10px;
+    border-radius: 6px;
+    color: $pmk-nx-ink;
+    font-size: 13px;
+
+    &:hover,
+    &.focus {
+      background-color: rgba(22, 23, 27, 0.05);
+    }
+  }
+
+  // Текущий раздел в списке — заливка его цвета без полоски снизу:
+  // полоска — примета строки, в списке она выглядела бы подчёркиванием.
+  .pmk_app--item.pmk_app--active {
+    box-shadow: none;
+  }
+}
+
 // ─── Вторая строка: пункты текущего раздела ───────────────────────────────
 //
 // ⚠️ !important ЗДЕСЬ ОБЯЗАТЕЛЕН, и это не небрежность. Nexus красит пункты

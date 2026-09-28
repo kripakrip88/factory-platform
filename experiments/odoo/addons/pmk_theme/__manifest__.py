@@ -63,6 +63,9 @@
             # "pmk_theme/static/src/xml/vendor/apps_sidebar.xml",
             # "pmk_theme/static/src/js/collapsible_sections.js",
             "pmk_theme/static/src/js/navbar_active_section.js",
+            # Пять рабочих разделов строкой, остальные — в «Ещё»
+            # (разбор UX, шаг 5, 28.09.2026).
+            "pmk_theme/static/src/js/navbar_more.js",
             "pmk_theme/static/src/js/chatter_inline.js",
             # Правый верхний угол без переключателя компаний и лишних
             # пунктов меню аватара (разбор UX, 28.09.2026).

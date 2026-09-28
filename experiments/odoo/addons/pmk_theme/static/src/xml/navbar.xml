@@ -47,8 +47,14 @@
         (одна граница в двух местах — на случай если ui.isSmall и наш
         медиа-запрос разойдутся по ширине).
       -->
+      <!--
+        Пять рабочих разделов строкой, остальные — в «Ещё» (разбор UX, шаг 5).
+        Какие разделы основные и почему — js/navbar_more.js. Выпадашка —
+        штатные Dropdown/DropdownItem, как в меню приложений ядра (navbar.xml:
+        88-96): те же href, data-menu-xmlid и onNavBarDropdownItemSelection.
+      -->
       <nav t-if="!this.ui.isSmall" class="pmk_apps_bar" aria-label="Модули">
-        <a t-foreach="menuService.getApps()" t-as="app" t-key="app.id"
+        <a t-foreach="pmkMainApps" t-as="app" t-key="app.id"
            class="pmk_app"
            t-att-class="{ 'pmk_app--active': menuService.getCurrentApp() === app }"
            t-att-href="getMenuItemHref(app)"
@@ -58,6 +64,24 @@
            t-on-click.prevent="() => this.onNavBarDropdownItemSelection(app)">
           <span class="pmk_app__label" t-esc="app.name"/>
         </a>
+        <Dropdown t-if="pmkMoreApps.length" position="'bottom-start'" menuClass="'pmk_apps_more_menu'">
+          <t t-set="moreActive" t-value="pmkActiveMoreApp"/>
+          <button type="button" class="pmk_app pmk_app--more"
+                  t-att-class="{ 'pmk_app--active': moreActive }"
+                  t-att-data-menu-xmlid="moreActive and moreActive.xmlid"
+                  t-att-aria-current="moreActive ? 'page' : false"
+                  title="Другие разделы">
+            <span class="pmk_app__label" t-esc="moreActive ? moreActive.name : 'Ещё'"/>
+          </button>
+          <t t-set-slot="content">
+            <DropdownItem t-foreach="pmkMoreApps" t-as="app" t-key="app.id"
+                          class="{ 'pmk_app pmk_app--item': true, 'pmk_app--active': menuService.getCurrentApp() === app }"
+                          onSelected="() => this.onNavBarDropdownItemSelection(app)"
+                          attrs="{ href: getMenuItemHref(app), 'data-menu-xmlid': app.xmlid }">
+              <span class="pmk_app__label" t-esc="app.name"/>
+            </DropdownItem>
+          </t>
+        </Dropdown>
       </nav>
     </xpath>
   </t>
