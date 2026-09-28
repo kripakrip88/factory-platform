@@ -703,7 +703,8 @@ body.o_nexus_dark {
   padding: 0 12px !important;
   gap: 6px;
 
-  .o_stat_text {
+  .o_stat_text,
+  .o_pmk_stat_labels {
     display: none !important;
   }
 

@@ -11,7 +11,8 @@
 //   • ставит класс o_pmk_stat_zero, когда число равно нулю: ноль — «шага ещё
 //     не было», он не должен выглядеть так же, как настоящее число;
 //   • округляет числа до целых: «0,000» → «0», «0,00 руб» → «0 руб»
-//     (Антон, 28.09.2026: «убрать сотые и тысячные знаки после запятой»).
+//     (Антон, 28.09.2026: «убрать сотые и тысячные знаки после запятой»);
+//     дробь меньше единицы остаётся одним знаком — «0,4», не «0».
 //     Кнопка — счётчик, а не отчёт: точное значение открывается по клику.
 //
 // Внутри выпадашки «Ещё» надписи видны (стили), и подсказку там не ставим —
@@ -27,6 +28,7 @@
 // data-tooltip и классов не зацикливают наблюдатель.
 
 const ZERO_CLASS = "o_pmk_stat_zero";
+const LABELS_CLASS = "o_pmk_stat_labels";
 
 function textOf(el) {
     return (el.textContent || "").replace(/\s+/g, " ").trim();
@@ -47,8 +49,13 @@ function isZero(text) {
 // их трогать нельзя.
 const DECIMAL = /-?\d{1,3}(?:[\s\u00a0\u202f]\d{3})+,\d+|-?\d+,\d+/g;
 
+// Меньше единицы, но не ноль (обрезок 0,4 м, остаток 0,05 т) — оставляем
+// один значащий знак: иначе вышел бы серый «0», то есть «ничего нет».
 function roundNumber(match) {
     const number = Number.parseFloat(match.replace(/[\s\u00a0\u202f]/g, "").replace(",", "."));
+    if (number !== 0 && Math.abs(number) < 1) {
+        return number.toLocaleString("ru-RU", { maximumSignificantDigits: 1 });
+    }
     return Math.round(number).toLocaleString("ru-RU");
 }
 
@@ -67,12 +74,35 @@ function roundValues(button) {
     }
 }
 
-function decorate(button) {
-    roundValues(button);
-    const label = [...button.querySelectorAll(".o_stat_text")]
-        .map(textOf)
+// Кнопка склада «На руках / Прогноз» устроена не как остальные: надписи
+// лежат не в .o_stat_text, а отдельной колонкой .o_stat_info рядом с
+// колонкой чисел. Правило «надпись — в подсказку» её не видело, и надписи
+// остались на кнопке. Колонку надписей узнаём по признакам: в ней нет полей
+// записи ([name]) и нет цифр. Помечаем классом — стили её прячут.
+function labelColumns(button) {
+    return [...button.querySelectorAll(".o_stat_info:not(.o_stat_value)")].filter(
+        (col) => !col.querySelector("[name]") && !/\d/.test(col.textContent)
+    );
+}
+
+function labelOf(button) {
+    const texts = [...button.querySelectorAll(".o_stat_text")].map(textOf).filter(Boolean);
+    if (texts.length) {
+        return texts.join(" / ");
+    }
+    const columns = labelColumns(button);
+    for (const col of columns) {
+        col.classList.add(LABELS_CLASS);
+    }
+    return columns
+        .flatMap((col) => [...col.children].map(textOf))
         .filter(Boolean)
         .join(" / ");
+}
+
+function decorate(button) {
+    roundValues(button);
+    const label = labelOf(button);
     const valueEl = button.querySelector(".o_stat_value");
     const value = valueEl ? textOf(valueEl) : "";
     const tip = label || button.getAttribute("title") || "";
