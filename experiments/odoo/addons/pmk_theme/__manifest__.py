@@ -81,6 +81,8 @@
             "pmk_theme/static/src/js/statusbar_compact.js",
             # Нули в таблицах бледные («оживить таблицы», 29.09.2026).
             "pmk_theme/static/src/js/list_zero.js",
+            # Деньги в списках без копеек (Антон, 29.09.2026).
+            "pmk_theme/static/src/js/list_money.js",
             "pmk_theme/static/src/xml/statusbar_compact.xml",
             "pmk_theme/static/src/xml/navbar.xml",
             "pmk_theme/static/src/xml/chatter.xml",

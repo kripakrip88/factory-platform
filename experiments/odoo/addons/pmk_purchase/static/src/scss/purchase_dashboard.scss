@@ -1,0 +1,34 @@
+// Подписи карточек панели «Запросы КП» — нашими словами (Антон, 29.09.2026:
+// «штатные надписи Odoo переименовывай»).
+//
+// ПОЧЕМУ СТИЛЕМ, А НЕ ШАБЛОНОМ. Подпись в шаблоне ядра — голый текст после
+// блока с числом (`<div class="fs-2">…</div>RFQ Sent`), у него нет своего
+// узла, и xpath до него не дотянуться — только заменить карточку целиком
+// вместе с её логикой. Поэтому: у карточки размер шрифта 0 (голый текст
+// пропадает), у блока с числом свой размер (у верхних карточек — класс
+// fs-2, у нижних «Мои» задаём здесь), подпись — ::after. Перевод ядра этим
+// не задевается, а шаблон ядра остаётся как есть.
+.o_purchase_dashboard .purchase-dashboard-card {
+  font-size: 0 !important;
+
+  > div {
+    font-size: 1rem;
+  }
+
+  &::after {
+    display: block;
+    font-size: 13px;
+    line-height: 1.3;
+  }
+}
+
+.o_purchase_dashboard {
+  [filter_name="draft_rfqs"] .purchase-dashboard-card::after { content: "Новые"; }
+  [filter_name="waiting_rfqs"] .purchase-dashboard-card::after { content: "Отправлены"; }
+  [filter_name="late"] .purchase-dashboard-card::after { content: "Срок ответа прошёл"; }
+  [filter_name="not_acknowledged"] .purchase-dashboard-card::after { content: "Не подтверждены поставщиком"; }
+  [filter_name="late_receipt"] .purchase-dashboard-card::after { content: "Поставка просрочена"; }
+  // Правая колонка: «Days to Order» (purchase) и «OTD» (purchase_stock).
+  [title="Сколько дней в среднем от запроса до заказа"] .purchase-dashboard-card::after { content: "Дней до заказа"; }
+  [title="OTD"] .purchase-dashboard-card::after { content: "Поставки в срок"; }
+}

@@ -46,6 +46,10 @@
       <xpath expr="//list" position="attributes">
         <attribute name="decoration-info"/>
       </xpath>
+      <!-- «Справка» — перевод Reference: это номер запроса (29.09.2026). -->
+      <xpath expr="//field[@name='name']" position="attributes">
+        <attribute name="string">Номер</attribute>
+      </xpath>
       <xpath expr="//field[@name='state']" position="attributes">
         <attribute name="decoration-success">state == 'purchase'</attribute>
         <attribute name="decoration-warning">state == 'to approve'</attribute>

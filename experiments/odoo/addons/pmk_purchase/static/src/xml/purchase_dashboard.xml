@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Панель над списком «Запросы КП» — подсказки по-русски нашими словами
+  (Антон, 29.09.2026: «штатные надписи Odoo переименовывай»). Подписи самих
+  карточек — scss/purchase_dashboard.scss (там же объяснено, почему стилем).
+
+  Xpath по атрибутам исходного шаблона: клиентские шаблоны хранятся
+  английскими, перевод подставляется при отрисовке, поэтому filter_name и
+  title здесь английские. Трогаем только узлы модуля purchase (он в
+  зависимостях); карточку «OTD» добавляет purchase_stock — её подпись
+  стилем, без xpath, чтобы не упасть, если модуль снимут.
+-->
+<templates xml:space="preserve">
+  <t t-inherit="purchase.PurchaseDashboard" t-inherit-mode="extension">
+    <xpath expr="//div[@filter_name='draft_rfqs']" position="attributes">
+      <attribute name="title">Все новые запросы КП</attribute>
+    </xpath>
+    <xpath expr="//div[@filter_name='waiting_rfqs']" position="attributes">
+      <attribute name="title">Все отправленные запросы КП, ждут ответа</attribute>
+    </xpath>
+    <xpath expr="//div[@filter_name='late']" position="attributes">
+      <attribute name="title">Запросы КП с прошедшим крайним сроком</attribute>
+    </xpath>
+    <xpath expr="//div[@filter_name='not_acknowledged']" position="attributes">
+      <attribute name="title">Заказы, которые поставщик ещё не подтвердил</attribute>
+    </xpath>
+    <xpath expr="//div[@filter_name='late_receipt']" position="attributes">
+      <attribute name="title">Заказы с просроченной поставкой</attribute>
+    </xpath>
+    <xpath expr="//div[@filter_name='draft_rfqs,my_purchases']" position="attributes">
+      <attribute name="title">Мои новые запросы КП</attribute>
+    </xpath>
+    <xpath expr="//div[@filter_name='waiting_rfqs,my_purchases']" position="attributes">
+      <attribute name="title">Мои отправленные запросы КП</attribute>
+    </xpath>
+    <xpath expr="//div[@filter_name='late,my_purchases']" position="attributes">
+      <attribute name="title">Мои просроченные запросы КП</attribute>
+    </xpath>
+    <xpath expr="//div[@filter_name='not_acknowledged,my_purchases']" position="attributes">
+      <attribute name="title">Мои заказы, не подтверждённые поставщиком</attribute>
+    </xpath>
+    <xpath expr="//div[@filter_name='late_receipt,my_purchases']" position="attributes">
+      <attribute name="title">Мои заказы с просроченной поставкой</attribute>
+    </xpath>
+    <xpath expr="//div[@title='All Days to Order']" position="attributes">
+      <attribute name="title">Сколько дней в среднем от запроса до заказа</attribute>
+    </xpath>
+    <xpath expr="//div[@title='My Days to Order']" position="attributes">
+      <attribute name="title">Мои: дней от запроса до заказа</attribute>
+    </xpath>
+  </t>
+</templates>

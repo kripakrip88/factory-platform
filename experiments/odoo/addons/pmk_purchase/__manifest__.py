@@ -1,6 +1,6 @@
 {
     "name": "ПМК — поставщики и прайсы",
-    "version": "19.0.1.0.1",
+    "version": "19.0.1.0.2",
     "summary": "Реестр поставщиков прайсов: что возит, куда писать, как часто, когда был последний прайс",
     "description": """
 В Odoo нет понятия «поставщик, у которого мы запрашиваем прайс». Штатный
@@ -36,6 +36,13 @@
     ],
     "post_init_hook": "post_init_hook",
     "license": "LGPL-3",
+    # Панель над «Запросами КП» — подписи и подсказки по-русски (29.09.2026).
+    "assets": {
+        "web.assets_backend": [
+            "pmk_purchase/static/src/scss/purchase_dashboard.scss",
+            "pmk_purchase/static/src/xml/purchase_dashboard.xml",
+        ],
+    },
     "installable": True,
     "application": False,
 }

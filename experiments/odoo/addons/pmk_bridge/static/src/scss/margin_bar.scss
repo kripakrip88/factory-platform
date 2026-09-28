@@ -3,7 +3,8 @@
 // Цвета — тона стадий темы (pmk_theme выводит их CSS-переменными
 // --pmk-tone-*); второй аргумент var() — запасной цвет, если тема не
 // установлена. Заливка — рамочный (более тёмный) тон пары: фоновый на
-// белом не виден. Неполный расчёт — серая штриховка: «не знаем точно».
+// белом не виден. Неполный расчёт — красным с красным числом: сигнал, что
+// маржа завышена (Антон, 29.09.2026: «пусть даёт сигнал»).
 .o_pmk_margin {
   display: inline-flex;
   align-items: center;
@@ -31,15 +32,15 @@
   &[data-state="low"] &__fill { background: var(--pmk-tone-yellow-bd, #e0c46a); }
   &[data-state="bad"] &__fill { background: var(--pmk-tone-red-bd, #e8a79d); }
 
-  &[data-state="incomplete"] &__fill {
-    background: repeating-linear-gradient(
-      45deg,
-      #c9c6bd 0 3px,
-      #e6e3db 3px 6px
-    );
+  // Неполный расчёт: полоска насыщенно-красная (не бледный тон — это
+  // сигнал), число — тёмно-красным.
+  &[data-state="incomplete"] &__fill { background: #e24b4a; }
+
+  &[data-state="incomplete"] &__label {
+    color: #a32d2d;
+    font-weight: 500;
   }
 
-  &[data-state="incomplete"] &__label,
   &[data-state="none"] &__label {
     color: #6b7078;
   }
