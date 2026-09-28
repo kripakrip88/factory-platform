@@ -50,4 +50,32 @@
       </xpath>
     </field>
   </record>
+
+  <!--
+    «Спецификации» вместо «Сводная ведомость материалов» (Антон, 28.09.2026).
+    Так Odoo перевёл Bill of Materials; на заводе это спецификация. Кнопку
+    добавляет mrp — поэтому наследуем его виды, а mrp стоит в зависимостях.
+    Xpath по имени поля, а не по тексту: разметка хранится переведённой.
+  -->
+  <record id="view_product_template_bom_button_ru" model="ir.ui.view">
+    <field name="name">product.template.bom.button.ru</field>
+    <field name="model">product.template</field>
+    <field name="inherit_id" ref="mrp.product_template_form_view_bom_button"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='bom_count']" position="attributes">
+        <attribute name="string">Спецификации</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="view_product_product_bom_button_ru" model="ir.ui.view">
+    <field name="name">product.product.bom.button.ru</field>
+    <field name="model">product.product</field>
+    <field name="inherit_id" ref="mrp.product_product_form_view_bom_button"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='bom_count']" position="attributes">
+        <attribute name="string">Спецификации</attribute>
+      </xpath>
+    </field>
+  </record>
 </odoo>
