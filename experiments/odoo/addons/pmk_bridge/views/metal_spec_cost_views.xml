@@ -370,6 +370,18 @@
         <field name="price_signal_stale" column_invisible="1"/>
         <field name="price_incomplete" optional="hide"/>
         <field name="currency_id" column_invisible="1"/>
+        <!--
+          «Оживить таблицы», приём 4 (29.09.2026): цена клиенту и полоска
+          маржи. Полоске нужны три соседних поля — цена клиенту (нет её —
+          прочерк), признак неполного расчёта (серая полоска, «≤») и число
+          позиций без цены (в подсказку). Логика — js/margin_bar_field.js.
+        -->
+        <field name="price_customer_total" optional="show" sum="Цена клиенту"
+               widget="monetary"/>
+        <field name="margin_pct" string="Маржа" optional="show"
+               widget="pmk_margin_bar"
+               options="{'incomplete_field': 'price_incomplete', 'base_field': 'price_customer_total', 'missing_field': 'no_price_count'}"/>
+        <field name="no_price_count" column_invisible="1"/>
       </xpath>
     </field>
   </record>

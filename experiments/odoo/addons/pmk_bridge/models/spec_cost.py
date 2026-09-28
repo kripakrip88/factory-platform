@@ -292,9 +292,12 @@ class MetalSpecCost(models.Model):
         "Маржа", compute="_compute_customer_totals", store=True,
         help="Цена клиенту минус металл. Работа и переделы сюда ещё не "
              "входят — это не прибыль, а то, из чего её платят.")
+    # aggregator=None: в сгруппированном списке Odoo по умолчанию СКЛАДЫВАЕТ
+    # проценты в строке группы (две строки 0 % и 37,6 % давали «37,6 %»).
+    # Сумма процентов бессмысленна — строку группы оставляем пустой.
     margin_pct = fields.Float(
         "Маржа, %", compute="_compute_customer_totals", store=True,
-        digits=(6, 1))
+        digits=(6, 1), aggregator=None)
 
     no_price_count = fields.Integer(
         "Позиций без цены", compute="_compute_cost_totals", store=True)

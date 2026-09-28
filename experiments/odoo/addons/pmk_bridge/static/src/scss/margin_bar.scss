@@ -1,0 +1,46 @@
+// Полоска маржи в списке «Расчётов» — логика в js/margin_bar_field.js.
+//
+// Цвета — тона стадий темы (pmk_theme выводит их CSS-переменными
+// --pmk-tone-*); второй аргумент var() — запасной цвет, если тема не
+// установлена. Заливка — рамочный (более тёмный) тон пары: фоновый на
+// белом не виден. Неполный расчёт — серая штриховка: «не знаем точно».
+.o_pmk_margin {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+
+  &__track {
+    position: relative;
+    display: inline-block;
+    width: 48px;
+    height: 6px;
+    overflow: hidden;
+    border-radius: 3px;
+    background: #eeece6;
+  }
+
+  &__fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    border-radius: 3px;
+  }
+
+  &[data-state="good"] &__fill { background: var(--pmk-tone-green-bd, #9fcf9b); }
+  &[data-state="low"] &__fill { background: var(--pmk-tone-yellow-bd, #e0c46a); }
+  &[data-state="bad"] &__fill { background: var(--pmk-tone-red-bd, #e8a79d); }
+
+  &[data-state="incomplete"] &__fill {
+    background: repeating-linear-gradient(
+      45deg,
+      #c9c6bd 0 3px,
+      #e6e3db 3px 6px
+    );
+  }
+
+  &[data-state="incomplete"] &__label,
+  &[data-state="none"] &__label {
+    color: #6b7078;
+  }
+}

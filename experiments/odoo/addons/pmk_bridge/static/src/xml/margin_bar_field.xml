@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+  <!-- Полоска маржи: логика и пороги — js/margin_bar_field.js. -->
+  <t t-name="pmk_bridge.MarginBarField">
+    <div class="o_pmk_margin" t-att-data-state="state" t-att-title="title">
+      <span t-if="state !== 'none'" class="o_pmk_margin__track">
+        <span class="o_pmk_margin__fill" t-attf-style="width: {{ width }}%"/>
+      </span>
+      <span class="o_pmk_margin__label" t-esc="label"/>
+    </div>
+  </t>
+</templates>

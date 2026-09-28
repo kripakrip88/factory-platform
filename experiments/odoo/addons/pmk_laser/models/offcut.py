@@ -38,15 +38,17 @@ class LaserOffcut(models.Model):
         domain="[('job_id', '=', job_id)]")
 
     sheet_type = fields.Char(related="job_id.sheet_type", string="Вид листа", store=True, readonly=True)
-    thickness_mm = fields.Float(related="job_id.thickness_mm", string="Толщина, мм", store=True, readonly=True)
+    # «Оживить таблицы» (29.09.2026): размеры и проценты в строке группы не
+    # складываем (Odoo по умолчанию суммирует любое число) — там пусто.
+    thickness_mm = fields.Float(related="job_id.thickness_mm", string="Толщина, мм", store=True, readonly=True, aggregator=None)
 
-    width_mm = fields.Float("Ширина, мм", required=True, digits=(8, 0))
-    length_mm = fields.Float("Длина, мм", required=True, digits=(8, 0))
+    width_mm = fields.Float("Ширина, мм", required=True, digits=(8, 0), aggregator=None)
+    length_mm = fields.Float("Длина, мм", required=True, digits=(8, 0), aggregator=None)
 
-    proposed_width_mm = fields.Float("Предложено, ширина", readonly=True, digits=(8, 0))
-    proposed_length_mm = fields.Float("Предложено, длина", readonly=True, digits=(8, 0))
+    proposed_width_mm = fields.Float("Предложено, ширина", readonly=True, digits=(8, 0), aggregator=None)
+    proposed_length_mm = fields.Float("Предложено, длина", readonly=True, digits=(8, 0), aggregator=None)
     deviation_pct = fields.Float(
-        "Правка, %", compute="_compute_metal", store=True, digits=(6, 1),
+        "Правка, %", compute="_compute_metal", store=True, digits=(6, 1), aggregator=None,
         help="Насколько технолог поправил предложение системы по площади. "
              "Это мерка качества прикидки: пока правки крупные, точную "
              "геометрию раскладки разбирать рано или наоборот — пора.")

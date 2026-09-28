@@ -15,9 +15,12 @@
         <field name="finished_at"/>
         <field name="duration_minutes" sum="Лист занял, мин"/>
         <field name="cut_minutes" sum="Чистая резка, мин"/>
+        <!-- «Оживить таблицы» (29.09.2026): цвет плашки — как тон кнопки стадий
+             в документе (начало пути серое, в работе голубое, готово
+             зелёное, тупик розовый); бледный вид плашки — тема. -->
         <field name="state" widget="badge"
                decoration-success="state == 'done'"
-               decoration-warning="state == 'running'"
+               decoration-info="state == 'running'"
                decoration-muted="state == 'waiting'"/>
         <field name="excluded" optional="show"/>
         <field name="exclude_reason" optional="hide"/>

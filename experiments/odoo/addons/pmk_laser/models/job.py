@@ -146,7 +146,11 @@ class LaserJob(models.Model):
         "Полезный вес, кг", compute="_compute_metal", store=True, digits=(12, 1),
         help="Вес разложенных деталей. За него платит заказчик и от него "
              "считается премия — не от веса купленного листа.")
-    utilization_pct = fields.Float("Использование, %", compute="_compute_metal", store=True, digits=(5, 1))
+    # «Оживить таблицы» (29.09.2026): в строке группы пусто. Сумма процентов
+    # (по умолчанию у Odoo) бессмысленна, а простое среднее обманывает:
+    # задание без раскладки хранит 0 % и тянет группу вниз, и оно не
+    # взвешено по металлу.
+    utilization_pct = fields.Float("Использование, %", compute="_compute_metal", store=True, digits=(5, 1), aggregator=None)
 
     premium_rate_rub = fields.Float(
         "Ставка премии, ₽/т", compute="_compute_premium", store=True, digits=(8, 0))

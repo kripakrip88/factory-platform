@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+  <!-- Логика — js/stage_badge_field.js. -->
+  <t t-name="pmk_deal.StageBadgeField">
+    <span t-if="props.readonly and props.record.data[props.name]"
+          class="badge rounded-pill"
+          t-attf-class="o_badge_color_#{props.record.data.stage_id_color or 0}"
+          t-esc="props.record.data[props.name].display_name"/>
+    <t t-else="" t-call="mail.Many2OneFieldRotting"/>
+  </t>
+</templates>

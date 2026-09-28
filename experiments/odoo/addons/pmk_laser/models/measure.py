@@ -52,7 +52,8 @@ class LaserMeasure(models.Model):
     machine_id = fields.Many2one(
         "pmk.laser.machine", "Станок", compute="_compute_from_job", store=True, index=True)
     sheet_type = fields.Char("Вид листа", compute="_compute_from_job", store=True)
-    thickness_mm = fields.Float("Толщина, мм", compute="_compute_from_job", store=True, digits=(6, 2))
+    # «Оживить таблицы» (29.09.2026): толщины в строке группы не складываем.
+    thickness_mm = fields.Float("Толщина, мм", compute="_compute_from_job", store=True, digits=(6, 2), aggregator=None)
 
     duration_minutes = fields.Float("Лист занял, мин", compute="_compute_duration", store=True, digits=(8, 1))
     cut_minutes = fields.Float(

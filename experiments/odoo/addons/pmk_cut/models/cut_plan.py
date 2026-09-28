@@ -54,7 +54,9 @@ class PmkCutPlan(models.Model):
     total_bars = fields.Integer("Заготовок", compute="_compute_totals", store=True)
     total_weight = fields.Float("Взято металла, кг", compute="_compute_totals", store=True, digits=(12, 2))
     scrap_weight = fields.Float("В лом, кг", compute="_compute_totals", store=True, digits=(12, 2))
-    waste_ratio = fields.Float("Отход, %", compute="_compute_totals", store=True, digits=(5, 2))
+    # «Оживить таблицы» (29.09.2026): в строке группы пусто — сумма процентов
+    # бессмысленна, а простое среднее не взвешено по металлу.
+    waste_ratio = fields.Float("Отход, %", compute="_compute_totals", store=True, digits=(5, 2), aggregator=None)
     has_unplaced = fields.Boolean("Есть неразмещённые", compute="_compute_totals", store=True)
 
     @api.depends("result_ids.bars_used", "result_ids.weight_total",

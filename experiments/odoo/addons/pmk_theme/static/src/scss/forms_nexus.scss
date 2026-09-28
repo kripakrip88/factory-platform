@@ -1111,3 +1111,105 @@ $pmk-stage-tones: (
   text-decoration: underline;
   text-underline-offset: 2px;
 }
+
+// ═══ Таблицы: «оживить таблицы» ═══════════════════════════════════════════
+//
+// Антон, 29.09.2026, после смены палитры: «теперь стало скучно внутри
+// таблиц»; по макету — «делай всё из предложения». Пять приёмов, все про
+// смысл, а не украшение:
+//   1. статус плашкой в тон кнопки стадий (ниже, «Плашки статусов»);
+//   2. нули бледные (js/list_zero.js + правило ниже);
+//   3. сроки по смыслу — штатный виджет remaining_days в видах сделок и
+//      закупок (просрочено красным, сегодня янтарным);
+//   4. полоска маржи в «Расчётах» — виджет pmk_margin_bar в pmk_bridge;
+//   5. тёплая шапка таблицы, строки групп бледным лаймом, итоги жирные.
+
+// Тона стадий — CSS-переменными: ими пользуются модули, до SCSS-карты
+// которых не дотянуться (полоска маржи в pmk_bridge собирается раньше).
+:root {
+  @each $tone, $pair in $pmk-stage-tones {
+    --pmk-tone-#{$tone}-bg: #{nth($pair, 1)};
+    --pmk-tone-#{$tone}-bd: #{nth($pair, 2)};
+  }
+}
+
+// ─── 1. Плашки статусов ─────────────────────────────────────────────────────
+//
+// Виджет badge ядра красит плашку насыщенной заливкой по decoration-*
+// (text-bg-success и т. п., у Bootstrap — с !important): зелёный, жёлтый,
+// бирюзовый, красный во всю силу. Делаем их бледными, тем же тоном, что
+// кнопка стадии в документе, с тёмным текстом того же цвета. Значение
+// decoration в наших видах выставлено по той же логике, что тон кнопки:
+// начало пути — серое (muted), в работе — голубое (info), готово — зелёное
+// (success), тупик — розовое (danger), «ждёт решения» — жёлтое (warning).
+// Плашка с цветом стадии (color_field, класс o_badge_color_N) — тоном
+// палитры Odoo того же номера, как кнопка стадии сделки.
+$pmk-badge-tones: (
+  "text-bg-300": grey, "text-bg-secondary": grey, "text-bg-light": grey,
+  "text-bg-info": blue, "text-bg-primary": blue,
+  "text-bg-warning": yellow,
+  "text-bg-success": green,
+  "text-bg-danger": red,
+  "o_badge_color_0": grey, "o_badge_color_1": red, "o_badge_color_2": orange,
+  "o_badge_color_3": yellow, "o_badge_color_4": cyan, "o_badge_color_5": purple,
+  "o_badge_color_6": almond, "o_badge_color_7": teal, "o_badge_color_8": blue,
+  "o_badge_color_9": raspberry, "o_badge_color_10": green, "o_badge_color_11": violet,
+);
+// Текст — тёмный оттенок того же цвета (контраст к своему фону выше 7:1).
+$pmk-badge-ink: (
+  grey: #444441, red: #791f1f, orange: #712b13, yellow: #633806, cyan: #0c4a52,
+  purple: #3c3489, almond: #5a4526, teal: #085041, blue: #0c447c,
+  raspberry: #72243e, green: #27500a, violet: #3c3489,
+);
+
+// .o_field_pmk_stage_badge — стадия в списке сделок (pmk_deal).
+@each $cls, $tone in $pmk-badge-tones {
+  .o_field_badge > .badge.#{$cls},
+  .o_field_pmk_stage_badge > .badge.#{$cls} {
+    border: 1px solid nth(map-get($pmk-stage-tones, $tone), 2) !important;
+    background-color: nth(map-get($pmk-stage-tones, $tone), 1) !important;
+    color: map-get($pmk-badge-ink, $tone) !important;
+    font-weight: 500;
+  }
+}
+
+// ─── 2. Нули бледные ────────────────────────────────────────────────────────
+// Кроме строк, которые Odoo красит целиком по смыслу (decoration на <list>:
+// просроченное красным, черновик голубым…): там серый ноль выбивался бы из
+// цвета строки. У таких строк в классах есть text-* — их и пропускаем.
+.o_list_renderer .o_data_row:not([class*="text-"]) > td.o_pmk_zero {
+  color: #b4b2a9;
+}
+
+// ─── 5. Шапка, группы, итоги ────────────────────────────────────────────────
+//
+// Шапка: ячейки шапки красит переменная ядра --ListRenderer-thead-bg-color
+// (серый #f8f9fa); тема ставила свой цвет на thead, но th его перекрывали.
+// Строки групп: ячейки берут фон из --table-bg — ставим бледный лайм,
+// наведение ядра поверх сохраняется. Итоги групп в ядре fw-bold = 500
+// (так настроен Bootstrap в Odoo) — делаем по-настоящему жирными.
+.o_list_renderer {
+  --ListRenderer-thead-bg-color: #f5f3ee;
+
+  tr.o_group_header {
+    --table-bg: #eef5c8;
+
+    .o_list_number > span.fw-bold {
+      font-weight: 700 !important;
+    }
+  }
+
+  // Номер или название документа — первая колонка «name» — чуть плотнее:
+  // по нему строку ищут глазами.
+  .o_data_row > td.o_data_cell[name="name"] {
+    font-weight: 500;
+  }
+}
+
+// Тёмный режим: шапка тёмная (тема красит в нём текст шапки светлым). Строки
+// группы и нули — как в светлом: ячейки таблицы в тёмном режиме темы
+// остаются светлыми, а ядро держит подпись группы чёрной (text-black с
+// !important) — на тёмной подложке её было бы не прочесть.
+body.o_nexus_dark .o_list_renderer {
+  --ListRenderer-thead-bg-color: #1e2025;
+}

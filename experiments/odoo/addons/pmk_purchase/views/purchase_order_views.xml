@@ -27,4 +27,32 @@
       </xpath>
     </field>
   </record>
+
+  <!--
+    Список «Запросы КП» — «оживить таблицы» (29.09.2026).
+    • Строка черновика и отправленного запроса целиком была голубой (ядро:
+      decoration-info на list) — вся таблица синела. Статус видно плашкой.
+    • Цвет плашки — как тон кнопки стадий закупки: «Запрос КП» серый (начало
+      пути), «Запрос КП отправлен» голубой, «К согласованию» жёлтый (вне
+      пути, ждёт решения), «Заказ на покупку» зелёный, отменён — розовый.
+      Условия взаимоисключающие: плашка берёт первое сработавшее по порядку
+      атрибутов, а переопределённые атрибуты ядра стоят раньше новых.
+  -->
+  <record id="purchase_order_kpis_tree_tones" model="ir.ui.view">
+    <field name="name">purchase.order.kpis.list.pmk.tones</field>
+    <field name="model">purchase.order</field>
+    <field name="inherit_id" ref="purchase.purchase_order_kpis_tree"/>
+    <field name="arch" type="xml">
+      <xpath expr="//list" position="attributes">
+        <attribute name="decoration-info"/>
+      </xpath>
+      <xpath expr="//field[@name='state']" position="attributes">
+        <attribute name="decoration-success">state == 'purchase'</attribute>
+        <attribute name="decoration-warning">state == 'to approve'</attribute>
+        <attribute name="decoration-info">state == 'sent'</attribute>
+        <attribute name="decoration-muted">state == 'draft'</attribute>
+        <attribute name="decoration-danger">state == 'cancel'</attribute>
+      </xpath>
+    </field>
+  </record>
 </odoo>

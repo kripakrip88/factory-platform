@@ -172,9 +172,12 @@
         <field name="total_qty"/>
         <field name="total_area" sum="Площадь, м²" optional="show"/>
         <field name="total_weight" sum="Итого, кг"/>
+        <!-- «Оживить таблицы» (29.09.2026): цвет плашки — как тон кнопки стадий
+             в документе (начало пути серое, в работе голубое, готово
+             зелёное, тупик розовый); бледный вид плашки — тема. -->
         <field name="state" widget="badge"
-               decoration-info="state == 'draft'"
-               decoration-warning="state == 'confirmed'"
+               decoration-muted="state == 'draft'"
+               decoration-info="state == 'confirmed'"
                decoration-success="state == 'done'"/>
       </list>
     </field>

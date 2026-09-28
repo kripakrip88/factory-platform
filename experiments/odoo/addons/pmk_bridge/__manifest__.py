@@ -74,6 +74,10 @@
             "pmk_bridge/static/src/scss/spec_cost.scss",
             "pmk_bridge/static/src/js/product_lines_cost.js",
             "pmk_bridge/static/src/xml/product_lines_cost.xml",
+            # Полоска маржи в списке «Расчётов» («оживить таблицы», 29.09.2026).
+            "pmk_bridge/static/src/scss/margin_bar.scss",
+            "pmk_bridge/static/src/js/margin_bar_field.js",
+            "pmk_bridge/static/src/xml/margin_bar_field.xml",
         ],
     },
     "installable": True,

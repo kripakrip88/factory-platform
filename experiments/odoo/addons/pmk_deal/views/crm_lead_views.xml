@@ -121,4 +121,34 @@
     </field>
   </record>
 
+  <!--
+    Список сделок — «оживить таблицы» (29.09.2026).
+    • Стадия — плашкой в цвете стадии (как кнопка стадии в сделке: цвет из
+      «Настройки CRM → Этапы»). Было — простой текст (badge_rotting ядра
+      рисует плашку только у «залежавшейся» сделки, сроки залёживания не
+      заданы). Свой виджет pmk_stage_badge, а не штатный badge: штатный
+      только для чтения, и стадию нельзя было бы сменить в списке (у списка
+      multi_edit). В правке строки — штатный редактор стадии.
+    • «Ожидаемое закрытие» — видно по умолчанию и по смыслу: просрочено —
+      красным («5 дней назад»), сегодня — янтарным, дальше — обычным. Только
+      у сделок в работе: у выигранной и проигранной срок уже не горит.
+      [@optional] обязателен: выше в том же списке есть скрытая служебная
+      колонка date_deadline.
+  -->
+  <record id="view_crm_lead_list_tones" model="ir.ui.view">
+    <field name="name">crm.lead.list.pmk.tones</field>
+    <field name="model">crm.lead</field>
+    <field name="inherit_id" ref="crm.crm_case_tree_view_oppor"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='stage_id']" position="attributes">
+        <attribute name="widget">pmk_stage_badge</attribute>
+      </xpath>
+      <xpath expr="//field[@name='date_deadline'][@optional]" position="attributes">
+        <attribute name="widget">remaining_days</attribute>
+        <attribute name="optional">show</attribute>
+        <attribute name="options">{'classes': {'danger': "days &lt; 0 and record.won_status == 'pending'", 'warning': "days == 0 and record.won_status == 'pending'", 'bf': "days &lt;= 0 and record.won_status == 'pending'"}}</attribute>
+      </xpath>
+    </field>
+  </record>
+
 </odoo>

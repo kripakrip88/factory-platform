@@ -7,7 +7,9 @@
     <field name="arch" type="xml">
       <!-- Реестр обрезков: габарит впереди веса. По габариту потом ищут, куда
            кусок влезет; по весу этого не сделать — решение владельца. -->
-      <list string="Обрезки" decoration-muted="state == 'scrap'" decoration-warning="state == 'proposal'">
+      <!-- Жёлтую строку для «Предложен системой» сняли: статус теперь видно
+           плашкой, а жёлтая строка целиком спорила с ней (29.09.2026). -->
+      <list string="Обрезки" decoration-muted="state == 'scrap'">
         <field name="job_id"/>
         <field name="sheet_line_id" optional="show"/>
         <field name="sheet_type"/>
@@ -17,10 +19,13 @@
         <field name="area_m2" sum="Площадь, м²"/>
         <field name="mass_kg" sum="Масса, кг"/>
         <field name="deviation_pct" optional="show"/>
+        <!-- «Оживить таблицы» (29.09.2026): цвет плашки — как тон кнопки стадий
+             в документе (начало пути серое, в работе голубое, готово
+             зелёное, тупик розовый); бледный вид плашки — тема. -->
         <field name="state" widget="badge"
+               decoration-muted="state == 'proposal'"
                decoration-success="state == 'confirmed'"
-               decoration-warning="state == 'proposal'"
-               decoration-muted="state == 'scrap'"/>
+               decoration-danger="state == 'scrap'"/>
         <button name="action_confirm" type="object" string="Подтвердить"
                 class="btn-primary" icon="fa-check" invisible="state == 'confirmed'"/>
         <button name="action_scrap" type="object" string="В лом"

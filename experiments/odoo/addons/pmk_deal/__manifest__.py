@@ -20,6 +20,14 @@
         "views/crm_lead_views.xml",
         "views/metal_spec_views.xml",
     ],
+    # Стадия в списке сделок плашкой в цвете стадии («оживить таблицы»,
+    # 29.09.2026) — свой виджет поверх штатного редактора стадии.
+    "assets": {
+        "web.assets_backend": [
+            "pmk_deal/static/src/js/stage_badge_field.js",
+            "pmk_deal/static/src/xml/stage_badge_field.xml",
+        ],
+    },
     "installable": True,
     "application": False,
     "auto_install": False,

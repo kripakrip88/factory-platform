@@ -39,7 +39,9 @@ class LaserNorm(models.Model):
 
     machine_id = fields.Many2one("pmk.laser.machine", "Станок", required=True, index=True, ondelete="cascade")
     sheet_type = fields.Char("Вид листа", required=True)
-    thickness_mm = fields.Float("Толщина, мм", required=True, digits=(6, 2))
+    # «Оживить таблицы» (29.09.2026): толщины, скорости, минуты на метр и
+    # разброс в строке группы не складываем (у Odoo по умолчанию сумма).
+    thickness_mm = fields.Float("Толщина, мм", required=True, digits=(6, 2), aggregator=None)
 
     mode = fields.Selection(
         [(timing.MODE_NONE, "Норматива нет"),
@@ -58,18 +60,18 @@ class LaserNorm(models.Model):
     last_sample = fields.Date("Последний замер", readonly=True)
 
     min_per_m = fields.Float(
-        "Минут на метр реза", readonly=True, digits=(8, 4),
+        "Минут на метр реза", readonly=True, digits=(8, 4), aggregator=None,
         help="Переносимая величина: столько минут уходит на метр реза вместе с "
              "проколами и холостым ходом. Есть всегда, когда есть хоть один "
              "полный замер.")
     speed_mm_min = fields.Float(
-        "Скорость, мм/мин", readonly=True, digits=(10, 1),
+        "Скорость, мм/мин", readonly=True, digits=(10, 1), aggregator=None,
         help="Эффективная скорость участка, а не паспортная скорость луча: "
              "холостые перемещения сидят внутри. Для планирования стола нужна "
              "именно она.")
-    pierce_time_s = fields.Float("Прокол, с", readonly=True, digits=(8, 2))
+    pierce_time_s = fields.Float("Прокол, с", readonly=True, digits=(8, 2), aggregator=None)
     spread_pct = fields.Float(
-        "Разброс, %", readonly=True, digits=(6, 1),
+        "Разброс, %", readonly=True, digits=(6, 1), aggregator=None,
         help="Наибольшее расхождение факта с моделью. Пока держится в пределах "
              "десятка процентов — нормативу можно планировать смену.")
 
