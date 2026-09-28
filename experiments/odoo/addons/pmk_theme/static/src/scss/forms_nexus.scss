@@ -685,3 +685,43 @@ body.o_nexus_dark {
 }
 
 .pmk-kpi__dot { opacity: 0.4; }
+
+// ─── Кнопки-счётчики над формой ─────────────────────────────────────────────
+//
+// Разбор UX, шаг 3 (решение Антона 28.09.2026, скрин 31): только значок и
+// число, надпись — во всплывающей подсказке. Подсказку и пометку нуля ставит
+// static/src/js/stat_buttons.js.
+//
+// Было: надписи во всю ширину («Коммерческие предложения» — 217 px), значки
+// и числа оранжевые (правило копии темы buttons.scss с !important и основной
+// цвет Odoo), ноль выглядел так же, как число, число — 12 px.
+// Стало: значок серый, число чёрное полужирное 14 px, ноль серый обычный.
+// min-width ядра (105 px) снят — иначе значок остался бы в широкой пустой
+// кнопке.
+.o-form-buttonbox .oe_stat_button {
+  min-width: 0 !important;
+  padding: 0 12px !important;
+  gap: 6px;
+
+  .o_stat_text {
+    display: none !important;
+  }
+
+  .o_button_icon {
+    color: #4b4f58 !important;
+    font-size: 18px;
+    margin-right: 0 !important;
+  }
+
+  .o_stat_value {
+    color: #14141a !important;
+    font-size: 14px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &.o_pmk_stat_zero .o_stat_value {
+    color: #9aa0a6 !important;
+    font-weight: 400;
+  }
+}

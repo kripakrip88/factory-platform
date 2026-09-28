@@ -70,6 +70,9 @@
             # Строка пути: номера не обрезаются, подсказки по-русски
             # (разбор UX, шаг 2, 28.09.2026).
             "pmk_theme/static/src/xml/breadcrumbs.xml",
+            # Кнопки-счётчики: подсказка вместо надписи, ноль серым
+            # (разбор UX, шаг 3, 28.09.2026).
+            "pmk_theme/static/src/js/stat_buttons.js",
             "pmk_theme/static/src/xml/navbar.xml",
             "pmk_theme/static/src/xml/chatter.xml",
         ],
