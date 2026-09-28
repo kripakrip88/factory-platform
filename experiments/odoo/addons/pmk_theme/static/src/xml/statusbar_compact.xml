@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Полоса стадий одной кнопкой (разбор UX, шаг 4) — шаблонная часть.
+  Логика и объяснение — js/statusbar_compact.js.
+
+  1. Кнопка открывается всегда. В ядре она выключена, если стадию нельзя
+     менять руками (у закупки, производства, счёта стадия идёт от кнопок
+     документа). Со стрелками путь был виден и так, а у одной кнопки без
+     списка пропал бы: видно только «Черновик», а что дальше — нет. Пункты
+     списка при этом не нажимаются (disabled + проверка в selectItem).
+  2. Класс o_pmk_stage_toggle — к нему привязано оформление.
+
+  ⚠️ ЧЕТЫРЕ ОДИНАКОВЫХ БЛОКА — НЕ ДУБЛЬ ПО НЕБРЕЖНОСТИ. Наследники полосы
+  (время в стадии, сделка CRM, проводка счёта) собраны как primary-копии
+  web.StatusBarField и берут родителя в том виде, каким он был к моменту их
+  загрузки. Наш файл грузится позже, и правка одного web.StatusBarField до
+  них не дошла бы. Поэтому правим каждый шаблон отдельно.
+-->
+<templates xml:space="preserve">
+
+  <t t-inherit="web.StatusBarField" t-inherit-mode="extension">
+    <xpath expr="//button[@t-ref='dropdown']" position="attributes">
+      <attribute name="t-att-disabled"/>
+      <attribute name="class" add="o_pmk_stage_toggle" separator=" "/>
+    </xpath>
+  </t>
+
+  <t t-inherit="mail.StatusBarDurationField" t-inherit-mode="extension">
+    <xpath expr="//button[@t-ref='dropdown']" position="attributes">
+      <attribute name="t-att-disabled"/>
+      <attribute name="class" add="o_pmk_stage_toggle" separator=" "/>
+    </xpath>
+  </t>
+
+  <t t-inherit="mail.RottingStatusBarDurationField" t-inherit-mode="extension">
+    <xpath expr="//button[@t-ref='dropdown']" position="attributes">
+      <attribute name="t-att-disabled"/>
+      <attribute name="class" add="o_pmk_stage_toggle" separator=" "/>
+    </xpath>
+  </t>
+
+  <t t-inherit="account.MoveStatusBarSecuredField" t-inherit-mode="extension">
+    <xpath expr="//button[@t-ref='dropdown']" position="attributes">
+      <attribute name="t-att-disabled"/>
+      <attribute name="class" add="o_pmk_stage_toggle" separator=" "/>
+    </xpath>
+  </t>
+
+</templates>

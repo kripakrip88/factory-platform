@@ -827,3 +827,184 @@ body.o_nexus_dark {
     white-space: nowrap;
   }
 }
+
+// ─── Полоса стадий ──────────────────────────────────────────────────────────
+//
+// Разбор UX, шаг 4 (Антон, 28.09.2026): «кнопки этапов переделал на более
+// аккуратные и выпадашкой, очень много места занимают и отвлекают внимание».
+// Логика — js/statusbar_compact.js, шаблоны — xml/statusbar_compact.xml.
+//
+// Было: ряд стрелок, текущая — ярко-оранжевая с белым текстом (контраст
+// 2,9:1), пройденные и будущие одинаково светло-серые.
+// Стало: одна кнопка в цвет кнопок-счётчиков. В ней деления пути (чёрные —
+// пройдено вместе с текущей, светлые — впереди), название, срок в стадии и
+// стрелка списка. Корпоративные цвета — чёрный и лайм (шаг 6 разбора): лайм
+// только заливкой под чёрным текстом (текущая стадия в списке), лаймом по
+// белому не пишем — не читается.
+//
+// Селектор с .o_form_view и !important: тема theme_nexus красит .btn-secondary
+// и .o_arrow_button (на телефоне кнопка получает этот класс) с !important.
+// :not(.d-none) — как у ядра: кнопку, спрятанную ядром (у поля нет ни одной
+// стадии), наш display не должен возвращать на экран.
+// Отступы по вертикали не трогаем — высота та же, что у кнопок шапки слева
+// («Выиграно», «Потерян»), иначе кнопка висела бы на 10 px выше их низа.
+.o_form_view .o_statusbar_status > .btn.o_pmk_stage_toggle:not(.d-none) {
+  display: inline-flex !important;
+  align-self: center;
+  align-items: center;
+  gap: 8px;
+  max-width: 360px;
+  margin: 0 !important;
+  padding-right: 12px !important;
+  padding-left: 12px !important;
+  border: 1px solid rgb(234, 230, 220) !important;
+  border-radius: 8px !important;
+  background: #fff !important;
+  box-shadow: none !important;
+  clip-path: none !important;
+  color: #14141a !important;
+  font-weight: 600;
+  white-space: nowrap;
+
+  &:hover,
+  &.show,
+  &[aria-expanded="true"] {
+    border-color: #9aa0a6 !important;
+    background: #f3f2ef !important;
+    color: #14141a !important;
+  }
+
+  // Фокус с клавиатуры: тема гасит outline, а наш box-shadow: none погасил
+  // бы и её кольцо — кнопку в фокусе было бы не отличить.
+  &:focus-visible {
+    border-color: #14141a !important;
+    box-shadow: 0 0 0 3px rgba(20, 20, 26, 0.18) !important;
+  }
+
+  // На телефоне ядро рисует рамку-стрелку отдельным слоем ::before поверх
+  // содержимого — белые уголки резали бы деления и стрелку списка.
+  &::before {
+    content: none !important;
+  }
+
+  // Своя стрелка списка: у ядра она то есть, то нет (на телефоне класс
+  // o_arrow_button её гасит), а должна быть всегда — это кнопка со списком.
+  &::after {
+    display: inline-block !important;
+    margin: 0 !important;
+    border: 0 !important;
+    content: "\f107" !important;
+    color: #6b7078;
+    font-family: FontAwesome;
+    font-weight: 400;
+  }
+
+  .o_pmk_stage_steps {
+    display: inline-flex;
+    gap: 3px;
+  }
+
+  .o_pmk_step {
+    display: block;
+    width: 12px;
+    height: 4px;
+    border-radius: 2px;
+    background: #e0ddd5;
+  }
+
+  .o_pmk_step_done {
+    background: #14141a;
+  }
+
+  .o_pmk_stage_name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .o_pmk_stage_time {
+    color: #6b7078;
+    font-size: 12px;
+    font-weight: 400;
+  }
+}
+
+// Список стадий. Меню — всплывающий слой вне формы, поэтому узнаём его по
+// своим пунктам.
+.o-dropdown--menu:has(.o_pmk_stage_item) {
+  min-width: 220px;
+  padding: 4px !important;
+  border: 1px solid rgb(234, 230, 220) !important;
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(20, 20, 26, 0.12);
+}
+
+.o-dropdown--menu .dropdown-item.o_pmk_stage_item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: transparent !important;
+  color: #14141a !important;
+  font-size: 13px;
+
+  // Место под значок слева: галочка у пройденных, точка у текущей.
+  &::before {
+    flex: 0 0 14px;
+    content: "";
+    color: #6b7078;
+    font-family: FontAwesome;
+    font-size: 12px;
+    text-align: center;
+  }
+
+  // Время в стадии (mail) лежит во вложенном span — прижимаем к правому краю.
+  > span {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .text-muted {
+    margin-left: auto !important;
+  }
+
+  &:hover,
+  &:focus,
+  &.focus {
+    background: #f3f2ef !important;
+  }
+
+  &.o_pmk_stage_passed {
+    color: #6b7078 !important;
+
+    &::before {
+      content: "\f00c";
+    }
+  }
+
+  &.o_pmk_stage_folded {
+    color: #6b7078 !important;
+  }
+
+  // Пункты стадии, которую руками не меняют, — не «выключенные», а просто
+  // список: читаются обычным цветом, но не нажимаются.
+  &.disabled {
+    opacity: 1;
+    pointer-events: none;
+  }
+
+  &.active {
+    background: #c8f000 !important;
+    color: #14141a !important;
+    font-weight: 600;
+
+    &::before {
+      content: "\f111";
+      color: #14141a;
+      font-size: 7px;
+    }
+  }
+}

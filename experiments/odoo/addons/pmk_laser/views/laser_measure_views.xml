@@ -40,7 +40,9 @@
                   class="btn-primary" icon="fa-play" invisible="state != 'waiting'"/>
           <button name="action_finish" type="object" string="Закончил"
                   class="btn-primary" icon="fa-stop" invisible="state != 'running'"/>
-          <field name="state" widget="statusbar"/>
+          <!-- statusbar_visible — путь стадий для кнопки-выпадашки темы
+               (деления и галочки пройденных, разбор UX, шаг 4). -->
+          <field name="state" widget="statusbar" statusbar_visible="waiting,running,done"/>
         </header>
         <sheet>
           <group>

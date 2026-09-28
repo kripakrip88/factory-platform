@@ -73,6 +73,10 @@
             # Кнопки-счётчики: подсказка вместо надписи, ноль серым
             # (разбор UX, шаг 3, 28.09.2026).
             "pmk_theme/static/src/js/stat_buttons.js",
+            # Полоса стадий одной кнопкой со списком вместо ряда стрелок
+            # (разбор UX, шаг 4, 28.09.2026).
+            "pmk_theme/static/src/js/statusbar_compact.js",
+            "pmk_theme/static/src/xml/statusbar_compact.xml",
             "pmk_theme/static/src/xml/navbar.xml",
             "pmk_theme/static/src/xml/chatter.xml",
         ],
