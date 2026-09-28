@@ -11,7 +11,9 @@
 """
 
 import base64
+import html
 import logging
+import re
 
 from markupsafe import Markup
 
@@ -21,8 +23,33 @@ from odoo.exceptions import UserError
 _logger = logging.getLogger(__name__)
 
 
+# Превью письма — только видимый текст. Разбор UX, шаг 12 (ML-04): модуль
+# mail_client вырезал теги, но оставлял содержимое <style> и <head>, и у
+# писем B2B-Center вместо начала текста показывалось
+# «.ExternalClass { width: 100%; } img { border: 0 none;…». А по превью писем
+# торговых площадок решают, открывать ли письмо.
+_PREVIEW_INVISIBLE = re.compile(
+    r"<(style|script|head|title)\b[^>]*>.*?</\1\s*>", re.IGNORECASE | re.DOTALL)
+_PREVIEW_COMMENTS = re.compile(r"<!--.*?-->", re.DOTALL)
+_PREVIEW_TAGS = re.compile(r"<[^>]+>")
+
+
 class MailClientMessage(models.Model):
     _inherit = "mail.client.message"
+
+    @staticmethod
+    def _build_preview(raw):
+        """Первые 255 знаков видимого текста письма: без стилей, скриптов,
+        заголовка документа и HTML-комментариев (в них Outlook прячет свои
+        условные стили); сущности вроде &nbsp; — в символы."""
+        if not raw:
+            return False
+        text = _PREVIEW_COMMENTS.sub(" ", raw)
+        text = _PREVIEW_INVISIBLE.sub(" ", text)
+        text = _PREVIEW_TAGS.sub(" ", text)
+        text = html.unescape(text)
+        text = re.sub(r"\s+", " ", text).strip()
+        return text[:255] or False
 
     # ondelete='set null', а не cascade и не restrict: удалённый лид не должен
     # ни утаскивать за собой письмо, ни мешать его удалить. После удаления лида
