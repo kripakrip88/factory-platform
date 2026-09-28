@@ -37,6 +37,21 @@ const NOT_COMPACT = new Set(["hr.VersionsTimeline"]);
 // Больше шести делений не читаются как «шаги» — тогда только название.
 const MAX_STEPS = 6;
 
+// Тупиковые исходы — не шаг пути, даже если вид перечислил их в
+// statusbar_visible. У служебных писем Odoo путь «В очереди → Отправлено →
+// Получено → Ошибка → Отменено»: без этого списка 115 отменённых писем
+// показали бы полную полосу и галочки у «Отправлено» и «Получено».
+const OFF_PATH = new Set([
+    "cancel",
+    "canceled",
+    "cancelled",
+    "error",
+    "exception",
+    "rejected",
+    "scrap",
+    "lost",
+]);
+
 patch(StatusBarField.prototype, {
     get pmkCompact() {
         return !NOT_COMPACT.has(this.constructor.template);
@@ -64,7 +79,7 @@ patch(StatusBarField.prototype, {
         }
         const { visibleSelection } = this.props;
         if (this.field.type === "selection") {
-            return visibleSelection.includes(item.value);
+            return visibleSelection.includes(item.value) && !OFF_PATH.has(item.value);
         }
         return true;
     },
