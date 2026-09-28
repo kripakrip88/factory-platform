@@ -1213,3 +1213,45 @@ $pmk-badge-ink: (
 body.o_nexus_dark .o_list_renderer {
   --ListRenderer-thead-bg-color: #1e2025;
 }
+
+// ─── Расчёт: карточки итогов и плашка неполного расчёта ────────────────────
+//
+// Разбор UX, шаг 11 (28.09.2026).
+// • pmk-kpi__sub — вторая строка карточки мелко: килограммы под тоннами,
+//   процент маржи под суммой. Процент раньше стоял в строке суммы, у той
+//   white-space: nowrap — и «63,9 %» вылезал за край карточки.
+// • pmk-kpi__card--warn — карточка при неполном расчёте: бледно-жёлтая, как
+//   тон «внимание» стадий; текст пометки — тёмно-янтарный.
+// • pmk-price-alert — плашка над шапкой: какие позиции без цены.
+.pmk-kpi__sub {
+  margin-top: 3px;
+  font-size: 12px;
+  color: #6b6f76;
+  font-variant-numeric: tabular-nums;
+
+  .o_field_widget {
+    display: inline;
+    color: inherit;
+    font-size: inherit;
+  }
+}
+
+.pmk-kpi__card--warn {
+  border-color: #ead68e;
+  background: #fbf3d5;
+
+  .pmk-kpi__sub { color: #633806; }
+}
+
+.pmk-price-alert {
+  border: 1px solid #ead68e;
+  border-radius: 10px;
+  background: #fbf3d5;
+  color: #633806;
+
+  .o_field_widget {
+    display: inline;
+    color: inherit;
+    font-weight: 500;
+  }
+}

@@ -41,12 +41,25 @@ class CrmLeadDeal(models.Model):
             "view_mode": "list,form",
             "domain": [("opportunity_id", "=", self.id)],
             # Клиент и сделка подставляются в новый расчёт: менеджер пришёл
-            # сюда со сделки, повторять её выбор руками незачем.
+            # сюда со сделки, повторять её выбор руками незачем. Клиент —
+            # КОМПАНИЯ контакта сделки, сам человек — контактное лицо
+            # (разбор UX, шаг 11); предмет КП — черновиком из названия сделки.
             "context": {
                 "default_opportunity_id": self.id,
-                "default_partner_id": self.partner_id.id,
+                "default_partner_id": self.partner_id.commercial_partner_id.id,
+                "default_contact_id": self._pmk_contact_person().id,
+                "default_note": self.name,
             },
         }
+
+
+    def _pmk_contact_person(self):
+        """Человек из «Контакта» сделки, если это человек внутри компании."""
+        self.ensure_one()
+        person = self.partner_id
+        if person and not person.is_company and person.parent_id:
+            return person
+        return self.env["res.partner"]
 
 
 class MetalSpecDeal(models.Model):
@@ -61,11 +74,21 @@ class MetalSpecDeal(models.Model):
 
     @api.onchange("opportunity_id")
     def _onchange_opportunity_id(self):
-        """Клиент берётся из сделки, если в расчёте его ещё нет.
+        """Клиент, контактное лицо и предмет КП — из сделки, если их ещё нет.
 
         Не перетираем заполненного: у сделки может стоять головная компания, а
         считают для филиала — и выбор менеджера важнее автоподстановки.
+        Клиент — компания контакта сделки, человек — контактное лицо (разбор
+        UX, шаг 11): иначе клиентом расчёта становился инженер заказчика, и
+        список, поиск и группировка «Клиент» разбивались по людям.
         """
         for spec in self:
-            if spec.opportunity_id and not spec.partner_id:
-                spec.partner_id = spec.opportunity_id.partner_id
+            deal = spec.opportunity_id
+            if not deal:
+                continue
+            if not spec.partner_id:
+                spec.partner_id = deal.partner_id.commercial_partner_id
+            if not spec.contact_id:
+                spec.contact_id = deal._pmk_contact_person()
+            if not spec.note:
+                spec.note = deal.name

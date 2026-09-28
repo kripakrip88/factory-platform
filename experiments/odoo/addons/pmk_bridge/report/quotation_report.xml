@@ -61,7 +61,10 @@
                   коммерческого партнёра, человека выводим отдельной строкой.
                 -->
                 <t t-set="p" t-value="doc.partner_id.commercial_partner_id"/>
-                <t t-set="contact" t-value="doc.partner_id if doc.partner_id != p else False"/>
+                <!-- С 29.09.2026 в расчёте есть поле «Контактное лицо», а
+                     клиент — компания (разбор UX, шаг 11). Старые расчёты,
+                     где клиентом остался человек, печатаются как раньше. -->
+                <t t-set="contact" t-value="doc.contact_id or (doc.partner_id if doc.partner_id != p else False)"/>
                 <!--
                   Реквизиты заказчика — одной строкой, через разделители: в
                   бланке МойСклада их не было вовсе, но по КП без ИНН нельзя

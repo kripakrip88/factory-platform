@@ -110,6 +110,21 @@
         это число, которое ляжет в себестоимость, а «металл в деталях» рядом
         показывает, сколько из него дошло до изделия.
       -->
+      <!--
+        Неполный расчёт — жёлтой плашкой над шапкой: какие позиции без цены
+        и сколько весят (разбор UX, шаг 11, CA-02; Антон: «давай исправим»).
+        Ничего не блокирует: КП печатается, плашка — наблюдение.
+      -->
+      <xpath expr="//div[hasclass('pmk-doc-head')]" position="before">
+        <div class="alert pmk-price-alert mb-3" role="alert"
+             invisible="not price_incomplete">
+          <i class="fa fa-exclamation-triangle me-1" aria-hidden="true"/>
+          <strong>Нет цены у <field name="no_price_count" nolabel="1"/> поз.:</strong>
+          <field name="price_missing_text" nolabel="1"/>.
+          Металл занижен, маржа завышена — проверьте цены перед отправкой КП.
+        </div>
+      </xpath>
+
       <xpath expr="//div[hasclass('pmk-kpi')]" position="inside">
         <!--
           Цена клиенту стоит ПЕРЕД металлом: для менеджера это главное число
@@ -122,20 +137,45 @@
             <field name="price_customer_total" widget="monetary"/>
           </div>
         </div>
-        <div class="pmk-kpi__card" invisible="price_customer_total == 0">
+        <!--
+          Процент маржи — отдельной строкой под суммой: в одной строке с
+          суммой он вылезал за край карточки (Антон, 28.09.2026: «расчёт
+          процента выходит за рамку»).
+
+          Карточки «Маржа» и «Металл» — в двух вариантах: при неполном
+          расчёте жёлтая рамка и пометка «без N поз.», у процента «≤» — это
+          верхняя граница. Вариант переключается по price_incomplete: у
+          разметки формы нет условного класса.
+        -->
+        <div class="pmk-kpi__card"
+             invisible="price_customer_total == 0 or price_incomplete">
           <div class="pmk-kpi__label">Маржа над металлом</div>
           <div class="pmk-kpi__value">
             <field name="margin_amount" widget="monetary"/>
-            <span class="fs-6 text-muted ms-1">
-              <field name="margin_pct" nolabel="1"/>%
-            </span>
           </div>
+          <div class="pmk-kpi__sub"><field name="margin_pct" nolabel="1"/> % от цены</div>
         </div>
-        <div class="pmk-kpi__card">
+        <div class="pmk-kpi__card pmk-kpi__card--warn"
+             invisible="price_customer_total == 0 or not price_incomplete">
+          <div class="pmk-kpi__label">Маржа над металлом</div>
+          <div class="pmk-kpi__value">
+            <field name="margin_amount" widget="monetary"/>
+          </div>
+          <div class="pmk-kpi__sub">≤ <field name="margin_pct" nolabel="1"/> % · без
+            <field name="no_price_count" nolabel="1"/> поз.</div>
+        </div>
+        <div class="pmk-kpi__card" invisible="price_incomplete">
           <div class="pmk-kpi__label">Металл к закупке</div>
           <div class="pmk-kpi__value">
             <field name="total_cost_fact" widget="monetary"/>
           </div>
+        </div>
+        <div class="pmk-kpi__card pmk-kpi__card--warn" invisible="not price_incomplete">
+          <div class="pmk-kpi__label">Металл к закупке</div>
+          <div class="pmk-kpi__value">
+            <field name="total_cost_fact" widget="monetary"/>
+          </div>
+          <div class="pmk-kpi__sub">занижен: без <field name="no_price_count" nolabel="1"/> поз.</div>
         </div>
         <!--
           ⚠️ ВТОРАЯ КАРТОЧКА ПОКАЗЫВАЕТСЯ, ТОЛЬКО ЕСЛИ ЕСТЬ ОТХОД.
@@ -161,17 +201,14 @@
           <field name="total_cost_waste" widget="monetary"
                  invisible="total_cost_waste == 0"/>
           <span class="pmk-kpi__dot" invisible="total_cost_waste == 0">·</span>
-          <span>Купить, т:</span>
-          <field name="total_weight_fact_t" digits="[12,3]"/>
-          <!--
-            Предупреждение показывается только когда есть что показать.
-            Молчаливый ноль в итоге опаснее любой ошибки: КП уходит клиенту
-            с бесплатным металлом, и замечают это после отгрузки.
-          -->
-          <span class="pmk-kpi__dot" invisible="not price_incomplete">·</span>
-          <span class="text-danger" invisible="not price_incomplete">
-            Без цены позиций: <field name="no_price_count" nolabel="1"/>
-          </span>
+          <!-- «Купить, т» — только когда отличается от веса в карточке:
+               пока себестоимость по чистому весу (решение 24.09), это то же
+               число, третий раз (разбор UX, CA-09). Предупреждение о
+               позициях без цены переехало в плашку над шапкой (CA-02). -->
+          <span invisible="not buy_weight_differs">Купить, т:</span>
+          <field name="total_weight_fact_t" digits="[12,3]"
+                 invisible="not buy_weight_differs"/>
+          <field name="buy_weight_differs" invisible="1"/>
         </div>
         <field name="price_incomplete" invisible="1"/>
         <field name="currency_id" invisible="1"/>

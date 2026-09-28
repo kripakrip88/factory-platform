@@ -31,7 +31,22 @@ class MetalSpec(models.Model):
     name = fields.Char("Номер", required=True, copy=False, readonly=True, default="Черновик")
     date = fields.Date("Дата", required=True, default=fields.Date.context_today, tracking=True)
     partner_id = fields.Many2one("res.partner", "Клиент", tracking=True)
-    note = fields.Char("Примечание")
+    # Разбор UX, шаг 11 (Антон, 28.09.2026: «подставлять компанию контакта;
+    # человек остаётся контактным лицом — делаем»). Клиент расчёта — всегда
+    # компания: по нему список, поиск и группировка «Клиент», по нему
+    # реквизиты в КП. Человек, с которым ведём заявку, — отдельно; КП
+    # печатает его строкой «Контактное лицо».
+    contact_id = fields.Many2one(
+        "res.partner", "Контактное лицо", tracking=True,
+        domain="[('parent_id', '=', partner_id)]",
+        help="С кем ведём заявку у клиента. Печатается в КП.")
+    # Разбор UX, шаг 11 (CA-03): поле печатается в КП строкой «Предмет», а
+    # подпись «Примечание» звала писать туда для себя («уточнить толщину у
+    # технолога»). Пометки для себя — в ленту внизу, «Внутренняя заметка».
+    note = fields.Char(
+        "Предмет КП (видит клиент)",
+        help="Печатается в КП строкой «Предмет». Пометки для себя — в ленту "
+             "внизу документа, кнопкой «Внутренняя заметка».")
     product_ids = fields.One2many("pmk.metal.spec.product", "spec_id", "Изделия", copy=True)
 
     total_weight = fields.Float("Итого, кг", compute="_compute_totals", store=True, digits=(12, 3))
@@ -43,6 +58,16 @@ class MetalSpec(models.Model):
     # отфильтрованные наборы: без них правка во вкладке не доходила до
     # верхнего уровня — цепочка деталь → изделие → спецификация рвалась
     # на первом же звене.
+    @api.onchange("partner_id")
+    def _onchange_partner_company(self):
+        """Выбрали человека — клиентом становится его компания, сам он —
+        контактным лицом. Частное лицо без компании остаётся клиентом."""
+        for spec in self:
+            person = spec.partner_id
+            if person and not person.is_company and person.parent_id:
+                spec.contact_id = person
+                spec.partner_id = person.commercial_partner_id
+
     @api.depends(
         "product_ids.weight_total",
         "product_ids.qty",

@@ -322,6 +322,60 @@ class MetalSpecCost(models.Model):
             spec.no_price_count = sum(spec.product_ids.mapped("no_price_count"))
             spec.price_incomplete = spec.no_price_count > 0
 
+    # Разбор UX, шаг 11 (CA-02): неполный расчёт — плашкой с названиями
+    # позиций и весом, а не мелкой строкой «Без цены позиций: 1». Какая
+    # именно позиция без цены, на главной вкладке видно не было, а в СМ-00024
+    # это был рифлёный лист — 30 % веса расчёта. Не хранится: считается при
+    # открытии документа, по тем же строкам, что no_price_count.
+    price_missing_text = fields.Char(
+        "Позиции без цены", compute="_compute_price_missing_text")
+
+    @api.depends("no_price_count")
+    def _compute_price_missing_text(self):
+        Line = self.env["pmk.metal.spec.line"]
+        for spec in self:
+            spec_id = spec._origin.id
+            if not spec.no_price_count or not spec_id:
+                spec.price_missing_text = False
+                continue
+            lines = Line.search([
+                ("spec_id", "=", spec_id),
+                ("price_state", "not in", ("ok", "empty")),
+            ])
+            # Одна позиция справочника в нескольких деталях — одной строкой.
+            # Вес строки — на одно изделие, умножаем на их количество.
+            weights = {}
+            for line in lines:
+                item = line.profile_id or line.sheet_id or line.fastener_id or line.paint_id
+                name = item.display_name if item else (line.detail_name or "позиция")
+                weights[name] = weights.get(name, 0.0) + (
+                    (line.weight_fact_total or 0.0) * (line.product_id.qty or 1))
+            ranked = sorted(weights.items(), key=lambda kv: -kv[1])
+            shown = ["%s — %s" % (name, self._pmk_weight_label(kg)) for name, kg in ranked[:5]]
+            rest = len(ranked) - len(shown)
+            spec.price_missing_text = "; ".join(shown) + (
+                " и ещё %s" % rest if rest > 0 else "")
+
+    # «Купить, т» в шапке — только когда отличается от веса в деталях (есть
+    # отход). Сравнение с допуском: дробные суммы расходятся в последнем
+    # знаке, и точное «==» показывало бы строку почти всегда.
+    buy_weight_differs = fields.Boolean(compute="_compute_buy_weight_differs")
+
+    @api.depends("total_weight_fact", "total_weight")
+    def _compute_buy_weight_differs(self):
+        for spec in self:
+            spec.buy_weight_differs = abs(
+                (spec.total_weight_fact or 0.0) - (spec.total_weight or 0.0)) >= 0.5
+
+    @staticmethod
+    def _pmk_weight_label(kg):
+        """15210 → «15,2 т», 445 → «445 кг», 0,4 → «0,4 кг»."""
+        if kg >= 1000:
+            return ("%.1f т" % (kg / 1000.0)).replace(".", ",")
+        if kg >= 10:
+            return "%d кг" % round(kg)
+        return ("%.1f кг" % kg).replace(".", ",")
+
     @api.depends("product_ids.price_customer_total", "total_cost_fact")
     def _compute_customer_totals(self):
         for spec in self:

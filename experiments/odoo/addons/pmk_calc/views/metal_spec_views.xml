@@ -43,13 +43,21 @@
                 <label for="partner_id"/>
                 <field name="partner_id" nolabel="1"/>
               </div>
+              <!-- Контактное лицо — человек у клиента; клиент — компания
+                   (разбор UX, шаг 11). Печатается в КП. -->
+              <div class="pmk-field">
+                <label for="contact_id"/>
+                <field name="contact_id" nolabel="1"
+                       context="{'default_parent_id': partner_id}"/>
+              </div>
               <div class="pmk-field">
                 <label for="date"/>
                 <field name="date" nolabel="1"/>
               </div>
               <div class="pmk-field pmk-field--wide">
                 <label for="note"/>
-                <field name="note" nolabel="1" placeholder="Примечание…"/>
+                <field name="note" nolabel="1"
+                       placeholder="Например: металлоконструкции для ОФ «Солнечная», п. Горный"/>
               </div>
 
             </div>
@@ -59,16 +67,17 @@
               они добавляли лишние ряды и тянули шапку вниз.
             -->
             <div class="pmk-kpi">
-              <div class="pmk-kpi__card">
-                <div class="pmk-kpi__label">Общий вес, кг</div>
-                <div class="pmk-kpi__value">
-                  <field name="total_weight" digits="[12,2]"/>
-                </div>
-              </div>
+              <!-- Вес — одной карточкой: тонны крупно, килограммы мелко
+                   под ними. Было две карточки с одним и тем же числом
+                   (Антон, 28.09.2026: «два окна общий вес кг и тн, как
+                   будто можно грамотно объединить»). -->
               <div class="pmk-kpi__card">
                 <div class="pmk-kpi__label">Общий вес, т</div>
                 <div class="pmk-kpi__value">
                   <field name="total_weight_t" digits="[12,3]"/>
+                </div>
+                <div class="pmk-kpi__sub">
+                  <field name="total_weight" digits="[12,1]"/> кг
                 </div>
               </div>
               <div class="pmk-kpi__note">
