@@ -76,7 +76,7 @@
         -->
         <div class="alert alert-warning mb-2" role="alert"
              invisible="price_lost_count == 0 or price_signal_stale">
-          <i class="fa fa-exclamation-triangle me-1" aria-hidden="true"/>
+          <i class="fa fa-exclamation-triangle me-1" title="Внимание" aria-hidden="true"/>
           Позиций выпало из прайса: <field name="price_lost_count" nolabel="1"
                                            class="fw-bold"/>.
           Металл всё равно придётся купить — итог занижен, а не уменьшился.
@@ -118,8 +118,8 @@
       <xpath expr="//div[hasclass('pmk-doc-head')]" position="before">
         <div class="alert pmk-price-alert mb-3" role="alert"
              invisible="not price_incomplete">
-          <i class="fa fa-exclamation-triangle me-1" aria-hidden="true"/>
-          <strong>Нет цены у <field name="no_price_count" nolabel="1"/> поз.:</strong>
+          <i class="fa fa-exclamation-triangle me-1" title="Внимание" aria-hidden="true"/>
+          <strong class="me-1">Нет цены у <field name="no_price_count" nolabel="1"/> поз.:</strong>
           <field name="price_missing_text" nolabel="1"/>.
           Металл занижен, маржа завышена — проверьте цены перед отправкой КП.
         </div>
