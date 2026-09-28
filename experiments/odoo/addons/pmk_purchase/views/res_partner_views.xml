@@ -194,7 +194,10 @@
         <filter string="Клиенты" name="pmk_customers"
                 domain="[('supplier_rank', '=', 0), ('pmk_price_supplier', '=', False), ('user_ids', '=', False), ('ref_company_ids', '=', False)]"/>
       </xpath>
+      <!-- Подпись «Поставщики»: перевод ядра подписывал фильтр «Счета
+           поставщиков», хотя он отбирает контрагентов, а не счета. -->
       <xpath expr="//filter[@name='supplier']" position="attributes">
+        <attribute name="string">Поставщики</attribute>
         <attribute name="domain">['|', ('supplier_rank', '&gt;', 0), ('pmk_price_supplier', '=', True)]</attribute>
       </xpath>
     </field>
