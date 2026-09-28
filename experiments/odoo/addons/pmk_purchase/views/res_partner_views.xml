@@ -86,9 +86,19 @@
     </field>
   </record>
 
+  <!--
+    ⚠️ priority 32 ОБЯЗАТЕЛЕН. Без него этот вид (приоритет по умолчанию 16,
+    как у штатного) Odoo выбирал поиском контрагентов ПО УМОЛЧАНИЮ ВЕЗДЕ:
+    при равном приоритете решает имя, а «res.partner.search.pmk.price» по
+    алфавиту раньше штатного. В «Клиентах» строка поиска была подписана
+    «Поставщик», а штатный фильтр «Клиенты» молча не применялся — список
+    показывал всех подряд (разбор UX, CP-01). Меню «Поставщики прайсов»
+    берёт этот вид явно (search_view_id) и от приоритета не зависит.
+  -->
   <record id="view_price_supplier_search" model="ir.ui.view">
     <field name="name">res.partner.search.pmk.price</field>
     <field name="model">res.partner</field>
+    <field name="priority">32</field>
     <field name="arch" type="xml">
       <search>
         <field name="name" string="Поставщик"/>
@@ -155,4 +165,50 @@
     <field name="view_mode">form</field>
     <field name="act_window_id" ref="action_price_supplier"/>
   </record>
+  <!--
+    Поиск «Клиентов» и «Поставщиков» — разбор UX, шаг 9 (Антон, 28.09.2026:
+    «вернуть „Клиентам“ штатный поиск с фильтрами „Клиенты“ и „Компании“ —
+    согласен, а у поставщиков в закупках соответственно поставщики и
+    компании»).
+
+    «КЛИЕНТЫ» — СВОЙ ФИЛЬТР. Штатный «Клиенты» (customer_rank > 0) растёт от
+    заказов и счетов в Odoo, а продажи у завода в МоёмСкладе: таких
+    контрагентов 0, список был бы пустым. Клиент завода — тот, кто НЕ
+    поставщик (ни по штатному признаку, ни в реестре прайсов), НЕ
+    пользователь системы и НЕ наша собственная компания (ИП Чулков — это
+    res.company). Штатный фильтр прячем, чтобы в меню не было двух
+    «Клиентов»; по имени он остаётся доступен контекстам ядра.
+
+    «ПОСТАВЩИКИ» — штатный фильтр плюс реестр прайсов: поставщик, заведённый
+    из «Поставщиков прайсов», штатного признака ещё не имеет.
+  -->
+  <record id="view_partner_search_pmk_customers" model="ir.ui.view">
+    <field name="name">res.partner.search.pmk.customers</field>
+    <field name="model">res.partner</field>
+    <field name="inherit_id" ref="base.view_res_partner_filter"/>
+    <field name="arch" type="xml">
+      <xpath expr="//filter[@name='customer']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//filter[@name='customer']" position="before">
+        <filter string="Клиенты" name="pmk_customers"
+                domain="[('supplier_rank', '=', 0), ('pmk_price_supplier', '=', False), ('user_ids', '=', False), ('ref_company_ids', '=', False)]"/>
+      </xpath>
+      <xpath expr="//filter[@name='supplier']" position="attributes">
+        <attribute name="domain">['|', ('supplier_rank', '&gt;', 0), ('pmk_price_supplier', '=', True)]</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- Меню «Продажи → Клиенты» и «Закупки → Поставщики» открывают эти
+       штатные действия. По умолчанию: «Клиенты» + «Компании» и
+       «Поставщики» + «Компании» — контактные лица видны в карточке своей
+       компании. Остальное контекста — как в ядре. -->
+  <record id="account.res_partner_action_customer" model="ir.actions.act_window">
+    <field name="context">{'search_default_pmk_customers': 1, 'search_default_type_company': 1, 'res_partner_search_mode': 'customer', 'default_is_company': True, 'default_customer_rank': 1}</field>
+  </record>
+  <record id="account.res_partner_action_supplier" model="ir.actions.act_window">
+    <field name="context">{'search_default_supplier': 1, 'search_default_type_company': 1, 'res_partner_search_mode': 'supplier', 'default_is_company': True, 'default_supplier_rank': 1}</field>
+  </record>
+
 </odoo>
