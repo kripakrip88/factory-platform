@@ -1,12 +1,33 @@
 # -*- coding: utf-8 -*-
+import datetime
 import logging
 
+import pytz
 from dateutil.relativedelta import relativedelta
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
+
+# Сроки запросов считаем в днях по заводскому времени, а не по UTC и не по
+# часовому поясу того, кто спросил. Решение «пора ли писать» принимает
+# плановое задание, и работает оно от системного пользователя, у которого
+# часового пояса нет вовсе: по его часам понедельник 09:10 во Владивостоке —
+# ещё воскресенье. Список в браузере обязан показывать ту же дату, что увидит
+# задание, иначе «следующий запрос 5 октября» и реальное письмо разойдутся.
+TZ = "Asia/Vladivostok"
+
+
+def _local_today():
+    return datetime.datetime.now(pytz.timezone(TZ)).date()
+
+
+def _local_date(value):
+    """Дата по заводскому времени из хранимого в UTC момента."""
+    if not value:
+        return False
+    return pytz.UTC.localize(value).astimezone(pytz.timezone(TZ)).date()
 
 
 class ResPartner(models.Model):
@@ -36,8 +57,9 @@ class ResPartner(models.Model):
     pmk_price_request_date = fields.Datetime(
         "Последний запрос отправлен",
         readonly=True,
-        help="Когда мы последний раз просили прайс. По нему считается, "
-             "не пора ли спросить снова.",
+        help="Когда мы последний раз просили прайс. От него (или от "
+             "последнего прайса, если тот пришёл не в ответ на запрос) "
+             "считается следующий запрос.",
     )
 
     pmk_has_stock = fields.Boolean(
@@ -86,29 +108,176 @@ class ResPartner(models.Model):
         aggregator=None,
         help="Как часто просить свежий прайс. Ноль — не просить автоматически.",
     )
+    # Разбор UX, шаг 13 (29.09.2026). Раньше это поле было ручным с
+    # подписью «заполняется при приёме файла», но при приёме его никто не
+    # заполнял — ни загрузчик прайсов, ни человек. Пустое у всех, и фильтр
+    # «Прайса ещё не было» показывал в том числе Металлсервис с его 1554
+    # ценами.
+    #
+    # Теперь дата берётся из самих цен: у каждой строки прайса есть «Действует
+    # с» (date_start), загрузчик ставит туда дату прайса поставщика. Самая
+    # свежая из них и есть «Последний прайс». Руками её не правим: дата, не
+    # подкреплённая ценами в системе, обманула бы расчёт себестоимости,
+    # который берёт цены именно отсюда.
+    pmk_price_row_ids = fields.One2many(
+        "product.supplierinfo", "partner_id", string="Строки прайса")
     pmk_price_last_date = fields.Date(
         "Последний прайс",
-        help="Дата последнего полученного прайса. Заполняется при приёме файла.",
+        compute="_compute_pmk_price_last_date",
+        store=True,
+        help="Дата самого свежего прайса этого поставщика, загруженного в "
+             "систему. Берётся из цен поставщика: поле «Действует с».",
     )
+    # НЕ ХРАНИТСЯ, и это главное исправление шага 13. Хранимое поле
+    # замораживало «сегодня»: у поставщика без прайса в базе навсегда
+    # оставалось 20.09 — день, когда поле посчиталось впервые. И считалось оно
+    # только от даты прайса, а запрос не учитывало совсем: у Металлсервиса
+    # «следующий запрос» 20.09 стоял раньше «последнего» 21.09.
+    #
+    # Теперь срок идёт от последнего события — отправленного запроса или
+    # пришедшего прайса, что свежее, — и по нему же решает рассылка
+    # (`_pmk_price_due`). Поставщиков в реестре десятки, поэтому поиск по полю
+    # (фильтр «Пора запросить прайс») считается в Python без потерь.
     pmk_price_next_date = fields.Date(
         "Следующий запрос",
         compute="_compute_pmk_price_next_date",
-        store=True,
-        help="Считается от даты последнего прайса и периодичности.",
+        search="_search_pmk_price_next_date",
+        help="Последний запрос плюс периодичность. Прайс, пришедший в ответ "
+             "на запрос, срок не сдвигает, а присланный сам по себе — "
+             "отодвигает. Не было ни запроса, ни прайса — сегодня. У тех, "
+             "кому рассылка пишет сама, здесь день, когда уйдёт письмо: "
+             "рассылка ходит по расписанию, раз в неделю.",
     )
 
-    @api.depends("pmk_price_last_date", "pmk_price_period_days", "pmk_price_supplier")
-    def _compute_pmk_price_next_date(self):
+    @api.depends("pmk_price_row_ids.date_start")
+    def _compute_pmk_price_last_date(self):
+        # Одним запросом на всех: загрузчик прайса пишет строки сотнями, и
+        # перебор строк по одной на каждую пересчитанную карточку растянул бы
+        # заливку.
+        latest = dict(self.env["product.supplierinfo"].sudo()._read_group(
+            [("partner_id", "in", self.ids), ("date_start", "!=", False)],
+            ["partner_id"], ["date_start:max"]))
         for partner in self:
-            if not partner.pmk_price_supplier or partner.pmk_price_period_days <= 0:
-                partner.pmk_price_next_date = False
-                continue
-            if not partner.pmk_price_last_date:
-                # Прайса ещё не было — запрашивать можно хоть сегодня.
-                partner.pmk_price_next_date = fields.Date.context_today(partner)
-                continue
-            partner.pmk_price_next_date = partner.pmk_price_last_date + relativedelta(
-                days=partner.pmk_price_period_days)
+            partner.pmk_price_last_date = latest.get(partner._origin) or False
+
+    def _pmk_price_due_date(self, today):
+        """С какого дня пора просить прайс, или False — просить не нужно.
+
+        Отсчёт — от нашего последнего запроса. Прайс, пришедший в ответ на
+        него (в пределах периода после запроса), срок НЕ сдвигает: рассылка
+        ходит по понедельникам, а прайс датирован днём ответа, и отсчёт от
+        него уводил срок со вторника на вторник — очередной понедельник
+        оказывался «ещё рано», и двухнедельный запрос уходил раз в три
+        недели (разбор проверки шага 13). Прайс, присланный сам по себе —
+        позже, чем через период после запроса, или вовсе без запроса, —
+        отодвигает срок: свежие цены у нас уже есть.
+        """
+        self.ensure_one()
+        if not self.pmk_price_supplier or self.pmk_price_period_days <= 0:
+            return False
+        period = relativedelta(days=self.pmk_price_period_days)
+        request = _local_date(self.pmk_price_request_date)
+        price = self.pmk_price_last_date
+        if request and price and request <= price < request + period:
+            base = request
+        else:
+            base = max([d for d in (request, price) if d], default=False)
+        if not base:
+            # Ни запроса, ни прайса — спрашивать можно сегодня.
+            return today
+        return base + period
+
+    def _pmk_price_robot_schedule(self):
+        """(день ближайшего прогона рассылки, шаг в днях) или None.
+
+        None — рассылка сама не пишет: выключен рубильник или задание, либо
+        расписание не в днях и неделях. Тогда срок показываем как есть.
+        """
+        if self.env["ir.config_parameter"].sudo().get_param(
+                "pmk.price_request.enabled", "0") != "1":
+            return None
+        cron = self.env.ref("pmk_purchase.cron_price_request",
+                            raise_if_not_found=False)
+        cron = cron and cron.sudo()
+        if not cron or not cron.active or not cron.nextcall:
+            return None
+        step = {"days": 1, "weeks": 7}.get(cron.interval_type, 0) * cron.interval_number
+        if step <= 0:
+            return None
+        return _local_date(cron.nextcall), step
+
+    def _pmk_price_robot_writes(self):
+        """Возьмёт ли рассылка этого поставщика — те же условия, что в
+        `_cron_send_price_requests`, кроме срока."""
+        self.ensure_one()
+        return bool(self.pmk_price_supplier and self.pmk_price_mailing
+                    and self.pmk_price_email and not self.is_blacklisted
+                    and (self.message_bounce or 0) < 3)
+
+    def _pmk_price_next_value(self, today, schedule=None):
+        """Дата в колонке «Следующий запрос».
+
+        Кому рассылка пишет сама — день прогона, в который письмо уйдёт:
+        первый прогон не раньше срока. Иначе колонка показывала бы «сегодня»
+        или «просрочено» всю неделю до понедельника, хотя всё идёт по плану.
+        Остальным — сам срок: им писать человеку.
+        """
+        self.ensure_one()
+        due = self._pmk_price_due_date(today)
+        if not due or not schedule or not self._pmk_price_robot_writes():
+            return due
+        run, step = schedule
+        if due <= run:
+            return run
+        return run + relativedelta(days=-(-(due - run).days // step) * step)
+
+    @api.depends("pmk_price_supplier", "pmk_price_period_days",
+                 "pmk_price_last_date", "pmk_price_request_date",
+                 "pmk_price_mailing", "pmk_price_email")
+    def _compute_pmk_price_next_date(self):
+        today = _local_today()
+        schedule = self._pmk_price_robot_schedule()
+        for partner in self:
+            partner.pmk_price_next_date = partner._pmk_price_next_value(today, schedule)
+
+    def _search_pmk_price_next_date(self, operator, value):
+        compare = {
+            "<": lambda d, v: d < v,
+            "<=": lambda d, v: d <= v,
+            ">": lambda d, v: d > v,
+            ">=": lambda d, v: d >= v,
+        }
+        if operator not in compare and operator != "in":
+            # Отрицания («не равно», «не в списке») Odoo соберёт сам через
+            # «in»: вернуть NotImplemented — штатный способ это попросить.
+            return NotImplemented
+        today = _local_today()
+        schedule = self._pmk_price_robot_schedule()
+        suppliers = self.with_context(active_test=False).search(
+            [("pmk_price_supplier", "=", True)])
+        dates = {p.id: p._pmk_price_next_value(today, schedule) for p in suppliers}
+
+        if operator == "in":
+            wanted = {fields.Date.to_date(v) if v else False for v in value}
+            ids = [pid for pid, d in dates.items() if d in wanted]
+            if False in wanted:
+                # Срока нет и у всех, кто вне реестра прайсов.
+                return ["|", ("id", "in", ids), ("pmk_price_supplier", "=", False)]
+            return [("id", "in", ids)]
+
+        limit = fields.Date.to_date(value)
+        if not limit:
+            return [("id", "in", [])]
+        return [("id", "in", [pid for pid, d in dates.items()
+                              if d and compare[operator](d, limit)])]
+
+    def _pmk_price_due(self, today=None):
+        """Пора ли рассылке писать: срок наступил. Срок тот же, что в колонке
+        «Следующий запрос», — колонка лишь округляет его до дня прогона."""
+        self.ensure_one()
+        today = today or _local_today()
+        due = self._pmk_price_due_date(today)
+        return bool(due) and due <= today
 
     # ------------------------------------------------------------------
     # действия
@@ -184,6 +353,7 @@ class ResPartner(models.Model):
 
         limit = int(ICP.get_param("pmk.price_request.max_per_run", "30") or 30)
         now = fields.Datetime.now()
+        today = _local_today()
 
         candidates = self.search([
             ("pmk_price_supplier", "=", True),
@@ -194,16 +364,21 @@ class ResPartner(models.Model):
             ("is_blacklisted", "=", False),
             ("message_bounce", "<", 3),
         ])
+        # «Последний прайс» хранится и пересчитывается, когда цены меняет ORM.
+        # Строки цен, удалённые каскадом в базе (удаление карточки товара,
+        # откат заливки) или перенесённые SQL-ом, пересчёта не зовут —
+        # перед решением «писать или нет» освежаем дату сами.
+        self.env.add_to_compute(self._fields["pmk_price_last_date"], candidates)
 
-        def due(partner):
-            if not partner.pmk_price_request_date:
-                return True
-            period = partner.pmk_price_period_days or 0
-            if period <= 0:
-                return True
-            return (now - partner.pmk_price_request_date).days >= period
-
-        targets = candidates.filtered(due)
+        # Срок — тот же, что в колонке «Следующий запрос» (шаг 13 разбора
+        # UX). Раньше здесь считались целые сутки между моментами: задание
+        # просыпается в 23:10:00 UTC, а отметка прошлого запроса стоит на
+        # 23:10:09 — за 14 дней набегало 13 полных суток, и поставщик
+        # пропускал срок. Двухнедельный запрос уходил раз в три недели.
+        # Теперь сравниваются календарные дни по заводскому времени, и
+        # свежий прайс отодвигает запрос: у кого цены только что пришли,
+        # того не дёргаем.
+        targets = candidates.filtered(lambda p: p._pmk_price_due(today))
         dropped = len(targets) - limit
         targets = targets[:limit]
 
@@ -230,3 +405,20 @@ class ResPartner(models.Model):
         _logger.info("Запросы прайсов: поставлено в очередь %s из %s подходящих",
                      sent, len(candidates))
         return sent
+
+
+class MergePartnerAutomatic(models.TransientModel):
+    """Объединение контрагентов переносит строки цен SQL-ом, мимо ORM, и
+    «Последний прайс» у оставшейся карточки иначе остался бы прежним."""
+
+    _inherit = "base.partner.merge.automatic.wizard"
+
+    def _merge(self, partner_ids, dst_partner=None, extra_checks=True):
+        result = super()._merge(partner_ids, dst_partner=dst_partner,
+                                extra_checks=extra_checks)
+        survivors = self.env["res.partner"].browse(partner_ids).exists()
+        if survivors:
+            self.env.add_to_compute(
+                survivors._fields["pmk_price_last_date"], survivors)
+        return result
+

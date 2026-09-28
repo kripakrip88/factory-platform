@@ -80,8 +80,16 @@
         <field name="website" optional="hide"/>
         <field name="pmk_price_period_days" string="Период, дней" optional="show"/>
         <field name="pmk_price_request_date" string="Запрос отправлен" optional="show"/>
-        <field name="pmk_price_last_date" string="Прайс получен" optional="show"/>
-        <field name="pmk_price_next_date" optional="hide"/>
+        <!-- «Прайс от», а не «Прайс получен»: дата — это дата самого прайса
+             поставщика («Действует с» у его цен), а не день загрузки. -->
+        <field name="pmk_price_last_date" string="Прайс от" optional="show"/>
+        <!-- Срок словами («через 6 дней», «просрочено на 2 дня»). Красным и
+             жёлтым — только у тех, кто в рассылке: остальным письмо само не
+             уйдёт, и подсвечивать их срок значит кричать о том, что никто не
+             обещал сделать. (Разбор UX, шаг 13, 29.09.2026.) -->
+        <field name="pmk_price_next_date" string="Следующий запрос" optional="show"
+               widget="remaining_days"
+               options="{'classes': {'danger': 'days &lt; 0 and record.pmk_price_mailing', 'warning': 'days == 0 and record.pmk_price_mailing', 'bf': 'days &lt;= 0 and record.pmk_price_mailing'}}"/>
       </list>
     </field>
   </record>
