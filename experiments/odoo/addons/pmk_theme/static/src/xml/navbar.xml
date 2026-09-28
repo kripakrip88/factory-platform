@@ -52,6 +52,10 @@
         Какие разделы основные и почему — js/navbar_more.js. Выпадашка —
         штатные Dropdown/DropdownItem, как в меню приложений ядра (navbar.xml:
         88-96): те же href, data-menu-xmlid и onNavBarDropdownItemSelection.
+        o-dropdown-toggle-custo — штатный отказ от оформления кнопок-выпадашек
+        шапки (.o_main_navbar .dropdown-toggle:not(.o-dropdown-toggle-custo)):
+        без него «Ещё» получала высоту всей шапки 46 px, свой шрифт и теряла
+        стрелку.
       -->
       <nav t-if="!this.ui.isSmall" class="pmk_apps_bar" aria-label="Модули">
         <a t-foreach="pmkMainApps" t-as="app" t-key="app.id"
@@ -66,7 +70,7 @@
         </a>
         <Dropdown t-if="pmkMoreApps.length" position="'bottom-start'" menuClass="'pmk_apps_more_menu'">
           <t t-set="moreActive" t-value="pmkActiveMoreApp"/>
-          <button type="button" class="pmk_app pmk_app--more"
+          <button type="button" class="pmk_app pmk_app--more o-dropdown-toggle-custo"
                   t-att-class="{ 'pmk_app--active': moreActive }"
                   t-att-data-menu-xmlid="moreActive and moreActive.xmlid"
                   t-att-aria-current="moreActive ? 'page' : false"

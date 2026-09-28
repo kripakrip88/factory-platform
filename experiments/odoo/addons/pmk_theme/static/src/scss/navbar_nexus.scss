@@ -212,16 +212,26 @@ $pmk-nx-surface:    #faf9f6;   // светлая поверхность втор
 // «Ещё» — на кнопке его имя, значок и подсветка: правила .pmk_app--active и
 // значков выше срабатывают сами, шаблон кладёт на кнопку data-menu-xmlid
 // текущего раздела.
-.pmk_app--more {
+header.o_navbar .pmk_apps_bar .pmk_app--more {
   border: 0;
   background: transparent;
+  // Тема делает все <button> полужирными — а соседние пункты строки
+  // ссылки обычного веса. Полужирной кнопка становится, только когда
+  // открыт раздел из «Ещё», как любой текущий раздел.
+  font-weight: 400;
+
+  &.pmk_app--active {
+    font-weight: 600;
+  }
 
   // Стрелка своя: Dropdown вешает на кнопку .dropdown-toggle, и Bootstrap
-  // рисовал бы свой уголок рамками — гасим рамки, ставим значок шрифта.
+  // рисовал бы свой уголок рамками, а тема гасит его content: none — ставим
+  // значок шрифта с весом выше обоих.
   &::after {
+    display: inline-block !important;
     margin-left: 2px;
     border: 0 !important;
-    content: "\f107";
+    content: "\f107" !important;
     color: $pmk-nx-slate;
     font-family: FontAwesome;
     font-size: 12px;
