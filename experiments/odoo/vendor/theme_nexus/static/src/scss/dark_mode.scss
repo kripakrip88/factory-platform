@@ -133,6 +133,18 @@ body.o_nexus_dark {
     .o_searchview .o_searchview_facet {
         background: rgba(200, 240, 0, 0.18) !important;
     }
+
+    // Шапка формы и полоса вкладок в тёмном режиме оставались белыми (тема:
+    // .o_form_statusbar белый с !important; ядро: .o_notebook .nav { white }).
+    // Лаймовая подпись активной вкладки на белом не читалась бы.
+    .o_form_statusbar {
+        background: $nx-charcoal-2 !important;
+        border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+    }
+
+    .o_notebook .nav {
+        background: transparent !important;
+    }
 }
 
 // ---- Toggle switch UI (sits in the sidebar footer) -----------------------
