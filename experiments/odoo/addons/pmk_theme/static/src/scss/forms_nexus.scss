@@ -836,11 +836,13 @@ body.o_nexus_dark {
 //
 // Было: ряд стрелок, текущая — ярко-оранжевая с белым текстом (контраст
 // 2,9:1), пройденные и будущие одинаково светло-серые.
-// Стало: одна кнопка в цвет кнопок-счётчиков. В ней деления пути (чёрные —
-// пройдено вместе с текущей, светлые — впереди), название, срок в стадии и
-// стрелка списка. Корпоративные цвета — чёрный и лайм (шаг 6 разбора): лайм
-// только заливкой под чёрным текстом (текущая стадия в списке), лаймом по
-// белому не пишем — не читается.
+// Стало: одна кнопка. В ней деления пути (чёрные — пройдено вместе с
+// текущей, светлые — впереди), название, срок в стадии и стрелка списка.
+// Фон — мягкий тон цвета стадии (Антон, 28.09.2026: «лайм слишком ярко,
+// может сделаем фон кнопки цветом этапа?»). Тона бледные намеренно: кнопка —
+// справка «где мы», а не главное действие экрана. Текст всегда чёрный, на
+// любом тоне контраст выше 12:1. Какой тон у какой стадии — в
+// js/statusbar_compact.js (pmkTone), палитра — ниже, $pmk-stage-tones.
 //
 // Селектор с .o_form_view и !important: тема theme_nexus красит .btn-secondary
 // и .o_arrow_button (на телефоне кнопка получает этот класс) с !important.
@@ -868,11 +870,12 @@ body.o_nexus_dark {
   font-weight: 600;
   white-space: nowrap;
 
+  // Наведение и открытый список — чуть темнее своего тона, а не общим серым:
+  // иначе при наведении цвет стадии пропадал бы.
   &:hover,
   &.show,
   &[aria-expanded="true"] {
-    border-color: #9aa0a6 !important;
-    background: #f3f2ef !important;
+    filter: brightness(0.96);
     color: #14141a !important;
   }
 
@@ -906,12 +909,13 @@ body.o_nexus_dark {
     gap: 3px;
   }
 
+  // Будущие деления — полупрозрачным чёрным: видны на любом тоне фона.
   .o_pmk_step {
     display: block;
     width: 12px;
     height: 4px;
     border-radius: 2px;
-    background: #e0ddd5;
+    background: rgba(20, 20, 26, 0.15);
   }
 
   .o_pmk_step_done {
@@ -998,8 +1002,10 @@ body.o_nexus_dark {
     pointer-events: none;
   }
 
+  // Текущая стадия в списке — тем же тоном, что кнопка (правила ниже);
+  // без тона — светло-серая.
   &.active {
-    background: #c8f000 !important;
+    background: #f1f0ec !important;
     color: #14141a !important;
     font-weight: 600;
 
@@ -1008,5 +1014,35 @@ body.o_nexus_dark {
       color: #14141a;
       font-size: 7px;
     }
+  }
+}
+
+// Мягкие тона стадий: фон и рамка. Номера цветов Odoo → названия — в
+// js/statusbar_compact.js (TONES). Подобраны бледными: насыщенный цвет Odoo
+// (ярко-красный, ярко-зелёный) на кнопке резал бы глаз так же, как лайм.
+$pmk-stage-tones: (
+  grey: (#f1f0ec, #dedbd2),
+  red: (#fbe7e4, #efc3bc),
+  orange: (#fcebdc, #f1cba7),
+  yellow: (#fbf3d5, #ead68e),
+  cyan: (#e0f3f5, #aedde3),
+  purple: (#f0e7f6, #d5bfe6),
+  almond: (#f6eee3, #e3d2ba),
+  teal: (#e0f1ec, #a9d8c9),
+  blue: (#e6eefa, #bacfee),
+  raspberry: (#f9e4ec, #ebb9cc),
+  green: (#e4f3e3, #b5dbb2),
+  violet: (#ece8f8, #c9beeb),
+);
+
+@each $tone, $pair in $pmk-stage-tones {
+  .o_form_view .o_statusbar_status > .btn.o_pmk_stage_toggle[data-pmk-tone="#{$tone}"]:not(.d-none) {
+    border-color: nth($pair, 2) !important;
+    background: nth($pair, 1) !important;
+  }
+
+  .o-dropdown--menu .dropdown-item.o_pmk_stage_item.active.o_pmk_tone_#{$tone} {
+    background: nth($pair, 1) !important;
+    box-shadow: inset 0 0 0 1px nth($pair, 2);
   }
 }

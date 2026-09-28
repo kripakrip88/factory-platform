@@ -10,6 +10,13 @@
 // дальше название текущей стадии и срок в ней. По щелчку — список стадий:
 // пройденные с галочкой, текущая выделена, следующие обычным текстом.
 //
+// Фон кнопки — цвет стадии, мягким тоном (Антон, 28.09.2026: «лайм слишком
+// ярко, может сделаем фон кнопки цветом этапа?»). У стадий сделки цвет свой,
+// его выбирают палитрой в «Настройки CRM → Этапы». У документов, где цвета
+// стадий нет (закупка, производство, доборка), цвет — по смыслу стадии:
+// начало пути серое, дальше голубое, конец пути зелёный, тупик (отменено,
+// ошибка, лом) розовый, прочее вне пути («К согласованию») жёлтое.
+//
 // ⚠️ ПОЧЕМУ ПАТЧ ПРОТОТИПА, А НЕ СВОЙ ВИДЖЕТ. Режим «одна кнопка со списком»
 // в Odoo уже есть — так полоса выглядит на телефоне (ветка env.isSmall в
 // adjustVisibleItems). Мы включаем его и на широком экране. Патч прототипа
@@ -36,6 +43,26 @@ const NOT_COMPACT = new Set(["hr.VersionsTimeline"]);
 
 // Больше шести делений не читаются как «шаги» — тогда только название.
 const MAX_STEPS = 6;
+
+// Палитра Odoo (номер цвета → наш мягкий тон, scss/forms_nexus.scss).
+const TONES = [
+    "grey",
+    "red",
+    "orange",
+    "yellow",
+    "cyan",
+    "purple",
+    "almond",
+    "teal",
+    "blue",
+    "raspberry",
+    "green",
+    "violet",
+];
+
+// Модели стадий, у которых есть поле цвета. Список закрытый: запросить
+// поле, которого у модели нет, — ошибка чтения, и полоса не загрузится.
+const COLORED_STAGES = new Set(["crm.stage"]);
 
 // Тупиковые исходы — не шаг пути, даже если вид перечислил их в
 // statusbar_visible. У служебных писем Odoo путь «В очереди → Отправлено →
@@ -84,6 +111,40 @@ patch(StatusBarField.prototype, {
         return true;
     },
 
+    // У стадий сделки дочитываем их цвет (ядро берёт только название).
+    getFieldNames(props) {
+        const names = super.getFieldNames(...arguments);
+        const { relation } = props.record.fields[props.name];
+        if (this.pmkCompact && COLORED_STAGES.has(relation) && !names.includes("color")) {
+            return [...names, "color"];
+        }
+        return names;
+    },
+
+    pmkTone(item) {
+        if (Number.isInteger(item.pmkColor)) {
+            return TONES[item.pmkColor] || "grey";
+        }
+        if (!this.pmkHasPath || item.isFolded) {
+            return "grey";
+        }
+        if (!this.pmkOnPath(item)) {
+            return OFF_PATH.has(item.value) ? "red" : "yellow";
+        }
+        const path = this.getAllItems().filter((i) => this.pmkOnPath(i));
+        const index = path.findIndex((i) => i.value === item.value);
+        if (index === path.length - 1) {
+            return "green";
+        }
+        return index === 0 ? "grey" : "blue";
+    },
+
+    // Тон кнопки — по текущей стадии. Шаблон кладёт его в data-pmk-tone.
+    get pmkCurrentTone() {
+        const current = this.getAllItems().find((item) => item.isSelected);
+        return current ? this.pmkTone(current) : "grey";
+    },
+
     // Всегда ветка «узкого экрана» из ядра: видна только кнопка со списком.
     adjustVisibleItems() {
         if (!this.pmkCompact || !this.items.inline?.length || !this.dropdownRef.el) {
@@ -104,6 +165,14 @@ patch(StatusBarField.prototype, {
         const items = super.getAllItems(...arguments);
         if (!this.pmkCompact) {
             return items;
+        }
+        if (this.field.type === "many2one") {
+            const colors = new Map(
+                (this.specialData.data || []).map((option) => [option.id, option.color])
+            );
+            for (const item of items) {
+                item.pmkColor = colors.get(item.value);
+            }
         }
         const path = items.filter((item) => this.pmkOnPath(item));
         const current = path.findIndex((item) => item.isSelected);
@@ -127,6 +196,7 @@ patch(StatusBarField.prototype, {
             "dropdown-item_active_noarrow",
             item.pmkPassed && "o_pmk_stage_passed",
             item.isFolded && "o_pmk_stage_folded",
+            item.isSelected && `o_pmk_tone_${this.pmkTone(item)}`,
         ]
             .filter(Boolean)
             .join(" ");

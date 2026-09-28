@@ -9,6 +9,7 @@
      списка пропал бы: видно только «Черновик», а что дальше — нет. Пункты
      списка при этом не нажимаются (disabled + проверка в selectItem).
   2. Класс o_pmk_stage_toggle — к нему привязано оформление.
+  3. data-pmk-tone — цвет текущей стадии (фон кнопки), см. pmkCurrentTone.
 
   ⚠️ ЧЕТЫРЕ ОДИНАКОВЫХ БЛОКА — НЕ ДУБЛЬ ПО НЕБРЕЖНОСТИ. Наследники полосы
   (время в стадии, сделка CRM, проводка счёта) собраны как primary-копии
@@ -22,6 +23,7 @@
     <xpath expr="//button[@t-ref='dropdown']" position="attributes">
       <attribute name="t-att-disabled"/>
       <attribute name="class" add="o_pmk_stage_toggle" separator=" "/>
+      <attribute name="t-att-data-pmk-tone">pmkCurrentTone</attribute>
     </xpath>
   </t>
 
@@ -29,6 +31,7 @@
     <xpath expr="//button[@t-ref='dropdown']" position="attributes">
       <attribute name="t-att-disabled"/>
       <attribute name="class" add="o_pmk_stage_toggle" separator=" "/>
+      <attribute name="t-att-data-pmk-tone">pmkCurrentTone</attribute>
     </xpath>
   </t>
 
@@ -36,6 +39,7 @@
     <xpath expr="//button[@t-ref='dropdown']" position="attributes">
       <attribute name="t-att-disabled"/>
       <attribute name="class" add="o_pmk_stage_toggle" separator=" "/>
+      <attribute name="t-att-data-pmk-tone">pmkCurrentTone</attribute>
     </xpath>
   </t>
 
@@ -43,6 +47,7 @@
     <xpath expr="//button[@t-ref='dropdown']" position="attributes">
       <attribute name="t-att-disabled"/>
       <attribute name="class" add="o_pmk_stage_toggle" separator=" "/>
+      <attribute name="t-att-data-pmk-tone">pmkCurrentTone</attribute>
     </xpath>
   </t>
 

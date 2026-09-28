@@ -1,6 +1,6 @@
 {
     "name": "ПМК — поставщики и прайсы",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.0.1",
     "summary": "Реестр поставщиков прайсов: что возит, куда писать, как часто, когда был последний прайс",
     "description": """
 В Odoo нет понятия «поставщик, у которого мы запрашиваем прайс». Штатный
@@ -31,6 +31,8 @@
         "views/res_partner_views.xml",
         "views/price_mailing_views.xml",
         "views/menus.xml",
+        # «Запрос КП» в заголовке формы закупки (разбор UX, 28.09.2026).
+        "views/purchase_order_views.xml",
     ],
     "post_init_hook": "post_init_hook",
     "license": "LGPL-3",
