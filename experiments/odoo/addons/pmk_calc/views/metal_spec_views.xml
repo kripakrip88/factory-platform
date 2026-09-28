@@ -320,7 +320,10 @@
     <field name="model">pmk.metal.spec</field>
     <field name="arch" type="xml">
       <list string="Спецификации">
-        <field name="name"/>
+        <!-- Номер расчёта не обрезается никогда (разбор UX, шаг 2): без
+             ширины Odoo отдавал место клиенту и сделке, и «СМ-00024»
+             превращался в «СМ-00…» (29.09.2026). -->
+        <field name="name" width="105px"/>
         <field name="date"/>
         <field name="partner_id"/>
         <field name="total_products"/>
