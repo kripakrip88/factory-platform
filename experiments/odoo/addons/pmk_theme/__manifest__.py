@@ -64,6 +64,9 @@
             # "pmk_theme/static/src/js/collapsible_sections.js",
             "pmk_theme/static/src/js/navbar_active_section.js",
             "pmk_theme/static/src/js/chatter_inline.js",
+            # Правый верхний угол без переключателя компаний и лишних
+            # пунктов меню аватара (разбор UX, 28.09.2026).
+            "pmk_theme/static/src/js/systray_trim.js",
             "pmk_theme/static/src/xml/navbar.xml",
             "pmk_theme/static/src/xml/chatter.xml",
         ],
