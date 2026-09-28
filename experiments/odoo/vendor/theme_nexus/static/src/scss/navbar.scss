@@ -43,14 +43,14 @@
         transition: $nx-transition;
 
         &:hover {
-            color: $nx-orange !important;
+            color: $nx-accent !important;
         }
     }
 
     .o_menu_sections {
         .dropdown-toggle.show,
         .o_nav_entry.active {
-            color: $nx-orange !important;
+            color: $nx-accent !important;
         }
     }
 
@@ -62,8 +62,8 @@
             transition: $nx-transition;
 
             &:hover {
-                background: $nx-orange-softer !important;
-                color: $nx-orange !important;
+                background: $nx-hover !important;
+                color: $nx-accent !important;
             }
         }
 
@@ -74,7 +74,7 @@
         }
 
         .badge {
-            background: $nx-orange !important;
+            background: $nx-accent !important;
             border: 2px solid $nx-white;
         }
     }
@@ -106,13 +106,15 @@
     transition: $nx-transition;
 
     &:focus-within {
-        border-color: $nx-orange !important;
-        box-shadow: 0 0 0 3px $nx-orange-soft;
+        border-color: $nx-accent !important;
+        box-shadow: 0 0 0 3px $nx-focus-glow;
     }
 
+    // ПРАВКА ПМК: метка фильтра — лайм под чёрным текстом, без контура:
+    // лаймовая линия на белом не видна.
     .o_searchview_facet {
-        background: $nx-orange-softer !important;
+        background: $nx-fill !important;
         border-radius: $nx-radius-pill !important;
-        border: 1px solid $nx-orange-soft !important;
+        border: 1px solid transparent !important;
     }
 }

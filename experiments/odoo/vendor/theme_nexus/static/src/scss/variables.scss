@@ -16,10 +16,40 @@ $nx-slate-2:          #8A8D96;
 $nx-border:           #EAE6DC;
 $nx-border-strong:    #DAD5C8;
 
-$nx-orange:           #FF6A1A;
-$nx-orange-2:         #FF8A4C;
-$nx-orange-soft:      rgba(255, 106, 26, 0.14);
-$nx-orange-softer:    rgba(255, 106, 26, 0.07);
+// ПРАВКА ПМК (28.09.2026, разбор UX, шаг 6): оранжевый темы (#FF6A1A и три
+// его оттенка) заменён фирменной парой завода — чёрный и приглушённый лайм,
+// вариант «Б», выбор Антона. Роли:
+//   $nx-accent       главное действие, «где я» (черта вкладки), ссылки, рамка
+//                    фокуса — чёрный. Тонкие линии только тёмные.
+//   $nx-fill         выделение и «активно» заливкой (метка фильтра,
+//                    выделенный текст) — лайм средней яркости, всегда под
+//                    чёрным текстом (контраст 13,8). Лаймом по белому не
+//                    пишем и тонких линий не рисуем: #C8F000 на белом — 1,32.
+//                    Чистый #C8F000 заливкой «слишком ярко, режет глаз».
+//   $nx-fill-soft    тихая заливка (строка в правке, «сегодня» в календаре).
+//   $nx-hover        наведение — нейтральное, чтобы не путалось с выбором.
+//   $nx-focus-glow   свечение фокуса.
+//   $nx-lime-deep    полосы прогресса без смыслового цвета.
+//   $nx-accent-dark  акцент тёмного режима: чёрный на тёмном пропал бы.
+// Смысловые красный, жёлтый, зелёный, синий — без изменений. Цвета разделов
+// меню задаёт pmk_theme (navbar_nexus.scss), их правка не касается.
+// Снимок до правки — git-тег theme-orange-snapshot-2026-09-28.
+$nx-accent:           #16191C;
+$nx-accent-hover:     #2E3238;
+$nx-fill:             #DDEB94;
+$nx-fill-soft:        #EEF5C8;
+$nx-hover:            rgba(22, 25, 28, 0.05);
+$nx-focus-glow:       rgba(22, 25, 28, 0.14);
+$nx-lime-deep:        #9BB52A;
+$nx-accent-dark:      #C8F000;
+
+// Прежние имена — только ради выключенного sidebar.scss (закомментирован в
+// манифесте): включат его обратно — сборка стилей не упадёт на неизвестной
+// переменной. В новых правилах не использовать.
+$nx-orange:           $nx-accent;
+$nx-orange-2:         $nx-accent-hover;
+$nx-orange-soft:      $nx-fill;
+$nx-orange-softer:    $nx-fill-soft;
 
 $nx-green:            #2FB673;
 $nx-blue:             #4C7EFF;
@@ -75,8 +105,8 @@ $nx-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helveti
 
 @mixin nx-focus-ring {
     outline: none !important;
-    box-shadow: 0 0 0 3px $nx-orange-soft !important;
-    border-color: $nx-orange !important;
+    box-shadow: 0 0 0 3px $nx-focus-glow !important;
+    border-color: $nx-accent !important;
 }
 
 @mixin nx-scrollbar($track: transparent, $thumb: $nx-border-strong) {
@@ -86,6 +116,6 @@ $nx-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helveti
         background: $thumb;
         border-radius: $nx-radius-pill;
 
-        &:hover { background: $nx-orange; }
+        &:hover { background: $nx-slate; }
     }
 }

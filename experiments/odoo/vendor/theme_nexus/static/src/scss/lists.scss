@@ -43,11 +43,11 @@
             transition: $nx-transition;
 
             &:hover {
-                background: $nx-orange-softer !important;
+                background: $nx-hover !important;
             }
 
             &.o_selected_row {
-                background: $nx-orange-soft !important;
+                background: $nx-fill-soft !important;
             }
         }
 
@@ -69,17 +69,17 @@
 
     &:hover,
     &.active {
-        background: $nx-orange-soft !important;
+        background: $nx-fill-soft !important;
         color: $nx-charcoal !important;
     }
 }
 
 .table-info {
-    --table-hover-bg: #{$nx-orange-softer} !important;
+    --table-hover-bg: #{$nx-hover} !important;
     --table-striped-bg: #{$nx-offwhite} !important;
 }
 
 .o_input:focus,
 .o_list_renderer .o_data_row.o_selected_row > .o_data_cell.o_required_modifier:not(.o_readonly_modifier) {
-    border-bottom: 2px solid $nx-orange !important;
+    border-bottom: 2px solid $nx-accent !important;
 }

@@ -485,7 +485,8 @@ body.o_nexus_dark {
     }
   }
 
-  // Включённое состояние — оранжевый темы.
+  // Включённое состояние — фирменный лайм: включено = тёмный режим, дорожка
+  // всегда на тёмной шапке (до 28.09.2026 была оранжевой).
   &--on {
     .pmk_theme_switch__glyph::before {
       content: "\f186";        // месяц
@@ -493,7 +494,7 @@ body.o_nexus_dark {
     }
 
     .pmk_theme_switch__track {
-      background: #ff6a1a;
+      background: #c8f000;
 
       &::after { left: 18px; }
     }
@@ -552,8 +553,8 @@ body.o_nexus_dark {
   // Фокус показываем ОДИН раз и на капсуле — там, где человек видит границу
   // элемента. Рамка фокуса внутри капсулы была бы вторым контуром.
   &:focus-within {
-    border-color: #ff6a1a !important;
-    box-shadow: 0 0 0 3px rgba(255, 106, 26, 0.14) !important;
+    border-color: #16191c !important;
+    box-shadow: 0 0 0 3px rgba(22, 25, 28, 0.14) !important;
   }
 
   // Лупа слева — приглушённая: это указатель назначения поля, а не действие.
@@ -581,8 +582,8 @@ body.o_nexus_dark {
 
   &.show,
   &:focus-visible {
-    border-color: #ff6a1a !important;
-    color: #ff6a1a !important;
+    border-color: #16191c !important;
+    color: #16191c !important;
   }
 }
 

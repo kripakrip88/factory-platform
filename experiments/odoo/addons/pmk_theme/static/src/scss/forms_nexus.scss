@@ -444,14 +444,15 @@ body.o_nexus_dark {
   line-height: 1.6;
   white-space: nowrap;
   align-self: center;
-  border: 1px solid #ff6a1a !important;
-  color: #c44a09 !important;
+  border: 1px solid #16191c !important;
+  color: #16191c !important;
   background: transparent !important;
   border-radius: 6px;
 
+  // Шаг 6 разбора UX: чёрный контур вместо оранжевого, наведение — лайм.
   &:hover {
-    background: rgba(255, 106, 26, 0.08) !important;
-    color: #b3420a !important;
+    background: #eef5c8 !important;
+    color: #16191c !important;
   }
 }
 
@@ -520,7 +521,7 @@ body.o_nexus_dark {
 
   .o_input,
   .o_field_widget:not(:has(.o_input)):not(:has(table)) {
-    background: rgba(255, 106, 26, 0.07);
+    background: rgba(22, 25, 28, 0.04);
   }
 }
 
@@ -1045,4 +1046,68 @@ $pmk-stage-tones: (
     background: nth($pair, 1) !important;
     box-shadow: inset 0 0 0 1px nth($pair, 2);
   }
+}
+
+// ─── Почтовый клиент: выбранное — лаймом ────────────────────────────────────
+//
+// Разбор UX, шаг 6 (28.09.2026): оранжевый → чёрный и приглушённый лайм.
+// Модуль mail_client красит открытую папку и открытое письмо основным
+// цветом Odoo со сплошной заливкой и белым текстом. Основной цвет теперь
+// чёрный — вышли бы сплошные чёрные полосы в списке. По правилу темы
+// выбранное — лайм под чёрным текстом ($nx-fill), отмеченное галочкой —
+// тот же лайм прозрачнее. Черта непрочитанного (--mc-unread-marker) остаётся
+// основным цветом: это тонкая линия, ей и положено быть чёрной.
+.o_mail_client {
+  --mc-active-bg: #ddeb94;
+  --mc-active-color: #16191c;
+  --mc-ticked-bg: rgba(221, 235, 148, 0.45);
+}
+
+// В mail_client приглушённый текст открытого письма — белый полупрозрачный
+// (под тёмную заливку, с !important). На лайме он пропал бы — возвращаем
+// тёмно-серый; счётчик на открытой папке — тоже тёмной подложкой.
+.o_mail_client_row.active,
+.o_mail_client_row.active.o_ticked {
+  .text-muted,
+  .small {
+    color: #4b4f58 !important;
+  }
+
+  .o_mail_client_tick:not(:checked) {
+    border-color: rgba(22, 25, 28, 0.35);
+  }
+}
+
+.o_mail_client_folder.active .badge {
+  background-color: rgba(22, 25, 28, 0.12) !important;
+  color: #16191c !important;
+}
+
+// ─── Шапка на телефоне при открытом меню сообщений ─────────────────────────
+//
+// Ядро красит шапку основным цветом, пока открыто меню сообщений на узком
+// экране (.o-mail-discuss-systray-menu-open .o_main_navbar). Раньше это был
+// оранжевый, теперь чёрный — а тема красит пункты шапки тёмно-серым с
+// !important, и они пропали бы на чёрном. Шапка остаётся белой, как всегда.
+.o-mail-discuss-systray-menu-open .o_main_navbar {
+  background: #fff !important;
+}
+
+// ─── Ссылки: чёрные, отличаются подчёркиванием ─────────────────────────────
+//
+// Разбор UX, шаг 6: ссылки теперь основного цвета — чёрные. В тексте
+// (письма, заметки, поля с форматированием) без подчёркивания их не
+// отличить от слов вокруг — там подчёркнуты всегда, тонкой серой чертой.
+// Значение поля-ссылки в форме (контрагент, товар) — подчёркивание при
+// наведении: это поле формы, а не текст, постоянная черта его зашумила бы.
+.o_field_html a,
+.o-mail-Message-body a {
+  text-decoration: underline;
+  text-decoration-color: rgba(22, 25, 28, 0.35);
+  text-underline-offset: 2px;
+}
+
+.o_form_view .o_form_uri:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }

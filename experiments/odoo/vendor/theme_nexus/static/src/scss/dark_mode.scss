@@ -63,7 +63,7 @@ body.o_nexus_dark {
     .o_list_table tbody tr {
         border-color: rgba(255, 255, 255, 0.08) !important;
 
-        &:hover { background: rgba(255, 106, 26, 0.1) !important; }
+        &:hover { background: rgba(200, 240, 0, 0.08) !important; }
     }
 
     .form-control,
@@ -76,12 +76,63 @@ body.o_nexus_dark {
     .o_notebook .nav-tabs .nav-link {
         color: $nx-text-muted-dark !important;
 
-        &.active { color: $nx-orange !important; }
+        &.active { color: $nx-accent-dark !important; }
     }
 
-    .o_cell:hover { background: rgba(255, 106, 26, 0.12) !important; }
+    .o_cell:hover { background: rgba(200, 240, 0, 0.08) !important; }
 
-    ::selection { background: rgba(255, 106, 26, 0.35); color: $nx-text-on-dark; }
+    ::selection { background: rgba(200, 240, 0, 0.30); color: $nx-text-on-dark; }
+
+    // ПРАВКА ПМК (28.09.2026, шаг 6): акцент тёмного режима — фирменный лайм.
+    // Основной цвет Odoo теперь чёрный и подставляется при сборке, поэтому
+    // всё, что ядро красит им (ссылки, главная кнопка, флажки, черта
+    // вкладки, рамка фокуса, счётчики), на тёмном фоне пропало бы: контраст
+    // чёрного к #2A2C33 — 1,27. Лайм к #16171B — 13,6.
+    a,
+    .text-action,
+    .btn-link,
+    .o_form_view .o_form_uri,
+    .o_field_widget.o_field_copy {
+        color: $nx-accent-dark !important;
+    }
+
+    .btn-primary,
+    .o_form_button_create {
+        background: $nx-accent-dark !important;
+        border-color: $nx-accent-dark !important;
+        color: $nx-charcoal !important;
+        box-shadow: none;
+    }
+
+    .o_notebook .nav-tabs .nav-link.active {
+        box-shadow: inset 0 -2px 0 $nx-accent-dark;
+    }
+
+    // Белая галочка Bootstrap на ярком лайме не видна — отмеченный флажок
+    // тёмно-оливковый.
+    .form-check-input:checked {
+        background-color: #6E8200 !important;
+        border-color: #6E8200 !important;
+    }
+
+    .form-control:focus,
+    .o_input:focus,
+    .o_searchview:focus-within {
+        border-color: $nx-accent-dark !important;
+        box-shadow: 0 0 0 3px rgba(200, 240, 0, 0.25) !important;
+    }
+
+    .badge.bg-primary,
+    .badge.text-bg-primary,
+    .o_menu_systray .badge,
+    .o_loading_indicator {
+        background-color: $nx-accent-dark !important;
+        color: $nx-charcoal !important;
+    }
+
+    .o_searchview .o_searchview_facet {
+        background: rgba(200, 240, 0, 0.18) !important;
+    }
 }
 
 // ---- Toggle switch UI (sits in the sidebar footer) -----------------------
@@ -120,9 +171,9 @@ body.o_nexus_dark {
         }
 
         &.o_nexus_switch_on {
-            background: $nx-orange;
+            background: $nx-accent-dark;
 
-            &::after { left: 17px; background: $nx-white; }
+            &::after { left: 17px; background: $nx-charcoal; }
         }
     }
 }

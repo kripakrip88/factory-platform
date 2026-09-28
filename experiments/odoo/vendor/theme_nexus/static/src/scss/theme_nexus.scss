@@ -9,15 +9,15 @@ body {
 }
 
 ::selection {
-    background: $nx-orange-soft;
+    background: $nx-fill;
     color: $nx-charcoal;
 }
 
 a {
-    color: $nx-orange;
+    color: $nx-accent;
 
     &:hover {
-        color: darken($nx-orange, 8%);
+        color: $nx-accent-hover;
     }
 }
 
@@ -25,22 +25,27 @@ a {
 .o_calendar_view {
     .fc-daygrid-day.fc-day-today,
     .fc-timegrid-col.fc-day-today {
-        background: $nx-orange-softer !important;
+        background: $nx-fill-soft !important;
     }
 
+    // ПРАВКА ПМК: заливку событий убрали — цвета ядра (по участникам). Одна
+    // заливка на все события прятала, чьё событие, а чёрная сделала бы
+    // невидимыми заголовки: текст события в ядре почти чёрный.
     .fc-event {
         border-radius: $nx-radius-sm;
         border: none;
-        background: $nx-orange;
     }
 }
 
 // Activity / progress accents
 .o_activity_color_planned { color: $nx-blue !important; }
-.o_activity_color_today { color: $nx-orange !important; }
+.o_activity_color_today { color: $nx-yellow !important; }
 .o_activity_color_overdue { color: $nx-red !important; }
 
-.progress-bar { background-color: $nx-orange !important; }
+// ПРАВКА ПМК: только полосы без своего смыслового цвета. Полосы над
+// колонками воронки несут bg-success / bg-warning / bg-danger («в срок /
+// сегодня / просрочено») — прежнее правило красило их все одним цветом.
+.progress-bar:not([class*="bg-"]) { background-color: $nx-lime-deep !important; }
 
 // Home menu / apps grid (default Odoo grid, kept as a fallback entry point
 // alongside the pinned sidebar — e.g. reachable via the "Home" hotkey)
@@ -54,14 +59,15 @@ a {
 
 // Loading indicator
 .o_loading_indicator {
-    background: $nx-orange !important;
+    background: $nx-accent !important;
 }
 
 // Notification / toast
+// ПРАВКА ПМК: оранжевую черту слева убрали — у уведомления ядра своя
+// цветная полоса по типу (успех, предупреждение, ошибка).
 .o_notification {
     border-radius: $nx-radius-md;
     box-shadow: $nx-shadow-md;
-    border-left: 3px solid $nx-orange;
 }
 
 
@@ -83,24 +89,31 @@ a {
 // Видно на каждой карточке контрагента: переключатель «Физлицо / Компания»
 // горел фиолетовым посреди оранжевой темы.
 .form-check-input:checked {
-    background-color: $nx-orange !important;
-    border-color: $nx-orange !important;
+    background-color: $nx-accent !important;
+    border-color: $nx-accent !important;
+}
+
+// ПРАВКА ПМК: переключатель «включено» — зелёный, как в ядре: чёрный
+// флажок читается «отмечено», а у переключателя смысл «работает».
+.form-switch .form-check-input:checked {
+    background-color: $nx-green !important;
+    border-color: $nx-green !important;
 }
 
 .form-check-input:focus {
-    border-color: $nx-orange !important;
-    box-shadow: 0 0 0 .2rem $nx-orange-soft !important;
+    border-color: $nx-accent !important;
+    box-shadow: 0 0 0 .2rem $nx-focus-glow !important;
 }
 
 .form-check:hover .form-check-input:not(:disabled) {
-    border-color: $nx-orange-2 !important;
+    border-color: $nx-slate !important;
 }
 
 // ─── Поле с копированием и элементы управления картинкой ───────────────────
 // Ядро: .o_field_widget.o_field_copy { color: #71639e }
 //       .o_field_widget.o_field_image .o_form_image_controls { background: #71639e }
 .o_field_widget.o_field_copy {
-    color: $nx-orange !important;
+    color: $nx-accent !important;
 }
 
 .o_field_widget.o_field_image .o_form_image_controls,
@@ -114,6 +127,6 @@ a {
 .badge.bg-primary,
 .badge.text-bg-primary,
 .o_menu_systray .badge {
-    background-color: $nx-orange !important;
+    background-color: $nx-accent !important;
     color: #fff !important;
 }

@@ -19,15 +19,16 @@ input[type="submit"],
 
 .btn-primary,
 .o_form_button_create {
-    background: $nx-orange !important;
-    border: 1px solid $nx-orange !important;
+    background: $nx-accent !important;
+    border: 1px solid $nx-accent !important;
     color: $nx-white !important;
-    box-shadow: 0 4px 14px rgba(255, 106, 26, 0.28);
+    box-shadow: 0 4px 14px rgba(22, 25, 28, 0.16);
 
+    // ПРАВКА ПМК: у чёрного darken() разницы не даёт — наведение светлее.
     &:hover {
-        background: darken($nx-orange, 6%) !important;
-        border-color: darken($nx-orange, 6%) !important;
-        box-shadow: 0 6px 18px rgba(255, 106, 26, 0.36);
+        background: $nx-accent-hover !important;
+        border-color: $nx-accent-hover !important;
+        box-shadow: 0 6px 18px rgba(22, 25, 28, 0.22);
     }
 
     &:disabled {
@@ -45,17 +46,17 @@ input[type="submit"],
 
     &:hover {
         background: $nx-offwhite !important;
-        border-color: $nx-orange !important;
-        color: $nx-orange !important;
+        border-color: $nx-accent !important;
+        color: $nx-accent !important;
     }
 }
 
 .btn-link {
-    color: $nx-orange !important;
+    color: $nx-accent !important;
     font-weight: 600;
 
     &:hover {
-        color: darken($nx-orange, 8%) !important;
+        color: $nx-accent-hover !important;
         text-decoration: underline;
     }
 }
@@ -66,8 +67,8 @@ input[type="submit"],
     color: $nx-slate !important;
 
     &:hover {
-        background: $nx-orange-softer !important;
-        color: $nx-orange !important;
+        background: $nx-hover !important;
+        color: $nx-accent !important;
     }
 }
 
@@ -77,13 +78,13 @@ input[type="submit"],
     transition: $nx-transition;
 
     &:hover {
-        border-color: $nx-orange !important;
-        background: $nx-orange-softer !important;
+        border-color: $nx-slate-2 !important;
+        background: $nx-hover !important;
     }
 }
 
 .o-form-buttonbox .oe_stat_button .o_button_icon,
 .o_form_view .o_form_uri,
 .alert-link {
-    color: $nx-orange !important;
+    color: $nx-accent !important;
 }
