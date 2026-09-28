@@ -135,6 +135,66 @@
         <attribute name="invisible">1</attribute>
       </xpath>
 
+      <!--
+        Шаг 4 (разбор UX, шаг 8, 28.09.2026): блок разложенного адреса —
+        прочь с экрана. Антон: «давай уберём эту кучу строк и сделаем одну
+        плашку как юридический адрес такого же размера, только фактический
+        адрес». Плашка «Фактический адрес» — на «Реквизитах» (pmk_dadata).
+
+        Поля (улица, город, индекс, страна) остаются в базе: их заполняет
+        «Заполнить по ИНН» из юридического адреса, их берут печатные формы и
+        колонка «Город» в списках. Прячем подпись «Адрес» и сам блок; ищем
+        внутри нашей страницы — блок адреса вложенной формы контактного лица
+        лежит на «Контактах» и под выборку не попадает.
+      -->
+      <xpath expr="//page[@name='pmk_main']//span[@name='address_name']"
+             position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//page[@name='pmk_main']//div[hasclass('o_address_format')]"
+             position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+
+      <!--
+        Вкладка «Заметки» — убрана (Антон, 28.09.2026: «заметки убираем, если
+        понадобятся — попрошу включить обратно»). Заполнены у 77 поставщиков
+        из загруженного реестра («что возит», площадка, проверка) — текст в
+        базе цел, вернуть = снять эту строку. Вместе с вкладкой ушла загрузка
+        факсимиле подписи у физлиц (российская локализация, печать).
+      -->
+      <xpath expr="//page[@name='internal_notes']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+
+      <!--
+        «Продажи и закупки» — без полей, которыми завод не пользуется
+        (Антон: «продажи 2 строки, закупки в разы больше… раскидаешь, чтобы
+        всё выглядело лаконично?»):
+          • группировка запросов котировок (purchase_stock) — запросы
+            отправляются по одному;
+          • напоминание о приёмке (purchase) — приёмку не ведём в Odoo;
+          • валюта поставщика — все закупки в рублях.
+        Подписи прячем вместе с полями: у группировки и напоминания подпись
+        отдельным узлом, иначе висела бы надпись без поля.
+      -->
+      <xpath expr="//page[@name='sales_purchases']//label[@for='group_rfq']"
+             position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//page[@name='sales_purchases']//div[@name='group_rfq_container']"
+             position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//page[@name='sales_purchases']//div[@name='receipt_reminder']"
+             position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//page[@name='sales_purchases']//field[@name='property_purchase_currency_id']"
+             position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+
     </field>
   </record>
 

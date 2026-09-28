@@ -65,4 +65,60 @@
     </field>
   </record>
 
+
+  <!--
+    Лид и сделка — без адреса, языка, сайта и маркетинга. Разбор UX, шаг 8
+    (28.09.2026, согласовано Антоном: «давай уберём эту кучу строк»).
+
+    Адрес клиента живёт в карточке контрагента («Фактический адрес»), а не в
+    каждой сделке; язык у завода один; сайт — в карточке контрагента; рекламных
+    кампаний, каналов и источников завод не ведёт. Остаются компания, имя
+    контакта, должность и команда.
+
+    Поля в базе остаются, ядро по-прежнему переносит их в контрагента при
+    создании. Xpath по узлам внутри своей группы/страницы: у лида и у сделки
+    блоки адреса разные (group lead_partner и page lead), а на форме
+    контрагента в «Контактах» есть свой адрес.
+  -->
+  <record id="view_crm_lead_form_trim" model="ir.ui.view">
+    <field name="name">crm.lead.form.pmk.trim</field>
+    <field name="model">crm.lead</field>
+    <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+    <field name="arch" type="xml">
+      <!-- Лид: верхняя группа -->
+      <xpath expr="//group[@name='lead_partner']/label[@for='street']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//group[@name='lead_partner']/div[hasclass('o_address_format')]" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//group[@name='lead_partner']/field[@name='website']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//group[@name='lead_partner']/field[@name='lang_id']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <!-- Лид: «Дополнительная информация» — маркетинг -->
+      <xpath expr="//page[@name='extra']//group[@name='categorization']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <!-- Сделка: вкладка «Контакты» -->
+      <xpath expr="//page[@name='lead']//label[@for='street_page_lead']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//page[@name='lead']//div[hasclass('o_address_format')]" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//page[@name='lead']//field[@name='lang_id']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//page[@name='lead']//field[@name='website']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//page[@name='lead']//group[field[@name='campaign_id']]" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+    </field>
+  </record>
+
 </odoo>

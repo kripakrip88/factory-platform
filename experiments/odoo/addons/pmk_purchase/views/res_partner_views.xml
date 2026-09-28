@@ -1,9 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
 
-  <!-- Блок запроса прайсов — в группу «Закупки» карточки контрагента,
-       рядом с закупщиком и условиями оплаты, а не отдельной вкладкой:
-       снабженец смотрит всё это разом. -->
+  <!-- Блок запроса прайсов — на вкладке «Продажи и закупки», а не отдельной
+       вкладкой: снабженец смотрит всё это разом.
+
+       Разбор UX, шаг 8 (28.09.2026): раньше десять полей прайса
+       дописывались в колонку «Закупка», и она становилась в разы длиннее
+       колонки «Продажи» (Антон: «правый столбец сильно растянут»). Теперь
+       в колонке «Закупка» только флажок «Поставщик прайсов», а сам блок —
+       отдельной группой «Прайсы» во всю ширину, в две колонки: слева кто и
+       куда писать, справа расписание запросов. Без флажка блока нет. -->
   <record id="view_partner_form_price" model="ir.ui.view">
     <field name="name">res.partner.form.pmk.price</field>
     <field name="model">res.partner</field>
@@ -11,25 +17,28 @@
     <field name="arch" type="xml">
       <xpath expr="//group[@name='purchase']" position="inside">
         <field name="pmk_price_supplier"/>
-        <field name="pmk_supply_ids" widget="many2many_tags"
-               invisible="not pmk_price_supplier"
-               options="{'no_create_edit': True}"/>
-        <field name="pmk_has_stock" invisible="not pmk_price_supplier"/>
-        <field name="pmk_price_email" invisible="not pmk_price_supplier"
-               placeholder="zakaz@postavshchik.ru"/>
-        <field name="pmk_price_email_state" invisible="not pmk_price_supplier"
-               widget="badge"
-               decoration-warning="pmk_price_email_state == 'draft'"
-               decoration-success="pmk_price_email_state == 'confirmed'"
-               decoration-danger="pmk_price_email_state == 'invalid'"/>
-        <field name="pmk_price_email_source" invisible="not pmk_price_supplier"
-               widget="url"/>
-        <field name="pmk_price_mailing" invisible="not pmk_price_supplier"
-               widget="boolean_toggle"/>
-        <field name="pmk_price_period_days" invisible="not pmk_price_supplier"/>
-        <field name="pmk_price_request_date" invisible="not pmk_price_supplier"/>
-        <field name="pmk_price_last_date" invisible="not pmk_price_supplier"/>
-        <field name="pmk_price_next_date" invisible="not pmk_price_supplier"/>
+      </xpath>
+      <xpath expr="//page[@name='sales_purchases']/group[@name='container_row_2']" position="after">
+        <group name="pmk_price" string="Прайсы" invisible="not pmk_price_supplier">
+          <group name="pmk_price_who">
+            <field name="pmk_supply_ids" widget="many2many_tags"
+                   options="{'no_create_edit': True}"/>
+            <field name="pmk_has_stock"/>
+            <field name="pmk_price_email" placeholder="zakaz@postavshchik.ru"/>
+            <field name="pmk_price_email_state" widget="badge"
+                   decoration-warning="pmk_price_email_state == 'draft'"
+                   decoration-success="pmk_price_email_state == 'confirmed'"
+                   decoration-danger="pmk_price_email_state == 'invalid'"/>
+            <field name="pmk_price_email_source" widget="url"/>
+          </group>
+          <group name="pmk_price_when">
+            <field name="pmk_price_mailing" widget="boolean_toggle"/>
+            <field name="pmk_price_period_days"/>
+            <field name="pmk_price_request_date"/>
+            <field name="pmk_price_last_date"/>
+            <field name="pmk_price_next_date"/>
+          </group>
+        </group>
       </xpath>
     </field>
   </record>
