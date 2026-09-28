@@ -39,8 +39,12 @@
         <header>
           <button name="action_parse_file" type="object" string="Разобрать файл"
                   class="btn-primary" icon="fa-file-archive-o" invisible="not file"/>
+          <!-- fa-object-ungroup, а не fa-drafting-compass: в Odoo 19 шрифт
+               значков — Font Awesome 4.7, циркуля там нет, и кнопка стояла без
+               значка (разбор UX, шаг 15). «Фигуры, разобранные на контуры» —
+               ровно то, что делает кнопка с чертежом детали. -->
           <button name="action_parse_drawings" type="object" string="Разобрать чертежи"
-                  icon="fa-drafting-compass" invisible="not part_ids"/>
+                  icon="fa-object-ungroup" invisible="not part_ids"/>
           <button name="action_propose_offcuts" type="object" string="Предложить обрезки"
                   icon="fa-recycle" invisible="not sheet_ids"/>
           <button name="action_update_norms" type="object" string="Пересчитать нормативы"
