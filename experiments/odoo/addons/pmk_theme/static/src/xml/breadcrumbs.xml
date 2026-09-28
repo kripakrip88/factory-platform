@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <!--
+        Строка пути (разбор UX, шаг 2, решение Антона 28.09.2026; скрин 32).
+
+        1. КОРОТКИЕ ЗВЕНЬЯ НЕ СЖИМАЮТСЯ. В Odoo 19 все звенья пути сжимаются
+           одинаково, и номер «СМ-00024» обрезался до «СМ-…» рядом с длинным
+           названием сделки. Звено до 16 знаков — это номер документа или
+           короткое название раздела — получает класс o_pmk_bc_short, и стили
+           (navbar_nexus.scss) запрещают ему сжиматься. Сжимается только
+           длинное название.
+        2. ПОДСКАЗКА ПО-РУССКИ. У видимых звеньев ядро собирает подсказку прямо
+           в разметке строкой «Back to "…" form» — такую строку Odoo не
+           переводит. Берём тот же метод, что уже использует выпадашка «…»:
+           getBreadcrumbTooltip() идёт через перевод.
+        3. ПОЛНОЕ НАЗВАНИЕ ТЕКУЩЕГО ДОКУМЕНТА при наведении — атрибут title:
+           название обрезается, а подсказки у него в ядре нет.
+
+        Пути xpath без индексов: у текущего звена два варианта разметки (с
+        путём и без), и они различаются вложенностью.
+    -->
+    <t t-inherit="web.Breadcrumbs" t-inherit-mode="extension">
+        <xpath expr="//t[@t-foreach='visiblePathBreadcrumbs']/li" position="attributes">
+            <attribute name="t-att-class">{ o_back_button: breadcrumb_last, o_pmk_bc_short: (breadcrumb.name || '').length &lt;= 16 }</attribute>
+        </xpath>
+        <xpath expr="//t[@t-foreach='visiblePathBreadcrumbs']/li/a" position="attributes">
+            <attribute name="t-att-data-tooltip">getBreadcrumbTooltip(breadcrumb)</attribute>
+        </xpath>
+        <xpath expr="//div[hasclass('o_breadcrumb')]/div/div[hasclass('o_last_breadcrumb_item')]/span" position="attributes">
+            <attribute name="t-att-title">breadcrumb.name</attribute>
+        </xpath>
+        <xpath expr="//div[hasclass('o_breadcrumb')]/div[hasclass('o_last_breadcrumb_item')]/span" position="attributes">
+            <attribute name="t-att-title">breadcrumb.name</attribute>
+        </xpath>
+    </t>
+</templates>

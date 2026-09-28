@@ -67,6 +67,9 @@
             # Правый верхний угол без переключателя компаний и лишних
             # пунктов меню аватара (разбор UX, 28.09.2026).
             "pmk_theme/static/src/js/systray_trim.js",
+            # Строка пути: номера не обрезаются, подсказки по-русски
+            # (разбор UX, шаг 2, 28.09.2026).
+            "pmk_theme/static/src/xml/breadcrumbs.xml",
             "pmk_theme/static/src/xml/navbar.xml",
             "pmk_theme/static/src/xml/chatter.xml",
         ],

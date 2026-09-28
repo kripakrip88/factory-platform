@@ -550,3 +550,44 @@ body.o_nexus_dark {
 .o-web-UserMenu-imStatus {
   display: none !important;
 }
+
+// ─── Строка пути ────────────────────────────────────────────────────────────
+//
+// Разбор UX, шаг 2 (решение Антона 28.09.2026, скрин 32). Прошлые звенья были
+// оранжевыми: правило серых звеньев из копии темы написано под класс
+// .o_breadcrumb_item, которого в Odoo 19 нет, и ссылки брали общий цвет
+// ссылок — акцент. Оранжевый в строке пути спорил с главной кнопкой и
+// читался плохо (контраст 2,9 при норме 4,5).
+//
+// Прошлые звенья — тёмно-серые #4B4F58 (контраст 7,8), при наведении —
+// чёрные с подчёркиванием. Текущий документ — чёрный полужирный: это «где я».
+// !important у цвета — против общего цвета ссылок темы.
+//
+// .o_pmk_bc_short ставит шаблон xml/breadcrumbs.xml на звенья до 16 знаков
+// (номера документов): им сжиматься запрещено, сжимается длинное название.
+.o_control_panel .o_breadcrumb {
+  .breadcrumb-item > a {
+    color: #4b4f58 !important;
+    font-weight: 500;
+    text-decoration: none;
+
+    &:hover,
+    &:focus-visible {
+      color: #14141a !important;
+      text-decoration: underline;
+    }
+  }
+
+  .breadcrumb-item + .breadcrumb-item::before {
+    color: #9aa0a6;
+  }
+
+  .breadcrumb-item.o_pmk_bc_short {
+    flex-shrink: 0;
+  }
+
+  .o_last_breadcrumb_item {
+    color: #14141a;
+    font-weight: 600;
+  }
+}
