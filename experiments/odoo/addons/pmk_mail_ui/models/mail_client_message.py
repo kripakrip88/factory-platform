@@ -164,15 +164,19 @@ class MailClientMessage(models.Model):
         ]
         return result
 
-    def _pmk_body_cids(self):
+    @staticmethod
+    def _pmk_cids_in(html_text):
         """Номера картинок, на которые ссылается текст, в порядке появления."""
-        self.ensure_one()
         seen = []
-        for match in _CID_SRC.finditer(self.body_html or ""):
+        for match in _CID_SRC.finditer(html_text or ""):
             cid = match.group(3)
             if cid not in seen:
                 seen.append(cid)
         return seen
+
+    def _pmk_body_cids(self):
+        self.ensure_one()
+        return self._pmk_cids_in(self.body_html)
 
     def _pmk_cid_map(self, cids):
         by_cid = {p.pmk_content_id: p for p in self.client_attachment_ids
@@ -225,75 +229,122 @@ class MailClientMessage(models.Model):
         return bool(self._pmk_image_mime(part)
                     and self._pmk_decoded_size(part) <= _INLINE_MAX_BYTES)
 
-    def _pmk_download_inline(self, cids, need_structure):
-        self.ensure_one()
-        # Два открытия одного письма разом (двойной щелчок, два менеджера в
-        # общем ящике) завели бы одну и ту же часть дважды и упёрлись бы в
-        # UNIQUE(message_id, part_number) — письмо не открылось бы вовсе.
-        # Второй запрос ждать не заставляем: NOWAIT даёт ошибку блокировки,
-        # Odoo сам повторяет такой запрос чуть позже, и к тому времени всё
-        # уже записано первым.
+    def _pmk_lock_message(self):
+        """Два открытия одного письма разом (двойной щелчок, два менеджера в
+        общем ящике) завели бы одну и ту же часть дважды и упёрлись бы в
+        UNIQUE(message_id, part_number) — письмо не открылось бы вовсе.
+        Второй запрос ждать не заставляем: NOWAIT даёт ошибку блокировки,
+        Odoo сам повторяет такой запрос чуть позже, и к тому времени всё уже
+        записано первым."""
         self.env.cr.execute(
             "SELECT id FROM mail_client_message WHERE id = %s FOR NO KEY UPDATE NOWAIT",
             [self.id])
-        Part = self.env["mail.client.attachment"].sudo()
+
+    def _pmk_record_inline_parts(self, parts, cids):
+        """Завести строки частей, на которые ссылается текст, с их Content-ID.
+
+        `parts` — состав письма, как его разбирает модуль почты (BODYSTRUCTURE).
+        Часть, которую модуль почты считает вложением, но ещё не завёл, заводим
+        его же значениями — тогда его `_sync_attachment_records` её пропустит.
+        Картинку, которую он вложением не считает, помечаем «в тексте».
+        """
+        self.ensure_one()
         wanted = set(cids) | {unquote(c) for c in cids}
+        existing = {p.part_number: p for p in self.client_attachment_ids}
+        attachment_numbers = [info["part_number"] for info in parts
+                              if info.get("is_attachment")]
+        new_vals = []
+        for index, info in enumerate(parts):
+            cid = (info.get("content_id") or "").strip()
+            if not cid or cid not in wanted:
+                continue
+            record = existing.get(info["part_number"])
+            if record:
+                if record.pmk_content_id != cid:
+                    record.pmk_content_id = cid
+                continue
+            is_attachment = bool(info.get("is_attachment"))
+            new_vals.append({
+                "message_id": self.id,
+                # Порядок в списке вложений — как у модуля почты: он нумерует
+                # только вложения, начиная с 10. Картинки из текста — после.
+                "sequence": (10 + attachment_numbers.index(info["part_number"])
+                             if is_attachment else 100 + index),
+                "name": (info["filename"] or (_("part %s", info["part_number"])
+                                              if is_attachment else cid.split("@")[0])),
+                "part_number": info["part_number"],
+                "content_type": info["content_type"],
+                "encoding": info["encoding"],
+                "file_size": info["size"],
+                "pmk_content_id": cid,
+                "pmk_inline": not is_attachment,
+            })
+        if new_vals:
+            self.env["mail.client.attachment"].sudo().create(new_vals)
+        self.pmk_cid_checked = True
+
+    def _pmk_fetch_inline_bytes(self, connection, cids):
+        """Скачать картинки из текста уже открытым подключением."""
+        self.ensure_one()
+        for part in self._pmk_cid_map(cids).values():
+            if not part or part.state != "remote" or not self._pmk_embeddable(part):
+                continue
+            try:
+                payload = connection.fetch_part(
+                    self.imap_uid, part.part_number, part.encoding)
+            except ImapError as exc:
+                # Одна битая картинка не должна мешать остальным.
+                part.write({"state": "failed", "error_message": str(exc)[:255]})
+                continue
+            attachment = self.env["ir.attachment"].sudo().create({
+                "name": part.name,
+                "datas": base64.b64encode(payload),
+                "mimetype": (self._pmk_image_mime(part) or part.content_type
+                             or "application/octet-stream"),
+                "res_model": "mail.client.message",
+                "res_id": self.id,
+            })
+            part.write({"attachment_id": attachment.id, "state": "fetched",
+                        "error_message": False})
+        self.env["mail.client.audit"].sudo().log_access(
+            server=self.account_id.server_id, account=self.account_id,
+            action="body_fetch", detail=_("Картинки в тексте письма"))
+
+    def _fetch_text_parts(self, connection, parts):
+        """Письмо читается с сервера впервые — картинки из текста забираем
+        тем же подключением. Иначе первое открытие письма с подписью
+        заходило бы в ящик дважды: за текстом и отдельно за картинками.
+
+        Сбой здесь не должен сорвать чтение самого письма: модуль почты
+        пометил бы его «не удалось», поэтому ошибки связи только в журнал —
+        при открытии картинки дозаберёт `_pmk_inline_parts`.
+        """
+        html_text, text = super()._fetch_text_parts(connection, parts)
+        cids = self._pmk_cids_in(html_text) if html_text and "cid:" in html_text else []
+        if cids and self.imap_uid:
+            self._pmk_lock_message()
+            try:
+                self._pmk_record_inline_parts(parts, cids)
+                self._pmk_fetch_inline_bytes(connection, cids)
+            except (ImapError, UserError, OSError) as exc:
+                _logger.warning("Письмо %s: картинки в тексте не забрать — %s",
+                                self.id, exc)
+        return html_text, text
+
+    def _pmk_download_inline(self, cids, need_structure):
+        """Отдельный заход на сервер — для писем, прочитанных до этой правки
+        (у них состав есть, а Content-ID не записан), и для докачки."""
+        self.ensure_one()
+        self._pmk_lock_message()
         connection = None
         try:
             connection = self.account_id._open_connection()
             connection.select(self.folder_id.imap_path, readonly=True)
             if need_structure:
-                existing = {p.part_number: p for p in self.client_attachment_ids}
-                new_vals = []
-                for sequence, info in enumerate(
-                        connection.fetch_structure(self.imap_uid), start=100):
-                    cid = (info.get("content_id") or "").strip()
-                    if not cid or cid not in wanted:
-                        continue
-                    record = existing.get(info["part_number"])
-                    if record:
-                        if record.pmk_content_id != cid:
-                            record.pmk_content_id = cid
-                        continue
-                    new_vals.append({
-                        "message_id": self.id,
-                        "sequence": sequence,
-                        "name": info["filename"] or cid.split("@")[0],
-                        "part_number": info["part_number"],
-                        "content_type": info["content_type"],
-                        "encoding": info["encoding"],
-                        "file_size": info["size"],
-                        "pmk_content_id": cid,
-                        "pmk_inline": True,
-                    })
-                if new_vals:
-                    Part.create(new_vals)
-                self.pmk_cid_checked = True
+                self._pmk_record_inline_parts(
+                    connection.fetch_structure(self.imap_uid), cids)
                 self.invalidate_recordset(["client_attachment_ids"])
-
-            for part in self._pmk_cid_map(cids).values():
-                if not part or part.state != "remote" or not self._pmk_embeddable(part):
-                    continue
-                try:
-                    payload = connection.fetch_part(
-                        self.imap_uid, part.part_number, part.encoding)
-                except ImapError as exc:
-                    # Одна битая картинка не должна мешать остальным.
-                    part.write({"state": "failed", "error_message": str(exc)[:255]})
-                    continue
-                attachment = self.env["ir.attachment"].sudo().create({
-                    "name": part.name,
-                    "datas": base64.b64encode(payload),
-                    "mimetype": (self._pmk_image_mime(part) or part.content_type
-                                 or "application/octet-stream"),
-                    "res_model": "mail.client.message",
-                    "res_id": self.id,
-                })
-                part.write({"attachment_id": attachment.id, "state": "fetched",
-                            "error_message": False})
-            self.env["mail.client.audit"].sudo().log_access(
-                server=self.account_id.server_id, account=self.account_id,
-                action="body_fetch", detail=_("Картинки в тексте письма"))
+            self._pmk_fetch_inline_bytes(connection, cids)
         except (ImapError, UserError, OSError) as exc:
             _logger.warning("Письмо %s: картинки в тексте не забрать — %s",
                             self.id, exc)

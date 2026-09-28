@@ -7,6 +7,7 @@ from dateutil.relativedelta import relativedelta
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
+from odoo.tools import SQL
 
 _logger = logging.getLogger(__name__)
 
@@ -240,6 +241,36 @@ class ResPartner(models.Model):
         for partner in self:
             partner.pmk_price_next_date = partner._pmk_price_next_value(today, schedule)
 
+    @api.model
+    def _pmk_price_next_dates(self):
+        """{id: «Следующий запрос»} по всему реестру прайсов.
+
+        Поле считается в Python, поэтому и поиск, и сортировка по нему идут
+        через готовые значения. Поставщиков в реестре десятки — это
+        несколько запросов, а не перебор базы контрагентов.
+        """
+        today = _local_today()
+        schedule = self._pmk_price_robot_schedule()
+        suppliers = self.with_context(active_test=False).search(
+            [("pmk_price_supplier", "=", True)])
+        return {p.id: p._pmk_price_next_value(today, schedule) for p in suppliers}
+
+    def _order_field_to_sql(self, alias, field_name, direction, nulls, query):
+        # Сортировка по «Следующему запросу» щелчком по заголовку колонки
+        # (замечание проверки шага 13: поле перестало храниться, и колонка
+        # потеряла сортировку). Тот же приём, что у ядра для «Избранного»
+        # проектов и вакансий: своё SQL-выражение для нехранимого поля.
+        # Здесь это CASE по id с посчитанными датами; у остальных — NULL,
+        # они уходят в конец.
+        if field_name == "pmk_price_next_date":
+            whens = [SQL("WHEN %s THEN %s::date", pid, day)
+                     for pid, day in self._pmk_price_next_dates().items() if day]
+            sql_field = (SQL("(CASE %s %s END)", SQL.identifier(alias, "id"),
+                             SQL(" ").join(whens))
+                         if whens else SQL("NULL::date"))
+            return SQL("%s %s %s", sql_field, direction, nulls)
+        return super()._order_field_to_sql(alias, field_name, direction, nulls, query)
+
     def _search_pmk_price_next_date(self, operator, value):
         compare = {
             "<": lambda d, v: d < v,
@@ -251,11 +282,7 @@ class ResPartner(models.Model):
             # Отрицания («не равно», «не в списке») Odoo соберёт сам через
             # «in»: вернуть NotImplemented — штатный способ это попросить.
             return NotImplemented
-        today = _local_today()
-        schedule = self._pmk_price_robot_schedule()
-        suppliers = self.with_context(active_test=False).search(
-            [("pmk_price_supplier", "=", True)])
-        dates = {p.id: p._pmk_price_next_value(today, schedule) for p in suppliers}
+        dates = self._pmk_price_next_dates()
 
         if operator == "in":
             wanted = {fields.Date.to_date(v) if v else False for v in value}
