@@ -28,10 +28,12 @@ describe("quick filters", () => {
     test("ids match the names the server accepts", () => {
         // MESSAGE_FILTERS in mail_client_folder.py rejects anything else, so a
         // name that drifts here becomes an error dialog on the first click.
+        // ПРАВКА ПМК (шаг 18): + "awaiting" («Ждут ответа», Г10).
         expect(MESSAGE_FILTERS.map((item) => item.id)).toEqual([
             "all",
             "unread",
             "read",
+            "awaiting",
             "flagged",
             "attachments",
             "contact",

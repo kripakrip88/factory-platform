@@ -3,13 +3,14 @@
 # License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl-3.0.html)
 import logging
 import re
+from datetime import datetime, timedelta
 
 from markupsafe import Markup
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 from odoo.fields import Domain
-from odoo.tools.mail import html_sanitize, plaintext2html
+from odoo.tools.mail import email_normalize, html_sanitize, plaintext2html
 
 from ..tools import bodystructure
 from ..tools.imap_client import ImapError
@@ -35,6 +36,13 @@ _RE_REMOTE_CSS_URL = re.compile(
 )
 _RE_MESSAGE_ID = re.compile(r'<[^>]+>')
 _RE_EMAIL = re.compile(r'[\w.+-]+@[\w-]+\.[\w.-]+')
+
+# ПРАВКА ПМК (шаг 18, Г10): «ждёт ответа / ждём клиента» — только по письмам
+# последних AWAITING_DAYS дней (решение владельца 30.09.2026: 7 дней). Без
+# окна «ждёт ответа» — 1218 переписок из 1779, то есть вся история ящика.
+AWAITING_DAYS = 7
+# Роботы ответа не ждут: уведомления, отказы доставки.
+_RE_ROBOT = re.compile(r'no-?reply|mailer-daemon', re.IGNORECASE)
 
 
 class MailClientMessage(models.Model):
@@ -385,11 +393,19 @@ class MailClientMessage(models.Model):
     # client action RPC
     # ------------------------------------------------------------------
     def _to_list_payload(self):
-        """Compact representation for the middle pane."""
+        """Compact representation for the middle pane.
+
+        ПРАВКА ПМК (шаг 18): ``email_to`` (первые 512 знаков) и
+        ``is_outgoing`` — у нашего письма строка показывает «Кому: …», а не
+        себя отправителем («Владимир Голубенко» на каждой строке
+        «Отправленных»).
+        """
         return [{
             'id': message.id,
             'subject': message.subject or _("(no subject)"),
             'email_from': message.email_from or '',
+            'email_to': (message.email_to or '')[:512],
+            'is_outgoing': message._is_outgoing(),
             'date': message.date and fields.Datetime.to_string(message.date),
             'preview': message.preview or '',
             'flag_seen': message.flag_seen,
@@ -400,6 +416,91 @@ class MailClientMessage(models.Model):
             'partner_id': message.partner_id.id or False,
             'partner_name': message.partner_id.display_name or '',
         } for message in self]
+
+    def _is_outgoing(self):
+        """ПРАВКА ПМК (шаг 18): письмо наше — лежит в «Отправленных» или
+        «Черновиках» либо отправлено с адреса самого ящика.
+
+        По адресу — потому что копии наших писем лежат и во «Входящих»
+        (102 у pmkpark@ на 29.09), а у дубля, которого оставит
+        _without_duplicates, папка может оказаться любой. Общий признак для
+        строки списка («Кому: …»), «ждёт ответа» и переписки (шаг 20).
+        """
+        self.ensure_one()
+        if self.folder_id.role in ('sent', 'drafts'):
+            return True
+        own = email_normalize(self.account_id.email or '')
+        return bool(own) and email_normalize(self.email_from or '') == own
+
+    # ------------------------------------------------------------------
+    # ПРАВКА ПМК (шаг 18, Г10): кто кому должен ответить
+    # ------------------------------------------------------------------
+    @api.model
+    def _awaiting_since(self):
+        return fields.Datetime.now() - timedelta(days=AWAITING_DAYS)
+
+    def _awaiting_by_thread(self, since=None):
+        """{ключ переписки: 'us' | 'client' | False} по этим письмам.
+
+        Одно правило на плашку строки и на фильтр «Ждут ответа». Письма
+        берутся в порядке «дата ↓, id ↓», решает первое подходящее:
+        черновики (отметка или папка) и тихие папки (_is_quiet: Спам,
+        Корзина, у pmk_mail_ui — рассылки mail.ru) пропускаются; старше
+        окна — плашки нет; наше (_is_outgoing) — ждём клиента; от робота
+        (no-reply, mailer-daemon) — плашки нет; иначе — ждёт нашего ответа.
+
+        Копии одного письма в двух папках — одно письмо, как в
+        _threaded_page, но отбрасываются ПОСЛЕ пропуска: иначе оставшейся
+        копией могла бы оказаться спамная, и письмо пропало бы из расчёта.
+        Отметка flag_answered не годится: у входящих последних писем она не
+        стоит ни разу (замер 29.09).
+        """
+        since = since or self._awaiting_since()
+        candidates = self.filtered(lambda m: (
+            m.thread_key
+            and not m.flag_draft
+            and m.folder_id.role != 'drafts'
+            and not m.folder_id._is_quiet()
+        ))
+        ordered = candidates.sorted(
+            key=lambda m: (m.date or datetime.min, m.id), reverse=True)
+        verdict = {}
+        for message in ordered._without_duplicates():
+            key = message.thread_key
+            if key in verdict:
+                continue
+            if not message.date or message.date < since:
+                verdict[key] = False
+            elif message._is_outgoing():
+                verdict[key] = 'client'
+            elif _RE_ROBOT.search(message.email_from or ''):
+                verdict[key] = False
+            else:
+                verdict[key] = 'us'
+        return verdict
+
+    @api.model
+    def _awaiting_domain(self, account_ids):
+        """Домен фильтра «Ждут ответа»: переписки этих ящиков, где последнее
+        слово за клиентом (то же правило, что у плашки строки).
+
+        Один запрос по окну AWAITING_DAYS (около 240 писем за 7 дней на
+        29.09, отбор на SQL — 13 мс по индексу date), потом разбор в памяти.
+        Спам, Корзину и Черновики отсекаем уже в запросе — правило их всё
+        равно пропускает, а писем там больше, чем во всём остальном.
+        """
+        if not account_ids:
+            return [('id', 'in', [])]
+        since = self._awaiting_since()
+        recent = self.search_fetch([
+            ('account_id', 'in', list(account_ids)),
+            ('date', '>=', since),
+            ('folder_id.role', 'not in', ('spam', 'trash', 'drafts')),
+        ], ['thread_key', 'date', 'email_from', 'flag_draft', 'folder_id',
+            'account_id', 'message_id'], order='date desc, id desc')
+        verdict = recent._awaiting_by_thread(since)
+        keys = sorted(key for key, value in verdict.items() if value == 'us')
+        return [('thread_key', 'in', keys), ('account_id', 'in', list(account_ids))]
 
     # ------------------------------------------------------------------
     # conversations
@@ -426,7 +527,7 @@ class MailClientMessage(models.Model):
         return self.browse(keep)
 
     @api.model
-    def _threaded_page(self, domain, limit, account_ids=None):
+    def _threaded_page(self, domain, limit, account_ids=None, before=None):
         """One row per conversation, newest first.
 
         ``domain`` decides *which* conversations appear and in what order, so
@@ -437,10 +538,23 @@ class MailClientMessage(models.Model):
 
         The row itself stays a message from ``domain``. Acting on a row -
         delete, move, mark read - must not silently reach into Sent.
+
+        ПРАВКА ПМК (шаг 18, Б1): ``before`` — дата последней строки прошлой
+        страницы — ограничивает переписку по её последнему письму (having
+        date:max < before), а не письма в домене: иначе переписка с первой
+        страницы возвращалась на следующей своим более старым письмом.
+        Дата строки и есть date:max её писем из ``domain``, так что ключ
+        страницы у JS прежний.
+
+        ПРАВКА ПМК (шаг 18, Г10): строка несёт ``awaiting`` — 'us' (ждёт
+        нашего ответа), 'client' (ждём клиента) или False; считается по тем же
+        письмам переписки, что и счётчики, без лишних запросов на письмо. У
+        строки из тихой папки (Спам, Корзина…) плашки нет.
         """
+        having = [('date:max', '<', fields.Datetime.to_datetime(before))] if before else ()
         groups = self._read_group(
             domain, ['thread_key'], ['__count', 'date:max'],
-            order='date:max desc', limit=limit,
+            having=having, order='date:max desc', limit=limit,
         )
         if not groups:
             return [], False
@@ -456,9 +570,13 @@ class MailClientMessage(models.Model):
             latest.setdefault(message.thread_key, message)
 
         wide = Domain([('thread_key', 'in', keys)])
-        if account_ids:
+        # ПРАВКА ПМК (шаг 18): «is not None» — пустой набор ящиков не
+        # означает «все ящики базы» (см. _message_domain).
+        if account_ids is not None:
             wide &= Domain([('account_id', 'in', list(account_ids))])
-        members = self.search(wide, order='date desc, id desc')._without_duplicates()
+        found = self.search(wide, order='date desc, id desc')
+        members = found._without_duplicates()
+        awaiting = found._awaiting_by_thread()
 
         counts, unread, flagged, attachments = {}, {}, {}, {}
         for message in members:
@@ -482,6 +600,8 @@ class MailClientMessage(models.Model):
                 'unread_count': unread.get(key, 0),
                 'flag_flagged': flagged.get(key, False),
                 'has_attachment': attachments.get(key, False),
+                'awaiting': (False if message.folder_id._is_quiet()
+                             else awaiting.get(key, False)),
             })
             payload.append(row)
         return payload, len(groups) == limit
@@ -492,15 +612,42 @@ class MailClientMessage(models.Model):
 
         Deliberately account-wide rather than folder-wide: a conversation is
         the exchange, and the replies are in Sent.
+
+        ПРАВКА ПМК (шаг 20, 30.09.2026): переписка видна под письмом целиком
+        (panes/conversation.js), поэтому у строки ещё:
+        ``folder_role`` (роль папки письма), ``body_state`` (тело уже
+        загружено или придёт с сервера при развороте); ``is_outgoing`` и
+        ``email_to`` строка несёт с шага 18 (_to_list_payload) — по ним
+        «мы» и подложка наших писем.
+
+        Из копий одного письма в двух папках (у pmkpark@ 103 пары «Входящие
+        + Отправленные») остаётся ОТКРЫТОЕ: окно разворачивает письмо, по
+        которому щёлкнули, и ищет его в переписке по id. Раньше оставалась
+        первая копия по id, и открытое письмо могло в переписке не
+        найтись. Порядок и состав прежние: старые сверху, копии — одно
+        письмо.
         """
         message = self._checked(message_id, 'read')
         if not message.thread_key:
-            return message._to_list_payload()
+            return message._thread_payload()
         members = self.search([
             ('account_id', '=', message.account_id.id),
             ('thread_key', '=', message.thread_key),
         ], order='date asc, id asc')
-        return members._without_duplicates()._to_list_payload()
+        kept = (message | members)._without_duplicates()
+        return kept.sorted(
+            key=lambda m: (m.date or datetime.min, m.id))._thread_payload()
+
+    def _thread_payload(self):
+        """ПРАВКА ПМК (шаг 20): строка переписки — строка списка плюс роль
+        папки и состояние тела."""
+        payload = self._to_list_payload()
+        for row, message in zip(payload, self):
+            row.update({
+                'folder_role': message.folder_id.role or False,
+                'body_state': message.body_state,
+            })
+        return payload
 
     @api.model
     def get_message_detail(self, message_id):
@@ -509,7 +656,14 @@ class MailClientMessage(models.Model):
             raise UserError(_("This message no longer exists."))
         message.check_access('read')
 
-        if message.body_state == 'header_only' or message.structure_state == 'unknown':
+        # ПРАВКА ПМК (шаг 20): и после 'failed' — читаем заново. Один сбой
+        # связи (_fetch_body ставит 'failed') навсегда оставлял письмо «не
+        # удалось загрузить»; с перепиской под письмом старые письма
+        # разворачиваются по одному, и заходов в ящик — и сбоев — больше.
+        # Чтение по-прежнему только на просмотр: EXAMINE и BODY.PEEK,
+        # отметку \Seen на сервере оно не ставит.
+        if message.body_state in ('header_only', 'failed') \
+                or message.structure_state == 'unknown':
             # Lazy fetch: this is the moment the content is actually needed.
             # 'structure_state' is checked too, so a message read before
             # attachments were supported picks up its part list on next open.
@@ -525,6 +679,10 @@ class MailClientMessage(models.Model):
             'date': message.date and fields.Datetime.to_string(message.date),
             'body': message._display_body(),
             'body_state': message.body_state,
+            # ПРАВКА ПМК (шаг 20): начало текста — для строки свёрнутого
+            # письма в переписке после первого разворота (превью считается,
+            # когда тело пришло с сервера).
+            'preview': message.preview or '',
             'has_blocked_images': bool(
                 not message.images_allowed
                 and self._has_remote_assets(message.body_html)

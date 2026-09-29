@@ -6,9 +6,24 @@
  * непрочитано любое её письмо. Поэтому переписки, где непрочитано старое
  * письмо или ответ клиента на наше письмо в «Отправленных», не гасли никогда.
  *
- * Открытие гасит письма не новее открытого (upto): ответ клиента, пришедший
- * позже нашего письма, из «Отправленных» не виден — он остаётся жирным, пока
- * его не откроют. «Прочитано» (кнопка, выделение) гасит переписку целиком.
+ * Гасим письма не новее ПОКАЗАННОГО (upto): открытие строки — всё, что не
+ * новее письма строки. С шага 20 (30.09.2026) переписка видна под письмом
+ * целиком, новые сверху, и самое новое письмо развёрнуто: когда его тело
+ * пришло, лента зовёт крючок корня conversationShown — гасим всё, что не
+ * новее его (якоря: строка и это письмо). Ответ клиента, пришедший позже
+ * нашего письма в «Отправленных», виден сверху и гаснет (до шага 20 он
+ * оставался жирным). То же — у любого письма, развёрнутого в ленте, если
+ * в переписке ещё есть что гасить.
+ *
+ * Самое новое — НЕ при открытии, а когда его тело показано (разбор шага
+ * 20): тело могло не прийти (mail.ru отказал) — тогда письмо остаётся
+ * непрочитанным и здесь, и на mail.ru; а пометка при открытии писала
+ * строку самого нового письма в ту же секунду, когда лента читала его
+ * тело, — запись тела упиралась в пометку, и Odoo повторял запрос целиком:
+ * второй вход в mail.ru и второе чтение тела. Пометку показанного шлём
+ * после пометки открытия (pmkOpening): иначе две пометки писали бы одни и
+ * те же строки одновременно. «Прочитано» (кнопка, выделение) гасит
+ * переписку целиком.
  * В «Все входящие» переписка общая для всех ящиков (unified) — там и гасим
  * во всех. Строку гасим по числу, которое вернул сервер, а не наугад.
  *
@@ -31,10 +46,24 @@
  * по-прежнему зовётся синхронно сразу после записи ответа — глушилка ниже
  * нужна ради него. selectMessage модуля почты возвращает исход открытия
  * ("shown" / "superseded" / "failed"); по "failed" не гасим ничего.
- * «Непрочитано» — как у модуля почты: одно письмо.
+ *
+ * «Непрочитано» (шаг 18, 30.09.2026) — одно письмо (со всеми его копиями в
+ * ящике: строку сервер считает по одной копии), но с точными числами с
+ * сервера (pmk_mark_unseen): модуль почты прибавлял +1 открытой папке, а не
+ * папке письма, в «Все входящие» счётчики не трогал, а строку искал по id
+ * письма — письмо из окна переписки или истории контакта строкой не
+ * является, и строка не жирнела. Теперь строку ищем по ключу переписки и
+ * ставим ей число, которое вернул сервер. Значок в окне меняется сразу, до
+ * ответа сервера. Без режима переписок — как у модуля почты (он с шага 18
+ * сам берёт папку письма из detail.folder_id).
  *
  * Грабли: держимся за имена selectMessage / setSeen / toggleSeen / bulkSeen /
- * runBulk и за state.thread / state.messages / state.accounts / row.thread_key.
+ * runBulk / conversationShown (крючок корня, его зовёт лента
+ * panes/conversation.js через ReadingPane) и за state.thread /
+ * state.messages / state.accounts /
+ * state.contact.history / state.detail / state.selectedMessageId /
+ * state.unified / row.thread_key / row.unread_count. Серверные — за
+ * pmk_mark_threads_seen и pmk_mark_unseen (models/mail_client_message.py).
  * Переименуют их — импорт не упадёт, а пометка тихо вернётся к одному письму.
  * Модуль почты теперь наш (vendor/README.md): правишь эти методы там —
  * правь и этот файл тем же коммитом.
@@ -56,20 +85,53 @@ patch(MailClientInbox.prototype, {
         // открыли другое) гасим, как раньше: его открывали, и оно дошло.
         const outcome = await super.selectMessage(messageId);
         if (outcome !== "failed" && this.pmkThreadHasUnread(messageId)) {
-            await this.pmkMarkThreadsSeen([messageId], { upto: true });
+            // Якорь — только строка: самое новое письмо ленты гасит
+            // conversationShown, когда его тело показано.
+            const marking = this.pmkMarkThreadsSeen([messageId], { upto: true });
+            this.pmkOpening = marking.catch(() => {});
+            await marking;
         }
         return outcome;
     },
 
+    /**
+     * Письмо ленты показано (развёрнуто, тело пришло) — гасим переписку до
+     * него. Сначала ждём пометку открытия: после её ответа строка и лента
+     * знают, что ещё не прочитано, и часто гасить уже нечего. Переписке
+     * верим, только если на экране всё ещё она: выделена другая строка
+     * (идёт открытие) или письма в ленте нет — ничего не делаем.
+     */
+    async conversationShown(messageId) {
+        super.conversationShown(messageId);
+        if (!this.state.threaded) {
+            return;
+        }
+        await this.pmkOpening;
+        const detail = this.state.detail;
+        if (
+            !detail ||
+            detail.id === messageId ||
+            this.state.selectedMessageId !== detail.id ||
+            !this.state.thread.some((item) => item.id === messageId) ||
+            !this.pmkThreadHasUnread(detail.id)
+        ) {
+            return;
+        }
+        await this.pmkMarkThreadsSeen([detail.id, messageId], { upto: true });
+    },
+
     setSeen(value) {
-        if (value && this.state.threaded) {
+        if (!this.state.threaded) {
+            return super.setSeen(value);
+        }
+        if (value) {
             // Пометку при открытии делает selectMessage, кнопку — toggleSeen.
             // Сюда приходит только вызов из selectMessage модуля почты, в том
             // числе запоздалый, от прошлого открытия, — его и глушим.
             return;
         }
-        // «Непрочитано» — как у модуля почты: одно письмо, строка снова жирная.
-        return super.setSeen(value);
+        // «Непрочитано» — одно письмо, строка переписки снова жирная.
+        return this.pmkMarkUnseen(this.state.selectedMessageId);
     },
 
     async toggleSeen() {
@@ -131,6 +193,39 @@ patch(MailClientInbox.prototype, {
             [],
             { message_ids: messageIds, upto, unified: this.state.unified }
         );
+        this.pmkApplyThreadResult(result, true);
+    },
+
+    async pmkMarkUnseen(messageId) {
+        if (!messageId) {
+            return;
+        }
+        const detail = this.state.detail;
+        const shown = Boolean(detail && detail.id === messageId);
+        if (shown) {
+            detail.flag_seen = false; // значок в окне — сразу
+        }
+        let result;
+        try {
+            result = await this.orm.call("mail.client.message", "pmk_mark_unseen", [], {
+                message_id: messageId,
+                unified: this.state.unified,
+            });
+        } catch (error) {
+            // Сервер отказал (общий ящик «только смотреть») — значок назад.
+            if (shown && this.state.detail === detail) {
+                detail.flag_seen = true;
+            }
+            throw error;
+        }
+        this.pmkApplyThreadResult(result, false);
+    },
+
+    /**
+     * Ответ сервера (pmk_mark_threads_seen / pmk_mark_unseen) — в окно:
+     * seen — чем стали письма из result.ids.
+     */
+    pmkApplyThreadResult(result, seen) {
         const ids = new Set(result.ids);
         const left = new Map(result.threads.map((t) => [t.thread_key, t.unread]));
         // Строку ищем по ключу переписки, а не по id: письмо могли открыть
@@ -142,22 +237,22 @@ patch(MailClientInbox.prototype, {
                 row.unread_count = left.get(row.thread_key);
                 row.flag_seen = !row.unread_count;
             } else if (ids.has(row.id)) {
-                row.flag_seen = true;
-                row.unread_count = 0;
+                row.flag_seen = seen;
+                row.unread_count = seen ? 0 : Math.max(row.unread_count || 0, 1);
             }
         }
         for (const item of this.state.thread) {
             if (ids.has(item.id)) {
-                item.flag_seen = true;
+                item.flag_seen = seen;
             }
         }
         for (const item of this.state.contact?.history || []) {
             if (ids.has(item.id)) {
-                item.flag_seen = true;
+                item.flag_seen = seen;
             }
         }
         if (this.state.detail && ids.has(this.state.detail.id)) {
-            this.state.detail.flag_seen = true;
+            this.state.detail.flag_seen = seen;
         }
         // Точные счётчики с сервера — и для папок, где лежат ответы клиента,
         // и в общем ящике, где activeFolderId пуст.

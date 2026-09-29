@@ -2,16 +2,23 @@ import { Component, onWillStart, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { browser } from "@web/core/browser/browser";
+import { Dropdown } from "@web/core/dropdown/dropdown";
+import { DropdownItem } from "@web/core/dropdown/dropdown_item";
 import { _t } from "@web/core/l10n/translation";
 
 import { FolderTree } from "./panes/folder_tree";
 import { MessageList } from "./panes/message_list";
 import { ReadingPane } from "./panes/reading_pane";
 import { Composer } from "./composer/composer";
+import { readPref, writePref } from "./utils";
 
 const PAGE_SIZE = 50;
 const SIDEBAR_KEY = "mail_client.sidebar_pinned";
-const THREADED_KEY = "mail_client.threaded";
+// ПРАВКА ПМК (шаг 18, А2): переписки — режим по умолчанию, как в Mail.ru.
+// Ключ новый (было "mail_client.threaded", по умолчанию выключено): прежний
+// выбор сбрасывается у всех (решение владельца 30.09.2026), а «выключено»
+// дальше запоминается.
+const THREADED_KEY = "mail_client.threaded.v2";
 
 /**
  * Quick filters, in menu order. The names must match MESSAGE_FILTERS in
@@ -26,6 +33,8 @@ export const MESSAGE_FILTERS = [
     { id: "all", label: _t("All"), icon: "fa-inbox" },
     { id: "unread", label: _t("Unread"), icon: "fa-envelope" },
     { id: "read", label: _t("Read"), icon: "fa-envelope-open-o" },
+    // ПРАВКА ПМК (шаг 18, Г10): последнее слово за клиентом, ответа нет.
+    { id: "awaiting", label: _t("Awaiting reply"), icon: "fa-reply" },
     { id: "flagged", label: _t("Starred"), icon: "fa-star" },
     { id: "attachments", label: _t("Has attachments"), icon: "fa-paperclip" },
     { id: "contact", label: _t("From a contact"), icon: "fa-address-book-o" },
@@ -40,7 +49,7 @@ export const MESSAGE_FILTERS = [
  */
 export class MailClientInbox extends Component {
     static template = "mail_client.Inbox";
-    static components = { FolderTree, MessageList, ReadingPane, Composer };
+    static components = { FolderTree, MessageList, ReadingPane, Composer, Dropdown, DropdownItem };
     static props = ["*"];
 
     setup() {
@@ -65,10 +74,12 @@ export class MailClientInbox extends Component {
             bulkBusy: false,
             draft: null,
             drafts: [],
-            threaded: browser.localStorage.getItem(THREADED_KEY) === "true",
+            threaded: readPref(THREADED_KEY) !== "false",
             filter: "all",
-            showFilterMenu: false,
             unified: false,
+            // ПРАВКА ПМК (шаг 18): рассылки одной строкой — с первой страницы
+            // списка, при «Загрузить ещё» остаются.
+            digests: [],
             thread: [],
             contact: null,
             searchingServer: false,
@@ -202,7 +213,6 @@ export class MailClientInbox extends Component {
     }
 
     async setFilter(filterId) {
-        this.state.showFilterMenu = false;
         if (filterId === this.state.filter) {
             return;
         }
@@ -215,7 +225,7 @@ export class MailClientInbox extends Component {
 
     async toggleThreaded() {
         this.state.threaded = !this.state.threaded;
-        browser.localStorage.setItem(THREADED_KEY, String(this.state.threaded));
+        writePref(THREADED_KEY, this.state.threaded);
         this.clearSelection();
         await this.loadMessages({ reset: true });
     }
@@ -371,6 +381,9 @@ export class MailClientInbox extends Component {
             this.state.messages = reset
                 ? result.messages
                 : this.state.messages.concat(result.messages);
+            if (reset) {
+                this.state.digests = result.digests || [];
+            }
             this.state.hasMore = result.has_more;
         } finally {
             this.state.loadingList = false;
@@ -457,6 +470,17 @@ export class MailClientInbox extends Component {
         }
     }
 
+    /**
+     * ПРАВКА ПМК (разбор шага 20, 30.09.2026): письмо ленты переписки
+     * показано — развёрнуто, и его тело пришло с сервера
+     * (panes/conversation.js, props.onShown). Крючок для pmk_mail_ui:
+     * thread_seen.js гасит переписку до этого письма. Модуль почты сам
+     * ничего не помечает: разворот письма — только просмотр.
+     */
+    conversationShown() {
+        // Отметки «прочитано» у модуля почты — только открытие строки.
+    }
+
     // ------------------------------------------------------------------
     // message actions - optimistic, then queued to the server
     // ------------------------------------------------------------------
@@ -464,6 +488,18 @@ export class MailClientInbox extends Component {
         const row = this.state.messages.find((m) => m.id === messageId);
         if (row) {
             Object.assign(row, values);
+        }
+        // ПРАВКА ПМК (шаг 18): то же письмо в окне переписки и в истории
+        // контакта — его могли открыть оттуда, и значок там должен совпадать.
+        for (const item of this.state.thread || []) {
+            if (item.id === messageId) {
+                Object.assign(item, values);
+            }
+        }
+        for (const item of this.state.contact?.history || []) {
+            if (item.id === messageId) {
+                Object.assign(item, values);
+            }
         }
         if (this.state.detail && this.state.detail.id === messageId) {
             Object.assign(this.state.detail, values);
@@ -479,13 +515,26 @@ export class MailClientInbox extends Component {
         }
     }
 
+    /**
+     * ПРАВКА ПМК (шаг 18): счётчик — у папки письма, а не у открытой папки.
+     * Письмо из «Отправленных», открытое из окна переписки во «Входящих»,
+     * прибавляло «Входящим», а в «Все входящие» (activeFolderId пуст)
+     * счётчики не менялись вовсе. Папку знает detail (get_message_detail
+     * отдаёт folder_id); selectMessage зовёт setSeen(true) сразу после записи
+     * detail, так что detail — это выделенное письмо.
+     */
     async setSeen(value) {
         const messageId = this.state.selectedMessageId;
         if (!messageId) {
             return;
         }
+        const detail = this.state.detail;
+        const folderId =
+            detail && detail.id === messageId && detail.folder_id
+                ? detail.folder_id
+                : this.state.activeFolderId;
         this.updateRow(messageId, { flag_seen: value });
-        this.adjustUnread(this.state.activeFolderId, value ? -1 : 1);
+        this.adjustUnread(folderId, value ? -1 : 1);
         await this.orm.call("mail.client.message", "set_seen", [], {
             message_id: messageId,
             value,
@@ -547,7 +596,13 @@ export class MailClientInbox extends Component {
     // ------------------------------------------------------------------
     // composing
     // ------------------------------------------------------------------
-    async compose(mode = "new") {
+    /**
+     * ПРАВКА ПМК (шаг 20): ответить или переслать можно конкретное письмо
+     * переписки (кнопки у развёрнутого письма в ленте), а не только
+     * открытое: messageId. Без него — открытое, как было (закреплённая
+     * строка над письмом). Prop onReply окна чтения — этот метод.
+     */
+    async compose(mode = "new", messageId = null) {
         const account = this.activeAccount;
         if (!account) {
             return;
@@ -555,7 +610,7 @@ export class MailClientInbox extends Component {
         this.state.draft = await this.orm.call("mail.client.compose", "start", [], {
             account_id: account.id,
             mode,
-            message_id: mode === "new" ? null : this.state.selectedMessageId,
+            message_id: mode === "new" ? null : messageId ?? this.state.selectedMessageId,
         });
     }
 

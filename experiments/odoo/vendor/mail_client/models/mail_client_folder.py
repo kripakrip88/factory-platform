@@ -25,6 +25,12 @@ ROLE_ORDER = {
     'inbox': 0, 'drafts': 1, 'sent': 2, 'archive': 3, 'spam': 4, 'trash': 5, 'other': 6,
 }
 
+# ПРАВКА ПМК (шаг 18, 30.09.2026): «тихие» папки — их непрочитанное не зовёт
+# читать. Счётчик у них серый, без плашки, в итог свёрнутого ящика не входит,
+# а письмо из такой папки не делает переписку «ждёт ответа». Надстройка
+# добавляет свои папки через _is_quiet() (pmk_mail_ui: сортировщики mail.ru).
+QUIET_ROLES = ('spam', 'trash')
+
 # Quick filters for the message list.
 #
 # Every one of these reads a column that is filled in at sync time, so it is
@@ -39,6 +45,10 @@ MESSAGE_FILTERS = {
     'flagged': [('flag_flagged', '=', True)],
     'attachments': [('has_attachment', '=', True)],
     'contact': [('partner_id', '!=', False)],
+    # ПРАВКА ПМК (шаг 18, Г10): переписки, где последнее слово за клиентом и
+    # ответа от нас нет. Постоянного условия нет — домен собирает
+    # _message_domain из mail.client.message._awaiting_domain по ящикам.
+    'awaiting': [],
 }
 
 
@@ -87,6 +97,38 @@ class MailClientFolder(models.Model):
     def _role_rank(self):
         self.ensure_one()
         return ROLE_ORDER.get(self.role, 9)
+
+    def _is_quiet(self):
+        """ПРАВКА ПМК (шаг 18): крючок «тихой» папки — Спам и Корзина.
+
+        Надстройка расширяет его своими папками (pmk_mail_ui — сортировщики
+        mail.ru). Читается в get_inbox_state (серый счётчик) и в расчёте
+        «ждёт ответа» (_awaiting_by_thread): письмо из тихой папки переписку
+        не решает.
+        """
+        self.ensure_one()
+        return self.role in QUIET_ROLES
+
+    @api.model
+    def _list_digests(self, inboxes):
+        """ПРАВКА ПМК (шаг 18): крючок «рассылки одной строкой».
+
+        Вызывается для первой страницы «Входящих» (или «Все входящие») без
+        поиска и фильтра; ``inboxes`` — показанные папки «Входящие». Ответ —
+        список ``{folder_id, name, unread, total, date, senders}``: строка
+        списка на папку, которая открывает эту папку. У модуля почты таких
+        папок нет — пусто; pmk_mail_ui отдаёт сортировщики mail.ru.
+        """
+        return []
+
+    @api.model
+    def _unified_inboxes(self, account_ids):
+        """«Входящие» ящиков для «Все входящие» (подписанные)."""
+        return self.search([
+            ('account_id', 'in', list(account_ids or [])),
+            ('role', '=', 'inbox'),
+            ('subscribed', '=', True),
+        ])
 
     @api.model
     def _unread_by_folder(self, folder_ids):
@@ -501,20 +543,30 @@ class MailClientFolder(models.Model):
         domain = self._filter_domain(message_filter)
         if folder_id:
             domain.append(('folder_id', '=', folder_id))
-        elif account_ids:
+        # ПРАВКА ПМК (шаг 18, 30.09.2026): было «elif account_ids:» — пустой
+        # список ящиков (у пользователя нет своего ящика) читался как «без
+        # ограничения», и «Все входящие» отдавали письма всей базы, включая
+        # Спам и Отправленные чужих ящиков (правило администратора [(1,'=',1)]).
+        # Пустой список — это «нет ящиков», значит, и писем нет.
+        elif account_ids is not None:
             # Unified inbox: every subscribed inbox the user can reach.
-            inboxes = self.search([
-                ('account_id', 'in', account_ids),
-                ('role', '=', 'inbox'),
-                ('subscribed', '=', True),
-            ])
-            domain.append(('folder_id', 'in', inboxes.ids))
+            domain.append(('folder_id', 'in', self._unified_inboxes(account_ids).ids))
+        if message_filter == 'awaiting':
+            # ПРАВКА ПМК (шаг 18, Г10): переписки ящиков, которые на экране.
+            scope = (self.browse(folder_id).account_id.ids if folder_id
+                     else list(account_ids or []))
+            domain += self.env['mail.client.message']._awaiting_domain(scope)
         if before:
             domain.append(('date', '<', before))
         if search:
-            domain += ['|', '|',
+            # ПРАВКА ПМК (шаг 18, Г11): ищем и по получателю — «Кому» и
+            # «Копия». Иначе в «Отправленных» письмо клиенту не найти по его
+            # адресу: там в «От» везде наш ящик.
+            domain += ['|', '|', '|', '|',
                        ('subject', 'ilike', search),
                        ('email_from', 'ilike', search),
+                       ('email_to', 'ilike', search),
+                       ('email_cc', 'ilike', search),
                        ('preview', 'ilike', search)]
         return domain
 
@@ -534,37 +586,57 @@ class MailClientFolder(models.Model):
         """
         Message = self.env['mail.client.message']
         limit = min(limit or 50, 200)
+        # ПРАВКА ПМК (шаг 18, Б1): в режиме переписок «старше последней
+        # строки» — это условие на ПЕРЕПИСКУ (её последнее письмо), а не на
+        # письма. В домене оно пропускало на вторую страницу переписку с
+        # первой — её более старым письмом («Загрузить ещё» повторяло 234
+        # переписки «Входящих» pmkpark@). Переписки получают before в
+        # _threaded_page (having date:max < before).
+        domain_before = None if threaded else before
 
         if unified:
             # Same scope as the sidebar: own and shared mailboxes only, never
             # everything an administrator's record rule would allow.
             accounts = self.env['mail.client.account']._accessible_accounts()
             domain = self._message_domain(
-                account_ids=accounts.ids, search=search, before=before,
+                account_ids=accounts.ids, search=search, before=domain_before,
                 message_filter=message_filter)
             title = _("All Inboxes")
             folder_id = False
             account_ids = accounts.ids
+            inboxes = self._unified_inboxes(accounts.ids)
         else:
             folder = self.browse(folder_id).exists()
             if not folder:
                 raise UserError(_("This folder no longer exists."))
             folder.check_access('read')
             domain = self._message_domain(
-                folder_id=folder.id, search=search, before=before,
+                folder_id=folder.id, search=search, before=domain_before,
                 message_filter=message_filter)
             title = folder.name
             # Scope for conversation contents: threads reach into Sent, but
             # never into somebody else's mailbox that happens to sit on the
             # same mailing list.
             account_ids = folder.account_id.ids
+            inboxes = folder.filtered(lambda f: f.role == 'inbox')
 
-        if threaded:
-            payload, has_more = Message._threaded_page(domain, limit, account_ids)
+        if unified and not account_ids:
+            # ПРАВКА ПМК (шаг 18): нет ни своего, ни общего ящика — пустой
+            # список, и никаких «широких» запросов без ящиков.
+            payload, has_more = [], False
+        elif threaded:
+            payload, has_more = Message._threaded_page(
+                domain, limit, account_ids, before=before)
         else:
             messages = Message.search(domain, order='date desc, id desc', limit=limit)
             payload = messages._to_list_payload()
             has_more = len(messages) == limit
+
+        # ПРАВКА ПМК (шаг 18): рассылки одной строкой — только на первой
+        # странице «Входящих» без поиска и фильтра (крючок _list_digests).
+        digests = []
+        if inboxes and not before and not search and (message_filter or 'all') == 'all':
+            digests = self._list_digests(inboxes)
 
         return {
             'folder_id': folder_id,
@@ -573,6 +645,7 @@ class MailClientFolder(models.Model):
             'has_more': has_more,
             'threaded': bool(threaded),
             'filter': message_filter or 'all',
+            'digests': digests,
         }
 
     @api.model

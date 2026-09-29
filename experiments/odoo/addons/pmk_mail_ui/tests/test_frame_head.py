@@ -7,9 +7,12 @@
 цитату ответа.
 """
 import base64
+from unittest.mock import patch
 
 from odoo import fields
 from odoo.tests import TransactionCase, tagged
+
+from odoo.addons.mail_client.tools.imap_client import ImapError
 
 from ..models.mail_client_message import _FRAME_HEAD
 
@@ -95,8 +98,15 @@ class TestFrameHead(TransactionCase):
         self.assertIn(' src="https://cdn.example.com/a.png"', body)
 
     def test_empty_and_failed_bodies_stay_empty(self):
+        # С шага 20 письмо с body_state='failed' при открытии читается с
+        # сервера заново (модуль почты, get_message_detail). Сервер снова не
+        # ответил — тело так и остаётся пустым, заголовок листа не ложится.
         message = self._message("", body_state="failed")
-        self.assertEqual(self.Message.get_message_detail(message.id)["body"], "")
+        with patch.object(type(self.account), "_open_connection",
+                          side_effect=ImapError("connection refused")) as opener:
+            self.assertEqual(self.Message.get_message_detail(message.id)["body"], "")
+        opener.assert_called_once()
+        self.assertEqual(message.body_state, "failed")
 
     def test_sheet_stays_out_of_lead_and_quote(self):
         message = self._message("<p>Заявка на ограждения</p>")

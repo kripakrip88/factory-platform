@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!-- ПРАВКА ПМК (шаг 20, 30.09.2026): переписка целиком под письмом, новые
+         сверху (panes/conversation.js). Развёрнутое письмо — карточка
+         MessageCard в o_mail_client_conv_card, свёрнутое — строка
+         o_mail_client_conv_row, середина длинной переписки — кнопка
+         o_mail_client_conv_more («ещё N писем»). Наше письмо — is-ours
+         (бледная подложка, токен mc-ours-bg в mail_client.scss) и плашка «мы». -->
+    <t t-name="mail_client.Conversation">
+        <div class="o_mail_client_conv">
+            <t t-foreach="layout" t-as="entry" t-key="entry.key">
+                <button type="button" t-if="entry.type === 'more'"
+                        class="o_mail_client_conv_more btn btn-link w-100 text-start px-4"
+                        t-on-click="() => this.reveal(entry.ids)">
+                    <i class="fa fa-ellipsis-v me-2" aria-hidden="true"/>
+                    <t t-esc="moreLabel(entry.count)"/>
+                </button>
+
+                <div t-elif="entry.expanded" class="o_mail_client_conv_card"
+                     t-att-class="{'is-ours': entry.item.is_outgoing}"
+                     t-att-data-message-id="entry.item.id">
+                    <t t-set="card" t-value="cardDetail(entry.item)"/>
+                    <MessageCard t-if="card"
+                                 detail="card"
+                                 getScroller="props.getScroller"
+                                 ours="!!entry.item.is_outgoing"
+                                 canReply="!entry.item.is_outgoing"
+                                 onReply="(mode) => this.reply(mode, entry.item)"
+                                 onCollapse="() => this.collapse(entry.item)"
+                                 onAllowImages="() => this.allowImages(entry.item)"
+                                 onDownloadAttachment="props.onDownloadAttachment"/>
+                    <t t-else="">
+                        <!-- Тело ещё идёт с сервера (или не пришло): строка «От»
+                             из строки переписки. -->
+                        <div class="o_mail_client_reading_header px-4 py-2">
+                            <div class="o_mail_client_from d-flex align-items-baseline gap-2 small">
+                                <strong class="o_mail_client_from_text text-truncate"
+                                        t-esc="senderName(entry.item.email_from)"/>
+                                <span class="o_mail_client_ours badge rounded-pill flex-shrink-0"
+                                      t-if="entry.item.is_outgoing" t-att-title="oursTitle">we</span>
+                                <span class="text-muted ms-auto flex-shrink-0"
+                                      t-esc="formatDate(entry.item.date)"/>
+                                <button class="o_mail_client_card_collapse btn btn-sm btn-link align-self-center"
+                                        aria-expanded="true"
+                                        t-att-title="collapseTitle" t-att-aria-label="collapseTitle"
+                                        t-on-click="() => this.collapse(entry.item)">
+                                    <i class="fa fa-chevron-up" aria-hidden="true"/>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="o_mail_client_conv_state px-4 pb-3 small text-muted">
+                            <t t-if="state.failed[entry.item.id]">
+                                <i class="fa fa-exclamation-triangle me-1" aria-hidden="true"/>
+                                <span>This message could not be opened.</span>
+                                <button type="button" class="btn btn-link btn-sm p-0 ms-2 align-baseline"
+                                        t-on-click="() => this.load(entry.item.id)">Retry</button>
+                            </t>
+                            <t t-else="">
+                                <i class="fa fa-circle-o-notch fa-spin me-1" aria-hidden="true"/>
+                                <span>Fetching message…</span>
+                            </t>
+                        </div>
+                    </t>
+                </div>
+
+                <button type="button" t-else=""
+                        class="o_mail_client_conv_row d-flex align-items-center gap-2 w-100 text-start px-4"
+                        t-att-class="{'is-ours': entry.item.is_outgoing, 'o_unread': !entry.item.flag_seen}"
+                        aria-expanded="false"
+                        t-att-data-message-id="entry.item.id"
+                        t-on-click="() => this.expand(entry.item)">
+                    <span class="o_mail_client_conv_name text-truncate flex-shrink-0"
+                          t-esc="senderName(entry.item.email_from)"/>
+                    <span class="o_mail_client_ours badge rounded-pill flex-shrink-0"
+                          t-if="entry.item.is_outgoing" t-att-title="oursTitle">we</span>
+                    <span class="o_mail_client_conv_snippet text-truncate flex-grow-1 text-muted"
+                          t-esc="snippet(entry.item)"/>
+                    <i class="fa fa-paperclip text-muted flex-shrink-0" t-if="entry.item.has_attachment"
+                       aria-hidden="true"/>
+                    <span class="o_mail_client_conv_date text-muted flex-shrink-0 ms-auto"
+                          t-esc="formatDate(entry.item.date)"/>
+                </button>
+            </t>
+        </div>
+    </t>
+
+</templates>

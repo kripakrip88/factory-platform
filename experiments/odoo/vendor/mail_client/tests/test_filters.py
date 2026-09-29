@@ -2,8 +2,9 @@
 # Copyright 2026 Albirru Solutions (Irwan Syah)
 # License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl-3.0.html)
 """Quick filters on the message list."""
-from datetime import datetime
+from datetime import datetime, timedelta
 
+from odoo import fields
 from odoo.exceptions import UserError
 from odoo.tests import TransactionCase, tagged
 
@@ -181,6 +182,9 @@ class TestMessageFilters(TransactionCase):
         other_account = self.env['mail.client.account'].create({
             'name': 'Second', 'email': 'other@example.org', 'server_id': self.server.id,
         })
+        # ПРАВКА ПМК (шаг 18): ящики — свои. Без владельца тест был зелёным
+        # только из-за ошибки «пустой список ящиков = все письма базы».
+        (self.account | other_account).user_id = self.env.uid
         other_inbox = self.env['mail.client.folder'].create({
             'name': 'INBOX', 'account_id': other_account.id,
             'imap_path': 'INBOX', 'role': 'inbox',
@@ -192,3 +196,102 @@ class TestMessageFilters(TransactionCase):
         result = self.Folder.get_messages(unified=True, message_filter='unread')
         self.assertEqual(sorted(row['subject'] for row in result['messages']),
                          ['Unread here', 'Unread there'])
+
+    # ------------------------------------------------------------------
+    # ПРАВКА ПМК (шаг 18, Г11): поиск по получателю
+    # ------------------------------------------------------------------
+    def test_search_finds_the_recipient(self):
+        """В «Отправленных» «От» везде наш ящик — письмо клиенту ищут по его
+        адресу в «Кому» или «Копии»."""
+        sent = self.Folder.create({
+            'name': 'Sent', 'account_id': self.account.id, 'imap_path': 'Sent', 'role': 'sent',
+        })
+        self._message(1, 'Offer', folder=sent, sender='me@example.org')
+        self._message(2, 'Invoice', folder=sent, sender='me@example.org')
+        self._message(3, 'Other', folder=sent, sender='me@example.org')
+        self.Message.search([('subject', '=', 'Offer')]).email_to = 'Client <client@firm.ru>'
+        self.Message.search([('subject', '=', 'Invoice')]).write({
+            'email_to': 'accounts@firm.ru', 'email_cc': 'client@firm.ru'})
+        for threaded in (False, True):
+            result = self.Folder.get_messages(
+                folder_id=sent.id, search='client@firm.ru', threaded=threaded)
+            self.assertEqual(sorted(row['subject'] for row in result['messages']),
+                             ['Invoice', 'Offer'], "threaded=%s" % threaded)
+
+    # ------------------------------------------------------------------
+    # ПРАВКА ПМК (шаг 18, Г10): фильтр «Ждут ответа»
+    # ------------------------------------------------------------------
+    def _recent(self, uid, key, days_ago, folder=None, sender='client@firm.ru'):
+        folder = folder or self.inbox
+        return self.Message.create({
+            'account_id': folder.account_id.id, 'folder_id': folder.id, 'imap_uid': uid,
+            'subject': key, 'thread_key': key, 'email_from': sender,
+            'message_id': '<m%s-%s@x>' % (folder.id, uid),
+            'date': fields.Datetime.now() - timedelta(days=days_ago, hours=1),
+        })
+
+    def test_awaiting_filter(self):
+        sent = self.Folder.create({
+            'name': 'Sent', 'account_id': self.account.id, 'imap_path': 'Sent', 'role': 'sent',
+        })
+        self._recent(1, '<us@x>', 2)
+        self._recent(2, '<us@x>', 1)                                  # два письма клиента
+        self._recent(3, '<client@x>', 3)
+        self._recent(1, '<client@x>', 2, folder=sent, sender='me@example.org')
+        self._recent(4, '<old@x>', 10)
+        self._recent(5, '<robot@x>', 1, sender='noreply@shop.ru')
+        self.assertEqual(self._subjects(message_filter='awaiting'), ['<us@x>', '<us@x>'],
+                         "Без переписок — все письма таких переписок в папке.")
+
+        result = self.Folder.get_messages(
+            folder_id=self.inbox.id, threaded=True, message_filter='awaiting')
+        self.assertEqual([row['thread_key'] for row in result['messages']], ['<us@x>'])
+        self.assertEqual(result['filter'], 'awaiting')
+
+        # Фильтр совпадает с плашкой строки: всё, что «ждёт ответа» в списке,
+        # есть в фильтре, и ничего больше.
+        rows = self.Folder.get_messages(folder_id=self.inbox.id, threaded=True)['messages']
+        self.assertEqual({row['thread_key'] for row in rows if row['awaiting'] == 'us'},
+                         {row['thread_key'] for row in result['messages']})
+
+        # В «Отправленных» переписка клиента видна своим нашим письмом.
+        in_sent = self.Folder.get_messages(folder_id=sent.id, message_filter='awaiting')
+        self.assertEqual(in_sent['messages'], [])
+
+    def test_awaiting_filter_in_the_unified_inbox(self):
+        other_account = self.env['mail.client.account'].create({
+            'name': 'Second', 'email': 'other@example.org', 'server_id': self.server.id,
+        })
+        other_inbox = self.Folder.create({
+            'name': 'INBOX', 'account_id': other_account.id,
+            'imap_path': 'INBOX', 'role': 'inbox',
+        })
+        self._recent(1, '<here@x>', 1)
+        self._recent(1, '<there@x>', 1, folder=other_inbox)
+        self._recent(2, '<answered@x>', 1, folder=other_inbox, sender='other@example.org')
+        self.assertEqual(self.Folder.get_messages(unified=True, message_filter='awaiting')['messages'],
+                         [], "Чужие ящики — не мои: фильтр по ним не ищет.")
+
+        (self.account | other_account).user_id = self.env.uid
+        for threaded in (False, True):
+            result = self.Folder.get_messages(
+                unified=True, threaded=threaded, message_filter='awaiting')
+            self.assertEqual(sorted(row['subject'] for row in result['messages']),
+                             ['<here@x>', '<there@x>'], "threaded=%s" % threaded)
+
+    # ------------------------------------------------------------------
+    # ПРАВКА ПМК (шаг 18): тихие папки
+    # ------------------------------------------------------------------
+    def test_inbox_state_marks_spam_and_trash_quiet(self):
+        self.account.user_id = self.env.uid
+        for name, role in (('Junk', 'spam'), ('Trash', 'trash'), ('Sent', 'sent'),
+                           ('Projects', 'other')):
+            self.Folder.create({
+                'name': name, 'account_id': self.account.id, 'imap_path': name, 'role': role,
+            })
+        state = self.env['mail.client.account'].get_inbox_state()
+        account = next(a for a in state['accounts'] if a['id'] == self.account.id)
+        quiet = {folder['name']: folder['quiet'] for folder in account['folders']}
+        self.assertEqual(quiet, {
+            'INBOX': False, 'Sent': False, 'Junk': True, 'Trash': True, 'Projects': False,
+        })

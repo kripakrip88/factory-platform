@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!-- ПРАВКА ПМК (шаг 20, 30.09.2026): одно письмо — строка «От»,
+         предупреждения, вложения и рамка. Вынесено из окна чтения шага 17
+         без видимых изменений (panes/message_card.js).
+
+         Корней у шаблона несколько, обёртки нет: у одиночного письма блоки
+         лежат прямо в окне прокрутки (o_mail_client_reading_scroll), как
+         было, — на это рассчитаны правила pmk_theme (third_party.scss:
+         «.o_mail_client_reading_scroll > .px-4») и растяжка короткого письма
+         до низа окна (mail_client.scss, o_mail_client_frame_wrap).
+         Карточку контакта окно чтения ставит слотом afterHeader — сразу под
+         строкой «От», где она и стояла.
+
+         В переписке (panes/conversation.xml) — та же карточка внутри
+         o_mail_client_conv_card; в строке «От» ещё плашка «мы»,
+         «Ответить», «Переслать» и «Свернуть». -->
+    <t t-name="mail_client.MessageCard">
+        <div class="o_mail_client_reading_header px-4 py-2" t-on-click="onHeaderClick">
+            <div class="o_mail_client_from d-flex align-items-baseline gap-2 small">
+                <!-- В ленте переписки подписи «От:» нет: «Имя · мы · дата» —
+                     имени нужнее место рядом с кнопками. -->
+                <span class="text-muted flex-shrink-0" t-if="!props.onCollapse">From:</span>
+                <!-- Адрес — o_mail_client_from_addr: на узком окне ленты его
+                     прячут, только когда рядом имя (strong + адрес,
+                     mail_client.scss). Без имени адрес — единственное, что
+                     говорит, кто написал. -->
+                <span class="o_mail_client_from_text text-truncate" t-att-title="props.detail.email_from">
+                    <strong t-if="sender.name" class="me-1" t-esc="sender.name"/>
+                    <span class="o_mail_client_from_addr" t-att-class="sender.name ? 'text-muted' : ''"
+                          t-esc="sender.name ? '&lt;' + sender.address + '&gt;' : sender.address"/>
+                </span>
+                <span class="o_mail_client_ours badge rounded-pill flex-shrink-0"
+                      t-if="props.ours" t-att-title="oursTitle">we</span>
+                <button class="o_mail_client_details_toggle btn btn-link btn-sm p-0 flex-shrink-0"
+                        t-if="hasRecipients"
+                        t-att-aria-expanded="showRecipients ? 'true' : 'false'"
+                        t-on-click="() => this.toggleRecipients()"
+                        t-esc="recipientsToggleLabel"/>
+                <span class="text-muted ms-auto flex-shrink-0" t-esc="formatDate(props.detail.date)"/>
+                <span class="o_mail_client_card_actions d-flex align-self-center gap-1 flex-shrink-0"
+                      t-if="props.onReply or props.onCollapse">
+                    <t t-if="props.onReply">
+                        <button class="btn btn-sm btn-light" t-if="props.canReply"
+                                title="Reply" aria-label="Reply"
+                                t-on-click="() => props.onReply('reply')">
+                            <i class="fa fa-reply" aria-hidden="true"/><span class="o_mail_client_label ms-1">Reply</span>
+                        </button>
+                        <button class="btn btn-sm btn-light" title="Forward" aria-label="Forward"
+                                t-on-click="() => props.onReply('forward')">
+                            <i class="fa fa-share" aria-hidden="true"/><span class="o_mail_client_label ms-1">Forward</span>
+                        </button>
+                    </t>
+                    <button class="o_mail_client_card_collapse btn btn-sm btn-link"
+                            t-if="props.onCollapse" aria-expanded="true"
+                            t-att-title="collapseTitle" t-att-aria-label="collapseTitle"
+                            t-on-click="() => props.onCollapse()">
+                        <i class="fa fa-chevron-up" aria-hidden="true"/>
+                    </button>
+                </span>
+            </div>
+            <div class="o_mail_client_recipients small text-muted mt-1" t-if="showRecipients">
+                <div t-if="props.detail.email_to"><strong>To:</strong> <t t-esc="props.detail.email_to"/></div>
+                <div t-if="props.detail.email_cc"><strong>Cc:</strong> <t t-esc="props.detail.email_cc"/></div>
+            </div>
+        </div>
+
+        <t t-slot="afterHeader"/>
+
+        <div class="alert alert-danger mx-4 py-2 small" role="alert"
+             t-if="props.detail.is_spam">
+            <i class="fa fa-exclamation-triangle me-1"/>
+            Your mail server flagged this message as spam<t t-if="props.detail.spam_score">
+            (Rspamd score <t t-esc="props.detail.spam_score"/>)</t>. Treat links and
+            attachments with suspicion.
+        </div>
+
+        <div class="alert alert-warning mx-4 py-2 small d-flex align-items-center"
+             role="alert" t-if="props.detail.has_blocked_images">
+            <span class="flex-grow-1">
+                <i class="fa fa-picture-o me-1"/>
+                Remote images are blocked. Loading them tells the sender you opened this message.
+            </span>
+            <button class="btn btn-sm btn-outline-secondary ms-2"
+                    t-on-click="() => props.onAllowImages()">
+                Show images
+            </button>
+        </div>
+
+        <div class="alert alert-warning mx-4 py-2 small" role="alert"
+             t-if="props.detail.body_state === 'failed'">
+            This message could not be downloaded from the mail server.
+        </div>
+
+        <div class="px-4 pb-2" t-if="props.detail.attachments.length">
+            <div class="d-flex flex-wrap gap-2">
+                <!-- ПРАВКА ПМК: у вложения два действия. Кнопка скачивания
+                     осталась ровно такой, какой была, рядом с ней встала
+                     «Посмотреть». Обе лежат в одной группе: так они выглядят
+                     одной плашкой файла и при переносе строки не разъезжаются
+                     по разным строкам. -->
+                <div class="btn-group" role="group"
+                     t-foreach="props.detail.attachments" t-as="attachment"
+                     t-key="attachment.id">
+                    <button class="btn btn-sm btn-light o_mail_client_chip d-inline-flex align-items-center gap-2"
+                            t-att-disabled="state.downloading === attachment.id"
+                            t-on-click="() => this.onDownload(attachment)">
+                        <i class="fa" t-att-class="state.downloading === attachment.id ? 'fa-circle-o-notch fa-spin' : 'fa-paperclip'"/>
+                        <span t-esc="attachment.name"/>
+                        <small class="text-muted" t-esc="formatSize(attachment.size)"/>
+                    </button>
+                    <button class="btn btn-sm btn-light d-inline-flex align-items-center gap-1"
+                            t-on-click="() => this.onPreview(attachment)">
+                        <i class="fa fa-eye"/>
+                        <span>View</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Высоту рамки ставит frame_fit.js (followFrame), как только
+             документ письма разобран; без доступа к документу рамки —
+             прежнее поведение (рамка на остаток окна, прокрутка внутри, см.
+             mail_client.scss). -->
+        <div class="o_mail_client_frame_wrap px-4 pb-4">
+            <iframe class="o_mail_client_frame w-100"
+                    t-ref="frame"
+                    t-att-sandbox="sandbox"
+                    t-att-srcdoc="props.detail.body"
+                    title="Message body"/>
+        </div>
+    </t>
+
+</templates>

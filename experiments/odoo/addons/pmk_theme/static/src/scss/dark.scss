@@ -541,6 +541,31 @@ $pmk-dark-alerts: (
     --mc-active-bg: #3d451e;
     --mc-active-color: #f4f1ea;
     --mc-ticked-bg: rgba(200, 240, 0, 0.14);
+    // Шаг 18 (30.09.2026): точка непрочитанного светлее (синяя #005ff9 на
+    // #1e2025 едва видна), плашки «ждёт ответа / ждём клиента» — жёлтым и
+    // серым тоном тёмных плашек ($pmk-dark-tones выше).
+    --mc-unread-dot: #5c9dff;
+    --mc-await-us-bg: #{nth(map-get($pmk-dark-tones, "yellow"), 1)};
+    --mc-await-us-color: #{nth(map-get($pmk-dark-tones, "yellow"), 3)};
+    --mc-await-client-bg: #{nth(map-get($pmk-dark-tones, "grey"), 1)};
+    --mc-await-client-color: #{nth(map-get($pmk-dark-tones, "grey"), 3)};
+    // Шаг 20 (30.09.2026): наши письма в переписке под письмом — чуть
+    // светлее панели (без лайма), плашка «мы» — серым тоном тёмных плашек.
+    --mc-ours-bg: rgba(255, 255, 255, 0.04);
+    --mc-ours-badge-bg: #{nth(map-get($pmk-dark-tones, "grey"), 1)};
+    --mc-ours-badge-color: #{nth(map-get($pmk-dark-tones, "grey"), 3)};
+  }
+
+  // Заголовок группы «Сегодня / Вчера / Раньше» и серые части строки —
+  // тем же приглушённым, что подписи темы; тихий счётчик папки (Спам,
+  // рассылки) — самым бледным.
+  body.o_nexus_dark .o_mail_client .o_mail_client_group {
+    color: var(--pmk-ink-3) !important;
+  }
+
+  body.o_nexus_dark .o_mail_client .o_mail_client_count_quiet {
+    color: var(--pmk-ink-3);
+    opacity: 1;
   }
 
   body.o_nexus_dark .o_mail_client .o_mail_client_folder.btn {

@@ -27,28 +27,28 @@
                         t-on-click="() => this.toggleThreaded()">
                     <i class="fa fa-comments-o"/>
                 </button>
-                <div class="position-relative">
+                <!-- ПРАВКА ПМК (шаг 18): штатное меню Odoo вместо своего —
+                     своё не закрывалось ни щелчком мимо, ни клавишей Esc. -->
+                <Dropdown menuClass="'o_mail_client_filter_menu'">
                     <button class="btn btn-light btn-sm"
                             t-att-class="state.filter !== 'all' ? 'active' : ''"
-                            title="Filter messages"
-                            t-on-click="() => state.showFilterMenu = !state.showFilterMenu">
+                            title="Filter messages">
                         <i class="fa fa-filter me-1"/>
                         <t t-esc="activeFilter.label"/>
                     </button>
-                    <div class="o_mail_client_filter_menu dropdown-menu show"
-                         t-if="state.showFilterMenu">
-                        <button t-foreach="filters" t-as="item" t-key="item.id"
-                                class="dropdown-item d-flex align-items-center gap-2"
-                                t-att-class="item.id === state.filter ? 'active' : ''"
-                                t-on-click="() => this.setFilter(item.id)">
+                    <t t-set-slot="content">
+                        <DropdownItem t-foreach="filters" t-as="item" t-key="item.id"
+                                      class="{ 'd-flex align-items-center gap-2': true, active: item.id === state.filter }"
+                                      onSelected="() => this.setFilter(item.id)">
                             <i class="fa fa-fw" t-att-class="item.icon"/>
                             <t t-esc="item.label"/>
-                        </button>
-                    </div>
-                </div>
+                        </DropdownItem>
+                    </t>
+                </Dropdown>
                 <div class="o_mail_client_search flex-grow-1 d-flex gap-1">
+                    <!-- ПРАВКА ПМК (шаг 18, Г11): ищем и по получателю. -->
                     <input type="text" class="form-control form-control-sm"
-                           placeholder="Search subject, sender or preview…"
+                           placeholder="Search subject, sender, recipient or preview…"
                            t-att-value="state.search"
                            t-on-change="(ev) => this.onSearch(ev.target.value)"/>
                     <button class="btn btn-light btn-sm flex-shrink-0"
@@ -95,6 +95,8 @@
                                  canAct="canAct"
                                  folderName="activeFolder ? activeFolder.name : ''"
                                  filterLabel="filterLabel"
+                                 digests="state.digests"
+                                 onOpenFolder.bind="selectFolder"
                                  onClearFilter="() => this.setFilter('all')"
                                  onSelectMessage.bind="selectMessage"
                                  onLoadMore.bind="loadMore"
@@ -118,7 +120,8 @@
                                  onMove.bind="moveMessage"
                                  onDelete.bind="deleteMessage"
                                  onReply.bind="compose"
-                                 onDownloadAttachment.bind="downloadAttachment"/>
+                                 onDownloadAttachment.bind="downloadAttachment"
+                                 onConversationShown.bind="conversationShown"/>
                 </t>
             </div>
         </div>

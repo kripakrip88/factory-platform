@@ -58,9 +58,17 @@ export class FolderTree extends Component {
      * Unread total for a mailbox, shown on the header while it is folded.
      * Without it, collapsing an account would quietly hide the fact that new
      * mail has arrived in it.
+     *
+     * ПРАВКА ПМК (шаг 18): без тихих папок (folder.quiet — Спам, Корзина,
+     * у pmk_mail_ui ещё рассылки mail.ru). Иначе у свёрнутого pmkpark@ в
+     * итоге стояло «3391», из них 3374 — спам, и настоящих новых писем за
+     * этим числом не видно.
      */
     unreadFor(account) {
-        return account.folders.reduce((total, folder) => total + (folder.unread || 0), 0);
+        return account.folders.reduce(
+            (total, folder) => total + (folder.quiet ? 0 : folder.unread || 0),
+            0
+        );
     }
 
     /** True when the folder currently being read belongs to this account. */

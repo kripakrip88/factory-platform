@@ -52,7 +52,14 @@
                                 t-on-click="() => props.onSelectFolder(folder.id)">
                             <i class="fa fa-fw me-2" t-att-class="iconFor(folder.role)"/>
                             <span class="text-truncate flex-grow-1"><t t-esc="folder.name"/></span>
-                            <span t-if="folder.unread"
+                            <!-- ПРАВКА ПМК (шаг 18): у тихой папки (Спам, Корзина,
+                                 рассылки) число серым текстом, без плашки: оно не
+                                 зовёт читать. -->
+                            <span t-if="folder.unread and folder.quiet"
+                                  class="o_mail_client_count_quiet ms-2">
+                                <t t-esc="folder.unread"/>
+                            </span>
+                            <span t-elif="folder.unread"
                                   class="badge rounded-pill text-bg-primary ms-2">
                                 <t t-esc="folder.unread"/>
                             </span>

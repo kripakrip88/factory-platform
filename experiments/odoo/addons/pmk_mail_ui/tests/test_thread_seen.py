@@ -7,6 +7,11 @@ pmk_mark_threads_seen находит все письма переписки в �
 «Отправленными» и с копией письма, которую прячет get_thread, — и не трогает
 чужие переписки и чужие ящики. При открытии (upto) — только письма не новее
 открытого; в «Все входящие» (unified) — во всех ящиках, где можно писать.
+
+«Непрочитано» (шаг 18) — pmk_mark_unseen: одно письмо (со всеми его копиями
+в ящике — строку считают по одной копии), а в ответе точное
+число непрочитанного в переписке (строку окно ищет по ключу) и точный
+счётчик папки ПИСЬМА, а не открытой папки.
 """
 from datetime import datetime
 
@@ -130,6 +135,34 @@ class TestThreadSeen(TransactionCase):
         self.assertEqual(result["threads"], [{"thread_key": ROOT, "unread": 1}],
                          "Строка честно остаётся жирной — окно гасит её по этому числу.")
 
+    def test_opening_reads_up_to_the_newest_shown(self):
+        """Шаг 20 (30.09.2026): переписка видна под письмом целиком, новые
+        сверху, и самое новое письмо развёрнуто. Когда его тело пришло,
+        окно (thread_seen.js, крючок conversationShown) передаёт якорями
+        строку и самое новое письмо: прочитано всё, что не новее самого
+        нового, — и ответ клиента, пришедший после нашего письма в
+        «Отправленных». Письмо, пришедшее уже после того, как окно получило
+        переписку, новее якорей и остаётся жирным."""
+        newer = self._newer_reply()
+        arrived_later = self.Message.create({
+            "account_id": self.account.id, "folder_id": self.inbox.id,
+            "imap_uid": 8, "subject": "Re: Счёт", "thread_key": ROOT,
+            "email_from": "client@example.org", "flag_seen": False,
+            "message_id": "<later@example.org>", "date": datetime(2026, 9, 7, 10, 0, 0),
+        })
+        result = self.Message.pmk_mark_threads_seen([self.reply.id, newer.id], upto=True)
+
+        self.assertTrue(newer.flag_seen, "Самое новое показано развёрнутым — прочитано.")
+        self.assertTrue(self.old.flag_seen)
+        self.assertTrue(self.copy_sent.flag_seen)
+        self.assertIn(newer.id, self._ops().message_id.ids,
+                      "И на mail.ru — через очередь общих отметок.")
+        self.assertFalse(arrived_later.flag_seen, "Окно его ещё не видело.")
+        self.assertFalse(self.other.flag_seen)
+        self.assertFalse(self.elsewhere.flag_seen)
+        self.assertEqual(result["threads"], [{"thread_key": ROOT, "unread": 1}])
+        self.assertEqual(set(result["ids"]), {self.old.id, self.copy_sent.id, newer.id})
+
     def test_read_button_reads_the_whole_thread(self):
         """«Прочитано» на строке в «Отправленных» — просьба прочитать
         переписку целиком, иначе кнопка там ничего бы не делала."""
@@ -214,3 +247,112 @@ class TestThreadSeen(TransactionCase):
         with self.assertRaises(AccessError):
             self.Message.with_user(viewer).pmk_mark_threads_seen([self.latest.id])
         self.assertFalse(self.old.flag_seen)
+
+    # ------------------------------------------------------------------
+    # «Непрочитано» (шаг 18, 30.09.2026)
+    # ------------------------------------------------------------------
+    def test_unread_from_the_thread_pane_makes_the_row_bold(self):
+        """Письмо из «Отправленных», открытое из окна переписки во
+        «Входящих»: строка «Входящих» снова жирная, счётчик — у «Отправленных»
+        (модуль почты прибавлял открытой папке)."""
+        self.Message.pmk_mark_threads_seen([self.latest.id])
+        self.assertTrue(self._row(ROOT)["flag_seen"])
+
+        result = self.Message.pmk_mark_unseen(self.reply.id)
+
+        self.assertFalse(self.reply.flag_seen)
+        self.assertEqual(result["ids"], [self.reply.id])
+        self.assertEqual(result["threads"], [{"thread_key": ROOT, "unread": 1}])
+        self.assertEqual(result["folders"], [{"id": self.sent.id, "unread": 1}])
+        row = self._row(ROOT)
+        self.assertFalse(row["flag_seen"])
+        self.assertEqual(row["unread_count"], 1)
+
+    def test_unread_on_a_copy_marks_both_copies(self):
+        """Разбор шага 18: «Непрочитано» на копии письма во «Входящих», у
+        которой есть двойник в «Отправленных» (тот же Message-ID, id больше).
+        Строку считают по одной копии — _without_duplicates оставляет
+        двойника. Отметка только с открытой копии прибавляла «Входящим»
+        единицу, а строка оставалась нежирной, и после перезагрузки тоже.
+        Копии — одно письмо: снимаем с обеих, и на mail.ru."""
+        self.Message.pmk_mark_threads_seen([self.latest.id])
+        self.assertTrue(self._row(ROOT)["flag_seen"])
+        self.assertGreater(self.copy_sent.id, self.copy_inbox.id)
+
+        result = self.Message.pmk_mark_unseen(self.copy_inbox.id)
+
+        self.assertFalse(self.copy_inbox.flag_seen)
+        self.assertFalse(self.copy_sent.flag_seen, "Двойник — то же письмо.")
+        self.assertEqual(set(result["ids"]), {self.copy_inbox.id, self.copy_sent.id})
+        self.assertEqual(result["threads"], [{"thread_key": ROOT, "unread": 1}],
+                         "Одно письмо, а не два и не ноль.")
+        self.assertEqual(
+            {f["id"]: f["unread"] for f in result["folders"]},
+            {self.inbox.id: 2, self.sent.id: 1},
+            "Точные счётчики обеих папок: во «Входящих» ещё чужая переписка OTHER.")
+        row = self._row(ROOT)
+        self.assertFalse(row["flag_seen"], "Строка снова жирная.")
+        self.assertEqual(row["unread_count"], 1)
+        unset = self._ops().filtered(lambda op: op.op_type == "unset_flag")
+        self.assertEqual(set(unset.message_id.ids), {self.copy_inbox.id, self.copy_sent.id})
+
+        # Двойник уже непрочитан — второй операции в очередь не ставим.
+        self.copy_inbox.flag_seen = True
+        self.Message.pmk_mark_unseen(self.copy_inbox.id)
+        unset = self._ops().filtered(lambda op: op.op_type == "unset_flag")
+        self.assertEqual(len(unset.filtered(lambda op: op.message_id == self.copy_sent)), 1)
+
+    def test_unread_without_copies_touches_one_message(self):
+        """Письмо без двойника (и без Message-ID) — как было: одно письмо."""
+        self.latest.message_id = False
+        result = self.Message.pmk_mark_unseen(self.latest.id)
+        self.assertEqual(result["ids"], [self.latest.id])
+        self.assertEqual(self._ops().message_id, self.latest)
+
+    def test_unread_in_unified_returns_the_inbox_counter(self):
+        """В «Все входящие» открытой папки нет: счётчик «Входящих» приходит
+        с сервера, а переписка считается по всем ящикам, как её строка."""
+        (self.account | self.second).user_id = self.env.uid
+        self.Message.pmk_mark_threads_seen([self.latest.id], unified=True)
+
+        result = self.Message.pmk_mark_unseen(self.latest.id, unified=True)
+
+        self.assertEqual(result["folders"], [{"id": self.inbox.id, "unread": 2}],
+                         "latest и чужая переписка OTHER.")
+        self.assertEqual(result["threads"], [{"thread_key": ROOT, "unread": 1}])
+        rows = self.env["mail.client.folder"].get_messages(threaded=True, unified=True)
+        row = next(r for r in rows["messages"] if r["thread_key"] == ROOT)
+        self.assertEqual(row["unread_count"], 1)
+        self.assertFalse(row["flag_seen"])
+
+    def test_unread_queues_unset_flag_in_shared_mode(self):
+        """Ящик с общими отметками — «непрочитано» уходит и на mail.ru;
+        «только чтение» — остаётся в Odoo."""
+        self.Message.pmk_mark_unseen(self.latest.id)
+        ops = self._ops()
+        self.assertEqual(ops.mapped("op_type"), ["unset_flag"])
+        self.assertEqual(ops.message_id, self.latest)
+        self.assertEqual(ops.payload, {"flags": ["\\Seen"]})
+
+        self.elsewhere.flag_seen = True
+        self.Message.pmk_mark_unseen(self.elsewhere.id)
+        self.assertFalse(self.elsewhere.flag_seen)
+        self.assertFalse(self._ops(self.second))
+
+    def test_viewer_cannot_mark_unread(self):
+        Users = self.env["res.users"].with_context(no_reset_password=True)
+        viewer = Users.create({
+            "name": "Зритель", "login": "pmk_viewer_unseen", "email": "viewer2@example.org",
+            "group_ids": [(6, 0, [
+                self.env.ref("mail_client.group_mail_client_user").id,
+                self.env.ref("base.group_user").id,
+            ])],
+        })
+        self.account.user_id = False
+        self.env["mail.client.access"].create({
+            "account_id": self.account.id, "user_id": viewer.id, "role": "viewer",
+        })
+        with self.assertRaises(AccessError):
+            self.Message.with_user(viewer).pmk_mark_unseen(self.latest.id)
+        self.assertTrue(self.latest.flag_seen)
+        self.assertFalse(self._ops())

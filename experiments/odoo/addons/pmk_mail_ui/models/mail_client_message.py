@@ -26,7 +26,7 @@ from odoo.http import request
 
 from odoo.addons.mail_client.tools.imap_client import ImapError
 
-from ..tools import remote_paths
+from ..tools import quote_fold, remote_paths
 
 _logger = logging.getLogger(__name__)
 
@@ -108,6 +108,11 @@ _INLINE_TOTAL_BYTES = 6 * 1024 * 1024
 # Manrope внутри рамки не загрузился бы (у рамки был непрозрачный origin,
 # шрифт отдаётся без CORS) — поэтому шрифт системный. С шага 17 origin у
 # рамки наш, и подключить его можно, но это отдельная правка.
+#
+# details.pmk-quote — свёрнутая цитата «···» (шаг 20, В2, tools/quote_fold.py):
+# серая капсула, как в Mail.ru; треугольник <summary> спрятан (list-style
+# и ::-webkit-details-marker для Safari). Раскрытие меняет высоту письма —
+# рамку подгоняет frame_fit.js (ResizeObserver на документ письма).
 _FRAME_HEAD = (
     '<base target="_blank">'
     '<meta name="referrer" content="no-referrer">'
@@ -124,6 +129,13 @@ _FRAME_HEAD = (
     'img:not([width="0"],[width="1"],[width="2"],'
     '[height="0"],[height="1"],[height="2"]){height:auto!important}'
     "pre{white-space:pre-wrap}"
+    "details.pmk-quote{margin:8px 0}"
+    "details.pmk-quote>summary{display:inline-block;list-style:none;cursor:pointer;"
+    "padding:0 7px;border-radius:6px;background:#e8eaed;color:#5f6368;"
+    "font-weight:700;letter-spacing:1px;line-height:14px;user-select:none}"
+    "details.pmk-quote>summary::-webkit-details-marker{display:none}"
+    "details.pmk-quote>summary:hover{background:#dadce0;color:#3c4043}"
+    "details.pmk-quote[open]>summary{margin-bottom:8px}"
     "</style>"
 )
 
@@ -270,8 +282,15 @@ class MailClientMessage(models.Model):
 
         Подстановка идёт ПОСЛЕ _display_body, то есть после глушилки Г13:
         data: она оставляет, а путь «к нам» подставленной картинкой не станет.
+
+        Цитата под «···» (шаг 20, В2) сворачивается сразу после super() — ДО
+        подстановки картинок: разборщику не гонять мегабайты data:, а cid:
+        внутри свёрнутой цитаты находится тем же поиском по строке.
         """
         result = super().get_message_detail(message_id)
+        if result.get("body"):
+            # Доступ проверен в super(); тема и «картинки разрешены» — полями.
+            result["body"] = self.browse(message_id)._pmk_fold_quotes(result["body"])
         body = result.get("body") or ""
         if "cid:" not in body:
             return result
@@ -317,6 +336,28 @@ class MailClientMessage(models.Model):
         ]
         return result
 
+    def _pmk_fold_quotes(self, body):
+        """Цитата письма — под «···» (шаг 20 плана, В2, 30.09.2026).
+
+        Правила — в tools/quote_fold.py (чистая функция, при сомнении не
+        сворачивает). Только для окна письма: в лид и в цитату ответа
+        (_display_body, _quoted_body) свёртка не попадает — они берут
+        письмо без неё.
+
+        Свёртка пересобирает разметку через lxml, а libxml2 и браузер кривую
+        разметку разбирают по-разному. Глушилка Г13 проверяла строку ДО
+        пересборки, поэтому после свёртки глушим ещё раз — так же, как после
+        вырезки меток Word в _display_body. Повтор безвреден: заглушённое
+        второй раз не совпадает. Без свёртки строка возвращается как есть.
+        """
+        self.ensure_one()
+        folded, rule = quote_fold.fold_quotes(body, self.subject)
+        if not rule:
+            return body
+        if self.images_allowed:
+            return self._pmk_block_assets(folded, allow_remote=True)
+        return self._block_remote_assets(folded)
+
     # ------------------------------------------------------------------
     # переписка целиком (разбор «Почта как в Mail.ru», Г9)
     # ------------------------------------------------------------------
@@ -330,16 +371,20 @@ class MailClientMessage(models.Model):
         Если непрочитано более старое письмо, строка оставалась жирной
         навсегда (29.09.2026: 7 строк во «Входящих», 38 в «Отправленных»).
 
-        upto — письмо ОТКРЫЛИ, а не нажали «Прочитано»: помечаем только
-        письма переписки не новее открытого. Строку в «Отправленных»
-        представляет наше последнее письмо, а ответ клиента, пришедший позже,
-        лежит во «Входящих» и в окне виден лишь строкой «ещё N в переписке» —
-        открыв переписку в «Отправленных», его не прочитали, и гасить его (а
-        с общими отметками — и на mail.ru) нельзя. Цель Г9 — старые письма,
-        державшие строку жирной; строка с новым ответом честно остаётся
-        жирной. «Прочитано» (кнопка в окне, выделение строк) — просьба
-        прочитать переписку целиком: в «Отправленных» ничего другого она и не
-        может значить.
+        upto — письма ОТКРЫЛИ, а не нажали «Прочитано»: помечаем только
+        письма переписки не новее самого нового из message_ids (по каждому
+        ключу берётся максимум дат). Открытие строки — якорь сама строка.
+        С шага 20 (30.09.2026) переписка видна под письмом целиком, новые
+        сверху, и самое новое письмо развёрнуто: когда его тело пришло,
+        окно (thread_seen.js, крючок conversationShown) передаёт якорями
+        строку И это письмо — прочитано всё, что показано развёрнутым, и
+        всё, что старше. Ответ клиента, пришедший позже нашего письма в
+        «Отправленных», теперь виден развёрнутым сверху и гаснет (до шага 20
+        он был виден лишь строкой «ещё N в переписке» и оставался жирным).
+        Тело не пришло — письмо не гаснет. Письмо, пришедшее уже после того,
+        как окно получило переписку, новее якорей и остаётся непрочитанным.
+        «Прочитано» (кнопка в окне, выделение строк) — просьба прочитать
+        переписку целиком.
 
         unified — строка из «Все входящие». Там переписка одна на все ящики
         (_threaded_page группирует только по ключу, и строка жирная, пока
@@ -363,23 +408,17 @@ class MailClientMessage(models.Model):
         списка окно гасит по этому числу, а не наугад.
         """
         anchors = self._checked_many(message_ids)  # права на запись, как у set_seen_bulk
-        everywhere = (set(self.env["mail.client.account"]._accessible_accounts().ids)
-                      if unified else None)
         # Ключ переписки → ящики, где её искать, и даты открытых писем.
-        accounts, dates = {}, {}
+        scope = self._pmk_thread_scope(anchors, unified)
+        dates = {}
         for message in anchors.filtered("thread_key"):
-            key = message.thread_key
-            accounts.setdefault(key, set()).update(message.account_id.ids, everywhere or ())
-            dates.setdefault(key, []).append(message.date)
-
-        def thread(key):
-            return Domain([("thread_key", "=", key), ("account_id", "in", sorted(accounts[key]))])
+            dates.setdefault(message.thread_key, []).append(message.date)
 
         unread = anchors.filtered(lambda m: not m.flag_seen)
-        if accounts:
+        if scope:
             parts = []
-            for key in accounts:
-                part = thread(key)
+            for key, accounts in scope.items():
+                part = self._pmk_thread_domain(key, accounts)
                 # Письмо без даты открытого не новее: такое помечаем всегда.
                 if upto and all(dates[key]):
                     part &= Domain(["|", ("date", "<=", max(dates[key])), ("date", "=", False)])
@@ -391,21 +430,97 @@ class MailClientMessage(models.Model):
             unread |= found._filtered_access("write")
         if unread:
             self.set_seen_bulk(unread.ids, True)
+        return self._pmk_thread_result(unread, scope)
 
-        # Сколько осталось — так же, как строку считает _threaded_page: копии
-        # одного письма в двух папках — одно письмо.
-        remaining = dict.fromkeys(accounts, 0)
-        if accounts:
-            members = self.search(Domain.OR([thread(key) for key in accounts]),
-                                  order="date desc, id desc")._without_duplicates()
+    @api.model
+    def pmk_mark_unseen(self, message_id, unified=False):
+        """«Непрочитано» в режиме переписок — одно письмо, но с точными
+        числами (шаг 18, 30.09.2026).
+
+        Модуль почты прибавлял +1 открытой папке, а не папке письма (письмо
+        из «Отправленных», открытое из окна переписки во «Входящих», прибавляло
+        «Входящим»), в «Все входящие» не менял счётчиков вовсе, а строку искал
+        по id письма — письмо из окна переписки или из истории контакта
+        строкой не является, и строка не жирнела.
+
+        Помечаем штатным set_seen: проверка прав на запись и очередь (для
+        ящика с общими отметками — и на mail.ru, mail_client_flags.py).
+        Отвечаем в том же виде, что pmk_mark_threads_seen: сколько
+        непрочитанного теперь в переписке (строку окно ищет по ключу) и
+        точный счётчик папки письма. unified — как там: строка «Все
+        входящие» одна на все ящики пользователя.
+
+        Копии письма в двух папках ящика (тот же Message-ID; 102 пары
+        «Входящие + Отправленные» у pmkpark@) — ОДНО письмо: «непрочитано»
+        снимаем со всех (разбор шага 18, 30.09.2026). Строку и число
+        переписки считают по одной копии — _without_duplicates оставляет
+        копию с большим id, обычно ту, что в «Отправленных». Отметка только с
+        открытой копии во «Входящих» прибавляла «Входящим» единицу, а строка
+        оставалась нежирной и после перезагрузки. Копии ищем без sudo и
+        берём только те, что пользователю можно менять, — как в
+        pmk_mark_threads_seen.
+        """
+        self.set_seen(message_id, False)
+        message = self.browse(message_id)
+        changed = message
+        if message.message_id:
+            copies = self.search([
+                ("account_id", "=", message.account_id.id),
+                ("message_id", "=", message.message_id),
+                ("id", "!=", message.id),
+                ("flag_seen", "=", True),
+            ])._filtered_access("write")
+            if copies:
+                self.set_seen_bulk(copies.ids, False)
+                changed |= copies
+        return self._pmk_thread_result(changed, self._pmk_thread_scope(message, unified))
+
+    # ------------------------------------------------------------------
+    @api.model
+    def _pmk_thread_scope(self, anchors, unified=False):
+        """Ключ переписки → ящики, где её искать.
+
+        В папке переписка живёт в своём ящике: одно письмо в копии на zakaz@
+        и на pmkpark@ — две разные переписки (так же ограничивает
+        get_thread). В «Все входящие» (unified) строка одна на все ящики
+        пользователя — там и ищем во всех.
+        """
+        everywhere = (set(self.env["mail.client.account"]._accessible_accounts().ids)
+                      if unified else set())
+        scope = {}
+        for message in anchors.filtered("thread_key"):
+            scope.setdefault(message.thread_key, set()).update(
+                message.account_id.ids, everywhere)
+        return scope
+
+    @api.model
+    def _pmk_thread_domain(self, key, accounts):
+        return Domain([("thread_key", "=", key), ("account_id", "in", sorted(accounts))])
+
+    @api.model
+    def _pmk_remaining(self, scope):
+        """Сколько непрочитанного в каждой переписке — так же, как строку
+        считает _threaded_page: копии одного письма в двух папках — одно."""
+        remaining = dict.fromkeys(scope, 0)
+        if scope:
+            members = self.search(
+                Domain.OR([self._pmk_thread_domain(key, accounts)
+                           for key, accounts in scope.items()]),
+                order="date desc, id desc")._without_duplicates()
             for member in members:
                 if not member.flag_seen:
                     remaining[member.thread_key] += 1
+        return remaining
 
-        folders = unread.folder_id
+    @api.model
+    def _pmk_thread_result(self, changed, scope):
+        """Ответ окну: письма, строки-переписки по ключу, точные счётчики
+        папок этих писем."""
+        remaining = self._pmk_remaining(scope)
+        folders = changed.folder_id
         counts = self.env["mail.client.folder"]._unread_by_folder(folders.ids)
         return {
-            "ids": unread.ids,
+            "ids": changed.ids,
             "threads": [{"thread_key": key, "unread": remaining[key]}
                         for key in sorted(remaining)],
             # Точные числа, а не «минус столько-то»: у модуля adjustUnread

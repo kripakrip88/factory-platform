@@ -778,6 +778,10 @@ class MailClientAccount(models.Model):
                     'role': folder.role,
                     'parent_id': folder.parent_id.id or False,
                     'unread': counts.get(folder.id, 0),
+                    # ПРАВКА ПМК (шаг 18): тихая папка — счётчик серым
+                    # текстом и не в итоге свёрнутого ящика («Спам 3374»
+                    # кричал громче «Входящих»).
+                    'quiet': folder._is_quiet(),
                 } for folder in folders],
             })
         return {'accounts': payload}

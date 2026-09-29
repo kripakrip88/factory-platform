@@ -1,8 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
 
+    <!-- ПРАВКА ПМК (шаг 18 плана, «Почта как в Mail.ru», 30.09.2026): список
+         как в Mail.ru. Два вида (удобный — две строки, компактный — одна);
+         непрочитанное — жирным и синей точкой; галочка — на месте точки, видна
+         при наведении или когда что-то уже выбрано; у нашего письма «Кому: …»;
+         число писем переписки серым; плашки «ждёт ответа / ждём клиента»;
+         группы «Сегодня / Вчера / Раньше»; рассылки одной строкой (крючок
+         сервера _list_digests). Меню «Переместить» — штатное меню Odoo:
+         самодельное не закрывалось ни щелчком мимо, ни клавишей Esc. -->
     <t t-name="mail_client.MessageList">
-        <div class="o_mail_client_list d-flex flex-column flex-shrink-0">
+        <t t-set="listItems" t-value="items"/>
+        <div class="o_mail_client_list d-flex flex-column flex-shrink-0"
+             t-att-class="{ o_compact: isCompact, o_has_selection: props.selectedIds.length }">
             <div class="o_mail_client_list_header d-flex align-items-center gap-2 px-3 py-2">
                 <input type="checkbox" class="form-check-input mt-0 o_mail_client_tick"
                        t-att-checked="allTicked"
@@ -15,6 +25,23 @@
                 <span class="fw-bold flex-grow-1" t-else="">
                     <t t-esc="props.selectedIds.length"/> selected
                 </span>
+                <!-- Ниже xl компактный вид не помещается и сам становится
+                     удобным (mail_client.scss), поэтому и переключателя нет. -->
+                <div class="o_mail_client_view_switch btn-group btn-group-sm flex-shrink-0 d-none d-xl-inline-flex"
+                     role="group">
+                    <button class="btn btn-light" title="Comfortable view" aria-label="Comfortable view"
+                            t-att-class="{ active: !isCompact }"
+                            t-att-aria-pressed="isCompact ? 'false' : 'true'"
+                            t-on-click="() => this.setView('comfortable')">
+                        <i class="fa fa-th-list" aria-hidden="true"/>
+                    </button>
+                    <button class="btn btn-light" title="Compact view" aria-label="Compact view"
+                            t-att-class="{ active: isCompact }"
+                            t-att-aria-pressed="isCompact ? 'true' : 'false'"
+                            t-on-click="() => this.setView('compact')">
+                        <i class="fa fa-bars" aria-hidden="true"/>
+                    </button>
+                </div>
             </div>
 
             <div class="o_mail_client_bulkbar d-flex align-items-center gap-1 px-2 py-1"
@@ -34,19 +61,20 @@
                 </button>
                 <!-- Hidden on a read-only mailbox: the server refuses both, so
                      offering them would only produce an error dialog. -->
-                <div class="position-relative" t-if="props.canAct">
+                <Dropdown t-if="props.canAct" menuClass="'o_mail_client_move_menu'"
+                          disabled="!!props.busy">
                     <button class="btn btn-sm btn-light" title="Move to folder"
-                            t-att-disabled="props.busy"
-                            t-on-click="() => state.showMoveMenu = !state.showMoveMenu">
+                            t-att-disabled="props.busy">
                         <i class="fa fa-folder-open-o"/>
                     </button>
-                    <div class="o_mail_client_move_menu dropdown-menu show" t-if="state.showMoveMenu">
-                        <button t-foreach="props.moveTargets or []" t-as="folder" t-key="folder.id"
-                                class="dropdown-item" t-on-click="() => this.onMoveTo(folder.id)">
+                    <t t-set-slot="content">
+                        <DropdownItem t-foreach="props.moveTargets or []" t-as="folder"
+                                      t-key="folder.id"
+                                      onSelected="() => this.onMoveTo(folder.id)">
                             <t t-esc="folder.name"/>
-                        </button>
-                    </div>
-                </div>
+                        </DropdownItem>
+                    </t>
+                </Dropdown>
                 <button class="btn btn-sm btn-light text-danger" title="Delete"
                         t-if="props.canAct"
                         t-att-disabled="props.busy"
@@ -57,12 +85,12 @@
             </div>
 
             <div class="flex-grow-1 overflow-auto">
-                <t t-if="props.loading and !props.messages.length">
+                <t t-if="props.loading and !listItems.length">
                     <div class="text-center text-muted p-4">
                         <i class="fa fa-circle-o-notch fa-spin fa-2x"/>
                     </div>
                 </t>
-                <t t-elif="!props.messages.length">
+                <t t-elif="!listItems.length">
                     <div class="text-center text-muted p-4 small">
                         <t t-if="props.filterLabel">
                             <!-- Saying "nothing here" under an active filter
@@ -80,47 +108,81 @@
                     </div>
                 </t>
 
-                <div t-foreach="props.messages" t-as="message" t-key="message.id"
-                     class="o_mail_client_row d-flex px-3 py-2"
-                     t-att-class="{
-                         'o_unread': !message.flag_seen,
-                         'active': isSelected(message.id),
-                         'o_ticked': isTicked(message.id),
-                     }"
-                     t-on-click="(ev) => this.onRowClick(ev, message.id)">
-                    <input type="checkbox" class="form-check-input mt-1 me-2 o_mail_client_tick"
-                           t-att-checked="isTicked(message.id)"
-                           t-on-change="() => props.onToggleSelected(message.id)"/>
-                    <div class="flex-grow-1 overflow-hidden">
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="text-truncate flex-grow-1" t-att-title="message.email_from">
-                                <t t-esc="sender(message)"/>
-                            </span>
-                            <i t-if="message.flag_flagged" class="fa fa-star text-warning small"/>
-                            <i t-if="message.has_attachment" class="fa fa-paperclip text-muted small"/>
-                            <small class="text-muted flex-shrink-0">
-                                <t t-esc="formatDate(message.date)"/>
-                            </small>
-                        </div>
-                        <div class="text-truncate">
-                            <i t-if="message.flag_answered" class="fa fa-reply text-muted me-1 small"/>
-                            <span t-if="message.thread_count > 1"
-                                  class="badge rounded-pill text-bg-secondary me-1"
-                                  t-att-title="threadTitle(message.thread_count)">
-                                <t t-esc="message.thread_count"/>
-                            </span>
-                            <span t-att-class="message.flag_seen ? '' : 'fw-bold'">
-                                <t t-esc="message.subject"/>
-                            </span>
-                        </div>
-                        <div class="text-truncate text-muted small" t-if="message.preview">
-                            <t t-esc="message.preview"/>
-                        </div>
-                        <div t-if="message.is_spam">
-                            <span class="badge text-bg-danger">Spam</span>
+                <t t-foreach="listItems" t-as="item" t-key="item.key">
+                    <div t-if="item.type === 'group'" class="o_mail_client_group text-muted"
+                         t-esc="groupLabel(item.bucket)"/>
+
+                    <div t-elif="item.type === 'digest'"
+                         class="o_mail_client_row o_mail_client_digest d-flex"
+                         t-att-class="{ o_unread: item.digest.unread }"
+                         role="button" tabindex="0"
+                         t-on-click="() => this.onOpenDigest(item.digest)"
+                         t-on-keydown="(ev) => ev.key === 'Enter' and this.onOpenDigest(item.digest)">
+                        <span class="o_mail_client_lead">
+                            <i class="fa fa-folder-o text-muted" aria-hidden="true"/>
+                        </span>
+                        <div class="o_mail_client_row_main">
+                            <div class="o_mail_client_line1">
+                                <span class="o_mail_client_who text-truncate" t-esc="item.digest.name"/>
+                                <span class="o_mail_client_row_count text-muted" t-if="item.digest.unread"
+                                      t-esc="digestUnreadLabel(item.digest.unread)"/>
+                                <small class="o_mail_client_date text-muted" t-esc="formatDate(item.digest.date)"/>
+                            </div>
+                            <div class="o_mail_client_line2 text-truncate text-muted">
+                                <t t-esc="item.digest.senders.join(', ')"/>
+                            </div>
                         </div>
                     </div>
-                </div>
+
+                    <div t-else="" class="o_mail_client_row d-flex"
+                         t-att-class="{
+                             'o_unread': !item.message.flag_seen,
+                             'active': isSelected(item.message.id),
+                             'o_ticked': isTicked(item.message.id),
+                         }"
+                         t-on-click="(ev) => this.onRowClick(ev, item.message.id)">
+                        <t t-set="message" t-value="item.message"/>
+                        <label class="o_mail_client_lead">
+                            <span class="o_mail_client_dot" t-if="!message.flag_seen" aria-hidden="true"/>
+                            <input type="checkbox" class="form-check-input o_mail_client_tick"
+                                   t-att-aria-label="message.subject"
+                                   t-att-checked="isTicked(message.id)"
+                                   t-on-change="() => props.onToggleSelected(message.id)"/>
+                        </label>
+                        <div class="o_mail_client_row_main">
+                            <div class="o_mail_client_line1">
+                                <span class="o_mail_client_who text-truncate" t-if="message.is_outgoing"
+                                      t-att-title="message.email_to">
+                                    <!-- Пробел — на той же строке: Owl выбрасывает
+                                         пробелы с переводом строки между тегами. -->
+                                    <span class="o_mail_client_to_label text-muted">To:</span> <t t-esc="recipient(message)"/>
+                                </span>
+                                <span class="o_mail_client_who text-truncate" t-else=""
+                                      t-att-title="message.email_from" t-esc="sender(message)"/>
+                                <span t-if="message.thread_count > 1"
+                                      class="o_mail_client_row_count text-muted"
+                                      t-att-title="threadTitle(message.thread_count)"
+                                      t-esc="message.thread_count"/>
+                                <span t-if="message.awaiting" class="o_mail_client_await"
+                                      t-att-class="message.awaiting === 'us' ? 'o_await_us' : 'o_await_client'"
+                                      t-att-title="awaitTitle(message.awaiting)"
+                                      t-esc="awaitLabel(message.awaiting)"/>
+                                <span class="o_mail_client_marks" t-if="message.flag_flagged or message.has_attachment">
+                                    <i t-if="message.flag_flagged" class="fa fa-star text-warning small"/>
+                                    <i t-if="message.has_attachment" class="fa fa-paperclip text-muted small"/>
+                                </span>
+                                <small class="o_mail_client_date text-muted" t-esc="formatDate(message.date)"/>
+                            </div>
+                            <div class="o_mail_client_line2 text-truncate">
+                                <i t-if="message.flag_answered" class="fa fa-reply text-muted me-1 small"/>
+                                <span class="o_mail_client_row_subject" t-esc="message.subject"/>
+                                <span class="o_mail_client_preview text-muted" t-if="message.preview">
+                                    — <t t-esc="message.preview"/>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </t>
 
                 <div class="p-2 text-center" t-if="props.hasMore">
                     <button class="btn btn-link btn-sm"

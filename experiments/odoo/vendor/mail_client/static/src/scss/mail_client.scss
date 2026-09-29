@@ -10,6 +10,18 @@
     --mc-active-color: #{$white};
     --mc-unread-marker: #{$primary};
     --mc-ticked-bg: #{rgba($primary, .12)};
+    // ПРАВКА ПМК (шаг 18): точка непрочитанного — синяя, как в Mail.ru, и
+    // плашки «ждёт ответа» (бледный янтарь) / «ждём клиента» (серая).
+    --mc-unread-dot: #005ff9;
+    --mc-await-us-bg: #fff1c7;
+    --mc-await-us-color: #6b4d00;
+    --mc-await-client-bg: #{$gray-200};
+    --mc-await-client-color: #{$gray-700};
+    // ПРАВКА ПМК (шаг 20): наши письма в переписке — бледная нейтральная
+    // подложка (не лайм, решение владельца), плашка «мы» — серая капсула.
+    --mc-ours-bg: #f5f6f1;
+    --mc-ours-badge-bg: #{$gray-200};
+    --mc-ours-badge-color: #{$gray-700};
 
     background-color: var(--mc-panel-bg);
 }
@@ -111,10 +123,6 @@
             color: rgba(255, 255, 255, .75) !important;
         }
 
-        .badge.text-bg-danger {
-            box-shadow: 0 0 0 1px rgba(255, 255, 255, .5);
-        }
-
         // Keep the checkbox visible against the dark background.
         .o_mail_client_tick:not(:checked) {
             border-color: rgba(255, 255, 255, .6);
@@ -122,9 +130,219 @@
         }
     }
 
-    &.o_unread {
-        border-left: 3px solid var(--mc-unread-marker);
-        padding-left: calc(1rem - 3px);
+}
+
+// --- ПРАВКА ПМК: список как в Mail.ru (шаг 18 плана, 30.09.2026) ---
+// Непрочитанное — жирным и синей точкой (была черта слева). Галочка стоит
+// на месте точки: видна при наведении, с клавиатуры, отмеченная, и на всём
+// списке, когда что-то уже выбрано; на сенсорном экране — всегда. Два вида:
+// удобный (две строки) и компактный (одна строка, колонка шире; ниже xl не
+// помещается и сам становится удобным).
+
+.o_mail_client_row {
+    gap: .25rem;
+    padding: .45rem .75rem .45rem .25rem;
+}
+
+.o_mail_client_lead {
+    position: relative;
+    display: flex;
+    flex: 0 0 1.5rem;
+    align-items: center;
+    justify-content: center;
+    align-self: flex-start;
+    height: 1.5em;
+    margin: 0;
+    cursor: pointer;
+
+    .o_mail_client_tick {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        margin: 0;
+        transform: translate(-50%, -50%);
+        opacity: 0;
+    }
+}
+
+.o_mail_client_dot {
+    width: .5rem;
+    height: .5rem;
+    border-radius: 50%;
+    background-color: var(--mc-unread-dot);
+}
+
+.o_mail_client_row:hover .o_mail_client_lead,
+.o_mail_client_lead:focus-within,
+.o_mail_client_row.o_ticked .o_mail_client_lead,
+.o_has_selection .o_mail_client_lead {
+    .o_mail_client_tick {
+        opacity: 1;
+    }
+
+    .o_mail_client_dot {
+        visibility: hidden;
+    }
+}
+
+@media (hover: none) {
+    .o_mail_client_lead {
+        .o_mail_client_tick {
+            opacity: 1;
+        }
+
+        .o_mail_client_dot {
+            visibility: hidden;
+        }
+    }
+}
+
+.o_mail_client_row_main {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.o_mail_client_line1 {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    min-width: 0;
+}
+
+.o_mail_client_who {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.o_mail_client_row_count {
+    flex-shrink: 0;
+    font-size: .8125rem;
+}
+
+.o_mail_client_marks {
+    display: inline-flex;
+    flex-shrink: 0;
+    gap: .3rem;
+}
+
+.o_mail_client_date {
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+.o_mail_client_row.o_unread {
+    .o_mail_client_who,
+    .o_mail_client_row_subject {
+        font-weight: 700;
+    }
+}
+
+.o_mail_client_await {
+    flex-shrink: 0;
+    padding: .05rem .45rem;
+    border-radius: 1rem;
+    font-size: .6875rem;
+    font-weight: 500;
+    line-height: 1.4;
+    white-space: nowrap;
+
+    &.o_await_us {
+        background-color: var(--mc-await-us-bg);
+        color: var(--mc-await-us-color);
+    }
+
+    &.o_await_client {
+        background-color: var(--mc-await-client-bg);
+        color: var(--mc-await-client-color);
+    }
+}
+
+// Заголовок группы «Сегодня / Вчера / Раньше»: мелко, серым, не закреплён.
+.o_mail_client_group {
+    padding: .6rem .75rem .2rem 2rem;
+    border-bottom: 1px solid var(--mc-border);
+    font-size: .75rem;
+    font-weight: 600;
+    letter-spacing: .02em;
+    text-transform: uppercase;
+}
+
+// Рассылки одной строкой: щелчок открывает папку.
+.o_mail_client_digest:focus-visible {
+    outline: 2px solid var(--mc-unread-dot);
+    outline-offset: -2px;
+}
+
+// Тихая папка: число серым текстом, без плашки.
+.o_mail_client_count_quiet {
+    font-size: .8125rem;
+    opacity: .55;
+}
+
+.o_mail_client_view_switch .btn {
+    --#{$prefix}btn-padding-y: .1rem;
+    --#{$prefix}btn-padding-x: .45rem;
+}
+
+// Компактный вид: одна строка — кто, число писем, тема и начало текста,
+// плашка, значки, дата. Первая строка удобного вида раскладывается в общий
+// ряд (display: contents), порядок задаёт order.
+@include media-breakpoint-up(xl) {
+    .o_mail_client_list.o_compact {
+        width: 34rem;
+
+        .o_mail_client_row {
+            padding-top: .3rem;
+            padding-bottom: .3rem;
+        }
+
+        .o_mail_client_row_main {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+        }
+
+        .o_mail_client_line1 {
+            display: contents;
+        }
+
+        .o_mail_client_who {
+            flex: 0 0 11rem;
+            order: 1;
+        }
+
+        .o_mail_client_row_count {
+            order: 2;
+        }
+
+        .o_mail_client_line2 {
+            flex: 1 1 auto;
+            min-width: 0;
+            order: 3;
+        }
+
+        .o_mail_client_await {
+            order: 4;
+        }
+
+        .o_mail_client_marks {
+            order: 5;
+        }
+
+        .o_mail_client_date {
+            margin-left: 0;
+            order: 6;
+        }
+    }
+}
+
+@media (min-width: 1400px) {
+    .o_mail_client_list.o_compact {
+        width: 40rem;
+
+        .o_mail_client_who {
+            flex-basis: 13rem;
+        }
     }
 }
 
@@ -132,8 +350,7 @@
     border-bottom: 1px solid var(--mc-border);
 }
 
-.o_mail_client_contact,
-.o_mail_client_thread {
+.o_mail_client_contact {
     border: 1px solid var(--mc-border);
     border-radius: .375rem;
     background-color: var(--mc-hover-bg);
@@ -147,8 +364,7 @@
     flex-shrink: 0;
 }
 
-.o_mail_client_contact_history,
-.o_mail_client_thread {
+.o_mail_client_contact_history {
     .btn-link {
         color: inherit;
         text-decoration: none;
@@ -163,12 +379,6 @@
 
 .o_mail_client_contact_history {
     border-top: 1px solid var(--mc-border);
-}
-
-.o_mail_client_thread_title {
-    text-transform: uppercase;
-    letter-spacing: .02em;
-    font-size: .75rem;
 }
 
 .o_mail_client_frame {
@@ -220,8 +430,32 @@
 }
 
 @container (max-width: 40rem) {
-    .o_mail_client_toolbar .o_mail_client_label {
+    .o_mail_client_toolbar .o_mail_client_label,
+    .o_mail_client_card_actions .o_mail_client_label {
         display: none;
+    }
+
+    .o_mail_client_conv_name {
+        max-width: 8rem;
+    }
+
+    // В ленте на узком окне — только имя (адрес в подсказке), а дата и
+    // кнопки, если не влезли, уходят второй строкой. Иначе имя обрезалось
+    // до «Иван Пет…» рядом с датой и кнопками. Адрес прячем, только когда
+    // перед ним имя: у письма без имени («ivan@…», «zakaz@… <zakaz@…>»)
+    // адрес — единственное, что говорит, кто написал (разбор шага 20:
+    // 115 из 2304 писем в переписках pmkpark@).
+    .o_mail_client_conv_card .o_mail_client_from {
+        flex-wrap: wrap;
+        row-gap: .25rem;
+    }
+
+    .o_mail_client_conv_card .o_mail_client_from_text > strong + .o_mail_client_from_addr {
+        display: none;
+    }
+
+    .o_mail_client_conv_card .o_mail_client_card_actions {
+        margin-left: auto;
     }
 }
 
@@ -288,6 +522,127 @@
     overflow-y: auto;
 }
 
+// --- ПРАВКА ПМК: переписка под письмом (шаг 20 плана, 30.09.2026) ---
+// Лента panes/conversation.xml, новые сверху: развёрнутое письмо — карточка
+// (строка «От», вложения, рамка ростом с письмо), свёрнутое — строка, «ещё N
+// писем» — кнопка. Каждая — во всю ширину окна чтения, между ними черта.
+
+.o_mail_client_contact + .o_mail_client_conv {
+    margin-top: .75rem;
+}
+
+.o_mail_client_conv_card,
+.o_mail_client_conv_row,
+.o_mail_client_conv_more {
+    border-bottom: 1px solid var(--mc-border);
+}
+
+.o_mail_client_conv_card {
+    // Шапка письма в ленте без своей черты — черта у карточки. Щелчок по
+    // пустому месту шапки сворачивает письмо (MessageCard.onHeaderClick).
+    .o_mail_client_reading_header {
+        border-bottom: 0;
+        cursor: pointer;
+    }
+
+    // Лист письма в ленте ростом с письмо и не тянется до низа окна (это
+    // только у одиночного письма). Без подгонки (рамке закрыт документ) —
+    // своя высота 24rem с прокруткой внутри, как у одиночного письма.
+    .o_mail_client_frame_wrap {
+        flex: none;
+        padding-bottom: 1rem !important;
+    }
+
+    &.is-ours {
+        background-color: var(--mc-ours-bg);
+    }
+}
+
+.o_mail_client_card_actions .btn {
+    --#{$prefix}btn-padding-y: .1rem;
+    --#{$prefix}btn-padding-x: .45rem;
+    white-space: nowrap;
+}
+
+.o_mail_client_card_collapse {
+    color: inherit;
+    opacity: .6;
+
+    &:hover,
+    &:focus-visible {
+        opacity: 1;
+    }
+}
+
+.o_mail_client_conv_row {
+    min-height: 2.5rem;
+    padding-top: .375rem;
+    padding-bottom: .375rem;
+    border-width: 0 0 1px;
+    border-radius: 0;
+    background-color: transparent;
+    color: inherit;
+    font-size: .875rem;
+
+    &:hover {
+        background-color: var(--mc-hover-bg);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--mc-unread-dot);
+        outline-offset: -2px;
+    }
+
+    &.is-ours {
+        background-color: var(--mc-ours-bg);
+
+        &:hover {
+            background-color: var(--mc-hover-bg);
+        }
+    }
+
+    // Непрочитанное — жирным, как в списке.
+    &.o_unread .o_mail_client_conv_name,
+    &.o_unread .o_mail_client_conv_snippet {
+        font-weight: 700;
+    }
+}
+
+.o_mail_client_conv_name {
+    max-width: 14rem;
+}
+
+// Цвет — классом text-muted в шаблоне: у тёмной темы pmk_theme он свой.
+.o_mail_client_conv_snippet {
+    min-width: 0;
+}
+
+.o_mail_client_conv_date {
+    font-size: .8125rem;
+}
+
+.o_mail_client_conv_more {
+    min-height: 2.25rem;
+    border-radius: 0;
+    color: var(--#{$prefix}secondary-color);
+    font-size: .8125rem;
+    text-decoration: none;
+
+    &:hover,
+    &:focus-visible {
+        background-color: var(--mc-hover-bg);
+        color: inherit;
+        text-decoration: none;
+    }
+}
+
+.o_mail_client_ours {
+    background-color: var(--mc-ours-badge-bg);
+    color: var(--mc-ours-badge-color);
+    font-weight: 500;
+    line-height: 1.2;
+}
+
 // --- composer and message actions (Phase 2) ---
 
 .o_mail_client_toolbar {
@@ -304,12 +659,10 @@
     scrollbar-width: thin;
 }
 
+// ПРАВКА ПМК (шаг 18): оба меню — штатный Dropdown Odoo, он сам ставит
+// меню на место (раньше position: absolute под своей кнопкой).
 .o_mail_client_move_menu,
 .o_mail_client_filter_menu {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    z-index: 1000;
     max-height: 18rem;
     overflow-y: auto;
 }

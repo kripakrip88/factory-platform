@@ -1,7 +1,18 @@
 import { describe, expect, mockDate, test } from "@odoo/hoot";
-import { allowTranslations } from "@web/../tests/web_test_helpers";
+import { allowTranslations, patchWithCleanup } from "@web/../tests/web_test_helpers";
+import { browser } from "@web/core/browser/browser";
 
-import { formatMessageDate, formatSize, senderName, splitAddress } from "@mail_client/utils";
+import {
+    dayBucket,
+    formatMessageDate,
+    formatSize,
+    readPref,
+    recipientLabel,
+    senderName,
+    splitAddress,
+    splitRecipients,
+    writePref,
+} from "@mail_client/utils";
 
 describe.current.tags("headless");
 
@@ -94,5 +105,79 @@ describe("formatMessageDate", () => {
     test("shows the weekday for a message from the last week", () => {
         mockDate("2026-08-14 15:00:00", +7);
         expect(formatMessageDate("2026-08-12 03:05:00")).toBe("Wed 10:05");
+    });
+});
+
+// ПРАВКА ПМК (шаг 18): «Кому: …» в строке нашего письма.
+describe("recipientLabel", () => {
+    test("the first name, and how many more", () => {
+        expect(recipientLabel("Client <client@firm.ru>")).toBe("Client");
+        expect(recipientLabel("client@firm.ru")).toBe("client@firm.ru");
+        expect(recipientLabel("Кирилл Данилов <megafuga@gmail.com>, granitsa.sk@mail.ru")).toBe(
+            "Кирилл Данилов +1"
+        );
+        expect(recipientLabel("a@x.ru, b@x.ru; c@x.ru")).toBe("a@x.ru +2");
+    });
+
+    test("a comma inside the name does not split the recipient", () => {
+        // Заголовок приходит без кавычек: это один адресат.
+        const to = "Зимихина Наталья, АО Хабаровск Автомост <habavtpto@mail.ru>";
+        expect(splitRecipients(to)).toEqual([to]);
+        expect(recipientLabel(to)).toBe("Зимихина Наталья, АО Хабаровск Автомост");
+        expect(splitRecipients('"Doe, John" <j@x.ru>, k@x.ru')).toEqual([
+            '"Doe, John" <j@x.ru>',
+            "k@x.ru",
+        ]);
+    });
+
+    test("no recipient", () => {
+        allowTranslations();
+        expect(String(recipientLabel(""))).toBe("(no recipient)");
+        expect(String(recipientLabel(undefined))).toBe("(no recipient)");
+    });
+});
+
+// ПРАВКА ПМК (шаг 18): группы «Сегодня / Вчера / Раньше» — в зоне браузера.
+describe("dayBucket", () => {
+    test("splits at local midnight, not at UTC midnight", () => {
+        // Хабаровск, UTC+10, половина первого ночи.
+        mockDate("2026-08-12 00:30:00", +10);
+        expect(dayBucket("2026-08-11 14:20:00")).toBe("today"); // 00:20 местного
+        expect(dayBucket("2026-08-11 13:50:00")).toBe("yesterday"); // 23:50 вчера
+        expect(dayBucket("2026-08-10 14:10:00")).toBe("yesterday"); // 00:10 вчера
+        expect(dayBucket("2026-08-10 13:50:00")).toBe("earlier");
+    });
+
+    test("a clock running ahead is still today; nonsense is earlier", () => {
+        mockDate("2026-08-12 15:00:00", +10);
+        expect(dayBucket("2026-08-12 10:00:00")).toBe("today");
+        expect(dayBucket("")).toBe("earlier");
+        expect(dayBucket("not a date")).toBe("earlier");
+    });
+});
+
+// ПРАВКА ПМК (шаг 18): вид списка и режим переписок помнятся в браузере, но
+// хранилище, которое бросает (приватное окно, запрет сайта), почту не роняет.
+describe("readPref / writePref", () => {
+    test("round trip", () => {
+        writePref("mail_client.test_pref", "compact");
+        expect(readPref("mail_client.test_pref", "comfortable")).toBe("compact");
+        expect(readPref("mail_client.missing_pref", "comfortable")).toBe("comfortable");
+    });
+
+    test("a storage that throws gives the default and is not written", () => {
+        patchWithCleanup(browser, {
+            localStorage: {
+                getItem() {
+                    throw new Error("SecurityError");
+                },
+                setItem() {
+                    throw new Error("QuotaExceededError");
+                },
+            },
+        });
+        expect(readPref("mail_client.threaded.v2", null)).toBe(null);
+        expect(readPref("mail_client.list_view", "comfortable")).toBe("comfortable");
+        writePref("mail_client.list_view", "compact"); // не бросает
     });
 });

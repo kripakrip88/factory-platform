@@ -10,6 +10,17 @@
     --mc-unread-marker: #{$primary};
     // Stronger than in light mode: a 12% tint is invisible on a dark surface.
     --mc-ticked-bg: #{rgba($primary, .28)};
+    // ПРАВКА ПМК (шаг 18): точка и плашки списка светлее на тёмном фоне.
+    // У ПМК этот бандл не собирается — те же значения в pmk_theme/dark.scss.
+    --mc-unread-dot: #5c9dff;
+    --mc-await-us-bg: #{rgba(#ffc107, .18)};
+    --mc-await-us-color: #ffd666;
+    --mc-await-client-bg: #{rgba($white, .1)};
+    --mc-await-client-color: #{rgba($white, .75)};
+    // ПРАВКА ПМК (шаг 20): подложка наших писем в переписке и плашка «мы».
+    --mc-ours-bg: #{rgba($white, .04)};
+    --mc-ours-badge-bg: #{rgba($white, .1)};
+    --mc-ours-badge-color: #{rgba($white, .75)};
 }
 
 // Email HTML nearly always assumes a light background, so the frame keeps its

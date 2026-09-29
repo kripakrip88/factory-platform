@@ -2688,27 +2688,6 @@ msgstr "%s письма"
 msgid "%s messages in thread"
 msgstr "%s писем"
 
-# ПМК, доводка шага 17 (30.09.2026): заголовок блока переписки под «От» —
-# остальные письма, без открытого. Было «2 писем в этой переписке» (число
-# отдельно, слово переводом без формы). Формы — как у строк выше.
-#. module: mail_client
-#. odoo-javascript
-#: code:addons/mail_client/static/src/panes/reading_pane.js:0
-msgid "%s other message in this conversation"
-msgstr "ещё %s письмо в этой переписке"
-
-#. module: mail_client
-#. odoo-javascript
-#: code:addons/mail_client/static/src/panes/reading_pane.js:0
-msgid "%s other messages in this conversation (2-4)"
-msgstr "ещё %s письма в этой переписке"
-
-#. module: mail_client
-#. odoo-javascript
-#: code:addons/mail_client/static/src/panes/reading_pane.js:0
-msgid "%s other messages in this conversation"
-msgstr "ещё %s писем в этой переписке"
-
 #. module: mail_client
 #. odoo-javascript
 #: code:addons/mail_client/static/src/panes/reading_pane.xml:0
@@ -2738,3 +2717,134 @@ msgstr "подробнее"
 #: code:addons/mail_client/static/src/panes/reading_pane.js:0
 msgid "hide details"
 msgstr "свернуть"
+
+# ПМК, шаг 18 (30.09.2026): список писем как в Mail.ru — вид списка, группы
+# по дням, «Кому: …», «ждёт ответа / ждём клиента» и фильтр, рассылки одной
+# строкой, поиск по получателю.
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/mail_client_action.js:0
+msgid "Awaiting reply"
+msgstr "Ждут ответа"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/mail_client_action.xml:0
+msgid "Search subject, sender, recipient or preview…"
+msgstr "Поиск по теме, отправителю, получателю или началу письма…"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/message_list.xml:0
+msgid "Comfortable view"
+msgstr "Удобный вид"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/message_list.xml:0
+msgid "Compact view"
+msgstr "Компактный вид"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/message_list.js:0
+msgid "Today"
+msgstr "Сегодня"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/message_list.js:0
+msgid "Yesterday"
+msgstr "Вчера"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/message_list.js:0
+msgid "Earlier"
+msgstr "Раньше"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/message_list.js:0
+msgid "awaiting reply"
+msgstr "ждёт ответа"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/message_list.js:0
+msgid "awaiting client"
+msgstr "ждём клиента"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/message_list.js:0
+msgid "The client wrote last and has no answer from us yet"
+msgstr "Последним писал клиент — ответа от нас ещё нет"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/message_list.js:0
+msgid "We wrote last and are waiting for the client"
+msgstr "Последними писали мы — ждём ответа клиента"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/message_list.js:0
+msgid "%s new"
+msgstr "новых: %s"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/utils.js:0
+msgid "(no recipient)"
+msgstr "(без адресата)"
+
+# ПМК, шаг 20 (30.09.2026): переписка целиком под письмом, новые сверху
+# (panes/conversation.*, panes/message_card.*). «ещё N писем» — три формы
+# числа, как «N писем» в строке над письмом: форму выбирает pluralForm
+# (utils.js), «(2-4)» — только ключ формы «few». Прежний блок «ещё N писем в
+# этой переписке» под строкой «От» снят вместе со своими строками.
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/conversation.js:0
+msgid "%s more message"
+msgstr "ещё %s письмо"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/conversation.js:0
+msgid "%s more messages (2-4)"
+msgstr "ещё %s письма"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/conversation.js:0
+msgid "%s more messages"
+msgstr "ещё %s писем"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/conversation.xml:0
+#: code:addons/mail_client/static/src/panes/message_card.xml:0
+msgid "we"
+msgstr "мы"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/conversation.js:0
+#: code:addons/mail_client/static/src/panes/message_card.js:0
+msgid "Our message"
+msgstr "Наше письмо"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/conversation.js:0
+#: code:addons/mail_client/static/src/panes/message_card.js:0
+msgid "Collapse"
+msgstr "Свернуть"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/conversation.xml:0
+msgid "This message could not be opened."
+msgstr "Письмо не открылось."

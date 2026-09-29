@@ -181,12 +181,17 @@
     padding: 0 .75rem .6rem !important;
   }
 
-  // Вложения, предупреждения, карточка контакта и ветка переписки стоят
-  // между шапкой и письмом — сводим их к тем же полям, что и всё вокруг.
+  // Вложения, предупреждения и карточка контакта стоят между шапкой и
+  // письмом — сводим их к тем же полям, что и всё вокруг.
   .o_mail_client_contact,
-  .o_mail_client_thread,
   .o_mail_client_reading .alert { margin-left: .75rem !important; margin-right: .75rem !important; }
 
   // Блоки письма лежат в окне прокрутки (шаг 17), а не прямо в окне чтения.
-  .o_mail_client_reading_scroll > .px-4 { padding-left: .75rem !important; padding-right: .75rem !important; }
+  // С шага 20 (30.09.2026) переписка — лентой под письмом: блоки
+  // развёрнутого письма лежат в карточке ленты, строки свёрнутых писем и
+  // «ещё N писем» — кнопки ленты (прежний блок .o_mail_client_thread снят).
+  .o_mail_client_reading_scroll > .px-4,
+  .o_mail_client_conv_card > .px-4,
+  .o_mail_client_conv_row,
+  .o_mail_client_conv_more { padding-left: .75rem !important; padding-right: .75rem !important; }
 }

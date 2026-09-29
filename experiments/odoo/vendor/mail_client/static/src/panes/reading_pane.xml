@@ -10,6 +10,10 @@
          лежит в ОДНОМ окне прокрутки (o_mail_client_reading_scroll); у рамки
          письма своей прокрутки нет, её высоту подгоняет frame_fit.js.
 
+         Шаг 20 (30.09.2026): одно письмо — panes/message_card.xml (разметка та
+         же), переписка — panes/conversation.xml: лента под строкой, новые
+         сверху, вместо прежнего списка «ещё N писем в этой переписке».
+
          Пока грузится следующее письмо, прежнее остаётся на месте бледным
          (o_mail_client_stale) — без пустого окна и крутилки на всю панель.
          Оно на это время inert — ни щелчка, ни клавиатуры: кнопки действуют
@@ -46,12 +50,15 @@
                           t-att-title="threadCountTitle"
                           t-esc="threadCountLabel"/>
 
+                    <!-- ПРАВКА ПМК (разбор шага 20): на НАШЕЙ строке с лентой
+                         «Ответить / Всем» — на последнее письмо клиента
+                         (replyTargetId), а не нам же. -->
                     <button class="btn btn-sm btn-light flex-shrink-0" title="Reply" aria-label="Reply"
-                            t-on-click="() => props.onReply('reply')">
+                            t-on-click="() => props.onReply('reply', replyTargetId)">
                         <i class="fa fa-reply" aria-hidden="true"/><span class="o_mail_client_label ms-1">Reply</span>
                     </button>
                     <button class="btn btn-sm btn-light flex-shrink-0" title="Reply all" aria-label="Reply all"
-                            t-on-click="() => props.onReply('reply_all')">
+                            t-on-click="() => props.onReply('reply_all', replyTargetId)">
                         <i class="fa fa-reply-all" aria-hidden="true"/><span class="o_mail_client_label ms-1">To all</span>
                     </button>
                     <button class="btn btn-sm btn-light flex-shrink-0" title="Forward" aria-label="Forward"
@@ -111,156 +118,83 @@
                     </Dropdown>
                 </div>
 
+                <!-- ПРАВКА ПМК (шаг 20): письмо без переписки — карточка MessageCard
+                     (та же разметка шага 17, блоки прямо в окне прокрутки),
+                     переписка — лента Conversation, новые сверху. -->
                 <div class="o_mail_client_reading_scroll flex-grow-1" t-ref="scroller">
-                    <div class="o_mail_client_reading_header px-4 py-2">
-                        <div class="o_mail_client_from d-flex align-items-baseline gap-2 small">
-                            <span class="text-muted flex-shrink-0">From:</span>
-                            <span class="o_mail_client_from_text text-truncate">
-                                <strong t-if="sender.name" class="me-1" t-esc="sender.name"/>
-                                <span t-att-class="sender.name ? 'text-muted' : ''"
-                                      t-esc="sender.name ? '&lt;' + sender.address + '&gt;' : sender.address"/>
-                            </span>
-                            <button class="o_mail_client_details_toggle btn btn-link btn-sm p-0 flex-shrink-0"
-                                    t-if="hasRecipients"
-                                    t-att-aria-expanded="showRecipients ? 'true' : 'false'"
-                                    t-on-click="() => this.toggleRecipients()"
-                                    t-esc="recipientsToggleLabel"/>
-                            <span class="text-muted ms-auto flex-shrink-0" t-esc="formatDate(props.detail.date)"/>
-                        </div>
-                        <div class="o_mail_client_recipients small text-muted mt-1" t-if="showRecipients">
-                            <div t-if="props.detail.email_to"><strong>To:</strong> <t t-esc="props.detail.email_to"/></div>
-                            <div t-if="props.detail.email_cc"><strong>Cc:</strong> <t t-esc="props.detail.email_cc"/></div>
-                        </div>
-                    </div>
-
-                    <!-- Contact context, built from res.partner and this module's own
-                         messages: no dependency on any Odoo application. -->
-                    <div class="o_mail_client_contact mx-4 mt-3" t-if="state.showContact and props.contact">
-                        <div class="d-flex align-items-start gap-3 p-3">
-                            <img t-if="props.contact.partner"
-                                 class="o_mail_client_avatar rounded-circle"
-                                 t-att-src="props.contact.partner.image_url" alt=""/>
-                            <div class="flex-grow-1">
-                                <t t-if="props.contact.partner">
-                                    <div class="fw-bold"><t t-esc="props.contact.partner.name"/></div>
-                                    <div class="small text-muted" t-if="props.contact.partner.company">
-                                        <t t-esc="props.contact.partner.company"/>
-                                    </div>
-                                    <div class="small text-muted">
-                                        <span t-if="props.contact.partner.phone">
-                                            <i class="fa fa-phone me-1"/><t t-esc="props.contact.partner.phone"/>
-                                        </span>
-                                        <span t-if="props.contact.partner.city" class="ms-2">
-                                            <i class="fa fa-map-marker me-1"/>
-                                            <t t-esc="props.contact.partner.city"/>
-                                            <t t-if="props.contact.partner.country">,
-                                                <t t-esc="props.contact.partner.country"/></t>
-                                        </span>
-                                    </div>
-                                </t>
-                                <t t-else="">
-                                    <div class="fw-bold"><t t-esc="props.contact.email"/></div>
-                                    <div class="small text-muted">Not in your contacts.</div>
-                                </t>
-                                <div class="small text-muted mt-1">
-                                    <t t-esc="props.contact.message_count"/> message(s) from this address
-                                </div>
-                            </div>
-                        </div>
-                        <div class="o_mail_client_contact_history" t-if="props.contact.history.length">
-                            <button t-foreach="props.contact.history" t-as="item" t-key="item.id"
-                                    class="btn btn-link w-100 text-start d-flex align-items-center px-3 py-1"
-                                    t-on-click="() => props.onSelectMessage(item.id)">
-                                <span class="text-truncate flex-grow-1"
-                                      t-att-class="item.flag_seen ? '' : 'fw-bold'">
-                                    <t t-esc="item.subject"/>
-                                </span>
-                                <small class="text-muted ms-2"><t t-esc="formatDate(item.date)"/></small>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- The rest of the conversation, shown only when threading is on. -->
-                    <div class="o_mail_client_thread mx-4 mt-3" t-if="otherInThread.length">
-                        <div class="o_mail_client_thread_title small text-muted px-3 pt-2">
-                            <i class="fa fa-comments-o me-1"/>
-                            <t t-esc="otherInThreadLabel"/>
-                        </div>
-                        <button t-foreach="otherInThread" t-as="item" t-key="item.id"
-                                class="btn btn-link w-100 text-start d-flex align-items-center px-3 py-1"
-                                t-on-click="() => props.onSelectMessage(item.id)">
-                            <span class="text-truncate flex-grow-1"
-                                  t-att-class="item.flag_seen ? '' : 'fw-bold'">
-                                <t t-esc="item.email_from"/>
-                            </span>
-                            <small class="text-muted ms-2"><t t-esc="formatDate(item.date)"/></small>
-                        </button>
-                    </div>
-
-                    <div class="alert alert-danger mx-4 py-2 small" role="alert"
-                         t-if="props.detail.is_spam">
-                        <i class="fa fa-exclamation-triangle me-1"/>
-                        Your mail server flagged this message as spam<t t-if="props.detail.spam_score">
-                        (Rspamd score <t t-esc="props.detail.spam_score"/>)</t>. Treat links and
-                        attachments with suspicion.
-                    </div>
-
-                    <div class="alert alert-warning mx-4 py-2 small d-flex align-items-center"
-                         role="alert" t-if="props.detail.has_blocked_images">
-                        <span class="flex-grow-1">
-                            <i class="fa fa-picture-o me-1"/>
-                            Remote images are blocked. Loading them tells the sender you opened this message.
-                        </span>
-                        <button class="btn btn-sm btn-outline-secondary ms-2"
-                                t-on-click="() => props.onAllowImages()">
-                            Show images
-                        </button>
-                    </div>
-
-                    <div class="alert alert-warning mx-4 py-2 small" role="alert"
-                         t-if="props.detail.body_state === 'failed'">
-                        This message could not be downloaded from the mail server.
-                    </div>
-
-                    <div class="px-4 pb-2" t-if="props.detail.attachments.length">
-                        <div class="d-flex flex-wrap gap-2">
-                            <!-- ПРАВКА ПМК: у вложения теперь два действия. Кнопка
-                                 скачивания осталась ровно такой, какой была, рядом
-                                 с ней встала «Посмотреть». Обе лежат в одной
-                                 группе: так они выглядят одной плашкой файла и при
-                                 переносе строки не разъезжаются по разным строкам. -->
-                            <div class="btn-group" role="group"
-                                 t-foreach="props.detail.attachments" t-as="attachment"
-                                 t-key="attachment.id">
-                                <button class="btn btn-sm btn-light o_mail_client_chip d-inline-flex align-items-center gap-2"
-                                        t-att-disabled="state.downloading === attachment.id"
-                                        t-on-click="() => this.onDownload(attachment)">
-                                    <i class="fa" t-att-class="state.downloading === attachment.id ? 'fa-circle-o-notch fa-spin' : 'fa-paperclip'"/>
-                                    <span t-esc="attachment.name"/>
-                                    <small class="text-muted" t-esc="formatSize(attachment.size)"/>
-                                </button>
-                                <button class="btn btn-sm btn-light d-inline-flex align-items-center gap-1"
-                                        t-on-click="() => this.onPreview(attachment)">
-                                    <i class="fa fa-eye"/>
-                                    <span>View</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Высоту рамки ставит frame_fit.js (followFrame), как только
-                         документ письма разобран; без доступа к документу рамки —
-                         прежнее поведение (рамка на остаток окна, прокрутка
-                         внутри, см. mail_client.scss). -->
-                    <div class="o_mail_client_frame_wrap px-4 pb-4">
-                        <iframe class="o_mail_client_frame w-100"
-                                t-ref="frame"
-                                t-att-sandbox="sandbox"
-                                t-att-srcdoc="props.detail.body"
-                                title="Message body"/>
-                    </div>
+                    <t t-if="threadCount">
+                        <t t-call="mail_client.ReadingPaneContact"/>
+                        <Conversation detail="props.detail"
+                                      thread="props.thread"
+                                      getScroller="getScroller"
+                                      onReply="props.onReply"
+                                      onAllowImages="props.onAllowImages"
+                                      onDownloadAttachment="props.onDownloadAttachment"
+                                      onShown="props.onConversationShown"/>
+                    </t>
+                    <MessageCard t-else=""
+                                 detail="props.detail"
+                                 getScroller="getScroller"
+                                 onAllowImages="props.onAllowImages"
+                                 onDownloadAttachment="props.onDownloadAttachment">
+                        <t t-set-slot="afterHeader">
+                            <t t-call="mail_client.ReadingPaneContact"/>
+                        </t>
+                    </MessageCard>
                 </div>
             </t>
+        </div>
+    </t>
+
+    <!-- Карточка контакта (меню «⋯» → «Показать контакт»). У одиночного
+         письма — сразу под строкой «От» (слот MessageCard, как в шаге 17), у
+         переписки — над лентой. -->
+    <t t-name="mail_client.ReadingPaneContact">
+        <!-- Contact context, built from res.partner and this module's own
+             messages: no dependency on any Odoo application. -->
+        <div class="o_mail_client_contact mx-4 mt-3" t-if="state.showContact and props.contact">
+            <div class="d-flex align-items-start gap-3 p-3">
+                <img t-if="props.contact.partner"
+                     class="o_mail_client_avatar rounded-circle"
+                     t-att-src="props.contact.partner.image_url" alt=""/>
+                <div class="flex-grow-1">
+                    <t t-if="props.contact.partner">
+                        <div class="fw-bold"><t t-esc="props.contact.partner.name"/></div>
+                        <div class="small text-muted" t-if="props.contact.partner.company">
+                            <t t-esc="props.contact.partner.company"/>
+                        </div>
+                        <div class="small text-muted">
+                            <span t-if="props.contact.partner.phone">
+                                <i class="fa fa-phone me-1"/><t t-esc="props.contact.partner.phone"/>
+                            </span>
+                            <span t-if="props.contact.partner.city" class="ms-2">
+                                <i class="fa fa-map-marker me-1"/>
+                                <t t-esc="props.contact.partner.city"/>
+                                <t t-if="props.contact.partner.country">,
+                                    <t t-esc="props.contact.partner.country"/></t>
+                            </span>
+                        </div>
+                    </t>
+                    <t t-else="">
+                        <div class="fw-bold"><t t-esc="props.contact.email"/></div>
+                        <div class="small text-muted">Not in your contacts.</div>
+                    </t>
+                    <div class="small text-muted mt-1">
+                        <t t-esc="props.contact.message_count"/> message(s) from this address
+                    </div>
+                </div>
+            </div>
+            <div class="o_mail_client_contact_history" t-if="props.contact.history.length">
+                <button t-foreach="props.contact.history" t-as="item" t-key="item.id"
+                        class="btn btn-link w-100 text-start d-flex align-items-center px-3 py-1"
+                        t-on-click="() => props.onSelectMessage(item.id)">
+                    <span class="text-truncate flex-grow-1"
+                          t-att-class="item.flag_seen ? '' : 'fw-bold'">
+                        <t t-esc="item.subject"/>
+                    </span>
+                    <small class="text-muted ms-2"><t t-esc="formatDate(item.date)"/></small>
+                </button>
+            </div>
         </div>
     </t>
 

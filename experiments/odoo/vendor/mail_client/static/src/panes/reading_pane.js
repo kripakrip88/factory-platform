@@ -5,28 +5,18 @@ import { useService } from "@web/core/utils/hooks";
 import { _t } from "@web/core/l10n/translation";
 import { user } from "@web/core/user";
 
-import { formatMessageDate, formatSize, splitAddress } from "../utils";
-import { AttachmentPreviewDialog } from "../attachments/attachment_preview_dialog";
-import { followFrame } from "./frame_fit";
+import { formatMessageDate, pluralForm } from "../utils";
+import { Conversation, newestOf } from "./conversation";
+import { MessageCard } from "./message_card";
 
 /**
  * ПРАВКА ПМК: форма числа писем по правилам языка («14 писем», «2 письма»,
- * «1 письмо»). В _t форм множественного числа нет, а по-русски их три,
- * поэтому форму выбирает Intl.PluralRules, и у каждой формы своя строка
- * перевода. Английский форму «few» не выбирает никогда. Строки перевода
- * пишем в _t целиком, а не собираем: сборщик перевода берёт только их.
+ * «1 письмо») — pluralForm (utils.js). Строки перевода пишем в _t целиком, а
+ * не собираем: сборщик перевода берёт только их. user.lang уже в виде
+ * браузера («ru-RU»), не Odoo («ru_RU»).
  */
-function pluralForm(count) {
-    try {
-        // user.lang уже в виде браузера («ru-RU»), не Odoo («ru_RU»).
-        return new Intl.PluralRules(user.lang || "en").select(count);
-    } catch {
-        return "other"; // неизвестный браузеру язык — английские формы
-    }
-}
-
 function threadCountLabel(count) {
-    const form = pluralForm(count);
+    const form = pluralForm(count, user.lang);
     if (form === "one") {
         return _t("%s message in thread", count);
     }
@@ -36,21 +26,19 @@ function threadCountLabel(count) {
     return _t("%s messages in thread", count);
 }
 
-// Заголовок блока переписки под строкой «От»: остальные письма, без открытого.
-function otherInThreadLabel(count) {
-    const form = pluralForm(count);
-    if (form === "one") {
-        return _t("%s other message in this conversation", count);
-    }
-    if (form === "few") {
-        return _t("%s other messages in this conversation (2-4)", count);
-    }
-    return _t("%s other messages in this conversation", count);
-}
-
+/**
+ * Окно чтения: закреплённая строка над письмом (шаг 17) и окно прокрутки.
+ *
+ * ПРАВКА ПМК (шаг 20, 30.09.2026): письмо без переписки — карточка
+ * MessageCard (разметка шага 17 как была); переписка из двух писем и
+ * больше (режим переписок) — лента Conversation, новые сверху. Закреплённая
+ * строка и «⋯» по-прежнему действуют на открытое письмо (строку списка).
+ * Цепочка «ReadingPane → Conversation → MessageCard» — хрупкое место,
+ * см. vendor/README.md.
+ */
 export class ReadingPane extends Component {
     static template = "mail_client.ReadingPane";
-    static components = { Dropdown, DropdownItem };
+    static components = { Dropdown, DropdownItem, Conversation, MessageCard };
     static props = {
         detail: { optional: true },
         loading: { type: Boolean },
@@ -69,23 +57,22 @@ export class ReadingPane extends Component {
         onDelete: { type: Function },
         onReply: { type: Function },
         onDownloadAttachment: { type: Function },
+        // ПРАВКА ПМК (разбор шага 20): письмо ленты показано — крючок корня
+        // conversationShown (отметку «прочитано» ставит pmk_mail_ui).
+        onConversationShown: { type: Function, optional: true },
     };
 
     setup() {
         this.notification = useService("notification");
-        this.dialog = useService("dialog");
         this.state = useState({
-            downloading: null,
             showContact: false,
-            // ПРАВКА ПМК: «Кому» и «Копия» раскрыты у этого письма. Храним id,
-            // а не флажок: следующее письмо открывается снова свёрнутым.
-            recipientsFor: null,
         });
 
         // ПРАВКА ПМК (шаг 17): одна прокрутка у окна чтения, рамка — ростом
-        // с письмо (frame_fit.js).
+        // с письмо (frame_fit.js; с шага 20 рамкой ведает MessageCard — у
+        // каждого развёрнутого письма переписки своя).
         this.scrollerRef = useRef("scroller");
-        this.frameRef = useRef("frame");
+        this.getScroller = () => this.scrollerRef.el;
         // Другое письмо на экране — читаем его с начала. Окно прокрутки то же
         // самое (прежнее письмо на время загрузки не убирается), поэтому само
         // оно наверх не вернётся.
@@ -96,21 +83,6 @@ export class ReadingPane extends Component {
                 }
             },
             () => [this.props.detail?.id]
-        );
-        // Сменился текст в рамке (другое письмо, «Показать картинки») —
-        // подогнать рамку под новый документ, как только он разобран, не
-        // дожидаясь картинок. Элемент рамки тот же, меняется только srcdoc.
-        // Без доступа к документу рамки (нет allow-same-origin) — прежнее
-        // поведение: рамка на всю оставшуюся высоту с прокруткой внутри.
-        useEffect(
-            () => {
-                const frame = this.frameRef.el;
-                if (!frame) {
-                    return;
-                }
-                return followFrame(frame, { getScroller: () => this.scrollerRef.el });
-            },
-            () => [this.props.detail?.body]
         );
     }
 
@@ -134,7 +106,8 @@ export class ReadingPane extends Component {
         return this.state.showContact ? _t("Hide contact") : _t("Show contact");
     }
 
-    /** Писем в переписке, считая открытое; 0 — не показывать. */
+    /** Писем в переписке, считая открытое; 0 — не показывать. С шага 20
+     *  от этого же числа зависит, показывать ли ленту переписки. */
     get threadCount() {
         const count = this.props.thread ? this.props.thread.length : 0;
         return count > 1 ? count : 0;
@@ -148,25 +121,27 @@ export class ReadingPane extends Component {
         return _t("%s messages", this.threadCount);
     }
 
-    /** «От» одной строкой: имя и адрес отдельно, чтобы имя выделить. */
-    get sender() {
-        return splitAddress(this.props.detail?.email_from);
-    }
-
-    get hasRecipients() {
-        return Boolean(this.props.detail?.email_to || this.props.detail?.email_cc);
-    }
-
-    get showRecipients() {
-        return Boolean(this.props.detail) && this.state.recipientsFor === this.props.detail.id;
-    }
-
-    get recipientsToggleLabel() {
-        return this.showRecipients ? _t("hide details") : _t("details");
-    }
-
-    toggleRecipients() {
-        this.state.recipientsFor = this.showRecipients ? null : this.props.detail.id;
+    /**
+     * ПРАВКА ПМК (разбор шага 20, 30.09.2026): на какое письмо отвечают
+     * «Ответить / Всем» закреплённой строки. null — на открытое (строку), как
+     * было.
+     *
+     * Строка — НАШЕ письмо (открыли в «Отправленных»), а лента показывает
+     * сверху, прямо под строкой, более поздний ответ клиента. Ответ на
+     * письмо строки ушёл бы нам же (Г3, mail_client_compose.py) с нашим
+     * текстом в цитате. Тогда отвечаем на самое новое НЕ наше письмо
+     * переписки — последнее, что написал клиент. «Переслать» — по-прежнему
+     * письмо строки. Без ленты, когда строка не наша или в переписке только
+     * наши письма — письмо строки.
+     */
+    get replyTargetId() {
+        const thread = this.threadCount ? this.props.thread : [];
+        const row = thread.find((item) => item.id === this.props.detail.id);
+        if (!row || !row.is_outgoing) {
+            return null;
+        }
+        const theirs = newestOf(thread.filter((item) => !item.is_outgoing));
+        return theirs ? theirs.id : null;
     }
 
     toggleContact() {
@@ -193,75 +168,8 @@ export class ReadingPane extends Component {
         scroller.scrollTop += ev.deltaY * unit;
     }
 
-    /** Other messages in this conversation, current one excluded. */
-    get otherInThread() {
-        if (!this.props.thread || !this.props.detail) {
-            return [];
-        }
-        return this.props.thread.filter((message) => message.id !== this.props.detail.id);
-    }
-
-    // ПРАВКА ПМК: «ещё 2 письма в переписке», а не «2 писем» — число и
-    // форма слова рядом с «3 письма» в закреплённой строке.
-    get otherInThreadLabel() {
-        return otherInThreadLabel(this.otherInThread.length);
-    }
-
     formatDate(value) {
         return formatMessageDate(value);
-    }
-
-    formatSize(bytes) {
-        return formatSize(bytes);
-    }
-
-    /**
-     * The body is rendered inside a sandboxed iframe without allow-scripts:
-     * no script of the message ever runs. Popups stay allowed so that
-     * target="_blank" links still open.
-     *
-     * ПРАВКА ПМК (шаг 17, решение владельца 29.09.2026): добавлен
-     * allow-same-origin — без него окно почты не может прочитать высоту
-     * письма (frame_fit.js), а без высоты нет одной прокрутки на всё письмо.
-     * allow-scripts НЕ добавлять никогда: вместе с allow-same-origin он
-     * снимает песочницу целиком, и скрипт письма получил бы нашу сессию.
-     * Цена allow-same-origin: запросы из письма к нашему серверу идут с
-     * сессией. Их глушит pmk_mail_ui (tools/remote_paths.py, Г13) — всегда,
-     * и после «Показать картинки»; ссылки javascript: снимает frame_fit.js.
-     */
-    get sandbox() {
-        return "allow-same-origin allow-popups allow-popups-to-escape-sandbox";
-    }
-
-    async onDownload(attachment) {
-        this.state.downloading = attachment.id;
-        try {
-            const result = await this.props.onDownloadAttachment(attachment.id);
-            if (result && result.url) {
-                // Fetched on demand, so the URL only exists after this call.
-                window.open(result.url, "_blank");
-            }
-        } finally {
-            this.state.downloading = null;
-        }
-    }
-
-    /**
-     * ПРАВКА ПМК: показать вложение, не скачивая его.
-     *
-     * Окно заводится прямо отсюда, а не через корень почты: просмотр не часть
-     * состояния почты и живёт ровно столько, сколько открыт диалог. Кнопка
-     * скачивания рядом осталась нетронутой — файл всё равно иногда нужен на
-     * диске, и тогда его берут в один клик, как раньше.
-     */
-    onPreview(attachment) {
-        this.dialog.add(AttachmentPreviewDialog, {
-            attachmentId: attachment.id,
-            name: attachment.name,
-            // Скачивание из окна идёт тем же путём, что и по кнопке в письме:
-            // колесо на кнопке и разбор отказа остаются в одном месте.
-            onDownload: () => this.onDownload(attachment),
-        });
     }
 
     onMoveTo(folderId) {
