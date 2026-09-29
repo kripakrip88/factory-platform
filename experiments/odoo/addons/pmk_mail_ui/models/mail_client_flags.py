@@ -18,7 +18,8 @@
 Режим 'one_way' не трогаем: zakaz@ и тесты модуля почты его не заметят.
 
 ТУДА — штатная очередь mail.client.sync.op. Она уходит в начале КАЖДОГО прохода
-и режим не проверяет (_push_pending_ops), своя отправка не нужна.
+и режим не проверяет (_push_pending_ops), своя отправка не нужна. В нашем
+режиме _push_pending_ops перехвачен только ради is_dirty (см. ниже, шаг 22).
 ОБРАТНО — если сервер не знает CONDSTORE, одной командой UID FETCH спрашиваем
 FLAGS у писем папки за последние 30 дней и сверяем с базой.
 
@@ -32,17 +33,17 @@ FLAGS у писем папки за последние 30 дней и сверя
 пароля приложения mail.ru не проверено. Если сервер отказывает, модуль почты
 после пяти попыток (5 проходов) бросает операцию (state='failed') — и тогда
 первое же чтение вернуло бы письму отметку сервера: всё открытое в Odoo
-через ~50 минут снова жирное, без всякого сигнала. Поэтому брошенная
-операция тоже держит письмо (отметка Odoo остаётся, пока сервер её не примет
-или человек не решит), а ящик после прохода помечается ошибкой с объяснением
-(значок у ящика, Настройки → Почтовые ящики). Лечение — дать паролю право
-записи и нажать «Повторить» в «Ожидающих операциях» либо вернуть ящику
-«Только чтение». Держим не вечно — FLAG_WINDOW_DAYS: старше этого письма всё
-равно выпадают из окна чтения.
+через ~10 минут (5 проходов по 2 минуты) снова жирное, без всякого сигнала.
+Поэтому брошенная операция тоже держит письмо (отметка Odoo остаётся, пока
+сервер её не примет или человек не решит), а ящик после прохода помечается
+ошибкой с объяснением (значок у ящика, Настройки → Почтовые ящики). Лечение
+— дать паролю право записи и нажать «Повторить» в «Ожидающих операциях» либо
+вернуть ящику «Только чтение». Держим не вечно — FLAG_WINDOW_DAYS: старше
+этого письма всё равно выпадают из окна чтения.
 
 Штатную _apply_flag_changes не берём: она рассчитана на «только изменённые»
 от CHANGEDSINCE, читает письма целиком (с текстом) и сверяет метки. Мы же
-отдаём ей всё окно, ~1250 писем каждые 10 минут, а метки в этом режиме живут
+отдаём ей всё окно, ~1250 писем каждые 2 минуты, а метки в этом режиме живут
 только в Odoo — она стирала бы их каждым проходом. По той же причине в нашем
 режиме её подменяет наша запись и на сервере с CONDSTORE (Dovecot, zakaz@,
 если его переключат, или mail.ru, если включит CONDSTORE): там отметки
@@ -50,24 +51,32 @@ FLAGS у писем папки за последние 30 дней и сверя
 MODSEQ письма, CHANGEDSINCE возвращает его без меток — и штатная запись стёрла
 бы метку, поставленную в Odoo, да ещё и перебила бы неотправленную операцию.
 
+IS_DIRTY (шаг 22, 30.09.2026). В этом режиме поле не ведётся — как и в
+«только чтении» у автора, где его ставит _set_flag и никто не снимает.
+Штатный _push_pending_ops после отправки очереди снимал is_dirty со ВСЕХ
+грязных писем ящика одним UPDATE вне точки сохранения: менеджер снова тронул
+письмо в первые секунды прохода — SerializationFailure, откат первой папки и
+ящик в error до следующего прохода (а проход теперь раз в 2 минуты). Снимать
+только у писем с прошедшей операцией и в точке сохранения — тоже не выход:
+это ровно те письма, которые менеджер трогал только что, и UPDATE ждал бы
+его незафиксированную строку. Читал is_dirty здесь один потребитель —
+миграция 19.0.1.0.4, она отработала 29.09. Что письмо ждёт сервера, наш код
+узнаёт по операциям (_pmk_uids_waiting_push). Переведут ящик в «Двустороннюю»
+— её первый проход с очередью снимет is_dirty штатно.
+
 ИЗВЕСТНЫЕ ОГРАНИЧЕНИЯ (повторная проверка 29.09, отложено осознанно):
 • Путь CONDSTORE в этом режиме (сейчас не работает нигде: zakaz@ в one_way,
   у mail.ru CONDSTORE нет). Отметки, отложенные конфликтом записи или
   удержанием, там НЕ перечитаются на следующем проходе: _sync_messages
   продвинет highest_mod_seq. Прежде чем переводить zakaz@ в этот режим —
   не продвигать MODSEQ при откате/удержании или пробрасывать конфликт.
-• Штатный _push_pending_ops снимает is_dirty со всех писем ящика вне точки
-  сохранения: если менеджер снова тронет письмо в первые 1-2 с прохода,
-  проход откатит первую папку и до следующего прохода покажет ошибку
-  (операции уйдут повторно, +FLAGS безвреден). Чинить вместе с шагом 22
-  (частая синхронизация + защита от наложения).
 
 ГРАБЛИ. Опираемся на закрытые имена модуля почты: ImapConnection._uid,
 _iter_fetch_items, _RE_UID, _RE_FLAGS. Переименуют при обновлении vendor —
 модуль не загрузится (ImportError); после обновления гонять tests/.
 """
 import logging
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import timedelta
 
 from psycopg2.errors import DeadlockDetected, LockNotAvailable, SerializationFailure
@@ -122,12 +131,31 @@ class MailClientAccount(models.Model):
         self.ensure_one()
         return self.sync_mode == SHARED_FLAGS_MODE
 
-    def _sync(self):
-        super()._sync()
+    def _sync_pass(self):
+        # Шаг 22: перехват прохода, а не _sync — проверка идёт под
+        # блокировкой ящика и до сигнала шины, который _sync шлёт один раз,
+        # уже с итоговым состоянием ящика.
+        changes = super()._sync_pass()
         # Проход удался (иначе ошибка уже записана), но отметки сервер мог
-        # отвергнуть: _sync об этом молчит и пишет «подключено».
+        # отвергнуть: проход об этом молчит и пишет «подключено».
         if self.state == "connected" and self._pmk_shares_flags():
             self._pmk_report_refused_marks()
+        return changes
+
+    def _push_pending_ops(self, connection):
+        # Шаг 22: в нашем режиме — штатная отправка очереди без массового
+        # снятия is_dirty (почему — «IS_DIRTY» в шапке файла). Остальные
+        # режимы — как у модуля почты.
+        if not self._pmk_shares_flags():
+            return super()._push_pending_ops(connection)
+        pending = self.env["mail.client.sync.op"].sudo().search([
+            ("account_id", "=", self.id),
+            ("state", "=", "pending"),
+        ])
+        if pending:
+            _logger.info("Почта %s: отправляем на сервер операций — %s",
+                         self.email, len(pending))
+            pending._push(connection)
 
     def _pmk_report_refused_marks(self):
         refused = self.env["mail.client.sync.op"]._pmk_live_refusals(
@@ -145,8 +173,7 @@ class MailClientAccount(models.Model):
                 count=len(refused), error=refused[0].last_error or "—",
             ),
         })
-        # Сигнал о проходе уже ушёл с «подключено» — повторяем с ошибкой.
-        self._notify_bus()
+        # Сигнал о проходе _sync шлёт после нас — уже с ошибкой.
 
 
 class MailClientMessage(models.Model):
@@ -175,35 +202,39 @@ class MailClientFolder(models.Model):
         # передаём контекстом: путь CHANGEDSINCE внутри super() зовёт
         # _apply_flag_changes, и та не должна читать ящик второй раз — тест
         # модуля почты считает её запросы (test_flag_sync_cost_…: не больше 5).
-        super(MailClientFolder, self.with_context(pmk_shared_flags=shared)
-              )._reconcile_existing(connection, status)
+        # Шаг 22: super() и мы возвращаем, что изменилось (Counter: flags,
+        # removed) — по сумме прохода почта решает, перечитывать ли список.
+        changes = Counter(super(MailClientFolder, self.with_context(pmk_shared_flags=shared)
+                                )._reconcile_existing(connection, status) or {})
         # Жёстко по режиму: у обычного ящика (и у заглушек в тестах модуля
         # почты) соединение может и не уметь _uid — нас там быть не должно.
         if not shared or self.role in SKIP_ROLES:
-            return
+            return changes
         # Сервер умеет CONDSTORE (Dovecot, zakaz@): отметки уже пришли через
         # CHANGEDSINCE — штатным путём, но нашей записью (_apply_flag_changes
         # ниже). Если mail.ru когда-нибудь его включит, наш проход по окну
         # отключится сам. highest_mod_seq здесь ещё прошлый: новый
         # _sync_messages пишет после нас.
         if int(self.highest_mod_seq or 0) and status.get("mod_seq"):
-            return
-        self._pmk_pull_flags(connection, status)
+            return changes
+        changes["flags"] += self._pmk_pull_flags(connection, status)
+        return changes
 
     def _pmk_pull_flags(self, connection, status):
+        """Сколько писем получили отметки с сервера."""
         low = self._pmk_flag_window_start()
         if not low:
-            return                      # в папке нет свежих писем
+            return 0                    # в папке нет свежих писем
         high = status["uid_next"] - 1 if status.get("uid_next") else "*"
         try:
             entries = self._pmk_fetch_flags(connection, low, high)
         except ImapError as exc:
             # Сбой одной папки не должен сорвать проход: письма уже
-            # загружены, отметки дочитаем через 10 минут.
+            # загружены, отметки дочитаем через 2 минуты.
             _logger.warning("Почта %s/%s: отметки с сервера не прочитать — %s",
                             self.account_id.email, self.imap_path, exc)
-            return
-        self._pmk_store_flags(entries)
+            return 0
+        return self._pmk_store_flags(entries)
 
     def _apply_flag_changes(self, changed):
         # Путь CONDSTORE (CHANGEDSINCE). Штатная запись стирала бы метки Odoo
@@ -216,11 +247,12 @@ class MailClientFolder(models.Model):
 
     def _pmk_store_flags(self, entries):
         """Записать отметки с сервера: без писем, чья отметка из Odoo ещё не
-        дошла, и с откатом только своей записи при встречной правке."""
+        дошла, и с откатом только своей записи при встречной правке.
+        Возвращает, скольким письмам записаны отметки (при откате — 0)."""
         waiting = self._pmk_uids_waiting_push()
         entries = [e for e in entries if e["uid"] not in waiting]
         if not entries:
-            return
+            return 0
         # Всё, что проход записал до нас (новые письма, удаления), — в базу
         # ДО точки сохранения: сбой в чужой записи должен идти штатным путём
         # _sync, а не приниматься за наш конфликт отметок.
@@ -235,10 +267,11 @@ class MailClientFolder(models.Model):
         except _CONCURRENCY_ERRORS as exc:
             _logger.info("Почта %s/%s: отметки отложены до следующего прохода — %s",
                          self.account_id.email, self.imap_path, exc)
-            return
+            return 0
         if changed:
             _logger.info("Почта %s/%s: отметки с сервера у %s писем",
                          self.account_id.email, self.imap_path, changed)
+        return changed
 
     def _pmk_flag_window_start(self):
         """Наименьший UID среди писем папки за окно. Спрашиваем диапазон, а не
@@ -276,8 +309,9 @@ class MailClientFolder(models.Model):
 
     def _pmk_uids_waiting_push(self):
         """Письма, чья отметка из Odoo ещё не дошла до сервера. Именно операции,
-        а не is_dirty: _push_pending_ops снимает is_dirty со всех писем
-        ящика, даже если операция не прошла и ждёт повтора. Операция, которую
+        а не is_dirty: в нашем режиме is_dirty не ведётся (шапка, «IS_DIRTY»),
+        а штатный _push_pending_ops снимал его со всех писем ящика, даже если
+        операция не прошла и ждёт повтора. Операция, которую
         сервер отверг пять раз (failed), тоже держит письмо — иначе отметка
         Odoo молча откатилась бы (см. «ОТКАЗ СЕРВЕРА» в шапке); ящик при этом
         помечен ошибкой. Держит FLAG_WINDOW_DAYS, не дольше."""

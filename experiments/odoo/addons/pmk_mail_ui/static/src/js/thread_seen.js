@@ -57,9 +57,16 @@
  * ответа сервера. Без режима переписок — как у модуля почты (он с шага 18
  * сам берёт папку письма из detail.folder_id).
  *
+ * Шаг 22 (30.09.2026): список обновляется после синхронизации без сброса, и
+ * ответ обновления, снятый с базы до нашей пометки, вернул бы строке
+ * жирность. Поэтому pmkApplyThreadResult, поправив строки, зовёт крючок
+ * корня noteListEdit: такой ответ корень не применяет, а перечитывает
+ * список ещё раз (mail_client_action.js, refreshListOnce). bulkSeen идёт
+ * через runBulk — его запись корень отслеживает сам (trackListWrite).
+ *
  * Грабли: держимся за имена selectMessage / setSeen / toggleSeen / bulkSeen /
  * runBulk / conversationShown (крючок корня, его зовёт лента
- * panes/conversation.js через ReadingPane) и за state.thread /
+ * panes/conversation.js через ReadingPane) / noteListEdit и за state.thread /
  * state.messages / state.accounts /
  * state.contact.history / state.detail / state.selectedMessageId /
  * state.unified / row.thread_key / row.unread_count. Серверные — за
@@ -228,6 +235,9 @@ patch(MailClientInbox.prototype, {
     pmkApplyThreadResult(result, seen) {
         const ids = new Set(result.ids);
         const left = new Map(result.threads.map((t) => [t.thread_key, t.unread]));
+        // Шаг 22: строки списка поправлены — обновление списка, запрошенное
+        // до пометки, их не перебьёт (см. шапку).
+        this.noteListEdit();
         // Строку ищем по ключу переписки, а не по id: письмо могли открыть
         // из окна переписки или из истории контакта, тогда это не строка списка.
         // Жирной она остаётся, если в переписке что-то непрочитано и теперь

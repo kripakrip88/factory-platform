@@ -7,7 +7,10 @@
 • перенос и удаление в нашем режиме закрыты так же, как в «только чтении»;
 • отметки с сервера читаются одной командой по окну, строка без FLAGS ничего
   не снимает, письмо с неотправленной операцией сервер не перебивает;
-• за один проход крона отметка доходит туда, а чужая — обратно.
+• за один проход крона отметка доходит туда, а чужая — обратно, и проход
+  сообщает, скольким письмам пришли отметки (сигнал шины, шаг 22);
+• проход не пишет is_dirty (шаг 22): массовый UPDATE вне точки сохранения
+  ронял первую папку, если менеджер трогал письмо в первые секунды прохода.
 
 Настоящего IMAP нет: FlagServer отвечает так, как отвечает imaplib.
 """
@@ -438,17 +441,53 @@ class TestSharedFlags(TransactionCase):
         with patch.object(self.env.cr, "commit"), \
                 patch.object(self.env.cr, "rollback") as rollback, \
                 patch.object(type(self.account), "_open_connection", return_value=server):
-            self.account._sync()
+            summary = self.account._sync()
 
         rollback.assert_not_called()
         self.assertEqual(self.account.state, "connected", self.account.error_message)
         self.assertEqual(server.stored, [(101, ("\\Seen",), True)])
         self.assertIn("\\Seen", server.flags[101])
         self.assertTrue(opened.flag_seen, "Отметка из Odoo не откатилась чтением.")
-        self.assertFalse(opened.is_dirty)
+        # Шаг 22: в этом режиме is_dirty не ведётся (шапка mail_client_flags.py,
+        # «IS_DIRTY»): что письмо ждёт сервера, говорят операции.
+        self.assertTrue(opened.is_dirty)
         self.assertTrue(read_on_web.flag_seen, "Прочитанное на mail.ru пришло в Odoo.")
         self.assertEqual(self._ops().mapped("state"), ["done"])
         self.assertTrue(server.closed)
+        # Отметка с mail.ru — изменение прохода: почта перечитает список.
+        self.assertEqual((summary["flags"], summary["changed"]), (1, True))
+
+    def test_pass_does_not_rewrite_is_dirty(self):
+        """Шаг 22: проход в нашем режиме не пишет is_dirty ни одному письму.
+        Штатный _push_pending_ops снимал его со всех грязных писем ящика
+        одним UPDATE вне точки сохранения — менеджер тронул письмо в первые
+        секунды прохода, и проход откатывал первую папку с ошибкой ящика."""
+        opened = self._message(101)
+        touched_before = self._message(102, is_dirty=True)
+        opened._set_flag("\\Seen", True)
+        server = self._server({101: set(), 102: set()})
+        Message = type(self.env["mail.client.message"])
+        original = Message.write
+        dirty_writes = []
+
+        def spy(records, vals):
+            if "is_dirty" in vals:
+                dirty_writes.append((tuple(records.ids), vals["is_dirty"]))
+            return original(records, vals)
+
+        self.patch(Message, "write", spy)
+        self._passes(server, 1)
+        self.assertEqual(self._ops().mapped("state"), ["done"], "Очередь ушла штатно.")
+        self.assertEqual(dirty_writes, [], "Ни одной записи is_dirty за проход.")
+        self.assertTrue(opened.is_dirty and touched_before.is_dirty)
+
+        # «Двусторонняя» — как у модуля почты: после отправки очереди снято.
+        self.account.sync_mode = "two_way"
+        opened._set_flag("\\Flagged", True)
+        dirty_writes.clear()
+        self._passes(server, 1)
+        self.assertIn(False, [value for _ids, value in dirty_writes])
+        self.assertFalse(opened.is_dirty)
 
     def _passes(self, server, count):
         with patch.object(self.env.cr, "commit"), \

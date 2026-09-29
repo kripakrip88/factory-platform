@@ -2848,3 +2848,39 @@ msgstr "Свернуть"
 #: code:addons/mail_client/static/src/panes/conversation.xml:0
 msgid "This message could not be opened."
 msgstr "Письмо не открылось."
+
+# ПМК, шаг 22 (30.09.2026): почта — новые письма быстрее. Синхронизация раз в
+# 2 минуты, один проход по ящику в каждый момент («ящик занят» вместо ошибки;
+# занять его может и дочитка структур, поэтому не «синхронизация уже идёт»),
+# список после синхронизации не сбрасывается: новые строки над прокрученным
+# списком ждут плашкой «N новых писем» — три формы числа, как «ещё N писем»
+# (pluralForm, utils.js; «(2-4)» — только ключ формы «few»).
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/mail_client_action.js:0
+msgid "The mailbox is busy right now; new mail will arrive by itself."
+msgstr "Ящик сейчас занят — новые письма придут сами."
+
+#. module: mail_client
+#. odoo-python
+#: code:addons/mail_client/models/mail_client_account.py:0
+msgid "%s is busy right now; new mail will arrive by itself."
+msgstr "Ящик %s сейчас занят — новые письма придут сами."
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/message_list.js:0
+msgid "%s new message"
+msgstr "%s новое письмо"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/message_list.js:0
+msgid "%s new messages (2-4)"
+msgstr "%s новых письма"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/message_list.js:0
+msgid "%s new messages"
+msgstr "%s новых писем"

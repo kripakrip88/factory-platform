@@ -14,3 +14,4 @@ from . import test_threading
 from . import test_filters
 from . import test_oauth
 from . import test_sync_scope
+from . import test_sync_lock

@@ -2,6 +2,7 @@
 # Copyright 2026 Albirru Solutions (Irwan Syah)
 # License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl-3.0.html)
 import logging
+from collections import Counter
 from datetime import timedelta
 
 from odoo import _, api, fields, models
@@ -144,8 +145,14 @@ class MailClientFolder(models.Model):
     # sync
     # ------------------------------------------------------------------
     def _sync_messages(self, connection):
-        """Bring this folder in line with the server."""
+        """Bring this folder in line with the server.
+
+        ПРАВКА ПМК (шаг 22): возвращает, что проход изменил в письмах папки,
+        — Counter(new=…, removed=…, flags=…). _sync_pass складывает их по
+        папкам, и сигнал шины говорит почте, есть ли что перечитывать.
+        """
         self.ensure_one()
+        changes = Counter()
         status = connection.select(self.imap_path, readonly=True)
 
         if self.uid_validity and status['uid_validity'] != self.uid_validity:
@@ -156,7 +163,7 @@ class MailClientFolder(models.Model):
                 self.account_id.email, self.imap_path, self.uid_validity,
                 status['uid_validity'],
             )
-            self._invalidate_folder()
+            changes['removed'] += self._invalidate_folder()
 
         # Read this *after* a possible invalidation: a folder that was just
         # reset is starting over, and reconciling it against a set we have not
@@ -164,9 +171,9 @@ class MailClientFolder(models.Model):
         first_sync = not self.uid_next
 
         self.uid_validity = status['uid_validity'] or 0
-        self._fetch_new_messages(connection, status)
+        changes['new'] += self._fetch_new_messages(connection, status) or 0
         if not first_sync:
-            self._reconcile_existing(connection, status)
+            changes.update(self._reconcile_existing(connection, status) or {})
 
         self.write({
             'uid_next': status['uid_next'] or self.uid_next,
@@ -174,11 +181,15 @@ class MailClientFolder(models.Model):
             'last_sync_date': fields.Datetime.now(),
         })
         self._refresh_counters()
+        return changes
 
     def _invalidate_folder(self):
+        """ПРАВКА ПМК (шаг 22): возвращает, сколько писем убрано."""
         self.ensure_one()
+        removed = len(self.message_ids)
         self.message_ids.unlink()
         self.write({'uid_next': 0, 'highest_mod_seq': '0'})
+        return removed
 
     def _starting_uid(self, connection):
         """Where to begin on a first sync, honouring the account's sync window."""
@@ -193,13 +204,14 @@ class MailClientFolder(models.Model):
         return 1
 
     def _fetch_new_messages(self, connection, status):
+        """ПРАВКА ПМК (шаг 22): возвращает, сколько писем заведено."""
         self.ensure_one()
         start = self._starting_uid(connection)
         if start is None:
-            return  # nothing in the sync window
+            return 0  # nothing in the sync window
         upper = status['uid_next'] - 1 if status['uid_next'] else None
         if upper is not None and upper < start:
-            return
+            return 0
 
         Message = self.env['mail.client.message']
         created = 0
@@ -238,6 +250,7 @@ class MailClientFolder(models.Model):
         if created:
             _logger.info("Mail Client: %s new message(s) in %s/%s",
                          created, self.account_id.email, self.imap_path)
+        return created
 
     @staticmethod
     def _fetch_structures(connection, uids):
@@ -318,8 +331,13 @@ class MailClientFolder(models.Model):
         }
 
     def _reconcile_existing(self, connection, status):
-        """Apply flag changes and remove messages deleted on the server."""
+        """Apply flag changes and remove messages deleted on the server.
+
+        ПРАВКА ПМК (шаг 22): возвращает Counter(flags=…, removed=…) — сколько
+        писем получили новые отметки и сколько убрано.
+        """
         self.ensure_one()
+        changes = Counter()
         previous_mod_seq = int(self.highest_mod_seq or 0)
 
         if previous_mod_seq and status['mod_seq']:
@@ -327,29 +345,31 @@ class MailClientFolder(models.Model):
                 changed, vanished = connection.fetch_flags_since(previous_mod_seq)
             except ImapError as exc:
                 _logger.warning("Mail Client: CHANGEDSINCE failed on %s: %s", self.imap_path, exc)
-                return
-            self._apply_flag_changes(changed)
+                return changes
+            changes['flags'] += self._apply_flag_changes(changed) or 0
             if connection.supports_qresync:
-                self._remove_uids(vanished)
-                return
+                changes['removed'] += self._remove_uids(vanished) or 0
+                return changes
 
         # No CONDSTORE state yet, or no QRESYNC to report deletions: fall back
         # to comparing UID sets. Slower, but keeps generic servers working.
-        self._reconcile_by_uid_diff(connection, status)
+        changes['removed'] += self._reconcile_by_uid_diff(connection, status) or 0
+        return changes
 
     def _reconcile_by_uid_diff(self, connection, status):
+        """ПРАВКА ПМК (шаг 22): возвращает, сколько писем убрано."""
         self.ensure_one()
         local_uids = self._all_local_uids()
         if not local_uids:
-            return
+            return 0
         # Skip the expensive listing when the counts already agree.
         if status['exists'] and status['exists'] == len(local_uids):
-            return
+            return 0
         try:
             remote_uids = set(connection.search_all_uids())
         except ImapError as exc:
             _logger.warning("Mail Client: UID SEARCH failed on %s: %s", self.imap_path, exc)
-            return
+            return 0
         if not remote_uids and status['exists']:
             # The server says the folder is not empty but returned no UIDs.
             # Something is wrong with the response; deleting everything on the
@@ -358,8 +378,8 @@ class MailClientFolder(models.Model):
                 "Mail Client: inconsistent UID SEARCH on %s (EXISTS=%s, no UIDs); "
                 "skipping deletion pass.", self.imap_path, status['exists'],
             )
-            return
-        self._remove_uids(local_uids - remote_uids)
+            return 0
+        return self._remove_uids(local_uids - remote_uids)
 
     def _backfill_structures(self, connection, limit=BACKFILL_BATCH_SIZE):
         """Read BODYSTRUCTURE for messages stored before we asked for it.
@@ -369,18 +389,28 @@ class MailClientFolder(models.Model):
         Returns how many messages were settled, so the cron can tell whether
         there is more to do.
         """
+        return self._backfill_structures_batch(connection, limit)[0]
+
+    def _backfill_structures_batch(self, connection, limit=BACKFILL_BATCH_SIZE):
+        """ПРАВКА ПМК (шаг 22): тело _backfill_structures без изменений по
+        существу, но ответ — (settled, written): сколько писем описано и
+        сколько записано вообще, вместе с помеченными 'failed'. Дочитка
+        ящика (mail.client.account._backfill_structures) фиксирует папку по
+        written: запись 'failed' при settled = 0 раньше оставалась
+        незафиксированной, когда блокировка ящика уже снята.
+        """
         self.ensure_one()
         pending = self.env['mail.client.message'].search(
             [('folder_id', '=', self.id), ('structure_state', '=', 'unknown')],
             order='imap_uid desc', limit=limit,
         )
         if not pending:
-            return 0
+            return 0, 0
 
         uids = pending.mapped('imap_uid')
         structures = self._fetch_structures(connection, uids)
         if not structures:
-            return 0
+            return 0, 0
 
         settled = 0
         for message in pending:
@@ -394,7 +424,7 @@ class MailClientFolder(models.Model):
                 # making progress once only such messages remained.
                 values = {'structure_state': 'failed'}
             message.write(values)
-        return settled
+        return settled, len(pending)
 
     def search_on_server(self, term, limit=100):
         """Run the search on the mail server and store any headers we lack.
@@ -466,15 +496,18 @@ class MailClientFolder(models.Model):
         return {row['imap_uid'] for row in rows}
 
     def _apply_flag_changes(self, changed):
+        """ПРАВКА ПМК (шаг 22): возвращает, скольким письмам записаны
+        отметки (или метки)."""
         self.ensure_one()
         if not changed:
-            return
+            return 0
         # Bounded by what actually changed, not by the size of the folder.
         messages = self.env['mail.client.message'].search([
             ('folder_id', '=', self.id),
             ('imap_uid', 'in', [entry['uid'] for entry in changed]),
         ])
         by_uid = {m.imap_uid: m for m in messages}
+        written = 0
         for entry in changed:
             message = by_uid.get(entry['uid'])
             if not message:
@@ -500,12 +533,15 @@ class MailClientFolder(models.Model):
 
             if has_changes:
                 message.write(values)
+                written += 1
+        return written
 
     def _remove_uids(self, uids):
+        """ПРАВКА ПМК (шаг 22): возвращает, сколько писем убрано."""
         self.ensure_one()
         uids = [u for u in uids or []]
         if not uids:
-            return
+            return 0
         messages = self.env['mail.client.message'].search([
             ('folder_id', '=', self.id), ('imap_uid', 'in', uids),
         ])
@@ -513,6 +549,7 @@ class MailClientFolder(models.Model):
             _logger.info("Mail Client: removing %s message(s) deleted on the server in %s",
                          len(messages), self.imap_path)
             messages.unlink()
+        return len(messages)
 
     def _refresh_counters(self):
         for folder in self:

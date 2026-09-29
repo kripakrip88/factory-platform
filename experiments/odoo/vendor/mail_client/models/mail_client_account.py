@@ -3,6 +3,9 @@
 # License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl-3.0.html)
 import logging
 import secrets
+from collections import Counter
+
+import psycopg2
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
@@ -36,6 +39,13 @@ NAME_ROLES = {
     'junk': 'spam', 'spam': 'spam',
     'archive': 'archive', 'arsip': 'archive',
 }
+
+# ПРАВКА ПМК (шаг 22 плана, 30.09.2026): один проход по ящику в каждый момент.
+# Первое число сессионной advisory-блокировки Postgres «идёт проход по ящику»,
+# второе — id ящика: pg_try_advisory_lock(MAILBOX_LOCK_KEY, account_id). Форма
+# из двух int4 не пересекается с блокировками по одному bigint, которыми
+# пользуется ядро Odoo. Число — «mcsy» (mail client sync) в ASCII.
+MAILBOX_LOCK_KEY = 0x6D637379
 
 
 class MailClientAccount(models.Model):
@@ -502,13 +512,94 @@ class MailClientAccount(models.Model):
         return self.server_id.sudo()._connect(account=self.sudo())
 
     def action_sync_now(self):
+        busy = self.browse()
         for account in self:
-            account._sync()
+            if not account._sync():
+                busy |= account
+        if busy:
+            # ПРАВКА ПМК (шаг 22): ящик занят — его синхронизирует крон или
+            # кнопка в почте, либо дочитывает структуры крон «Describe Older
+            # Messages». Сказать об этом, а не делать вид, что проход был.
+            # «Придут сами»: идущий проход пришлёт сигнал, а после дочитки
+            # письма принесёт следующий проход крона (раз в 2 минуты).
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'type': 'info',
+                    'message': _("%s is busy right now; new mail will arrive by itself.",
+                                 ', '.join(busy.mapped('email'))),
+                },
+            }
         return True
 
     def _sync(self):
-        """Synchronise one account. Never raises: failures are recorded."""
+        """Synchronise one account. Never raises: failures are recorded.
+
+        ПРАВКА ПМК (шаг 22 плана, 30.09.2026): один проход по ящику в каждый
+        момент. Крон, кнопка «Синхронизировать» (sync_account, веб-процесс) и
+        дочитка структур (_backfill_structures, свой крон) раньше работали с
+        ящиком одновременно: 27.09 первая загрузка pmkpark@mail.ru (153 с)
+        столкнулась со вторым запуском — «could not serialize access due to
+        concurrent update», ящик в error.
+
+        Теперь проход берёт сессионную advisory-блокировку Postgres на ящик
+        (_try_lock_mailbox). Сессионную, а не транзакционную: проход
+        фиксирует каждую папку (commit), а транзакционная отпускалась бы на
+        первой же. Занято — прохода нет: запись в журнал INFO и ответ False;
+        крон идёт к следующему ящику, кнопка отвечает «занят». Итог
+        прохода фиксируется ДО снятия блокировки: иначе следующий проход,
+        взявший ящик, упёрся бы в нашу незафиксированную строку ящика.
+
+        Снимок базы — тоже под блокировкой. Курсоры Odoo работают в
+        REPEATABLE READ (sql_db.py): снимок берётся первым запросом
+        транзакции, а у всех трёх вызывающих он раньше блокировки (кнопка —
+        exists() и права, крон — поиск ящиков, сам pg_try_advisory_lock —
+        тоже запрос). Проход, взявший ящик сразу после чужого, видел бы базу
+        до чужого итога: отправленные операции — как ждущие, и первая же
+        запись в строку, изменённую после снимка, — «could not serialize
+        access», ящик в error. Поэтому сразу после блокировки — commit: к
+        этому месту никто из вызывающих ничего не записал, блокировка
+        сессионная и commit её не снимает, и проход начинает новую
+        транзакцию уже с чужим итогом.
+
+        Возвращает сводку изменений прохода (_change_summary) — её же несёт
+        сигнал шины — или False, если ящик занят.
+        """
         self.ensure_one()
+        cr = self.env.cr
+        if not self._try_lock_mailbox(cr):
+            _logger.info("Mail Client: %s is already being synchronised; pass skipped.",
+                         self.email)
+            return False
+        try:
+            # Свежий снимок — уже под блокировкой (см. выше). Внутри try:
+            # сбой commit тоже должен отпустить ящик. A test cursor refuses
+            # to commit; tests reaching this patch it.
+            cr.commit()
+            changes = self._sync_pass()
+            self._notify_bus(changes)
+            # A test cursor refuses to commit; tests reaching this patch it,
+            # as they already must for the per-folder commits.
+            cr.commit()
+        finally:
+            self._unlock_mailbox(cr)
+        return self._change_summary(changes)
+
+    def _sync_pass(self):
+        """One pass over the mailbox; the caller holds the mailbox lock.
+
+        ПРАВКА ПМК (шаг 22): прежнее тело _sync без изменений по существу,
+        плюс подсчёт того, что проход изменил в письмах ящика, по папкам:
+        ``{id папки: Counter(new=…, removed=…, flags=…)}`` — только
+        зафиксированные папки, в которых что-то изменилось. По папкам —
+        чтобы почта не перечитывала открытые «Входящие» из-за нового письма
+        в Спаме (_change_summary, folder_ids). Надстройка (pmk_mail_ui)
+        перехватывает этот метод, а не _sync: её проверка отметок идёт под
+        той же блокировкой и до сигнала шины.
+        """
+        self.ensure_one()
+        changes = {}
         connection = None
         try:
             connection = self._open_connection()
@@ -518,13 +609,17 @@ class MailClientAccount(models.Model):
             self._sync_folders(connection)
             folders = self.folder_ids.filtered(lambda f: f.subscribed and f.active)
             for folder in folders:
-                folder._sync_messages(connection)
+                done = folder._sync_messages(connection)
                 # Commit per folder so a failure late in the run does not throw
                 # away the folders that already succeeded. Same pattern as core
                 # fetchmail. A test cursor refuses to commit outright, so a test
                 # reaching this has to patch it - and must, because the except
                 # below would otherwise swallow the refusal and pass.
                 self.env.cr.commit()
+                # Counted only once committed: a folder rolled back below has
+                # changed nothing anybody can see.
+                if done and any(done.values()):
+                    changes[folder.id] = Counter(done)
             self.write({
                 'state': 'connected',
                 'error_message': False,
@@ -544,7 +639,72 @@ class MailClientAccount(models.Model):
         finally:
             if connection:
                 connection.close()
-        self._notify_bus()
+        return changes
+
+    @staticmethod
+    def _change_summary(changes):
+        """ПРАВКА ПМК (шаг 22): что проход изменил в письмах ящика — для
+        сигнала шины и ответа кнопки. ``changes`` — итог _sync_pass (по
+        папкам); None — неизвестно (сигнал не из прохода), тогда
+        «изменилось» и без folder_ids, то есть везде: лишнее обновление
+        списка безвредно, пропущенное — нет.
+
+        ``folder_ids`` — папки, где что-то изменилось: почта перечитывает
+        список, только если среди них есть показанная (mail_client_action.js,
+        listShowsChange)."""
+        if changes is None:
+            return {'changed': True}
+        keys = ('new', 'removed', 'flags')
+        total = Counter()
+        folder_ids = []
+        for folder_id, counts in changes.items():
+            if any(counts.get(key) for key in keys):
+                folder_ids.append(folder_id)
+                total.update({key: counts.get(key) or 0 for key in keys})
+        counts = {key: int(total.get(key) or 0) for key in keys}
+        return dict(counts, changed=any(counts.values()), folder_ids=sorted(folder_ids))
+
+    # ------------------------------------------------------------------
+    # ПРАВКА ПМК (шаг 22): блокировка «проход по ящику»
+    # ------------------------------------------------------------------
+    def _try_lock_mailbox(self, cr=None):
+        """Взять ящик под проход, не дожидаясь: True — взят, False — занят.
+
+        Сессионная advisory-блокировка живёт на СОЕДИНЕНИИ, а не в транзакции:
+        commit и rollback её не снимают. Поэтому брать и отпускать — на одном
+        курсоре. У крона это job_cr (ir.cron._run_job держит его на весь
+        вызов), у кнопки — курсор запроса (http._serve_db → retrying), в
+        тестах — тестовый курсор поверх одного соединения. Проход коммитит
+        этот же курсор, соединение не меняется. Процесс упал — Postgres
+        закрыл соединение и отпустил блокировку сам.
+        """
+        self.ensure_one()
+        cr = cr or self.env.cr
+        cr.execute("SELECT pg_try_advisory_lock(%s, %s)", (MAILBOX_LOCK_KEY, self.id))
+        return bool(cr.fetchone()[0])
+
+    def _unlock_mailbox(self, cr=None):
+        """Отпустить ящик — всегда из finally, на том же курсоре.
+
+        Соединение Odoo после запроса возвращается в пул ОТКРЫТЫМ (сброс
+        соединения при выдаче из пула advisory-блокировки не снимает), и
+        забытая блокировка заперла бы ящик для всех остальных процессов до
+        закрытия соединения. Прерванная транзакция (ошибка уже летит наверх)
+        отказывает любой команде, снятию блокировки тоже, — откатываем её и
+        снимаем: работа такой транзакции всё равно пропала.
+        """
+        self.ensure_one()
+        cr = cr or self.env.cr
+        query = "SELECT pg_advisory_unlock(%s, %s)"
+        params = (MAILBOX_LOCK_KEY, self.id)
+        try:
+            cr.execute(query, params, log_exceptions=False)
+        except psycopg2.Error:
+            cr.rollback()
+            cr.execute(query, params)
+        if not cr.fetchone()[0]:
+            _logger.warning("Mail Client: the sync lock of %s was not held on release.",
+                            self.email)
 
     def _push_pending_ops(self, connection):
         """Send queued local changes to the server before fetching anything."""
@@ -634,8 +794,19 @@ class MailClientAccount(models.Model):
         leaf = path.rsplit('/', 1)[-1].rsplit('.', 1)[-1].strip().lower()
         return NAME_ROLES.get(leaf, 'other')
 
-    def _notify_bus(self):
-        """Push a refresh hint to everyone who can see this mailbox."""
+    def _notify_bus(self, changes=None):
+        """Push a refresh hint to everyone who can see this mailbox.
+
+        ПРАВКА ПМК (шаг 22): сигнал говорит, изменилось ли что-то в письмах
+        ящика за проход (``changed``, и сколько: ``new``, ``removed``,
+        ``flags``, и в каких папках: ``folder_ids`` — _change_summary).
+        Почта раньше на КАЖДЫЙ сигнал перегружала список с начала: при
+        проходе раз в 2 минуты список прыгал бы постоянно. Теперь без
+        изменений — только состояние ящика, с изменениями — счётчики папок и
+        список без сброса, если изменилась показанная папка
+        (mail_client_action.js, onSyncNotification). Без ``changes`` —
+        «изменилось» везде.
+        """
         self.ensure_one()
         partners = (self.user_id | self.allowed_user_ids).partner_id
         if not partners:
@@ -644,6 +815,7 @@ class MailClientAccount(models.Model):
             'account_id': self.id,
             'state': self.state,
             'last_sync_date': self.last_sync_date and fields.Datetime.to_string(self.last_sync_date),
+            **self._change_summary(changes),
         })
 
     @api.model
@@ -703,21 +875,53 @@ class MailClientAccount(models.Model):
             # quarter of an hour rather than a login and a SELECT per folder.
             return
 
+        # ПРАВКА ПМК (шаг 22): та же блокировка, что у прохода (_sync), —
+        # дочитка не входит в ящик, пока его синхронизируют, и наоборот.
+        # Занято — дочитаем через 15 минут.
+        #
+        # Как и у прохода, блокировка отпускается только с чистой
+        # транзакцией: иначе проход, взявший ящик сразу после нас, упрётся в
+        # наши незафиксированные строки писем и после нашего commit (его
+        # делает крон уже после следующего ящика — вход на сервер, секунды)
+        # получит «could not serialize access», ящик в error. Поэтому папка,
+        # которая хоть что-то записала — описала письма или пометила
+        # 'failed', — фиксируется сразу (раньше только при settled > 0), а
+        # неожиданная ошибка откатывается до снятия блокировки.
+        #
+        # Снимок здесь, в отличие от прохода, берётся до блокировки
+        # (_folders_needing_structures выше). Столкновение с только что
+        # закончившимся проходом безвредно: ошибка в журнал, откат, дочитка
+        # через 15 минут; ящик и его состояние дочитка не пишет.
+        cr = self.env.cr
+        if not self._try_lock_mailbox(cr):
+            _logger.info("Mail Client: %s is being synchronised; structure backfill skipped.",
+                         self.email)
+            return
         connection = None
         try:
             connection = self._open_connection()
             for folder in folders:
                 connection.select(folder.imap_path, readonly=True)
-                if folder._backfill_structures(connection):
+                _settled, written = folder._backfill_structures_batch(connection)
+                if written:
                     self.env.cr.commit()
         except (ImapError, UserError) as exc:
+            # Nothing is left uncommitted here: a folder is committed as soon
+            # as it has written anything, and neither error can come after
+            # the writes of a folder.
             _logger.warning("Mail Client: structure backfill failed for %s: %s",
                             self.email, exc)
         except Exception:  # noqa: BLE001 - one bad account must not stop the cron
             _logger.exception("Mail Client: unexpected backfill error for %s", self.email)
+            # ПРАВКА ПМК (шаг 22): чистая транзакция до снятия блокировки
+            # (см. выше). Зафиксированные папки своё сохраняют.
+            cr.rollback()
         finally:
-            if connection:
-                connection.close()
+            try:
+                if connection:
+                    connection.close()
+            finally:
+                self._unlock_mailbox(cr)
 
     @api.model
     def _cron_backfill_structures(self):
@@ -792,6 +996,20 @@ class MailClientAccount(models.Model):
         if not account:
             raise UserError(_("This mailbox no longer exists."))
         account.check_access('read')
-        account.sudo()._sync()
+        # ПРАВКА ПМК (шаг 22): ящик занят — его синхронизирует крон (или
+        # кнопка в другой вкладке) либо дочитывает структуры крон «Describe
+        # Older Messages». Прохода нет, ответ busy; почта показывает мягкое
+        # «Ящик сейчас занят — новые письма придут сами»: идущий проход
+        # пришлёт сигнал шины, а после дочитки (она сигнала не шлёт) письма
+        # принесёт следующий проход крона. changed и folder_ids — изменилось
+        # ли что-то в письмах и в каких папках: без изменений в показанной
+        # папке список не перечитывается.
+        summary = account.sudo()._sync()
         account.invalidate_recordset(['state', 'error_message'])
-        return {'state': account.state, 'error_message': account.error_message or ''}
+        return {
+            'state': account.state,
+            'error_message': account.error_message or '',
+            'busy': not summary,
+            'changed': bool(summary and summary['changed']),
+            'folder_ids': summary['folder_ids'] if summary else [],
+        }

@@ -1,9 +1,18 @@
-import { Component, useState } from "@odoo/owl";
+import { Component, onMounted, onPatched, onWillUnmount, useRef, useState } from "@odoo/owl";
 import { Dropdown } from "@web/core/dropdown/dropdown";
 import { DropdownItem } from "@web/core/dropdown/dropdown_item";
 import { _t } from "@web/core/l10n/translation";
+import { user } from "@web/core/user";
 
-import { dayBucket, formatMessageDate, readPref, recipientLabel, senderName, writePref } from "../utils";
+import {
+    dayBucket,
+    formatMessageDate,
+    pluralForm,
+    readPref,
+    recipientLabel,
+    senderName,
+    writePref,
+} from "../utils";
 import { buildListItems } from "./list_items";
 
 // ПРАВКА ПМК (шаг 18): вид списка — «удобный» (две строки) или «компактный»
@@ -11,6 +20,8 @@ import { buildListItems } from "./list_items";
 // удобный. Живёт здесь, а не в корне: это только вид списка.
 const LIST_VIEW_KEY = "mail_client.list_view";
 const LIST_VIEWS = ["comfortable", "compact"];
+// ПРАВКА ПМК (шаг 22): «в начале списка» — прокрутка не дальше этого (px).
+const TOP_SLACK = 4;
 
 export class MessageList extends Component {
     static template = "mail_client.MessageList";
@@ -34,6 +45,15 @@ export class MessageList extends Component {
         // _list_digests) и переход в их папку по щелчку.
         digests: { type: Array, optional: true },
         onOpenFolder: { type: Function, optional: true },
+        // ПРАВКА ПМК (шаг 22): новые строки над прокрученным списком
+        // (плашка «N новых писем»), подсветка открытой переписки, у которой
+        // сменилось письмо строки, и прокрутка для корня (обновление
+        // списка без сброса, mail_client_action.js — refreshList).
+        pendingNew: { type: Number, optional: true },
+        selectedThreadKey: { optional: true },
+        onShowNew: { type: Function, optional: true },
+        onReachTop: { type: Function, optional: true },
+        onListApi: { type: Function, optional: true },
         onClearFilter: { type: Function },
         onSelectMessage: { type: Function },
         onLoadMore: { type: Function },
@@ -48,6 +68,74 @@ export class MessageList extends Component {
     setup() {
         const view = readPref(LIST_VIEW_KEY, "comfortable");
         this.state = useState({ view: LIST_VIEWS.includes(view) ? view : "comfortable" });
+
+        // ПРАВКА ПМК (шаг 22): прокрутка списка — корню. Он спрашивает, в
+        // начале ли пользователь (тогда свежий список ставится целиком), и
+        // после такой замены просит удержать начало: вставка строк сверху не
+        // должна увести прокрутку. keepTop действует на ближайшую
+        // перерисовку и не дольше секунды — позже она прыгнула бы сама.
+        this.scrollRef = useRef("scroll");
+        this.wasAtTop = true;
+        this.keepTopUntil = 0;
+        onMounted(() =>
+            this.props.onListApi?.({
+                isAtTop: () => this.isAtTop(),
+                keepTop: () => this.keepTop(),
+            })
+        );
+        onPatched(() => {
+            if (this.keepTopUntil && Date.now() < this.keepTopUntil) {
+                this.toTop();
+            }
+            this.keepTopUntil = 0;
+        });
+        onWillUnmount(() => this.props.onListApi?.(null));
+    }
+
+    isAtTop() {
+        const el = this.scrollRef.el;
+        return !el || el.scrollTop <= TOP_SLACK;
+    }
+
+    toTop() {
+        const el = this.scrollRef.el;
+        if (el && el.scrollTop) {
+            el.scrollTop = 0;
+        }
+        this.wasAtTop = true;
+    }
+
+    keepTop() {
+        this.toTop();
+        this.keepTopUntil = Date.now() + 1000;
+    }
+
+    onScroll() {
+        const atTop = this.isAtTop();
+        if (!atTop) {
+            this.keepTopUntil = 0; // пользователь прокручивает сам
+        } else if (!this.wasAtTop) {
+            this.props.onReachTop?.();
+        }
+        this.wasAtTop = atTop;
+    }
+
+    /** Плашка «N новых писем»: наверх, и список встаёт целиком. */
+    onShowNew() {
+        this.toTop();
+        this.props.onShowNew?.();
+    }
+
+    get newLabel() {
+        const count = this.props.pendingNew || 0;
+        const form = pluralForm(count, user.lang);
+        if (form === "one") {
+            return _t("%s new message", count);
+        }
+        if (form === "few") {
+            return _t("%s new messages (2-4)", count);
+        }
+        return _t("%s new messages", count);
     }
 
     formatDate(value) {
@@ -63,8 +151,16 @@ export class MessageList extends Component {
         return recipientLabel(message.email_to);
     }
 
-    isSelected(messageId) {
-        return this.props.selectedMessageId === messageId;
+    // ПРАВКА ПМК (шаг 22): и строка открытой переписки, которую после
+    // обновления списка представляет новое письмо (пришёл ответ).
+    isSelected(message) {
+        return (
+            this.props.selectedMessageId === message.id ||
+            Boolean(
+                this.props.selectedThreadKey &&
+                    message.thread_key === this.props.selectedThreadKey
+            )
+        );
     }
 
     isTicked(messageId) {

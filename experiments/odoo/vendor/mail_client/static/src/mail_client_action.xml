@@ -85,6 +85,9 @@
                               onSent.bind="onSent"/>
                 </t>
                 <t t-else="">
+                    <!-- ПРАВКА ПМК (шаг 22): список обновляется без сброса —
+                         плашка новых писем, подсветка открытой переписки,
+                         прокрутка для корня (refreshList). -->
                     <MessageList messages="state.messages"
                                  selectedMessageId="state.selectedMessageId"
                                  selectedIds="state.selectedIds"
@@ -96,6 +99,11 @@
                                  folderName="activeFolder ? activeFolder.name : ''"
                                  filterLabel="filterLabel"
                                  digests="state.digests"
+                                 pendingNew="state.pendingNew"
+                                 selectedThreadKey="selectedThreadKey"
+                                 onShowNew.bind="showNewMessages"
+                                 onReachTop.bind="onListTop"
+                                 onListApi.bind="setListApi"
                                  onOpenFolder.bind="selectFolder"
                                  onClearFilter="() => this.setFilter('all')"
                                  onSelectMessage.bind="selectMessage"

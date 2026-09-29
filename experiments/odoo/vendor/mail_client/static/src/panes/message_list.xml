@@ -84,7 +84,21 @@
                 <i class="fa fa-circle-o-notch fa-spin text-muted ms-1" t-if="props.busy"/>
             </div>
 
-            <div class="flex-grow-1 overflow-auto">
+            <!-- ПРАВКА ПМК (шаг 22): прокрутку списка читает корень (обновление
+                 без сброса); плашка «N новых писем» — над прокрученным списком,
+                 закреплена сверху и нулевой высоты: строки под ней не сдвигает.
+                 Сама полоса есть всегда (объявление для экранного диктора
+                 работает, только если область уже на странице), кнопка — когда
+                 есть новые строки. -->
+            <div class="flex-grow-1 overflow-auto o_mail_client_list_scroll"
+                 t-ref="scroll" t-on-scroll="onScroll">
+                <div class="o_mail_client_new_bar" aria-live="polite">
+                    <button type="button" class="o_mail_client_new_pill" t-if="props.pendingNew"
+                            t-on-click="() => this.onShowNew()">
+                        <i class="fa fa-arrow-up me-1" aria-hidden="true"/>
+                        <t t-esc="newLabel"/>
+                    </button>
+                </div>
                 <t t-if="props.loading and !listItems.length">
                     <div class="text-center text-muted p-4">
                         <i class="fa fa-circle-o-notch fa-spin fa-2x"/>
@@ -137,7 +151,7 @@
                     <div t-else="" class="o_mail_client_row d-flex"
                          t-att-class="{
                              'o_unread': !item.message.flag_seen,
-                             'active': isSelected(item.message.id),
+                             'active': isSelected(item.message),
                              'o_ticked': isTicked(item.message.id),
                          }"
                          t-on-click="(ev) => this.onRowClick(ev, item.message.id)">

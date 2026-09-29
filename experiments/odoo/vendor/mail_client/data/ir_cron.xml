@@ -6,16 +6,19 @@
         <field name="model_id" ref="model_mail_client_account"/>
         <field name="state">code</field>
         <field name="code">model._cron_sync_all()</field>
-        <!-- ПРАВКА ПМК (29.09.2026): было 2. Первая загрузка ящика
+        <!-- ПРАВКА ПМК (шаг 22 плана, 30.09.2026): раз в 2 минуты, с защитой
+             от наложения. 29.09 было поднято до 10: первая загрузка ящика
              pmkpark@mail.ru 27.09 (2 тыс. писем) шла 153 с и налезала на
-             другой запуск синхронизации: «could not serialize access due to
-             concurrent update», ящик вставал в error. Крон сам с собой не
-             пересекается (поток один), но кнопка «Синхронизировать» запускает
-             тот же проход в веб-процессе. Обычный проход — 2-3 с (замер 29.09),
-             так что частить можно, но только вместе с защитой от наложения —
-             это шаг 22 плана. До него держим 10. noupdate здесь нет, поэтому
-             значение закреплено и в pmk_mail_ui/data/ir_cron.xml. -->
-        <field name="interval_number">10</field>
+             запуск кнопкой «Синхронизировать» — «could not serialize access
+             due to concurrent update», ящик вставал в error. Теперь проход,
+             кнопка и дочитка структур берут ящик под advisory-блокировку
+             Postgres (models/mail_client_account.py, _try_lock_mailbox):
+             занятый ящик пропускается. Обычный проход — 2-3 с. Не чаще: как
+             часто mail.ru пускает по IMAP, неизвестно, а 2 минуты — 720
+             входов в сутки на ящик, как у автора по умолчанию. noupdate
+             здесь нет, поэтому значение закреплено и в
+             pmk_mail_ui/data/ir_cron.xml. -->
+        <field name="interval_number">2</field>
         <field name="interval_type">minutes</field>
         <field name="active" eval="True"/>
     </record>

@@ -98,6 +98,51 @@
     border-bottom: 1px solid var(--mc-border);
 }
 
+// ПРАВКА ПМК (шаг 22): плашка «N новых писем» над прокрученным списком.
+// Закреплена сверху окна прокрутки и нулевой высоты — строки под ней не
+// сдвигаются, когда она появляется. Цвета — токены почты: светлая и тёмная
+// темы (pmk_theme dark.scss переопределяет --mc-*) без отдельных правил.
+.o_mail_client_new_bar {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    height: 0;
+    overflow: visible;
+}
+
+.o_mail_client_new_pill {
+    // Фон — панель списка, приподнятая тоном наведения: плашка отделяется
+    // от строк и в тёмной теме, где тень не видна. --mc-hover-bg там
+    // полупрозрачный, поэтому слоем поверх непрозрачного фона — иначе
+    // строки просвечивали бы сквозь плашку.
+    --mc-pill-lift: linear-gradient(var(--mc-hover-bg), var(--mc-hover-bg));
+    margin-top: .5rem;
+    padding: .25rem .8rem;
+    border: 1px solid var(--mc-border);
+    border-radius: 999px;
+    background-color: var(--mc-panel-bg);
+    background-image: var(--mc-pill-lift);
+    color: var(--mc-unread-dot);
+    font-size: .8125rem;
+    font-weight: 600;
+    line-height: 1.4;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .18);
+    cursor: pointer;
+
+    &:hover {
+        background-image: var(--mc-pill-lift), var(--mc-pill-lift);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--mc-unread-dot);
+        outline-offset: 2px;
+    }
+}
+
 .o_mail_client_row {
     border-bottom: 1px solid var(--mc-border);
     cursor: pointer;
