@@ -257,6 +257,17 @@ class TestSelectBookkeeping(TransactionCase):
         self.assertEqual(connection.imap.commands[0][0], 'EXAMINE')
         self.assertEqual(connection.imap.state, 'SELECTED')
 
+    def test_select_for_writing_refuses_a_read_only_answer(self):
+        # ПРАВКА ПМК (29.09.2026): сервер ответил на SELECT «OK [READ-ONLY]»
+        # (FakeImap так отвечает всегда). Отказ — на SELECT, а следующая
+        # команда (LIST, EXAMINE) не должна падать на застрявшем READ-ONLY.
+        connection = self._connection()
+        with self.assertRaises(ImapError):
+            connection.select('INBOX', readonly=False)
+        self.assertNotIn('READ-ONLY', connection.imap.untagged_responses)
+        self.assertEqual(connection.imap.state, 'AUTH')
+        self.assertIsNone(connection.selected)
+
     def test_failed_select_leaves_no_mailbox_selected(self):
         connection = self._connection()
         connection.imap._simple_command = lambda *a, **k: ('NO', [b'nope'])

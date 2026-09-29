@@ -439,6 +439,20 @@ class ImapConnection:
             self.imap.state = 'AUTH'
             self.selected = None
             raise ImapError("%s %s refused by server" % (command, path))
+        # ПРАВКА ПМК (29.09.2026): SELECT на запись, а сервер открыл папку
+        # только на чтение («OK [READ-ONLY]» — например, у пароля приложения
+        # нет права записи). imaplib держит READ-ONLY в untagged_responses и
+        # роняет СЛЕДУЮЩУЮ команду, какой бы она ни была: отказ отметок в
+        # очереди ронял бы весь проход ящика, вместе с чтением новых писем.
+        # Отказываем здесь, на SELECT: операция очереди провалится штатно
+        # (_fail), а LIST и EXAMINE дальше пройдут.
+        if not readonly and 'READ-ONLY' in self.imap.untagged_responses:
+            self.imap.untagged_responses.pop('READ-ONLY', None)
+            self.imap.state = 'AUTH'
+            self.selected = None
+            raise ImapError(
+                "SELECT %s: server opened the folder read-only "
+                "(no write permission)" % path)
 
         self.imap.state = 'SELECTED'
         self.selected = path
