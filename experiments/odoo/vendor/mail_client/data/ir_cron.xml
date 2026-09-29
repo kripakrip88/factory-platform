@@ -6,7 +6,16 @@
         <field name="model_id" ref="model_mail_client_account"/>
         <field name="state">code</field>
         <field name="code">model._cron_sync_all()</field>
-        <field name="interval_number">2</field>
+        <!-- ПРАВКА ПМК (29.09.2026): было 2. Первая загрузка ящика
+             pmkpark@mail.ru 27.09 (2 тыс. писем) шла 153 с и налезала на
+             другой запуск синхронизации: «could not serialize access due to
+             concurrent update», ящик вставал в error. Крон сам с собой не
+             пересекается (поток один), но кнопка «Синхронизировать» запускает
+             тот же проход в веб-процессе. Обычный проход — 2-3 с (замер 29.09),
+             так что частить можно, но только вместе с защитой от наложения —
+             это шаг 22 плана. До него держим 10. noupdate здесь нет, поэтому
+             значение закреплено и в pmk_mail_ui/data/ir_cron.xml. -->
+        <field name="interval_number">10</field>
         <field name="interval_type">minutes</field>
         <field name="active" eval="True"/>
     </record>
