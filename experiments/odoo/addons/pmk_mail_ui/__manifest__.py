@@ -1,6 +1,6 @@
 {
     "name": "ПМК — почта в Продажах и Закупках",
-    "version": "19.0.1.0.3",
+    "version": "19.0.1.0.4",
     "summary": "Почтовый клиент как раздел Продаж и Закупок, а не отдельное приложение",
     "description": """
 Письма читают не «в почте вообще», а рядом с заказом: менеджер по продажам —
@@ -14,7 +14,7 @@
     "category": "Productivity/Mail",
     "author": "ПМК Парк",
     "depends": ["mail_client", "pmk_theme", "crm"],
-    "data": ["data/menus.xml"],
+    "data": ["data/menus.xml", "data/ir_cron.xml"],
     "assets": {
         "web.assets_backend": [
             "pmk_mail_ui/static/src/js/*.js",

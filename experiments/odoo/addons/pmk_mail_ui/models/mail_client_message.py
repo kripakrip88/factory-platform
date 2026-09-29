@@ -15,14 +15,18 @@ import html
 import logging
 import mimetypes
 import re
-from urllib.parse import unquote
+from urllib.parse import unquote, urlsplit
 
 from markupsafe import Markup
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
+from odoo.fields import Domain
+from odoo.http import request
 
 from odoo.addons.mail_client.tools.imap_client import ImapError
+
+from ..tools import remote_paths
 
 _logger = logging.getLogger(__name__)
 
@@ -59,6 +63,65 @@ _IMAGE_MIME = re.compile(r"^image/[a-z0-9.+-]+$")
 # и логотип весят десятки килобайт, а мегабайтные фото остаются вложением.
 _INLINE_MAX_BYTES = 1536 * 1024
 _INLINE_TOTAL_BYTES = 6 * 1024 * 1024
+
+# Лист письма в окне чтения (разбор UX, Г2). Санитайзер Odoo при
+# синхронизации вырезает у письма <style>, <head>, <meta> и <base>
+# (kill_tags, odoo/tools/mail.py:91). Письма без стилей в строках
+# показывались шрифтом браузера по умолчанию — Times 16 px, а письма из
+# Word и Outlook — с двойными отступами: «p.MsoNormal{margin:0}» жило как
+# раз в вырезанном <style>. Возвращаем минимум, и только при ПОКАЗЕ: в
+# хранимом письме этого нет, в лид (_display_body) и в цитату ответа
+# (_quoted_body берёт body_html) это не попадает. В чат лида <style>
+# нельзя вдвойне: там письмо не в рамке, и правила легли бы на весь Odoo.
+#
+# <base target="_blank">: рамка — sandbox без allow-top-navigation, и
+# ссылка без target открывалась ВНУТРИ рамки; сайты с запретом рамки
+# давали белый лист. allow-popups у рамки есть — вкладка откроется, а
+# allow-popups-to-escape-sandbox снимет с неё песочницу. noopener браузер
+# ставит сам для любого _blank, в том числе через <base>.
+#
+# <meta name="referrer">: сайты и счётчики из рассылок не узнают адрес
+# erppark.ru — ни по щелчку, ни по картинкам после «Показать картинки».
+# Если какой-то сайт потребует Referer, строку можно снять, не трогая прочее.
+#
+# Свой стиль в строке у письма сильнее этих правил (проверено на подписи
+# Calibri), <font face> — тоже: наши правила только для «ничейного» текста.
+#
+# color:#16191c — «чернила» темы (--pmk-accent-ink, pmk_theme tokens.scss).
+# :root{color-scheme:light} — лист белый и в тёмной теме, даже если правило
+# рамки в pmk_theme/dark.scss когда-нибудь уберут: CSS страницы внутрь рамки
+# не проникает, а <meta name="color-scheme"> письма вырезан санитайзером.
+#
+# height:auto — с !important: иначе Word-овский style="height:7.75in"
+# пересилит правило, и сжатая по ширине картинка сплющится (письмо 106,
+# снимок 1549×744 шире окна). Кроме «распорок» старой табличной вёрстки:
+# gif 1×1 с width="600" height="1" по height:auto стал бы квадратом
+# 600×600, а вертикальная width="1" height="40" схлопнулась бы в точку
+# (повторная проверка 29.09). Узнаём их по размеру 0-2 px в атрибуте.
+#
+# Класс ищем без учёта регистра и по вхождению: mail.ru при пересылке
+# превращает MsoNormal в «msonormalmrcssattr».
+#
+# Manrope внутри рамки не загрузится (у рамки непрозрачный origin, шрифт
+# отдаётся без CORS) — поэтому шрифт системный.
+_FRAME_HEAD = (
+    '<base target="_blank">'
+    '<meta name="referrer" content="no-referrer">'
+    "<style>"
+    ":root{color-scheme:light}"
+    "body{margin:12px 16px;"
+    'font:14px/1.45 -apple-system,system-ui,"Segoe UI",Roboto,'
+    '"Helvetica Neue",Arial,"Noto Sans",sans-serif;'
+    "color:#16191c;overflow-wrap:break-word}"
+    'p[class*="msonormal" i],li[class*="msonormal" i],'
+    'div[class*="msonormal" i]{margin:0}'
+    'p[class*="msolistparagraph" i]{margin-top:0;margin-bottom:0}'
+    "img{max-width:100%}"
+    'img:not([width="0"],[width="1"],[width="2"],'
+    '[height="0"],[height="1"],[height="2"]){height:auto!important}'
+    "pre{white-space:pre-wrap}"
+    "</style>"
+)
 
 
 class MailClientMessage(models.Model):
@@ -107,16 +170,99 @@ class MailClientMessage(models.Model):
             # что-то склеила — это не станет следящим пикселем.
             if not self.images_allowed:
                 body = self._block_remote_assets(body)
+        # «К нам» глушим всегда, и после «Показать картинки» (разбор UX, Г13):
+        # в этом случае модуль почты отдаёт письмо как есть (его
+        # mail_client_message.py:380). Без картинок проход уже сделан в
+        # _block_remote_assets.
+        if body and self.images_allowed:
+            body = self._pmk_block_assets(body, allow_remote=True)
         return body
 
+    # ------------------------------------------------------------------
+    # картинки по адресу без «http» (разбор UX, Г13) — правила в
+    # tools/remote_paths.py, здесь только привязка к модулю почты
+    # ------------------------------------------------------------------
+    @api.model
+    def _pmk_own_hosts(self):
+        """Имена нашего сервера: из web.base.url и из текущего запроса
+        (стенд, вход по IP). Поддомены считаются нашими (www., n8n.)."""
+        urls = [self.env["ir.config_parameter"].sudo().get_param("web.base.url") or ""]
+        if request:
+            urls.append(request.httprequest.host_url)
+        hosts = set()
+        for url in urls:
+            try:
+                host = urlsplit(url).hostname
+            except ValueError:
+                continue
+            if host:
+                hosts.add(host.rstrip(".").lower())
+        return hosts
+
+    @api.model
+    def _pmk_block_assets(self, html_text, allow_remote):
+        """Заглушить всё, что грузится из сети, кроме частей самого письма.
+        allow_remote — «Показать картинки» нажата: чужие адреса оставляем,
+        адреса «к нам» глушим всё равно. Повторный проход ничего не меняет."""
+        return remote_paths.block_assets(html_text, self._pmk_own_hosts(), allow_remote)
+
+    @api.model
+    def _block_remote_assets(self, html):
+        # Вендор глушит https?:// (на это смотрят его тесты), мы — остальное.
+        return self._pmk_block_assets(super()._block_remote_assets(html), allow_remote=False)
+
+    @api.model
+    def _has_remote_assets(self, html):
+        # Плашка «Показать картинки» — ровно тогда, когда кнопке есть что
+        # показать. super() не зовём: вендор сказал бы «да» и для нашего
+        # сервера по полному адресу, а кнопка его уже не вернёт.
+        if not html:
+            return False
+        return (self._pmk_block_assets(html, allow_remote=False)
+                != self._pmk_block_assets(html, allow_remote=True))
+
+    def _quoted_body(self):
+        # Цитата при «Ответить»/«Переслать» встаёт в редактор прямо на
+        # странице Odoo, а не в рамку, — путь «к нам» ушёл бы с сессией.
+        # Чужие картинки оставляем, как у вендора: цитата уходит адресату.
+        return Markup(self._pmk_block_assets(str(super()._quoted_body()), allow_remote=True))
+
+    # ------------------------------------------------------------------
+    # окно чтения
+    # ------------------------------------------------------------------
     @api.model
     def get_message_detail(self, message_id):
+        """Письмо для окна чтения: картинки из подписи на местах и
+        оформление листа (шрифт, отступы Word, ссылки в новой вкладке).
+
+        Оформление (разбор UX, Г2) — последним шагом и на ЛЮБОМ пути: у
+        большинства писем картинок нет, и подстановка выходит рано (нет
+        «cid:», нет частей). Сюда же приходит «Показать картинки» —
+        allow_images модуля почты зовёт self.get_message_detail, так что
+        заголовок ложится ровно один раз.
+        """
+        result = self._pmk_detail_with_inline_images(message_id)
+        body = result.get("body")
+        if body:
+            # Склейка только через %: body бывает Markup (картинки разрешены
+            # и вырезать было нечего — модуль почты отдаёт body_html как
+            # есть), а «str + Markup» экранирует левую часть: в окне читалось
+            # бы «<base target=…» текстом. '%s%s' % (str, Markup) — обычный
+            # str без экранирования.
+            result["body"] = "%s%s" % (_FRAME_HEAD, body)
+        return result
+
+    @api.model
+    def _pmk_detail_with_inline_images(self, message_id):
         """Письмо для окна чтения — с картинками из подписи на своих местах.
 
         Картинка подставляется прямо в текст (data:), потому что окно письма —
         изолированная рамка: ссылку на наш сервер она откроет без входа в
         систему и получит заглушку. Вложение, которое уже показано в тексте,
         из списка вложений убираем — иначе один логотип висит дважды.
+
+        Подстановка идёт ПОСЛЕ _display_body, то есть после глушилки Г13:
+        data: она оставляет, а путь «к нам» подставленной картинкой не станет.
         """
         result = super().get_message_detail(message_id)
         body = result.get("body") or ""
@@ -163,6 +309,102 @@ class MailClientMessage(models.Model):
             for part in message.client_attachment_ids if part.id not in shown
         ]
         return result
+
+    # ------------------------------------------------------------------
+    # переписка целиком (разбор «Почта как в Mail.ru», Г9)
+    # ------------------------------------------------------------------
+    @api.model
+    def pmk_mark_threads_seen(self, message_ids, upto=False, unified=False):
+        """Прочитать письма переписок, в которые входят эти письма.
+
+        Строка-переписка жирная, пока непрочитано ЛЮБОЕ её письмо в ящике:
+        _threaded_page считает по всему ящику, вместе с «Отправленными».
+        А модуль почты при открытии помечает одно письмо — то, что в строке.
+        Если непрочитано более старое письмо, строка оставалась жирной
+        навсегда (29.09.2026: 7 строк во «Входящих», 38 в «Отправленных»).
+
+        upto — письмо ОТКРЫЛИ, а не нажали «Прочитано»: помечаем только
+        письма переписки не новее открытого. Строку в «Отправленных»
+        представляет наше последнее письмо, а ответ клиента, пришедший позже,
+        лежит во «Входящих» и в окне виден лишь строкой «ещё N в переписке» —
+        открыв переписку в «Отправленных», его не прочитали, и гасить его (а
+        с общими отметками — и на mail.ru) нельзя. Цель Г9 — старые письма,
+        державшие строку жирной; строка с новым ответом честно остаётся
+        жирной. «Прочитано» (кнопка в окне, выделение строк) — просьба
+        прочитать переписку целиком: в «Отправленных» ничего другого она и не
+        может значить.
+
+        unified — строка из «Все входящие». Там переписка одна на все ящики
+        (_threaded_page группирует только по ключу, и строка жирная, пока
+        непрочитано письмо в любом из них), поэтому и помечаем во всех ящиках
+        пользователя, где у него есть право записи. Иначе строка гасла бы
+        только до следующей загрузки списка. В папке переписка живёт в своём
+        ящике: одно письмо в копии на zakaz@ и на pmkpark@ — две разные
+        переписки, так же ограничивает get_thread.
+
+        Письма ищем здесь, а не берём из окна чтения: get_thread прячет
+        вторую копию письма, лежащего в двух папках (102 пары «Входящие +
+        Отправленные» в pmkpark@), а счётчик папки её считает.
+
+        Помечаем через set_seen_bulk, тем же путём, что и кнопка модуля:
+        проверка прав на запись и запись в очередь (для ящика с общими
+        отметками — models/mail_client_flags.py). Синхронизацию отсюда НЕ
+        запускаем: очередь уйдёт на mail.ru ближайшим проходом крона, одним
+        подключением на все пометки.
+
+        Возвращаем, сколько непрочитанного осталось в каждой переписке: строку
+        списка окно гасит по этому числу, а не наугад.
+        """
+        anchors = self._checked_many(message_ids)  # права на запись, как у set_seen_bulk
+        everywhere = (set(self.env["mail.client.account"]._accessible_accounts().ids)
+                      if unified else None)
+        # Ключ переписки → ящики, где её искать, и даты открытых писем.
+        accounts, dates = {}, {}
+        for message in anchors.filtered("thread_key"):
+            key = message.thread_key
+            accounts.setdefault(key, set()).update(message.account_id.ids, everywhere or ())
+            dates.setdefault(key, []).append(message.date)
+
+        def thread(key):
+            return Domain([("thread_key", "=", key), ("account_id", "in", sorted(accounts[key]))])
+
+        unread = anchors.filtered(lambda m: not m.flag_seen)
+        if accounts:
+            parts = []
+            for key in accounts:
+                part = thread(key)
+                # Письмо без даты открытого не новее: такое помечаем всегда.
+                if upto and all(dates[key]):
+                    part &= Domain(["|", ("date", "<=", max(dates[key])), ("date", "=", False)])
+                parts.append(part)
+            # Копии НЕ отбрасываем: счётчик папки считает каждую. Поиск без
+            # sudo — под правилами доступа; в общем ящике «только смотреть»
+            # (роль viewer) помечать нельзя — такие письма пропускаем.
+            found = self.search(Domain.OR(parts) & Domain([("flag_seen", "=", False)]))
+            unread |= found._filtered_access("write")
+        if unread:
+            self.set_seen_bulk(unread.ids, True)
+
+        # Сколько осталось — так же, как строку считает _threaded_page: копии
+        # одного письма в двух папках — одно письмо.
+        remaining = dict.fromkeys(accounts, 0)
+        if accounts:
+            members = self.search(Domain.OR([thread(key) for key in accounts]),
+                                  order="date desc, id desc")._without_duplicates()
+            for member in members:
+                if not member.flag_seen:
+                    remaining[member.thread_key] += 1
+
+        folders = unread.folder_id
+        counts = self.env["mail.client.folder"]._unread_by_folder(folders.ids)
+        return {
+            "ids": unread.ids,
+            "threads": [{"thread_key": key, "unread": remaining[key]}
+                        for key in sorted(remaining)],
+            # Точные числа, а не «минус столько-то»: у модуля adjustUnread
+            # уменьшает открытую папку, даже когда письмо лежит в другой.
+            "folders": [{"id": f.id, "unread": counts.get(f.id, 0)} for f in folders],
+        }
 
     @staticmethod
     def _pmk_cids_in(html_text):
