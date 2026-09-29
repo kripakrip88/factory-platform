@@ -2577,12 +2577,6 @@ msgid "message(s) from this address"
 msgstr "писем с этого адреса"
 
 #. module: mail_client
-#. odoo-javascript
-#: code:addons/mail_client/static/src/panes/reading_pane.xml:0
-msgid "more in this conversation"
-msgstr "писем в этой переписке"
-
-#. module: mail_client
 #. odoo-python
 #: code:addons/mail_client/models/mail_client_message.py:0
 msgid "moving mail"
@@ -2671,3 +2665,76 @@ msgstr "Писем в переписке: %s"
 #: code:addons/mail_client/static/src/composer/composer.xml:0
 msgid "Start typing a name, or paste an address"
 msgstr "Начните вводить имя или вставьте адрес"
+
+# ПМК, шаг 17 (29.09.2026): строка над письмом и меню «⋯».
+# Три формы числа писем: форму выбирает Intl.PluralRules (reading_pane.js),
+# у каждой своя строка. «(2-4)» — только ключ формы «few», в английском
+# интерфейсе эта строка не показывается никогда.
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/reading_pane.js:0
+msgid "%s message in thread"
+msgstr "%s письмо"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/reading_pane.js:0
+msgid "%s messages in thread (2-4)"
+msgstr "%s письма"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/reading_pane.js:0
+msgid "%s messages in thread"
+msgstr "%s писем"
+
+# ПМК, доводка шага 17 (30.09.2026): заголовок блока переписки под «От» —
+# остальные письма, без открытого. Было «2 писем в этой переписке» (число
+# отдельно, слово переводом без формы). Формы — как у строк выше.
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/reading_pane.js:0
+msgid "%s other message in this conversation"
+msgstr "ещё %s письмо в этой переписке"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/reading_pane.js:0
+msgid "%s other messages in this conversation (2-4)"
+msgstr "ещё %s письма в этой переписке"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/reading_pane.js:0
+msgid "%s other messages in this conversation"
+msgstr "ещё %s писем в этой переписке"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/reading_pane.xml:0
+msgid "To all"
+msgstr "Всем"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/reading_pane.xml:0
+msgid "More actions"
+msgstr "Ещё действия"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/reading_pane.js:0
+msgid "Hide contact"
+msgstr "Скрыть контакт"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/reading_pane.js:0
+msgid "details"
+msgstr "подробнее"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/reading_pane.js:0
+msgid "hide details"
+msgstr "свернуть"

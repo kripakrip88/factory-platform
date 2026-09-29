@@ -25,6 +25,12 @@
  * строка, — и гасил её переписку целиком, вместе с неоткрытым ответом
  * клиента (повторная проверка 29.09). Других вызовов setSeen(true) у модуля
  * почты нет: selectMessage и toggleSeen (mail_client_action.js).
+ * С шага 17 (29.09.2026) модуль почты сам выбрасывает опоздавший ответ
+ * (у каждого открытия свой знак) и setSeen по нему не зовёт, а четыре
+ * запроса открытия идут разом. По текущему открытию setSeen(true)
+ * по-прежнему зовётся синхронно сразу после записи ответа — глушилка ниже
+ * нужна ради него. selectMessage модуля почты возвращает исход открытия
+ * ("shown" / "superseded" / "failed"); по "failed" не гасим ничего.
  * «Непрочитано» — как у модуля почты: одно письмо.
  *
  * Грабли: держимся за имена selectMessage / setSeen / toggleSeen / bulkSeen /
@@ -42,11 +48,17 @@ patch(MailClientInbox.prototype, {
         if (!this.state.threaded) {
             return super.selectMessage(messageId);
         }
-        await super.selectMessage(messageId);
-        // Если письмо не открылось, super бросил исключение и мы сюда не дошли.
-        if (this.pmkThreadHasUnread(messageId)) {
+        // Не открылось текущее — super бросает исключение, сюда не доходим.
+        // Не открылось опоздавшее (уже открыли другое) — модуль почты ошибку
+        // глотает и отвечает "failed": письма никто не видел, гасить нечего.
+        // А если его уже нет на сервере, пометка вызвала бы окно ошибки про
+        // письмо, которого нет на экране. "superseded" (письмо пришло, но уже
+        // открыли другое) гасим, как раньше: его открывали, и оно дошло.
+        const outcome = await super.selectMessage(messageId);
+        if (outcome !== "failed" && this.pmkThreadHasUnread(messageId)) {
             await this.pmkMarkThreadsSeen([messageId], { upto: true });
         }
+        return outcome;
     },
 
     setSeen(value) {
@@ -96,7 +108,8 @@ patch(MailClientInbox.prototype, {
     /**
      * Есть ли что гасить. Окну и переписке верим, только если это всё ещё
      * открытое письмо: при быстрых щелчках по строкам ответ прошлого
-     * открытия приходит, когда на экране уже другое письмо.
+     * открытия приходит, когда на экране уже другое письмо (модуль почты
+     * его тогда не записывает и молча возвращается — остаётся строка списка).
      */
     pmkThreadHasUnread(messageId) {
         const detail = this.state.detail;

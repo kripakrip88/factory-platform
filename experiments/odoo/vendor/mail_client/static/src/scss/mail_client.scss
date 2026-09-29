@@ -176,11 +176,132 @@
     background-color: #fff; // email HTML assumes a white canvas
 }
 
+// --- ПРАВКА ПМК: окно чтения — одна прокрутка на всё письмо ---
+// Шаг 17 плана («Почта как в Mail.ru», шаг 2, А1 и А11), 29.09.2026.
+// Сверху закреплена одна строка (.o_mail_client_toolbar), всё остальное — в
+// одном окне прокрутки. Рамка письма ростом с письмо: высоту ставит
+// panes/frame_fit.js, пока может прочитать документ рамки.
+
+.o_mail_client_reading {
+    // Подписи кнопок прячутся по ширине самого окна чтения, а не экрана: при
+    // открытой колонке папок оно узкое и на ноутбуке 1280 px.
+    container-type: inline-size;
+
+    > * {
+        transition: opacity .1s ease;
+    }
+}
+
+// Пока грузится следующее письмо, прежнее остаётся на месте бледным. Бледнеет
+// с задержкой: быстрый ответ сервера не должен давать мигания. Щелчки на это
+// время выключены сразу: кнопки действуют на выделенную строку, а на экране
+// ещё прежнее письмо. Клавиатуру выключает атрибут inert в шаблоне;
+// pointer-events здесь — для браузеров без inert.
+.o_mail_client_stale > * {
+    opacity: .55;
+    pointer-events: none;
+    transition: opacity .15s ease .15s;
+}
+
+// Тема уступает место кнопкам: на ноутбуке 1280 px с колонкой папок ей
+// остаётся около 140 px, на окне чтения 400 px — 4rem (полная тема — в
+// подсказке и в строке списка).
+.o_mail_client_subject {
+    flex: 1 1 auto;
+    min-width: 4rem;
+    font-weight: 600;
+}
+
+.o_mail_client_thread_count {
+    border: 1px solid var(--mc-border);
+    background-color: var(--mc-hover-bg);
+    color: inherit;
+    font-weight: 500;
+}
+
+@container (max-width: 40rem) {
+    .o_mail_client_toolbar .o_mail_client_label {
+        display: none;
+    }
+}
+
+.o_mail_client_reading_scroll {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    // Место под полосу прокрутки занято всегда, есть она или нет. Иначе на
+    // Windows и на Mac с мышью ширина письма зависела бы от того, длинное ли
+    // оно: frame_fit.js на время мерки схлопывает рамку, полоса пропадает,
+    // письмо мерится на 15 px шире, чем показано, и конец его уходит под
+    // прокрутку внутри рамки. При полосах поверх текста (Mac без мыши) не
+    // действует — там и нужды нет.
+    scrollbar-gutter: stable;
+
+    // Блоки не сжимаются под высоту окна — окно прокручивается. Без этого
+    // карточка контакта и переписка (overflow: hidden, значит, «можно до
+    // нуля») сплющились бы на длинном письме.
+    > * {
+        flex-shrink: 0;
+    }
+}
+
+.o_mail_client_from_text {
+    min-width: 0;
+}
+
+.o_mail_client_details_toggle {
+    --#{$prefix}btn-font-size: inherit;
+    line-height: inherit;
+    vertical-align: baseline;
+}
+
+.o_mail_client_recipients {
+    overflow-wrap: anywhere;
+}
+
+// Лист письма тянется до низа окна, если письмо короче окна, — как было,
+// когда рамка занимала весь остаток.
+.o_mail_client_frame_wrap {
+    display: flex;
+    flex: 1 0 auto;
+    flex-direction: column;
+}
+
+.o_mail_client_frame {
+    display: block;
+    // Прежнее поведение, пока высота не подогнана (и навсегда, если документ
+    // рамки закрыт): остаток окна, прокрутка внутри рамки.
+    flex: 1 1 auto;
+    min-height: 24rem;
+
+    &.o_mail_client_frame_fit {
+        // Высота — инлайном из frame_fit.js; растягиваться можно, сжиматься нет.
+        flex: 1 0 auto;
+        min-height: 0;
+    }
+}
+
+.o_mail_client_more_menu {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
 // --- composer and message actions (Phase 2) ---
 
 .o_mail_client_toolbar {
     border-bottom: 1px solid var(--mc-border);
-    flex-wrap: wrap;
+    // ПРАВКА ПМК (шаг 17): одна закреплённая строка около 48 px. Было
+    // flex-wrap: wrap — на узком окне кнопки уходили во второй ряд и
+    // отнимали высоту у письма. Теперь не переносятся: на узком окне
+    // прячутся подписи (см. @container ниже), а если и так не влезло —
+    // строка прокручивается вбок.
+    flex-wrap: nowrap;
+    min-height: 3rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
 }
 
 .o_mail_client_move_menu,

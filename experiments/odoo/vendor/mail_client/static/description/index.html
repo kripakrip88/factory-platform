@@ -229,7 +229,10 @@
                 <div class="col-12 col-md-6" style="margin-bottom: 22px;">
                     <div style="color: #e2e8f0; line-height: 1.7;">
                         <h5 style="color: #38bdf8; font-weight: 700;"><i class="fa fa-shield"></i>&nbsp; Sandboxed rendering</h5>
-                        <p style="color: #94a3b8;">Sanitised server-side, then rendered in an iframe with neither scripting nor same-origin access.</p>
+                        <!-- ПРАВКА ПМК (шаг 17, 29.09.2026): у рамки письма
+                             allow-same-origin — без него не прочитать высоту
+                             письма (panes/frame_fit.js). Скриптов по-прежнему нет. -->
+                        <p style="color: #94a3b8;">Sanitised server-side, then rendered in a sandboxed iframe with scripting disabled. Same-origin access is allowed only so the frame can be sized to the message.</p>
                     </div>
                 </div>
                 <div class="col-12 col-md-6" style="margin-bottom: 22px;">

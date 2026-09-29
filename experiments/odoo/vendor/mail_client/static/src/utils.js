@@ -35,6 +35,22 @@ export function senderName(emailFrom) {
     return emailFrom.trim();
 }
 
+/**
+ * ПРАВКА ПМК: «Имя <адрес>» по частям — для строки «От» над письмом, где имя
+ * выделено, а адрес приглушён (шаг 17). Без имени name пустой; адрес без
+ * угловых скобок — address как есть.
+ */
+export function splitAddress(emailFrom) {
+    const text = (emailFrom || "").trim();
+    const match = text.match(/^"?([^"<]*?)"?\s*<([^>]+)>\s*$/);
+    if (!match) {
+        return { name: "", address: text };
+    }
+    const name = match[1].trim();
+    const address = match[2].trim();
+    return { name: name === address ? "" : name, address };
+}
+
 /** Format a byte count for display. */
 export function formatSize(bytes) {
     if (!bytes) {

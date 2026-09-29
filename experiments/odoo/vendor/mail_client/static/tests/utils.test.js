@@ -1,7 +1,7 @@
 import { describe, expect, mockDate, test } from "@odoo/hoot";
 import { allowTranslations } from "@web/../tests/web_test_helpers";
 
-import { formatMessageDate, formatSize, senderName } from "@mail_client/utils";
+import { formatMessageDate, formatSize, senderName, splitAddress } from "@mail_client/utils";
 
 describe.current.tags("headless");
 
@@ -23,6 +23,43 @@ describe("senderName", () => {
         allowTranslations();
         expect(String(senderName(""))).toBe("(unknown sender)");
         expect(String(senderName(undefined))).toBe("(unknown sender)");
+    });
+});
+
+// ПРАВКА ПМК: строка «От» над письмом (шаг 17) — имя и адрес по частям.
+describe("splitAddress", () => {
+    test("splits the display name from the address", () => {
+        expect(splitAddress('"Budi Santoso" <budi@example.co.id>')).toEqual({
+            name: "Budi Santoso",
+            address: "budi@example.co.id",
+        });
+        expect(splitAddress("Budi Santoso <budi@example.co.id>")).toEqual({
+            name: "Budi Santoso",
+            address: "budi@example.co.id",
+        });
+    });
+
+    test("a bare address has no name", () => {
+        expect(splitAddress("budi@example.co.id")).toEqual({
+            name: "",
+            address: "budi@example.co.id",
+        });
+        expect(splitAddress("<budi@example.co.id>")).toEqual({
+            name: "",
+            address: "budi@example.co.id",
+        });
+    });
+
+    test("a name that repeats the address is not shown twice", () => {
+        expect(splitAddress('"budi@example.co.id" <budi@example.co.id>')).toEqual({
+            name: "",
+            address: "budi@example.co.id",
+        });
+    });
+
+    test("survives a missing sender", () => {
+        expect(splitAddress("")).toEqual({ name: "", address: "" });
+        expect(splitAddress(undefined)).toEqual({ name: "", address: "" });
     });
 });
 

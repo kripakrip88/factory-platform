@@ -8,18 +8,26 @@
 
     Подпись пишем по-русски прямо здесь: перевод вставленного узла ищется в
     контексте НАШЕГО модуля, а не mail_client.
+
+    Шаг 17 (29.09.2026): панель стала закреплённой строкой над письмом, на
+    узком окне чтения подписи кнопок прячутся и остаются значки. Подпись
+    поэтому в span.o_mail_client_label — как у соседних кнопок модуля почты
+    (правило в mail_client.scss); flex-shrink-0 — кнопку не сжимает длинная
+    тема письма. На узком окне кнопка — один значок, поэтому имя для
+    экранного диктора в aria-label, а значок от диктора спрятан.
   -->
   <t t-name="pmk_mail_ui.ReadingPaneLead"
      t-inherit="mail_client.ReadingPane"
      t-inherit-mode="extension">
 
     <xpath expr="//div[hasclass('o_mail_client_toolbar')]/div[hasclass('vr')]" position="before">
-      <button class="btn btn-sm btn-light pmk-mail-lead"
+      <button class="btn btn-sm btn-light flex-shrink-0 pmk-mail-lead"
               t-if="env.pmkCrm"
               t-att-disabled="pmkLead.busy"
               title="Создать лида из этого письма"
+              aria-label="Создать лида из этого письма"
               t-on-click="() => this.pmkCreateLead()">
-        <i class="fa" t-att-class="pmkLead.busy ? 'fa-circle-o-notch fa-spin me-1' : 'fa-user-plus me-1'"/>Лид
+        <i class="fa" aria-hidden="true" t-att-class="pmkLead.busy ? 'fa-circle-o-notch fa-spin' : 'fa-user-plus'"/><span class="o_mail_client_label ms-1">Лид</span>
       </button>
     </xpath>
   </t>

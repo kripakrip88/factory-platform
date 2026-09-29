@@ -389,39 +389,71 @@ export class MailClientInbox extends Component {
     // ------------------------------------------------------------------
     // reading
     // ------------------------------------------------------------------
+    /**
+     * ПРАВКА ПМК: письмо открывается без мигания и без гонки («Почта как в
+     * Mail.ru», шаг 2, А11; шаг 17 плана, 29.09.2026).
+     *
+     * Четыре запроса идут разом, а не по очереди: было четыре круга до
+     * сервера подряд, стало время самого долгого. Ответ пишется в state
+     * одним куском, когда пришли все четыре, — до этого на экране остаётся
+     * прежнее письмо (окно чтения показывает его бледным, пока loadingDetail).
+     *
+     * Гонка автора: при быстрых щелчках ответ прошлого открытия приходил
+     * позже и записывался поверх — на экране письмо X при выделенной строке
+     * S2, а setSeen(true) после него помечал S2 (setSeen берёт выделенную
+     * строку) и сбивал счётчик папки. Теперь у каждого открытия свой знак:
+     * после await ответ пишется, только если это всё ещё последнее открытие
+     * и строка всё ещё выделена (выделение сбрасывают смена папки, фильтра,
+     * перенос, удаление). Опоздавший ответ молча выбрасывается, его ошибка —
+     * тоже: письмо, которого уже нет на экране, не должно открывать окно
+     * ошибки.
+     *
+     * pmk_mail_ui/static/src/js/thread_seen.js держится на том, что
+     * setSeen(true) зовётся синхронно после записи ответа — так и осталось.
+     *
+     * Возвращает, чем кончилось открытие (крючок для thread_seen.js):
+     * "shown" — письмо на экране; "superseded" — ответ пришёл, но уже
+     * открыли другое, ответ выброшен; "failed" — не открылось, а на экране
+     * уже другое письмо, ошибка выброшена молча. Отказ ТЕКУЩЕГО открытия —
+     * исключение, как у автора.
+     */
     async selectMessage(messageId) {
+        const token = {};
+        this.openToken = token;
+        const isCurrent = () =>
+            this.openToken === token && this.state.selectedMessageId === messageId;
         this.state.selectedMessageId = messageId;
         this.state.loadingDetail = true;
         try {
             // The body is fetched from IMAP on this call when it is not stored
             // yet, so the round trip can be slower than a normal read.
-            this.state.detail = await this.orm.call(
-                "mail.client.message",
-                "get_message_detail",
-                [messageId]
-            );
-            this.state.moveTargets = await this.orm.call(
-                "mail.client.message",
-                "get_move_targets",
-                [messageId]
-            );
-            this.state.contact = await this.orm.call(
-                "mail.client.message",
-                "get_contact_context",
-                [messageId]
-            );
-            this.state.thread = this.state.threaded
-                ? await this.orm.call("mail.client.message", "get_thread", [messageId])
-                : [];
+            const [detail, moveTargets, contact, thread] = await Promise.all([
+                this.orm.call("mail.client.message", "get_message_detail", [messageId]),
+                this.orm.call("mail.client.message", "get_move_targets", [messageId]),
+                this.orm.call("mail.client.message", "get_contact_context", [messageId]),
+                this.state.threaded
+                    ? this.orm.call("mail.client.message", "get_thread", [messageId])
+                    : [],
+            ]);
+            if (!isCurrent()) {
+                return "superseded";
+            }
+            Object.assign(this.state, { detail, moveTargets, contact, thread });
             // Opening a message marks it read, the way every mail client does.
             if (!this.state.detail.flag_seen) {
                 this.setSeen(true);
             }
+            return "shown";
         } catch (error) {
+            if (!isCurrent()) {
+                return "failed";
+            }
             this.state.detail = null;
             throw error;
         } finally {
-            this.state.loadingDetail = false;
+            if (this.openToken === token) {
+                this.state.loadingDetail = false;
+            }
         }
     }
 
@@ -548,12 +580,16 @@ export class MailClientInbox extends Component {
     }
 
     async allowImages() {
-        if (!this.state.selectedMessageId) {
+        const messageId = this.state.selectedMessageId;
+        if (!messageId) {
             return;
         }
-        this.state.detail = await this.orm.call("mail.client.message", "allow_images", [
-            this.state.selectedMessageId,
-        ]);
+        const detail = await this.orm.call("mail.client.message", "allow_images", [messageId]);
+        // ПРАВКА ПМК: та же гонка, что в selectMessage, — пока сервер отвечал,
+        // могли открыть другое письмо; ответ по прежнему на него не пишем.
+        if (this.state.selectedMessageId === messageId && this.state.detail?.id === messageId) {
+            this.state.detail = detail;
+        }
     }
 
     // ------------------------------------------------------------------
