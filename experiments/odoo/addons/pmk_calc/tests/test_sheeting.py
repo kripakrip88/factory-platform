@@ -50,7 +50,9 @@ class TestSheeting(TransactionCase):
         count, scheme, state = fit_sheet(W, L, 1400.0, 200.0, KERF, EDGE)
         self.assertEqual(state, "ok")
         self.assertGreaterEqual(count, 30)
-        self.assertIn("×", scheme)
+        # Схема пишется словами («28 рядами + 2 полосой, поворот»), значка
+        # «×» в ней давно нет — поворот видно по слову.
+        self.assertIn("поворот", scheme)
 
     def test_заготовка_больше_листа(self):
         count, _scheme, state = fit_sheet(W, L, 1600.0, 7000.0, KERF, EDGE)

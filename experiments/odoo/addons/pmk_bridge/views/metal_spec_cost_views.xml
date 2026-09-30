@@ -15,33 +15,32 @@
     <field name="arch" type="xml">
 
       <!--
-        Настройки расчёта — рядом с клиентом и датой, в той же колонке ввода.
-        Поставщик и дата цен стоят вместе: это одна мысль «чей прайс и на
-        какое число», разносить их по разным углам формы незачем.
+        Шапка расчёта (разбор UX, шаг 32): блоки встают по ИМЕНАМ блоков
+        pmk_calc (name="pmk_f_…"), а не в конец контейнера, — порядок
+        Сделка → Клиент → Контактное лицо → Дата | Цены на дату → Предмет КП
+        больше не зависит от очерёдности загрузки модулей.
+
+        «Цены на дату» — рядом с датой документа: это пара «на какое число».
+        «Поставщик для цен» уехал на вкладку «Цены» — пуст во всех расчётах,
+        а в шапке занимал место у главного. В КП он не печатается.
       -->
-      <xpath expr="//div[hasclass('pmk-doc-head__fields')]" position="inside">
-        <div class="pmk-field">
-          <label for="company_id"/>
-          <field name="company_id" nolabel="1" options="{'no_create': True}"/>
-        </div>
-        <div class="pmk-field">
-          <label for="supplier_id"/>
-          <field name="supplier_id" nolabel="1"
-                 placeholder="Любой, по рейтингу…"/>
-        </div>
-        <div class="pmk-field">
+      <xpath expr="//div[@name='pmk_f_date']" position="after">
+        <div class="pmk-field" name="pmk_f_price_date">
           <label for="price_date"/>
-          <div class="d-flex align-items-center gap-2">
+          <div class="d-flex flex-wrap align-items-center gap-2">
             <field name="price_date" nolabel="1"/>
             <!--
               Сигнал о том, что расчёт смотрит в архив. Дата цен замораживается
               при создании, а строка прайса выбирается по ней: после заливки
               нового прайса кнопка честно перечитает старые цены и промолчит.
-              Молчание читается как «нас не задело» — поэтому говорим явно,
-              красным, и рядом даём кнопку перехода.
+              Молчание читается как «нас не задело» — поэтому говорим явно и
+              рядом даём кнопку перехода. Шаг 32: словами «есть прайс от
+              21.09» бледно-жёлтой плашкой (внимание) вместо красного «!».
             -->
-            <span class="badge text-bg-danger" invisible="not price_stale"
-                  title="Есть прайс свежее — текущие цены взяты из архива">!</span>
+            <span class="pmk-signal" invisible="not price_stale"
+                  title="Цены в расчёте взяты из прайса старее последнего. «Перечитать цены» перечитает их на дату расчёта; свежие — кнопкой «Взять свежий прайс»">
+              <field name="price_stale_label" nolabel="1"/>
+            </span>
             <button name="action_use_latest_prices" type="object"
                     class="btn btn-sm btn-link p-0" invisible="not price_stale"
                     string="Взять свежий прайс"/>
@@ -52,10 +51,25 @@
         <!--
           Коэффициентов использования на форме НЕТ. Себестоимость считается по
           чистому весу справочника (решение владельца 24.09.2026), а сколько
-          металла реально купить — отдельный предварительный расчёт, который
+          металла реально купить — отдельная раскладка листов, которую
           проверяет технолог. Поля остались в модели со значением 100%: когда
           накопится статистика, доля вернётся на экран осмысленной.
         -->
+      </xpath>
+
+      <!--
+        «Организация» — только когда компаний больше одной (решение Антона
+        27.09.2026: «появится сама со второй компанией»). Пользователь с
+        двумя компаниями сам попадает в base.group_multi_company (ядро,
+        res_users.py), поэтому группа и есть этот выключатель. При одной
+        компании поле не на форме, а значение ставится по умолчанию — текущая
+        компания; КП печатает её из записи, как и раньше.
+      -->
+      <xpath expr="//div[@name='pmk_f_note']" position="after">
+        <div class="pmk-field" name="pmk_f_company" groups="base.group_multi_company">
+          <label for="company_id"/>
+          <field name="company_id" nolabel="1" options="{'no_create': True}"/>
+        </div>
       </xpath>
 
       <!--
@@ -215,12 +229,29 @@
       </xpath>
 
       <!--
-        Кнопка обновления цен — в шапке листа, рядом с номером документа.
-        Пересчёт ручной по замыслу: спецификация считается НА ДАТУ, и
-        отправленное клиенту КП не должно менять сумму само по себе после
-        заливки нового прайса.
+        ШАПКА ДОКУМЕНТА (разбор UX, шаг 32).
+
+        «КП (PDF)» — первой и единственной залитой кнопкой: ради КП расчёт и
+        заводят, а печать жила только в меню-шестерёнке. Первой — ещё и
+        потому, что на узком экране ядро оставляет в строке одну первую
+        кнопку, остальные прячет в «⋯».
+
+        Сигнал «В КП не попадут без цены: …» — рядом с печатью, где
+        принимают решение. Ничего не блокирует.
+
+        «Перечитать цены» — контурная. Пересчёт ручной по замыслу:
+        спецификация считается НА ДАТУ, и отправленное клиенту КП не должно
+        менять сумму само по себе после заливки нового прайса.
       -->
       <xpath expr="//header" position="inside">
+        <button name="action_print_quotation" type="object" string="КП (PDF)"
+                class="oe_highlight"
+                title="PDF коммерческого предложения. Изделия без цены клиенту в КП не попадают"/>
+        <!-- шаг 33: «Отправить КП» (письмо с PDF) — сюда, контурной. -->
+        <span class="pmk-signal" invisible="not kp_skip_text"
+              title="Изделия без цены клиенту в КП не печатаются. Поставьте цену за штуку в составе — или печатайте как есть">
+          <field name="kp_skip_text" nolabel="1"/>
+        </span>
         <button name="action_refresh_prices" type="object"
                 string="Перечитать цены" class="btn-secondary"/>
       </xpath>
@@ -239,8 +270,14 @@
       -->
       <xpath expr="//notebook" position="inside">
         <page string="Цены" name="prices">
-          <div class="d-flex align-items-center gap-2 mb-3">
-            <label for="compare_price_date" class="mb-0"/>
+          <!-- Одна строка с переносом: чей прайс, с чем сравниваем, когда
+               перечитано. «Поставщик для цен» — здесь с шага 32 (был в
+               шапке документа, пуст во всех расчётах). -->
+          <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+            <label for="supplier_id" class="mb-0"/>
+            <field name="supplier_id" nolabel="1" class="pmk-price-supplier"
+                   placeholder="Любой, по рейтингу…"/>
+            <label for="compare_price_date" class="mb-0 ms-3"/>
             <field name="compare_price_date" nolabel="1"
                    placeholder="предыдущий прайс"/>
             <!-- Пустое поле не молчит: рядом сказано, что взято по умолчанию.
@@ -255,14 +292,35 @@
                                 readonly="1"/>
             </span>
           </div>
+          <!--
+            Доводка шага 32: смена поставщика (или даты цен) цены в строках не
+            меняет — их меняет только «Перечитать цены». До перечитывания
+            «Было» и «Стало» сравнивали бы цены разных поставщиков — говорим
+            об этом словами и даём кнопку рядом. Ничего не запрещает.
+          -->
+          <div class="d-flex flex-wrap align-items-center gap-2 mb-3"
+               invisible="not price_reread_needed">
+            <span class="pmk-signal"
+                  title="Цены в строках меняет только «Перечитать цены»: расчёт считается на дату. До перечитывания «Было» и «Стало» сравнивают разные прайсы">цены не перечитаны</span>
+            <span class="text-muted">в строках — цены прежнего поставщика или
+              прежней даты</span>
+            <button name="action_refresh_prices" type="object"
+                    class="btn btn-sm btn-link p-0" string="Перечитать цены"/>
+            <field name="price_reread_needed" invisible="1"/>
+          </div>
           <field name="price_line_ids" readonly="1">
             <list create="0" delete="0" edit="0">
               <field name="detail_name" string="Деталь"/>
               <field name="position_label" string="Позиция"/>
               <field name="calc_mode" optional="hide"/>
               <field name="price_partner_id" string="Поставщик" optional="hide"/>
-              <field name="price_compare_unit" string="Было" digits="[16,2]"/>
-              <field name="price_unit" string="Стало" digits="[16,2]"/>
+              <!-- За тонну, а не за единицу учёта (шаг 32): у проката
+                   единица — метр, у листа — штука, у краски — кг, и
+                   числа в одной колонке были несравнимы. Было → стало —
+                   по времени (доводка): прайс сравнения новее цен расчёта —
+                   «Стало» по нему, а не наоборот. -->
+              <field name="price_compare_ton" string="Было, ₽/т" digits="[16,0]"/>
+              <field name="price_now_ton" string="Стало, ₽/т" digits="[16,0]"/>
               <field name="price_compare_pct" string="Изм., %"
                      decoration-danger="price_compare_pct &gt; 0"
                      decoration-success="price_compare_pct &lt; 0"/>
@@ -277,17 +335,13 @@
               <field name="currency_id" column_invisible="1"/>
             </list>
           </field>
-          <group class="mt-3">
-            <group>
-              <field name="compare_total_cost" widget="monetary"/>
-              <field name="total_cost_fact" string="Стало сейчас"
-                     widget="monetary" readonly="1"/>
-            </group>
-            <group>
-              <field name="compare_delta" widget="monetary"/>
-              <field name="compare_pct"/>
-            </group>
-          </group>
+          <!-- Итог одной строкой (шаг 32) вместо блока из четырёх полей:
+               «С 16.06: +276 198 ₽ (+8,8 %)». Поля «Было по тому прайсу»,
+               «Разница», «Разница, %» остались в модели. -->
+          <div class="mt-3 fw-semibold pmk-compare-summary"
+               invisible="not compare_summary">
+            <field name="compare_summary" nolabel="1"/>
+          </div>
           <div class="alert alert-warning mt-2" role="alert"
                invisible="not price_incomplete">
             <i class="fa fa-exclamation-triangle me-1" aria-hidden="true"/>
@@ -323,6 +377,19 @@
       -->
       <xpath expr="//field[@name='product_ids']/form//field[@name='qty']"
              position="after">
+        <!-- Металл рядом с ценой (шаг 32): КП = материал + переделы +
+             маржа, цену ставят, видя стоимость металла на штуку.
+             Доводка: у части позиций нет цены закупки — металл занижен, и
+             вместо голого числа стоит бледно-жёлтая плашка «≥ 2 807,72 ·
+             без 3 поз.» (или «нет в прайсах: 2 поз.»). Два поля с одной
+             подписью, видно одно. -->
+        <field name="cost_fact_one" string="Металл на 1 шт" readonly="1"
+               widget="monetary" invisible="no_price_count"/>
+        <field name="metal_one_label" string="Металл на 1 шт" readonly="1"
+               widget="badge" class="pmk-metal-one"
+               decoration-warning="no_price_count &gt; 0"
+               invisible="not no_price_count"/>
+        <field name="no_price_count" invisible="1"/>
         <field name="price_customer_unit" widget="monetary"/>
         <field name="price_customer_total" widget="monetary" readonly="1"/>
         <field name="currency_id" invisible="1"/>
@@ -330,9 +397,27 @@
 
       <xpath expr="//field[@name='product_ids']/list/field[@name='weight_total']"
              position="after">
-        <field name="price_customer_unit" string="Цена за шт" widget="monetary"/>
+        <!-- «Металл, ₽» перед ценой (разбор UX, шаг 32): закупка металла на
+             одно изделие, с отходом (пока равна чистой — решение 24.09).
+             Итога по колонке нет: сумма «на штуку» по разным изделиям
+             бессмысленна, итог металла — карточка «Металл к закупке».
+             Доводка: подписью, а не числом. Есть позиции без цены закупки —
+             бледно-жёлтая плашка «≥ 2 807,72 · без 3 поз.» / «нет в
+             прайсах: 2 поз.» (как карточка «Металл к закупке»): голое
+             число было занижено, а 0,00 читалось как «бесплатно». Всё с
+             ценой — просто число, без плашки (spec_cost.scss).
+             no_price_count — служебной колонкой: простое поле,
+             column_invisible его загрузку не режет. -->
+        <field name="metal_one_label" string="Металл, ₽" readonly="1"
+               optional="show" widget="badge" class="pmk-metal-one"
+               decoration-warning="no_price_count &gt; 0"/>
+        <field name="no_price_count" column_invisible="1"/>
+        <!-- width: штатная ширина денежной колонки — 105 px, и «9 500 000,00 ₽»
+             обрезалось до «9 500 000,…» (ночной осмотр 29.09, расчёт, п. 3). -->
+        <field name="price_customer_unit" string="Цена за шт" widget="monetary"
+               width="130px"/>
         <field name="price_customer_total" string="Сумма" widget="monetary"
-               sum="Цена клиенту" readonly="1"/>
+               sum="Цена клиенту" readonly="1" width="130px"/>
         <field name="currency_id" column_invisible="1"/>
       </xpath>
 

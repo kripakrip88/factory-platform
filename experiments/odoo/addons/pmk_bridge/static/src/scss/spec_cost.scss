@@ -31,3 +31,96 @@
   .pmk-c-detail { width: 24%; }
   .pmk-c-what   { width: 34%; }
 }
+
+// ─── Сигналы формы расчёта (разбор UX, шаг 32) ────────────────────────────
+//
+// «В КП не попадут без цены: …» в шапке, «есть прайс от 21.09» у даты цен,
+// «нет в прайсах» в составе. Жёлтый — «внимание», цвет повторён словом.
+// Ничего не блокируют.
+//
+// Тона — CSS-переменные темы pmk_theme: фон и рамка в светлой заданы на
+// :root (forms_nexus.scss), в тёмной — все три под body.o_nexus_dark
+// (dark.scss). Второй аргумент var() — то же светлое значение на случай,
+// если тема не установлена; текста в светлой теме переменной нет — берётся
+// тёмно-янтарный из запасного. Правка dark.scss не нужна.
+.pmk-signal,
+.pmk-cost-signal {
+  display: inline-block;
+  max-width: 100%;
+  padding: 1px 8px;
+  border: 1px solid var(--pmk-tone-yellow-bd, #ead68e);
+  border-radius: 10px;
+  background: var(--pmk-tone-yellow-bg, #fbf3d5);
+  color: var(--pmk-tone-yellow-ink, #633806);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+  vertical-align: middle;
+
+  // Внутри — поле формы (div.o_field_widget): пусть идёт строкой и берёт
+  // цвет плашки, а не свой.
+  .o_field_widget,
+  .o_field_widget > span {
+    display: inline;
+    color: inherit !important;
+    font-size: inherit;
+    font-weight: inherit;
+  }
+}
+
+// Шапка: плашка — в строке кнопок, по высоте с ними; длинный список
+// изделий переносится, а не растягивает строку за край.
+.o_statusbar_buttons > .pmk-signal {
+  align-self: center;
+  white-space: normal;
+}
+
+// Состав: плашка в денежной колонке — по правому краю, без переноса;
+// не влезла — многоточие ячейки, полный текст в подсказке.
+.pmk-cost-signal {
+  padding: 0 6px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.pmk-cost-signal--muted {
+  border-color: var(--pmk-tone-grey-bd, #dedbd2);
+  background: var(--pmk-tone-grey-bg, #f1f0ec);
+  color: var(--pmk-tone-grey-ink, #444441);
+}
+
+// Вкладка «Цены»: поставщик в строке с датой сравнения — полю выбора нужна
+// ширина под название («АО «Металлсервис», филиал Хабаровск»).
+.pmk-price-supplier {
+  flex: 0 1 300px;
+  min-width: 220px;
+}
+
+// ─── «Металл, ₽» в списке изделий (доводка шага 32) ───────────────────────
+//
+// Колонка — подпись виджетом badge (models/spec_cost.py, metal_one_label).
+// Есть позиции без цены закупки — бледно-жёлтая плашка «≥ 2 807,72 · без 3
+// поз.» (decoration-warning → text-bg-warning, тона и тёмная пара — тема).
+// Всё с ценой — просто число: text-bg-300 (так BadgeField помечает значение
+// без decoration) гасим до обычного текста ячейки, иначе серые плашки на
+// каждой строке спрятали бы жёлтую. Тот же приём, что у «Использования» на
+// вкладке «Раскладка» (pmk_calc, dobor_builder.scss).
+// Вес (0,5,0) выше светлого правила темы (0,3,0) и тёмного (0,4,1) — оба с
+// !important, поэтому и здесь !important.
+.o_list_renderer .o_field_badge.pmk-metal-one > .badge.text-bg-300 {
+  background: transparent !important;
+  border-color: transparent !important;
+  color: inherit !important;
+  padding-left: 0;
+  padding-right: 0;
+  font-size: inherit;
+  font-weight: 400;
+}
+
+// Деньги — по правому краю и моноширинными цифрами, как «Цена за шт» и
+// «Сумма» рядом. Колонка текстовая (подпись), и ядро ровняло бы её влево.
+.o_list_renderer td[name="metal_one_label"],
+.o_list_renderer th[data-name="metal_one_label"] {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}

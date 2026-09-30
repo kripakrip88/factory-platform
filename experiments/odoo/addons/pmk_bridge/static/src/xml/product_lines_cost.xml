@@ -24,8 +24,16 @@
       <th scope="col" class="pmk-num pmk-c-cost">Закупка, ₽</th>
     </xpath>
 
+    <!-- Без цены в прайсе — словом «нет в прайсах» бледно-жёлтой плашкой
+         (шаг 32), а не прочерком. Полный текст — в подсказке. -->
     <xpath expr="//td[hasclass('pmk-c-weight')]" position="after">
-      <td class="pmk-num pmk-c-cost" t-esc="costOf(line)"/>
+      <td class="pmk-num pmk-c-cost">
+        <t t-set="signal" t-value="costSignal(line)"/>
+        <span t-if="signal" class="pmk-cost-signal"
+              t-att-class="'pmk-cost-signal--' + signal.tone"
+              t-att-title="signal.title" t-esc="signal.label"/>
+        <t t-else="" t-esc="costOf(line)"/>
+      </td>
     </xpath>
 
     <!--

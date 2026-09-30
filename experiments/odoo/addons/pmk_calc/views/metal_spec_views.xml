@@ -5,22 +5,24 @@
     <field name="name">pmk.metal.spec.form</field>
     <field name="model">pmk.metal.spec</field>
     <field name="arch" type="xml">
-      <form string="Спецификация">
+      <form string="Спецификация" class="pmk-spec-form">
         <!--
-          Кнопка раскладки в шапке листа. Считает ЧЕРНОВУЮ укладку: сколько
-          заготовок влезает в лист и сколько листов покупать. Нажатие —
-          осознанный шаг: увидел число листов и решаешь, нести технологу или
-          закладывать как есть.
+          class="pmk-spec-form" — крючок для стилей формы расчёта (разбор UX,
+          шаг 32: одна залитая кнопка на экран, см. scss/dobor_builder.scss).
+          Ядро кладёт класс на корень вида (div.o_form_view), а не на лист:
+          под ним и панель с «Новое», и лента документа.
         -->
         <!--
-          Предварительный расчёт металла: сколько листов покупать под заказ.
-          Его проверяет технолог, подтверждает и отдаёт в закупку — в
-          себестоимость КП это число не идёт, там чистый вес справочника.
+          ШАПКА ПУСТАЯ, НО ОСТАЁТСЯ. Кнопки в неё кладёт мост (pmk_bridge):
+          «КП (PDF)» — главное действие расчёта, «Перечитать цены». Его xpath
+          идёт на //header: снеси узел — и вид моста упадёт при загрузке.
+
+          Кнопка раскладки («Предварительный расчёт металла») переехала на
+          вкладку «Раскладка», к своему результату, и называется «Разложить
+          листы (черновик)» (разбор UX, шаг 32): в шапке она спорила с
+          печатью КП за первое место и не говорила, что делает.
         -->
-        <header>
-          <button name="action_draft_layout" type="object"
-                  string="Предварительный расчёт металла" class="btn-secondary"/>
-        </header>
+        <header/>
         <sheet>
           <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
           <!--
@@ -38,23 +40,33 @@
             разъезжались. Теперь без стилей это просто обычная форма Odoo.
           -->
           <div class="pmk-doc-head">
+            <!--
+              Порядок шапки (разбор UX, шаг 32): Сделка → Клиент →
+              Контактное лицо (все во всю ширину: «ООО «Арестак-Строй»,
+              Цыганов…» в половине ширины обрезался) → Дата | Цены на дату →
+              Предмет КП. Сделку ставит pmk_deal, цены — pmk_bridge: они
+              встают по ИМЕНАМ блоков (name="pmk_f_…"), а не в конец
+              контейнера. Иначе порядок решала очерёдность загрузки
+              модулей, и «Сделка» оказывалась последней.
+              ⚠️ Имена блоков — опора для xpath других модулей. Не менять.
+            -->
             <div class="pmk-doc-head__fields">
-              <div class="pmk-field">
+              <div class="pmk-field pmk-field--wide" name="pmk_f_partner">
                 <label for="partner_id"/>
                 <field name="partner_id" nolabel="1"/>
               </div>
               <!-- Контактное лицо — человек у клиента; клиент — компания
                    (разбор UX, шаг 11). Печатается в КП. -->
-              <div class="pmk-field">
+              <div class="pmk-field pmk-field--wide" name="pmk_f_contact">
                 <label for="contact_id"/>
                 <field name="contact_id" nolabel="1"
                        context="{'default_parent_id': partner_id}"/>
               </div>
-              <div class="pmk-field">
+              <div class="pmk-field" name="pmk_f_date">
                 <label for="date"/>
                 <field name="date" nolabel="1"/>
               </div>
-              <div class="pmk-field pmk-field--wide">
+              <div class="pmk-field pmk-field--wide" name="pmk_f_note">
                 <label for="note"/>
                 <field name="note" nolabel="1"
                        placeholder="Например: металлоконструкции для ОФ «Солнечная», п. Горный"/>
@@ -285,28 +297,55 @@
               Здесь только листовые детали: у проката своя задача — раскрой
               хлыстов, он считается другим калькулятором.
             -->
+            <!--
+              Кнопка раскладки — здесь, над своим результатом (разбор UX,
+              шаг 32). Контурная: залитая на экране одна — «КП (PDF)».
+              Нажатие — осознанный шаг: увидел число листов и решаешь, нести
+              технологу или закладывать как есть. В себестоимость КП это
+              число не идёт, там чистый вес справочника.
+
+              Колонки (шаг 32): 11 → 8. «Изделие», «Схема» и «Состояние» —
+              в меню колонок; A и B — одной колонкой «Размер, мм» (П-25);
+              процент — подписью со словом, мало — жёлтым, очень мало —
+              красным (sheeting.sheet_use_label). Уровень для цвета —
+              служебной колонкой: простое поле, column_invisible его не режет.
+            -->
             <page string="Раскладка" name="layout">
-              <div class="text-muted mb-2">
-                Сколько листов придётся купить под этот заказ. Верхняя оценка:
-                технолог кладёт детали плотнее и объединяет позиции на одном
-                листе — за счёт этого и появляется экономия.
+              <div class="d-flex flex-wrap align-items-center gap-3 mb-2">
+                <button name="action_draft_layout" type="object"
+                        string="Разложить листы (черновик)" class="btn btn-secondary"
+                        invisible="not sheet_line_ids"
+                        title="Сколько заготовок влезает в лист и сколько листов купить. Результат — в таблице ниже и в истории документа"/>
+                <span class="text-muted" invisible="not sheet_line_ids">
+                  Сколько листов купить под заказ. Верхняя оценка: технолог
+                  уложит плотнее и объединит детали на одном листе.
+                </span>
+                <span class="text-muted" invisible="sheet_line_ids">
+                  Листовых деталей нет — раскладывать нечего. Лист
+                  добавляется в составе изделия; новые детали появятся здесь
+                  после сохранения.
+                </span>
               </div>
               <field name="sheet_line_ids" readonly="0">
                 <list editable="bottom" create="0" delete="0">
-                  <field name="product_id" readonly="1"/>
-                  <field name="detail_name" readonly="1"/>
+                  <field name="product_id" readonly="1" optional="hide"/>
+                  <field name="detail_name" readonly="1" string="Деталь"/>
                   <field name="sheet_id" readonly="1"/>
-                  <field name="a_mm" readonly="1"/>
-                  <field name="b_mm" readonly="1"/>
+                  <field name="detail_size_label" readonly="1" string="Размер, мм"/>
                   <field name="qty" readonly="1"/>
+                  <!-- Габарит правится как прежде. ⚠️ Мина 1500×6000:
+                       цены заведены на этот габарит, второй вариант листа
+                       обнулит вес карточки — не трогаем (память
+                       project_sheet_size_trap). -->
                   <field name="layout_sheet_size" string="Габарит"/>
                   <field name="layout_per_sheet" readonly="1" string="В листе"/>
                   <field name="layout_sheets" readonly="1" sum="Листов" string="Листов"/>
-                  <field name="layout_scheme" readonly="1" string="Схема"/>
-                  <!-- Без widget="percentage": в поле уже проценты, виджет умножал
-                       их ещё на сто и показывал 5600% вместо 56%. -->
-                  <field name="layout_utilization_pct" readonly="1"
-                         string="Использование, %" optional="show"/>
+                  <field name="layout_scheme" readonly="1" string="Схема" optional="hide"/>
+                  <field name="layout_use_label" readonly="1" string="Использование"
+                         widget="badge" class="pmk-sheet-use"
+                         decoration-warning="layout_use_level == 'low'"
+                         decoration-danger="layout_use_level == 'bad'"/>
+                  <field name="layout_use_level" column_invisible="1"/>
                   <field name="layout_state" readonly="1" optional="hide"/>
                 </list>
               </field>

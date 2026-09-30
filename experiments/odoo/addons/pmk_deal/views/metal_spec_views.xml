@@ -4,14 +4,19 @@
   <!--
     Сделка в шапке расчёта — первым полем, перед клиентом: сначала отвечаем
     «по какой заявке считаем», и клиент подставляется уже из неё.
+
+    Разбор UX, шаг 32: раньше блок вставал в КОНЕЦ шапки (position="inside")
+    и оказывался последним — после организации, поставщика и даты цен, — а
+    в половине ширины название сделки обрезалось. Теперь — перед блоком
+    клиента по его имени (pmk_f_partner) и во всю ширину.
   -->
   <record id="view_metal_spec_form_deal" model="ir.ui.view">
     <field name="name">pmk.metal.spec.form.deal</field>
     <field name="model">pmk.metal.spec</field>
     <field name="inherit_id" ref="pmk_calc.view_metal_spec_form"/>
     <field name="arch" type="xml">
-      <xpath expr="//div[hasclass('pmk-doc-head__fields')]" position="inside">
-        <div class="pmk-field">
+      <xpath expr="//div[@name='pmk_f_partner']" position="before">
+        <div class="pmk-field pmk-field--wide" name="pmk_f_deal">
           <label for="opportunity_id"/>
           <field name="opportunity_id" nolabel="1"
                  options="{'no_create': True}"

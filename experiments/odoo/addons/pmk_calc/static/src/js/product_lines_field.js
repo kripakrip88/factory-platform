@@ -113,6 +113,19 @@ export class ProductLinesRenderer extends ListRenderer {
         // в редакторе. Раскрытие держим сами: браузерный <details> внутри
         // таблицы Odoo не открывается, клик перехватывает список.
         this.pmk = useState({ open: {}, editing: null });
+        // Изделия, раскрытые сами, потому что были единственными (разбор UX,
+        // шаг 32). Обычный Set, НЕ реактивный: пишется во время отрисовки,
+        // а запись в useState оттуда вызвала бы повторную отрисовку.
+        this.pmkAutoOpen = new Set();
+    }
+
+    /**
+     * Без пустых строк-распорок под «Добавить изделие» (разбор UX, шаг 32).
+     * Штатный список дорисовывает пустые строки до четырёх: под составом
+     * изделия они читались как два незаполненных изделия.
+     */
+    get getEmptyRowIds() {
+        return [];
     }
 
     get compositionColspan() {
@@ -128,12 +141,28 @@ export class ProductLinesRenderer extends ListRenderer {
         return num(value);
     }
 
+    /**
+     * Раскрыт ли состав изделия.
+     *
+     * Выбор пользователя — главнее всего. Не выбирал: единственное изделие
+     * раскрыто сразу (разбор UX, шаг 32) — щёлкать ради него лишнее, а
+     * расчёт на одно изделие — частый случай (СМ-00024: «весь объём КМ1»).
+     * Раскрывшееся само остаётся раскрытым и когда добавили второе
+     * изделие: иначе состав, в котором работали, схлопнулся бы под рукой.
+     */
     isOpen(record) {
-        return !!this.pmk.open[record.id];
+        if (record.id in this.pmk.open) {
+            return !!this.pmk.open[record.id];
+        }
+        if (this.props.list.records.length === 1) {
+            this.pmkAutoOpen.add(record.id);
+            return true;
+        }
+        return this.pmkAutoOpen.has(record.id);
     }
 
     async toggleComposition(record) {
-        const open = !this.pmk.open[record.id];
+        const open = !this.isOpen(record);
         if (!open && this.pmk.editing) {
             // Свернули с открытым редактором — закрываем его по-настоящему,
             // иначе строка осталась бы «в правке» без видимого редактора.

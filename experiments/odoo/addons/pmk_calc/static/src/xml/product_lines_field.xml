@@ -96,7 +96,9 @@
                               <span class="pmk-edit__weight">
                                 <t t-esc="weightOf(line)"/> кг
                               </span>
-                              <button type="button" class="btn btn-sm btn-primary"
+                              <!-- Контурная (разбор UX, шаг 32): залитая на
+                                   экране расчёта одна — «КП (PDF)». -->
+                              <button type="button" class="btn btn-sm btn-secondary"
                                       t-on-click.stop.prevent="() => this.stopEdit(record, section)">Готово</button>
                               <button type="button" class="btn btn-sm btn-link pmk-edit__del"
                                       t-on-click.stop.prevent="() => this.removeLine(record, section, line)">Удалить</button>

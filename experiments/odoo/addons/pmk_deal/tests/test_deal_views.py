@@ -189,3 +189,20 @@ class TestDealViews(TransactionCase):
                             ("crm.stage_lead3", 7), ("crm.stage_lead4", 0)):
             with self.subTest(stage=xmlid):
                 self.assertEqual(self.env.ref(xmlid).rotting_threshold_days, days)
+
+
+@tagged("post_install", "-at_install")
+class TestSpecFormDeal(TransactionCase):
+    """Расчёт, разбор UX, шаг 32: «Сделка» — первой и во всю ширину."""
+
+    def test_deal_first_in_spec_head(self):
+        self.assertTrue(self.env.ref("pmk_deal.view_metal_spec_form_deal").active)
+        views = self.env["pmk.metal.spec"].get_views([(False, "form")])
+        arch = etree.fromstring(views["views"]["form"]["arch"])
+        head = arch.xpath("//div[contains(concat(' ', @class, ' '), ' pmk-doc-head__fields ')]")[0]
+        blocks = [d for d in head if d.tag == "div"]
+        self.assertEqual(blocks[0].get("name"), "pmk_f_deal")
+        self.assertIsNotNone(blocks[0].find("field[@name='opportunity_id']"))
+        self.assertIn("pmk-field--wide", blocks[0].get("class"),
+                      "Во всю ширину: в половине название сделки обрезалось.")
+        self.assertEqual(blocks[1].get("name"), "pmk_f_partner")
