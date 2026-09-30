@@ -74,7 +74,8 @@
                 <list editable="bottom">
                   <field name="sequence" widget="handle"/>
                   <field name="profile_id" options="{'no_create': True}"/>
-                  <field name="length_mm"/>
+                  <!-- Миллиметры без хвоста «,0» (разбор UX, шаг 24). -->
+                  <field name="length_mm" options="{'hide_trailing_zeros': True}"/>
                   <field name="qty"/>
                   <field name="priority"/>
                   <field name="name"/>
@@ -100,7 +101,7 @@
                 <list editable="bottom">
                   <field name="sequence" widget="handle"/>
                   <field name="profile_id" options="{'no_create': True}"/>
-                  <field name="length_mm"/>
+                  <field name="length_mm" options="{'hide_trailing_zeros': True}"/>
                   <field name="qty" sum="Всего отрезков"/>
                   <field name="name"/>
                   <control>
@@ -157,12 +158,16 @@
     <field name="model">pmk.cut.plan</field>
     <field name="arch" type="xml">
       <list string="Раскрой">
-        <field name="name"/>
+        <!-- Разбор UX, шаг 24: номер «РК-00001» целиком и без лишней
+             ширины (было 308 px, а числа жались в узкие колонки); вес с
+             одним знаком: сотые килограмма в сводном списке не нужны,
+             точные — во вкладке «Результат». -->
+        <field name="name" width="105px"/>
         <field name="date"/>
         <field name="partner_id"/>
         <field name="total_bars"/>
-        <field name="total_weight" sum="Взято, кг"/>
-        <field name="scrap_weight" sum="В лом, кг"/>
+        <field name="total_weight" digits="[12,1]" sum="Взято, кг"/>
+        <field name="scrap_weight" digits="[12,1]" sum="В лом, кг"/>
         <field name="waste_ratio"/>
       </list>
     </field>

@@ -135,6 +135,16 @@ class TestDealViews(TransactionCase):
         deadline = arch.find(".//field[@name='date_deadline'][@optional]")
         self.assertEqual(deadline.get("string"), "Ответить клиенту до")
 
+    def test_list_stage_badge(self):
+        """Стадия — нашим виджетом: у него своя ширина колонки (шаг 24,
+        listViewWidth в stage_badge_field.js), и «КП отправлено · 8 дн» не
+        режется. Ширину в атрибуте вида не задаём — она бы её перебила."""
+        arch = self._arch("list", "crm.crm_case_tree_view_oppor")
+        stage = arch.xpath("//field[@name='stage_id']")
+        self.assertEqual(len(stage), 1)
+        self.assertEqual(stage[0].get("widget"), "pmk_stage_badge")
+        self.assertIsNone(stage[0].get("width"))
+
     def test_deadline_field_label_everywhere(self):
         """Подпись и подсказка — в самом поле: «Добавить свой фильтр»,
         своя группировка и выгрузка берут их из описания поля."""

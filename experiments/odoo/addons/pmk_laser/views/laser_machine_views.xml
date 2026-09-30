@@ -9,7 +9,8 @@
         <field name="sequence" widget="handle"/>
         <field name="name"/>
         <field name="power_kw"/>
-        <field name="max_thickness_mm"/>
+        <!-- «20», а не «20,0» (разбор UX, шаг 24). -->
+        <field name="max_thickness_mm" options="{'hide_trailing_zeros': True}"/>
         <field name="load_min"/>
         <field name="unload_min"/>
         <field name="shift_minutes"/>

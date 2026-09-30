@@ -27,7 +27,7 @@
                 <div class="pmk-prow__head">
                   <span class="pmk-prow__title" t-esc="section.title"/>
                   <span class="pmk-prow__sum">
-                    <t t-esc="section.lines.length"/> поз. · <t t-esc="num(section.weight)"/> кг
+                    <t t-esc="section.lines.length"/> поз. · <t t-esc="kg(section.weight)"/> кг
                   </span>
                 </div>
 

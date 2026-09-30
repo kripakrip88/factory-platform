@@ -6,10 +6,12 @@
     <field name="model">pmk.laser.measure</field>
     <field name="arch" type="xml">
       <list string="Замеры" decoration-muted="excluded">
-        <field name="job_id"/>
+        <!-- Разбор UX, шаг 24: номер задания целиком, толщина без хвоста
+             нулей («3», «0,5»). -->
+        <field name="job_id" width="105px"/>
         <field name="sheet_line_id"/>
         <field name="machine_id"/>
-        <field name="thickness_mm"/>
+        <field name="thickness_mm" options="{'hide_trailing_zeros': True}"/>
         <field name="operator_id"/>
         <field name="started_at"/>
         <field name="finished_at"/>

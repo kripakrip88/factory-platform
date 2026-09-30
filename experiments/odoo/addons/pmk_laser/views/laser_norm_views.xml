@@ -12,7 +12,8 @@
       <list string="Нормативы" decoration-muted="mode == 'none'" decoration-warning="mode == 'aggregate'">
         <field name="machine_id"/>
         <field name="sheet_type"/>
-        <field name="thickness_mm"/>
+        <!-- Толщина без хвоста нулей (разбор UX, шаг 24). -->
+        <field name="thickness_mm" options="{'hide_trailing_zeros': True}"/>
         <field name="mode" widget="badge"
                decoration-success="mode == 'full'"
                decoration-warning="mode == 'aggregate'"

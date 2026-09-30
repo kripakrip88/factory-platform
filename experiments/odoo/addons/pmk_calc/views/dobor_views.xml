@@ -48,8 +48,11 @@
               </div>
               <div class="pmk-kpi__card">
                 <div class="pmk-kpi__label">Общий вес, кг</div>
+                <!-- Один знак, как у веса в строках и в итоге таблицы ниже
+                     (разбор UX, шаг 24): одно число на экране дважды —
+                     с одной точностью. -->
                 <div class="pmk-kpi__value">
-                  <field name="total_weight" digits="[12,2]"/>
+                  <field name="total_weight" digits="[12,1]"/>
                 </div>
               </div>
               <div class="pmk-kpi__note">
@@ -73,13 +76,18 @@
               <field name="title"/>
               <field name="coating_id"/>
               <field name="sheet_id" options="{'no_create': True}" required="1"/>
-              <field name="plank_length"/>
+              <!-- Миллиметры без хвоста «,0» / «,00» (разбор UX, шаг 24):
+                   «2 500», «312,5» — дробное остаётся дробным. -->
+              <field name="plank_length" options="{'hide_trailing_zeros': True}"/>
               <field name="qty"/>
-              <field name="developed_width" readonly="1"/>
+              <field name="developed_width" readonly="1" options="{'hide_trailing_zeros': True}"/>
               <field name="bends" readonly="1" optional="show"/>
               <field name="strips" readonly="1" optional="hide"/>
-              <field name="strip_waste" readonly="1" optional="hide"/>
-              <field name="weight_total" readonly="1" sum="Итого, кг"/>
+              <field name="strip_waste" readonly="1" optional="hide" options="{'hide_trailing_zeros': True}"/>
+              <!-- Вес с одним знаком (шаг 24): «66,7», не «66,725». Итог
+                   берёт те же знаки (pmk_theme/static/src/js/list_table_rules.js)
+                   и совпадает с карточкой «Общий вес, кг» над таблицей. -->
+              <field name="weight_total" readonly="1" digits="[12,1]" sum="Итого, кг"/>
               <!-- Снимок профиля правится построителем, руками в него не лезут. -->
               <field name="profile_snapshot_json" column_invisible="1"/>
               <control>
@@ -137,8 +145,8 @@
                   <group string="Результат">
                     <field name="developed_width" readonly="1"/>
                     <field name="bends" readonly="1"/>
-                    <field name="weight_one" readonly="1"/>
-                    <field name="weight_total" readonly="1"/>
+                    <field name="weight_one" readonly="1" digits="[12,1]"/>
+                    <field name="weight_total" readonly="1" digits="[12,1]"/>
                     <field name="strips" readonly="1"/>
                     <field name="strip_waste" readonly="1"/>
                   </group>
@@ -165,17 +173,25 @@
     <field name="model">pmk.dobor.order</field>
     <field name="arch" type="xml">
       <list string="Заказы доборки">
-        <field name="name"/>
+        <!-- Разбор UX, шаг 24: номер «ДОБ-00012» целиком и без лишней
+             ширины (было 270–290 px на номер — половина таблицы пустая);
+             площадь до сотых вместо «1,0950», вес без граммов. -->
+        <field name="name" width="105px"/>
         <field name="order_date"/>
         <field name="customer"/>
         <field name="total_positions"/>
         <field name="total_qty"/>
-        <field name="total_area" sum="Площадь, м²" optional="show"/>
-        <field name="total_weight" sum="Итого, кг"/>
+        <field name="total_area" digits="[12,2]" sum="Площадь, м²" optional="show"/>
+        <field name="total_weight" digits="[12,1]" sum="Итого, кг"/>
         <!-- «Оживить таблицы» (29.09.2026): цвет плашки — как тон кнопки стадий
              в документе (начало пути серое, в работе голубое, готово
              зелёное, тупик розовый); бледный вид плашки — тема. -->
-        <field name="state" widget="badge"
+        <!-- Ширина плашки задана (шаг 24): у виджета badge ядро не знает
+             предела ширины (column_width_hook.js — минимум 80 px, максимума
+             нет), и свободное место, освободившееся от номера, делилось
+             между статусом и клиентом — плашка «Черновик» в колонке на
+             350 px. 110 px вмещают «Изготовлен»; остальное уходит клиенту. -->
+        <field name="state" widget="badge" width="110px"
                decoration-muted="state == 'draft'"
                decoration-info="state == 'confirmed'"
                decoration-success="state == 'done'"/>

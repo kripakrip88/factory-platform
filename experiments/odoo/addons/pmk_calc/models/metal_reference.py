@@ -9,6 +9,16 @@
 
 from odoo import api, fields, models
 
+# aggregator=None у чисел справочников (разбор UX, шаг 24, 01.10.2026).
+# У дробного и целого поля Odoo по умолчанию складывает значения в строке
+# группы: список «Лист», открытый по видам, показывал «514,90» толщин и
+# «4 041,98» масс квадратного метра — бессмыслица, которая читается как
+# итог. Здесь каждое число — характеристика одной позиции (масса метра,
+# толщина, габарит, расход, слои), сумма по группе не значит ничего.
+# Колонки в базе это не касается: атрибут живёт только в описании поля,
+# миграция не нужна. Вернуть сумму — убрать aggregator=None у поля
+# (docs/disabled-features.md, шаг 24).
+
 
 class MetalProfileType(models.Model):
     """Вид проката. Нужен, чтобы в расчёте сначала выбирался вид, а типоразмер
@@ -43,7 +53,7 @@ class MetalProfile(models.Model):
     gost = fields.Char("Стандарт", required=True)
     size_label = fields.Char("Типоразмер", required=True)
     mass_per_meter = fields.Float(
-        "Масса, кг/м", required=True, digits=(12, 4),
+        "Масса, кг/м", required=True, digits=(12, 4), aggregator=None,
         help="Табличное значение ГОСТ. Масса погонного метра.",
     )
     # Площадь окраски погонного метра, м²/м. По ней считается расход краски:
@@ -55,15 +65,15 @@ class MetalProfile(models.Model):
     # Пустое значение означает «не заполнено», а не «ноль» — расход краски по
     # такой позиции просто не посчитается, и это видно в расчёте.
     surface_per_meter = fields.Float(
-        "Площадь окраски, м²/м", digits=(10, 4),
+        "Площадь окраски, м²/м", digits=(10, 4), aggregator=None,
         help="Площадь поверхности одного погонного метра. Нужна для расчёта "
              "расхода лакокрасочного покрытия. Заполняется по мере надобности.")
 
     # Только у труб ВГП: наружный диаметр фиксирован для каждого условного
     # прохода — на него режется трубная резьба.
-    du = fields.Integer("Ду, мм")
-    outer_mm = fields.Float("Наружный, мм", digits=(6, 2))
-    wall_mm = fields.Float("Стенка, мм", digits=(6, 2))
+    du = fields.Integer("Ду, мм", aggregator=None)
+    outer_mm = fields.Float("Наружный, мм", digits=(6, 2), aggregator=None)
+    wall_mm = fields.Float("Стенка, мм", digits=(6, 2), aggregator=None)
 
     display_name = fields.Char(compute="_compute_display_name", store=True)
 
@@ -95,11 +105,11 @@ class MetalSheet(models.Model):
     _rec_name = "display_name"
 
     sheet_type = fields.Char("Вид листа", required=True, index=True)
-    thickness_mm = fields.Float("Толщина, мм", required=True, digits=(6, 2))
+    thickness_mm = fields.Float("Толщина, мм", required=True, digits=(6, 2), aggregator=None)
     size_label = fields.Char("Размер")
     gost = fields.Char("Стандарт", required=True)
     mass_per_sqm = fields.Float(
-        "Масса, кг/м²", required=True, digits=(12, 4),
+        "Масса, кг/м²", required=True, digits=(12, 4), aggregator=None,
         help="У гладкого листа это толщина × 7.85 (ГОСТ 19903-2015), "
              "у рифлёного и ПВЛ — табличное значение с учётом рифлей и просечки.",
     )
@@ -149,7 +159,7 @@ class MetalFastener(models.Model):
         "Вид", required=True, default="bolt")
     gost = fields.Char("Стандарт")
     size_label = fields.Char("Типоразмер", help="Например: М12×40")
-    weight_kg = fields.Float("Масса, кг/шт", required=True, digits=(12, 5))
+    weight_kg = fields.Float("Масса, кг/шт", required=True, digits=(12, 5), aggregator=None)
 
 
 class PaintCoating(models.Model):
@@ -175,13 +185,13 @@ class PaintCoating(models.Model):
         "Вид", required=True, default="enamel")
     color = fields.Char("Цвет / RAL")
     consumption = fields.Float(
-        "Расход, кг/м²", required=True, digits=(10, 4), default=0.15,
+        "Расход, кг/м²", required=True, digits=(10, 4), default=0.15, aggregator=None,
         help="Расход на квадратный метр при БАЗОВОЙ толщине покрытия")
     base_thickness_um = fields.Float(
-        "Базовая толщина, мкм", required=True, digits=(8, 1), default=20.0,
+        "Базовая толщина, мкм", required=True, digits=(8, 1), default=20.0, aggregator=None,
         help="Толщина сухой плёнки, при которой указан расход. "
              "Если заказчик требует другую — расход пересчитается пропорционально.")
     layers = fields.Integer(
-        "Слоёв", default=1,
+        "Слоёв", default=1, aggregator=None,
         help="Рекомендуемое число слоёв для базовой толщины. Справочно: "
              "на расход не влияет, его определяет итоговая толщина плёнки.")

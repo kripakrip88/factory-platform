@@ -187,8 +187,11 @@
                   <field name="sequence" widget="handle"/>
                   <field name="name"/>
                   <field name="qty"/>
-                  <field name="weight_one" readonly="1"/>
-                  <field name="weight_total" readonly="1" sum="Итого, кг"/>
+                  <!-- Вес с одним знаком (разбор UX, шаг 24), как карточка
+                       веса над таблицей: «15 210,2», а не «15 210,184». Итог
+                       внизу берёт те же знаки (pmk_theme, list_table_rules.js). -->
+                  <field name="weight_one" readonly="1" digits="[12,1]"/>
+                  <field name="weight_total" readonly="1" digits="[12,1]" sum="Итого, кг"/>
                   <field name="note" optional="hide"/>
                   <!-- Своя подпись вместо штатного «Добавить строку»: строка
                        документа здесь — изделие, так и называем. -->
@@ -203,8 +206,8 @@
                       <field name="qty"/>
                     </group>
                     <group>
-                      <field name="weight_one" readonly="1"/>
-                      <field name="weight_total" readonly="1"/>
+                      <field name="weight_one" readonly="1" digits="[12,1]"/>
+                      <field name="weight_total" readonly="1" digits="[12,1]"/>
                       <field name="note"/>
                     </group>
                   </group>
@@ -220,11 +223,14 @@
                           <!-- Типоразмеры показываем только выбранного вида -->
                           <field name="profile_id" options="{'no_create': True}"
                                  domain="[('type_id', '=', type_id)]"/>
-                          <field name="length_mm"/>
+                          <!-- Миллиметры без хвоста «,0» (шаг 24): «2 500», а
+                               дробная длина остаётся дробной — «2 500,5». -->
+                          <field name="length_mm" options="{'hide_trailing_zeros': True}"/>
                           <field name="qty"/>
                           <field name="grade_id" options="{'no_create': True}" optional="hide"/>
-                          <field name="weight_one" readonly="1"/>
-                          <field name="weight_total" readonly="1" sum="Итого, кг"/>
+                          <!-- Вес с одним знаком, как в списке изделий (шаг 24). -->
+                          <field name="weight_one" readonly="1" digits="[12,1]"/>
+                          <field name="weight_total" readonly="1" digits="[12,1]" sum="Итого, кг"/>
                         </list>
                       </field>
                     </page>
@@ -237,8 +243,13 @@
                           <field name="detail_name"/>
                           <field name="fastener_id" options="{'no_create': True}"/>
                           <field name="qty"/>
-                          <field name="weight_one" readonly="1"/>
-                          <field name="weight_total" readonly="1" sum="Итого, кг"/>
+                          <!-- Вес ШТУКИ метиза — с граммами, исключение из
+                               «вес с одним знаком» (шаг 24): болт и гайка весят
+                               0,010–0,099 кг, с одним знаком было бы «0,0» и
+                               «0,1» — читалось бы как «вес не задан». Вес
+                               всего — с одним знаком, как на других вкладках. -->
+                          <field name="weight_one" readonly="1" digits="[12,3]"/>
+                          <field name="weight_total" readonly="1" digits="[12,1]" sum="Итого, кг"/>
                         </list>
                       </field>
                     </page>
@@ -260,8 +271,8 @@
                                заказчик требует другую толщину плёнки. -->
                           <field name="paint_thickness_um"/>
                           <field name="qty" column_invisible="1"/>
-                          <field name="weight_one" string="Расход, кг" readonly="1"/>
-                          <field name="weight_total" readonly="1" sum="Итого, кг"/>
+                          <field name="weight_one" string="Расход, кг" readonly="1" digits="[12,1]"/>
+                          <field name="weight_total" readonly="1" digits="[12,1]" sum="Итого, кг"/>
                         </list>
                       </field>
                     </page>
@@ -273,12 +284,12 @@
                           <field name="calc_mode" column_invisible="1"/>
                           <field name="detail_name"/>
                           <field name="sheet_id" options="{'no_create': True}"/>
-                          <field name="a_mm"/>
-                          <field name="b_mm"/>
+                          <field name="a_mm" options="{'hide_trailing_zeros': True}"/>
+                          <field name="b_mm" options="{'hide_trailing_zeros': True}"/>
                           <field name="qty"/>
                           <field name="grade_id" options="{'no_create': True}" optional="hide"/>
-                          <field name="weight_one" readonly="1"/>
-                          <field name="weight_total" readonly="1" sum="Итого, кг"/>
+                          <field name="weight_one" readonly="1" digits="[12,1]"/>
+                          <field name="weight_total" readonly="1" digits="[12,1]" sum="Итого, кг"/>
                         </list>
                       </field>
                     </page>
@@ -375,8 +386,13 @@
         <field name="date"/>
         <field name="partner_id"/>
         <field name="total_products"/>
-        <field name="total_weight" sum="Итого, кг"/>
-        <field name="total_weight_t" sum="Итого, т"/>
+        <!-- Вес — в тоннах, до килограмма (разбор UX, шаг 24): «50,939 т»
+             вместо «50 938,926 кг» с граммами. Килограммы повторяли то же
+             число и забирали ширину у денег — ушли в меню колонок (⚙), без
+             граммов. Под pmk_bridge (view_metal_spec_list_cost) после «т»
+             встают деньги: колонка «т» видна всегда, скрытие там снято. -->
+        <field name="total_weight" string="Вес, кг" digits="[12,0]" sum="Итого, кг" optional="hide"/>
+        <field name="total_weight_t" string="Вес, т" digits="[12,3]" sum="Итого, т"/>
       </list>
     </field>
   </record>

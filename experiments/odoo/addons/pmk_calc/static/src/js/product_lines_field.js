@@ -91,6 +91,13 @@ const SECTIONS = [
 
 const num = (value) => (value || 0).toLocaleString("ru-RU", { maximumFractionDigits: 3 });
 
+// Вес — с одним знаком (разбор UX, шаг 24): «66,7 кг», а не «66,725 кг».
+// Так же, как колонки веса в списке изделий и в окне изделия (digits
+// [12,1] в metal_spec_views.xml) и карточка веса над таблицей — одно
+// число на экране не расходится в точности.
+const kg = (value) =>
+    (value || 0).toLocaleString("ru-RU", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
 // Ссылка на справочник приходит объектом {id, display_name}. Старый вид —
 // пара [id, name] — встречается в ответах сервера, поэтому держим оба.
 const relName = (value) => {
@@ -139,6 +146,11 @@ export class ProductLinesRenderer extends ListRenderer {
     /** Формат чисел для шаблона: разряды и запятая, как принято в документах. */
     num(value) {
         return num(value);
+    }
+
+    /** Вес для шаблона: один знак после запятой, как в колонках веса. */
+    kg(value) {
+        return kg(value);
     }
 
     /**
@@ -242,7 +254,7 @@ export class ProductLinesRenderer extends ListRenderer {
     }
 
     weightOf(line) {
-        return num(line.data.weight_total);
+        return kg(line.data.weight_total);
     }
 
     isEditing(line) {

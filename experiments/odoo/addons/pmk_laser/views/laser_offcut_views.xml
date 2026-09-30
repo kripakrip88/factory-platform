@@ -10,13 +10,15 @@
       <!-- Жёлтую строку для «Предложен системой» сняли: статус теперь видно
            плашкой, а жёлтая строка целиком спорила с ней (29.09.2026). -->
       <list string="Обрезки" decoration-muted="state == 'scrap'">
-        <field name="job_id"/>
+        <!-- Разбор UX, шаг 24: номер задания целиком, толщина без хвоста
+             нулей, площадь до сотых — как в задании. -->
+        <field name="job_id" width="105px"/>
         <field name="sheet_line_id" optional="show"/>
         <field name="sheet_type"/>
-        <field name="thickness_mm"/>
+        <field name="thickness_mm" options="{'hide_trailing_zeros': True}"/>
         <field name="width_mm"/>
         <field name="length_mm"/>
-        <field name="area_m2" sum="Площадь, м²"/>
+        <field name="area_m2" digits="[10,2]" sum="Площадь, м²"/>
         <field name="mass_kg" sum="Масса, кг"/>
         <field name="deviation_pct" optional="show"/>
         <!-- «Оживить таблицы» (29.09.2026): цвет плашки — как тон кнопки стадий

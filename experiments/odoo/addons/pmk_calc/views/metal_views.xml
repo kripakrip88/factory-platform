@@ -14,8 +14,11 @@
       <list string="Линейный прокат">
         <field name="type_id"/>
         <field name="size_label"/>
-        <!-- sum даёт итог по отфильтрованному: удобно прикинуть массу подборки -->
-        <field name="mass_per_meter" sum="Итого кг/м"/>
+        <!-- Без итога (разбор UX, шаг 24): сумма масс погонного метра разных
+             профилей ничего не значит, а внизу и в строках групп читалась как
+             масса подборки. В строках групп пусто — aggregator=None в модели
+             (models/metal_reference.py). -->
+        <field name="mass_per_meter"/>
         <field name="gost" optional="show"/>
       </list>
     </field>
@@ -56,8 +59,11 @@
     <field name="arch" type="xml">
       <list string="Лист">
         <field name="sheet_type"/>
-        <field name="thickness_mm"/>
-        <field name="mass_per_sqm" sum="Итого кг/м²"/>
+        <!-- Шаг 24: толщина без хвоста нулей — «0,35», «4», «60», а не
+             «4,00». Итога «кг/м²» больше нет: сумма масс квадратного метра
+             листов разной толщины ничего не значит. -->
+        <field name="thickness_mm" options="{'hide_trailing_zeros': True}"/>
+        <field name="mass_per_sqm"/>
         <field name="gost" optional="show"/>
       </list>
     </field>

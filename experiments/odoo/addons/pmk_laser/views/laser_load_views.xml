@@ -52,7 +52,8 @@
       <list string="Загрузка по дням" default_order="date, machine_id">
         <field name="date"/>
         <field name="machine_id"/>
-        <field name="name"/>
+        <!-- Номер задания целиком (разбор UX, шаг 24). -->
+        <field name="name" width="105px"/>
         <field name="sheet_id" string="Лист"/>
         <field name="sheet_count" sum="Листов"/>
         <field name="cut_length_m" sum="Рез, м"/>

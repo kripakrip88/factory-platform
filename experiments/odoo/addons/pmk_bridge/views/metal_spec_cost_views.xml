@@ -483,12 +483,11 @@
                   string="Перечитать цены" class="btn-secondary"/>
         </header>
       </xpath>
-      <!-- «Итого, т» — по умолчанию скрыта: повторяет «Итого, кг», а после
-           колонок цены клиенту и маржи номер расчёта обрезался до «СМ-00…».
-           Вернуть — в меню колонок списка (29.09.2026). -->
-      <xpath expr="//field[@name='total_weight_t']" position="attributes">
-        <attribute name="optional">hide</attribute>
-      </xpath>
+      <!-- Вес в списке — «Вес, т» до килограмма, видна всегда; «Вес, кг» —
+           в меню колонок (разбор UX, шаг 24, pmk_calc view_metal_spec_list).
+           Раньше здесь пряталась колонка тонн: она повторяла килограммы, а
+           номер расчёта обрезался до «СМ-00…». Номер держит ширина 105 px
+           (шаг 2), повтор ушёл вместе с килограммами. Деньги — после тонн. -->
       <xpath expr="//field[@name='total_weight_t']" position="after">
         <field name="total_cost_fact" optional="show" sum="Металл"
                widget="monetary"/>

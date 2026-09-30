@@ -44,21 +44,25 @@ class LaserMachine(models.Model):
     # Мощность — то, чем два наших станка и отличаются. В арифметику норматива
     # она не входит НАМЕРЕННО: скорость выводится из замеров этого станка, а не
     # из его киловатт. Поле нужно технологу, чтобы выбрать, куда отдать десятку.
-    power_kw = fields.Float("Мощность, кВт", digits=(6, 1))
+    # aggregator=None у характеристик станка (разбор UX, шаг 24): сумма
+    # киловатт, минут загрузки или габаритов стола двух станков в строке
+    # группы ничего не значит. «Минут в смене» сумму оставляет: это ёмкость
+    # участка на день.
+    power_kw = fields.Float("Мощность, кВт", digits=(6, 1), aggregator=None)
 
     load_min = fields.Float(
-        "Загрузка стола, мин/лист", digits=(6, 2), required=True, default=2.0,
+        "Загрузка стола, мин/лист", digits=(6, 2), required=True, default=2.0, aggregator=None,
         help="Константа станка: сколько занимает положить лист на стол. "
              "Умножается на число листов задания, а не берётся один раз.")
     unload_min = fields.Float(
-        "Разгрузка стола, мин/лист", digits=(6, 2), required=True, default=3.0,
+        "Разгрузка стола, мин/лист", digits=(6, 2), required=True, default=3.0, aggregator=None,
         help="Снять детали и убрать остаток. Тоже на каждый лист.")
 
     max_thickness_mm = fields.Float(
-        "Максимальная толщина, мм", digits=(6, 1),
+        "Максимальная толщина, мм", digits=(6, 1), aggregator=None,
         help="Рамка для технолога: задание толще этого станок не возьмёт.")
-    max_width_mm = fields.Float("Стол, ширина мм", digits=(8, 0))
-    max_length_mm = fields.Float("Стол, длина мм", digits=(8, 0))
+    max_width_mm = fields.Float("Стол, ширина мм", digits=(8, 0), aggregator=None)
+    max_length_mm = fields.Float("Стол, длина мм", digits=(8, 0), aggregator=None)
 
     shift_minutes = fields.Integer(
         "Минут в смене", default=480,

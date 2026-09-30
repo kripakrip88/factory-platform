@@ -11,7 +11,7 @@
 и работает как «все приложения». Так ничего не становится недостижимым,
 когда модулей больше, чем влезает по ширине.
     """,
-    "version": "19.0.2.2.0",
+    "version": "19.0.2.3.0",
     "category": "Theme/Backend",
     "author": "ПМК Парк",
     "license": "LGPL-3",
@@ -95,6 +95,13 @@
             "pmk_theme/static/src/js/list_zero.js",
             # Деньги в списках без копеек (Антон, 29.09.2026).
             "pmk_theme/static/src/js/list_money.js",
+            # Таблицы одного вида (разбор UX, шаг 24, 01.10.2026): без пустых
+            # строк-распорок, знаки итога как в строках. Правила — чистые
+            # функции (их гоняет node), идут раньше патча, который их
+            # импортирует. После list_money.js: патч getActiveColumns
+            # оборачивает его и видит уже расставленные знаки денег.
+            "pmk_theme/static/src/js/list_table_rules.js",
+            "pmk_theme/static/src/js/list_table.js",
             "pmk_theme/static/src/xml/statusbar_compact.xml",
             "pmk_theme/static/src/xml/navbar.xml",
             "pmk_theme/static/src/xml/chatter.xml",

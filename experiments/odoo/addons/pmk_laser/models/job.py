@@ -114,18 +114,20 @@ class LaserJob(models.Model):
              "тяжелее гладкого, у просечно-вытяжного металла 37–63% габарита, "
              "и справочник это уже знает, а формула по плотности — нет.")
     sheet_type = fields.Char(related="sheet_id.sheet_type", string="Вид листа", store=True, readonly=True)
+    # Толщина и масса м² берут aggregator=None у справочника листа
+    # (pmk_calc, шаг 24): связанное поле копирует его, если своего нет.
     thickness_mm = fields.Float(related="sheet_id.thickness_mm", string="Толщина, мм", store=True, readonly=True)
     mass_per_sqm = fields.Float(related="sheet_id.mass_per_sqm", string="Масса, кг/м²", readonly=True)
     grade_id = fields.Many2one("pmk.metal.grade", "Марка стали")
 
     kerf_mm = fields.Float(
-        "Ширина реза, мм", digits=(4, 2), default=money.DEFAULT_KERF_MM, required=True,
+        "Ширина реза, мм", digits=(4, 2), default=money.DEFAULT_KERF_MM, required=True, aggregator=None,
         help="Полоска металла, которую рез уносит в пыль на всю толщину. "
              "Значение своё, а не из файла: раздел с режимами у технолога "
              "демонстрационный. Без этой строки лом в балансе всегда "
              "«больше расчётного», и непонятно почему.")
     min_offcut_mm = fields.Float(
-        "Обрезок от, мм", digits=(8, 0), default=money.DEFAULT_MIN_OFFCUT_MM, required=True,
+        "Обрезок от, мм", digits=(8, 0), default=money.DEFAULT_MIN_OFFCUT_MM, required=True, aggregator=None,
         help="Короче этого остаток в реестр не заводится — место на стеллаже "
              "дороже металла.")
 
@@ -152,8 +154,11 @@ class LaserJob(models.Model):
     # взвешено по металлу.
     utilization_pct = fields.Float("Использование, %", compute="_compute_metal", store=True, digits=(5, 1), aggregator=None)
 
+    # Шаг 24: ставку и процент расхождения в строке группы не складываем —
+    # сумма ставок ₽/т и процентов ничего не значит. Премия, вес, листы и
+    # минуты складываются как раньше (и в сводной «Загрузки участка»).
     premium_rate_rub = fields.Float(
-        "Ставка премии, ₽/т", compute="_compute_premium", store=True, digits=(8, 0))
+        "Ставка премии, ₽/т", compute="_compute_premium", store=True, digits=(8, 0), aggregator=None)
     premium_rub = fields.Float(
         "Премия, ₽", compute="_compute_premium", store=True, digits=(10, 2), tracking=True)
 
@@ -161,7 +166,7 @@ class LaserJob(models.Model):
     pierce_count = fields.Integer("Проколов", compute="_compute_denominator", store=True)
     parts_without_drawing = fields.Integer("Деталей без чертежа", compute="_compute_denominator", store=True)
     contour_gap_pct = fields.Float(
-        "Расхождение с контурами, %", compute="_compute_denominator", store=True, digits=(6, 1),
+        "Расхождение с контурами, %", compute="_compute_denominator", store=True, digits=(6, 1), aggregator=None,
         help="Насколько число проколов по чертежам расходится с числом "
              "контуров в файле раскроя. Большое расхождение значит, что "
              "к деталям приложены не те чертежи.")

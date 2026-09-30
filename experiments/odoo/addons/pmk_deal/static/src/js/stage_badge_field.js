@@ -28,6 +28,15 @@ export class PmkStageBadgeField extends Many2OneFieldRotting {
     }
 }
 
+// Ширина колонки (разбор UX, шаг 24, 01.10.2026). Ядро даёт колонке
+// many2one не меньше 80 px (FIELD_WIDTHS в column_width_hook.js), ячейка
+// режет содержимое троеточием, и «КП отправлено · 8 дн» обрезалось до
+// «КП отпр…» — ни стадии, ни сигнала «зависла». 170 px — самая длинная
+// плашка «КП отправлено» и «12 дн» рядом (плашка 0,75 em: около 97 и 49 px,
+// между ними 8 px) плюс отступы ячейки 8 + 8 px. Это минимум: при свободном
+// месте колонка шире, ядро раздаёт его само. Прецедент — полоска маржи
+// pmk_bridge (margin_bar_field.js, listViewWidth [150, 190]).
 registry.category("fields").add("list.pmk_stage_badge", {
     ...buildM2OFieldDescription(PmkStageBadgeField),
+    listViewWidth: [170],
 });

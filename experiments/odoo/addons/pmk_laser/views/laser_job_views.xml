@@ -8,7 +8,9 @@
       <!-- Список заданий: слева что режем, справа деньги. Премия в списке не
            украшение — это то, ради чего участок вообще заводят в систему. -->
       <list string="Задания на резку">
-        <field name="name"/>
+        <!-- Разбор UX, шаг 24: номер «ЛР-00001» не обрезается; премия без
+             копеек, как деньги в остальных списках (точная — в задании). -->
+        <field name="name" width="105px"/>
         <field name="date"/>
         <field name="partner_id" optional="show"/>
         <field name="sheet_id" string="Лист"/>
@@ -16,7 +18,7 @@
         <field name="sheet_count" sum="Листов"/>
         <field name="utilization_pct" optional="show"/>
         <field name="useful_mass_kg" sum="Полезный вес, кг"/>
-        <field name="premium_rub" sum="Премия, ₽"/>
+        <field name="premium_rub" digits="[10,0]" sum="Премия, ₽"/>
         <field name="planned_minutes" sum="План, мин" optional="show"/>
         <field name="actual_minutes" sum="Факт, мин" optional="show"/>
         <field name="plan_state" widget="badge"
@@ -159,7 +161,8 @@
                   <field name="qty_used" optional="show"/>
                   <field name="drawing" filename="drawing_name" widget="binary"/>
                   <field name="drawing_name" column_invisible="True"/>
-                  <field name="cut_length_mm"/>
+                  <!-- Миллиметры без хвоста «,0» (шаг 24). -->
+                  <field name="cut_length_mm" options="{'hide_trailing_zeros': True}"/>
                   <field name="pierce_count"/>
                   <field name="cut_length_total_m" sum="Рез всего, м"/>
                   <field name="pierces_total" sum="Проколов всего"/>

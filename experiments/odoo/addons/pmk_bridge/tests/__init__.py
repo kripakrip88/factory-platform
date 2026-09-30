@@ -5,3 +5,4 @@ from . import test_sku
 from . import test_spec_text
 from . import test_spec_form
 from . import test_kp_send
+from . import test_spec_list
