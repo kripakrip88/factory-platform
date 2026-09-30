@@ -24,12 +24,13 @@
  * (router.js:134), так что у вложенного действия первым сегментом идёт
  * идентификатор родителя, а не то, что нам нужно.
  *
- * Поэтому берём router.current.action — состояние роутера, которое
- * обновляется сразу, до записи в адрес. Приводим его к тому же виду, в каком
- * ядро рисует ссылку пункта: число или строка с точкой дают «action-<N>»,
- * остальное — сам путь (та же развилка, что в stateToUrl, router.js:97-101).
- * Ссылку пункта берём у самого ядра через getMenuItemHref, чтобы обе стороны
- * сравнения происходили из одного источника.
+ * Поэтому вторая версия брала router.current.action — состояние роутера,
+ * которое обновляется сразу, до записи в адрес, — и сравнивала со ссылкой
+ * пункта (getMenuItemHref). С шага 23 первым источником стал сам контроллер
+ * действия, а сравнение идёт по номеру и path — почему, см. ниже «ШАГ 23».
+ * Роутер и адрес остались запасными источниками. Ключи — в том же виде, в
+ * каком ядро пишет действие в адрес: число или строка с точкой дают
+ * «action-<N>», остальное — сам путь (развилка stateToUrl, router.js:97-101).
  *
  * ПОЧЕМУ ПРАВИМ DOM, А НЕ ШАБЛОН. Шапку уже наследуют ядро, тема
  * theme_liquid_glass и мы — третий участник в том же узле нам дорого обошёлся.
@@ -56,6 +57,32 @@
  * срабатывает второй: doPush уже стоит в очереди макрозадач, поэтому наш
  * setTimeout(0), поставленный позже, выполнится после него. Два дешёвых
  * прохода по десятку узлов надёжнее, чем угадывать, какая ветка сработала.
+ *
+ * ШАГ 23 (01.10.2026): ПО НОМЕРУ ДЕЙСТВИЯ И path, А НЕ ПО ОДНОЙ ССЫЛКЕ.
+ * «Воронка сделок» и «Рассылка прайсов» не подсвечивались. Сравнение одной
+ * строки «ссылка пункта = состояние роутера» ломалось, когда у пункта и у
+ * открытого действия разные ключи одного и того же:
+ *  · Воронка открывается и адресом /odoo/crm: это серверное действие
+ *    crm.action_your_pipeline с path «crm», оно возвращает окно воронки
+ *    (номер 348), и ядро приписывает окну path серверного
+ *    (action_service.js, _executeServerAction: nextAction.path ||= …).
+ *    Роутер держит «crm», у пункта ссылка «action-348» — мимо.
+ *  · Рассылка прайсов — серверное действие без path; оно возвращает окно
+ *    без номера, и в роутере вовсе нет действия (адрес
+ *    /odoo/pmk.price.mailing/1). Лечится path у самого действия
+ *    («price-mailing», pmk_purchase/views/price_mailing_views.xml): окно
+ *    получает его от ядра, пункт — через actionPath.
+ * Теперь у открытого действия и у пункта берём ОБА ключа — номер и path —
+ * и пункт горит, если совпал любой (active_section_keys.js). Источник —
+ * currentController.action: сам контроллер, а не адрес. Так же ядро само
+ * определяет текущее приложение после загрузки — сравнивает
+ * currentController.action.id с menu.actionID (webclient.js).
+ * Контроллер уже новый в момент ACTION_MANAGER:UI-UPDATED (стек коммитится
+ * в onMounted до сигнала), поэтому верен уже первый проход.
+ * Нет ключей у контроллера (окно без номера и path — например, расчёт,
+ * открытый кнопкой из сделки) — берём роутер, затем адрес, как раньше.
+ * Ключи роутера с ключами контроллера НЕ смешиваем: в первом проходе роутер
+ * ещё держит прошлое действие, и загорелся бы прошлый пункт.
  */
 
 import { patch } from "@web/core/utils/patch";
@@ -64,6 +91,7 @@ import { browser } from "@web/core/browser/browser";
 import { router, routerBus } from "@web/core/browser/router";
 import { NavBar } from "@web/webclient/navbar/navbar";
 import { useEffect } from "@odoo/owl";
+import { actionKey, controllerKeys, isMenuActive } from "@pmk_theme/js/active_section_keys";
 
 patch(NavBar.prototype, {
     setup() {
@@ -86,36 +114,24 @@ patch(NavBar.prototype, {
     },
 
     /**
-     * Текущее действие в том же виде, в каком оно попадает в ссылку пункта.
-     * Развилка повторяет stateToUrl (router.js:97-101).
+     * Ключи открытого действия — номер и path (см. шапку файла, «шаг 23»).
+     * Порядок источников: контроллер → роутер → адрес. Берём первый
+     * непустой и не смешиваем.
      */
-    pmkCurrentKey() {
-        const action = router.current && router.current.action;
-        if (action === undefined || action === null || action === "") {
-            // Запасной путь на случай, если состояние роутера ещё пустое:
-            // берём последний сегмент вида action-N из адреса.
-            const m = /\/odoo\/(?:.*\/)?(action-[^/?#]+)/.exec(browser.location.pathname);
-            return m ? m[1] : null;
+    pmkCurrentKeys() {
+        const controller = this.actionService.currentController;
+        const fromController = controllerKeys(controller && controller.action);
+        if (fromController.length) {
+            return fromController;
         }
-        return typeof action === "number" || String(action).includes(".")
-            ? `action-${action}`
-            : String(action);
-    },
-
-    /** Ссылку пункта берём у ядра и отрезаем префикс — сравниваем сопоставимое. */
-    pmkMenuKey(menu) {
-        return this.getMenuItemHref(menu).replace(/^\/odoo\//, "");
-    },
-
-    /** Пункт активен сам или активен кто-то из потомков (пункт-выпадашка). */
-    pmkIsActive(menu, key) {
-        if (!key) {
-            return false;
+        // Развилка actionKey повторяет stateToUrl (router.js:97-101).
+        const fromRouter = actionKey(router.current && router.current.action);
+        if (fromRouter) {
+            return [fromRouter];
         }
-        if (this.pmkMenuKey(menu) === key) {
-            return true;
-        }
-        return (menu.childrenTree || []).some((child) => this.pmkIsActive(child, key));
+        // Запасной путь: последний сегмент вида action-N из адреса.
+        const m = /\/odoo\/(?:.*\/)?(action-[^/?#]+)/.exec(browser.location.pathname);
+        return m ? [m[1]] : [];
     },
 
     pmkMarkActiveSection() {
@@ -124,8 +140,8 @@ patch(NavBar.prototype, {
             return;
         }
 
-        const key = this.pmkCurrentKey();
-        const active = this.currentAppSections.find((section) => this.pmkIsActive(section, key));
+        const keys = this.pmkCurrentKeys();
+        const active = this.currentAppSections.find((section) => isMenuActive(section, keys));
         const activeId = active ? String(active.id) : null;
 
         // Цвет текущего раздела отдаём в CSS одной переменной на всю шапку —

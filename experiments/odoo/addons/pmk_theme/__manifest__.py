@@ -11,7 +11,7 @@
 и работает как «все приложения». Так ничего не становится недостижимым,
 когда модулей больше, чем влезает по ширине.
     """,
-    "version": "19.0.2.1.0",
+    "version": "19.0.2.2.0",
     "category": "Theme/Backend",
     "author": "ПМК Парк",
     "license": "LGPL-3",
@@ -23,6 +23,10 @@
         "mail", "calendar", "project", "contacts", "project_todo", "spreadsheet_dashboard",
     ],
     "data": [
+        # Группа-выключатель «Опасные действия (показать)» — первой: на неё
+        # ссылаются data/dangerous_actions.xml и views/res_config_settings_views.xml
+        # (разбор UX, шаг 23, 01.10.2026).
+        "security/pmk_theme_groups.xml",
         "data/menus.xml",
         "data/hide_menus.xml",
         # Наши стили в конец бандла. ВАЖНО: файл несёт сам подключение scss —
@@ -31,6 +35,11 @@
         # Язык страницы и запрет автоперевода: браузер принимал русский за
         # другой язык и переводил интерфейс («Сохранить» -> «чувак»).
         "views/webclient_lang.xml",
+        # Опасное — только группе-выключателю, в ней никого нет (шаг 23):
+        # портал, «Поделиться», начисленные расходы и выручка в шестерёнке;
+        # галочки платных модулей IAP в Настройках.
+        "data/dangerous_actions.xml",
+        "views/res_config_settings_views.xml",
     ],
     "assets": {
         "web.assets_backend": [
@@ -62,6 +71,9 @@
             # "pmk_theme/static/src/js/vendor/navbar_sidebar.js",
             # "pmk_theme/static/src/xml/vendor/apps_sidebar.xml",
             # "pmk_theme/static/src/js/collapsible_sections.js",
+            # Ключи «где я» — чистые функции, прогоняются в node (шаг 23).
+            # Раньше navbar_active_section.js, который их импортирует.
+            "pmk_theme/static/src/js/active_section_keys.js",
             "pmk_theme/static/src/js/navbar_active_section.js",
             # Пять рабочих разделов строкой, остальные — в «Ещё»
             # (разбор UX, шаг 5, 28.09.2026).

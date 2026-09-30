@@ -101,12 +101,25 @@
   </record>
 
   <!-- Записи у модели одна, поэтому меню ведёт не на список, а сразу в форму:
-       открывать список из одной строки — лишний клик каждый раз. -->
+       открывать список из одной строки — лишний клик каждый раз.
+
+       path — разбор UX, шаг 23 (01.10.2026). Серверное действие возвращает
+       окно без номера (action_open), и без path в адресе не было действия
+       вовсе: /odoo/pmk.price.mailing/1. Отсюда три беды: пункт «Рассылка
+       прайсов» не подсвечивался в строке разделов, обновление страницы
+       открывало голую запись модели, а строка пути после перехода дальше
+       не восстанавливалась («A server action must have a path to be
+       restored», web/controllers/action.py). С path ядро само передаёт его
+       окну (action_service.js, _executeServerAction), адрес становится
+       /odoo/price-mailing/1, пункт меню получает actionPath. Старые
+       закладки /odoo/pmk.price.mailing/1 по-прежнему открывают форму.
+       Путь уникален среди всех действий (ограничение _check_path ядра). -->
   <record id="action_price_mailing" model="ir.actions.server">
     <field name="name">Рассылка прайсов</field>
     <field name="model_id" ref="model_pmk_price_mailing"/>
     <field name="state">code</field>
     <field name="code">action = model.action_open()</field>
+    <field name="path">price-mailing</field>
   </record>
 
 </odoo>

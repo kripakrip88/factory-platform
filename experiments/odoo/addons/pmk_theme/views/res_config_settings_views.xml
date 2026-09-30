@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Настройки без галочек платных модулей — разбор UX, шаг 23 (01.10.2026).
+
+    Каждая из галочек ниже при сохранении Настроек СТАВИТ модуль платного
+    сервиса Odoo (IAP, списание кредитов): обогащение и поиск лидов, лиды из
+    посещений сайта, автозаполнение контрагента. Первые три были удалены
+    шагом 7 — одно нажатие вернуло бы их.
+
+    Узлы получают groups= группы-выключателя (в ней никого нет). Сервер
+    вырезает такой узел из вида вместе с полем (ir_ui_view.py,
+    _postprocess_access_rights), поэтому поле не уходит при сохранении и
+    модуль не ставится: у неустановленного модуля значение поля — False.
+    Данных тут нет, в КП ничего не печатается.
+
+    ⚠️ active в XML — грабли Odoo 19: вид, чей xpath не нашёл узел чужого
+    модуля, выключается при загрузке и дальше не проверяется, то есть
+    падение становится невидимым. Держим active=True явно; тест
+    tests/test_settings_paid_hidden.py проверяет, что вид жив.
+
+    ВЕРНУТЬ: добавить себя в группу «Опасные действия (показать)» — вернутся
+    все галочки разом; одну — удалить её xpath ниже и сделать -u pmk_theme.
+  -->
+
+  <!-- CRM: блок «Генерация лидов» (Обогащение лидов, Поиск лидов) целиком —
+       без них он пустой, заголовок без строк не нужен; и блок «Посещения →
+       лиды» (website_crm_iap_reveal, поставил бы ещё и iap). -->
+  <record id="view_res_config_settings_crm_no_paid" model="ir.ui.view">
+    <field name="name">res.config.settings.crm.pmk.no.paid</field>
+    <field name="model">res.config.settings</field>
+    <field name="inherit_id" ref="crm.res_config_settings_view_form"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//block[@name='convert_visitor_setting_container']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_dangerous_actions</attribute>
+      </xpath>
+      <xpath expr="//block[@name='generate_lead_setting_container']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_dangerous_actions</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- Общие настройки, блок «Контакты»: «Автозаполнение данных партнёра».
+       «Отправка СМС» и «Odoo IAP» в том же блоке остаются: это ссылки на
+       покупку кредитов на сайте Odoo, а не галочки установки модуля. -->
+  <record id="view_res_config_settings_base_no_paid" model="ir.ui.view">
+    <field name="name">res.config.settings.base.pmk.no.paid</field>
+    <field name="model">res.config.settings</field>
+    <field name="inherit_id" ref="base_setup.res_config_settings_view_form"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//setting[@id='partner_autocomplete']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_dangerous_actions</attribute>
+      </xpath>
+    </field>
+  </record>
+</odoo>
