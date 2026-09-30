@@ -186,8 +186,11 @@ class TestSpecFormStep32(TransactionCase):
         self.assertIsNotNone(signal)
         self.assertIsNotNone(signal.find("field[@name='kp_skip_text']"))
         self.assertEqual(signal.get("invisible"), "not kp_skip_text")
-        self.assertIsNone(header.find("button[@name='action_send_quotation']"),
-                          "«Отправить КП» — шаг 33.")
+        # Шаг 33: «Отправить КП» — сразу за печатью, контурная.
+        self.assertEqual(buttons[1].get("name"), "action_send_quotation")
+        self.assertEqual(buttons[1].get("string"), "Отправить КП")
+        self.assertFalse(filled(buttons[1]), "Залитая — только «КП (PDF)».")
+        self.assertIn("btn-secondary", buttons[1].get("class") or "")
 
     def test_head_order_and_moved_fields(self):
         arch = self._form()

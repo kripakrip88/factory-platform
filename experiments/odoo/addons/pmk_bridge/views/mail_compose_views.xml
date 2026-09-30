@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+  <!--
+    Окно письма «Отправить КП» (разбор UX, шаг 33).
+
+    Штатное окно Odoo; меняется только при флаге контекста pmk_kp_send,
+    который ставит кнопка расчёта. То же окно из ленты любого документа
+    выглядит как раньше.
+
+    Над «Кому» — строка: от кого уйдёт письмо (серым — справка) и
+    бледно-жёлтые сигналы, каждый назван словами: адрес отправителя не
+    задан; какие изделия не попадут в КП без цены или КП пустое; PDF КП не
+    приложен; получателя надо вписать. Сигналы ничего не запрещают. Залитая
+    кнопка в окне одна — штатная «Отправить».
+
+    «Ответить» (reply_to) в этом окне скрыто: шаблон ставит туда тот же ящик,
+    что и отправитель, и об этом уже сказано строкой «ответ клиента придёт в
+    этот ящик». Поле в КП не печатается. Список отключённого — шаг 33.
+  -->
+  <record id="view_mail_compose_kp" model="ir.ui.view">
+    <field name="name">mail.compose.message.form.pmk.kp</field>
+    <field name="model">mail.compose.message</field>
+    <field name="inherit_id" ref="mail.email_compose_message_wizard_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//form/group[1]" position="before">
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-2"
+             invisible="not context.get('pmk_kp_send')">
+          <span class="text-muted" invisible="not pmk_kp_sender_text">
+            <field name="pmk_kp_sender_text" nolabel="1"/>
+          </span>
+          <span class="pmk-signal" invisible="not pmk_kp_sender_hint"
+                title="Почтовый сервер примет письмо только с адреса ящика завода. Впишите почту в карточку организации и откройте окно заново">
+            <field name="pmk_kp_sender_hint" nolabel="1"/>
+          </span>
+          <span class="pmk-signal" invisible="not pmk_kp_skip_text"
+                title="Изделия без цены клиенту в PDF не попадают. Поставьте цену за штуку в составе расчёта — или отправляйте как есть">
+            <field name="pmk_kp_skip_text" nolabel="1"/>
+          </span>
+          <span class="pmk-signal" invisible="not pmk_kp_pdf_hint"
+                title="Письмо уйдёт без КП, и стадия сделки не сменится. Откройте окно заново кнопкой «Отправить КП» — или приложите скрепкой PDF с номером расчёта в имени">
+            <field name="pmk_kp_pdf_hint" nolabel="1"/>
+          </span>
+          <span class="pmk-signal" invisible="not pmk_kp_to_hint"
+                title="Письмо уйдёт тому, кто указан в поле «Кому». Новый адрес можно вписать прямо в поле">
+            <field name="pmk_kp_to_hint" nolabel="1"/>
+          </span>
+        </div>
+      </xpath>
+      <xpath expr="//field[@name='reply_to']" position="attributes">
+        <attribute name="invisible">reply_to_mode == 'update' or context.get('pmk_kp_send')</attribute>
+      </xpath>
+    </field>
+  </record>
+
+</odoo>

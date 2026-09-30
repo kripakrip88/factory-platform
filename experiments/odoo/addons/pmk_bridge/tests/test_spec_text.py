@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Подписи формы расчёта (разбор UX, шаг 32) — формат без базы.
+"""Подписи формы расчёта и письма с КП (разбор UX, шаги 32–33) — без базы.
 
 Обычный unittest: tools/spec_text.py — чистые функции, тест гоняется голым
 питоном до всякого деплоя:
@@ -171,6 +171,104 @@ class TestKpSkip(unittest.TestCase):
 
     def test_nameless(self):
         self.assertIn("«без названия»", spec_text.kp_skip_text([False]))
+
+
+class TestManagerLine(unittest.TestCase):
+    """Строка «Менеджер» под таблицей КП (шаг 33)."""
+
+    def test_full(self):
+        self.assertEqual(
+            plain(spec_text.manager_line("Антон Карнеев", "+7 914 205-50-65", "a@pmkpark.ru")),
+            "Менеджер: Антон Карнеев, тел. +7 914 205-50-65, a@pmkpark.ru")
+
+    def test_empty_parts_are_not_printed(self):
+        # Живая база 30.09: у admin нет ни телефона, ни почты.
+        self.assertEqual(spec_text.manager_line("Антон Карнеев", False, False),
+                         "Менеджер: Антон Карнеев")
+        self.assertEqual(spec_text.manager_line("Антон Карнеев", "", "a@b.ru"),
+                         "Менеджер: Антон Карнеев, a@b.ru")
+        self.assertEqual(plain(spec_text.manager_line("Антон Карнеев", "+7 1", " ")),
+                         "Менеджер: Антон Карнеев, тел. +7 1")
+
+    def test_no_name_no_line(self):
+        self.assertFalse(spec_text.manager_line(False, "+7 1", "a@b.ru"))
+        self.assertFalse(spec_text.manager_line("  ", "+7 1", "a@b.ru"))
+
+
+class TestKpSubject(unittest.TestCase):
+
+    def test_with_subject(self):
+        self.assertEqual(spec_text.kp_subject("СМ-00021", "Навес 6×12, демонстрационный расчёт"),
+                         "Коммерческое предложение СМ-00021 — Навес 6×12, демонстрационный расчёт")
+
+    def test_without_subject_no_dash(self):
+        self.assertEqual(spec_text.kp_subject("СМ-00015", False), "Коммерческое предложение СМ-00015")
+        self.assertEqual(spec_text.kp_subject("СМ-00015", "   "), "Коммерческое предложение СМ-00015")
+
+    def test_long_subject_keeps_number_whole(self):
+        note = "ОФ «Солнечная», шламовый корпус. КМ 284-ОЗ-2026-КМ " * 3
+        subject = spec_text.kp_subject("СМ-00024", note)
+        self.assertTrue(subject.startswith("Коммерческое предложение СМ-00024 — ОФ"))
+        self.assertIn("СМ-00024", subject)
+        self.assertNotIn("  ", subject, "Лишние пробелы предмета схлопываются.")
+
+
+class TestKpGreeting(unittest.TestCase):
+
+    def test_surname_first(self):
+        # Контактное лицо СМ-00024 на живой базе.
+        self.assertEqual(spec_text.kp_greeting("Цыганов Михаил Анатольевич"),
+                         "Здравствуйте, Михаил Анатольевич!")
+        self.assertEqual(spec_text.kp_greeting("Иванова Мария Ильинична"),
+                         "Здравствуйте, Мария Ильинична!")
+        self.assertEqual(spec_text.kp_greeting("Петрович Иван Сергеевич"),
+                         "Здравствуйте, Иван Сергеевич!", "Фамилия на «-ич» — не отчество.")
+
+    def test_name_first(self):
+        self.assertEqual(spec_text.kp_greeting("Михаил Анатольевич Цыганов"),
+                         "Здравствуйте, Михаил Анатольевич!")
+
+    def test_lowercase_is_capitalized(self):
+        self.assertEqual(spec_text.kp_greeting("цыганов михаил анатольевич"),
+                         "Здравствуйте, Михаил Анатольевич!")
+
+    def test_unclear_is_plain(self):
+        for name in ("Цыганов Михаил", "Цыганов М. А.", "Цыганов М.А.",
+                     "Иван Сергеевич Петрович", "Михаил Цыганов Иванов", "", False):
+            with self.subTest(name=name):
+                self.assertEqual(spec_text.kp_greeting(name), "Здравствуйте!")
+
+    def test_company_is_plain(self):
+        self.assertEqual(spec_text.kp_greeting("ООО Арестак Строй", is_person=False),
+                         "Здравствуйте!")
+
+
+class TestKpWindowTexts(unittest.TestCase):
+
+    def test_sender(self):
+        self.assertEqual(spec_text.kp_sender_text("Антон Карнеев", "pmkpark@mail.ru"),
+                         "От: Антон Карнеев <pmkpark@mail.ru> · ответ клиента придёт в этот ящик")
+        self.assertEqual(spec_text.kp_sender_text("", "pmkpark@mail.ru"),
+                         "От: pmkpark@mail.ru · ответ клиента придёт в этот ящик")
+        # Адреса нет — серой справки нет: вместо неё жёлтая плашка.
+        self.assertFalse(spec_text.kp_sender_text("Антон", False))
+        self.assertFalse(spec_text.kp_sender_text("Антон", "  "))
+
+    def test_sender_hint(self):
+        self.assertIn("адрес не задан", spec_text.kp_sender_hint(False))
+        self.assertIn("адрес не задан", spec_text.kp_sender_hint(" "))
+        self.assertFalse(spec_text.kp_sender_hint("pmkpark@mail.ru"))
+
+    def test_empty_and_no_pdf(self):
+        self.assertEqual(spec_text.kp_empty_text(0), "КП пустое: в расчёте нет изделий")
+        self.assertEqual(spec_text.kp_empty_text(3),
+                         "КП пустое: ни у одного изделия нет цены клиенту")
+        self.assertIn("PDF КП не приложен", spec_text.KP_NO_PDF)
+
+    def test_to_hint(self):
+        self.assertIn("не выбран клиент", spec_text.kp_to_hint(False, False))
+        self.assertIn("нет почты", spec_text.kp_to_hint(True, False))
+        self.assertEqual(spec_text.kp_to_hint(True, True), "Впишите получателя")
 
 
 class TestPerTon(unittest.TestCase):

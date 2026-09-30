@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Подписи формы расчёта одной строкой (разбор UX, шаг 32).
+"""Подписи формы расчёта одной строкой (разбор UX, шаги 32 и 33).
 
 Строки, которые раньше были либо значком, либо четырьмя полями, либо голым
 числом:
@@ -175,6 +175,132 @@ def metal_label(amount, missing):
     if not has_amount:
         return "нет в прайсах: %s%sпоз." % (missing, NBSP)
     return "≥%s%s · без %s%sпоз." % (NBSP, money2(amount), missing, NBSP)
+
+
+# ─── Печать и отправка КП (разбор UX, шаг 33) ─────────────────────────────
+
+KP_TITLE = "Коммерческое предложение"
+
+# Окончания отчества: «-ович/-евич/-ич» (Ильич, Кузьмич) и «-овна/-евна/-ична»
+# (Ильинична, Никитична). По ним видно, в каком порядке записано ФИО.
+PATRONYMIC_ENDINGS = ("ич", "вна", "чна")
+
+
+def manager_line(name, phone=None, email=None):
+    """Строка под таблицей КП: «Менеджер: Антон Карнеев, тел. +7…, a@b.ru».
+
+    Пустые части не печатаются; без имени строки нет вовсе — «Менеджер:
+    тел. …» без человека читается как ошибка бланка.
+    """
+    name = (name or "").strip()
+    if not name:
+        return False
+    parts = [name]
+    phone = (phone or "").strip()
+    if phone:
+        parts.append("тел.%s%s" % (NBSP, phone))
+    email = (email or "").strip()
+    if email:
+        parts.append(email)
+    return "Менеджер: %s" % ", ".join(parts)
+
+
+def kp_subject(number, note=None):
+    """Тема письма: «Коммерческое предложение СМ-00024 — Навес 6×12».
+
+    Номер целиком, никогда не обрезается. Предмет КП — как в поле, только
+    без лишних пробелов; нет предмета — тема без тире.
+    """
+    subject = "%s %s" % (KP_TITLE, (number or "").strip())
+    note = " ".join((note or "").split())
+    if note:
+        subject += " — %s" % note
+    return subject.strip()
+
+
+def _looks_like_patronymic(word):
+    return word.lower().endswith(PATRONYMIC_ENDINGS)
+
+
+def _name_word(word):
+    return word[:1].upper() + word[1:]
+
+
+def kp_greeting(name, is_person=True):
+    """Приветствие письма по имени получателя.
+
+    «Цыганов Михаил Анатольевич» → «Здравствуйте, Михаил Анатольевич!» —
+    по имени-отчеству, как принято в деловой переписке. Порядок «Имя
+    Отчество Фамилия» тоже узнаётся. Во всех неясных случаях — компания,
+    два слова, инициалы, два слова похожи на отчество — просто
+    «Здравствуйте!»: лучше без имени, чем с чужим.
+    """
+    words = (name or "").split()
+    if not is_person or len(words) != 3:
+        return "Здравствуйте!"
+    if not all(word.replace("-", "").isalpha() for word in words):
+        return "Здравствуйте!"                  # инициалы «М.А.», цифры
+    second, third = _looks_like_patronymic(words[1]), _looks_like_patronymic(words[2])
+    if third and not second:                    # Фамилия Имя Отчество
+        first, middle = words[1], words[2]
+    elif second and not third:                  # Имя Отчество Фамилия
+        first, middle = words[0], words[1]
+    else:
+        return "Здравствуйте!"
+    return "Здравствуйте, %s %s!" % (_name_word(first), _name_word(middle))
+
+
+def kp_sender_text(name, email):
+    """Кто отправляет, строкой в окне письма (серым — это справка).
+
+    «От: Антон Карнеев <pmkpark@mail.ru> · ответ клиента придёт в этот ящик».
+    Адреса нет — строки нет: вместо неё жёлтая плашка kp_sender_hint.
+    """
+    email = (email or "").strip()
+    if not email:
+        return False
+    name = (name or "").strip()
+    who = "%s <%s>" % (name, email) if name else email
+    return "От: %s · ответ клиента придёт в этот ящик" % who
+
+
+def kp_sender_hint(email):
+    """Адреса отправителя нет — плашкой, а не серым (доводка шага 33).
+
+    Без адреса почтовый сервер письмо не примет, и потом у письма в ленте
+    будет красный конверт. Серым пишется справка, а это — проблема: она
+    жёлтая и названа словами. Ничего не запрещает.
+    """
+    if (email or "").strip():
+        return False
+    return "От: адрес не задан — укажите почту организации в её карточке"
+
+
+# Письмо без PDF КП: вложение убрали в окне или шаблона нет (удалили в
+# Настройках). Письмо уйдёт, но КП клиент не получит — и стадия сделки не
+# двинется (pmk_deal/models/kp_sent.py).
+KP_NO_PDF = "PDF КП не приложен — клиент получит письмо без КП"
+
+
+def kp_empty_text(total):
+    """В КП не попадёт ни одного изделия (доводка шага 33).
+
+    Пустой бланк — шапка таблицы и «Итого к оплате: 0,00» — уходит клиенту
+    так же, как полный, если об этом не сказать. Сигнал, не запрет.
+    total — сколько изделий в расчёте всего.
+    """
+    if not total:
+        return "КП пустое: в расчёте нет изделий"
+    return "КП пустое: ни у одного изделия нет цены клиенту"
+
+
+def kp_to_hint(has_client, client_has_email):
+    """Подсказка, пока поле «Кому» в окне письма пусто. Ничего не запрещает."""
+    if not has_client:
+        return "Впишите получателя: в расчёте не выбран клиент"
+    if not client_has_email:
+        return "Впишите получателя: у контактного лица и клиента нет почты"
+    return "Впишите получателя"
 
 
 def per_ton(price_unit, mass_unit_kg):

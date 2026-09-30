@@ -16,7 +16,7 @@ IMAP APPEND. Odoo про IMAP-папки ящика ничего не знает
 import logging
 import re
 
-from odoo import api, models
+from odoo import api, models, modules
 
 _logger = logging.getLogger(__name__)
 
@@ -29,6 +29,8 @@ class IrMailServer(models.Model):
 
     def send_email(self, message, *args, **kwargs):
         result = super().send_email(message, *args, **kwargs)
+        if self._pmk_sent_copy_disabled():
+            return result
         if not self.env.context.get(SKIP_FLAG):
             # Письмо уже доставлено. Неудача подшивки не должна выглядеть
             # как неудача отправки, поэтому ошибки только в лог.
@@ -37,6 +39,21 @@ class IrMailServer(models.Model):
             except Exception as exc:                     # noqa: BLE001
                 _logger.warning("Копия в «Отправленные» не подшита: %s", exc)
         return result
+
+    def _pmk_sent_copy_disabled(self):
+        """В тестах и при загрузке реестра копию НЕ подшиваем (шаг 33).
+
+        Ядро в этих случаях письмо не отправляет (send_email → _disable_send),
+        но наша подшивка стояла ПОСЛЕ super() и шла дальше: IMAP APPEND в
+        настоящий ящик. На копии боевой базы оба ящика подключены, и тест
+        или сборка положили бы тестовое письмо в «Отправленные» pmkpark@mail.ru.
+
+        ⚠️ current_test проверяется отдельно от _disable_send(): штатная
+        заглушка почты в тестах (MailCommon.mock_mail_gateway →
+        mock_smtplib_connection) подменяет _disable_send на False, чтобы
+        прогнать поддельный SMTP. Поддельного IMAP у неё нет.
+        """
+        return bool(self._disable_send() or modules.module.current_test)
 
     # ------------------------------------------------------------------
     def _pmk_file_to_sent(self, message):

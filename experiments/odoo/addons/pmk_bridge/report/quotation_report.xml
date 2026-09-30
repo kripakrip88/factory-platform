@@ -82,7 +82,7 @@
                   в 19-й версии нет вовсе — печать упала именно на нём.
                   У нас в карточке есть и юридический адрес, он вернее.
                 -->
-                <t t-set="addr" t-value="p.pmk_legal_address or ', '.join(
+                <t t-set="addr" t-value="('pmk_legal_address' in p._fields and p.pmk_legal_address) or ', '.join(
                     [x for x in [p.zip, p.city, p.street, p.street2] if x])"/>
                 <div t-if="addr"><span t-esc="addr"/></div>
                 <div t-if="p.phone or p.email">
@@ -149,9 +149,16 @@
           </tbody>
         </table>
 
+        <!--
+          Итоги — две строки, а не три (разбор UX, шаг 33): «Итого» и «Итого
+          к оплате» печатали одно и то же число, потому что НДС уже внутри
+          цены. Остались «Итого к оплате» и под ним «в том числе НДС» — как в
+          счёте: «в том числе» относится к сумме над ним. Вернуть третью
+          строку — список отключённого (docs/disabled-features.md, шаг 33).
+        -->
         <table class="pmk-quote__totals">
-          <tr>
-            <td class="pmk-quote__label">Итого:</td>
+          <tr class="pmk-quote__grand">
+            <td class="pmk-quote__label">Итого к оплате:</td>
             <td class="pmk-quote__num">
 <span t-esc="doc.pmk_money(doc.price_customer_total)"/>
             </td>
@@ -167,13 +174,18 @@
 <span t-esc="doc.pmk_money(doc.price_customer_total * vat_rate / (100 + vat_rate))"/>
             </td>
           </tr>
-          <tr class="pmk-quote__grand">
-            <td class="pmk-quote__label">Итого к оплате:</td>
-            <td class="pmk-quote__num">
-<span t-esc="doc.pmk_money(doc.price_customer_total)"/>
-            </td>
-          </tr>
         </table>
+
+        <!--
+          Кому звонить по этому КП (разбор UX, шаг 33). Менеджер —
+          ответственный сделки расчёта, иначе создавший расчёт, иначе тот, кто
+          печатает (pmk_manager_line, models/kp_send.py; OdooBot отсеивается).
+          Телефон и почта — из карточки пользователя; пустое не печатается.
+        -->
+        <t t-set="manager_line" t-value="doc.pmk_manager_line()"/>
+        <div class="pmk-quote__manager" t-if="manager_line">
+          <span t-esc="manager_line"/>
+        </div>
 
         <div class="pmk-quote__foot">
           <div t-if="company.partner_id.bank_ids">

@@ -6,3 +6,4 @@
 from . import test_money_text
 from . import test_deal_money
 from . import test_deal_views
+from . import test_kp_sent

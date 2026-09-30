@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Письмо клиенту с КП (разбор UX, шаг 33).
+
+    noupdate="1" — как у запроса прайсов в pmk_purchase: правки Антона в
+    Настройках → Технические → Шаблоны писем деплой не затрёт. Цена этого —
+    правка текста ЗДЕСЬ дойдёт только до новой базы; на живой — руками в
+    Настройках или удалением записи перед -u.
+
+    ВСЕ ПОДСТАНОВКИ — ПОЛЯ РАСЧЁТА (pmk_bridge/models/kp_send.py), без кода
+    в выражениях: шаблон правится в Настройках без риска сломать подстановку.
+
+    Кому: контактное лицо с почтой, иначе клиент, иначе пусто — получателя
+    впишут в окне. use_default_to=False: только это, без «предложенных»
+    ядром подписчиков документа.
+
+    От кого и куда ответ: «Имя пользователя <почта организации>» — сервер
+    Mail.ru принимает письмо только с адреса своего ящика; ответ клиента
+    придёт в тот же ящик (без Reply-To ядро поставило бы catchall@pmkpark.ru,
+    который никто не читает).
+
+    Вложение — тот же отчёт, что у кнопки «КП (PDF)»: «КП СМ-00024.pdf».
+    Изделия без цены клиенту в него не попадают.
+
+    Оформление — штатное (email_layout_xmlid пусто → mail_notification_layout).
+    Внешнему получателю без доступа к расчёту ядро не рисует ни шапки с
+    кнопкой «Открыть», ни подвала «Powered by Odoo»: письмо = этот текст.
+    Подпись пользователя не добавляется (при шаблоне ядро её выключает) —
+    подпись ниже, в самом тексте.
+
+    ЦВЕТА ТЕКСТА НЕТ НАМЕРЕННО (доводка шага 33). Инлайновый style
+    сохраняется и в письме, и в ленте расчёта. Тёмный цвет в тёмной теме
+    давал тёмный текст на тёмном пузыре ленты, и прочитать его было нельзя.
+    Без цвета текст берёт цвет того, где его показывают: у клиента чёрный
+    на белом, в ленте — цвет ленты. Окно письма показывает текст на белом
+    холсте, как его увидит клиент (pmk_theme, forms.scss).
+  -->
+  <data noupdate="1">
+
+    <record id="mail_template_metal_spec_quotation" model="mail.template">
+      <field name="name">Расчёт: отправить КП клиенту</field>
+      <field name="model_id" ref="pmk_calc.model_pmk_metal_spec"/>
+      <field name="subject">{{ object.pmk_kp_subject }}</field>
+      <field name="email_from">{{ object.pmk_kp_email_from }}</field>
+      <field name="reply_to">{{ object.pmk_kp_email_from }}</field>
+      <field name="use_default_to" eval="False"/>
+      <field name="partner_to">{{ object.pmk_kp_recipient_id.id }}</field>
+      <field name="lang">ru_RU</field>
+      <field name="report_template_ids"
+             eval="[Command.link(ref('pmk_bridge.action_report_metal_spec_quotation'))]"/>
+      <field name="description">Кнопка «Отправить КП» в расчёте металлопроката</field>
+      <field name="body_html" type="html">
+<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5">
+  <p><t t-out="object.pmk_kp_greeting"/></p>
+
+  <p>Направляем коммерческое предложение <t t-out="object.name"/><t t-if="object.note">
+     — <t t-out="object.note"/></t>. Файл PDF во вложении.</p>
+
+  <p>Если нужно что-то уточнить — ответьте на это письмо или позвоните.</p>
+
+  <p style="margin-top:18px">
+     С уважением,<br/>
+     <t t-out="object.pmk_kp_sender_name"/><br/>
+     ПМК Парк — завод металлоконструкций, Хабаровск<br/>
+     <t t-if="object.pmk_kp_sender_phone">тел. <t t-out="object.pmk_kp_sender_phone"/><br/></t>
+     <t t-out="object.pmk_kp_sender_email"/>
+  </p>
+</div>
+      </field>
+    </record>
+
+  </data>
+</odoo>

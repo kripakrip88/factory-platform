@@ -12,5 +12,6 @@ from . import test_mail_list
 from . import test_quote_fold
 from . import test_quote_rules
 from . import test_remote_paths
+from . import test_sent_copy_guard
 from . import test_shared_flags
 from . import test_thread_seen

@@ -30,6 +30,7 @@
         .pmk-quote__totals .pmk-quote__label { width: auto; text-align: right; }
         .pmk-quote__totals .pmk-quote__num { width: 120pt; }
         .pmk-quote__grand td { font-weight: bold; font-size: 12pt; border-top: 1pt solid #1a1a1a; }
+        .pmk-quote__manager { margin-top: 10pt; font-size: 10pt; }
         .pmk-quote__foot { margin-top: 18pt; font-size: 10pt; line-height: 1.5; }
         .pmk-quote__sign { margin-top: 22pt; }
         .pmk-quote__sign-line {
