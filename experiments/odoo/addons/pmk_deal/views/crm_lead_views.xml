@@ -9,6 +9,11 @@
 
     Встреча — только когда назначена: пустая кнопка «Нет встречи» висела на
     каждой сделке и сдвигала название.
+
+    У лида «Расчётов» нет (шаг 31): считают по сделке, а не по интересу, —
+    поле «Сделка» у расчёта принимает только сделки. Кнопка у лида открыла
+    бы форму нового расчёта, привязанного к лиду, как «Расчёт и КП» у
+    сделки, а строка денег у лида скрыта — результат нигде не был бы виден.
   -->
   <record id="view_crm_lead_form_specs" model="ir.ui.view">
     <field name="name">crm.lead.form.specs</field>
@@ -17,7 +22,8 @@
     <field name="arch" type="xml">
       <xpath expr="//button[@name='action_schedule_meeting']" position="before">
         <button name="action_open_specs" type="object"
-                class="oe_stat_button" icon="fa-calculator">
+                class="oe_stat_button" icon="fa-calculator"
+                invisible="type == 'lead'">
           <field name="spec_count" widget="statinfo" string="Расчёты"/>
         </button>
       </xpath>
@@ -37,6 +43,16 @@
     загрузке, если бы наш вид применился раньше (грабли 23.09.2026 —
     project_odoo_view_load_order). Поэтому sale_crm — в зависимостях.
   -->
+  <!--
+    Главная кнопка сделки — «Расчёт и КП» (разбор UX, шаг 31, 30.09.2026).
+    Одна залитая кнопка на экран — следующий шаг процесса. Была штатная
+    «Новое коммерческое предложение»: вела в КП Odoo (sale.order), которым
+    завод не пользуется, и была единственной залитой. Наша кнопка: расчёта
+    нет — форма нового со сделкой и клиентом, один — он сам, несколько —
+    список (deal_link.py, action_open_specs). Стоит на месте штатной, перед
+    «Выиграно»; штатная скрыта, НЕ удалена — узел нужен xpath'ам других
+    видов, а вернуть её — снять invisible (docs/disabled-features.md).
+  -->
   <record id="view_crm_lead_form_hide_empty_quotations" model="ir.ui.view">
     <field name="name">crm.lead.form.hide.empty.quotations</field>
     <field name="model">crm.lead</field>
@@ -44,6 +60,15 @@
     <field name="arch" type="xml">
       <xpath expr="//button[@name='action_view_sale_quotation']" position="attributes">
         <attribute name="invisible">type == 'lead' or quotation_count == 0</attribute>
+      </xpath>
+      <xpath expr="//button[@name='action_sale_quotations_new']" position="before">
+        <button name="action_open_specs" type="object" string="Расчёт и КП"
+                class="oe_highlight" data-hotkey="q"
+                title="Нет расчёта — создать со сделкой и клиентом; один — открыть; несколько — список"
+                invisible="type == 'lead' or not active"/>
+      </xpath>
+      <xpath expr="//button[@name='action_sale_quotations_new']" position="attributes">
+        <attribute name="invisible">1</attribute>
       </xpath>
     </field>
   </record>
@@ -143,10 +168,19 @@
       <xpath expr="//field[@name='stage_id']" position="attributes">
         <attribute name="widget">pmk_stage_badge</attribute>
       </xpath>
+      <!-- Шаг 31: «Ожидаемое закрытие» → «Ответить клиенту до» — срок
+           ответа, а не прогноз закрытия. Сигнал, не запрет. -->
       <xpath expr="//field[@name='date_deadline'][@optional]" position="attributes">
+        <attribute name="string">Ответить клиенту до</attribute>
         <attribute name="widget">remaining_days</attribute>
         <attribute name="optional">show</attribute>
         <attribute name="options">{'classes': {'danger': "days &lt; 0 and record.won_status == 'pending'", 'warning': "days == 0 and record.won_status == 'pending'", 'bf': "days &lt;= 0 and record.won_status == 'pending'"}}</attribute>
+      </xpath>
+      <!-- Шаг 31: доход сделки теперь — цена клиенту из главного расчёта
+           (deal_money.py), так колонка и называется. Узел не заменяем:
+           на него xpath-ят виды прогноза и отчётов crm. -->
+      <xpath expr="//field[@name='expected_revenue']" position="attributes">
+        <attribute name="string">Цена клиенту</attribute>
       </xpath>
     </field>
   </record>

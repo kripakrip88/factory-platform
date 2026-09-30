@@ -811,6 +811,18 @@ class MailClientMessage(models.Model):
         # руководителя команды ниже.
         user = self.env.user
         assignee = user if user._is_internal() and not user._is_superuser() else False
+        values = {
+            "name": self.subject or _("Без темы"),
+            "email_from": self.email_from,
+            "partner_id": self.partner_id.id or False,
+            "user_id": assignee.id if assignee else False,
+        }
+        # «Откуда пришёл = Почта» (разбор UX, шаг 31, 30.09.2026): через месяц
+        # группировкой видно, какой канал приносит заявки и маржу. Поле
+        # объявлено в pmk_deal; проверка наличия — чтобы почта не зависела от
+        # модуля сделки и работала и без него.
+        if "pmk_source" in self.env["crm.lead"]._fields:
+            values["pmk_source"] = "mail"
         lead = (
             self.env["crm.lead"]
             .with_context(
@@ -818,14 +830,7 @@ class MailClientMessage(models.Model):
                 mail_create_nolog=True,
                 default_user_id=assignee.id if assignee else False,
             )
-            .create(
-                {
-                    "name": self.subject or _("Без темы"),
-                    "email_from": self.email_from,
-                    "partner_id": self.partner_id.id or False,
-                    "user_id": assignee.id if assignee else False,
-                }
-            )
+            .create(values)
         )
         # Срабатывает только для заявки без менеджера, то есть при системном
         # запуске.

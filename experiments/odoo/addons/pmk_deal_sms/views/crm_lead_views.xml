@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+  <!--
+    Список сделок без кнопок «СМС» (разбор UX, шаг 31): одна в шапке над
+    выбранными, одна в каждой строке. СМС завод не шлёт, пакета СМС у Odoo
+    нет. Скрыты, НЕ удалены: вид crm_sms над отчётным списком заменяет
+    кнопку строки своим xpath'ом — без узла он упал бы.
+    ⚠️ Вид над видом crm_sms, а не над списком crm: кнопки добавляет crm_sms,
+    xpath на его узел из вида над crm упал бы при загрузке, если бы наш вид
+    применился раньше (грабли 23.09.2026, project_odoo_view_load_order).
+    Вернуть кнопки — удалить этот модуль в «Приложениях» (сделка и расчёт
+    не пострадают) или снять invisible ниже. docs/disabled-features.md.
+  -->
+  <record id="view_crm_lead_list_no_sms" model="ir.ui.view">
+    <field name="name">crm.lead.list.pmk.no.sms</field>
+    <field name="model">crm.lead</field>
+    <field name="inherit_id" ref="crm_sms.crm_case_tree_view_oppor"/>
+    <field name="arch" type="xml">
+      <xpath expr="//header/button[@name='%(crm_sms.crm_lead_act_window_sms_composer_single)d']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//button[@name='%(crm_sms.crm_lead_act_window_sms_composer_multi)d']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+    </field>
+  </record>
+
+</odoo>

@@ -16,6 +16,16 @@ import { buildM2OFieldDescription } from "@web/views/fields/many2one/many2one_fi
 
 export class PmkStageBadgeField extends Many2OneFieldRotting {
     static template = "pmk_deal.StageBadgeField";
+
+    setup() {
+        super.setup();
+        // Шаг 31: «N дн», а не штатное «N д.» в правке строки — там рисует
+        // шаблон ядра mail.Many2OneFieldRotting, и берёт он этот dayCount
+        // (плашку вне правки рисует наш шаблон). Одно слово с кнопкой стадии
+        // в сделке (pmk_theme/statusbar_compact.js) и карточкой воронки.
+        // Считается один раз при создании поля — как и у ядра.
+        this.dayCount = `${this.props.record.data.rotting_days} дн`;
+    }
 }
 
 registry.category("fields").add("list.pmk_stage_badge", {

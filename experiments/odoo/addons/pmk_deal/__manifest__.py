@@ -8,26 +8,42 @@
     # цены, CRM его не касается. Поэтому связка «сделка ↔ расчёт» живёт своим
     # модулем: не установлен — обе стороны работают как раньше.
     "name": "ПМК: сделка и расчёт",
-    "version": "19.0.1.0.3",
+    "version": "19.0.1.0.4",
     "summary": "Расчёт металлопроката привязан к сделке CRM",
     "category": "Sales/CRM",
     "author": "ПМК Парк",
     "license": "LGPL-3",
-    # sale_crm — ради вида, который прячет пустую кнопку штатных КП
-    # (views/crm_lead_views.xml): xpath идёт по её узлу.
-    "depends": ["crm", "sale_crm", "pmk_calc"],
+    # sale_crm — ради вида, который прячет штатные кнопки КП и ставит «Расчёт
+    # и КП» (views/crm_lead_views.xml): xpath идёт по её узлу.
+    # pmk_bridge — деньги расчёта (цена клиенту, металл, маржа, «без цены»)
+    # живут в мосте; сделка показывает их строкой и берёт из них доход
+    # (разбор UX, шаг 31). Мост уже стоит на боевой базе.
+    # ⚠️ crm_sms НЕ в зависимостях, хоть шаг 31 и прячет кнопки «СМС»:
+    # цепочка crm_sms → sms → iap_mail → iap, и удаление «SMS» или iap в
+    # «Приложениях» каскадом снесло бы pmk_deal с полем «Сделка» у расчёта
+    # (ловушка удаления модулей). Кнопки прячет мостик pmk_deal_sms
+    # (auto_install): удалят SMS — уйдёт только он.
+    "depends": ["crm", "sale_crm", "pmk_calc", "pmk_bridge"],
     "data": [
         "views/crm_lead_views.xml",
+        "views/crm_lead_money_views.xml",
         "views/metal_spec_views.xml",
+        "data/crm_lost_reason.xml",
+        "data/crm_pipeline_views.xml",
     ],
     # Стадия в списке сделок плашкой в цвете стадии («оживить таблицы»,
-    # 29.09.2026) — свой виджет поверх штатного редактора стадии.
+    # 29.09.2026) — свой виджет поверх штатного редактора стадии. Шаг 31 —
+    # строка денег расчёта на сделке и на карточке воронки.
     "assets": {
         "web.assets_backend": [
             "pmk_deal/static/src/js/stage_badge_field.js",
             "pmk_deal/static/src/xml/stage_badge_field.xml",
+            "pmk_deal/static/src/scss/deal_money.scss",
         ],
     },
+    # Сроки стадий и архив штатных причин проигрыша на новой базе — так же,
+    # как миграция 19.0.1.0.4 делает на боевой.
+    "post_init_hook": "post_init_hook",
     "installable": True,
     "application": False,
     "auto_install": False,

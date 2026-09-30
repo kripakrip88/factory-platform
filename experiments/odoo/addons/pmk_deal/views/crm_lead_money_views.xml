@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+  <!--
+    Сделка: деньги из расчёта вместо «дохода 0» и вероятности.
+    Разбор UX, шаг 31 (30.09.2026). Всё скрытое — атрибутом invisible, узлы
+    на месте (на них ссылаются xpath'ы других видов), данные целы. Каждое
+    скрытие записано в docs/disabled-features.md.
+
+    • Под названием — строка главного расчёта сделки:
+      «СМ-00024 · 50,9 т · цена 9 500 000 ₽ · металл 3 429 022 ₽ · маржа 63,9 %»
+      и красным «без цены: 1», только когда больше нуля (сигнал «в городе
+      нет», ничего не запрещает). Нет расчёта — подсказка, какой кнопкой он
+      появится. Штатный блок «Ожидаемый доход … в … Вероятность» скрыт целиком:
+      доход теперь сам берётся из цены клиенту (models/deal_money.py), а
+      вероятность считал автомат без истории.
+    • Вкладка «Контакты» скрыта: после шага 8 там остались три почти пустых
+      блока. Компания, имя контакта и должность подняты наверх, под «Клиента»,
+      и видны, пока клиент не выбран: выбрали — всё это уже есть в карточке
+      клиента. Команда продаж (у всех одна, «Продажи») скрыта и у лида.
+    • «Откуда пришёл» — у сделки над сроком, у лида под менеджером.
+    • «Ожидаемое закрытие» → «Ответить клиенту до»: это срок ответа клиенту,
+      а не прогноз закрытия. Просрочен — красный в списке; ничего не
+      запрещается. Подпись и подсказка «?» заданы и в поле (deal_money.py),
+      и здесь: атрибуты вида не зависят от переводов, и -u crm их не вернёт.
+
+    ⚠️ ПОДПИСЬ «Контактное лицо» У ЛИДА. Метка <label for="contact_name">
+    привязывается к ПОСЛЕДНЕМУ уже встреченному полю с этим именем
+    (form_compiler.js, encounteredFields). Наше поле наверху сделки стоит в
+    разметке раньше блока лида, и метка лида ушла бы к нему. Поэтому метке и
+    полю лида даём своё id — так ядро само развело метки на вкладке
+    «Контакты» (contact_name_page_lead) и у почты лида.
+  -->
+  <record id="view_crm_lead_form_money" model="ir.ui.view">
+    <field name="name">crm.lead.form.pmk.money</field>
+    <field name="model">crm.lead</field>
+    <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+    <field name="arch" type="xml">
+      <!-- Доход, «в», вероятность, переключатель автомата — весь h2. -->
+      <xpath expr="//div[hasclass('oe_title')]/h2" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//div[hasclass('oe_title')]/h2" position="after">
+        <div class="pmk-deal-money" invisible="type == 'lead'">
+          <field name="pmk_spec_id" invisible="1"/>
+          <field name="pmk_spec_summary" class="pmk-deal-money__line"
+                 invisible="not pmk_spec_id"/>
+          <field name="pmk_no_price_label" class="pmk-noprice"
+                 invisible="not pmk_no_price_label"/>
+          <!-- У проигранной (архивной) сделки кнопки «Расчёт и КП» нет —
+               и подсказки про неё тоже. -->
+          <span class="pmk-deal-money__empty" invisible="pmk_spec_id or not active">Расчёта ещё нет — кнопка «Расчёт и КП» создаст его со сделкой и клиентом</span>
+        </div>
+      </xpath>
+
+      <!-- Вкладка «Контакты» — целиком. -->
+      <xpath expr="//page[@name='lead']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//group[@name='opportunity_partner']/field[@name='partner_id']" position="after">
+        <field name="partner_name" invisible="partner_id"/>
+        <field name="contact_name" invisible="partner_id"/>
+        <field name="function" invisible="partner_id"/>
+      </xpath>
+      <xpath expr="//group[@name='lead_info']/label[@for='contact_name']" position="attributes">
+        <attribute name="for">contact_name_group_lead_info</attribute>
+      </xpath>
+      <xpath expr="//group[@name='lead_info']//field[@name='contact_name']" position="attributes">
+        <attribute name="id">contact_name_group_lead_info</attribute>
+      </xpath>
+
+      <!-- Лид: команда продаж скрыта, «Откуда пришёл» — на её месте. -->
+      <xpath expr="/form/sheet/group/group/field[@name='team_id']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="/form/sheet/group/group/field[@name='team_id']" position="after">
+        <field name="pmk_source"/>
+      </xpath>
+
+      <!-- Сделка: «Откуда пришёл» и «Ответить клиенту до». -->
+      <xpath expr="//label[@for='date_deadline']" position="before">
+        <field name="pmk_source"/>
+      </xpath>
+      <xpath expr="//label[@for='date_deadline']" position="attributes">
+        <attribute name="string">Ответить клиенту до</attribute>
+      </xpath>
+      <xpath expr="//field[@name='date_deadline']" position="attributes">
+        <attribute name="placeholder">не назначено</attribute>
+        <attribute name="help">Срок ответа клиенту. Просрочен — красным в списке сделок; ничего не запрещает.</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <!--
+    Воронка: карточка сделки (шаг 31).
+    • Деньги строкой «50,9 т · 9,5 млн ₽ · маржа 64 %» и красная пометка
+      «без цены: 1». Штатная сумма дохода показывается, только пока расчёта
+      нет (узел скрыт, а не удалён: на него ссылается прогнозный канбан).
+    • Клиент — без имени человека (было «Компания, Человек», и обрезалось):
+      у человека из компании — компания, у сделки на компанию — она сама, у
+      частного лица — он сам (pmk_client_id, deal_money.py; штатное
+      commercial_partner_id у компании и частного лица пустое). Без
+      выбранного клиента — введённые руками компания или, если её нет,
+      человек.
+    • «N дн» вместо штатного «N д.» — одно слово с кнопкой стадии в сделке и
+      плашкой в списке. Значок красный, только когда сделка дольше срока
+      стадии (сроки — «Настройки CRM → Этапы», поле «Дней до перехода в статус
+      „зависший“»; заданы миграцией 19.0.1.0.4).
+    Сумма в шапке колонки — штатная сумма поля «Ожидаемый доход»: он теперь
+    берётся из цены клиенту, поэтому в шапке сама собой сумма КП в работе.
+  -->
+  <record id="view_crm_lead_kanban_money" model="ir.ui.view">
+    <field name="name">crm.lead.kanban.pmk.money</field>
+    <field name="model">crm.lead</field>
+    <field name="inherit_id" ref="crm.crm_case_kanban_view_leads"/>
+    <field name="arch" type="xml">
+      <xpath expr="//kanban" position="inside">
+        <field name="pmk_spec_id"/>
+        <field name="pmk_client_id"/>
+      </xpath>
+      <xpath expr="//t[@t-name='card']//div[hasclass('o_kanban_card_crm_lead_revenue')]" position="attributes">
+        <attribute name="invisible">pmk_spec_id</attribute>
+      </xpath>
+      <xpath expr="//t[@t-name='card']//div[hasclass('o_kanban_card_crm_lead_revenue')]" position="after">
+        <div class="pmk-deal-card" invisible="not pmk_spec_id">
+          <field name="pmk_spec_card"/>
+          <field name="pmk_no_price_label" class="pmk-noprice"
+                 invisible="not pmk_no_price_label"/>
+        </div>
+      </xpath>
+
+      <xpath expr="//t[@t-name='card']/div[field[@name='partner_id']]" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//t[@t-name='card']/div[field[@name='partner_id']]" position="after">
+        <field name="pmk_client_id" invisible="not partner_id"
+               options="{'no_open': True}"/>
+      </xpath>
+      <xpath expr="//t[@t-name='card']/field[@name='partner_name']" position="attributes">
+        <attribute name="invisible">partner_id or not partner_name</attribute>
+      </xpath>
+      <xpath expr="//t[@t-name='card']/field[@name='contact_name']" position="attributes">
+        <attribute name="invisible">partner_id or partner_name</attribute>
+      </xpath>
+
+      <xpath expr="//footer//field[@name='rotting_days']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//footer//field[@name='rotting_days']" position="after">
+        <span class="badge rounded-pill o_mail_resource_rotting_bg align-self-center"
+              invisible="not is_rotting"
+              t-att-title="'Зависла: ' + record.rotting_days.value + ' дн в стадии — дольше срока стадии'"><t t-esc="record.rotting_days.value"/> дн</span>
+      </xpath>
+    </field>
+  </record>
+
+  <!--
+    Поиск по сделкам (шаг 31): группировка «Откуда пришёл» — через месяц
+    видно, какой канал приносит КП и маржу; «Ожидаемое закрытие» →
+    «Ответить клиенту до». Фильтр «Зависшие» — штатный.
+  -->
+  <record id="view_crm_lead_search_money" model="ir.ui.view">
+    <field name="name">crm.lead.search.pmk.money</field>
+    <field name="model">crm.lead</field>
+    <field name="inherit_id" ref="crm.view_crm_case_opportunities_filter"/>
+    <field name="arch" type="xml">
+      <xpath expr="//filter[@name='stage']" position="after">
+        <filter name="groupby_pmk_source" string="Откуда пришёл"
+                context="{'group_by': 'pmk_source'}"/>
+      </xpath>
+      <xpath expr="//filter[@name='date_deadline']" position="attributes">
+        <attribute name="string">Ответить клиенту до</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <!--
+    Кнопки «СМС» в списке сделок скрывает отдельный модуль pmk_deal_sms:
+    зависимость от crm_sms здесь сделала бы удаление «SMS» или iap
+    удалением сделки ↔ расчёта (ловушка удаления модулей).
+  -->
+
+  <!--
+    Быстрое создание сделки в воронке («+» в колонке) — без «Ожидаемого
+    дохода» (шаг 31). Доход теперь — цена клиенту из расчёта: вписанную здесь
+    сумму первый же расчёт молча заменил бы, а форма сделки её не показывает.
+    Звёзды приоритета остаются; значок строки — звезда, а не деньги. Поле
+    скрыто, не удалено (docs/disabled-features.md).
+  -->
+  <record id="view_crm_lead_quick_create_money" model="ir.ui.view">
+    <field name="name">crm.lead.quick.create.pmk.money</field>
+    <field name="model">crm.lead</field>
+    <field name="inherit_id" ref="crm.quick_create_opportunity_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='expected_revenue']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//i[hasclass('fa-money')]" position="attributes">
+        <attribute name="class">fa fa-star-o</attribute>
+        <attribute name="title">Приоритет</attribute>
+      </xpath>
+    </field>
+  </record>
+
+</odoo>

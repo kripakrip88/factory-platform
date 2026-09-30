@@ -21,7 +21,10 @@ BRANCH="${BRANCH:-feature/experiment-carbon}"
 # pmk_flow добавлен 27.09.2026 — схема связей документов, форк чужого
 # визуализатора (см. ниже). Ставится первый раз через INSTALL="pmk_flow":
 # -u на неустановленный модуль Odoo молча пропускает.
-OURS="pmk_calc pmk_theme pmk_pdf pmk_cut pmk_mail_ui pmk_partner pmk_purchase pmk_dadata pmk_laser pmk_bridge pmk_deal pmk_flow"
+# pmk_deal_sms добавлен 30.09.2026 (разбор UX, шаг 31) — мостик, который
+# прячет кнопки «СМС» в списке сделок; вынесен из pmk_deal, чтобы удаление
+# «SMS»/iap не снесло сделку ↔ расчёт. Первый раз: INSTALL="pmk_deal_sms".
+OURS="pmk_calc pmk_theme pmk_pdf pmk_cut pmk_mail_ui pmk_partner pmk_purchase pmk_dadata pmk_laser pmk_bridge pmk_deal pmk_deal_sms pmk_flow"
 # Вендорские — только раскладываются. -u им не нужен: мы правим в них код и
 # переводы, а не данные, а лишнее обновление перезапускает их data-файлы.
 #

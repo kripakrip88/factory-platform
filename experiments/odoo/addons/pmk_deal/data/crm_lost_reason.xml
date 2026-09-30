@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Заводские причины проигрыша (разбор UX, шаг 31, 30.09.2026).
+
+    В окне «Потерян» были штатные «Слишком дорого», «У нас нет
+    людей/навыков», «Недостаточно запасов» — язык продажника услуг. У 7
+    проигранных сделок причина не указана ни у одной: выбирать было не из
+    чего. Через месяц группировка «Причина проигрыша» в списке сделок
+    покажет, почему уходят заказы: цена, срок или металл.
+
+    ФОРМУЛИРОВКИ — ПРЕДЛОЖЕННЫЕ РАЗБОРОМ, УТВЕРЖДАЕТ АНТОН. noupdate="1":
+    поправит текст в «Настройки CRM → Причины проигрыша» — обновление модуля
+    его правку не затрёт. Порядок в окне — порядок создания (у модели нет
+    поля очерёдности).
+
+    Штатные три архивирует миграция 19.0.1.0.4 (hooks.py), только если ими
+    не отмечена ни одна сделка. Архив, а не удаление: вернуть — снять
+    «Архивировано» в том же справочнике.
+  -->
+  <data noupdate="1">
+    <record id="lost_reason_price" model="crm.lost.reason">
+      <field name="name">Цена выше конкурента</field>
+    </record>
+    <record id="lost_reason_term" model="crm.lost.reason">
+      <field name="name">Не устроил срок</field>
+    </record>
+    <record id="lost_reason_no_metal" model="crm.lost.reason">
+      <field name="name">Нет металла в городе</field>
+    </record>
+    <record id="lost_reason_no_answer" model="crm.lost.reason">
+      <field name="name">Клиент не ответил</field>
+    </record>
+    <record id="lost_reason_not_ours" model="crm.lost.reason">
+      <field name="name">Не наш профиль</field>
+    </record>
+    <record id="lost_reason_postponed" model="crm.lost.reason">
+      <field name="name">Проект отложен</field>
+    </record>
+  </data>
+</odoo>

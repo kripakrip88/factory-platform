@@ -1,11 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
-  <!-- Логика — js/stage_badge_field.js. -->
+  <!-- Логика — js/stage_badge_field.js.
+       Шаг 31 (30.09.2026): рядом со стадией — красный значок «N дн», когда
+       сделка в стадии дольше срока (сроки — у стадий, «Дней до перехода в
+       статус „зависший“»). То же слово «дн», что на кнопке стадии в сделке
+       и на карточке воронки; штатный значок писал «N д.». В правке строки
+       рисует шаблон ядра — ему «дн» подставляет js (dayCount). Сигнал, не
+       запрет. -->
   <t t-name="pmk_deal.StageBadgeField">
-    <span t-if="props.readonly and props.record.data[props.name]"
-          class="badge rounded-pill"
-          t-attf-class="o_badge_color_#{props.record.data.stage_id_color or 0}"
-          t-esc="props.record.data[props.name].display_name"/>
+    <t t-if="props.readonly and props.record.data[props.name]">
+      <span class="badge rounded-pill"
+            t-attf-class="o_badge_color_#{props.record.data.stage_id_color or 0}"
+            t-esc="props.record.data[props.name].display_name"/>
+      <span t-if="props.record.data.is_rotting"
+            class="badge rounded-pill o_mail_resource_rotting_bg ms-2"
+            t-attf-title="Зависла: {{ props.record.data.rotting_days }} дн в стадии — дольше срока стадии"><t t-esc="props.record.data.rotting_days"/> дн</span>
+    </t>
     <t t-else="" t-call="mail.Many2OneFieldRotting"/>
   </t>
 </templates>

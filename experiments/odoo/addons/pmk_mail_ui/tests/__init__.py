@@ -7,6 +7,7 @@
 from . import test_asset_rules
 from . import test_cron_interval
 from . import test_frame_head
+from . import test_lead_source
 from . import test_mail_list
 from . import test_quote_fold
 from . import test_quote_rules

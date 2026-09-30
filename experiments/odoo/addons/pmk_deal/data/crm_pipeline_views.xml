@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Воронка — три вида вместо семи (разбор UX, шаг 31, 30.09.2026):
+    канбан, список, активность. Календарь, сводная и график переехали в
+    отдельное действие «Аналитика воронки» — его поставим в «Отчёты», когда
+    появятся данные (12 сделок, 11 из них — архивные тестовые).
+
+    ⚠️ ПОЧЕМУ НЕ ХВАТАЕТ view_mode. У действия воронки ядра есть три записи
+    привязки видов (ir.actions.act_window.view: календарь, сводная, график),
+    и Odoo 19 показывает привязанные виды ВСЕГДА, что бы ни стояло во
+    view_mode (ir_actions.py, _compute_views). Поэтому привязки не удаляем, а
+    ПЕРЕВЕШИВАЕМ на своё действие: виды целы и собраны там, где будут нужны.
+
+    ⚠️ ЗАПИСИ ЧУЖОГО МОДУЛЯ (crm.*). Так же делает сам sale_crm с действием
+    crm.crm_lead_opportunities. Файл без noupdate: -u crm вернёт семь видов,
+    а следующий деплой (deploy.sh обновляет pmk_deal каждый раз) — снова три.
+
+    Вернуть семь видов: убрать из этого файла записи crm.* и действие
+    аналитики, затем -u pmk_deal и -u crm. Порядок важен: при удалении
+    действия аналитики привязки, висящие на нём, удалятся вместе с ним, а -u
+    crm создаст их заново на действии воронки. См. docs/disabled-features.md.
+  -->
+  <record id="action_pipeline_analytics" model="ir.actions.act_window">
+    <field name="name">Аналитика воронки</field>
+    <field name="res_model">crm.lead</field>
+    <field name="view_mode">graph,pivot,calendar,list,form</field>
+    <field name="domain">[('type', '=', 'opportunity')]</field>
+    <field name="context">{'default_type': 'opportunity'}</field>
+    <field name="search_view_id" ref="crm.view_crm_case_opportunities_filter"/>
+  </record>
+
+  <record id="crm.crm_lead_action_pipeline" model="ir.actions.act_window">
+    <field name="view_mode">kanban,list,form,activity</field>
+  </record>
+
+  <record id="crm.crm_lead_action_pipeline_view_calendar" model="ir.actions.act_window.view">
+    <field name="act_window_id" ref="action_pipeline_analytics"/>
+  </record>
+  <record id="crm.crm_lead_action_pipeline_view_pivot" model="ir.actions.act_window.view">
+    <field name="act_window_id" ref="action_pipeline_analytics"/>
+  </record>
+  <record id="crm.crm_lead_action_pipeline_view_graph" model="ir.actions.act_window.view">
+    <field name="act_window_id" ref="action_pipeline_analytics"/>
+  </record>
+</odoo>

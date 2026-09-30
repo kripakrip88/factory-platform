@@ -32,26 +32,50 @@ class CrmLeadDeal(models.Model):
             lead.spec_count = counts.get(lead.id, 0)
 
     def action_open_specs(self):
-        """Расчёты этой сделки; из пустого списка сразу создаётся новый."""
+        """«Расчёт и КП» и кнопка-счётчик «Расчёты»: сразу к делу.
+
+        Разбор UX, шаг 31 (30.09.2026). Главная кнопка сделки ведёт не в
+        список, а туда, где продолжают работу:
+          • расчёта нет — форма нового, сделка и клиент уже подставлены;
+          • расчёт один — он сам;
+          • несколько — список расчётов сделки (выбрать нужный).
+        Стадию сделки кнопка не двигает — решение «без автоперехода».
+        """
         self.ensure_one()
-        return {
+        specs = self.env["pmk.metal.spec"].search([("opportunity_id", "=", self.id)])
+        action = {
             "type": "ir.actions.act_window",
             "name": _("Расчёты по сделке"),
             "res_model": "pmk.metal.spec",
-            "view_mode": "list,form",
-            "domain": [("opportunity_id", "=", self.id)],
-            # Клиент и сделка подставляются в новый расчёт: менеджер пришёл
-            # сюда со сделки, повторять её выбор руками незачем. Клиент —
-            # КОМПАНИЯ контакта сделки, сам человек — контактное лицо
-            # (разбор UX, шаг 11); предмет КП — черновиком из названия сделки.
-            "context": {
-                "default_opportunity_id": self.id,
-                "default_partner_id": self.partner_id.commercial_partner_id.id,
-                "default_contact_id": self._pmk_contact_person().id,
-                "default_note": self.name,
-            },
+            "target": "current",
+            "context": self._pmk_spec_defaults(),
         }
+        if not specs:
+            action.update(name=_("Новый расчёт"), views=[(False, "form")])
+        elif len(specs) == 1:
+            action.update(name=specs.name, res_id=specs.id, views=[(False, "form")])
+        else:
+            action.update(
+                view_mode="list,form",
+                views=[(False, "list"), (False, "form")],
+                domain=[("opportunity_id", "=", self.id)],
+            )
+        return action
 
+    def _pmk_spec_defaults(self):
+        """Что подставить в новый расчёт со сделки.
+
+        Менеджер пришёл сюда со сделки, повторять её выбор руками незачем.
+        Клиент — КОМПАНИЯ контакта сделки, сам человек — контактное лицо
+        (разбор UX, шаг 11); предмет КП — черновиком из названия сделки.
+        """
+        self.ensure_one()
+        return {
+            "default_opportunity_id": self.id,
+            "default_partner_id": self.partner_id.commercial_partner_id.id,
+            "default_contact_id": self._pmk_contact_person().id,
+            "default_note": self.name,
+        }
 
     def _pmk_contact_person(self):
         """Человек из «Контакта» сделки, если это человек внутри компании."""

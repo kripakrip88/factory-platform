@@ -428,6 +428,15 @@ $pmk-dark-alerts: (
     }
   }
 
+  // «Зависла» — тёмная пара красного тона (forms_nexus.scss, после плашек
+  // статусов; шаг 31).
+  body.o_nexus_dark .badge.o_mail_resource_rotting_bg {
+    $t: map-get($pmk-dark-tones, "red");
+    border-color: nth($t, 2);
+    background-color: nth($t, 1);
+    color: nth($t, 3);
+  }
+
   // ─── 8. Полоска маржи ──────────────────────────────────────────────────
   body.o_nexus_dark .o_pmk_margin__track {
     background: #3a3d44;

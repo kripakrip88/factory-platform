@@ -1,0 +1,87 @@
+// Деньги расчёта на сделке и на карточке воронки (разбор UX, шаг 31).
+// Разметка — views/crm_lead_money_views.xml, текст — tools/money_text.py.
+//
+// Цвет несёт смысл и повторён словом: красное «без цены: 1» — проблема
+// (позиции без цены закупки, итог по металлу занижен), остальное — обычным
+// текстом. Цвета те же, что у неполной маржи в списке расчётов
+// (pmk_bridge/margin_bar.scss): тёмно-красный на светлом, светло-красный на
+// тёмном (как .text-danger в pmk_theme/dark.scss).
+
+$pmk-deal-red: #a32d2d;
+$pmk-deal-red-dark: #f08a85;
+$pmk-deal-muted: #6b7078;
+
+// ─── Форма сделки: строка под названием ────────────────────────────────────
+// Строка ставится на место скрытого h2 «Ожидаемый доход … Вероятность».
+// Flex с переносом: длинная строка переносится целиком по « · » (внутри
+// чисел неразрывные пробелы), номер СМ- не обрезается никогда.
+.o_form_view .pmk-deal-money {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 0.4em;
+  row-gap: 0.15em;
+  margin: 0.15rem 0 1rem;
+  font-size: 1.0625rem;
+  font-variant-numeric: tabular-nums;
+
+  .pmk-noprice::before {
+    content: "·";
+    margin-right: 0.4em;
+    color: $pmk-deal-muted;
+    font-weight: 400;
+  }
+}
+
+// Поля строки — по ширине текста, чтобы «· без цены: 1» стояло в той же
+// строке. ⚠️ Ядро в режиме правки растягивает Char-поля под названием на всю
+// ширину: `.o_form_view .o_form_editable .oe_title .o_field_char { width:
+// 100% }` (web/views/form/form_controller.scss), вес 0,4,0. Сделка почти
+// всегда открыта в правке — правило ядра выигрывало, и flex разносил поля
+// по двум строкам с висящей «·» в начале второй. Второй селектор — тот же
+// путь ядра плюс наш класс (0,5,0), первый — для формы только для чтения.
+.o_form_view .oe_title .pmk-deal-money > .o_field_widget,
+.o_form_view .o_form_editable .oe_title .pmk-deal-money > .o_field_widget {
+  width: auto;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.o_form_view .pmk-deal-money__empty {
+  color: $pmk-deal-muted;
+  font-size: 0.9375rem;
+}
+
+// ─── Карточка воронки ──────────────────────────────────────────────────────
+.o_kanban_view .pmk-deal-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 0.5em;
+  row-gap: 0.1em;
+  font-variant-numeric: tabular-nums;
+
+  > .o_field_widget {
+    width: auto;
+    min-width: 0;
+  }
+}
+
+// «без цены: 1» — сигнал, не запрет: только цвет и жирность, без рамки.
+.pmk-noprice {
+  color: $pmk-deal-red;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+// ─── Тёмная тема (body.o_nexus_dark, pmk_theme/dark.scss) ─────────────────
+@media screen {
+  body.o_nexus_dark .pmk-noprice {
+    color: $pmk-deal-red-dark;
+  }
+
+  body.o_nexus_dark .o_form_view .pmk-deal-money .pmk-noprice::before,
+  body.o_nexus_dark .o_form_view .pmk-deal-money__empty {
+    color: var(--pmk-ink-3, #a3a29f);
+  }
+}
