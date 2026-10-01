@@ -57,6 +57,57 @@
         <attribute name="decoration-muted">state == 'draft'</attribute>
         <attribute name="decoration-danger">state == 'cancel'</attribute>
       </xpath>
+      <!-- Разбор UX, шаг 25: звезда «Приоритет» и «Активность» — в меню
+           колонок (⚙). Звёзд никто не ставит (приоритет запроса КП в «Убрать
+           совсем» разбора), задач по закупкам нет; колонка задач вернётся
+           вместе с задачами. Обратимо: снять optional или включить в ⚙. -->
+      <xpath expr="//field[@name='priority']" position="attributes">
+        <attribute name="optional">hide</attribute>
+      </xpath>
+      <xpath expr="//field[@name='activity_ids']" position="attributes">
+        <attribute name="optional">hide</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <!--
+    Список «Заказы поставщикам» — разбор UX, шаг 25 (01.10.2026). Тот же
+    порядок, что у «Запросов КП» выше:
+    • строка «к выставлению счёта» больше не голубая (decoration-info на
+      list), колонка «Выставление счетов» и кнопка «Создать счета» над
+      выбранными скрыты: счета поставщиков ведутся в МоёмСкладе, в Odoo их
+      нет. Колонка — в меню колонок (⚙), кнопка — invisible (узел на месте);
+    • звезда «Приоритет» и «Активность» — в меню колонок, как у запросов;
+    • «Номер» вместо «Справка» (перевод Reference).
+    Когда счета переедут в Odoo («Деньги»), вернуть: снять invisible у
+    кнопки, optional у колонки и вернуть decoration-info
+    (docs/disabled-features.md).
+    Вид purchase_stock ставит «Приёмку» перед колонкой счетов — правки здесь
+    только в атрибутах, его xpath не страдает.
+  -->
+  <record id="purchase_order_view_tree_pmk" model="ir.ui.view">
+    <field name="name">purchase.order.list.pmk.columns</field>
+    <field name="model">purchase.order</field>
+    <field name="inherit_id" ref="purchase.purchase_order_view_tree"/>
+    <field name="arch" type="xml">
+      <xpath expr="//list" position="attributes">
+        <attribute name="decoration-info"/>
+      </xpath>
+      <xpath expr="//header/button[@name='action_create_invoice']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//field[@name='name']" position="attributes">
+        <attribute name="string">Номер</attribute>
+      </xpath>
+      <xpath expr="//field[@name='priority']" position="attributes">
+        <attribute name="optional">hide</attribute>
+      </xpath>
+      <xpath expr="//field[@name='activity_ids']" position="attributes">
+        <attribute name="optional">hide</attribute>
+      </xpath>
+      <xpath expr="//field[@name='invoice_status']" position="attributes">
+        <attribute name="optional">hide</attribute>
+      </xpath>
     </field>
   </record>
 </odoo>

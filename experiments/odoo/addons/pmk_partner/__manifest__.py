@@ -37,6 +37,10 @@
         "purchase_stock",
         "product",
         "website",
+        # Колонка «Сделок» в списке «Клиенты» (свой счётчик pmk_deal_count
+        # поверх crm.lead, разбор UX, шаг 25). crm и так приходит через
+        # pmk_theme — здесь явно, чтобы владелец модели был виден в списке.
+        "crm",
         # ради стилей полей
         "pmk_theme",
     ],
@@ -49,6 +53,8 @@
         "views/res_partner_tabs_views.xml",
         # Значок счетов отличается от значка договоров (разбор UX, 28.09.2026).
         "views/partner_stat_buttons.xml",
+        # Свой список «Клиенты», отдельный от «Поставщиков» (разбор UX, шаг 25).
+        "views/res_partner_list_views.xml",
     ],
     "license": "LGPL-3",
     "installable": True,

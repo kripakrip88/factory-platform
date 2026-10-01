@@ -4,6 +4,8 @@
 Поле объявлено в pmk_deal; почта от модуля сделки не зависит. Без pmk_deal
 тест пропускается, а лид создаётся как раньше.
 """
+from datetime import timedelta
+
 from odoo import fields
 from odoo.tests import TransactionCase, tagged
 
@@ -38,3 +40,20 @@ class TestLeadSource(TransactionCase):
         })
         message.action_pmk_create_lead()
         self.assertEqual(message.pmk_lead_id.pmk_source, "mail")
+
+    def test_lead_received_is_letter_date(self):
+        """«Получен» — дата письма, а не момент нажатия «Лид» (шаг 25)."""
+        if "pmk_received" not in self.env["crm.lead"]._fields:
+            self.skipTest("pmk_deal не установлен — поля «Получен» нет")
+        letter_date = fields.Datetime.now() - timedelta(days=4)
+        message = self.env["mail.client.message"].create({
+            "account_id": self.account.id, "folder_id": self.folder.id,
+            "imap_uid": 2, "subject": "Запрос КП на ферму",
+            "email_from": "client@example.org", "date": letter_date,
+            "body_html": "<div>Прошу посчитать</div>", "body_state": "fetched",
+            "structure_state": "parsed", "pmk_cid_checked": True,
+        })
+        message.action_pmk_create_lead()
+        lead = message.pmk_lead_id
+        self.assertEqual(lead.pmk_received, message.date)
+        self.assertLess(lead.pmk_received, lead.create_date)

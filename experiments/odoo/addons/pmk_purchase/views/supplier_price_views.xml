@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+  <!--
+    «Закупки → Цены поставщиков» — все строки прайсов одним списком
+    (разбор UX, шаг 25, 01.10.2026).
+
+    Раньше цену было видно только из карточки товара, по одной позиции, а
+    длину хлыста — нигде: поле было только в модели и в загрузчике прайсов.
+    Здесь: Поставщик · Позиция · Марка, габарит · Длина хлыста · Цена · Ед. ·
+    Цена, ₽/т · Действует с · по · Мин. кол-во.
+
+    • Цены — для себестоимости, не для перепродажи: список отвечает на вопрос
+      «почём металл у поставщиков», а не «почём продаём».
+    • «Цена, ₽/т» — по той же массе единицы, что берёт расчёт (мост,
+      models/reference_price.py): прокат — масса метра, лист — вес листа.
+    • Позиции без цены сюда не попадают — их показывает справочник проката и
+      листа («нет в прайсах», фильтр «Нет в прайсах»).
+    • По умолчанию — цены, действующие сегодня; вся история — снять фильтр.
+      «Старше 30 дней» — прайс пора обновить; «Без даты» — строка без даты
+      начала (такие действуют всегда).
+    • Только просмотр: цены заливает загрузчик прайсов, новые строки отсюда
+      не создаются, не удаляются и не дублируются — ни в списке, ни в форме
+      строки (своя форма ниже; у штатной есть «Создать» и «Действие →
+      Удалить», а на строку прайса ссылаются расчёты). Правка одной цены —
+      щелчком по строке. Завести или удалить строку руками можно в карточке
+      товара, вкладка «Закупка».
+  -->
+  <record id="view_supplier_price_list" model="ir.ui.view">
+    <field name="name">product.supplierinfo.list.pmk.prices</field>
+    <field name="model">product.supplierinfo</field>
+    <!-- priority 32: не становиться списком прайса по умолчанию (штатный —
+         16): карточка товара и закупка берут штатный. -->
+    <field name="priority">32</field>
+    <field name="arch" type="xml">
+      <list string="Цены поставщиков" create="0" delete="0" duplicate="0"
+            default_order="product_tmpl_id, date_start desc, min_qty">
+        <field name="partner_id" string="Поставщик" readonly="1"/>
+        <field name="product_tmpl_id" string="Позиция" readonly="1"/>
+        <field name="pmk_variant_label" optional="show"/>
+        <!-- Пусто, а не «0»: у листа, метизов и мотков длины хлыста нет. -->
+        <field name="pmk_bar_length_mm" string="Длина хлыста, мм" optional="show"
+               options="{'hide_trailing_zeros': True}"
+               invisible="not pmk_bar_length_mm"/>
+        <field name="price" string="Цена, ₽" digits="[16,2]" readonly="1"/>
+        <field name="product_uom_id" string="Ед." optional="show" readonly="1"
+               options="{'no_open': True}"/>
+        <field name="pmk_price_ton" optional="show" invisible="not pmk_price_ton"/>
+        <field name="date_start" string="Действует с"/>
+        <field name="date_end" string="по" optional="show"/>
+        <field name="min_qty" string="Мин. кол-во" optional="show"
+               options="{'hide_trailing_zeros': True}"/>
+        <field name="currency_id" column_invisible="1"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="view_supplier_price_search" model="ir.ui.view">
+    <field name="name">product.supplierinfo.search.pmk.prices</field>
+    <field name="model">product.supplierinfo</field>
+    <field name="priority">32</field>
+    <field name="arch" type="xml">
+      <search string="Цены поставщиков">
+        <field name="product_tmpl_id" string="Позиция"/>
+        <field name="partner_id" string="Поставщик"/>
+
+        <filter name="current" string="Действуют сегодня"
+                domain="['|', ('date_start', '=', False), ('date_start', '&lt;=', context_today().strftime('%Y-%m-%d')),
+                         '|', ('date_end', '=', False), ('date_end', '&gt;=', context_today().strftime('%Y-%m-%d'))]"/>
+        <separator/>
+        <filter name="older_30" string="Старше 30 дней"
+                domain="[('date_start', '&lt;', (context_today() - relativedelta(days=30)).strftime('%Y-%m-%d'))]"/>
+        <filter name="no_date" string="Без даты"
+                domain="[('date_start', '=', False)]"/>
+        <separator/>
+        <!-- Одна строка на позицию и прайс: оптовые пороги (3, 5 листов)
+             прячутся. Расчёт берёт именно базовую цену. -->
+        <filter name="base_qty" string="Базовая цена (без опта)"
+                domain="[('min_qty', '=', 0)]"/>
+
+        <group>
+          <filter name="by_partner" string="Поставщик" context="{'group_by': 'partner_id'}"/>
+          <filter name="by_product" string="Позиция" context="{'group_by': 'product_tmpl_id'}"/>
+          <filter name="by_date" string="Действует с" context="{'group_by': 'date_start:day'}"/>
+        </group>
+      </search>
+    </field>
+  </record>
+
+  <!--
+    Форма строки прайса для «Цен поставщиков» — штатная, но без «Создать»,
+    «Удалить» и «Дублировать» (mode primary: штатная форма не тронута, её
+    по-прежнему берут остальные места). Плюс «Длина хлыста» — единственное
+    место, где её можно дописать к строке из этого списка.
+  -->
+  <record id="view_supplier_price_form" model="ir.ui.view">
+    <field name="name">product.supplierinfo.form.pmk.prices</field>
+    <field name="model">product.supplierinfo</field>
+    <field name="inherit_id" ref="product.product_supplierinfo_form_view"/>
+    <field name="mode">primary</field>
+    <!-- priority 32: не становиться формой строки прайса по умолчанию. -->
+    <field name="priority">32</field>
+    <field name="arch" type="xml">
+      <xpath expr="//form" position="attributes">
+        <attribute name="create">0</attribute>
+        <attribute name="delete">0</attribute>
+        <attribute name="duplicate">0</attribute>
+      </xpath>
+      <xpath expr="//field[@name='discount']" position="before">
+        <field name="pmk_bar_length_mm" string="Длина хлыста, мм"
+               options="{'hide_trailing_zeros': True}"/>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="action_supplier_prices" model="ir.actions.act_window">
+    <field name="name">Цены поставщиков</field>
+    <field name="res_model">product.supplierinfo</field>
+    <field name="path">supplier-prices</field>
+    <field name="view_mode">list,form</field>
+    <field name="view_id" ref="view_supplier_price_list"/>
+    <field name="search_view_id" ref="view_supplier_price_search"/>
+    <!-- visible_product_tmpl_id=False: иначе штатная форма строки прайса
+         прячет товар — она рассчитана на открытие из карточки товара. -->
+    <field name="context">{'visible_product_tmpl_id': False, 'search_default_current': 1}</field>
+    <field name="help" type="html">
+      <p class="o_view_nocontent_smiling_face">Цен поставщиков ещё нет</p>
+      <p>Здесь появятся строки прайсов после их загрузки: поставщик, позиция,
+         длина хлыста, цена и дата прайса.</p>
+    </field>
+  </record>
+
+  <!-- Оба вида — явно: с одной привязкой формы Odoo открыл бы форму
+       первой (привязки идут раньше view_id действия). -->
+  <record id="action_supplier_prices_list_binding" model="ir.actions.act_window.view">
+    <field name="sequence">1</field>
+    <field name="view_mode">list</field>
+    <field name="view_id" ref="view_supplier_price_list"/>
+    <field name="act_window_id" ref="action_supplier_prices"/>
+  </record>
+  <record id="action_supplier_prices_form_binding" model="ir.actions.act_window.view">
+    <field name="sequence">2</field>
+    <field name="view_mode">form</field>
+    <field name="view_id" ref="view_supplier_price_form"/>
+    <field name="act_window_id" ref="action_supplier_prices"/>
+  </record>
+
+  <!--
+    Поставщики в карточке товара (вкладка «Закупка»), разбор UX, шаг 25:
+    «Длина хлыста» — впервые на экране (раньше только в модели и загрузчике),
+    «Действует с» — видно, из какого прайса строка; «Валюта» (у всех рубль) —
+    в меню колонок. Тот же вид у варианта товара (наследник ядра).
+  -->
+  <record id="product_supplierinfo_tree_view2_pmk" model="ir.ui.view">
+    <field name="name">product.supplierinfo.list.view2.pmk</field>
+    <field name="model">product.supplierinfo</field>
+    <field name="inherit_id" ref="purchase.product_supplierinfo_tree_view2"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='date_start']" position="attributes">
+        <attribute name="string">Действует с</attribute>
+        <attribute name="optional">show</attribute>
+      </xpath>
+      <xpath expr="//field[@name='price']" position="before">
+        <!-- Ячейка не прячется: список правится в строке, и у сохранённой
+             строки без длины (822 из 1554 на 01.10) её надо дописать —
+             скрытая ячейка скрывала и поле ввода. Ноль — серым: у листа,
+             метиза и мотка длины хлыста нет; бледные нули темы во вложенных
+             таблицах не работают, поэтому явно. -->
+        <field name="pmk_bar_length_mm" string="Длина хлыста, мм" optional="show"
+               options="{'hide_trailing_zeros': True}"
+               decoration-muted="not pmk_bar_length_mm"/>
+      </xpath>
+      <xpath expr="//field[@name='currency_id']" position="attributes">
+        <attribute name="optional">hide</attribute>
+      </xpath>
+    </field>
+  </record>
+
+</odoo>

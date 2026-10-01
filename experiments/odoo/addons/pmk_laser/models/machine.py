@@ -29,7 +29,19 @@ mrp тому, кто заведёт на этом же центре рабоче
 рабочему центру, и ни одна цифра не переедет в чужие поля.
 """
 
-from odoo import fields, models
+from odoo import api, fields, models
+
+
+def table_size_label(width_mm, length_mm):
+    """«1500×6000» из ширины и длины стола; не задана хоть одна — пусто.
+
+    Целые миллиметры без хвоста нулей: у стола дробных размеров не бывает,
+    а «1500,0×6000,0» читается хуже. Разряды без пробела — как в габарите
+    листа («1500x6000»), иначе подпись разъезжается на два слова.
+    """
+    if not width_mm or not length_mm:
+        return False
+    return "%g×%g" % (width_mm, length_mm)
 
 
 class LaserMachine(models.Model):
@@ -63,6 +75,13 @@ class LaserMachine(models.Model):
         help="Рамка для технолога: задание толще этого станок не возьмёт.")
     max_width_mm = fields.Float("Стол, ширина мм", digits=(8, 0), aggregator=None)
     max_length_mm = fields.Float("Стол, длина мм", digits=(8, 0), aggregator=None)
+    # Разбор UX, шаг 25: габарит стола одной колонкой списка — «1500×6000»,
+    # как пишут габарит листа (ширина × длина, характеристика «1500x6000»
+    # у листа в номенклатуре): технолог сверяет лист со столом глазами.
+    # Не хранится — это подпись из двух полей выше, не новое значение.
+    table_size_label = fields.Char(
+        "Стол, мм", compute="_compute_table_size_label",
+        help="Ширина × длина стола. Пусто — размеры стола не заданы.")
 
     shift_minutes = fields.Integer(
         "Минут в смене", default=480,
@@ -76,6 +95,12 @@ class LaserMachine(models.Model):
              "разных справочника с похожими названиями.")
 
     note = fields.Text("Примечание")
+
+    @api.depends("max_width_mm", "max_length_mm")
+    def _compute_table_size_label(self):
+        for machine in self:
+            machine.table_size_label = table_size_label(
+                machine.max_width_mm, machine.max_length_mm)
 
     _load_positive = models.Constraint(
         "CHECK(load_min >= 0 AND unload_min >= 0)",

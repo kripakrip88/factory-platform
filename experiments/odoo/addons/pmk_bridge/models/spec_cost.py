@@ -60,8 +60,12 @@ class SupplierInfoBarLength(models.Model):
 
     _inherit = "product.supplierinfo"
 
+    # aggregator=None (разбор UX, шаг 25): в списке «Цены поставщиков»,
+    # сгруппированном по поставщику, длины хлыстов складывались бы в строке
+    # группы — число, которое ничего не значит (как массы в справочниках,
+    # шаг 24).
     pmk_bar_length_mm = fields.Float(
-        "Длина хлыста, мм", digits=(10, 1),
+        "Длина хлыста, мм", digits=(10, 1), aggregator=None,
         help="Как поставщик продаёт эту позицию. Пусто — в прайсе длины не "
              "было (лист, метизы, мотки).")
 
@@ -807,8 +811,12 @@ class MetalSpecLineCost(models.Model):
     # повторной заливке ПЕРЕЗАПИСЫВАЕТ запись того же дня, поэтому ссылка
     # через месяц покажет другую цену. Ссылка ниже — только «посмотреть», ею
     # нельзя считать.
+    # ⚠️ ВЫЧИСЛЯЕМОЕ ТЕМ ЖЕ МЕТОДОМ, ЧТО И ЦЕНА. Обычным полем оно читалось
+    # пустым сразу после создания детали: вычисление цены отложено до сброса,
+    # а чтение обычного поля его не запускает (тест шага 25 поймал это).
     price_source_id = fields.Many2one(
-        "product.supplierinfo", "Строка прайса", readonly=True,
+        "product.supplierinfo", "Строка прайса",
+        compute="_compute_price_from_supplier", store=True, readonly=True,
         help="Только для просмотра: содержимое строки меняется при заливке "
              "нового прайса.")
 
@@ -924,19 +932,14 @@ class MetalSpecLineCost(models.Model):
         Исключение — лист: он продаётся целым листом, и масса нужна именно
         листа, а не квадратного метра. Её берём с карточки: там сотни
         килограммов, и два знака безвредны.
+
+        Правило живёт у справочника (_pmk_mass_per_unit в reference_link.py,
+        разбор UX, шаг 25): по нему же считает цену за тонну справочник и
+        список «Цены поставщиков» — одна дверь, числа не расходятся.
         """
         self.ensure_one()
-        if self.calc_mode == "linear":
-            return self.profile_id.mass_per_meter
-        if self.calc_mode == "sheet":
-            return tmpl.weight
-        if self.calc_mode == "fastener":
-            return self.fastener_id.weight_kg
-        if self.calc_mode == "paint":
-            # Краска продаётся килограммами: цена килограмма и есть цена
-            # единицы, переводить нечего.
-            return 1.0
-        return 0.0
+        position = self._cost_position()
+        return position._pmk_mass_per_unit(tmpl) if position else 0.0
 
     @api.depends("calc_mode", "profile_id", "sheet_id", "fastener_id", "paint_id",
                  "spec_id.price_date", "spec_id.supplier_id")
@@ -1091,32 +1094,15 @@ class MetalSpecLineCost(models.Model):
         сколько это стоило в июне»: вкладка «Цены» сравнивает два прайса, и
         расхождение в правилах выбора поставщика сделало бы сравнение
         бессмысленным — разница показывала бы не цену, а другой алгоритм.
+
+        Само правило выбора — у карточки товара (product.template.
+        _pmk_find_seller, reference_price.py, разбор UX, шаг 25): по нему же
+        справочник показывает цену колонкой. Здесь — только дата и поставщик
+        этого расчёта.
         """
         self.ensure_one()
         date = date or self.spec_id.price_date or fields.Date.context_today(self)
-        sellers = tmpl.seller_ids.filtered(
-            lambda s: (not s.date_start or s.date_start <= date)
-            and (not s.date_end or s.date_end >= date))
-        if not sellers:
-            return False
-
-        chosen = self.spec_id.supplier_id
-        if chosen:
-            sellers = sellers.filtered(lambda s: s.partner_id == chosen)
-            if not sellers:
-                return False
-        else:
-            # Рейтинг решает, чьи цены берём; при равном рейтинге — кто
-            # дешевле. Сортировка по контрагенту, а не по строке прайса:
-            # поле sequence в строке занято номером уровня объёма.
-            best_rank = min(sellers.mapped("partner_id.pmk_supplier_rank") or [0])
-            sellers = sellers.filtered(
-                lambda s: s.partner_id.pmk_supplier_rank == best_rank)
-
-        # Внутри поставщика берём базовый уровень: на этапе КП объём закупки
-        # ещё не определён, и обещать оптовую цену рано.
-        base = sellers.filtered(lambda s: not s.min_qty)
-        return (base or sellers).sorted(lambda s: (s.price_discounted, s.id))[:1]
+        return tmpl._pmk_find_seller(date, supplier=self.spec_id.supplier_id) or False
 
     def _reset_price_fields(self):
         self.ensure_one()

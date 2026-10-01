@@ -823,6 +823,10 @@ class MailClientMessage(models.Model):
         # модуля сделки и работала и без него.
         if "pmk_source" in self.env["crm.lead"]._fields:
             values["pmk_source"] = "mail"
+        # «Получен» (разбор UX, шаг 25) — когда пришло письмо, а не когда
+        # нажали «Лид»: между ними бывают дни. Поле тоже в pmk_deal.
+        if self.date and "pmk_received" in self.env["crm.lead"]._fields:
+            values["pmk_received"] = self.date
         lead = (
             self.env["crm.lead"]
             .with_context(

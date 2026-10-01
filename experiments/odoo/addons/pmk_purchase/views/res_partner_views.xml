@@ -66,10 +66,34 @@
           <button name="action_pmk_period_biweekly" type="object"
                   string="Раз в две недели"/>
         </header>
-        <field name="pmk_price_mailing" string="В рассылке" widget="boolean_toggle"/>
+        <!-- Переключатель — только у реестра прайсов (разбор UX, шаг 25). С
+             шага 25 этот список открывают и «Закупки → Поставщики», а там
+             бывает поставщик без флажка «Поставщик прайсов»: включённый ему
+             переключатель выглядел бы рассылкой, но крон пишет только
+             реестру — письмо не ушло бы никогда. Пустая ячейка — как в
+             карточке, где блок «Прайсы» без флажка не показывается. -->
+        <field name="pmk_price_supplier" column_invisible="1"/>
+        <field name="pmk_price_mailing" string="В рассылке" widget="boolean_toggle"
+               invisible="not pmk_price_supplier" width="70px"/>
         <field name="name"/>
-        <field name="pmk_supply_ids" widget="many2many_tags" string="Что возит"/>
-        <field name="pmk_has_stock" string="Склад ДВ"/>
+        <!-- ИНН — в меню колонок (разбор UX, шаг 25): заполнен у одного
+             поставщика из двадцати, по нему не ищут, но сверять реквизиты
+             удобно здесь. Хранится в vat (inn локализации — его зеркало).
+             Попутно новое поле в виде сбрасывает выбор колонок, запомненный
+             браузером раньше: после шага 13 в этом списке так и не появились
+             «Прайс от» и «Следующий запрос» — старый выбор был сильнее. -->
+        <field name="vat" string="ИНН" readonly="1" optional="hide"/>
+        <!-- Ширины заданы (разбор UX, шаг 25): ядро сжимало метки «Что
+             возит» до 96 px — шесть меток вставали столбиком и раздували
+             строку до шести этажей, — а колонку-галочку до 36 px, и шапка
+             «Склад ДВ» ломалась по буквам. Место взято у дат «Запрос
+             отправлен» и «Прайс от»: ядро держит под них 204 и 132 px ради
+             секунд и полного года, а в списке «21 сент., 20:15» и «21 сент.»,
+             и у переключателя «В рассылке» (96 px под шапку в одну строку).
+             Без этого место ушло бы у «Названия». -->
+        <field name="pmk_supply_ids" widget="many2many_tags" string="Что возит"
+               width="190px"/>
+        <field name="pmk_has_stock" string="Склад ДВ" width="44px"/>
         <field name="pmk_price_email" string="Адрес для прайса"/>
         <field name="pmk_price_email_state" widget="badge"
                decoration-warning="pmk_price_email_state == 'draft'"
@@ -79,10 +103,12 @@
         <field name="city" optional="show"/>
         <field name="website" optional="hide"/>
         <field name="pmk_price_period_days" string="Период, дней" optional="show"/>
-        <field name="pmk_price_request_date" string="Запрос отправлен" optional="show"/>
+        <field name="pmk_price_request_date" string="Запрос отправлен" optional="show"
+               width="112px"/>
         <!-- «Прайс от», а не «Прайс получен»: дата — это дата самого прайса
              поставщика («Действует с» у его цен), а не день загрузки. -->
-        <field name="pmk_price_last_date" string="Прайс от" optional="show"/>
+        <field name="pmk_price_last_date" string="Прайс от" optional="show"
+               width="80px"/>
         <!-- Срок словами («через 6 дней», «просрочено на 2 дня»). Красным и
              жёлтым — только у тех, кто в рассылке: остальным письмо само не
              уйдёт, и подсвечивать их срок значит кричать о том, что никто не
@@ -172,6 +198,23 @@
     <field name="sequence">2</field>
     <field name="view_mode">form</field>
     <field name="act_window_id" ref="action_price_supplier"/>
+  </record>
+
+  <!--
+    «Закупки → Поставщики» — тем же списком, что «Поставщики прайсов»
+    (разбор UX, шаг 25). Раньше меню открывало штатный список контрагентов —
+    тот же вид, что и «Продажи → Клиенты», и выбор колонок в ⚙ у клиентов и
+    поставщиков был общим (браузер помнит его по модели и виду). У клиентов
+    теперь свой вид (pmk_partner, res_partner_list_views.xml), у поставщиков —
+    этот. Кто попадает в список, по-прежнему решает фильтр «Поставщики»
+    (штатный признак или реестр прайсов). Вернуть штатный вид — удалить эту
+    запись (docs/disabled-features.md).
+  -->
+  <record id="action_supplier_list_binding" model="ir.actions.act_window.view">
+    <field name="sequence">1</field>
+    <field name="view_mode">list</field>
+    <field name="view_id" ref="view_price_supplier_list"/>
+    <field name="act_window_id" ref="account.res_partner_action_supplier"/>
   </record>
   <!--
     Поиск «Клиентов» и «Поставщиков» — разбор UX, шаг 9 (Антон, 28.09.2026:

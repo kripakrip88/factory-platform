@@ -185,4 +185,172 @@
     </field>
   </record>
 
+  <!--
+    Колонки списка сделок — разбор UX, шаг 25 (01.10.2026).
+    Итог: Сделка · Клиент · Имя контакта · Менеджер · Цена клиенту · Маржа ·
+    Вес, т · Ответить клиенту до · Стадия с «N дн».
+
+    • Клиент — компания, а не человек (pmk_client_id, как на карточке
+      воронки). Штатный «Контакт» (человек) остался в меню колонок.
+    • Маржа — полоской, как в списке расчётов: неполный расчёт (есть позиции
+      без цены закупки) — красная полоска и «≤» (маржа завышена), цены клиенту
+      в расчёте нет — прочерк. База полоски — цена клиенту из расчёта
+      (pmk_spec_price), а не «Цена клиенту» списка: ту можно вписать в строке,
+      и сделка без расчёта показала бы «0,0 %» как плохую маржу. Вес, т —
+      главного расчёта. Всё — окно в расчёт (связанные поля,
+      models/deal_money.py), не копия.
+    • «Эл. почта» — в меню колонок: показывала «Имя <адрес>» — дубль имени.
+    • Из меню колонок убраны (column_invisible, а не удаление: узлы на месте
+      для xpath'ов других модулей; колонки и раньше были только в ⚙): город,
+      регион, страна, команда (у всех одна), вероятность (считал автомат без
+      истории), кампания, канал, источник (маркетинг скрыт шагом 8, пусто у
+      всех), теги (0), задачи (0). Задачи остались в ⚙ списка «Мои задачи» —
+      вид ниже. Списки «Анализ воронки» и «Прогноз» строятся из этого
+      (mode primary) и получают ту же правку.
+    • Кнопки «Эл. почта» — в шапке над выбранными и в каждой строке —
+      скрыты: письмо клиенту пишут из почты или из сделки, рассылки по
+      списку завод не делает. «СМС» — модуль pmk_deal_sms.
+    Всё скрыто обратимо: вернуть — снять атрибут (docs/disabled-features.md).
+  -->
+  <record id="view_crm_lead_list_columns" model="ir.ui.view">
+    <field name="name">crm.lead.list.pmk.columns</field>
+    <field name="model">crm.lead</field>
+    <field name="inherit_id" ref="crm.crm_case_tree_view_oppor"/>
+    <field name="arch" type="xml">
+      <!-- Ширины «Клиента» и «Менеджера» заданы: без них ядро отдаёт
+           свободное место самой длинной колонке («Возможность»), а эти две
+           сжимает до минимума — «ООО «Ар…», «Антон Карне». -->
+      <xpath expr="//field[@name='name']" position="after">
+        <field name="pmk_client_id" optional="show" width="160px"/>
+      </xpath>
+      <xpath expr="//field[@name='email_from']" position="attributes">
+        <attribute name="optional">hide</attribute>
+      </xpath>
+      <xpath expr="//field[@name='user_id']" position="attributes">
+        <attribute name="string">Менеджер</attribute>
+        <attribute name="width">130px</attribute>
+      </xpath>
+      <xpath expr="//field[@name='expected_revenue']" position="after">
+        <field name="pmk_margin_pct" string="Маржа" optional="show"
+               widget="pmk_margin_bar"
+               options="{'incomplete_field': 'pmk_price_incomplete', 'base_field': 'pmk_spec_price', 'missing_field': 'pmk_no_price_count'}"/>
+        <field name="pmk_weight_t" string="Вес, т" digits="[12,3]"
+               sum="Итого, т" optional="show"/>
+        <field name="pmk_price_incomplete" column_invisible="1"/>
+        <field name="pmk_no_price_count" column_invisible="1"/>
+        <field name="pmk_spec_price" column_invisible="1"/>
+      </xpath>
+      <xpath expr="//field[@name='city']" position="attributes">
+        <attribute name="column_invisible">1</attribute>
+      </xpath>
+      <xpath expr="//field[@name='state_id']" position="attributes">
+        <attribute name="column_invisible">1</attribute>
+      </xpath>
+      <xpath expr="//field[@name='country_id']" position="attributes">
+        <attribute name="column_invisible">1</attribute>
+      </xpath>
+      <xpath expr="//field[@name='team_id']" position="attributes">
+        <attribute name="column_invisible">1</attribute>
+      </xpath>
+      <xpath expr="//field[@name='probability']" position="attributes">
+        <attribute name="column_invisible">1</attribute>
+      </xpath>
+      <xpath expr="//field[@name='campaign_id']" position="attributes">
+        <attribute name="column_invisible">1</attribute>
+      </xpath>
+      <xpath expr="//field[@name='medium_id']" position="attributes">
+        <attribute name="column_invisible">1</attribute>
+      </xpath>
+      <xpath expr="//field[@name='source_id']" position="attributes">
+        <attribute name="column_invisible">1</attribute>
+      </xpath>
+      <xpath expr="//field[@name='tag_ids']" position="attributes">
+        <attribute name="column_invisible">1</attribute>
+      </xpath>
+      <xpath expr="//field[@name='activity_ids']" position="attributes">
+        <attribute name="column_invisible">1</attribute>
+      </xpath>
+      <xpath expr="//field[@name='activity_user_id']" position="attributes">
+        <attribute name="column_invisible">1</attribute>
+      </xpath>
+      <xpath expr="//field[@name='my_activity_date_deadline']" position="attributes">
+        <attribute name="column_invisible">1</attribute>
+      </xpath>
+      <xpath expr="//header/button[@name='%(crm.action_lead_mass_mail)d']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <!-- Кнопка строки: одного invisible мало — колонка кнопок остаётся
+           пустой полосой ~90 px и сжимает «Клиента» и «Менеджера». Колонку
+           убирает column_invisible, и только когда он стоит у ВСЕХ кнопок
+           группы (рядом кнопка «СМС» — её гасит pmk_deal_sms). -->
+      <xpath expr="//button[@name='%(crm.action_lead_mail_compose)d']" position="attributes">
+        <attribute name="invisible">1</attribute>
+        <attribute name="column_invisible">1</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <!--
+    «Мои задачи» (часики вверху → Сделки) — тот же список сделок, но про
+    задачи. Колонки задач здесь нужны: возвращаем их к штатному виду
+    (в меню колонок, «Мой срок» — порядок списка). Вид наследует список
+    сделок и применяется после правки выше.
+  -->
+  <record id="view_crm_lead_list_activities_keep" model="ir.ui.view">
+    <field name="name">crm.lead.list.activities.pmk.keep</field>
+    <field name="model">crm.lead</field>
+    <field name="inherit_id" ref="crm.crm_lead_view_list_activities"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='activity_ids']" position="attributes">
+        <attribute name="column_invisible"/>
+      </xpath>
+      <xpath expr="//field[@name='activity_user_id']" position="attributes">
+        <attribute name="column_invisible"/>
+      </xpath>
+      <xpath expr="//field[@name='my_activity_date_deadline']" position="attributes">
+        <attribute name="column_invisible"/>
+      </xpath>
+    </field>
+  </record>
+
+  <!--
+    Колонки списка лидов — разбор UX, шаг 25. Итог: Лид · Получен · Эл. почта ·
+    Менеджер. «Получен» — когда клиент написал (pmk_received,
+    models/deal_money.py): у лида из почты — дата письма, у заведённого
+    руками — дата заведения. Не дата создания лида: лид заводят кнопкой
+    «Лид» часы и дни спустя, и create_date занижал бы задержку ответа.
+    Штатная «Дата создания» осталась на своём месте в ⚙. Сразу за
+    названием. Город, страна (пусты у всех) и команда (у всех одна) —
+    в меню колонок (⚙). «Откуда пришёл» — в меню колонок; заодно новое поле
+    в виде сбрасывает выбор колонок, запомненный браузером до шага 25 (иначе
+    старый выбор оказался бы сильнее новых настроек).
+    Маркетинг и вероятность у лида и так только в меню колонок — их этот шаг
+    не трогает (таблица «Чего не хватает» о них для лидов молчит).
+  -->
+  <record id="view_crm_lead_leads_list_columns" model="ir.ui.view">
+    <field name="name">crm.lead.list.lead.pmk.columns</field>
+    <field name="model">crm.lead</field>
+    <field name="inherit_id" ref="crm.crm_case_tree_view_leads"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='name']" position="after">
+        <field name="pmk_received" widget="date" optional="show"/>
+      </xpath>
+      <xpath expr="//field[@name='user_id']" position="attributes">
+        <attribute name="string">Менеджер</attribute>
+      </xpath>
+      <xpath expr="//field[@name='user_id']" position="after">
+        <field name="pmk_source" optional="hide"/>
+      </xpath>
+      <xpath expr="//field[@name='city']" position="attributes">
+        <attribute name="optional">hide</attribute>
+      </xpath>
+      <xpath expr="//field[@name='country_id']" position="attributes">
+        <attribute name="optional">hide</attribute>
+      </xpath>
+      <xpath expr="//field[@name='team_id']" position="attributes">
+        <attribute name="optional">hide</attribute>
+      </xpath>
+    </field>
+  </record>
+
 </odoo>

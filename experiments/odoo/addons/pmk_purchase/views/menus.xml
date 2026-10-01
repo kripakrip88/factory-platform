@@ -15,6 +15,15 @@
     <field name="sequence">36</field>
   </record>
 
+  <!-- Все строки прайсов одним списком (разбор UX, шаг 25): после рассылки —
+       то, что она приносит. -->
+  <record id="menu_supplier_prices" model="ir.ui.menu">
+    <field name="name">Цены поставщиков</field>
+    <field name="parent_id" ref="pmk_theme.menu_pmk_purchase"/>
+    <field name="action" ref="action_supplier_prices"/>
+    <field name="sequence">37</field>
+  </record>
+
   <record id="menu_supply_category" model="ir.ui.menu">
     <field name="name">Группы поставки</field>
     <field name="parent_id" ref="pmk_theme.menu_pmk_purchase"/>

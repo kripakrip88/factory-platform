@@ -20,8 +20,11 @@
       <xpath expr="//header/button[@name='%(crm_sms.crm_lead_act_window_sms_composer_single)d']" position="attributes">
         <attribute name="invisible">1</attribute>
       </xpath>
+      <!-- column_invisible — чтобы не осталась пустая колонка кнопок строки
+           (вместе с кнопкой «Эл. почта», её гасит pmk_deal, шаг 25). -->
       <xpath expr="//button[@name='%(crm_sms.crm_lead_act_window_sms_composer_multi)d']" position="attributes">
         <attribute name="invisible">1</attribute>
+        <attribute name="column_invisible">1</attribute>
       </xpath>
     </field>
   </record>

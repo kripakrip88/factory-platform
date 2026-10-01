@@ -12,19 +12,33 @@
              копеек, как деньги в остальных списках (точная — в задании). -->
         <field name="name" width="105px"/>
         <field name="date"/>
-        <field name="partner_id" optional="show"/>
-        <field name="sheet_id" string="Лист"/>
+        <!-- Разбор UX, шаг 25. «Заказчик», «Лист» и «План / Факт, мин» — в
+             меню колонок (⚙): заказчика у заданий нет, название листа
+             обрезалось, а в нём важна одна толщина — она теперь своей
+             колонкой. Минуты плана и факта нужны при разборе нормативов, не
+             каждый день. -->
+        <field name="partner_id" optional="hide"/>
+        <field name="sheet_id" string="Лист" optional="hide"/>
+        <field name="thickness_mm" options="{'hide_trailing_zeros': True}"/>
         <field name="machine_id"/>
         <field name="sheet_count" sum="Листов"/>
         <field name="utilization_pct" optional="show"/>
         <field name="useful_mass_kg" sum="Полезный вес, кг"/>
+        <!-- Лом — главная цифра экономии металла (премия от маржи): с итогом
+             внизу. Считается вычитанием, не вводится. -->
+        <field name="scrap_mass_kg" sum="Лом, кг" optional="show"/>
         <field name="premium_rub" digits="[10,0]" sum="Премия, ₽"/>
-        <field name="planned_minutes" sum="План, мин" optional="show"/>
-        <field name="actual_minutes" sum="Факт, мин" optional="show"/>
+        <field name="planned_minutes" sum="План, мин" optional="hide"/>
+        <field name="actual_minutes" sum="Факт, мин" optional="hide"/>
         <field name="plan_state" widget="badge"
                decoration-success="plan_state == 'ok'"
                decoration-warning="plan_state == 'rough'"
                decoration-muted="plan_state in ('no_norm', 'no_drawing')"/>
+        <!-- Деталей без чертежа: без чертежа нет длины реза, и норматив
+             времени не посчитать. Красным, когда больше нуля; ноль — серым
+             (list_zero темы). Сигнал, ничего не запрещает. -->
+        <field name="parts_without_drawing" optional="show"
+               decoration-danger="parts_without_drawing &gt; 0"/>
         <field name="measure_state" widget="badge"
                decoration-success="measure_state == 'done'"
                decoration-warning="measure_state == 'partial'"

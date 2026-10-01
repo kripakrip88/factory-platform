@@ -169,7 +169,10 @@ class PriceMailing(models.Model):
         P = self.env["res.partner"]
         cron = self._cron()
         tz = pytz.timezone(TZ)
-        recipients = P.search_count([("pmk_price_mailing", "=", True)])
+        # Получатель — как у крона: в реестре И в рассылке. Флажок «В
+        # рассылке» у снятого с реестра поставщика письма не даёт.
+        recipients = P.search_count([("pmk_price_supplier", "=", True),
+                                     ("pmk_price_mailing", "=", True)])
         suppliers = P.search_count([("pmk_price_supplier", "=", True)])
         queued = self.env["mail.mail"].sudo().search_count([("state", "=", "outgoing")])
         ready = bool(self.env["ir.mail_server"].sudo().search_count([]))

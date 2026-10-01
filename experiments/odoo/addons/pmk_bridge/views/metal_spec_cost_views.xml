@@ -321,6 +321,11 @@
               <field name="position_label" string="Позиция"/>
               <field name="calc_mode" optional="hide"/>
               <field name="price_partner_id" string="Поставщик" optional="hide"/>
+              <!-- Разбор UX, шаг 25: с какого прайса взята цена расчёта —
+                   видно в строке, а не только в карточке позиции. Пусто —
+                   цены нет (позиции нет в прайсах). «Цена за т» отдельной
+                   колонкой не нужна: это «Стало, ₽/т» (шаг 32). -->
+              <field name="price_date_used" string="Прайс от" optional="show"/>
               <!-- За тонну, а не за единицу учёта (шаг 32): у проката
                    единица — метр, у листа — штука, у краски — кг, и
                    числа в одной колонке были несравнимы. Было → стало —
@@ -412,19 +417,35 @@
              бледно-жёлтая плашка «≥ 2 807,72 · без 3 поз.» / «нет в
              прайсах: 2 поз.» (как карточка «Металл к закупке»): голое
              число было занижено, а 0,00 читалось как «бесплатно». Всё с
-             ценой — просто число, без плашки (spec_cost.scss).
-             no_price_count — служебной колонкой: простое поле,
-             column_invisible его загрузку не режет. -->
+             ценой — просто число, без плашки (spec_cost.scss). -->
+        <!-- Разбор UX, шаг 25: «Купить, кг» — сколько металла купить на все
+             изделия строки (с отходом) — в меню колонок, рядом с весом. -->
+        <field name="weight_fact_total" string="Купить, кг" digits="[12,1]"
+               sum="Купить, кг" readonly="1" optional="hide"/>
+        <!-- «Без цены» — число позиций без цены закупки в изделии: красным,
+             когда больше нуля, ноль — серым (сигнал «в городе нет», ничего не
+             запрещает). Серый — явным decoration-muted: бледные нули темы
+             (list_zero.js) во вложенных таблицах документа не работают.
+             Стоит ПЕРЕД «Металл, ₽»: металл — вплотную к цене (шаг 32).
+             До шага 25 то же поле было служебной колонкой (column_invisible)
+             ради цвета «Металл, ₽»; плашка читает его и теперь. -->
+        <field name="no_price_count" string="Без цены" readonly="1"
+               optional="show"
+               decoration-danger="no_price_count &gt; 0"
+               decoration-muted="no_price_count == 0"/>
         <field name="metal_one_label" string="Металл, ₽" readonly="1"
                optional="show" widget="badge" class="pmk-metal-one"
                decoration-warning="no_price_count &gt; 0"/>
-        <field name="no_price_count" column_invisible="1"/>
         <!-- width: штатная ширина денежной колонки — 105 px, и «9 500 000,00 ₽»
              обрезалось до «9 500 000,…» (ночной осмотр 29.09, расчёт, п. 3). -->
         <field name="price_customer_unit" string="Цена за шт" widget="monetary"
                width="130px"/>
         <field name="price_customer_total" string="Сумма" widget="monetary"
                sum="Цена клиенту" readonly="1" width="130px"/>
+        <!-- «Закупка» — металл на все изделия строки, с отходом — в меню
+             колонок, рядом с «Суммой»: цена клиенту против металла. -->
+        <field name="cost_fact_total" string="Закупка" widget="monetary"
+               sum="Закупка" readonly="1" optional="hide"/>
         <field name="currency_id" column_invisible="1"/>
       </xpath>
 
@@ -491,6 +512,12 @@
       <xpath expr="//field[@name='total_weight_t']" position="after">
         <field name="total_cost_fact" optional="show" sum="Металл"
                widget="monetary"/>
+        <!-- Разбор UX, шаг 25: «Без цены» — сколько позиций расчёта без цены
+             закупки. Рядом с «Металлом»: на них металл занижен. Красным,
+             когда больше нуля; ноль — серым (list_zero темы). Сигнал «в
+             городе нет», ничего не запрещает. -->
+        <field name="no_price_count" string="Без цены" optional="show"
+               decoration-danger="no_price_count &gt; 0"/>
         <!--
           Текстом, а не числом: у расчёта, который ни разу не пересчитывали,
           числовая колонка показывает 0,0 — и это читается как «проверено,
@@ -502,7 +529,10 @@
                decoration-muted="price_signal_stale"/>
         <field name="cost_change_pct" column_invisible="1"/>
         <field name="price_signal_stale" column_invisible="1"/>
-        <field name="price_incomplete" optional="hide"/>
+        <!-- «Расчёт неполный» (колонка «Р…») убран из меню колонок (шаг 25):
+             то же показывают «Без цены» и красная полоска маржи. Поле
+             осталось служебным — его читает полоска. -->
+        <field name="price_incomplete" column_invisible="1"/>
         <field name="currency_id" column_invisible="1"/>
         <!--
           «Оживить таблицы», приём 4 (29.09.2026): цена клиенту и полоска
@@ -515,7 +545,6 @@
         <field name="margin_pct" string="Маржа" optional="show"
                widget="pmk_margin_bar"
                options="{'incomplete_field': 'price_incomplete', 'base_field': 'price_customer_total', 'missing_field': 'no_price_count'}"/>
-        <field name="no_price_count" column_invisible="1"/>
       </xpath>
     </field>
   </record>

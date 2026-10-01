@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+  <!--
+    Список «Продажи → Клиенты» — свой вид (разбор UX, шаг 25, 01.10.2026).
+
+    Было: «Клиенты» и «Закупки → Поставщики» открывали ОДИН штатный вид
+    (base.view_partner_tree), и выбор колонок в меню ⚙ у них был общий: браузер
+    хранит его по модели и виду. Колонки при этом — фиолетовый квадрат с буквой
+    (аватар), «Email» по-английски, «Страна» (у всех Россия), безымянная
+    колонка значков «Статистика» и «Активности», а ИНН — только в ⚙ под
+    английским «Tax ID».
+
+    Стало: Название · ИНН · Город · Телефон · Эл. почта · Менеджер · Сделок.
+    «Поставщики» открываются видом «Поставщиков прайсов» (pmk_purchase) —
+    выбор колонок у двух списков теперь свой.
+
+    Штатный вид не тронут: он остаётся для остальных мест (контакты, выбор
+    контрагента). Аватар, страна, статистика и задачи в этот вид просто не
+    вошли — вернуть их можно, дописав поле сюда (docs/disabled-features.md).
+
+    ИНН — поле vat: в российской локализации inn — его зеркало, только для
+    чтения (pmk_dadata/views/res_partner_views.xml). Кто клиент — решает
+    фильтр «Клиенты» (pmk_purchase, pmk_customers): не поставщик, не в реестре
+    прайсов, не пользователь, не своя компания.
+
+    Без sample="1": пустой экран не показывает выдуманных клиентов.
+  -->
+  <record id="view_partner_customer_list" model="ir.ui.view">
+    <field name="name">res.partner.list.pmk.customer</field>
+    <field name="model">res.partner</field>
+    <!-- priority 32: вид не должен становиться списком контрагентов по
+         умолчанию (штатный — 8). Меню «Клиенты» берёт его явно, привязкой
+         ниже. -->
+    <field name="priority">32</field>
+    <field name="arch" type="xml">
+      <list string="Клиенты" multi_edit="1">
+        <!-- Нужно видам, которые ищут контрагента по полному имени. -->
+        <field name="complete_name" column_invisible="1"/>
+        <field name="display_name" string="Название"/>
+        <field name="vat" string="ИНН" readonly="1" optional="show"/>
+        <field name="city" optional="show"/>
+        <field name="phone" class="o_force_ltr" optional="show"/>
+        <field name="email" string="Эл. почта" optional="show"/>
+        <field name="user_id" string="Менеджер" widget="many2one_avatar_user"
+               domain="[('share', '=', False)]" optional="show"/>
+        <!-- «Сделок» — свой счётчик (models/res_partner.py): только сделки,
+             кроме проигранных. Штатный opportunity_count считал и лиды, и
+             проигранные — клиент с лидом и проигранной сделкой получал
+             «Сделок: 2». Колонка — только тем, кто видит сделки: остальным
+             счётчик ноль, и колонка была бы столбцом нулей. -->
+        <field name="pmk_deal_count" optional="show"
+               groups="sales_team.group_sale_salesman"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="action_customer_list_binding" model="ir.actions.act_window.view">
+    <field name="sequence">1</field>
+    <field name="view_mode">list</field>
+    <field name="view_id" ref="view_partner_customer_list"/>
+    <field name="act_window_id" ref="account.res_partner_action_customer"/>
+  </record>
+
+</odoo>

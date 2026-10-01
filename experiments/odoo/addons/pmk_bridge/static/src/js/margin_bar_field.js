@@ -76,7 +76,10 @@ export class MarginBarField extends Component {
 
     get title() {
         if (this.state === "none") {
-            return _t("Цена клиенту не назначена — маржи ещё нет");
+            // «в расчёте»: в списке сделок база полоски — цена из расчёта
+            // (pmk_spec_price), а «Цену клиенту» в строке могли вписать
+            // руками — подсказка «не назначена» спорила бы с ней.
+            return _t("Цены клиенту в расчёте нет — маржи ещё нет");
         }
         if (this.state === "incomplete") {
             const missing = this.props.missingField ? this.data[this.props.missingField] : "";

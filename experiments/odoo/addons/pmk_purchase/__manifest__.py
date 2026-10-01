@@ -21,7 +21,12 @@
 """,
     "category": "Purchases",
     "author": "ПМК Парк",
-    "depends": ["purchase", "pmk_theme"],
+    # pmk_bridge — список «Цены поставщиков» и колонки прайса в карточке
+    # товара (разбор UX, шаг 25): «Длина хлыста» (pmk_bar_length_mm), цена
+    # за тонну и марка/габарит строки прайса объявлены в мосте — там же, где
+    # расчёт берёт цену. Мост от pmk_purchase не зависит (цикла нет) и уже
+    # стоит на боевой базе.
+    "depends": ["purchase", "pmk_theme", "pmk_bridge"],
     "data": [
         "security/ir.model.access.csv",
         "data/supply_category.xml",
@@ -30,6 +35,9 @@
         "views/supply_category_views.xml",
         "views/res_partner_views.xml",
         "views/price_mailing_views.xml",
+        # «Закупки → Цены поставщиков» (разбор UX, шаг 25) — до меню: пункт
+        # меню ссылается на действие из этого файла.
+        "views/supplier_price_views.xml",
         "views/menus.xml",
         # «Запрос КП» в заголовке формы закупки (разбор UX, 28.09.2026).
         "views/purchase_order_views.xml",

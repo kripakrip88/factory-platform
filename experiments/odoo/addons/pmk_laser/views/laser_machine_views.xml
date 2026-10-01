@@ -11,10 +11,16 @@
         <field name="power_kw"/>
         <!-- «20», а не «20,0» (разбор UX, шаг 24). -->
         <field name="max_thickness_mm" options="{'hide_trailing_zeros': True}"/>
+        <!-- Разбор UX, шаг 25: габарит стола — «1500×6000»: какой лист
+             станок возьмёт. -->
+        <field name="table_size_label"/>
         <field name="load_min"/>
         <field name="unload_min"/>
         <field name="shift_minutes"/>
-        <field name="workcenter_id" optional="hide"/>
+        <!-- «Рабочий центр» убран и из меню колонок (шаг 25): пуст у обоих
+             станков, производственные заказы не ведутся. Узел на месте —
+             вернуть: снять column_invisible (docs/disabled-features.md). -->
+        <field name="workcenter_id" optional="hide" column_invisible="1"/>
       </list>
     </field>
   </record>

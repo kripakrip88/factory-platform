@@ -164,11 +164,19 @@
              точные — во вкладке «Результат». -->
         <field name="name" width="105px"/>
         <field name="date"/>
-        <field name="partner_id"/>
-        <field name="total_bars"/>
-        <field name="total_weight" digits="[12,1]" sum="Взято, кг"/>
-        <field name="scrap_weight" digits="[12,1]" sum="В лом, кг"/>
-        <field name="waste_ratio"/>
+        <!-- Разбор UX, шаг 25: «Расчёт» — из какого расчёта раскрой (номер
+             СМ- целиком, как номер раскроя), и «Примечание» — по нему раскрой
+             узнаётся глазами. «Заготовок» — в меню колонок (⚙): число хлыстов
+             без длин ничего не говорит, точное — во вкладке «Результат».
+             Остальные колонки получили optional="show" — у списка появилось
+             меню колонок, раньше его не было вовсе. -->
+        <field name="partner_id" optional="show"/>
+        <field name="spec_id" string="Расчёт" width="105px" optional="show"/>
+        <field name="note" optional="show"/>
+        <field name="total_bars" optional="hide"/>
+        <field name="total_weight" digits="[12,1]" sum="Взято, кг" optional="show"/>
+        <field name="scrap_weight" digits="[12,1]" sum="В лом, кг" optional="show"/>
+        <field name="waste_ratio" optional="show"/>
       </list>
     </field>
   </record>

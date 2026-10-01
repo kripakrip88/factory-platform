@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+  <!--
+    Справочники проката и листа: есть ли у позиции цена (разбор UX, шаг 25).
+
+    Раньше, чтобы узнать цену, открывали карточку товара. Теперь три колонки:
+    «Цена, ₽/т», «Поставщик», «Прайс от» — та цена, которую сегодня взял бы
+    новый расчёт (одна дверь к цене: product.template._pmk_find_seller и
+    масса единицы справочника, models/reference_price.py).
+
+    «нет в прайсах» — серым: позиции нет у поставщиков города. Это сигнал, а
+    не ошибка данных, и ничего не запрещается. Тем же признаком — фильтр
+    «Нет в прайсах» в поиске.
+
+    Здесь, а не в pmk_calc: калькулятор обещает работать без номенклатуры, а
+    цена опирается на карточку товара и прайсы — это мост.
+  -->
+  <record id="view_metal_profile_list_price" model="ir.ui.view">
+    <field name="name">pmk.metal.profile.list.price</field>
+    <field name="model">pmk.metal.profile</field>
+    <field name="inherit_id" ref="pmk_calc.view_metal_profile_list"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='mass_per_meter']" position="after">
+        <field name="pmk_price_ton" optional="show" invisible="not pmk_price_ton"/>
+        <field name="pmk_price_supplier_label" optional="show"
+               decoration-muted="pmk_price_missing"/>
+        <field name="pmk_price_date" optional="show"/>
+        <field name="pmk_price_missing" column_invisible="1"/>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="view_metal_sheet_list_price" model="ir.ui.view">
+    <field name="name">pmk.metal.sheet.list.price</field>
+    <field name="model">pmk.metal.sheet</field>
+    <field name="inherit_id" ref="pmk_calc.view_metal_sheet_list"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='mass_per_sqm']" position="after">
+        <field name="pmk_price_ton" optional="show" invisible="not pmk_price_ton"/>
+        <field name="pmk_price_supplier_label" optional="show"
+               decoration-muted="pmk_price_missing"/>
+        <field name="pmk_price_date" optional="show"/>
+        <field name="pmk_price_missing" column_invisible="1"/>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="view_metal_profile_search_price" model="ir.ui.view">
+    <field name="name">pmk.metal.profile.search.price</field>
+    <field name="model">pmk.metal.profile</field>
+    <field name="inherit_id" ref="pmk_calc.view_metal_profile_search"/>
+    <field name="arch" type="xml">
+      <xpath expr="//filter[@name='rebar']" position="after">
+        <separator/>
+        <filter name="pmk_no_price" string="Нет в прайсах"
+                domain="[('pmk_price_missing', '=', True)]"/>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="view_metal_sheet_search_price" model="ir.ui.view">
+    <field name="name">pmk.metal.sheet.search.price</field>
+    <field name="model">pmk.metal.sheet</field>
+    <field name="inherit_id" ref="pmk_calc.view_metal_sheet_search"/>
+    <field name="arch" type="xml">
+      <xpath expr="//filter[@name='galv']" position="after">
+        <separator/>
+        <filter name="pmk_no_price" string="Нет в прайсах"
+                domain="[('pmk_price_missing', '=', True)]"/>
+      </xpath>
+    </field>
+  </record>
+
+</odoo>

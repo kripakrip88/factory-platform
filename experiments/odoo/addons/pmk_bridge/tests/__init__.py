@@ -6,3 +6,4 @@ from . import test_spec_text
 from . import test_spec_form
 from . import test_kp_send
 from . import test_spec_list
+from . import test_step25_prices

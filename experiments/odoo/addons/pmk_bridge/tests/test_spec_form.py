@@ -247,9 +247,14 @@ class TestSpecFormStep32(TransactionCase):
         self.assertEqual(cost.get("string"), "Металл, ₽")
         self.assertEqual(cost.get("widget"), "badge")
         self.assertEqual(cost.get("decoration-warning"), "no_price_count > 0")
+        # Шаг 25: число позиций без цены — видимой колонкой «Без цены»
+        # (раньше служебная, column_invisible). Плашка «Металл, ₽» читает
+        # его по-прежнему; стоит перед ней, металл — вплотную к цене.
         count = columns[names.index("no_price_count")]
-        self.assertEqual(count.get("column_invisible"), "1",
-                         "Простое поле: column_invisible загрузку не режет.")
+        self.assertEqual(count.get("string"), "Без цены")
+        self.assertIsNone(count.get("column_invisible"))
+        self.assertEqual(count.get("decoration-danger"), "no_price_count > 0")
+        self.assertLess(names.index("no_price_count"), names.index("metal_one_label"))
 
         form = arch.xpath("//field[@name='product_ids']/form")[0]
         form_names = [f.get("name") for f in form.iter("field")]
