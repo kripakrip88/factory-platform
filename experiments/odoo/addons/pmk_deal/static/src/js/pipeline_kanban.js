@@ -63,6 +63,15 @@ const CrmKanbanHeader = CrmKanbanRenderer.components.KanbanHeader;
 // Цвета этапов — одним запросом на открытый канбан, а не на каждую колонку:
 // ключ — модель вида (у каждого открытия своя). Сменили цвет в настройках —
 // новый виден при следующем открытии воронки.
+//
+// ⚠️ ЗАПРОС — ЧЕРЕЗ env.services.orm, А НЕ this.orm ШАПКИ. this.orm — служба,
+// «защищённая» компонентом (useService): если компонент уничтожен до ответа,
+// его промис НЕ разрешается никогда — так ядро бережёт мёртвые компоненты от
+// обновления. Промис здесь общий для всех шапок. Ядро может пересоздать
+// колонки до показа (на живой базе так и было), шапка, начавшая запрос,
+// погибала, а остальные ждали её ответ вечно: воронка не появлялась совсем,
+// без единой ошибки в консоли (живой стенд 01.10.2026, v1.17.0; на копии с
+// другими данными не проявлялось). Незащищённая служба отвечает всегда.
 const stageColorsByModel = new WeakMap();
 const noModel = {};
 
@@ -87,7 +96,8 @@ export class PmkKanbanHeader extends CrmKanbanHeader {
         this.pmkStageColors = {};
         onWillStart(async () => {
             if (this.env.pmkPipeline && this.pmkGroupedByStage) {
-                this.pmkStageColors = await loadStageColors(this.orm, this.props.list.model);
+                this.pmkStageColors = await loadStageColors(
+                    this.env.services.orm, this.props.list.model);
             }
         });
     }

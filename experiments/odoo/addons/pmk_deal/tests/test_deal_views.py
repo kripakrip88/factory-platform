@@ -150,6 +150,19 @@ class TestDealViews(TransactionCase):
         self.assertEqual(progressbar.get("sum_field"), "expected_revenue",
                          "Сумма в шапке колонки — доход, то есть цена клиенту.")
 
+    def test_pipeline_colors_request_not_component_bound(self):
+        """Воронка не появлялась на живом стенде (01.10.2026, v1.17.0): общий
+        запрос цветов этапов шёл через this.orm шапки — службу, «защищённую»
+        компонентом. Шапка, начавшая запрос, погибала при пересоздании колонок,
+        и её промис не разрешался никогда — остальные шапки ждали вечно.
+        Общий запрос — только через незащищённую env.services.orm."""
+        from odoo.tools.misc import file_path
+
+        with open(file_path("pmk_deal/static/src/js/pipeline_kanban.js"), encoding="utf-8") as f:
+            source = f.read()
+        self.assertNotIn("loadStageColors(this.orm", source)
+        self.assertRegex(source, r"loadStageColors\(\s*this\.env\.services\.orm")
+
     def test_pipeline_header_assets(self):
         """Приёмка 01.10.2026 (R10): шапка колонки воронки — свои шаблоны
         поверх штатных crm/mail. Сам вид смотрит основной агент глазами;
