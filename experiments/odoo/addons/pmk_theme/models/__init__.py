@@ -3,3 +3,6 @@
 # подсказкой вместо штатной рекламы.
 from . import base
 from . import ir_actions_act_window
+# Значки переключателя видов — тонкие линейные Tabler (разбор UX, шаг 47,
+# 02.10.2026): к классу значка вида дописывается наш pmk_vi--<вид>.
+from . import ir_ui_view

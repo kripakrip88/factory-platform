@@ -440,6 +440,66 @@ body.o_nexus_dark {
 }
 
 
+// ═══════════════════════════════════════════════════════════════════════════
+// ШАГ 47 (разбор UX, 02.10.2026): переключатель темы, строка поиска, значки
+// видов. Три следующих раздела — переключатель темы, строка поиска,
+// переключатель видов — переписаны этим шагом; значки для всех трёх — здесь.
+//
+// ЗНАЧКИ — Tabler Icons (https://tabler.io/icons, @tabler/icons 3.34.1,
+// набор outline). Лицензия MIT, Copyright (c) 2020-2024 Paweł Kuna; полный
+// текст — https://github.com/tabler/tabler-icons/blob/main/LICENSE. Контуры
+// путей перенесены как есть, без правок (сверено с файлами пакета 02.10.2026);
+// вспомогательный путь-рамка «M0 0h24v24H0z» опущен (он прозрачный).
+//
+// КАК РИСУЮТСЯ. Маской (mask-image) с SVG в data:URI: цвет значка — фон
+// элемента, то есть currentColor кнопки. Одна запись работает и в светлой,
+// и в тёмной теме, и в выбранном состоянии — меняется только color. Ни шрифта,
+// ни запроса к стороннему адресу: всё внутри собранного CSS.
+//
+// ⚠️ Режим высокой контрастности Windows (forced-colors) подменяет фон на
+// системный Canvas — значок-маска слился бы с фоном. Поэтому каждый значок
+// здесь — ещё и в блоке @media (forced-colors: active) в конце раздела
+// «Переключатель видов» (системный цвет ButtonText). Новый значок — туда же,
+// тест test_step47_trifles это сверяет.
+//
+// ⚠️ В data:URI экранированы только «<» и «>» (%3C, %3E). Кавычки внутри —
+// одинарные, снаружи — двойные. Знак «#» в пути недопустим (оборвёт адрес):
+// цвет внутри SVG не нужен, маске важна только непрозрачность.
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Толщина линии значков в единицах сетки 24×24. 2 — как у Tabler; на 16 px
+// это ~1,3 px. Тоньше 1,5 единицы (1 px на 16 px) на обычном, не ретина,
+// мониторе линии расплываются. Солнцу и месяцу в кружке (12 px) — 2,5: при 2
+// лучи солнца длиной в одну единицу сетки (0,5 px) превращаются в пыль.
+$pmk-icon-stroke: 2;
+$pmk-knob-icon-stroke: 2.5;
+
+@function pmk-icon($paths, $stroke: $pmk-icon-stroke) {
+  @return url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='#{$stroke}' stroke-linecap='round' stroke-linejoin='round'%3E#{$paths}%3C/svg%3E");
+}
+
+// Маска значка: $icon — url(...) из карты ниже, $size — сторона квадрата.
+@mixin pmk-icon-mask($icon, $size: 16px) {
+  -webkit-mask: $icon center / $size $size no-repeat;
+  mask: $icon center / $size $size no-repeat;
+}
+
+$pmk-icons: (
+  "adjustments-horizontal": pmk-icon("%3Cpath d='M14 6m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0'/%3E%3Cpath d='M4 6l8 0'/%3E%3Cpath d='M16 6l4 0'/%3E%3Cpath d='M8 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0'/%3E%3Cpath d='M4 12l2 0'/%3E%3Cpath d='M10 12l10 0'/%3E%3Cpath d='M17 18m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0'/%3E%3Cpath d='M4 18l11 0'/%3E%3Cpath d='M19 18l1 0'/%3E"),
+  "sun": pmk-icon("%3Cpath d='M12 12m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0'/%3E%3Cpath d='M3 12h1m8 -9v1m8 8h1m-9 8v1m-6.4 -15.4l.7 .7m12.1 -.7l-.7 .7m0 11.4l.7 .7m-12.1 -.7l-.7 .7'/%3E", $pmk-knob-icon-stroke),
+  "moon": pmk-icon("%3Cpath d='M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z'/%3E", $pmk-knob-icon-stroke),
+  "list-details": pmk-icon("%3Cpath d='M13 5h8'/%3E%3Cpath d='M13 9h5'/%3E%3Cpath d='M13 15h8'/%3E%3Cpath d='M13 19h5'/%3E%3Cpath d='M3 4m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z'/%3E%3Cpath d='M3 14m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z'/%3E"),
+  "layout-kanban": pmk-icon("%3Cpath d='M4 4l6 0'/%3E%3Cpath d='M14 4l6 0'/%3E%3Cpath d='M4 8m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z'/%3E%3Cpath d='M14 8m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z'/%3E"),
+  "file-text": pmk-icon("%3Cpath d='M14 3v4a1 1 0 0 0 1 1h4'/%3E%3Cpath d='M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z'/%3E%3Cpath d='M9 9l1 0'/%3E%3Cpath d='M9 13l6 0'/%3E%3Cpath d='M9 17l6 0'/%3E"),
+  "calendar": pmk-icon("%3Cpath d='M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z'/%3E%3Cpath d='M16 3v4'/%3E%3Cpath d='M8 3v4'/%3E%3Cpath d='M4 11h16'/%3E%3Cpath d='M11 15h1'/%3E%3Cpath d='M12 15v3'/%3E"),
+  "table": pmk-icon("%3Cpath d='M3 5a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-14z'/%3E%3Cpath d='M3 10h18'/%3E%3Cpath d='M10 3v18'/%3E"),
+  "chart-bar": pmk-icon("%3Cpath d='M3 13a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z'/%3E%3Cpath d='M15 9a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z'/%3E%3Cpath d='M9 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v14a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z'/%3E%3Cpath d='M4 20h14'/%3E"),
+  "calendar-time": pmk-icon("%3Cpath d='M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4'/%3E%3Cpath d='M18 18m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0'/%3E%3Cpath d='M15 3v4'/%3E%3Cpath d='M7 3v4'/%3E%3Cpath d='M3 11h16'/%3E%3Cpath d='M18 16.496v1.504l1 1'/%3E"),
+  "sitemap": pmk-icon("%3Cpath d='M3 15m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z'/%3E%3Cpath d='M15 15m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z'/%3E%3Cpath d='M9 3m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z'/%3E%3Cpath d='M6 15v-1a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v1'/%3E%3Cpath d='M12 9l0 3'/%3E"),
+  "map-pin": pmk-icon("%3Cpath d='M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0'/%3E%3Cpath d='M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0z'/%3E"),
+);
+
+
 // ─── Переключатель светлой и тёмной темы ──────────────────────────────────
 //
 // Разметку даёт xml/theme_toggle.xml, логику — чужая тема (её патч держит
@@ -449,12 +509,22 @@ body.o_nexus_dark {
 // под подвал тёмной боковой панели (светлый кружок на полупрозрачной дорожке)
 // и на белой шапке выглядел бы выцветшим. Плюс независимость: снимем её тему —
 // правила ниже просто перестанут находить свой узел, а не покрасят чужой.
+//
+// ШАГ 47. Значок состояния — ВНУТРИ кружка-ползунка, а не отдельным глифом
+// слева (до 02.10.2026 солнце стояло рядом с дорожкой и читалось как ещё одна
+// кнопка). Светлая тема — белый кружок слева, солнце #854F0B (контраст к
+// белому 6,7); тёмная — тёмный кружок справа, месяц #EEF5C8 (15,8 к кружку).
+// Состояние читается трижды: положение кружка, его цвет и значок.
+//
+// Дорожка в обеих темах нейтральная: лайм — только «где я» (карта цветов
+// шага 6), а включённая тёмная тема — не место в системе. До шага 47 дорожка
+// включённого состояния была ярким #C8F000 — заливка ярким лаймом режет глаз.
+// Дорожка выключенного состояния — прежняя (0,18 чёрного).
 .pmk_theme_switch {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
   margin-right: 8px;
-  padding: 4px 8px;
+  padding: 4px 6px;
   border: 0;
   border-radius: 8px;
   background: transparent;
@@ -465,72 +535,80 @@ body.o_nexus_dark {
     background-color: rgba(22, 23, 27, 0.05);
   }
 
+  // !important: тема theme_nexus гасит outline у ВСЕХ <button> с !important
+  // (buttons.scss), без него рамка фокуса с клавиатуры не видна.
   &:focus-visible {
-    outline: 2px solid $pmk-nx-ink;
+    outline: 2px solid $pmk-nx-ink !important;
     outline-offset: -2px;
-  }
-
-  // Значок состояния: солнце на светлой теме, месяц на тёмной. Состояние
-  // помечено И положением ручки, И значком — одного признака мало.
-  &__glyph::before {
-    content: "\f185";          // солнце
-    font-family: FontAwesome;
-    font-size: 13px;
-    color: $pmk-nx-slate;
   }
 
   // Дорожка ползунка.
   &__track {
     position: relative;
-    width: 34px;
-    height: 18px;
+    flex: none;
+    width: 38px;
+    height: 22px;
     border-radius: 999px;
     background: rgba(22, 23, 27, 0.18);
     transition: background-color .18s ease-out;
-    flex: none;
+  }
 
-    // Ручка.
-    &::after {
+  // Кружок-ползунок со значком внутри.
+  &__knob {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: $pmk-nx-white;
+    box-shadow: 0 1px 2px rgba(22, 23, 27, 0.3);
+    transition: transform .18s ease-out, background-color .18s ease-out;
+
+    // Значок: солнце в светлой теме.
+    &::before {
       content: "";
       position: absolute;
-      top: 2px;
-      left: 2px;
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background: $pmk-nx-white;
-      box-shadow: 0 1px 2px rgba(22, 23, 27, 0.3);
-      transition: left .18s ease-out;
+      top: 3px;
+      left: 3px;
+      width: 12px;
+      height: 12px;
+      background-color: #854f0b;
+      @include pmk-icon-mask(map-get($pmk-icons, "sun"), 12px);
     }
   }
 
-  // Включённое состояние — фирменный лайм: включено = тёмный режим, дорожка
-  // всегда на тёмной шапке (до 28.09.2026 была оранжевой).
+  // Включено = тёмная тема: кружок справа, тёмный, месяц бледным лаймом.
+  // Кольцо вокруг кружка — чтобы тёмный кружок не терялся на тёмной дорожке.
   &--on {
-    .pmk_theme_switch__glyph::before {
-      content: "\f186";        // месяц
-      color: rgba(244, 241, 234, 0.72);
+    .pmk_theme_switch__track {
+      background: rgba(255, 255, 255, 0.16);
     }
 
-    .pmk_theme_switch__track {
-      background: #c8f000;
+    .pmk_theme_switch__knob {
+      transform: translateX(16px);
+      background: #16171b;
+      box-shadow: 0 0 0 1px rgba(238, 245, 200, 0.35);
 
-      &::after { left: 18px; }
+      &::before {
+        background-color: #eef5c8;
+        @include pmk-icon-mask(map-get($pmk-icons, "moon"), 12px);
+      }
     }
   }
 
   // В тёмном режиме сама кнопка живёт на тёмной шапке.
   body.o_nexus_dark & {
     &:hover { background-color: rgba(255, 255, 255, 0.08); }
-    &:focus-visible { outline-color: rgba(255, 255, 255, 0.85); }
+    &:focus-visible { outline-color: rgba(255, 255, 255, 0.85) !important; }
   }
 }
 
-// Ручка не ездит, если система просит меньше движения.
+// Кружок не ездит, если система просит меньше движения.
 @media (prefers-reduced-motion: reduce) {
   .pmk_theme_switch,
   .pmk_theme_switch__track,
-  .pmk_theme_switch__track::after {
+  .pmk_theme_switch__knob {
     transition: none;
   }
 }
@@ -582,10 +660,9 @@ body.o_nexus_dark {
   }
 }
 
-// Кнопка «Фильтры / Группировать / Избранное» справа от поиска. Примыкает к
-// капсуле и повторяет её скругление с правой стороны — вместе они читаются
-// одним составным элементом, а не двумя разными.
-.o_cp_searchview + .o_searchview_dropdown_toggler,
+// Кнопка «Фильтры / Группировать / Избранное» — запасной вид для браузера
+// без :has() (капсула ниже на нём не сработает): примыкает к полю и повторяет
+// его скругление справа.
 .o_searchview_dropdown_toggler {
   border: 1px solid $pmk-nx-border !important;
   border-left: 0 !important;
@@ -623,7 +700,370 @@ body.o_nexus_dark {
       color: #f4f1ea !important;
     }
   }
+
+  // Шаг 47: поле ввода в фокусе — без своего свечения. Тёмный режим чужой
+  // темы даёт .o_input:focus лаймовую обводку 3 px с !important
+  // (theme_nexus dark_mode.scss, вес 0,3,1) — внутри строки поиска это
+  // второй контур поверх фокуса самой строки. Вес здесь 0,4,1.
+  // Действует на любое поле поиска, в том числе на поиск Настроек (у его
+  // поля те же классы o_searchview_input o_input, кнопки фильтров нет):
+  // там тоже остаётся один контур — внешний, у строки (правило темы
+  // .o_searchview:focus-within). Это намеренно: «один элемент — один контур».
+  .o_searchview .o_searchview_input:focus {
+    box-shadow: none !important;
+  }
 }
+
+// ─── Шаг 47: поле и кнопка фильтров — одна капсула ────────────────────────
+//
+// ЗАЧЕМ. Кнопка меню фильтров «жила отдельной жизнью»: поле — целая капсула
+// со скруглением с обеих сторон (theme_nexus: radius 999px !important), а
+// кнопка пристыкована к её правому скруглению своим полукругом — на экране
+// два предмета. Теперь контур, фон и свечение фокуса — у ОБЩЕГО контейнера,
+// поле и кнопка внутри без рамок, между ними тонкий разделитель; вместо
+// треугольника — значок настроек фильтров (adjustments-horizontal).
+// Поведение то же: это та же кнопка ядра, открывает то же меню фильтров,
+// группировок и избранного (и Shift+Q).
+//
+// ГДЕ. Контейнер .input-group, в котором подряд стоят .o_searchview и кнопка
+// (SearchBar ядра: div.o_cp_searchview, web/static/src/search/search_bar/
+// search_bar.xml; дашборды spreadsheet_dashboard — тот же порядок узлов).
+// Соседство узлов гарантирует ядро: Dropdown рисует кнопку без обёртки, и
+// его собственное правило .o_searchview:focus-within + .o_searchview_
+// dropdown_toggler на этом стоит. :has() — чтобы НЕ задеть поиск без кнопки
+// фильтров (строка поиска Настроек, поиск без меню): там капсула — само поле.
+//
+// ШИРИНА НЕ ПРЫГАЕТ: ни наведение, ни фокус, ни открытое меню не меняют
+// отступов и толщины рамки — только цвет и тень. Ядро поворачивает
+// треугольник при открытии (transform: rotate(180deg)) — у значка поворот
+// снят.
+//
+// ФОКУС — ОДИН РАЗ И ТАМ, ГДЕ ОН ЕСТЬ. Свечение капсулы — только когда фокус
+// в поле (набирают текст или выбрали метку фильтра): оно значит «печатайте
+// сюда». Кнопка фильтров получает фокус и от щелчка мышью (Chrome); если бы
+// капсула светилась и тогда, человек видел бы «поле в фокусе» при открытом
+// меню, а набранный текст никуда бы не попал. У кнопки при переходе с
+// клавиатуры — своя рамка (:focus-visible ниже).
+//
+// Только экран: при печати списка ядро печатает метки фильтров
+// (d-print-contents), рамка капсулы на бумаге не нужна.
+$pmk-search-capsule: ".input-group:has(> .o_searchview + .o_searchview_dropdown_toggler)";
+
+@media screen {
+  #{$pmk-search-capsule} {
+    flex-wrap: nowrap;
+    border: 1px solid $pmk-nx-border;
+    border-radius: 999px;
+    background: $pmk-nx-white;
+    transition: border-color .15s ease-out, box-shadow .15s ease-out;
+
+    &:has(> .o_searchview:focus-within) {
+      border-color: #16191c;
+      box-shadow: 0 0 0 3px rgba(22, 25, 28, 0.14);
+    }
+
+    // Поле — без своего контура и фона (их держит капсула). Вес селектора
+    // (0,4,0) выше правил темы (0,1,0)…(0,3,1), поэтому и тёмная тема, и
+    // фокус поля своей рамки не вернут.
+    > .o_searchview,
+    > .o_searchview:focus-within {
+      border: 0 !important;
+      border-radius: 999px 0 0 999px !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      padding-right: 8px !important;
+    }
+
+    > .o_searchview_dropdown_toggler {
+      position: relative;
+      flex: 0 0 auto;
+      margin-left: 0 !important;
+      padding: 0 12px 0 10px !important;
+      border: 0 !important;
+      border-radius: 0 999px 999px 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      color: $pmk-nx-slate !important;
+
+      // Тонкий разделитель: короткая черта, не во всю высоту капсулы.
+      &::before {
+        content: "";
+        position: absolute;
+        top: 22%;
+        bottom: 22%;
+        left: 0;
+        width: 1px;
+        background: $pmk-nx-border;
+      }
+
+      // Значок вместо треугольника ядра (.o-dropdown-caret::after —
+      // FontAwesome \f0d7 с поворотом при открытии).
+      &::after {
+        content: "" !important;
+        display: block !important;
+        width: 16px;
+        height: 16px;
+        margin: 0 !important;
+        background-color: currentColor;
+        transform: none !important;
+        transition: none !important;
+        @include pmk-icon-mask(map-get($pmk-icons, "adjustments-horizontal"), 16px);
+      }
+
+      &:hover,
+      &.show {
+        background: rgba(22, 23, 27, 0.05) !important;
+        color: $pmk-nx-ink !important;
+      }
+
+      &:focus-visible {
+        outline: 2px solid $pmk-nx-ink !important;
+        outline-offset: -3px;
+      }
+    }
+  }
+
+  // Тёмная тема: фон капсулы — #2A2C33 (--pmk-surface-3), тот, что тема
+  // задумывала полю поиска. До шага 47 поле на деле было #1E2025 — цвет
+  // панели: правило темы .form-control стоит в dark_mode.scss ниже правила
+  // .o_searchview при равном весе, и поле отличалось от панели одной рамкой
+  // (у поиска Настроек так и осталось — он не капсула). Рамка фокуса —
+  // приглушённым лаймом словаря dark.scss (--pmk-accent), а не ярким #C8F000.
+  body.o_nexus_dark #{$pmk-search-capsule} {
+    border-color: rgba(255, 255, 255, 0.12);
+    background: var(--pmk-surface-3, #2a2c33);
+
+    &:has(> .o_searchview:focus-within) {
+      border-color: var(--pmk-accent, #d4e57a);
+      box-shadow: 0 0 0 3px rgba(212, 229, 122, 0.22);
+    }
+
+    > .o_searchview_dropdown_toggler {
+      color: rgba(244, 241, 234, 0.72) !important;
+
+      &::before {
+        background: rgba(255, 255, 255, 0.12);
+      }
+
+      &:hover,
+      &.show {
+        background: rgba(255, 255, 255, 0.08) !important;
+        color: #f4f1ea !important;
+      }
+
+      &:focus-visible {
+        outline-color: rgba(255, 255, 255, 0.85) !important;
+      }
+    }
+  }
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ПЕРЕКЛЮЧАТЕЛЬ ВИДОВ (шаг 47, вариант А — утверждён Антоном 01.10.2026).
+//
+// ЧТО БЫЛО. Штатные глифы шрифтов oi/fa разной толщины и стиля (канбан —
+// квадратики, список — полоски, график — залитая гора, форма — визитка), а
+// выбранный вид НЕ отличался вовсе: тема красит .btn-secondary белым с
+// !important, и фон .btn.active ядра (#DDEB94) до кнопки не доходил.
+//
+// СТАЛО. Тонкие линейные значки Tabler, только значки — подсказка при
+// наведении штатная (data-tooltip ядра с названием вида). Выбранный вид —
+// бледный лайм #EEF5C8 со значком #3B4A0B (контраст 8,5). Группа — одна
+// тонкая рамка вокруг, кнопки без своих рамок.
+//
+// ОТКУДА КЛАСС. Значок вида ядро берёт из словаря видов, который сервер
+// отдаёт при загрузке страницы (session_info.view_info). models/
+// ir_ui_view.py дописывает к классам ядра наши pmk_vi pmk_vi--<вид> — и в
+// ряду кнопок широкого экрана, и в выпадашке узкого (там список видов с
+// подписями — тот же класс значка). Классы ядра остаются: не доедут эти
+// стили — кнопка покажет штатный глиф, а не пустоту.
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Вид → значок Tabler. Ключи — типы видов Odoo; ключ без пары в
+// PMK_VIEW_ICONS (models/ir_ui_view.py) класса не получит — тест сверяет оба.
+$pmk-view-icons: (
+  "list": "list-details",
+  "kanban": "layout-kanban",
+  "form": "file-text",
+  "calendar": "calendar",
+  "pivot": "table",
+  "graph": "chart-bar",
+  "activity": "calendar-time",
+  "hierarchy": "sitemap",
+  "map": "map-pin",
+);
+
+// Значок: глиф шрифта гасим, рисуем маску. Ширина — не em-ширина oi-fw/fa-fw,
+// а ровно значок. transform: none — у иерархии ядро даёт fa-rotate-90.
+i.pmk_vi {
+  display: inline-block;
+  flex: none;
+  width: 16px !important;
+  height: 16px;
+  vertical-align: -3px;
+  background-color: currentColor;
+  transform: none !important;
+
+  &::before {
+    content: none !important;
+  }
+}
+
+@each $type, $icon in $pmk-view-icons {
+  i.pmk_vi--#{$type} {
+    @include pmk-icon-mask(map-get($pmk-icons, $icon), 16px);
+  }
+}
+
+// Ряд кнопок широкого экрана (nav — у узкого экрана там div с выпадашкой,
+// его не трогаем). --btn-group-gap — штатный зазор группы Bootstrap в
+// Odoo 19 (вместо слипания рамок margin-left: -1px).
+@media screen {
+  nav.o_cp_switch_buttons {
+    --btn-group-gap: 2px;
+    padding: 2px;
+    border: 1px solid $pmk-nx-border;
+    border-radius: 8px;
+    background: $pmk-nx-white;
+
+    > .o_switch_view {
+      display: inline-flex !important;
+      align-items: center;
+      justify-content: center;
+      min-width: 30px;
+      height: 28px;
+      padding: 0 7px !important;
+      border: 0 !important;
+      border-radius: 6px !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      color: $pmk-nx-slate !important;
+
+      &:hover {
+        background: rgba(22, 23, 27, 0.05) !important;
+        color: $pmk-nx-ink !important;
+      }
+
+      // Выбранный вид — «где я»: бледный лайм, значок тёмно-оливковый.
+      &.active {
+        background: #eef5c8 !important;
+        color: #3b4a0b !important;
+      }
+
+      &:focus-visible {
+        outline: 2px solid $pmk-nx-ink !important;
+        outline-offset: -2px;
+      }
+    }
+  }
+
+  // Сенсорный экран (планшет в цеху): ядро даёт кнопкам-значкам палец
+  // побольше (.o_touch_device .btn:has(.oi-fw:only-child) — 7px 10px).
+  // Наша высота 28 px его бы отменила — возвращаем мишень ~36 px.
+  .o_touch_device nav.o_cp_switch_buttons > .o_switch_view {
+    min-width: 40px;
+    height: 36px;
+  }
+
+  // Тёмная тема. Вес (0,3,2) выше dark.scss: body.o_nexus_dark .btn-secondary
+  // (0,2,1) с !important красит все второстепенные кнопки.
+  //
+  // Группа — та же поверхность и та же рамка, что у строки поиска (раздел
+  // выше): в светлой теме обе белые с рамкой #EAE6DC, в тёмной обе #2A2C33
+  // с рамкой 0,12 белого. До 02.10.2026 группа была #1E2025 — ровно цвет
+  // панели (theme_nexus: .o_control_panel #1E2025), её выделяла одна рамка,
+  // и рядом с приподнятой капсулой она «проваливалась» в панель.
+  body.o_nexus_dark nav.o_cp_switch_buttons {
+    border-color: rgba(255, 255, 255, 0.12);
+    background: var(--pmk-surface-3, #2a2c33);
+
+    > .o_switch_view {
+      background: transparent !important;
+      color: var(--pmk-ink-2, #c9c6bf) !important;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.06) !important;
+        color: var(--pmk-ink, #f4f1ea) !important;
+      }
+
+      // Тёмная пара бледного лайма: фон --pmk-fill, значок #EEF5C8 (9,0).
+      &.active {
+        background: var(--pmk-fill, #3d451e) !important;
+        color: #eef5c8 !important;
+      }
+
+      &:focus-visible {
+        outline-color: rgba(255, 255, 255, 0.85) !important;
+      }
+    }
+  }
+
+  // Телефон в тёмной теме. На узком сенсорном экране виды выбирают в нижней
+  // панели ядра (.o_bottom_sheet; включается только при узком экране И
+  // касании, web/static/src/core/dropdown/dropdown.js) — сетка «кнопок» с
+  // подписями. Ядро красит их как второстепенные кнопки светлой темы
+  // (control_panel.scss: фон #DEE2E6, выбранный #DDEB94), а текст пунктов
+  // меню тёмная тема делает светлым (dark.scss, раздел 9) — подписи и
+  // значки на #DEE2E6 не читались (контраст 1,2; было и до шага 47). Цвета
+  // ядро берёт из переменных --btn-*, их и подменяем: пункт — поверхность
+  // строки поиска с рамкой второстепенной кнопки, выбранный — тёмная пара
+  // бледного лайма, как у кнопок широкого экрана (#EEF5C8 на #3D451E, 9,0).
+  // Светлую тему не трогаем: серые пункты и лаймовый выбранный читаются.
+  body.o_nexus_dark .o_bottom_sheet .o_cp_switch_buttons .o-dropdown-item {
+    --btn-bg: var(--pmk-surface-3, #2a2c33);
+    --btn-border-color: var(--pmk-border-strong, #464a52);
+    --btn-active-bg: var(--pmk-fill, #3d451e);
+    --btn-active-border-color: var(--pmk-fill, #3d451e);
+    --btn-active-color: #eef5c8;
+  }
+}
+
+// ─── Режим высокой контрастности (Windows «Контрастные темы») ─────────────
+//
+// В режиме принудительных цветов (forced-colors: active) браузер заменяет
+// цвета страницы системными: текст — на ButtonText/CanvasText, фон — на
+// Canvas, сохраняя только прозрачность; тени снимает. Значки шага 47
+// нарисованы ФОНОМ под маской (background-color: currentColor) — фон стал
+// бы Canvas, и значок слился бы с фоном: пустые кнопки видов и фильтров,
+// пустой кружок переключателя темы. Прежние глифы шрифтов рисовались
+// цветом текста и в этом режиме оставались видны.
+//
+// Системные цвета браузер не подменяет — ими и красим. forced-color-adjust:
+// none на самом значке — чтобы его фон точно не тронули. Заодно то, что
+// этот режим снимает вместе с заливками:
+//   • выбранный вид — системным цветом выделения (Highlight): бледный лайм
+//     здесь пропадает, а «где я» должно читаться;
+//   • дорожка переключателя темы — контуром: иначе от переключателя
+//     остаётся один значок в пустоте.
+// В обычном режиме блок не действует.
+@media (forced-colors: active) {
+  i.pmk_vi,
+  #{$pmk-search-capsule} > .o_searchview_dropdown_toggler::after,
+  .pmk_theme_switch__knob::before,
+  .pmk_theme_switch--on .pmk_theme_switch__knob::before {
+    forced-color-adjust: none;
+    background-color: ButtonText;
+  }
+
+  // Вес — как у правил выбранного вида: светлого (0,3,1), тёмного (0,4,2) и
+  // нижней панели ядра (0,4,0). Блок стоит ниже их, поэтому выигрывает.
+  nav.o_cp_switch_buttons > .o_switch_view.active,
+  body.o_nexus_dark nav.o_cp_switch_buttons > .o_switch_view.active,
+  .o_bottom_sheet .o_cp_switch_buttons .o-dropdown-item.selected {
+    background-color: Highlight !important;
+    color: HighlightText !important;
+
+    i.pmk_vi {
+      background-color: HighlightText;
+    }
+  }
+
+  .pmk_theme_switch__track {
+    outline: 1px solid ButtonText;
+  }
+}
+
 
 // ─── Правый верхний угол ────────────────────────────────────────────────────
 //
