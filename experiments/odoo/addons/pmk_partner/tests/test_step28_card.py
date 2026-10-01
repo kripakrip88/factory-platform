@@ -131,6 +131,7 @@ class TestPartnerCardStep28(TransactionCase):
                          "В работе (контактного лица), выигранная и выигранная в архиве.")
 
         action = company.action_view_opportunity()
+        self.assertEqual(action["name"], "Сделки", "Заголовок — как подпись кнопки.")
         self.assertIn(("type", "=", "opportunity"), action["domain"])
         context = action["context"]
         for dead in ("search_default_filter_won", "search_default_filter_ongoing",
@@ -172,7 +173,13 @@ class TestPartnerCardStep28(TransactionCase):
         # Отбор прежний — по is_company.
         self.assertEqual(safe_eval(self._one(search, "//filter[@name='type_company']")
                                    .get("domain")), [("is_company", "=", True)])
-        # Ключ меню «Клиенты» по-прежнему находит фильтр.
+        # Ключ меню «Клиенты» по-прежнему находит фильтр. Ключ в действие
+        # кладёт pmk_purchase (views/res_partner_views.xml), он не зависимость
+        # pmk_partner: без него проверять нечего (прогон одного pmk_partner
+        # падал здесь 02.10, хотя на стенде всё верно).
+        if not self.env["ir.module.module"].search_count(
+                [("name", "=", "pmk_purchase"), ("state", "=", "installed")]):
+            return
         action = self.env["ir.actions.act_window"]._for_xml_id(
             "account.res_partner_action_customer")
         self.assertIn("search_default_type_company", action["context"])
