@@ -77,7 +77,8 @@ class TestCustomerListStep25(TransactionCase):
         self.assertEqual(company.pmk_deal_count, 2,
                          "Сделка контактного лица и выигранная; лид и проигранная — нет.")
         self.assertEqual(person.with_user(self.admin).pmk_deal_count, 1)
-        # Штатный счётчик (кнопка «Сделки» в карточке) по-прежнему считает всё.
+        # Штатный счётчик ядра по-прежнему считает всё. Кнопка «Сделки» в
+        # карточке с шага 28 показывает наш (test_step28_card.py).
         self.assertEqual(company.opportunity_count, 4)
 
     def test_standard_list_untouched(self):

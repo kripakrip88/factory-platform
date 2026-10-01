@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+  <!--
+    Кнопка-счётчик «Расчёты» в карточке контрагента — сразу за «Сделками»
+    (разбор UX, шаг 28, 01.10.2026). Логика и «чьи расчёты» —
+    models/partner_specs.py.
+
+    Видимость по правилу кнопок-счётчиков: наш шаг виден всегда, ноль серым.
+    Но «всегда» — у клиента. Поставщик, пользователь системы и своя компания
+    клиентами не бывают (то же определение, что у фильтра «Клиенты» шага 9:
+    pmk_purchase, pmk_customers), и у них кнопка — только когда расчёты есть.
+    Кто поставщик — общий признак pmk_is_supplier (pmk_bridge/models/
+    partner_supplier.py): штатный ранг или реестр прайсов (его дописывает
+    pmk_purchase), у самого контрагента или у его компании. Тот же признак
+    у блоков «Продажи» / «Закупка» вкладки — кнопка и вкладка не расходятся:
+    ни у контактного лица поставщика, ни у нового поставщика прайсов до
+    сохранения, ни у клиента, которому сняли флажок.
+
+    Группы на кнопке нет: расчёты читает любой сотрудник (ACL pmk_calc —
+    base.group_user), а «Сделки» рядом видит только продавец.
+
+    Наследуемся от вида crm, где объявлена «Сделки»: якорь гарантированно на
+    месте, и вид применяется сразу за ним.
+  -->
+  <record id="view_partner_form_specs_button" model="ir.ui.view">
+    <field name="name">res.partner.form.pmk.specs.button</field>
+    <field name="model">res.partner</field>
+    <field name="inherit_id" ref="crm.view_partners_form_crm1"/>
+    <field name="active">True</field>
+    <field name="arch" type="xml">
+      <xpath expr="//button[@name='action_view_opportunity']" position="after">
+        <button name="action_pmk_view_specs" type="object" class="oe_stat_button"
+                icon="fa-calculator"
+                invisible="(pmk_is_supplier or user_ids or ref_company_ids) and not pmk_spec_count">
+          <field name="pmk_spec_count" widget="statinfo" string="Расчёты"/>
+        </button>
+      </xpath>
+    </field>
+  </record>
+
+</odoo>

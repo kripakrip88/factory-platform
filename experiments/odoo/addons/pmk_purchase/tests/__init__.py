@@ -5,3 +5,4 @@
 from . import test_price_mailing_path
 from . import test_step25_lists
 from . import test_step26_empty
+from . import test_step28_partner_mailing

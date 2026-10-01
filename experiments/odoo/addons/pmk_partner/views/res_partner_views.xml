@@ -96,7 +96,8 @@
 
            Заказы поставщикам, счета поставщиков, своевременность поставок,
            партии и договоры НЕ трогаем: это ровно то, ради чего карточка
-           поставщика и нужна. -->
+           поставщика и нужна. С шага 28 штатные счётчики видны только при
+           числе больше нуля — views/partner_stat_buttons.xml. -->
       <button name="schedule_meeting" position="attributes">
         <attribute name="invisible">1</attribute>
       </button>

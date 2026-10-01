@@ -48,8 +48,18 @@ class PriceMailing(models.Model):
 
     # ── расписание (живёт в плановом задании; nextcall хранится в UTC)
     weekday = fields.Selection(WEEKDAYS, string="День недели", default="0")
+    # Час и минута остаются полями модели: из них _push_to_system собирает
+    # nextcall задания, а _pull_from_system раскладывает его обратно. На
+    # экране их нет — вместо двух полей одно «Время» (ниже).
     hour = fields.Integer("Час", default=9)
     minute = fields.Integer("Минута", default=10)
+    # Разбор UX, шаг 28 (01.10.2026): «Час» и «Минута» двумя полями → одно
+    # «Время» в виде 09:10 (виджет float_time: 9,1667 часа = 09:10). Своего
+    # значения не хранит: читается из часа и минуты и пишет в них же, а
+    # запись часа и минуты, как и раньше, раскладывает расписание в задание.
+    send_time = fields.Float(
+        "Время", compute="_compute_send_time", inverse="_inverse_send_time",
+        help="Во сколько по Владивостоку уходят письма, часы:минуты.")
     next_run = fields.Char("Следующая отправка", compute="_compute_runtime")
     last_run = fields.Datetime("Последний прогон", compute="_compute_runtime")
 
@@ -136,11 +146,29 @@ class PriceMailing(models.Model):
     def write(self, vals):
         res = super().write(vals)
         # Раскладываем только когда меняли настройки, а не служебные поля
-        # вроде адреса для пробного письма.
+        # вроде адреса для пробного письма. «Время» (send_time) здесь не
+        # нужно: его запись — это запись часа и минуты (_inverse_send_time),
+        # и раскладка срабатывает на ней.
         if {"enabled", "max_per_run", "weekday", "hour", "minute",
             "subject", "body_html"} & set(vals):
             self._push_to_system()
         return res
+
+    @api.depends("hour", "minute")
+    def _compute_send_time(self):
+        for rec in self:
+            rec.send_time = (rec.hour or 0) + (rec.minute or 0) / 60.0
+
+    def _inverse_send_time(self):
+        """09:10 → час 9, минута 10. Округляем до минуты: виджет хранит
+        время дробью часа (9,1666…), и без округления 09:10 могло бы стать
+        09:09. Вне суток — понятная ошибка, а не ValueError из
+        datetime(…, hour=25) при раскладке в задание (_next_occurrence)."""
+        for rec in self:
+            total = round((rec.send_time or 0.0) * 60)
+            if not 0 <= total <= 23 * 60 + 59:
+                raise UserError(_("Время — от 00:00 до 23:59."))
+            rec.write({"hour": total // 60, "minute": total % 60})
 
     @api.model_create_multi
     def create(self, vals_list):

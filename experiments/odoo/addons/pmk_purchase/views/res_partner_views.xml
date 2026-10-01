@@ -18,13 +18,20 @@
       <xpath expr="//group[@name='purchase']" position="inside">
         <field name="pmk_price_supplier"/>
       </xpath>
+      <!-- Разбор UX, шаг 28: подписи — короткие слова, как в списке
+           «Поставщиков прайсов», и в одну строку; колонка подписей у всех
+           блоков вкладки одной ширины, поля на одной вертикали (классы
+           o_pmk_labels_line / o_pmk_labels_even, forms_nexus.scss, раздел
+           8). Пояснения полей остались в подсказке «?» у подписи. -->
       <xpath expr="//page[@name='sales_purchases']/group[@name='container_row_2']" position="after">
-        <group name="pmk_price" string="Прайсы" invisible="not pmk_price_supplier">
+        <group name="pmk_price" string="Прайсы" invisible="not pmk_price_supplier"
+               class="o_pmk_labels_line o_pmk_labels_even">
           <group name="pmk_price_who">
             <field name="pmk_supply_ids" widget="many2many_tags"
                    options="{'no_create_edit': True}"/>
-            <field name="pmk_has_stock"/>
-            <field name="pmk_price_email" placeholder="zakaz@postavshchik.ru"/>
+            <field name="pmk_has_stock" string="Склад на ДВ"/>
+            <field name="pmk_price_email" string="Адрес для прайса"
+                   placeholder="zakaz@postavshchik.ru"/>
             <field name="pmk_price_email_state" widget="badge"
                    decoration-warning="pmk_price_email_state == 'draft'"
                    decoration-success="pmk_price_email_state == 'confirmed'"
@@ -33,10 +40,108 @@
           </group>
           <group name="pmk_price_when">
             <field name="pmk_price_mailing" widget="boolean_toggle"/>
-            <field name="pmk_price_period_days"/>
-            <field name="pmk_price_request_date"/>
-            <field name="pmk_price_last_date"/>
+            <field name="pmk_price_period_days" string="Период, дней"/>
+            <field name="pmk_price_request_date" string="Запрос отправлен"/>
+            <!-- «Прайс от», как в списке: дата самого прайса поставщика
+                 («Действует с» у его цен), а не день загрузки. -->
+            <field name="pmk_price_last_date" string="Прайс от"/>
             <field name="pmk_price_next_date"/>
+          </group>
+        </group>
+      </xpath>
+    </field>
+  </record>
+
+  <!--
+    «Продажи и закупки» по типу контрагента — разбор UX, шаг 28 (01.10.2026).
+
+    Было: у клиента блок «Закупка», у поставщика — «Продажи» (шаг 8 убрал
+    из них пустые поля, но не сами блоки). Стало:
+      • «Продажи» (менеджер, условия оплаты) — только у клиента;
+      • «Закупка» (снабженец, условия оплаты, рейтинг, «Поставщик
+        прайсов») — только у поставщика;
+      • у клиента вместо «Закупки» — одна строка «Поставщик прайсов»: иначе
+        отметить клиента поставщиком было бы негде. Отметили — карточка
+        становится карточкой поставщика: появляются «Закупка» и «Прайсы».
+        Сняли флажок — карточка снова клиентская: признак вычисляемый,
+        supplier_rank он не трогает;
+      • у пользователя системы и у своей компании (ИП Чулков) вкладки нет —
+        им не подходит ни один блок.
+
+    Кто поставщик — признак pmk_is_supplier (pmk_bridge/models/
+    partner_supplier.py, реестр прайсов дописывает models/res_partner.py
+    этого модуля): штатный признак или реестр прайсов, как у фильтра
+    «Поставщики», — у самого контрагента или у его компании. Кто клиент —
+    как у фильтра «Клиенты» (шаг 9, pmk_customers ниже в этом файле): не
+    поставщик, не пользователь, не своя компания.
+
+    Контактное лицо — по своей компании: у человека поставщика «Закупка», у
+    человека клиента «Продажи». Флажка «Поставщик прайсов» у контактного лица
+    нет ни строкой, ни в «Закупке»: отмеченный, он попал бы в реестр прайсов
+    отдельным поставщиком рядом со своей компанией. Если флажок у человека
+    уже стоит — он виден, чтобы его можно было снять.
+
+    Подписи — словами завода: «Продавец» → «Менеджер», «Покупатель» →
+    «Снабженец» (словарь разбора). Подписи в одну строку, поля всех блоков
+    вкладки на одной вертикали — классы, стиль в forms_nexus.scss, раздел 8.
+
+    «Рейтинг поставщика» (pmk_bridge) — в «Закупку». Его вид ставит поле за
+    ИНН в шапке, а шапку с шага 8 pmk_partner переносит на «Основную
+    информацию», которую у организаций прячет: рейтинг пропал из карточки
+    любого поставщика, хотя по нему расчёт выбирает, у кого брать цену.
+
+    Скрыто атрибутами, узлы на месте; вернуть — снять invisible
+    (docs/disabled-features.md, раздел «Шаг 28»). В КП отсюда не печатается
+    ничего: КП берёт название, ИНН/КПП, адрес, телефон, почту и контактное
+    лицо.
+
+    priority 98: после purchase.view_partner_property_form (36) — он
+    добавляет «Покупателя» — и до раскладки на вкладки pmk_partner (99).
+  -->
+  <record id="view_partner_form_trade_by_type" model="ir.ui.view">
+    <field name="name">res.partner.form.pmk.trade.by.type</field>
+    <field name="model">res.partner</field>
+    <field name="inherit_id" ref="base.view_partner_form"/>
+    <field name="priority">98</field>
+    <field name="active">True</field>
+    <field name="arch" type="xml">
+      <xpath expr="//group[@name='sale']" position="attributes">
+        <attribute name="invisible">pmk_is_supplier or user_ids or ref_company_ids</attribute>
+      </xpath>
+      <xpath expr="//group[@name='purchase']" position="attributes">
+        <attribute name="invisible">not pmk_is_supplier</attribute>
+      </xpath>
+      <xpath expr="//page[@name='sales_purchases']" position="attributes">
+        <attribute name="invisible">user_ids or ref_company_ids</attribute>
+      </xpath>
+
+      <xpath expr="//group[@name='sale']/field[@name='user_id']" position="attributes">
+        <attribute name="string">Менеджер</attribute>
+      </xpath>
+      <xpath expr="//group[@name='purchase']/field[@name='buyer_id']" position="attributes">
+        <attribute name="string">Снабженец</attribute>
+      </xpath>
+      <xpath expr="//group[@name='purchase']/field[@name='pmk_price_supplier']" position="before">
+        <xpath expr="//field[@name='pmk_supplier_rank']" position="move"/>
+      </xpath>
+      <!-- У контактного лица поставщика флажок не показываем (см. выше),
+           кроме уже отмеченного. -->
+      <xpath expr="//group[@name='purchase']/field[@name='pmk_price_supplier']" position="attributes">
+        <attribute name="invisible">parent_id and not is_company and not pmk_price_supplier</attribute>
+      </xpath>
+
+      <xpath expr="//page[@name='sales_purchases']/group[@name='container_row_2']" position="attributes">
+        <attribute name="class" add="o_pmk_labels_line o_pmk_labels_even" separator=" "/>
+      </xpath>
+      <!-- Строка для клиента: тот же флажок, что в «Закупке». Сразу за
+           блоками, перед «Прайсами» — у клиента «Прайсов» нет. Внутренняя
+           группа — чтобы строка встала в левую половину, под «Продажами»,
+           с той же колонкой подписей. У контактного лица строки нет. -->
+      <xpath expr="//page[@name='sales_purchases']/group[@name='container_row_2']" position="after">
+        <group name="pmk_price_switch" class="o_pmk_labels_line o_pmk_labels_even"
+               invisible="pmk_is_supplier or user_ids or ref_company_ids or (parent_id and not is_company)">
+          <group name="pmk_price_switch_row">
+            <field name="pmk_price_supplier"/>
           </group>
         </group>
       </xpath>
@@ -268,9 +373,10 @@
   </record>
 
   <!-- Меню «Продажи → Клиенты» и «Закупки → Поставщики» открывают эти
-       штатные действия. По умолчанию: «Клиенты» + «Компании» и
-       «Поставщики» + «Компании» — контактные лица видны в карточке своей
-       компании. Остальное контекста — как в ядре. -->
+       штатные действия. По умолчанию: «Клиенты» + «Организации» и
+       «Поставщики» + «Организации» (фильтр type_company; до шага 28 он
+       звался «Компании», подпись — pmk_partner) — контактные лица видны в
+       карточке своей компании. Остальное контекста — как в ядре. -->
   <record id="account.res_partner_action_customer" model="ir.actions.act_window">
     <field name="context">{'search_default_pmk_customers': 1, 'search_default_type_company': 1, 'res_partner_search_mode': 'customer', 'default_is_company': True, 'default_customer_rank': 1}</field>
   </record>

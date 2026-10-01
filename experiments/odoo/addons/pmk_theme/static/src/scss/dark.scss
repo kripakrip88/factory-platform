@@ -287,6 +287,24 @@ $pmk-dark-alerts: (
     color: var(--pmk-accent-ink) !important;
   }
 
+  // Кнопка действия в строке поля: «Заполнить по ИНН» в карточке
+  // контрагента, «Открыть очередь» в рассылке прайсов (разбор UX, шаг 28).
+  // Светлое правило forms_nexus.scss (раздел «Кнопка действия внутри строки
+  // поля») красит рамку и текст в #16191c с !important и весом 0,4,1 — выше,
+  // чем .btn-secondary этого раздела (0,2,1) и .btn-link раздела 1 (0,3,1).
+  // По весу выходил почти чёрный текст на тёмном листе (вывод по коду —
+  // смотреть глазами). Здесь вес 0,5,2.
+  body.o_nexus_dark .o_form_view.pmk-form .o_row > button.btn {
+    background: transparent !important;
+    border-color: var(--pmk-border-strong) !important;
+    color: var(--pmk-ink) !important;
+
+    &:hover {
+      background: var(--pmk-fill-soft) !important;
+      color: var(--pmk-ink) !important;
+    }
+  }
+
   // ─── 5. Списки ─────────────────────────────────────────────────────────
   body.o_nexus_dark .o_list_renderer {
     background: var(--pmk-surface) !important;
@@ -385,6 +403,17 @@ $pmk-dark-alerts: (
   // 29.09.2026). Слою — прозрачный фон, фон даёт само поле под ним.
   body.o_nexus_dark .o_field_widget span.o_input.pe-none {
     background: transparent !important;
+  }
+
+  // Подсказка в пустом поле: ядро красит её #bec5cc в обеих темах. На белом
+  // это бледно-серый, а на тёмном листе рядом со значением (#f4f1ea) подсказка
+  // читалась как заполненное поле — «10 или 12 цифр» у ИНН, «Электронная
+  // почта» в шапке поставщика (осмотр копии 02.10, разбор UX, шаг 28, где
+  // подсказок стало много). В тёмной паре — приглушённый тон подписей.
+  body.o_nexus_dark input::placeholder,
+  body.o_nexus_dark textarea::placeholder {
+    color: var(--pmk-ink-faint) !important;
+    opacity: 1;
   }
 
   // ─── 7. Кнопка стадии, меню стадий, плашки статусов ────────────────────

@@ -1,19 +1,128 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
   <!--
-    Разные значки у «Выставлено счетов» и «Договоров» в карточке контрагента.
-    Разбор UX, шаг 3 (Антон, 28.09.2026): после того как надписи ушли в
-    подсказки, эти две кнопки различались только подсказкой — у обеих в
-    Odoo значок-карандаш. Счетам — значок документа, договорам карандаш
-    остаётся.
+    Кнопки-счётчики карточки контрагента.
+
+    Правило разбора UX (шаг 28, документ «Правила для новых экранов»):
+      • чужой процесс, которого на заводе нет, — скрыт (встречи, задачи,
+        сотрудники, сохранённые карты — pmk_partner/views/res_partner_views.xml);
+      • штатный процесс, который есть, — виден только при числе больше нуля:
+        «Сделки», «Продажи», «Закупки», «Выставлено», «Договоры» (здесь);
+      • наш шаг — виден всегда, ноль серым: «Расчёты» (pmk_deal).
+    Было у клиента «Арестак-Строй»: пять кнопок, четыре из них — нули.
+
+    Скрываем атрибутом invisible, узлы не трогаем: на них ссылаются xpath
+    других видов. Вернуть кнопку при нуле — снять invisible здесь
+    (docs/disabled-features.md, раздел «Шаг 28»).
+
+    «Счета поставщиков» и «Своевременность» ядро и так прячет при нуле,
+    «Партии» видны только группе учёта партий.
+  -->
+
+  <!--
+    «Выставлено» — разные значки у счетов и договоров (разбор UX, шаг 3,
+    Антон, 28.09.2026): после того как надписи ушли в подсказки, эти две
+    кнопки различались только подсказкой — у обеих в Odoo значок-карандаш.
+    Счетам — значок документа, договорам карандаш остаётся.
+
+    Шаг 28: только при сумме. Счета покупателям завод пока ведёт в
+    МоёмСкладе — в Odoo «Выставлено 0» у всех.
   -->
   <record id="view_partner_invoices_button_icon" model="ir.ui.view">
     <field name="name">res.partner.invoices.button.icon</field>
     <field name="model">res.partner</field>
     <field name="inherit_id" ref="account.partner_view_buttons"/>
+    <field name="active">True</field>
     <field name="arch" type="xml">
       <xpath expr="//button[@name='action_view_partner_invoices']" position="attributes">
         <attribute name="icon">fa-file-text-o</attribute>
+        <attribute name="invisible">not total_invoiced</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <!--
+    «Сделки» — число наше, а не штатное (шаг 28).
+
+    Штатный opportunity_count считает и лиды, и проигранные сделки: клиент с
+    одной сделкой в работе и одним лидом из почты получал «Сделки 2». Число на
+    кнопке теперь pmk_deal_count — тот же счётчик, что в колонке «Сделок»
+    списка «Клиенты» (шаг 25): сделки в работе и выигранные (выигранные — и
+    убранные в архив). Кнопка видна, когда он больше нуля; открывает ровно
+    эти сделки (models/partner_card.py, action_view_opportunity; условие
+    счётчика — PMK_DEAL_DOMAIN в models/res_partner.py).
+
+    Штатное поле в кнопке не удаляем, а гасим: на него ссылается подпись
+    pmk_deal (view_partner_form_deals_label).
+  -->
+  <record id="view_partner_deals_button_count" model="ir.ui.view">
+    <field name="name">res.partner.deals.button.count</field>
+    <field name="model">res.partner</field>
+    <field name="inherit_id" ref="crm.view_partners_form_crm1"/>
+    <field name="active">True</field>
+    <field name="arch" type="xml">
+      <xpath expr="//button[@name='action_view_opportunity']" position="attributes">
+        <attribute name="invisible">not pmk_deal_count</attribute>
+      </xpath>
+      <xpath expr="//button[@name='action_view_opportunity']/field[@name='opportunity_count']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//button[@name='action_view_opportunity']/field[@name='opportunity_count']" position="after">
+        <field name="pmk_deal_count" widget="statinfo" string="Сделки"/>
+      </xpath>
+    </field>
+  </record>
+
+  <!--
+    «Продажи» — штатные заказы клиентов (sale.order). Завод продаёт через
+    МойСклад, в Odoo их ноль у всех — кнопка появится вместе с первым заказом.
+    Ищем кнопку по вложенному полю: в name у неё xmlid действия.
+  -->
+  <record id="view_partner_sale_button_nonzero" model="ir.ui.view">
+    <field name="name">res.partner.sale.button.nonzero</field>
+    <field name="model">res.partner</field>
+    <field name="inherit_id" ref="sale.res_partner_view_buttons"/>
+    <field name="active">True</field>
+    <field name="arch" type="xml">
+      <xpath expr="//button[field[@name='sale_order_count']]" position="attributes">
+        <attribute name="invisible">not sale_order_count</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <!--
+    «Покупки» → «Закупки» (словарь разбора: одно понятие — одно слово) и
+    только при числе больше нуля. Это запросы КП и заказы поставщику — у
+    клиента их не бывает, у поставщика кнопка появится с первым запросом.
+  -->
+  <record id="view_partner_purchase_button_nonzero" model="ir.ui.view">
+    <field name="name">res.partner.purchase.button.nonzero</field>
+    <field name="model">res.partner</field>
+    <field name="inherit_id" ref="purchase.res_partner_view_purchase_buttons"/>
+    <field name="active">True</field>
+    <field name="arch" type="xml">
+      <xpath expr="//button[field[@name='purchase_order_count']]" position="attributes">
+        <attribute name="invisible">not purchase_order_count</attribute>
+      </xpath>
+      <xpath expr="//button/field[@name='purchase_order_count']" position="attributes">
+        <attribute name="string">Закупки</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <!--
+    «Договоры» российской локализации — только когда договор заведён. Сейчас
+    договоров в Odoo ноль у всех: они появятся вместе с «Деньгами» (раздел
+    «Спрятать до востребования» разбора).
+  -->
+  <record id="view_partner_contract_button_nonzero" model="ir.ui.view">
+    <field name="name">res.partner.contract.button.nonzero</field>
+    <field name="model">res.partner</field>
+    <field name="inherit_id" ref="l10n_ru_contract.view_partner_form"/>
+    <field name="active">True</field>
+    <field name="arch" type="xml">
+      <xpath expr="//button[@name='action_view_contract']" position="attributes">
+        <attribute name="invisible">not contract_count</attribute>
       </xpath>
     </field>
   </record>

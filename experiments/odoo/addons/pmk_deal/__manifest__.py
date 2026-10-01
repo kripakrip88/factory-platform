@@ -28,6 +28,8 @@
         "views/crm_lead_views.xml",
         "views/crm_lead_money_views.xml",
         "views/metal_spec_views.xml",
+        # Кнопка-счётчик «Расчёты» в карточке клиента (разбор UX, шаг 28).
+        "views/res_partner_views.xml",
         "data/crm_lost_reason.xml",
         "data/crm_pipeline_views.xml",
     ],

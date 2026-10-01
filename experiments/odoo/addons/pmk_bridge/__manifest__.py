@@ -18,7 +18,10 @@
     #   product, uom      — товары, единицы, характеристики;
     #   stock             — склад, партии (кусок проката = партия);
     #   stock_account     — способ учёта затрат и оценка запасов на категориях
-    #                       (property_cost_method / property_valuation);
+    #                       (property_cost_method / property_valuation); через
+    #                       него же account — supplier_rank, из которого
+    #                       считается признак «поставщик» (шаг 28,
+    #                       models/partner_supplier.py);
     #   l10n_ru_doc       — поле uom.uom.kod (field_uom_uom__kod принадлежит ему);
     #   l10n_ru_upd_xml   — поле uom.uom.okei, без него УПД не выгрузится;
     #   pmk_calc          — сам справочник, из которого растут карточки;

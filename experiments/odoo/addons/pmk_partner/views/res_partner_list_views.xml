@@ -62,4 +62,32 @@
     <field name="act_window_id" ref="account.res_partner_action_customer"/>
   </record>
 
+  <!--
+    Фильтры типа в поиске контрагентов — теми же словами, что переключатель
+    в карточке (разбор UX, шаг 28): «Организации» и «ИП и физлица» вместо
+    «Компании» и «Физические лица» из перевода ядра. Переключатель с шага 28
+    говорит «ИП или физлицо / Организация» (models/partner_card.py), а
+    «Продажи → Клиенты» и «Закупки → Поставщики» открываются с фасетом
+    «Компании» — одно понятие звалось бы двумя словами на соседних экранах.
+
+    Отбор прежний (is_company), меняются только подписи; ключи
+    search_default_type_company в действиях работают как раньше. Поиск
+    общий — подписи те же во всех списках контрагентов. Вернуть — удалить
+    эту запись (docs/disabled-features.md, раздел «Шаг 28»).
+  -->
+  <record id="view_partner_search_type_labels" model="ir.ui.view">
+    <field name="name">res.partner.search.pmk.type.labels</field>
+    <field name="model">res.partner</field>
+    <field name="inherit_id" ref="base.view_res_partner_filter"/>
+    <field name="active">True</field>
+    <field name="arch" type="xml">
+      <xpath expr="//filter[@name='type_person']" position="attributes">
+        <attribute name="string">ИП и физлица</attribute>
+      </xpath>
+      <xpath expr="//filter[@name='type_company']" position="attributes">
+        <attribute name="string">Организации</attribute>
+      </xpath>
+    </field>
+  </record>
+
 </odoo>
