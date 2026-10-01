@@ -63,8 +63,8 @@ class TestKpSentDeal(MailCommon):
         # по умолчанию он выключен, — отдельным тестом.
         self.patch(kp_sent, "KP_SENT_MOVES_STAGE", True)
 
-    def test_default_is_no_auto_stage_move(self):
-        self.assertFalse(_DEFAULT_MOVES, "Решение Антона: стадии без автоперехода.")
+    def test_default_moves_stage(self):
+        self.assertTrue(_DEFAULT_MOVES, "Антон 01.10.2026: автопереход в «КП отправлено» включён.")
 
     # ─── помощники ──────────────────────────────────────────────────────
     def _deal(self, stage, user=None):

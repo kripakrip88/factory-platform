@@ -21,6 +21,14 @@ import { Component, useRef, useState, onMounted, onPatched, onWillUnmount } from
 
 const SVGNS = "http://www.w3.org/2000/svg";
 const GRAB = 14;        // радиус захвата вершины, px
+// Наименьшая рамка вписывания, мм. Без неё пустой чертёж (одна точка, рамка
+// 1×1) вписывался с масштабом ~340: любой клик по холсту превращался в полку
+// короче 5 мм, addPoint её отбрасывал — новая доборка «не рисовалась», точка
+// стояла на месте (найдено Антоном 01.10.2026; началось с правки 22.09
+// «масштаб без потолка», когда сняли Math.min(1.8, k)). Настоящие профили шире
+// 40 мм по обеим сторонам — их вписывание не меняется. То же число в
+// models/dobor_report.py (sketch_svg): экран и печать вписывают одинаково.
+const MIN_BOX = 40;
 const FOLD_GAP = 8;     // зазор подгиба 180°, имитирует толщину металла
 // Порог свободного вращения: пока курсор ближе ROT_FREE_R к центру ручки,
 // это ещё клик, а не «кручу». Радиус, а не пройденный путь, потому что он
@@ -272,7 +280,7 @@ export class DoborBuilder extends Component {
         // (dobor_report: band = LOCK_BAND if lock else 0) — иначе экран и
         // печать расходятся по вписыванию, как расходились до этой правки.
         const areaH = VIEW_H - (this.state.lock ? LOCK_BAND : 0);
-        const bw = Math.max(1, maxx - minx), bh = Math.max(1, maxy - miny), pad = 100;
+        const bw = Math.max(MIN_BOX, maxx - minx), bh = Math.max(MIN_BOX, maxy - miny), pad = 100;
         let k = Math.min((VIEW_W - pad) / bw, (areaH - pad) / bh);
         // Масштаб ограничен ТОЛЬКО снизу. Раньше здесь стоял ещё и потолок
         // Math.min(1.8, k) — он приехал из построителя ERPNext (metal_calculator,
