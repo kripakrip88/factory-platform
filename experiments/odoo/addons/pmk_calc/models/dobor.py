@@ -20,7 +20,9 @@ import re
 from markupsafe import Markup
 
 from odoo import api, fields, models
-from odoo.exceptions import ValidationError
+from odoo.exceptions import MissingError, ValidationError
+
+from . import deleted_names
 
 MM_IN_M = 1000.0
 STEEL_DENSITY_FACTOR = 7.85  # кг на м² при толщине 1 мм
@@ -231,6 +233,35 @@ class DoborOrderLine(models.Model):
     # Не обязательное: пока профиль рисуют, название придумывать рано, а
     # форма не должна этого требовать. Пустое заполняется само — см. create().
     title = fields.Char("Название доборки")
+
+    @api.depends("title")
+    def _compute_display_name(self):
+        """Имя позиции — её название (разбор UX, шаг 30, 02.10.2026).
+
+        Своего имени у модели не было (нет поля name), и Odoo подставлял
+        служебное «pmk.dobor.order.line,20». Так позиция попадала в историю
+        заказа: и в «Добавлено:» модуля tracking_manager, и в отслеживание
+        поля «Доборки» ядра mail. Пустое название бывает лишь в середине
+        create(): «Доборку N» ставит _fill_default_titles сразу после записи,
+        а tracking_manager перечитывает имя новой строки уже после этого.
+
+        Позицию удалили в этой же записи (доводка шага 30) — названия в базе
+        уже нет, а ядро mail как раз читает имена прежних позиций поля
+        «Доборки» перед фиксацией. Без этой ветки MissingError выбрасывала из
+        ленты ВСЕ отметки сохранения: статус, клиента, дату (deleted_names.py).
+        """
+        for line in self:
+            try:
+                title = (line.title or "").strip()
+            except MissingError:
+                line.display_name = deleted_names.recall(line, "удалённая позиция")
+                continue
+            line.display_name = title or "Доборка без названия"
+
+    def unlink(self):
+        # Имя — до удаления: после него его не прочитать (deleted_names.py).
+        deleted_names.remember(self)
+        return super().unlink()
 
     def _default_coating(self):
         """Цинк по умолчанию — как стояло в ERPNext.
@@ -466,6 +497,11 @@ class DoborOrderLine(models.Model):
         номер: после удаления позиций счёт по количеству может попасть на
         существующее имя. Так же нумерует «Копировать» в браузере
         (static/src/js/dobor_copy_line.js, nextAutoTitle).
+
+        Пишем без отметки в истории (tracking_disable, разбор UX, шаг 30):
+        это служебное имя к только что заведённой позиции, а не правка
+        человека. Без флага tracking_manager клал в ленту заказа рядом с
+        «Добавлено: Доборка 5» ещё «Изменено: … Название доборки : → Доборка 5».
         """
         for order in self.order_id:
             batch = self.filtered(lambda line, o=order: line.order_id == o).sorted(
@@ -481,7 +517,7 @@ class DoborOrderLine(models.Model):
                 number = before + index + 1
                 while "Доборка %s" % number in taken:
                     number += 1
-                line.title = "Доборка %s" % number
+                line.with_context(tracking_disable=True).title = "Доборка %s" % number
                 taken.add(line.title)
 
     @api.constrains("plank_length", "qty")

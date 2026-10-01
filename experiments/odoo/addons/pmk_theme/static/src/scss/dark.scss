@@ -640,3 +640,137 @@ $pmk-dark-alerts: (
     color: var(--pmk-accent-ink) !important;
   }
 }
+
+
+// ═══ Шаг 30: подсветки и лента — тёмная пара (разбор UX, 02.10.2026) ════════
+// Светлые правила — forms_nexus.scss, раздел «Шаг 30». Отдельный блок
+// @media screen в конце файла, а не правка разделов выше: возвращается одним
+// куском. Печать из тёмного режима остаётся светлой, как у всего файла.
+@media screen {
+
+  // 30.1 Лента: «Отправить сообщение» и нажатая «Внутренняя заметка» —
+  // контурные. Светлое правило (0,3,0) сильнее тёмной заливки лаймом
+  // (раздел 4, 0,2,1) и красило бы кнопку белой — пара обязана быть сильнее:
+  // (0,4,1). В пару взята и .btn-secondary ленты («Внутренняя заметка» в
+  // покое, «Активность»): у раздела 4 тёмного наведения нет, и рядом с
+  // контурной «Отправить сообщение», которая на наведение отвечает, соседи
+  // стояли бы неподвижными.
+  body.o_nexus_dark .o-mail-Chatter-topbar .btn-primary.o-mail-Chatter-sendMessage,
+  body.o_nexus_dark .o-mail-Chatter-topbar .btn-primary.o-mail-Chatter-logNote,
+  body.o_nexus_dark .o-mail-Chatter-topbar .btn-secondary {
+    background: var(--pmk-surface-2) !important;
+    border-color: var(--pmk-border-strong) !important;
+    color: var(--pmk-ink) !important;
+
+    &:hover {
+      background: var(--pmk-surface-3) !important;
+      border-color: var(--pmk-ink-3) !important;
+      color: var(--pmk-ink) !important;
+    }
+
+    &.active {
+      border-color: var(--pmk-ink) !important;
+    }
+
+    &:focus-visible {
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.18) !important;
+    }
+  }
+
+  // 30.2 «Новое» в форме — контурная. Светлое правило (0,2,0) слабее тёмной
+  // заливки лаймом (theme_nexus и раздел 4: body.o_nexus_dark
+  // .o_form_button_create, 0,2,1) — здесь (0,3,1).
+  body.o_nexus_dark .btn.o_form_button_create {
+    background: var(--pmk-surface-2) !important;
+    border-color: var(--pmk-border-strong) !important;
+    color: var(--pmk-ink) !important;
+
+    &:hover {
+      background: var(--pmk-surface-3) !important;
+      border-color: var(--pmk-ink-3) !important;
+      color: var(--pmk-ink) !important;
+    }
+
+    &:focus-visible {
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.18) !important;
+    }
+  }
+
+  // 30.2б Почта: «Написать», пока открыт редактор письма, и нажатая «</>».
+  body.o_nexus_dark .o_mail_client:has(.o_mail_client_composer) .o_mail_client_topbar .btn-primary,
+  body.o_nexus_dark .o_mail_client_composer .btn-sm.btn-primary {
+    background: var(--pmk-surface-2) !important;
+    border-color: var(--pmk-border-strong) !important;
+    color: var(--pmk-ink) !important;
+
+    &:hover {
+      background: var(--pmk-surface-3) !important;
+      border-color: var(--pmk-ink-3) !important;
+      color: var(--pmk-ink) !important;
+    }
+
+    // Кольцо фокуса (доводка): светлое правило 30.2б даёт тёмное кольцо,
+    // на тёмном листе его не видно.
+    &:focus-visible {
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.18) !important;
+    }
+  }
+
+  body.o_nexus_dark .o_mail_client_composer .btn-sm.btn-primary {
+    border-color: var(--pmk-ink) !important;
+  }
+
+  // 30.2в Окно новой строки: «Сохранить и создать» — контурная, как
+  // «Отменить» рядом. Светлое правило (0,3,0) сильнее тёмной заливки лаймом
+  // (раздел 4, 0,2,1) и красило бы кнопку белой — пара (0,4,1).
+  body.o_nexus_dark .modal-footer .btn.o_form_button_save_new {
+    background: var(--pmk-surface-2) !important;
+    border-color: var(--pmk-border-strong) !important;
+    color: var(--pmk-ink) !important;
+
+    &:hover {
+      background: var(--pmk-surface-3) !important;
+      border-color: var(--pmk-ink-3) !important;
+      color: var(--pmk-ink) !important;
+    }
+
+    &:focus-visible {
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.18) !important;
+    }
+  }
+
+  // 30.4 Выбранные строки: тёмный лайм открытого письма (--mc-active-bg,
+  // раздел 13; раздел 5 даёт тот же фон классу table-info). Тема заменяла у
+  // table-info подложку полосатой строки на #faf9f6 с !important: чётная
+  // выбранная строка списка без группировки выходила почти белой со светлым
+  // текстом (вывод по коду). Наведение на выбранной — светлее на 7 %.
+  body.o_nexus_dark .o_list_renderer .o_data_row.o_data_row_selected {
+    --table-bg: #3d451e;
+    --table-color: #f4f1ea;
+    --table-striped-bg: transparent !important;
+    --table-hover-bg: rgba(255, 255, 255, 0.07) !important;
+
+    > td.o_list_record_selector {
+      box-shadow: inset 3px 0 0 #9bb52a,
+                  inset 0 0 0 9999px var(--table-bg-state, var(--table-bg-type, var(--table-accent-bg)));
+    }
+  }
+
+  // Галочка выбранной строки: тёмная тема красит отмеченный флажок тёмной
+  // оливой #6E8200 (theme_nexus dark_mode.scss) — на тёмном лайме строки
+  // коробочка почти сливалась (2,4:1 при норме 3:1 для элементов
+  // управления). Рамка — приглушённым лаймом главной кнопки (7,4:1).
+  body.o_nexus_dark .o_list_renderer .o_data_row.o_data_row_selected .o_list_record_selector .form-check-input:checked {
+    border-color: var(--pmk-accent) !important;
+  }
+
+  // «Выбрать все» в плашке «N выбрано» (сама плашка — раздел 5).
+  body.o_nexus_dark .o_selection_box .list-group-item.active .o_select_domain.btn-info {
+    background: rgba(255, 255, 255, 0.10) !important;
+    color: var(--pmk-ink) !important;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.16) !important;
+    }
+  }
+}

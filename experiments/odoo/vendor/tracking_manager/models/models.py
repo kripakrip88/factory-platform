@@ -57,6 +57,14 @@ class Base(models.AbstractModel):
                 {
                     "mode": mode,
                     "record": self.display_name,
+                    # ПРАВКА ПМК (разбор UX, шаг 30, 02.10.2026): имя НОВОЙ
+                    # строки перечитываем при записи сообщения (precommit,
+                    # _tm_post_message), а не здесь. Здесь — середина create:
+                    # наши модели дописывают название после super().create()
+                    # (позиция доборки — «Доборка N»), и в ленту уходило
+                    # «pmk.dobor.order.line,20». Строку создали и удалили в
+                    # одной записи — остаётся имя на момент создания.
+                    "record_ref": self if mode == "create" else None,
                     "changes": changes,
                 }
             )
@@ -73,6 +81,22 @@ class Base(models.AbstractModel):
                 if field.type == "many2many":
                     old = format_m2m(before)
                     new = format_m2m(self[field_name])
+                # ПРАВКА ПМК (разбор UX, шаг 30): one2many — числом строк.
+                # Без этой ветки в ленту шёл служебный вид набора записей —
+                # «pmk.metal.spec.line(43, 44, 45)». Имён удалённых строк к
+                # этому моменту уже не прочитать (записи удалены), число —
+                # честное: «Детали : 3 → 4». Доводка: строки и добавили, и
+                # убрали (заменили деталь) — разница в скобках, «Детали :
+                # 3 → 3 (+1, −1)»: голое «3 → 3» читалось как «ничего не
+                # поменялось», а других следов правки нет (у изделия нет
+                # своей ленты). Знаки, а не слова: не зависят от языка.
+                elif field.type == "one2many":
+                    after = self[field_name]
+                    old = len(before)
+                    new = len(after)
+                    added, removed = len(after - before), len(before - after)
+                    if added and removed:
+                        new = "%s (+%s, −%s)" % (new, added, removed)
                 elif field.type == "many2one":
                     old = before.display_name
                     new = self[field_name]["display_name"]
@@ -89,6 +113,18 @@ class Base(models.AbstractModel):
         return changes
 
     def _tm_post_message(self, data):
+        # ПРАВКА ПМК (разбор UX, шаг 30, доводка): язык записи истории. Шаблон
+        # собирается на языке контекста, а сообщение хранится готовым HTML. Без
+        # языка в контексте (odoo shell, скрипт стенда, миграция — OdooBot)
+        # выходило «New : / Delete :» даже в русской базе (ДОБ-00007, 2189–
+        # 2192). Запасной язык — язык по умолчанию базы (ir.default у
+        # res.partner.lang, им же ядро открывает сайт), потом язык
+        # пользователя. Язык, переданный явно, — как был.
+        lang = (
+            self.env.context.get("lang")
+            or self.env["ir.default"].sudo()._get("res.partner", "lang")
+            or self.env.user.lang
+        )
         for model_name, model_data in data.items():
             # check if record has mail.thread mixin
             if not getattr(self.env[model_name], "message_post_with_source", False):
@@ -98,6 +134,14 @@ class Base(models.AbstractModel):
                 if not record_id:
                     continue
                 record = self.env[model_name].browse(record_id)
+                # ПРАВКА ПМК (шаг 30): имя новой строки — сейчас, см.
+                # «record_ref» в _tm_notify_owner. sudo — как у автора в
+                # _tm_finalize_o2m_tracking: строку могли завести под sudo.
+                for field_messages in messages_by_field.values():
+                    for message in field_messages:
+                        ref = message.pop("record_ref", None)
+                        if ref is not None and ref.sudo().exists():
+                            message["record"] = ref.sudo().display_name
                 messages = [
                     {
                         "name": record._tm_get_field_description(field_name),
@@ -106,7 +150,7 @@ class Base(models.AbstractModel):
                     for field_name, messages in messages_by_field.items()
                 ]
                 # We do not use message_post_with_view() because emails would be sent
-                rendered_template = self.env["ir.qweb"]._render(
+                rendered_template = self.env["ir.qweb"].with_context(lang=lang)._render(
                     "tracking_manager.track_o2m_m2m_template",
                     {"lines": messages, "object": record},
                     minimal_qcontext=True,
@@ -155,7 +199,13 @@ class Base(models.AbstractModel):
             record._tm_notify_owner(mode)
 
     def write(self, vals):
-        if self.is_tracked_by_o2m():
+        # ПРАВКА ПМК (разбор UX, шаг 30): tracking_disable — как у ядра mail
+        # (mail.thread с этим флагом не пишет отслеживание). Им пользуется
+        # служебная запись без истории: «Доборка N» новой позиции ставит
+        # pmk_calc (_fill_default_titles) сразу после create, и в ленту рядом
+        # с «Добавлено: Доборка 5» шло «Изменено: … Название доборки : →
+        # Доборка 5». Создание и удаление флаг не глушит — как было.
+        if self.is_tracked_by_o2m() and not self.env.context.get("tracking_disable"):
             self._tm_prepare_o2m_tracking()
         return super().write(vals)
 

@@ -1,0 +1,139 @@
+# Русский перевод модуля tracking_manager (OCA) — ПРАВКА ПМК, разбор UX, шаг 30.
+#
+# Каталог i18n_extra, а не i18n: Odoo читает его ПОСЛЕ i18n/<lang>.po, поэтому
+# если авторы выпустят свой русский файл, наш останется сверху (правило
+# experiments/odoo/vendor/README.md). Перевод чужого модуля из своего модуля
+# не делаем — см. там же.
+#
+# Подписи истории («New :», «Delete :», «Change :», подсказка стрелки
+# «Changed») — термины вида tracking_manager.track_o2m_m2m_template. Они живут
+# в базе (ir_ui_view.arch_db) и попадают туда только при
+# odoo -u tracking_manager --i18n-overwrite (deploy.sh с I18N=1) или вызовом
+# _load_module_terms (миграция pmk_calc 19.0.1.0.4). Перевод действует на
+# НОВЫЕ записи истории: старые лежат готовым HTML в mail_message.body, их
+# правит та же миграция.
+#
+# Не переведены намеренно общие с ядром имена (Base, Display Name, Email
+# Thread, Fields, ID, Mail Tracking Value, Models): у этих записей уже есть
+# перевод ядра, а --i18n-overwrite перезаписал бы его нашим.
+#
+# .pot рядом с этим файлом НЕ класть (он лежит в i18n/): PoFileReader сольёт
+# .po с .pot из того же каталога и пометит устаревшими записи, которых там нет.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: tracking_manager 19.0.1.0.1\n"
+"Report-Msgid-Bugs-To: \n"
+"PO-Revision-Date: 2026-10-02 00:00+0000\n"
+"Last-Translator: ПМК Парк\n"
+"Language-Team: \n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+#. module: tracking_manager
+#: model_terms:ir.ui.view,arch_db:tracking_manager.track_o2m_m2m_template
+msgid "<b>Change :</b>"
+msgstr "<b>Изменено:</b>"
+
+#. module: tracking_manager
+#: model_terms:ir.ui.view,arch_db:tracking_manager.track_o2m_m2m_template
+msgid "<b>Delete :</b>"
+msgstr "<b>Удалено:</b>"
+
+#. module: tracking_manager
+#: model_terms:ir.ui.view,arch_db:tracking_manager.track_o2m_m2m_template
+msgid "<b>New :</b>"
+msgstr "<b>Добавлено:</b>"
+
+#. module: tracking_manager
+#: model_terms:ir.ui.view,arch_db:tracking_manager.track_o2m_m2m_template
+msgid "Changed"
+msgstr "Изменено"
+
+#. module: tracking_manager
+#: model_terms:ir.ui.view,arch_db:tracking_manager.view_model_form
+msgid "Active"
+msgstr "Включено"
+
+#. module: tracking_manager
+#: model:ir.model.fields,field_description:tracking_manager.field_ir_model__active_custom_tracking
+msgid "Active Custom Tracking"
+msgstr "Своё отслеживание включено"
+
+#. module: tracking_manager
+#: model:ir.model.fields,field_description:tracking_manager.field_ir_model__automatic_custom_tracking
+msgid "Automatic Custom Tracking"
+msgstr "Отслеживать автоматически"
+
+#. module: tracking_manager
+#: model_terms:ir.ui.view,arch_db:tracking_manager.view_model_form
+msgid "Automatic configuration"
+msgstr "Автоматическая настройка"
+
+#. module: tracking_manager
+#: model:ir.model.fields,field_description:tracking_manager.field_ir_model_fields__custom_tracking
+#: model_terms:ir.ui.view,arch_db:tracking_manager.view_model_form
+msgid "Custom Tracking"
+msgstr "Своё отслеживание"
+
+#. module: tracking_manager
+#: model_terms:ir.ui.view,arch_db:tracking_manager.view_model_track_fields_search
+msgid "Custom Tracking OFF"
+msgstr "Не отслеживается"
+
+#. module: tracking_manager
+#: model_terms:ir.ui.view,arch_db:tracking_manager.view_model_track_fields_search
+msgid "Custom Tracking ON"
+msgstr "Отслеживается"
+
+#. module: tracking_manager
+#: model:ir.model.fields,field_description:tracking_manager.field_ir_model__automatic_custom_tracking_domain
+msgid "Domain"
+msgstr "Условие"
+
+#. module: tracking_manager
+#: model:ir.model.fields,help:tracking_manager.field_ir_model__automatic_custom_tracking
+msgid ""
+"If marked, the fields matching the matched by the domain below will be "
+"automatically tracked for this model."
+msgstr ""
+"Если отмечено, поля этой модели, подходящие под условие ниже, "
+"отслеживаются автоматически."
+
+#. module: tracking_manager
+#: model:ir.model.fields,field_description:tracking_manager.field_ir_model_fields__native_tracking
+msgid "Native Tracking"
+msgstr "Штатное отслеживание"
+
+#. module: tracking_manager
+#: model:ir.model.fields,field_description:tracking_manager.field_ir_model_fields__trackable
+msgid "Trackable"
+msgstr "Можно отслеживать"
+
+#. module: tracking_manager
+#: model:ir.actions.act_window,name:tracking_manager.ir_model_fields_action
+msgid "Trackable Fields"
+msgstr "Поля для отслеживания"
+
+#. module: tracking_manager
+#: model:ir.model.fields,field_description:tracking_manager.field_ir_model__tracked_field_count
+msgid "Tracked Field Count"
+msgstr "Отслеживаемых полей"
+
+#. module: tracking_manager
+#: model_terms:ir.ui.view,arch_db:tracking_manager.view_model_form
+msgid "Tracked Fields"
+msgstr "Отслеживаемые поля"
+
+#. module: tracking_manager
+#: model_terms:ir.ui.view,arch_db:tracking_manager.view_model_form
+msgid "Update"
+msgstr "Обновить"
+
+#. module: tracking_manager
+#: model_terms:ir.ui.view,arch_db:tracking_manager.view_model_form
+msgid "Update fields configuration"
+msgstr "Обновить настройку полей"

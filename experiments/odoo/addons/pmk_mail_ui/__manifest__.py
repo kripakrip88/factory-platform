@@ -14,7 +14,12 @@
     "category": "Productivity/Mail",
     "author": "ПМК Парк",
     "depends": ["mail_client", "pmk_theme", "crm"],
-    "data": ["data/menus.xml", "data/ir_cron.xml"],
+    "data": [
+        "data/menus.xml",
+        "data/ir_cron.xml",
+        # Настройки ящика: одна залитая кнопка на экран (разбор UX, шаг 30).
+        "views/mail_client_account_views.xml",
+    ],
     "assets": {
         "web.assets_backend": [
             "pmk_mail_ui/static/src/js/*.js",

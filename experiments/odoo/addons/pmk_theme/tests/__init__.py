@@ -9,6 +9,7 @@
 # static/src/js/active_section_keys.js, их гоняет node вне Odoo.
 from . import test_dangerous_actions
 from . import test_settings_paid_hidden
+from . import test_step30_highlights
 from . import test_list_table
 from . import test_empty_screens
 from . import test_step27_forms

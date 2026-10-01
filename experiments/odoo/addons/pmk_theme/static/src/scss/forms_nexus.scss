@@ -1734,3 +1734,217 @@ body.o_nexus_dark .o_dialog .o_field_widget.o_mail_composer_message {
 //    (`:not(.pmk-doc-form *)`): рамку возвращает тема. Окна изделия (шаг 34),
 //    позиций доборки и формы шага 28 не меняются. Убрать .o_field_float из
 //    того правила совсем — после шагов 28 и 34, с осмотром их окон.
+
+
+// ═══ Шаг 30: подсветки и лента (разбор UX, 02.10.2026) ══════════════════════
+//
+// Карта цветов (шаг 6): чёрный — главное, приглушённый лайм — «где я» и
+// выбранное. Залитая чёрная кнопка на экране одна — следующий шаг процесса
+// (на сделке «Расчёт и КП», в расчёте «КП (PDF)»). Здесь — вторые залитые
+// кнопки, «История» в ленте и выбранные строки списков. Тёмная пара каждого
+// правила с цветом — dark.scss, блок «Шаг 30» в конце файла.
+//
+// ВЕС. Тема заливает .btn-primary и .o_form_button_create чёрным правилом
+// (0,1,0) с !important (vendor/theme_nexus/static/src/scss/buttons.scss), в
+// тёмной теме — лаймом правилами (0,2,1): body.o_nexus_dark .btn-primary в
+// theme_nexus dark_mode.scss и в dark.scss, раздел 4. Правила ниже сильнее.
+
+// ─── 30.1 Лента: «Отправить сообщение» контурная везде ──────────────────────
+//
+// Ядро (mail/static/src/chatter/web/chatter.xml) даёт «Отправить сообщение»
+// (o-mail-Chatter-sendMessage) класс btn-primary, пока не открыт редактор
+// заметки, а «Внутренней заметке» (o-mail-Chatter-logNote) — btn-primary
+// active, пока открыт её редактор. На сделке, лиде, контрагенте, в закупке
+// рядом с главной кнопкой документа стояла вторая залитая. Обе — как
+// «Внутренняя заметка» в покое (btn-secondary темы): белая, рамка #dad5c8,
+// текст #16171b; наведение — #faf9f6 и тёмная рамка, тоже как у неё. Нажата
+// (открыт её редактор, класс active) — тёмная рамка без заливки. С шага 32
+// так выглядела лента одного расчёта (pmk_calc, dobor_builder.scss), теперь —
+// все ленты. Вес (0,3,0).
+.o-mail-Chatter-topbar .btn-primary.o-mail-Chatter-sendMessage,
+.o-mail-Chatter-topbar .btn-primary.o-mail-Chatter-logNote {
+  background: #ffffff !important;
+  border: 1px solid #dad5c8 !important;
+  color: #16171b !important;
+  box-shadow: none !important;
+
+  &:hover {
+    background: #faf9f6 !important;
+    border-color: #16191c !important;
+    color: #16191c !important;
+  }
+
+  &.active {
+    border-color: #16191c !important;
+  }
+
+  // box-shadow: none выше погасил бы и кольцо фокуса с клавиатуры (тема
+  // рисует его тенью, миксин nx-focus-ring) — возвращаем то же кольцо.
+  &:focus-visible {
+    box-shadow: 0 0 0 3px rgba(22, 25, 28, 0.14) !important;
+  }
+}
+
+// ─── 30.2 «Новое» в форме — контурная ───────────────────────────────────────
+//
+// Ядро рисует «Новое» формы контурной (btn-outline-primary, в окне формы —
+// btn-secondary: web/static/src/views/form/form_controller.xml), залитой её
+// делает тема (.btn-primary, .o_form_button_create). Завести ещё одну запись —
+// не следующий шаг открытого документа: на доборке, раскрое, задании
+// лазеру, сделке, лиде, в закупке «Новое» стояла залитой рядом с главной
+// кнопкой. Здесь — снова как у ядра, во всех формах и окнах форм. «Новое»
+// списка (o_list_button_add) и канбана — главное действие своего экрана, она
+// остаётся залитой. Вес (0,2,0).
+.btn.o_form_button_create {
+  background: #ffffff !important;
+  border: 1px solid #dad5c8 !important;
+  color: #16171b !important;
+  box-shadow: none !important;
+
+  &:hover {
+    background: #faf9f6 !important;
+    border-color: #16191c !important;
+    color: #16191c !important;
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 3px rgba(22, 25, 28, 0.14) !important;
+  }
+}
+
+// ─── 30.2б Почта: пока пишется письмо, залита одна «Отправить» ──────────────
+//
+// Редактор письма (mail_client, composer/composer.xml) занимает место списка
+// и окна чтения, а верхняя строка почты с залитой «Написать» остаётся — на
+// экране две залитые. Пока редактор открыт, «Написать» — контурная. Кнопка
+// «</>» (исходный код письма) нажатой становится btn-primary — третья
+// залитая; нажатая теперь — контурная с тёмной рамкой, как нажатая кнопка
+// ленты. Отличается от «Отправить» классом btn-sm: у «Отправить» его нет,
+// она остаётся залитой. Вес (0,4,0) и (0,3,0).
+.o_mail_client:has(.o_mail_client_composer) .o_mail_client_topbar .btn-primary,
+.o_mail_client_composer .btn-sm.btn-primary {
+  background: #ffffff !important;
+  border: 1px solid #dad5c8 !important;
+  color: #16171b !important;
+  box-shadow: none !important;
+
+  &:hover {
+    background: #faf9f6 !important;
+    border-color: #16191c !important;
+    color: #16191c !important;
+  }
+
+  // box-shadow: none выше гасил и кольцо фокуса с клавиатуры (тема рисует
+  // его тенью, миксин nx-focus-ring) — то же кольцо, что в 30.1 (доводка).
+  &:focus-visible {
+    box-shadow: 0 0 0 3px rgba(22, 25, 28, 0.14) !important;
+  }
+}
+
+.o_mail_client_composer .btn-sm.btn-primary {
+  border-color: #16191c !important;
+}
+
+// ─── 30.2в Окно новой строки: «Сохранить и создать» — контурная ─────────────
+//
+// Окно новой строки таблицы — X2ManyFieldDialog ядра: «Добавить изделие» в
+// расчёте, «Добавить позицию» в доборке, новый контакт в карточке
+// контрагента; так же окно «Создать и изменить…» у поля-списка. Внизу две
+// залитые: «Сохранить и закрыть» и «Сохранить и создать», обе btn-primary
+// (web/static/src/views/fields/relational_utils.xml,
+// web.X2ManyFieldDialogDefaultButtons; views/view_dialogs/form_view_dialog.xml).
+// Своего подвала у форм этих окон нет. Главная — «Сохранить и закрыть»;
+// «Сохранить и создать» — контурная, как «Новое» в 30.2 и «Отменить» рядом.
+// Окно уже сохранённой строки («Сохранить» одна) не меняется. Вес (0,3,0).
+.modal-footer .btn.o_form_button_save_new {
+  background: #ffffff !important;
+  border: 1px solid #dad5c8 !important;
+  color: #16171b !important;
+  box-shadow: none !important;
+
+  &:hover {
+    background: #faf9f6 !important;
+    border-color: #16191c !important;
+    color: #16191c !important;
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 3px rgba(22, 25, 28, 0.14) !important;
+  }
+}
+
+// ─── 30.3 «История» в ленте — компактно, слева ──────────────────────────────
+//
+// Кнопку сворачивания ленты (js/chatter_inline.js, xml/chatter.xml: прямой
+// ребёнок строки кнопок ленты, перед «Отправить сообщение») раздел «Полоса
+// свёрнутого чата» выше растягивает на всю ширину (width: 100%, стрелке —
+// margin-left: auto). В строке кнопок ленты она забирала всё свободное место
+// (~864 px), стрелка и подпись уезжали к правому краю — кнопка выглядела
+// пустым полем ввода. Теперь — по содержимому, первой слева, высотой с
+// соседние кнопки (размеры — переменные .btn ядра, как у них); стрелка —
+// перед подписью. Цвета прежние (их тёмная пара — тоже прежняя), здесь только
+// геометрия. Вес (0,3,0) выше правила «Полосы» (0,2,0).
+.o-mail-Chatter-topbar > .pmk-chatter-toggle.btn {
+  width: auto;
+  flex: 0 0 auto;
+  align-self: center;
+  min-height: 0;
+  margin: 0 8px 0 0;
+  padding: var(--btn-padding-y) var(--btn-padding-x);
+  font-size: var(--btn-font-size);
+  line-height: var(--btn-line-height);
+  gap: 6px;
+  border-radius: 8px;
+
+  .pmk-chatter-toggle__arrow {
+    margin-left: 0;
+  }
+}
+
+// ─── 30.4 Выбранные строки списка — лаймом, как открытое письмо ─────────────
+//
+// Ядро помечает выбранную строку классами table-info и o_data_row_selected
+// (web/static/src/views/list/list_renderer.js, getRowClass): голубой фон
+// Bootstrap. Тема (theme_nexus lists.scss) задаёт у .table-info подложку
+// полосатой строки #faf9f6 с !important — а список без группировки полосатый
+// (table-striped), и подложка ложится тенью поверх фона ячейки: каждая
+// вторая выбранная строка выглядела невыбранной (вывод по коду). Здесь —
+// лайм открытого письма в почте (--mc-active-bg, раздел «Почтовый клиент:
+// выбранное — лаймом») и оливковая полоска 3 px слева, как у него же; подложка
+// полос у выбранной строки прозрачная. Три состояния различаются: под
+// курсором — серая подложка темы; выбрана — лайм, полоска и чёрная галочка;
+// выбрана и под курсором — лайм на 8 % темнее. Цвет повторён словом: над
+// списком плашка «N выбрано». Вес (0,3,0) выше .table-info темы (0,1,0).
+.o_list_renderer .o_data_row.o_data_row_selected {
+  --table-bg: #ddeb94;
+  --table-color: #16191c;
+  --table-striped-bg: transparent !important;
+  --table-hover-bg: rgba(22, 25, 28, 0.08) !important;
+
+  // Вторая тень — подложка Bootstrap (наведение, полосы: ядро рисует их тенью
+  // inset 9999px, web/static/lib/bootstrap/scss/_tables.scss). Без неё у
+  // ячейки галочки пропало бы наведение.
+  > td.o_list_record_selector {
+    box-shadow: inset 3px 0 0 #7f9412,
+                inset 0 0 0 9999px var(--table-bg-state, var(--table-bg-type, var(--table-accent-bg)));
+  }
+}
+
+// Плашка «N выбрано» над списком — тот же лайм вместо голубого ядра;
+// «Выбрать все» в ней — без бирюзовой заливки (btn-info ядра,
+// web/static/src/views/view_components/selection_box.xml).
+.o_selection_box .list-group-item.active {
+  background-color: #ddeb94 !important;
+  border-color: #b5c75a !important;
+  color: #16191c !important;
+
+  .o_select_domain.btn-info {
+    background: rgba(22, 25, 28, 0.08) !important;
+    border: 0 !important;
+    color: #16191c !important;
+
+    &:hover {
+      background: rgba(22, 25, 28, 0.14) !important;
+    }
+  }
+}

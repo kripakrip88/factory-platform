@@ -17,7 +17,9 @@
 from markupsafe import Markup, escape
 
 from odoo import api, fields, models
-from odoo.exceptions import ValidationError
+from odoo.exceptions import MissingError, ValidationError
+
+from . import deleted_names
 
 MM_IN_M = 1000.0
 
@@ -142,6 +144,29 @@ class MetalSpecProduct(models.Model):
 
     weight_one = fields.Float("Вес изделия, кг", compute="_compute_weight", store=True, digits=(12, 3))
     weight_total = fields.Float("Вес всего, кг", compute="_compute_weight", store=True, digits=(12, 3))
+
+    @api.depends("name")
+    def _compute_display_name(self):
+        """Имя изделия — его название, как у ядра (поле name).
+
+        Своё вычисление — только ради изделия, удалённого в этой же записи
+        (доводка шага 30): ядро mail читает имена прежних изделий поля
+        «Изделия» перед фиксацией, а названия в базе уже нет. MissingError
+        выбрасывала из ленты ВСЕ отметки сохранения — удалили изделие и
+        поменяли дату или «Предмет КП», а в ленте только «Удалено: …»
+        (СМ-00024, 01.10.2026). См. deleted_names.py.
+        """
+        convert = self._fields["name"].convert_to_display_name
+        for product in self:
+            try:
+                product.display_name = convert(product.name, product)
+            except MissingError:
+                product.display_name = deleted_names.recall(product, "удалённое изделие")
+
+    def unlink(self):
+        # Имя — до удаления: после него его не прочитать (deleted_names.py).
+        deleted_names.remember(self)
+        return super().unlink()
 
     # Подписываемся на ВСЕ ТРИ поля деталей, а не только на общее.
     # Причина: детали правят во вкладках «Прокат» и «Лист», то есть через

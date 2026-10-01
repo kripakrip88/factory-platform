@@ -17,4 +17,5 @@ from . import test_quote_rules
 from . import test_remote_paths
 from . import test_sent_copy_guard
 from . import test_shared_flags
+from . import test_step30_token_button
 from . import test_thread_seen

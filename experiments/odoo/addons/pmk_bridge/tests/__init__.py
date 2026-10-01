@@ -9,3 +9,4 @@ from . import test_spec_list
 from . import test_step25_prices
 from . import test_spec_copy
 from . import test_step28_supplier_sign
+from . import test_step30_print_colors

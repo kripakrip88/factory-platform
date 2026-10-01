@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+  <!--
+    Настройки ящика (Настройки → Почтовые ящики → ящик): одна залитая кнопка
+    на экран (разбор UX, шаг 30, 02.10.2026).
+
+    Главная кнопка ящика — «Синхронизировать сейчас» в шапке. На вкладке
+    «Push-уведомления» (видна администратору) залитой была ещё «Создать
+    токен» — вторая залитая на экране. Здесь она контурная, как «Отозвать»
+    рядом. Сама кнопка и метод action_generate_notify_token — прежние.
+
+    Вид живёт здесь, а не в mail_client: новые XML-записи в почтовый модуль
+    не кладём (experiments/odoo/vendor/README.md, «Что куда класть») — -u
+    вендору deploy.sh делает только с I18N=1.
+
+    active держим в XML явно: наследник с xpath на узлы зависимого модуля,
+    однажды выключенный, Odoo при загрузке не проверяет — поломка xpath
+    прошла бы молча (грабля 20.09.2026).
+
+    Вернуть: удалить этот файл и строку в __manifest__.py, выложить
+    pmk_mail_ui (запись вида снимется при -u). Таблица —
+    docs/disabled-features.md, шаг 30.
+  -->
+  <record id="view_mail_client_account_form_pmk_token" model="ir.ui.view">
+    <field name="name">mail.client.account.form: «Создать токен» контурная (pmk)</field>
+    <field name="model">mail.client.account</field>
+    <field name="inherit_id" ref="mail_client.mail_client_account_view_form"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//button[@name='action_generate_notify_token']" position="attributes">
+        <attribute name="class">btn-secondary</attribute>
+      </xpath>
+    </field>
+  </record>
+
+</odoo>
