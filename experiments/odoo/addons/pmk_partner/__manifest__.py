@@ -1,6 +1,6 @@
 {
     "name": "ПМК — карточка контрагента",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.0.1",
     "summary": "Убраны поля, которых нет в работе завода; поля в едином виде темы",
     "description": """
 Форма контрагента в Odoo собрана из двадцати наследованных представлений и
@@ -60,7 +60,18 @@
         "views/partner_stat_buttons.xml",
         # Свой список «Клиенты», отдельный от «Поставщиков» (разбор UX, шаг 25).
         "views/res_partner_list_views.xml",
+        # Убрать совсем (разбор UX, шаг 29, 02.10.2026): «Тип адреса» без
+        # «Счет» и «Прочее», фильтр «Сотрудники», группировка «Страна».
+        "views/step29_partner_hide.xml",
     ],
+    # «Тип адреса» без лишних вариантов (шаг 29): правила — чистая функция
+    # (её гоняет node), идут раньше виджета, который их импортирует.
+    "assets": {
+        "web.assets_backend": [
+            "pmk_partner/static/src/js/radio_hide_rules.js",
+            "pmk_partner/static/src/js/radio_hide_field.js",
+        ],
+    },
     "license": "LGPL-3",
     "installable": True,
     "application": False,

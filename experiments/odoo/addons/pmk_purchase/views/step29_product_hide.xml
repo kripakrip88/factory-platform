@@ -1,0 +1,411 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Карточка товара-металла: убрать совсем и спрятать до востребования —
+    разбор UX, шаг 29 (02.10.2026). Группы-выключатели — pmk_theme
+    (security/pmk_step29_groups.xml): «Убранное», «Склад», «Деньги»
+    (показать).
+
+    ЗАЧЕМ. Металл завод не перепродаёт и склад в системе пока не ведёт, а
+    карточка показывала восемь нулевых кнопок-счётчиков, «Цену продажи 1,00»,
+    вкладки «Продажи» и «Цены», маршруты, объём, три описания для накладных.
+    У всех 753 позиций (02.10.2026): тип «Товар», «Продажи» отмечено, цена
+    продажи 1,00; объёма, штрихкода, кода ТНВЭД, описаний, маршрутов,
+    правил восполнения и размещения, документов и спецификаций нет ни у
+    одной; «Время выполнения заказа» у всех 1554 строк поставщиков — 1 день.
+
+    ЧТО ОСТАЁТСЯ ОБЫЧНОМУ ПОЛЬЗОВАТЕЛЮ. Кнопка «Закуплено»; «Основная
+    информация» — налоги на закупку, категория, артикул («Справка»), заметки;
+    «Покупка» — поставщики с ценами и описание покупки; «Склад» — вес.
+
+      «Убранное (показать)»: счётчики «Документы», «Спецификации», «Правила
+        размещения», «Ёмкости для хранения», «Продано»; звезда «Избранное»;
+        галочка «Продажи» под названием; «Тип товара» и подсказка под ним;
+        «Политика выставления счетов»; «Цена продажи»; вкладки «Продажи» и
+        «Цены»; «Политика контроля» счетов поставщика; «Маршруты»;
+        «Ответственный»; «Объём»; «Срок поставки» клиенту; три описания
+        для накладных; в списке номенклатуры — звезда и «Цена продажи»;
+      «Склад (показать)»: «На руках / Прогноз», два счётчика «Правила
+        восполнения» (Мин/Макс), «Приход / Расход»; «Отслеживать запасы» и
+        «Количество в наличии»; «Стоимость»; «Штрихкод»; в списке —
+        «Стоимость», «На руках», «Прогноз»;
+      «Деньги (показать)»: налоги на продажу; «Код ТНВЭД» (карточка
+        варианта, российская локализация).
+    Колонка «Время выполнения заказа» у поставщиков — в меню колонок (⚙).
+    Список вариантов («Искать ещё…» у товара в строке запроса КП) — те же
+    колонки, что в списке «Номенклатуры». Единица товара жила только внутри
+    спрятанных «Цены продажи» и «Стоимости» — у неё свой узел для тех, кто
+    включит «Единицы измерения» (подробно — у узла ниже).
+
+    ⚠️ У части узлов была штатная группа (Ответственный и «Количество в
+    наличии» — склад, «Политика контроля» — менеджер закупок, «Цены» —
+    прайс-листы, «Продано» — продажи, «Спецификации» — производство,
+    «Правила размещения» и «Ёмкости» — несколько мест хранения). Атрибут
+    groups у узла один — наша группа встаёт вместо штатной. Кнопки склада в
+    шапке и так внутри штатного <t groups="stock.group_stock_user">, поэтому
+    «Склад» там — плюсом к правам склада.
+
+    ПОЧЕМУ ЭТО НЕ ЛОМАЕТ РАСЧЁТ И КП. Вид — только экран: расчёт
+    (pmk_calc, pmk_bridge) читает товар в Python — поставщиков с ценами,
+    единицу, массу, связь со справочником, — и ему всё равно, видно ли поле.
+    Печать КП (pmk_bridge/report/quotation_report.xml) товара не печатает:
+    изделия из расчёта, организация, клиент, контакт, банк. Поля, на которые
+    ссылаются модификаторы соседей (например, «Стоимость» в контексте списка
+    поставщиков), ядро досоздаёт в разметке невидимыми — тест проверяет.
+
+    ДВЕ ФОРМЫ. Шаблон («Номенклатура») — product.product_template_only_form_view,
+    вариант (из строки закупки) — product.product_normal_form_view: кнопки
+    склада, производства и продаж у них из разных видов. priority 99 —
+    после всех штатных расширений обеих форм. Новые виды, active в XML —
+    грабли Odoo 19.
+
+    ВЕРНУТЬ: кучку — добавить себя в группу; узел — удалить его xpath и
+    выложить pmk_purchase. Таблица — docs/disabled-features.md, раздел
+    «шаг 29».
+  -->
+
+  <record id="view_product_template_form_step29" model="ir.ui.view">
+    <field name="name">product.template.form.pmk.step29</field>
+    <field name="model">product.template</field>
+    <field name="inherit_id" ref="product.product_template_only_form_view"/>
+    <field name="priority">99</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <!-- Кнопки-счётчики: чужой заводу процесс — скрыт. -->
+      <xpath expr="//div[@name='button_box']/button[@name='action_open_documents']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//div[@name='button_box']/button[field[@name='bom_count']]" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//button[@name='action_view_related_putaway_rules']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//button[@name='action_view_storage_category_capacity']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//button[@name='action_view_sales']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <!-- Склад до востребования. -->
+      <xpath expr="//button[@name='action_product_tmpl_forecast_report']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_stock</attribute>
+      </xpath>
+      <xpath expr="(//button[@name='action_view_orderpoints'])[1]" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_stock</attribute>
+      </xpath>
+      <xpath expr="(//button[@name='action_view_orderpoints'])[2]" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_stock</attribute>
+      </xpath>
+      <xpath expr="//button[@name='action_view_stock_move_lines']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_stock</attribute>
+      </xpath>
+      <!-- Шапка. -->
+      <xpath expr="//field[@name='is_favorite']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//span[@name='sale_option']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <!-- «Основная информация», левая колонка: в ней только убранное и
+           склад — целиком пропадает у того, у кого нет ни той, ни другой
+           группы (иначе осталась бы пустая колонка). -->
+      <xpath expr="//group[@name='group_general']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed,pmk_theme.group_pmk_stock</attribute>
+      </xpath>
+      <xpath expr="//group[@name='group_general']/field[@name='type']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//field[@name='product_tooltip']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//field[@name='invoice_policy']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//label[@for='is_storable']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_stock</attribute>
+      </xpath>
+      <xpath expr="//div[field[@name='is_storable']]" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_stock</attribute>
+      </xpath>
+      <xpath expr="//label[@for='qty_available']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_stock</attribute>
+      </xpath>
+      <xpath expr="//div[a[@name='action_open_quants']]" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_stock</attribute>
+      </xpath>
+      <!-- «Основная информация», правая колонка. -->
+      <xpath expr="//label[@for='list_price']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//div[@name='list_price_uom']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//label[@for='taxes_id']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_money</attribute>
+      </xpath>
+      <xpath expr="//div[@name='taxes_div']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_money</attribute>
+      </xpath>
+      <xpath expr="//label[@for='standard_price']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_stock</attribute>
+      </xpath>
+      <xpath expr="//div[@name='standard_price_uom']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_stock</attribute>
+      </xpath>
+      <!-- Единица товара. В Odoo 19 поле есть в карточке только внутри двух
+           блоков выше («… за [ед.]» у «Цены продажи» и у «Стоимости»), и
+           оба спрятаны: включи владелец «Единицы измерения»
+           (uom.group_uom), базовую единицу было бы негде сменить. Свой
+           узел — тому, у кого «Единицы измерения» есть, а ни «Убранного»,
+           ни «Склада» нет; с любой из них единица снова видна в штатном
+           «за [ед.]», а этот узел пропадает — рядом со штатным он не
+           встаёт. Без «Единиц измерения» (так сейчас) единицы не видно
+           никому, как и у ядра. У набора (тип «combo») единицы нет — как
+           в штатном «за [ед.]». -->
+      <xpath expr="//div[@name='standard_price_uom']" position="after">
+        <field name="uom_id" widget="many2one_uom" options="{'no_quick_create': True}"
+               invisible="type == 'combo'"
+               groups="uom.group_uom,!pmk_theme.group_pmk_removed,!pmk_theme.group_pmk_stock"/>
+      </xpath>
+      <xpath expr="//field[@name='barcode']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_stock</attribute>
+      </xpath>
+      <!-- Вкладки «Продажи» и «Цены» (прайс-листы продаж). -->
+      <xpath expr="//page[@name='sales']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//page[@name='sales_price']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <!-- «Покупка»: «Политика контроля» счетов поставщика. -->
+      <xpath expr="//group[@name='bill']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <!-- «Склад»: маршруты, ответственный, объём, срок поставки клиенту,
+           три описания для накладных. Остаётся вес. -->
+      <xpath expr="//group[@name='operations']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//field[@name='responsible_id']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//label[@for='volume']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//div[@name='volume']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//label[@for='sale_delay']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//div[field[@name='sale_delay']]" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//group[group/field[@name='description_pickingin']]" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- Карточка варианта: те же узлы; «Спецификации» — другая кнопка,
+       «Цена продажи» — lst_price, есть «Код ТНВЭД», нет «Ответственного». -->
+  <record id="view_product_product_form_step29" model="ir.ui.view">
+    <field name="name">product.product.form.pmk.step29</field>
+    <field name="model">product.product</field>
+    <field name="inherit_id" ref="product.product_normal_form_view"/>
+    <field name="priority">99</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//div[@name='button_box']/button[@name='action_open_documents']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//button[@name='action_view_bom']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//button[@name='action_view_related_putaway_rules']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//button[@name='action_view_storage_category_capacity']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//button[@name='action_view_sales']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//button[@name='action_product_forecast_report']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_stock</attribute>
+      </xpath>
+      <xpath expr="(//button[@name='action_view_orderpoints'])[1]" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_stock</attribute>
+      </xpath>
+      <xpath expr="(//button[@name='action_view_orderpoints'])[2]" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_stock</attribute>
+      </xpath>
+      <xpath expr="//button[@name='action_view_stock_move_lines']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_stock</attribute>
+      </xpath>
+      <xpath expr="//field[@name='is_favorite']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//span[@name='sale_option']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//group[@name='group_general']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed,pmk_theme.group_pmk_stock</attribute>
+      </xpath>
+      <xpath expr="//group[@name='group_general']/field[@name='type']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//field[@name='product_tooltip']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//field[@name='invoice_policy']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//label[@for='is_storable']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_stock</attribute>
+      </xpath>
+      <xpath expr="//div[field[@name='is_storable']]" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_stock</attribute>
+      </xpath>
+      <xpath expr="//label[@for='qty_available']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_stock</attribute>
+      </xpath>
+      <xpath expr="//div[a[@name='action_open_quants']]" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_stock</attribute>
+      </xpath>
+      <xpath expr="//label[@for='lst_price']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//div[@name='list_price_uom']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//label[@for='taxes_id']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_money</attribute>
+      </xpath>
+      <xpath expr="//div[@name='taxes_div']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_money</attribute>
+      </xpath>
+      <xpath expr="//label[@for='standard_price']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_stock</attribute>
+      </xpath>
+      <xpath expr="//div[@name='standard_price_uom']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_stock</attribute>
+      </xpath>
+      <!-- Единица — как в карточке шаблона выше. -->
+      <xpath expr="//div[@name='standard_price_uom']" position="after">
+        <field name="uom_id" widget="many2one_uom" options="{'no_quick_create': True}"
+               invisible="type == 'combo'"
+               groups="uom.group_uom,!pmk_theme.group_pmk_removed,!pmk_theme.group_pmk_stock"/>
+      </xpath>
+      <xpath expr="//field[@name='barcode']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_stock</attribute>
+      </xpath>
+      <!-- «Код ТНВЭД» — российская локализация (l10n_ru_doc приходит через
+           pmk_bridge). Нужен для счетов-фактур и УПД — до «Денег». -->
+      <xpath expr="//field[@name='kod_tnved']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_money</attribute>
+      </xpath>
+      <xpath expr="//page[@name='sales']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//page[@name='sales_price']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//group[@name='bill']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//group[@name='operations']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//label[@for='volume']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//div[@name='volume']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//label[@for='sale_delay']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//div[field[@name='sale_delay']]" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//group[group/field[@name='description_pickingin']]" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- Поставщики в карточке товара: «Время выполнения заказа» — 1 день у
+       всех 1554 строк — в меню колонок (⚙). Рядом в ⚙ уже «Валюта» (шаг 25). -->
+  <record id="view_supplierinfo_list_step29" model="ir.ui.view">
+    <field name="name">product.supplierinfo.list.pmk.step29</field>
+    <field name="model">product.supplierinfo</field>
+    <field name="inherit_id" ref="purchase.product_supplierinfo_tree_view2"/>
+    <field name="priority">99</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='delay']" position="attributes">
+        <attribute name="optional">hide</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- Список «Номенклатура»: «1,00» продажной цены и пустые складские
+       колонки — как в карточке. -->
+  <record id="view_product_template_list_step29" model="ir.ui.view">
+    <field name="name">product.template.list.pmk.step29</field>
+    <field name="model">product.template</field>
+    <field name="inherit_id" ref="product.product_template_tree_view"/>
+    <field name="priority">99</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='is_favorite']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//field[@name='list_price']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//field[@name='standard_price']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_stock</attribute>
+      </xpath>
+      <xpath expr="//field[@name='qty_available']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_stock</attribute>
+      </xpath>
+      <xpath expr="//field[@name='virtual_available']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_stock</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- Список вариантов (product.product, вид по умолчанию, priority 7): его
+       открывает «Искать ещё…» у поля «Товар» в строке запроса КП — те же
+       колонки, что в «Номенклатуре». «На руках» и «Прогноз» дописывает
+       stock (он приходит через pmk_theme раньше нас), штатная группа
+       «Склад: пользователь» заменена «Складом (показать)» — она её даёт.
+       «Ср. себестоимость» и «Итоговая стоимость» (stock_account) и так в ⚙. -->
+  <record id="view_product_product_list_step29" model="ir.ui.view">
+    <field name="name">product.product.list.pmk.step29</field>
+    <field name="model">product.product</field>
+    <field name="inherit_id" ref="product.product_product_tree_view"/>
+    <field name="priority">99</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='is_favorite']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//field[@name='lst_price']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//field[@name='standard_price']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_stock</attribute>
+      </xpath>
+      <xpath expr="//field[@name='qty_available']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_stock</attribute>
+      </xpath>
+      <xpath expr="//field[@name='virtual_available']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_stock</attribute>
+      </xpath>
+    </field>
+  </record>
+</odoo>

@@ -1,6 +1,6 @@
 {
     "name": "ПМК — поставщики и прайсы",
-    "version": "19.0.1.0.4",
+    "version": "19.0.1.0.5",
     "summary": "Реестр поставщиков прайсов: что возит, куда писать, как часто, когда был последний прайс",
     "description": """
 В Odoo нет понятия «поставщик, у которого мы запрашиваем прайс». Штатный
@@ -41,6 +41,12 @@
         "views/menus.xml",
         # «Запрос КП» в заголовке формы закупки (разбор UX, 28.09.2026).
         "views/purchase_order_views.xml",
+        # Убрать совсем и спрятать до востребования (разбор UX, шаг 29,
+        # 02.10.2026): запрос КП / заказ поставщику и карточка товара-металла.
+        # Группы-выключатели — pmk_theme; узлы purchase_stock и
+        # project_purchase прячет pmk_theme (models/hidden_nodes.py).
+        "views/step29_purchase_hide.xml",
+        "views/step29_product_hide.xml",
     ],
     "post_init_hook": "post_init_hook",
     "license": "LGPL-3",

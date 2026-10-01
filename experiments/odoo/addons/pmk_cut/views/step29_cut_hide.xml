@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Раскрой: убрать совсем — разбор UX, шаг 29 (02.10.2026).
+
+      • «Название» заготовки (pmk.cut.stock, name — «Хлыст 6 м», «Обрезок от
+        РК-00007») — в меню колонок (⚙): типоразмер и длина говорят то же —
+        у всех 8 строк стенда название повторяет длину («Хлыст 6 м» при
+        длине 6000, 02.10.2026). Нигде не печатается: схема раскроя и лист
+        подписывают хлыст длиной и типоразмером;
+      • «Теоретический минимум» (pmk.cut.result, lower_bound — сколько хлыстов
+        нужно при идеальной укладке) — в ⚙ в таблице «Результат» и скрыт в
+        окне строки результата: рядом «Взято хлыстов», и две цифры путают.
+    «Очерёдность» заготовок остаётся: по ней обрезки идут в дело первыми.
+
+    Правило шага 25: колонка была видна и лишняя — optional="hide" (вернуть
+    галочкой в ⚙); поле в окне — invisible. pmk_cut от pmk_theme не зависит,
+    группы-выключатели ему недоступны. Новый вид, а не правка cut_views.xml
+    (форму раскроя правят соседние шаги); active в XML — грабли Odoo 19.
+    Данные и расчёт не меняются: lower_bound по-прежнему считается и пишется.
+    В КП раскрой не печатается; лист раскроя (report/cut_report.xml,
+    models/cut_sheet.py) ни названия заготовки, ни теоретического минимума
+    не печатает.
+
+    ВЕРНУТЬ: удалить нужный xpath (или вид) и выложить pmk_cut. Таблица —
+    docs/disabled-features.md, раздел «шаг 29».
+  -->
+  <record id="view_cut_plan_form_step29" model="ir.ui.view">
+    <field name="name">pmk.cut.plan.form.pmk.step29</field>
+    <field name="model">pmk.cut.plan</field>
+    <field name="inherit_id" ref="pmk_cut.view_cut_plan_form"/>
+    <field name="priority">99</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='stock_ids']/list/field[@name='name']" position="attributes">
+        <attribute name="optional">hide</attribute>
+      </xpath>
+      <xpath expr="//field[@name='result_ids']/list/field[@name='lower_bound']" position="attributes">
+        <attribute name="optional">hide</attribute>
+      </xpath>
+      <xpath expr="//field[@name='result_ids']/form//field[@name='lower_bound']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+    </field>
+  </record>
+</odoo>

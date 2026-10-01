@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Лазерная резка: убрать совсем и спрятать до востребования — разбор UX,
+    шаг 29 (02.10.2026).
+
+      • «Раскладка» (nest_index — номер раскладки в файле) в таблице листов
+        задания — в меню колонок (⚙): у листов одной раскладки и так одна
+        картинка и одно время, оператору номер ни к чему; для разбора
+        замеров колонка возвращается галочкой;
+      • «Заказ» (sale_order_id) в задании — только когда заполнен
+        (invisible="not sale_order_id"): заказов клиентов в системе нет ни
+        одного, режут по расчёту — он рядом, поле «Расчёт». Появятся заказы
+        («до востребования» разбора) — снять атрибут;
+      • «Рабочий центр» (workcenter_id) у станка — только когда заполнен:
+        пуст у обоих станков, производственные заказы не ведутся (из списка
+        станков колонку убрал шаг 25).
+
+    Атрибутами, а не группой-выключателем: pmk_laser от pmk_theme не зависит.
+    Заполненное поле видно всегда — данные не прячутся. Новый вид, а не
+    правка laser_job_views.xml / laser_machine_views.xml (форму задания
+    правят соседние шаги); active в XML — грабли Odoo 19. Связи (pmk_flow)
+    по-прежнему видят заказ задания — поле на месте. В КП задание не
+    печатается.
+
+    ВЕРНУТЬ: удалить нужный xpath (или вид) и выложить pmk_laser. Таблица —
+    docs/disabled-features.md, раздел «шаг 29».
+  -->
+  <record id="view_laser_job_form_step29" model="ir.ui.view">
+    <field name="name">pmk.laser.job.form.pmk.step29</field>
+    <field name="model">pmk.laser.job</field>
+    <field name="inherit_id" ref="pmk_laser.view_laser_job_form"/>
+    <field name="priority">99</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='sheet_ids']/list/field[@name='nest_index']" position="attributes">
+        <attribute name="optional">hide</attribute>
+      </xpath>
+      <xpath expr="//field[@name='sale_order_id']" position="attributes">
+        <attribute name="invisible">not sale_order_id</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="view_laser_machine_form_step29" model="ir.ui.view">
+    <field name="name">pmk.laser.machine.form.pmk.step29</field>
+    <field name="model">pmk.laser.machine</field>
+    <field name="inherit_id" ref="pmk_laser.view_laser_machine_form"/>
+    <field name="priority">99</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='workcenter_id']" position="attributes">
+        <attribute name="invisible">not workcenter_id</attribute>
+      </xpath>
+    </field>
+  </record>
+</odoo>

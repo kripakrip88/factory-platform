@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    «Мои предпочтения» — разбор UX, шаг 29 (02.10.2026).
+
+      • вкладка «Календарь» (часовой пояс, конфиденциальность встреч, «Вне
+        офиса», места работы по дням недели — последние дописывает hr) —
+        группе «Убранное (показать)»: календарь встреч на заводе не ведут;
+      • «Часовой пояс» — перенесён на вкладку «Предпочтения», под «Язык»:
+        от него зависят даты и время во всей системе, прятать его нельзя
+        (hr делает поле обязательным). Вместе с ним — служебное tz_offset,
+        по нему виджет предупреждает о расхождении с часами компьютера;
+      • «Ключи API» на вкладке «Безопасность» — только администратору
+        (base.group_system): ключ даёт внешнему сервису вход под человеком.
+
+    «Склад по умолчанию» (property_warehouse_id, sale_stock) здесь не тронут:
+    ядро и так показывает его только при нескольких складах
+    (stock.group_stock_multi_warehouses), склад у завода один — поля на
+    экране нет.
+
+    Наследуем базовый вид предпочтений: из него собираются оба окна —
+    штатное и окно hr (hr.res_users_view_form_preferences, его открывает
+    «Мои предпочтения», когда у пользователя есть карточка сотрудника; у
+    admin она есть). priority 99 — после calendar, hr и mail: их правки
+    базового вида уже применены, «Часовой пояс» стоит на своём месте.
+    active в XML — грабли Odoo 19 (выключенный вид не проверяется, падение
+    невидимо).
+
+    ⚠️ ОКНО HR — ВТОРЫМ ВИДОМ НИЖЕ, groups= ТАМ НЕ РАБОТАЕТ. hr собирает это
+    окно от имени суперпользователя (hr/models/res_users.py, get_view:
+    with_user(SUPERUSER_ID)), и groups= сверяется с группами uid 1, а не
+    человека: «Ключи API» видел бы каждый (у uid 1 есть «Администрирование:
+    настройки»), «Календарь» не вернула бы и группа (uid 1 в ней нет). Зато
+    hr.action_get кладёт в контекст окна xml-id ВСЕХ групп человека
+    ({'base.group_system': True, …}) — по ним и прячем: invisible от
+    context.get(…). Штатное окно (без карточки сотрудника) собирается от
+    имени самого человека — там работает groups=.
+
+    ВЕРНУТЬ: календарь — добавить себя в «Убранное (показать)» (часовой пояс
+    при этом останется на «Предпочтениях»), в окне hr — тоже: группа
+    попадает в контекст при следующем открытии окна; всё прежнее —
+    выключить оба вида. Таблица — docs/disabled-features.md, раздел «шаг 29».
+  -->
+  <record id="view_users_prefs_step29" model="ir.ui.view">
+    <field name="name">res.users.preferences.pmk.step29</field>
+    <field name="model">res.users</field>
+    <field name="inherit_id" ref="base.view_users_form_simple_modif"/>
+    <field name="priority">99</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//page[@name='preferences_page']//field[@name='signature']" position="before">
+        <xpath expr="//page[@name='calendar']//field[@name='tz']" position="move"/>
+        <xpath expr="//page[@name='calendar']//field[@name='tz_offset']" position="move"/>
+      </xpath>
+      <xpath expr="//page[@name='calendar']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//div[@name='api_keys']" position="attributes">
+        <attribute name="groups">base.group_system</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <!--
+    Окно hr «Мои предпочтения» (у кого есть карточка сотрудника): то же
+    скрытие, но по контексту окна, а не groups= (причина — в шапке файла).
+    Вид выше в это окно уже вошёл (базовый вид собирается раньше вида hr),
+    здесь его groups= снимаются: иначе сервер сверил бы их с группами
+    суперпользователя. Контекст пишет hr.action_get — xml-id всех групп
+    человека (all_group_ids, с подразумеваемыми). Открыли окно без этого
+    контекста — оба блока скрыты: безопасная сторона.
+    ⚠️ Выключать только вместе с видом выше: без него часовой пояс остался
+    бы на вкладке «Календарь», а её этот вид прячет.
+  -->
+  <record id="view_users_prefs_hr_step29" model="ir.ui.view">
+    <field name="name">res.users.preferences.hr.pmk.step29</field>
+    <field name="model">res.users</field>
+    <field name="inherit_id" ref="hr.res_users_view_form_preferences"/>
+    <field name="priority">99</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//page[@name='calendar']" position="attributes">
+        <attribute name="groups"/>
+        <attribute name="invisible">not context.get('pmk_theme.group_pmk_removed')</attribute>
+      </xpath>
+      <xpath expr="//div[@name='api_keys']" position="attributes">
+        <attribute name="groups"/>
+        <attribute name="invisible">not context.get('base.group_system')</attribute>
+      </xpath>
+    </field>
+  </record>
+</odoo>

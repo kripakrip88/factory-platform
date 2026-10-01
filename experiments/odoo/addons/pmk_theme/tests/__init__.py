@@ -13,3 +13,4 @@ from . import test_list_table
 from . import test_empty_screens
 from . import test_step27_forms
 from . import test_step47_trifles
+from . import test_step29_hidden

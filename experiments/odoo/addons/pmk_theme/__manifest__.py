@@ -11,7 +11,7 @@
 и работает как «все приложения». Так ничего не становится недостижимым,
 когда модулей больше, чем влезает по ширине.
     """,
-    "version": "19.0.2.4.0",
+    "version": "19.0.2.5.0",
     "category": "Theme/Backend",
     "author": "ПМК Парк",
     "license": "LGPL-3",
@@ -27,11 +27,18 @@
         # ссылаются data/dangerous_actions.xml и views/res_config_settings_views.xml
         # (разбор UX, шаг 23, 01.10.2026).
         "security/pmk_theme_groups.xml",
+        # Группы-выключатели шага 29 (02.10.2026): «Убранное», «Склад»,
+        # «Деньги» (показать). На них ссылаются виды этого модуля и
+        # pmk_partner / pmk_purchase — поэтому тоже в начале.
+        "security/pmk_step29_groups.xml",
         "data/menus.xml",
         "data/hide_menus.xml",
         # Наши стили в конец бандла. ВАЖНО: файл несёт сам подключение scss —
         # без него тема останется без стилей вовсе.
         "data/assets_order.xml",
+        # Лента без «Отправить сообщение» и подписчиков, телефон без «SMS»
+        # (шаг 29): hidden.scss, sequence 43 — после dark.scss.
+        "data/assets_hidden.xml",
         # Язык страницы и запрет автоперевода: браузер принимал русский за
         # другой язык и переводил интерфейс («Сохранить» -> «чувак»).
         "views/webclient_lang.xml",
@@ -44,6 +51,13 @@
         # stock.help_message_template (разбор UX, шаг 26): ядро рисует его и
         # в меню, и в карточках «Обзора операций», поверх подсказки действия.
         "views/stock_empty_help.xml",
+        # Убрать совсем и спрятать до востребования (шаг 29): «Мои
+        # предпочтения» без календаря (оба окна: штатное и hr), «Сводка»
+        # Odoo выключается один раз.
+        # Узлы чужих модулей и шестерёнка — в models/ (hidden_nodes.py,
+        # ir_actions.py): без зависимостей от website / project / maintenance.
+        "views/step29_user_prefs.xml",
+        "data/digest_off.xml",
     ],
     "assets": {
         "web.assets_backend": [

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    hidden.scss — лента без «Отправить сообщение» и подписчиков там, где все
+    подписки на одного человека, и телефон без кнопки «SMS» (разбор UX,
+    шаг 29, 02.10.2026). Подробности — в шапке самого файла.
+
+    Отдельной записью, по правилам data/assets_order.xml (append в конец
+    бандла), sequence 43 — после dark.scss (42). Живые файлы темы на стенде:
+    navbar_nexus.scss (39), forms_nexus.scss (41), dark.scss (42) и этот;
+    остальные записи там выключены (active=False). Новая запись создаётся
+    включённой: поле active в XML не задано, как и у соседей, — -u её
+    состояние не трогает.
+
+    ВЕРНУТЬ кнопки ленты и «SMS»: выключить эту запись (режим разработчика →
+    Настройки → Технический → Структура базы данных → Активы → «ПМК:
+    hidden.scss…» → архивировать) или убрать файл из __manifest__.py и
+    выложить. Таблица — docs/disabled-features.md, раздел «шаг 29».
+  -->
+  <record id="asset_scss_hidden" model="ir.asset">
+    <field name="name">ПМК: hidden.scss — лента без «Отправить сообщение» (разбор UX, шаг 29)</field>
+    <field name="bundle">web.assets_backend</field>
+    <field name="directive">append</field>
+    <field name="path">pmk_theme/static/src/scss/hidden.scss</field>
+    <field name="sequence">43</field>
+  </record>
+</odoo>

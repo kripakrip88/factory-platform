@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Запрос КП / заказ поставщику: убрать совсем и спрятать до востребования
+    — разбор UX, шаг 29 (02.10.2026). Группы-выключатели — pmk_theme
+    (security/pmk_step29_groups.xml).
+
+    Форма (узлы модуля purchase — он в зависимостях):
+      • звезда «Приоритет» у номера — «Убранное»: звёзд никто не ставит;
+        вместе с ней — колонка звезды в трёх списках (там она с шага 25
+        была в ⚙) и фильтр «Отмечено» в обоих поисках;
+      • «Попросите подтверждения … днём(ями) ранее» (напоминание о приёмке)
+        — «Убранное». Штатная группа узлов «Напоминание о приёмке»
+        (purchase.group_send_reminder) заменена нашей; у контрагента те же
+        поля скрыты шагом 8, «Отправить напоминание» в шестерёнке — pmk_theme;
+      • «Подтвердить» после подтверждения заказа (action_acknowledge —
+        отметка «поставщик получил заказ», пишется и порталом, а портал
+        закрыт шагом 23) — «Убранное»; вместе с ней фильтр «Не принято»:
+        без кнопки в нём оказался бы каждый заказ;
+      • «Финансовое положение» (fiscal_position_id) — «Убранное»: схема
+        подмены налогов, у контрагентов скрыта с первого шага;
+      • «Загрузить счёт» в шапке подтверждённого заказа — «Деньги»: счета
+        поставщиков ведутся в МоёмСкладе (в списке та же кнопка погашена
+        шагом 26).
+    Подпись «Счет от поставщика» (partner_ref, «Vendor Reference» — номер
+    КП или заказа у поставщика) → «Номер у поставщика»: в форме и в трёх
+    списках. В «Добавить свой фильтр» и выгрузке осталось штатное название
+    поля — оно из перевода модели.
+
+    «Доставить в», «Инкотерм» ×2, «Проект», «% своевременной поставки» и
+    прогнозный отчёт в строке дописывают purchase_stock и project_purchase —
+    от них pmk_purchase не зависит, их прячет pmk_theme
+    (models/hidden_nodes.py). «Условия и положения», «Налоги» — оставлены
+    (документ разбора, «Выглядит лишним, но оставить»).
+
+    В КП ничего из этого не печатается: печать
+    (pmk_bridge/report/quotation_report.xml) — документ расчёта, полей
+    закупки в ней нет. Штатный бланк заказа поставщику печатает номер у
+    поставщика и инкотерм, если они заполнены, — как и раньше: вид печать не
+    меняет. У единственного заказа (P00001, отменён, 02.10.2026) не
+    заполнено ничего из скрытого, кроме «Доставить в» — его ставит ядро.
+
+    Новые виды, а не правка purchase_order_views.xml (его правят соседние
+    шаги); active в XML — грабли Odoo 19. ВЕРНУТЬ: добавить себя в группу;
+    поштучно — удалить xpath и выложить pmk_purchase. Таблица —
+    docs/disabled-features.md, раздел «шаг 29».
+  -->
+
+  <record id="view_purchase_order_form_step29" model="ir.ui.view">
+    <field name="name">purchase.order.form.pmk.step29</field>
+    <field name="model">purchase.order</field>
+    <field name="inherit_id" ref="purchase.purchase_order_form"/>
+    <field name="priority">99</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//header/widget[@name='purchase_file_uploader']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_money</attribute>
+      </xpath>
+      <xpath expr="//header/button[@name='action_acknowledge']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//field[@name='priority']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//field[@name='partner_ref']" position="attributes">
+        <attribute name="string">Номер у поставщика</attribute>
+      </xpath>
+      <xpath expr="//label[@for='receipt_reminder_email']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//div[@name='reminder']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//field[@name='fiscal_position_id']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- Списки: «Номер у поставщика» (колонка в ⚙) и звезда «Приоритет». -->
+  <record id="view_purchase_order_tree_step29" model="ir.ui.view">
+    <field name="name">purchase.order.list.pmk.step29</field>
+    <field name="model">purchase.order</field>
+    <field name="inherit_id" ref="purchase.purchase_order_tree"/>
+    <field name="priority">99</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='partner_ref']" position="attributes">
+        <attribute name="string">Номер у поставщика</attribute>
+      </xpath>
+      <xpath expr="//field[@name='priority']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="view_purchase_order_kpis_tree_step29" model="ir.ui.view">
+    <field name="name">purchase.order.kpis.list.pmk.step29</field>
+    <field name="model">purchase.order</field>
+    <field name="inherit_id" ref="purchase.purchase_order_kpis_tree"/>
+    <field name="priority">99</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='partner_ref']" position="attributes">
+        <attribute name="string">Номер у поставщика</attribute>
+      </xpath>
+      <xpath expr="//field[@name='priority']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="view_purchase_order_view_tree_step29" model="ir.ui.view">
+    <field name="name">purchase.order.view.list.pmk.step29</field>
+    <field name="model">purchase.order</field>
+    <field name="inherit_id" ref="purchase.purchase_order_view_tree"/>
+    <field name="priority">99</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='partner_ref']" position="attributes">
+        <attribute name="string">Номер у поставщика</attribute>
+      </xpath>
+      <xpath expr="//field[@name='priority']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- Поиск: «Отмечено» (звезда) и «Не принято» (кнопка «Подтвердить»). -->
+  <record id="view_purchase_order_filter_step29" model="ir.ui.view">
+    <field name="name">purchase.order.search.rfq.pmk.step29</field>
+    <field name="model">purchase.order</field>
+    <field name="inherit_id" ref="purchase.view_purchase_order_filter"/>
+    <field name="priority">99</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//filter[@name='starred']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//filter[@name='not_acknowledged']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="view_purchase_order_search_step29" model="ir.ui.view">
+    <field name="name">purchase.order.search.order.pmk.step29</field>
+    <field name="model">purchase.order</field>
+    <field name="inherit_id" ref="purchase.purchase_order_view_search"/>
+    <field name="priority">99</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//filter[@name='starred']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+    </field>
+  </record>
+</odoo>

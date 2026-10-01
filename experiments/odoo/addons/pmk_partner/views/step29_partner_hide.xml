@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Контрагент: убрать совсем — разбор UX, шаг 29 (02.10.2026).
+
+      • «Тип адреса» в окне контактного лица — без вариантов «Счет» и
+        «Прочее» (адресов с ними в базе 0 из 85): свой виджет-наследник
+        штатного переключателя, static/src/js/radio_hide_field.js. Варианты
+        остаются: Контакт · Доставка · Директор · Бухгалтер. У записи, где
+        тип уже «Счет» или «Прочее», он виден отмеченным — данные не ломаются;
+      • новое контактное лицо — «Контакт» и у ИП / физлица: ядро ставило им
+        «Прочее» (контекст child_ids: 'default_type': is_company and
+        'contact' or 'other'), и скрытый вариант стоял бы отмеченным в
+        каждом новом контакте ИП. Контекст переписан целиком — остальные
+        ключи слово в слово как у ядра (base.view_partner_form, Odoo 19;
+        другие модули его не меняют — проверено по ir_ui_view 02.10.2026),
+        тест сверяет их с видом ядра;
+      • фильтр «Сотрудники» (его дописывает hr) и группировка «Страна» —
+        группе «Убранное (показать)»: контрагенты завода — российские
+        компании, сотрудники заводятся не здесь.
+
+    Группировку «Свойства», «Отправить SMS», «Поиск конфиденциальности» и
+    «Загрузить (vCard)» в шестерёнке прячет pmk_theme (models/hidden_nodes.py,
+    models/ir_actions.py); вид «Канбан» у «Клиентов» —
+    models/ir_actions_act_window.py этого модуля. «Отправить сообщение» у
+    контрагента остаётся: через него ушли запросы прайсов.
+
+    Новые виды, а не правка существующих (их правят соседние шаги); active в
+    XML — грабли Odoo 19 (выключенный вид не проверяется, падение невидимо).
+    В КП ничего из этого не печатается: печать
+    (pmk_bridge/report/quotation_report.xml) берёт у клиента название,
+    реквизиты, адрес, телефон и почту, у контактного лица — имя, должность и
+    телефон.
+
+    ВЕРНУТЬ: фильтр и группировку — добавить себя в «Убранное (показать)»;
+    варианты типа адреса и «Прочее» по умолчанию у ИП — удалить вид
+    view_partner_form_address_type_step29. Таблица —
+    docs/disabled-features.md, раздел «шаг 29».
+  -->
+
+  <record id="view_partner_search_step29" model="ir.ui.view">
+    <field name="name">res.partner.search.pmk.step29</field>
+    <field name="model">res.partner</field>
+    <field name="inherit_id" ref="base.view_res_partner_filter"/>
+    <field name="priority">99</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//filter[@name='group_country']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- Фильтр «Сотрудники» дописывает hr (он в зависимостях модуля). -->
+  <record id="view_partner_search_employees_step29" model="ir.ui.view">
+    <field name="name">res.partner.search.pmk.step29.employees</field>
+    <field name="model">res.partner</field>
+    <field name="inherit_id" ref="hr.res_partner_view_search"/>
+    <field name="priority">99</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//filter[@name='employees']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="view_partner_form_address_type_step29" model="ir.ui.view">
+    <field name="name">res.partner.form.pmk.step29.address.type</field>
+    <field name="model">res.partner</field>
+    <field name="inherit_id" ref="base.view_partner_form"/>
+    <field name="priority">99</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='child_ids']/form//field[@name='type']" position="attributes">
+        <attribute name="widget">pmk_radio_hide</attribute>
+        <attribute name="options">{'horizontal': true, 'pmk_hide': ['invoice', 'other']}</attribute>
+      </xpath>
+      <!-- Ядро: 'default_type': is_company and 'contact' or 'other'. -->
+      <xpath expr="//field[@name='child_ids']" position="attributes">
+        <attribute name="context">{'default_parent_id': id, 'default_street': street, 'default_street2': street2, 'default_city': city, 'default_state_id': state_id, 'default_zip': zip, 'default_country_id': country_id, 'default_lang': lang, 'default_user_id': user_id, 'default_type': 'contact'}</attribute>
+      </xpath>
+    </field>
+  </record>
+</odoo>

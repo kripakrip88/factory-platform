@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Маркетинговые метки (UTM) в поиске и списке лидов — разбор UX, шаг 29
+    (02.10.2026), «Убрать совсем: маркетинговые колонки и группировки».
+
+    Кампании, каналы и источники не заполнены ни у одной заявки: откуда
+    пришла заявка, завод отмечает своим полем «Откуда пришёл» (pmk_source,
+    шаг 31). Поля «Маркетинга» в формах лида и сделки скрыты шагом 8,
+    колонки списка сделок — шагом 25. Здесь остаток:
+      • группировки «Кампания», «Канал», «Источник» в поиске сделок (из
+        него же собирается поиск «Прогноза»), лидов и «Анализа воронки»;
+      • поля поиска «Кампания», «Канал», «Источник» в поиске лидов и
+        «Анализа воронки»;
+      • колонки «Кампания», «Канал», «Источник» в списке лидов (там они были
+        в меню колонок ⚙) — column_invisible, как у сделок с шага 25; из
+        списка лидов собирается и «Анализ лидов».
+
+    Атрибутом invisible / column_invisible, а не группой-выключателем:
+    pmk_deal от pmk_theme не зависит и на его группы сослаться не может.
+    Узлы на месте — на них ссылаются xpath других видов. Новые виды, а не
+    правка существующих: файлы видов сделки и лида правят соседние шаги.
+    active в XML — грабли Odoo 19 (выключенный вид не проверяется).
+
+    В КП ничего из этого не печатается: печать
+    (pmk_bridge/report/quotation_report.xml) полей сделки и лида не берёт.
+
+    ВЕРНУТЬ: удалить xpath нужного узла (или вид целиком) и выложить
+    pmk_deal. Таблица — docs/disabled-features.md, раздел «шаг 29».
+  -->
+
+  <!-- Поиск сделок (воронка, список сделок; «Прогноз» собирается из него). -->
+  <record id="view_crm_opportunities_search_step29" model="ir.ui.view">
+    <field name="name">crm.lead.search.opportunity.pmk.step29</field>
+    <field name="model">crm.lead</field>
+    <field name="inherit_id" ref="crm.view_crm_case_opportunities_filter"/>
+    <field name="priority">99</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <!-- «compaign» — опечатка в имени у самого ядра. -->
+      <xpath expr="//filter[@name='compaign']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//filter[@name='medium']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//filter[@name='source']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- Поиск лидов. -->
+  <record id="view_crm_leads_search_step29" model="ir.ui.view">
+    <field name="name">crm.lead.search.lead.pmk.step29</field>
+    <field name="model">crm.lead</field>
+    <field name="inherit_id" ref="crm.view_crm_case_leads_filter"/>
+    <field name="priority">99</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='source_id']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//field[@name='medium_id']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//field[@name='campaign_id']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//filter[@name='compaign']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//filter[@name='medium']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//filter[@name='source']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- Поиск «Анализа воронки» (Отчёты). -->
+  <record id="view_crm_report_search_step29" model="ir.ui.view">
+    <field name="name">crm.lead.search.report.pmk.step29</field>
+    <field name="model">crm.lead</field>
+    <field name="inherit_id" ref="crm.crm_opportunity_report_view_search"/>
+    <field name="priority">99</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='campaign_id']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//field[@name='medium_id']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//field[@name='source_id']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//filter[@name='compaign']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//filter[@name='medium']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//filter[@name='source']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- Список лидов («Анализ лидов» собирается из него). Колонки были в ⚙. -->
+  <record id="view_crm_leads_list_utm_step29" model="ir.ui.view">
+    <field name="name">crm.lead.list.lead.pmk.step29.utm</field>
+    <field name="model">crm.lead</field>
+    <field name="inherit_id" ref="crm.crm_case_tree_view_leads"/>
+    <field name="priority">99</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='campaign_id']" position="attributes">
+        <attribute name="column_invisible">1</attribute>
+      </xpath>
+      <xpath expr="//field[@name='medium_id']" position="attributes">
+        <attribute name="column_invisible">1</attribute>
+      </xpath>
+      <xpath expr="//field[@name='source_id']" position="attributes">
+        <attribute name="column_invisible">1</attribute>
+      </xpath>
+    </field>
+  </record>
+</odoo>

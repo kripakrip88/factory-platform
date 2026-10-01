@@ -44,6 +44,10 @@ EMPTY_HELP = {
 VIEW_MODES = {
     "purchase.purchase_rfq": ("list", "form"),
     "purchase.purchase_form_action": ("list", "form"),
+    # «Номенклатура» без канбана (разбор UX, шаг 29, 02.10.2026): плитки
+    # металла с «1,00 руб» и нулевым остатком вместо списка. В базе у
+    # действия по-прежнему list,kanban,form.
+    "stock.product_template_action_product": ("list", "form"),
 }
 
 

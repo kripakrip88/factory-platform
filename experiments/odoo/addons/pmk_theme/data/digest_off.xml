@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    «Сводка» Odoo (digest) — выключить один раз (разбор UX, шаг 29,
+    02.10.2026). Вызов идёт при каждом -u pmk_theme, но метод работает только
+    в первый раз: после него в системных параметрах остаётся метка
+    pmk_theme.digest_off, и включённую обратно сводку деплой не тронет.
+    Что именно делает и как вернуть — models/digest.py.
+  -->
+  <function model="digest.digest" name="_pmk_digest_off_once"/>
+</odoo>

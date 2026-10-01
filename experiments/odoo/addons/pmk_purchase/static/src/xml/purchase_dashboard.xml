@@ -9,6 +9,14 @@
   title здесь английские. Трогаем только узлы модуля purchase (он в
   зависимостях); карточку «OTD» добавляет purchase_stock — её подпись
   стилем, без xpath, чтобы не упасть, если модуль снимут.
+
+  Шаг 29 (02.10.2026): карточки «Не подтверждены поставщиком» и «Поставки
+  в срок» — только тем, кому сервер отдал флаг pmk_show (группы
+  «Убранное» и «Склад (показать)», models/purchase_order.py, там же —
+  зачем). «Не подтверждены» — t-if на узле purchase; «Поставки в срок» —
+  признак data-pmk-otd-off на корне панели и правило в
+  scss/purchase_dashboard.scss (узел чужой, см. выше). Флага нет — как у
+  ядра.
 -->
 <templates xml:space="preserve">
   <t t-inherit="purchase.PurchaseDashboard" t-inherit-mode="extension">
@@ -38,6 +46,7 @@
     </xpath>
     <xpath expr="//div[@filter_name='not_acknowledged']" position="attributes">
       <attribute name="title">Заказы, которые поставщик ещё не подтвердил</attribute>
+      <attribute name="t-if">!purchaseData.pmk_show or purchaseData.pmk_show.not_acknowledged</attribute>
     </xpath>
     <xpath expr="//div[@filter_name='late_receipt']" position="attributes">
       <attribute name="title">Заказы с просроченной поставкой</attribute>
@@ -53,6 +62,7 @@
     </xpath>
     <xpath expr="//div[@filter_name='not_acknowledged,my_purchases']" position="attributes">
       <attribute name="title">Мои заказы, не подтверждённые поставщиком</attribute>
+      <attribute name="t-if">!purchaseData.pmk_show or purchaseData.pmk_show.not_acknowledged</attribute>
     </xpath>
     <xpath expr="//div[@filter_name='late_receipt,my_purchases']" position="attributes">
       <attribute name="title">Мои заказы с просроченной поставкой</attribute>
@@ -62,6 +72,10 @@
     </xpath>
     <xpath expr="//div[@title='My Days to Order']" position="attributes">
       <attribute name="title">Мои: дней от запроса до заказа</attribute>
+    </xpath>
+    <!-- «Поставки в срок» прячет стиль по этому признаку (шаг 29). -->
+    <xpath expr="//div[hasclass('o_purchase_dashboard')]" position="attributes">
+      <attribute name="t-att-data-pmk-otd-off">purchaseData.pmk_show and !purchaseData.pmk_show.otd ? '1' : false</attribute>
     </xpath>
   </t>
 </templates>

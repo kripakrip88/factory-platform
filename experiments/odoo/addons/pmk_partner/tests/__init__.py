@@ -4,3 +4,4 @@
 #        --test-tags /pmk_partner --stop-after-init --http-port 8099
 from . import test_customer_list
 from . import test_step28_card
+from . import test_step29_partner

@@ -20,8 +20,22 @@
     запятой в нём нет, а шаблон карточки чужой (purchase_stock), и xpath к
     нему из нашего модуля зависел бы от порядка бандла.
 
+Какие карточки показывать — pmk_show (разбор UX, шаг 29, 02.10.2026):
+  • «Не подтверждены поставщиком» (обе: «Все» и «Мои») — только с
+    «Убранным (показать)»: отметить «поставщик получил заказ» шаг 29 убрал
+    (кнопка «Подтвердить», фильтр «Не принято»), портал закрыт шагом 23 —
+    счётчик рос бы с каждым заказом, а щелчок по карточке искал бы
+    фильтр, которого нет;
+  • «Поставки в срок» — только со «Складом (показать)»: без приёмок ядро
+    считает 0 %, и это тот же «% своевременной поставки», что шаг 29
+    прячет в заказе.
+Решает сервер (has_group), шаблон только читает флаг
+(static/src/xml/purchase_dashboard.xml); флага нет (окно выкладки) —
+карточки как у ядра.
+
 Вернуть штатное: удалить этот файл и строку в models/__init__.py, убрать
-xpath с pmk_days_to_order из шаблона. Таблица — docs/disabled-features.md.
+xpath с pmk_days_to_order и pmk_show из шаблона. Таблица —
+docs/disabled-features.md.
 """
 from dateutil.relativedelta import relativedelta
 
@@ -29,6 +43,9 @@ from odoo import api, fields, models
 from odoo.tools.misc import formatLang
 
 DASH = "—"
+# Группы-выключатели шага 29 (pmk_theme/security/pmk_step29_groups.xml).
+REMOVED = "pmk_theme.group_pmk_removed"
+STOCK = "pmk_theme.group_pmk_stock"
 
 
 class PurchaseOrder(models.Model):
@@ -57,4 +74,10 @@ class PurchaseOrder(models.Model):
             for scope, domain in (("global", delivered), ("my", delivered + mine)):
                 if not self.search_count(domain):
                     result[scope]["otd"] = DASH
+
+        user = self.env.user
+        result["pmk_show"] = {
+            "not_acknowledged": user.has_group(REMOVED),
+            "otd": user.has_group(STOCK),
+        }
         return result

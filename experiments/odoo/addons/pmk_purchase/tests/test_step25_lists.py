@@ -109,9 +109,10 @@ class TestPurchaseListsStep25(TransactionCase):
     # ─── Запросы КП и заказы поставщикам ────────────────────────────────
     def test_rfq_list(self):
         arch = self._arch("purchase.order", "purchase.purchase_order_kpis_tree")
-        for name in ("priority", "activity_ids"):
-            with self.subTest(field=name):
-                self.assertEqual(self._one(arch, name).get("optional"), "hide")
+        self.assertEqual(self._one(arch, "activity_ids").get("optional"), "hide")
+        # Звезда «Приоритет»: шаг 25 убрал её в ⚙, шаг 29 — совсем (группа
+        # «Убранное (показать)», views/step29_purchase_hide.xml).
+        self.assertFalse(arch.xpath("/list/field[@name='priority']"))
         self.assertFalse(arch.get("decoration-info"), "Строки не синие (29.09).")
 
     def test_orders_list(self):
@@ -119,9 +120,11 @@ class TestPurchaseListsStep25(TransactionCase):
         self.assertFalse(arch.get("decoration-info"),
                          "Голубая строка «к выставлению счёта» снята: счета в МоёмСкладе.")
         self.assertEqual(self._one(arch, "name").get("string"), "Номер")
-        for name in ("priority", "activity_ids", "invoice_status"):
+        for name in ("activity_ids", "invoice_status"):
             with self.subTest(field=name):
                 self.assertEqual(self._one(arch, name).get("optional"), "hide")
+        # «Приоритет» — с шага 29 группе «Убранное (показать)».
+        self.assertFalse(arch.xpath("/list/field[@name='priority']"))
         bills = arch.xpath("//header/button[@name='action_create_invoice']")
         self.assertEqual(len(bills), 1, "Кнопка скрыта, а не удалена.")
         self.assertIn(bills[0].get("invisible"), HIDDEN)

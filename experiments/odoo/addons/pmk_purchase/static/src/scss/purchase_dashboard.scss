@@ -32,3 +32,14 @@
   [title="Сколько дней в среднем от запроса до заказа"] .purchase-dashboard-card::after { content: "Дней до заказа"; }
   [title="OTD"] .purchase-dashboard-card::after { content: "Поставки в срок"; }
 }
+
+// «Поставки в срок» — до «Склада (показать)» (разбор UX, шаг 29): без
+// приёмок ядро считает 0 %, это тот же «% своевременной поставки», что
+// спрятан в заказе. Признак на корне ставит шаблон по флагу сервера
+// (xml/purchase_dashboard.xml, models/purchase_order.py). Обе карточки
+// («Все» и «Мои») несут title="OTD" — у них нет своего узла в нашем
+// шаблоне (их рисует purchase_stock). «Дней до заказа» сдвигается на
+// освободившееся место.
+.o_purchase_dashboard[data-pmk-otd-off] [title="OTD"] {
+  display: none !important;
+}

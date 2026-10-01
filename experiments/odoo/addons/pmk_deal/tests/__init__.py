@@ -9,3 +9,4 @@ from . import test_deal_views
 from . import test_kp_sent
 from . import test_list_columns
 from . import test_partner_specs
+from . import test_step29_utm
