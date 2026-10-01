@@ -52,6 +52,13 @@
             "pmk_calc/static/src/xml/dobor_builder.xml",
             "pmk_calc/static/src/xml/svg_field.xml",
             "pmk_calc/static/src/xml/product_lines_field.xml",
+            # Приёмка 01.10.2026: форма расчёта без «Новое» (R6), дата
+            # словами в заголовке (R3), «Копировать» у позиции доборки (R9b).
+            "pmk_calc/static/src/js/spec_form_view.js",
+            "pmk_calc/static/src/js/long_date_field.js",
+            "pmk_calc/static/src/scss/spec_form.scss",
+            "pmk_calc/static/src/js/dobor_copy_line.js",
+            "pmk_calc/static/src/xml/dobor_copy_line.xml",
         ],
     },
     "post_init_hook": "post_init_hook",

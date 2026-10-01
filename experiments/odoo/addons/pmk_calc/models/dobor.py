@@ -416,9 +416,7 @@ class DoborOrderLine(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         lines = super().create(vals_list)
-        for line in lines:
-            if not (line.title or "").strip():
-                line.title = line._default_title()
+        lines._fill_default_titles()
         lines._sync_snapshot_coating()
         return lines
 
@@ -431,16 +429,43 @@ class DoborOrderLine(models.Model):
             self._sync_snapshot_coating()
         return res
 
-    def _default_title(self):
-        """Имя по умолчанию: «Доборка N» с номером по порядку внутри заказа.
+    def _fill_default_titles(self):
+        """Имя по умолчанию позициям без названия: «Доборка N».
 
-        Считаем по количеству уже заведённых позиций, а не по sequence:
+        N — номер позиции в заказе на момент её заведения: сколько позиций
+        было до неё, плюс один. Считаем по количеству, а не по sequence:
         позиции переставляют перетаскиванием, и номер в названии от этого
         меняться не должен — он часть имени, а не порядковый номер строки.
+
+        Позиции, записанные ОДНОЙ пачкой, нумеруются подряд, в том порядке,
+        в каком стоят в списке (sequence): новый заказ с несколькими
+        строками; «Копировать» у ещё не сохранённой позиции — копия уходит на
+        сервер вместе с исходной и встаёт сразу под ней. Раньше каждая строка
+        считала «все остальные + 1» уже после записи всей пачки, и две строки
+        получали одно имя: две разные планки «Доборка 2» в листе для цеха, а
+        «Доборки 1» нет (приёмка 01.10.2026).
+
+        Имя, уже занятое в заказе, пропускаем — берём следующий свободный
+        номер: после удаления позиций счёт по количеству может попасть на
+        существующее имя. Так же нумерует «Копировать» в браузере
+        (static/src/js/dobor_copy_line.js, nextAutoTitle).
         """
-        self.ensure_one()
-        others = self.search_count([("order_id", "=", self.order_id.id), ("id", "!=", self.id)])
-        return "Доборка %s" % (others + 1)
+        for order in self.order_id:
+            batch = self.filtered(lambda line, o=order: line.order_id == o).sorted(
+                lambda line: (line.sequence, line.id))
+            before = self.search_count([("order_id", "=", order.id), ("id", "not in", batch.ids)])
+            taken = {
+                (title or "").strip()
+                for title in self.search([("order_id", "=", order.id)]).mapped("title")
+            }
+            for index, line in enumerate(batch):
+                if (line.title or "").strip():
+                    continue
+                number = before + index + 1
+                while "Доборка %s" % number in taken:
+                    number += 1
+                line.title = "Доборка %s" % number
+                taken.add(line.title)
 
     @api.constrains("plank_length", "qty")
     def _check_positive(self):

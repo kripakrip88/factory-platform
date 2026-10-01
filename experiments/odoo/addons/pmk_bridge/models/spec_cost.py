@@ -421,6 +421,54 @@ class MetalSpecCost(models.Model):
             spec.margin_pct = (
                 (total - spec.total_cost_fact) / total * 100.0) if total else 0.0
 
+    # ─── Копия расчёта — новый расчёт на сегодня (приёмка 01.10.2026, R4) ──
+    #
+    # «Дублировать» в ⚙ делают, чтобы посчитать заявку заново: тот же состав,
+    # другие объёмы или размеры. Значит копия — это НОВЫЙ расчёт: дата цен —
+    # сегодня, цены закупки перечитываются из прайсов (price_unit не
+    # копируется, см. поле), ручные правки цены не переносятся. Дату самого
+    # документа ставит pmk_calc (MetalSpec.copy_data), сделку переносит
+    # pmk_deal (opportunity_id, copy=True), раскладку листов не копирует
+    # pmk_calc (spec_layout.py) — её пересчитывают кнопкой.
+    def copy_data(self, default=None):
+        default = dict(default or {})
+        default.setdefault("price_date", fields.Date.context_today(self))
+        return super().copy_data(default)
+
+    def copy(self, default=None):
+        new_specs = super().copy(default)
+        # «Дублировать» из списка копирует сразу несколько: пара за парой.
+        for origin, new in zip(self, new_specs):
+            new._pmk_log_copy(origin)
+        return new_specs
+
+    def _pmk_log_copy(self, origin):
+        """Запись в ленту копии: откуда она и что в ней посчитано заново.
+
+        Без неё копия молча расходится с оригиналом в деньгах — другая дата
+        цен, другие цены, — и через неделю не понять почему.
+        """
+        self.ensure_one()
+        # Цена строки оригинала не совпадала с его строкой прайса — это ручная
+        # правка (или цены не перечитаны после смены поставщика). В копию
+        # такие цены не попадают: она считается по прайсу.
+        manual = len(origin.price_line_ids.filtered(
+            lambda l: l.price_state == "ok" and l.price_source_id
+            and abs(l.price_unit - l.price_source_id.price_discounted) >= 0.005))
+        laid_out = any(state != "none"
+                       for state in origin.sheet_line_ids.mapped("layout_state"))
+        on_date = self.price_date.strftime("%d.%m.%Y") if self.price_date else "сегодня"
+        parts = ["Копия %s. Дата расчёта и цены — на %s: цены закупки перечитаны "
+                 "из прайсов." % (origin.name, on_date)]
+        if manual:
+            parts.append("Цены, правленные вручную, не перенесены: %s поз." % manual)
+        if laid_out:
+            parts.append("Раскладку листов — заново кнопкой «Разложить листы "
+                         "(черновик)» на вкладке «Раскладка».")
+        if self.no_price_count:
+            parts.append("Позиций без цены: %s." % self.no_price_count)
+        self._message_log(body=" ".join(parts))
+
     def pmk_money(self, amount):
         """Сумма по-русски: «54 000,00 руб».
 
@@ -820,9 +868,18 @@ class MetalSpecLineCost(models.Model):
         help="Только для просмотра: содержимое строки меняется при заливке "
              "нового прайса.")
 
+    # ⚠️ copy=False — НЕ ПРО «НЕ ПЕРЕНОСИТЬ РУЧНУЮ ЦЕНУ», А ПРО ВСЮ ГРУППУ.
+    # Хранимое правимое вычисляемое поле ядро копирует (orm/fields.py), и
+    # create() защищает от пересчёта ВСЮ группу полей этого вычисления
+    # (orm/models.py, protected): состояние, ₽/кг, ₽/т, строку прайса,
+    # поставщика, дату прайса. Копия расчёта выходила с price_state по
+    # умолчанию «empty», без строки прайса и с нулевым металлом — СМ-00025
+    # (замечание владельца 01.10.2026: «продублировал расчёт, цены на металл
+    # автоматически не проставились»). Без копирования цена считается при
+    # создании копии, на её дату цен — как у нового расчёта.
     price_unit = fields.Float(
         "Цена за единицу", compute="_compute_price_from_supplier", store=True,
-        readonly=False, digits=(16, 4),
+        readonly=False, digits=(16, 4), copy=False,
         help="С НДС, за единицу учёта позиции: прокат — за метр, лист и "
              "метиз — за штуку, краска — за килограмм. Можно задать вручную.")
     price_kg = fields.Float(

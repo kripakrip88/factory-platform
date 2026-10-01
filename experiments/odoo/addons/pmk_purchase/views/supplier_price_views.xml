@@ -38,10 +38,14 @@
         <field name="partner_id" string="Поставщик" readonly="1"/>
         <field name="product_tmpl_id" string="Позиция" readonly="1"/>
         <field name="pmk_variant_label" optional="show"/>
-        <!-- Пусто, а не «0»: у листа, метизов и мотков длины хлыста нет. -->
+        <!-- Пусто, а не «0»: у листа, метизов и мотков длины хлыста нет.
+             С приёмки 01.10.2026 (R11) — пусто у любого не-проката, а не
+             только при нуле: длина хлыста — свойство проката
+             (pmk_is_linear — у позиции есть строка справочника сортамента). -->
         <field name="pmk_bar_length_mm" string="Длина хлыста, мм" optional="show"
                options="{'hide_trailing_zeros': True}"
-               invisible="not pmk_bar_length_mm"/>
+               invisible="not pmk_is_linear or not pmk_bar_length_mm"/>
+        <field name="pmk_is_linear" column_invisible="1"/>
         <field name="price" string="Цена, ₽" digits="[16,2]" readonly="1"/>
         <field name="product_uom_id" string="Ед." optional="show" readonly="1"
                options="{'no_open': True}"/>
@@ -106,9 +110,12 @@
         <attribute name="delete">0</attribute>
         <attribute name="duplicate">0</attribute>
       </xpath>
+      <!-- Длина хлыста — только у проката (приёмка 01.10.2026, R11). -->
       <xpath expr="//field[@name='discount']" position="before">
         <field name="pmk_bar_length_mm" string="Длина хлыста, мм"
-               options="{'hide_trailing_zeros': True}"/>
+               options="{'hide_trailing_zeros': True}"
+               invisible="not pmk_is_linear"/>
+        <field name="pmk_is_linear" invisible="1"/>
       </xpath>
     </field>
   </record>
@@ -162,16 +169,40 @@
       </xpath>
       <xpath expr="//field[@name='price']" position="before">
         <!-- Ячейка не прячется: список правится в строке, и у сохранённой
-             строки без длины (822 из 1554 на 01.10) её надо дописать —
-             скрытая ячейка скрывала и поле ввода. Ноль — серым: у листа,
-             метиза и мотка длины хлыста нет; бледные нули темы во вложенных
-             таблицах не работают, поэтому явно. -->
+             строки без длины (738 строк проката из 1554 на 01.10) её надо
+             дописать — скрытая ячейка скрывала и поле ввода. Ноль — серым;
+             бледные нули темы во вложенных таблицах не работают, поэтому явно.
+             Приёмка 01.10.2026 (R11): колонка — ТОЛЬКО у проката
+             (parent.pmk_is_linear — у карточки есть строка справочника
+             сортамента): у листа, метизов и краски длины хлыста нет, и
+             колонки нет вовсе. Признак читается с карточки: он стоит в её
+             форме скрытым полем (запись view_product_template_is_linear ниже). -->
         <field name="pmk_bar_length_mm" string="Длина хлыста, мм" optional="show"
                options="{'hide_trailing_zeros': True}"
-               decoration-muted="not pmk_bar_length_mm"/>
+               decoration-muted="not pmk_bar_length_mm"
+               column_invisible="not parent.pmk_is_linear"/>
       </xpath>
       <xpath expr="//field[@name='currency_id']" position="attributes">
         <attribute name="optional">hide</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <!--
+    Признак «прокат» в форме карточки товара — скрытым полем (приёмка
+    01.10.2026, R11): список поставщиков на вкладке «Закупка» берёт его как
+    parent.pmk_is_linear, а браузер передаёт в список только поля, которые
+    есть в форме. Наследуем вид закупок, который ставит этот список (а не
+    общую форму товара): xpath идёт по его узлу seller_ids. Тот же вид у
+    варианта товара — его форма строится из общей (mode primary).
+  -->
+  <record id="view_product_template_is_linear" model="ir.ui.view">
+    <field name="name">product.template.form.pmk.is.linear</field>
+    <field name="model">product.template</field>
+    <field name="inherit_id" ref="purchase.view_product_supplier_inherit"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='seller_ids']" position="before">
+        <field name="pmk_is_linear" invisible="1"/>
       </xpath>
     </field>
   </record>

@@ -7,11 +7,11 @@
     на месте (на них ссылаются xpath'ы других видов), данные целы. Каждое
     скрытие записано в docs/disabled-features.md.
 
-    • Под названием — строка главного расчёта сделки:
-      «СМ-00024 · 50,9 т · цена 9 500 000 ₽ · металл 3 429 022 ₽ · маржа 63,9 %»
-      и красным «без цены: 1», только когда больше нуля (сигнал «в городе
-      нет», ничего не запрещает). Нет расчёта — подсказка, какой кнопкой он
-      появится. Штатный блок «Ожидаемый доход … в … Вероятность» скрыт целиком:
+    • Под названием — деньги главного расчёта сделки карточками (с приёмки
+      01.10.2026, R1; было одной строкой): Расчёт · Вес · Цена клиенту ·
+      Металл · Маржа и красным «Без цены», только когда больше нуля (сигнал
+      «в городе нет», ничего не запрещает). Нет расчёта — подсказка, какой
+      кнопкой он появится. Штатный блок «Ожидаемый доход … в … Вероятность» скрыт целиком:
       доход теперь сам берётся из цены клиенту (models/deal_money.py), а
       вероятность считал автомат без истории.
     • Вкладка «Контакты» скрыта: после шага 8 там остались три почти пустых
@@ -40,13 +40,59 @@
       <xpath expr="//div[hasclass('oe_title')]/h2" position="attributes">
         <attribute name="invisible">1</attribute>
       </xpath>
+      <!--
+        Деньги главного расчёта — рядом коротких карточек «подпись серым над
+        значением» (приёмка 01.10.2026, R1), как карточки денег в форме
+        расчёта (классы темы pmk-kpi__*). Прежняя строка «СМ-00024 · 50,9 т ·
+        цена … · металл … · маржа … · без цены: 1» сливалась в один текст.
+        • Расчёт — ссылкой: номер СМ- целиком, щелчок открывает расчёт.
+        • Маржа — две карточки, видна одна: у неполного расчёта (позиции без
+          цены закупки) — «≤ 63,9 %» красным, как полоска маржи в списках;
+          у формы нет условного класса, поэтому так.
+        • «Без цены» — красным и только когда позиций больше нуля. Сигнал «в
+          городе нет», ничего не запрещает.
+      -->
       <xpath expr="//div[hasclass('oe_title')]/h2" position="after">
         <div class="pmk-deal-money" invisible="type == 'lead'">
-          <field name="pmk_spec_id" invisible="1"/>
-          <field name="pmk_spec_summary" class="pmk-deal-money__line"
-                 invisible="not pmk_spec_id"/>
-          <field name="pmk_no_price_label" class="pmk-noprice"
-                 invisible="not pmk_no_price_label"/>
+          <div class="pmk-deal-kpi" invisible="not pmk_spec_id">
+            <div class="pmk-kpi__card pmk-deal-kpi__card">
+              <div class="pmk-kpi__label">Расчёт</div>
+              <div class="pmk-kpi__value">
+                <field name="pmk_spec_id" options="{'no_create': True}"/>
+              </div>
+            </div>
+            <div class="pmk-kpi__card pmk-deal-kpi__card">
+              <div class="pmk-kpi__label">Вес</div>
+              <div class="pmk-kpi__value"><field name="pmk_kpi_weight"/></div>
+            </div>
+            <div class="pmk-kpi__card pmk-deal-kpi__card">
+              <div class="pmk-kpi__label">Цена клиенту</div>
+              <div class="pmk-kpi__value"><field name="pmk_kpi_price"/></div>
+            </div>
+            <div class="pmk-kpi__card pmk-deal-kpi__card">
+              <div class="pmk-kpi__label">Металл</div>
+              <div class="pmk-kpi__value"><field name="pmk_kpi_metal"/></div>
+            </div>
+            <div class="pmk-kpi__card pmk-deal-kpi__card"
+                 invisible="pmk_price_incomplete and pmk_spec_price">
+              <div class="pmk-kpi__label">Маржа</div>
+              <div class="pmk-kpi__value"><field name="pmk_kpi_margin"/></div>
+            </div>
+            <div class="pmk-kpi__card pmk-deal-kpi__card pmk-deal-kpi__card--bad"
+                 invisible="not pmk_price_incomplete or not pmk_spec_price"
+                 title="Маржа завышена: у части позиций нет цены закупки, металл занижен. «≤» — это верхняя граница">
+              <div class="pmk-kpi__label">Маржа</div>
+              <div class="pmk-kpi__value"><field name="pmk_kpi_margin"/></div>
+            </div>
+            <div class="pmk-kpi__card pmk-deal-kpi__card pmk-deal-kpi__card--bad"
+                 invisible="not pmk_no_price_count"
+                 title="Позиции без цены закупки — сигнал «в городе нет», не ошибка. Металл занижен на эти позиции; ничего не запрещает">
+              <div class="pmk-kpi__label">Без цены</div>
+              <div class="pmk-kpi__value"><field name="pmk_no_price_count"/> поз.</div>
+            </div>
+            <field name="pmk_price_incomplete" invisible="1"/>
+            <field name="pmk_spec_price" invisible="1"/>
+          </div>
           <!-- У проигранной (архивной) сделки кнопки «Расчёт и КП» нет —
                и подсказки про неё тоже. -->
           <span class="pmk-deal-money__empty" invisible="pmk_spec_id or not active">Расчёта ещё нет — кнопка «Расчёт и КП» создаст его со сделкой и клиентом</span>
@@ -108,6 +154,10 @@
       „зависший“»; заданы миграцией 19.0.1.0.4).
     Сумма в шапке колонки — штатная сумма поля «Ожидаемый доход»: он теперь
     берётся из цены клиенту, поэтому в шапке сама собой сумма КП в работе.
+    С приёмки 01.10.2026 (R10) она пишется как на карточке — «9,5 млн ₽»,
+    ноль прочерком; полоски задач под названием этапа нет, над ним — полоса
+    цвета этапа (static/src/js/pipeline_kanban.js). Узел <progressbar> не
+    трогаем: только с ним в шапке колонки есть сумма.
   -->
   <record id="view_crm_lead_kanban_money" model="ir.ui.view">
     <field name="name">crm.lead.kanban.pmk.money</field>

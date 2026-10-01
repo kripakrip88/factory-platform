@@ -124,6 +124,26 @@ class TestMoneyText(unittest.TestCase):
         self.assertEqual(money_text.no_price_label(1), "без цены: 1")
         self.assertEqual(money_text.no_price_label(6), "без цены: 6")
 
+    # ─── Карточки денег на сделке (приёмка 01.10.2026, R1) ──────────────
+    def test_kpi_cards_owner_example(self):
+        """СМ-00024: те же числа, что в строке, — по карточкам."""
+        self.assertEqual(plain(money_text.weight(50938.926)), "50,9 т")
+        self.assertEqual(plain(money_text.kpi_price(9500000.0)), "9 500 000 ₽")
+        self.assertEqual(plain(money_text.rub(3429021.97)), "3 429 022 ₽")
+        self.assertEqual(plain(money_text.kpi_margin(9500000.0, 63.86)), "63,9 %")
+
+    def test_kpi_margin_incomplete_is_upper_bound(self):
+        """Позиции без цены закупки — металл занижен, маржа «≤»."""
+        self.assertEqual(plain(money_text.kpi_margin(9500000.0, 63.86, True)), "≤ 63,9 %")
+        self.assertNotIn(" ", money_text.kpi_margin(9500000.0, 63.86, True),
+                         "«≤» не отрывается от числа при переносе.")
+
+    def test_kpi_without_customer_price(self):
+        self.assertEqual(money_text.kpi_price(0.0), "не назначена")
+        self.assertEqual(money_text.kpi_margin(0.0, 0.0), "—")
+        self.assertEqual(money_text.kpi_margin(0.0, 0.0, True), "—",
+                         "Без цены клиенту маржи нет — и «≤» нечему стоять.")
+
 
 if __name__ == "__main__":
     unittest.main()

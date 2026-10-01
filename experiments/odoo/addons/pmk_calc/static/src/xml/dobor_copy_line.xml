@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+  <!-- «Копировать» у позиции доборки (приёмка 01.10.2026, R9b). Логика —
+       js/dobor_copy_line.js. Кнопка-ссылка: залитая на экране одна —
+       «Печать листа». .stop — щелчок не открывает окно позиции. -->
+  <t t-name="pmk_calc.DoborCopyLine">
+    <button t-if="canCopy" type="button"
+            class="btn btn-link btn-sm p-0 text-nowrap pmk-dobor-copy"
+            title="Копия позиции встанет сразу под ней: тот же профиль, покрытие, металл и количество. Останется поменять размеры. Сохраняется вместе с заказом."
+            t-on-click.stop="onClick">
+      <i class="fa fa-clone me-1" aria-hidden="true"/>Копировать
+    </button>
+  </t>
+</templates>

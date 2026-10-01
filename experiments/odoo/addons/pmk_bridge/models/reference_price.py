@@ -23,6 +23,32 @@ from .reference_link import LINKED_MODELS
 class ProductTemplatePmkSeller(models.Model):
     _inherit = "product.template"
 
+    # ─── Прокат хлыстами (приёмка 01.10.2026, R11) ───────────────────────
+    #
+    # Владелец: «Зачем длина хлыста для листа, метизов и т. д.?» Длина хлыста
+    # нужна только прокату: его продают хлыстами 6 / 11,7 / 12 м, и по ней
+    # раскрой считает, сколько хлыстов купить. Признак — у карточки есть
+    # строка справочника сортамента (pmk.metal.profile: арматура, уголок,
+    # трубы…). По нему колонка «Длина хлыста» в поставщиках карточки товара
+    # видна только у проката, а в «Ценах поставщиков» у не-проката ячейка
+    # пустая. Не хранится: связь со справочником правят, а хранимый признак
+    # устарел бы молча (так же сделаны цены справочника, reference_link.py).
+    pmk_is_linear = fields.Boolean(
+        "Прокат (хлыстами)", compute="_compute_pmk_is_linear",
+        help="Позиция — прокат из справочника сортамента: продаётся хлыстами, "
+             "длина хлыста нужна раскрою. У листа, метизов и краски её нет.")
+
+    def _compute_pmk_is_linear(self):
+        # Одним поиском на всю страницу, а не по одному на карточку.
+        # _origin: у карточки в форме нового товара записи ещё нет (NewId).
+        ids = [tmpl._origin.id for tmpl in self if tmpl._origin.id]
+        linear = set()
+        if ids:
+            linear = set(self.env["pmk.metal.profile"].sudo().search(
+                [("product_tmpl_id", "in", ids)]).product_tmpl_id.ids)
+        for tmpl in self:
+            tmpl.pmk_is_linear = tmpl._origin.id in linear
+
     def _pmk_find_seller(self, date, supplier=None):
         """Строка прайса, по которой считаем себестоимость на дату.
 
@@ -76,6 +102,11 @@ class SupplierInfoPmkPrice(models.Model):
              "расчёт: прокат — масса метра из справочника, лист — вес листа, "
              "метиз — масса штуки. Пусто — позиция не связана со справочником "
              "или масса неизвестна.")
+    # Длина хлыста — только у проката (приёмка 01.10.2026, R11): по этому
+    # признаку «Цены поставщиков» оставляют ячейку пустой у листа, метизов и
+    # краски. Сама длина объявлена в spec_cost.py (pmk_bar_length_mm).
+    pmk_is_linear = fields.Boolean(
+        related="product_tmpl_id.pmk_is_linear", string="Прокат (хлыстами)")
     pmk_variant_label = fields.Char(
         "Марка, габарит", compute="_compute_pmk_variant_label",
         help="Характеристики варианта, на который назначена цена: у листа — "

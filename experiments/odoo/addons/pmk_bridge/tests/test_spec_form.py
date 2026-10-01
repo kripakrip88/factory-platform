@@ -193,17 +193,27 @@ class TestSpecFormStep32(TransactionCase):
         self.assertIn("btn-secondary", buttons[1].get("class") or "")
 
     def test_head_order_and_moved_fields(self):
+        """Приёмка 01.10.2026 (R3): Сделка → Клиент | Контактное лицо →
+        Предмет КП → Цены на дату | Организация; дата документа — в
+        заголовке, а не в шапке."""
         arch = self._form()
         head = arch.xpath("//div[contains(concat(' ', @class, ' '), ' pmk-doc-head__fields ')]")[0]
         fields_order = [f.get("name") for f in head.iter("field")
                         if f.get("name") in ("opportunity_id", "partner_id", "contact_id",
                                              "date", "price_date", "note", "company_id")]
-        expected = ["partner_id", "contact_id", "date", "price_date", "note"]
+        expected = ["partner_id", "contact_id", "note", "price_date"]
         if "opportunity_id" in fields_order:
             expected.insert(0, "opportunity_id")
         if self.env.user.has_group("base.group_multi_company"):
             expected.append("company_id")
         self.assertEqual(fields_order, expected)
+        blocks = [d.get("name") for d in head if d.get("name")]
+        self.assertEqual(blocks[blocks.index("pmk_f_note") + 1], "pmk_f_price_date",
+                         "«Цены на дату» — сразу под «Предметом КП».")
+        price_date = head.find("div[@name='pmk_f_price_date']")
+        self.assertNotIn("pmk-field--wide", price_date.get("class"),
+                         "Половина строки: вторая — «Организация».")
+        self.assertIsNone(head.find("div[@name='pmk_f_date']"))
         self.assertIsNone(head.find(".//field[@name='supplier_id']"),
                           "«Поставщик для цен» — на вкладке «Цены».")
         self.assertFalse(head.xpath(".//span[contains(@class, 'text-bg-danger')]"),

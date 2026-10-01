@@ -5,12 +5,17 @@
     <field name="name">pmk.metal.spec.form</field>
     <field name="model">pmk.metal.spec</field>
     <field name="arch" type="xml">
-      <form string="Спецификация" class="pmk-spec-form">
+      <form string="Спецификация" class="pmk-spec-form" js_class="pmk_spec_form">
         <!--
           class="pmk-spec-form" — крючок для стилей формы расчёта (разбор UX,
           шаг 32: одна залитая кнопка на экран, см. scss/dobor_builder.scss).
           Ядро кладёт класс на корень вида (div.o_form_view), а не на лист:
-          под ним и панель с «Новое», и лента документа.
+          под ним и панель над документом, и лента документа.
+
+          js_class="pmk_spec_form" — форма без кнопки «Новое» (приёмка
+          01.10.2026, R6: новый расчёт заводят из списка «Калькулятор
+          металлопроката»). Не create="0": он унёс бы и «Дублировать» в ⚙
+          (см. static/src/js/spec_form_view.js).
         -->
         <!--
           ШАПКА ПУСТАЯ, НО ОСТАЁТСЯ. Кнопки в неё кладёт мост (pmk_bridge):
@@ -24,7 +29,24 @@
         -->
         <header/>
         <sheet>
-          <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
+          <!--
+            Заголовок «СМ-00024 от 27 сентября 2026 г.» (приёмка 01.10.2026,
+            R3): дата рядом с номером, месяц словом, год полностью. Дата
+            правится тут же — по клику поле ввода и календарь (виджет
+            pmk_long_date, static/src/js/long_date_field.js). Отдельного
+            поля «Дата» в шапке больше нет; в модели оно прежнее, КП печатает
+            «от dd.MM.yyyy» из него же. Новый, ещё не записанный расчёт —
+            «Новый расчёт от …»: номер СМ- выдаётся при сохранении.
+            Узел oe_title остаётся: перед ним мост ставит плашки цен.
+          -->
+          <div class="oe_title pmk-spec-title">
+            <h1>
+              <span class="pmk-spec-title__new" invisible="id">Новый расчёт</span>
+              <field name="name" readonly="1" invisible="not id"/>
+              <span class="pmk-spec-title__from">от</span>
+              <field name="date" widget="pmk_long_date" class="pmk-spec-title__date"/>
+            </h1>
+          </div>
           <!--
             Шапка: ввод слева, итоги справа карточками. Итог документа — его
             главное число, а раньше он был набран тем же кеглем, что
@@ -41,30 +63,37 @@
           -->
           <div class="pmk-doc-head">
             <!--
-              Порядок шапки (разбор UX, шаг 32): Сделка → Клиент →
-              Контактное лицо (все во всю ширину: «ООО «Арестак-Строй»,
-              Цыганов…» в половине ширины обрезался) → Дата | Цены на дату →
-              Предмет КП. Сделку ставит pmk_deal, цены — pmk_bridge: они
-              встают по ИМЕНАМ блоков (name="pmk_f_…"), а не в конец
-              контейнера. Иначе порядок решала очерёдность загрузки
-              модулей, и «Сделка» оказывалась последней.
+              Порядок шапки (приёмка 01.10.2026, R2/R3): Сделка (во всю
+              ширину) → Клиент | Контактное лицо → Предмет КП (во всю
+              ширину) → Цены на дату | Организация. Сделку ставит pmk_deal,
+              цены и организацию — pmk_bridge: они встают по ИМЕНАМ блоков
+              (name="pmk_f_…"), а не в конец контейнера. Иначе порядок решала
+              очерёдность загрузки модулей, и «Сделка» оказывалась последней.
+              Дата документа — в заголовке, после номера (R3); блока
+              pmk_f_date больше нет — pmk_bridge встаёт после pmk_f_note.
               ⚠️ Имена блоков — опора для xpath других модулей. Не менять.
             -->
             <div class="pmk-doc-head__fields">
-              <div class="pmk-field pmk-field--wide" name="pmk_f_partner">
+              <!-- Клиент и контактное лицо — в одну строку, по половине
+                   (R2): в контакте теперь только имя человека, и обе строки
+                   помещаются. -->
+              <div class="pmk-field" name="pmk_f_partner">
                 <label for="partner_id"/>
                 <field name="partner_id" nolabel="1"/>
               </div>
               <!-- Контактное лицо — человек у клиента; клиент — компания
-                   (разбор UX, шаг 11). Печатается в КП. -->
-              <div class="pmk-field pmk-field--wide" name="pmk_f_contact">
+                   (разбор UX, шаг 11). Печатается в КП (имя, должность,
+                   телефон — поля человека, не display_name).
+                   partner_display_name_hide_company — штатный ключ ядра
+                   (res.partner._get_complete_name; CRM ставит его так же на
+                   «Контакт» сделки): в поле «Цыганов Михаил Анатольевич», а
+                   не «ООО «Арестак-Строй», Цыганов…» (R2). Только для этого
+                   поля: ключ живёт в контексте поля, display_name в других
+                   местах прежний. -->
+              <div class="pmk-field" name="pmk_f_contact">
                 <label for="contact_id"/>
                 <field name="contact_id" nolabel="1"
-                       context="{'default_parent_id': partner_id}"/>
-              </div>
-              <div class="pmk-field" name="pmk_f_date">
-                <label for="date"/>
-                <field name="date" nolabel="1"/>
+                       context="{'default_parent_id': partner_id, 'partner_display_name_hide_company': True}"/>
               </div>
               <div class="pmk-field pmk-field--wide" name="pmk_f_note">
                 <label for="note"/>

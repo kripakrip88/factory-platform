@@ -34,11 +34,17 @@
     # Стадия в списке сделок плашкой в цвете стадии («оживить таблицы»,
     # 29.09.2026) — свой виджет поверх штатного редактора стадии. Шаг 31 —
     # строка денег расчёта на сделке и на карточке воронки.
+    # Приёмка 01.10.2026 (R10): шапка колонки воронки — полоса цвета этапа,
+    # сумма «9,5 млн ₽», без полоски задач; колонки раздельно.
     "assets": {
         "web.assets_backend": [
             "pmk_deal/static/src/js/stage_badge_field.js",
             "pmk_deal/static/src/xml/stage_badge_field.xml",
             "pmk_deal/static/src/scss/deal_money.scss",
+            "pmk_deal/static/src/js/money_short.js",
+            "pmk_deal/static/src/js/pipeline_kanban.js",
+            "pmk_deal/static/src/xml/pipeline_kanban.xml",
+            "pmk_deal/static/src/scss/pipeline_kanban.scss",
         ],
     },
     # Сроки стадий и архив штатных причин проигрыша на новой базе — так же,

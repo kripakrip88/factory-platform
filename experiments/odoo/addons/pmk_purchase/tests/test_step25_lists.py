@@ -144,6 +144,8 @@ class TestPurchaseListsStep25(TransactionCase):
                 self.assertIsNone(length.get("invisible"))
                 self.assertIsNone(length.get("readonly"))
                 self.assertEqual(length.get("decoration-muted"), "not pmk_bar_length_mm")
+                # Приёмка 01.10.2026 (R11): колонка — только у проката.
+                self.assertEqual(length.get("column_invisible"), "not parent.pmk_is_linear")
                 start = self._one(arch, "date_start")
                 self.assertEqual(start.get("optional"), "show")
                 self.assertEqual(start.get("string"), "Действует с")
@@ -151,6 +153,20 @@ class TestPurchaseListsStep25(TransactionCase):
                 # Колонку ядро показывает только при нескольких валютах.
                 for node in currency:
                     self.assertEqual(node.get("optional"), "hide")
+
+    def test_product_card_has_linear_flag(self):
+        """R11: признак «прокат» стоит в форме карточки — иначе список
+        поставщиков не прочтёт parent.pmk_is_linear и спрячет колонку всем.
+        Карточка шаблона и варианта: вариант строится из общей формы."""
+        self.assertTrue(self.env.ref("pmk_purchase.view_product_template_is_linear").active)
+        for model in ("product.template", "product.product"):
+            with self.subTest(model=model):
+                views = self.env[model].with_user(self.admin).get_views([(False, "form")])
+                arch = etree.fromstring(views["views"]["form"]["arch"])
+                flag = arch.xpath("//field[@name='pmk_is_linear']")
+                self.assertTrue(flag, "Признак в форме %s." % model)
+                self.assertIn(flag[0].get("invisible"), HIDDEN)
+                self.assertTrue(arch.xpath("//field[@name='seller_ids']"))
 
     # ─── «Закупки → Цены поставщиков» ───────────────────────────────────
     def test_prices_menu_and_action(self):
@@ -180,6 +196,10 @@ class TestPurchaseListsStep25(TransactionCase):
                                  "pmk_price_ton", "date_start", "date_end", "min_qty"])
         self.assertEqual(self._one(arch, "partner_id").get("string"), "Поставщик")
         self.assertEqual(self._one(arch, "date_start").get("string"), "Действует с")
+        # R11: у не-проката ячейка пустая, а не «0».
+        self.assertEqual(self._one(arch, "pmk_bar_length_mm").get("invisible"),
+                         "not pmk_is_linear or not pmk_bar_length_mm")
+        self.assertIn(self._one(arch, "pmk_is_linear").get("column_invisible"), HIDDEN)
         search = self._arch("product.supplierinfo", "pmk_purchase.view_supplier_price_search",
                             "search")
         for name in ("current", "older_30", "no_date"):
@@ -199,6 +219,10 @@ class TestPurchaseListsStep25(TransactionCase):
             with self.subTest(attr=attr):
                 self.assertEqual(arch.get(attr), "0")
         self.assertEqual(len(arch.xpath("//field[@name='pmk_bar_length_mm']")), 1)
+        # R11: у не-проката поля нет, у проката — дописать можно.
+        self.assertEqual(arch.xpath("//field[@name='pmk_bar_length_mm']")[0].get("invisible"),
+                         "not pmk_is_linear")
+        self.assertTrue(arch.xpath("//field[@name='pmk_is_linear']"))
         self.assertTrue(arch.xpath("//field[@name='price']"), "Цену править можно.")
         # Штатная форма строки прайса — для остальных мест — не тронута.
         default = self.env["product.supplierinfo"].get_views([(False, "form")])

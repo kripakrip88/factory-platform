@@ -89,8 +89,14 @@ class CrmLeadDeal(models.Model):
 class MetalSpecDeal(models.Model):
     _inherit = "pmk.metal.spec"
 
+    # copy=True (приёмка 01.10.2026, R4): копия расчёта остаётся в той же
+    # сделке. Раньше сделка переносилась только при «Дублировать» из формы,
+    # открытой кнопкой «Расчёт и КП» (её контекст default_opportunity_id), а
+    # из меню «Калькулятор» копия теряла сделку. Копия датирована сегодняшним
+    # днём (pmk_calc) — значит она и становится главным расчётом сделки
+    # (main_spec в deal_money.py): новый расчёт заменяет старый.
     opportunity_id = fields.Many2one(
-        "crm.lead", "Сделка", index=True, ondelete="set null", copy=False,
+        "crm.lead", "Сделка", index=True, ondelete="set null", copy=True,
         # Только возможности, не лиды: считают по заявке, которую взяли в
         # работу. Лид — это ещё интерес, у него нет ни объёма, ни сортамента.
         domain="[('type', '=', 'opportunity')]",

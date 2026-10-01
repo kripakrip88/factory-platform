@@ -11,40 +11,62 @@ $pmk-deal-red: #a32d2d;
 $pmk-deal-red-dark: #f08a85;
 $pmk-deal-muted: #6b7078;
 
-// ─── Форма сделки: строка под названием ────────────────────────────────────
-// Строка ставится на место скрытого h2 «Ожидаемый доход … Вероятность».
-// Flex с переносом: длинная строка переносится целиком по « · » (внутри
-// чисел неразрывные пробелы), номер СМ- не обрезается никогда.
+// ─── Форма сделки: карточки денег под названием ────────────────────────────
+// Приёмка 01.10.2026 (R1): вместо одной строки «СМ-00024 · 50,9 т · цена …»
+// — ряд коротких карточек «подпись серым над значением». Рамка, фон, кегль
+// подписи и тёмная пара — классы темы pmk-kpi__* (pmk_theme: forms_nexus.scss,
+// dark.scss), как карточки денег в форме расчёта; здесь — только компактность
+// и ряд. Ряд ставится на место скрытого h2 «Ожидаемый доход … Вероятность».
 .o_form_view .pmk-deal-money {
+  margin: 0.25rem 0 1rem;
+}
+
+// Карточки в ряд с переносом: на узком экране ряд переходит на вторую
+// строку целиком по карточкам, номер СМ- и суммы не режутся.
+.o_form_view .pmk-deal-kpi {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
-  column-gap: 0.4em;
-  row-gap: 0.15em;
-  margin: 0.15rem 0 1rem;
-  font-size: 1.0625rem;
-  font-variant-numeric: tabular-nums;
+  align-items: stretch;
+  gap: 8px;
+}
 
-  .pmk-noprice::before {
-    content: "·";
-    margin-right: 0.4em;
-    color: $pmk-deal-muted;
-    font-weight: 400;
+.o_form_view .pmk-deal-kpi > .pmk-deal-kpi__card {
+  flex: 0 0 auto;
+  min-width: 0;
+  padding: 6px 12px;
+  border-radius: 10px;
+
+  .pmk-kpi__value {
+    margin-top: 1px;
+    font-size: 17px;
+    font-weight: 500;
+    white-space: nowrap;
   }
 }
 
-// Поля строки — по ширине текста, чтобы «· без цены: 1» стояло в той же
-// строке. ⚠️ Ядро в режиме правки растягивает Char-поля под названием на всю
-// ширину: `.o_form_view .o_form_editable .oe_title .o_field_char { width:
-// 100% }` (web/views/form/form_controller.scss), вес 0,4,0. Сделка почти
-// всегда открыта в правке — правило ядра выигрывало, и flex разносил поля
-// по двум строкам с висящей «·» в начале второй. Второй селектор — тот же
-// путь ядра плюс наш класс (0,5,0), первый — для формы только для чтения.
-.o_form_view .oe_title .pmk-deal-money > .o_field_widget,
-.o_form_view .o_form_editable .oe_title .pmk-deal-money > .o_field_widget {
+// Поля карточек — по ширине текста. ⚠️ Ядро в режиме правки растягивает
+// Char-поля под названием на всю ширину: `.o_form_view .o_form_editable
+// .oe_title .o_field_char { width: 100% }` (web/views/form/
+// form_controller.scss), вес 0,4,0 — карточка «Вес» растянулась бы на весь
+// ряд. Второй селектор — тот же путь ядра плюс наш класс (0,5,0), первый —
+// для формы только для чтения.
+.o_form_view .oe_title .pmk-deal-kpi .o_field_widget,
+.o_form_view .o_form_editable .oe_title .pmk-deal-kpi .o_field_widget {
   width: auto;
-  flex: 0 1 auto;
   min-width: 0;
+}
+
+// Красная карточка — проблема, повторена словом: «≤» у маржи, подпись «Без
+// цены». Бледный красный тон темы (forms_nexus.scss, $pmk-stage-tones red),
+// значение — тем же тёмно-красным, что «без цены» на карточке воронки.
+.o_form_view .pmk-deal-kpi > .pmk-deal-kpi__card--bad {
+  background: #fbe7e4;
+  border-color: #efc3bc;
+
+  .pmk-kpi__value,
+  .pmk-kpi__value .o_field_widget {
+    color: $pmk-deal-red;
+  }
 }
 
 .o_form_view .pmk-deal-money__empty {
@@ -80,8 +102,19 @@ $pmk-deal-muted: #6b7078;
     color: $pmk-deal-red-dark;
   }
 
-  body.o_nexus_dark .o_form_view .pmk-deal-money .pmk-noprice::before,
   body.o_nexus_dark .o_form_view .pmk-deal-money__empty {
     color: var(--pmk-ink-3, #a3a29f);
+  }
+
+  // Красная карточка в тёмной паре — тон темы (dark.scss, $pmk-dark-tones
+  // red). Вес выше тёмных правил темы для карточки (0,2,1) и значения (0,2,1).
+  body.o_nexus_dark .o_form_view .pmk-deal-kpi > .pmk-deal-kpi__card--bad {
+    background: var(--pmk-tone-red-bg, #4b383b);
+    border-color: var(--pmk-tone-red-bd, #805554);
+  }
+
+  body.o_nexus_dark .o_form_view .pmk-deal-kpi > .pmk-deal-kpi__card--bad .pmk-kpi__value,
+  body.o_nexus_dark .o_form_view .pmk-deal-kpi > .pmk-deal-kpi__card--bad .pmk-kpi__value .o_field_widget {
+    color: var(--pmk-tone-red-ink, #f3d2cd);
   }
 }

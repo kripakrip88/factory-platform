@@ -65,6 +65,20 @@ class TestDealMoney(TransactionCase):
         self.assertIn("маржа 100 %", summary)
         self.assertIn("9,5 млн ₽", self.lead.pmk_spec_card.replace(NB, " "))
         self.assertFalse(self.lead.pmk_no_price_label)
+        # Карточки под названием (приёмка 01.10.2026, R1).
+        self.assertEqual(self.lead.pmk_kpi_weight.replace(NB, " "), "0 кг")
+        self.assertEqual(self.lead.pmk_kpi_price.replace(NB, " "), "9 500 000 ₽")
+        self.assertEqual(self.lead.pmk_kpi_metal.replace(NB, " "), "0 ₽")
+        self.assertEqual(self.lead.pmk_kpi_margin.replace(NB, " "), "100 %")
+
+    def test_kpi_cards_empty_without_spec(self):
+        for name in ("pmk_kpi_weight", "pmk_kpi_price", "pmk_kpi_metal", "pmk_kpi_margin"):
+            with self.subTest(field=name):
+                self.assertFalse(self.lead[name])
+        spec = self._spec()
+        self.assertEqual(self.lead.pmk_spec_id, spec)
+        self.assertEqual(self.lead.pmk_kpi_price, "не назначена")
+        self.assertEqual(self.lead.pmk_kpi_margin, "—", "Без цены клиенту маржи нет.")
 
     def test_price_change_moves_revenue(self):
         spec = self._spec(price=1000.0)
@@ -89,6 +103,20 @@ class TestDealMoney(TransactionCase):
         # Тот же день — побеждает более поздний номер (как в списке расчётов).
         old.date = today
         self.assertEqual(self.lead.pmk_spec_id, max(old, new, key=lambda s: s.id))
+
+    def test_copy_stays_in_the_deal_and_becomes_main(self):
+        """Приёмка 01.10.2026, R4: копия расчёта — в той же сделке, на
+        сегодня, и она теперь главный расчёт (новый заменяет старый). Раньше
+        сделка переносилась только из формы, открытой кнопкой «Расчёт и КП»."""
+        today = fields.Date.context_today(self.lead)
+        spec = self._spec(price=1000.0, date=today - timedelta(days=3))
+        self.assertEqual(self.lead.pmk_spec_id, spec)
+        copy = spec.copy()
+        self.assertEqual(copy.opportunity_id, self.lead)
+        self.assertEqual(copy.date, today)
+        self.assertEqual(self.lead.pmk_spec_id, copy)
+        self.assertEqual(self.lead.expected_revenue, 1000.0)
+        self.assertEqual(self.lead.spec_count, 2)
 
     def test_detached_spec_leaves_the_deal(self):
         spec = self._spec(price=5000.0)
@@ -127,6 +155,10 @@ class TestDealMoney(TransactionCase):
         self.assertEqual(self.lead.pmk_no_price_label, "без цены: 1")
         # Сигнал ничего не запрещает: доход — цена клиенту, как обычно.
         self.assertEqual(self.lead.expected_revenue, 1000.0)
+        # Карточка «Маржа» — верхняя граница: металл занижен (R1).
+        self.assertTrue(self.lead.pmk_price_incomplete)
+        self.assertTrue(self.lead.pmk_kpi_margin.startswith("≤"), self.lead.pmk_kpi_margin)
+        self.assertEqual(self.lead.pmk_no_price_count, 1)
 
     # ─── кнопка «Расчёт и КП» ────────────────────────────────────────────
     def test_button_without_spec_opens_new_form_with_defaults(self):

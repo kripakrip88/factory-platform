@@ -203,13 +203,114 @@ class TestSpecLayoutStep32(TransactionCase):
         self.assertIn("layout_use_level", by_name, "Уровень для цвета — служебной колонкой.")
 
     def test_head_blocks(self):
+        """Приёмка 01.10.2026: Клиент | Контактное лицо — одной строкой
+        (R2), отдельного блока «Дата» нет — она в заголовке (R3)."""
         arch = self._form()
         head = arch.xpath("//div[contains(concat(' ', @class, ' '), ' pmk-doc-head__fields ')]")[0]
         names = [d.get("name") for d in head if d.get("name")]
         ours = [n for n in names if n in ("pmk_f_partner", "pmk_f_contact", "pmk_f_date", "pmk_f_note")]
-        self.assertEqual(ours, ["pmk_f_partner", "pmk_f_contact", "pmk_f_date", "pmk_f_note"])
-        for name in ("pmk_f_partner", "pmk_f_contact", "pmk_f_note"):
-            with self.subTest(block=name):
+        self.assertEqual(ours, ["pmk_f_partner", "pmk_f_contact", "pmk_f_note"])
+        for name in ("pmk_f_partner", "pmk_f_contact"):
+            with self.subTest(half=name):
                 block = head.find("div[@name='%s']" % name)
-                self.assertIn("pmk-field--wide", block.get("class"))
-        self.assertNotIn("pmk-field--wide", head.find("div[@name='pmk_f_date']").get("class"))
+                self.assertNotIn("pmk-field--wide", block.get("class"), "По половине ширины.")
+        self.assertIn("pmk-field--wide", head.find("div[@name='pmk_f_note']").get("class"))
+        self.assertIsNone(head.find(".//field[@name='date']"), "Дата — в заголовке.")
+
+    # ─── Приёмка 01.10.2026 ─────────────────────────────────────────────
+    def test_title_number_from_date(self):
+        """R3: «СМ-00024 от 27 сентября 2026 г.» — дата в заголовке, правится."""
+        arch = self._form()
+        title = arch.xpath("//div[contains(concat(' ', @class, ' '), ' pmk-spec-title ')]")
+        self.assertEqual(len(title), 1)
+        self.assertIn("oe_title", title[0].get("class").split(),
+                      "Узел oe_title на месте: перед ним мост ставит плашки цен.")
+        h1 = title[0].find("h1")
+        name = h1.find("field[@name='name']")
+        self.assertEqual(name.get("invisible"), "not id")
+        new = h1.find("span[@class='pmk-spec-title__new']")
+        self.assertEqual(new.get("invisible"), "id")
+        self.assertEqual(new.text, "Новый расчёт")
+        self.assertEqual(h1.find("span[@class='pmk-spec-title__from']").text, "от")
+        date = h1.find("field[@name='date']")
+        self.assertEqual(date.get("widget"), "pmk_long_date")
+        self.assertFalse(date.get("readonly"), "Дату можно поменять прямо в заголовке.")
+        children = [c.get("name") or c.get("class") for c in h1]
+        self.assertLess(children.index("name"), children.index("date"))
+
+    def test_title_date_beats_theme_input_frame(self):
+        """R3, находка проверки 01.10.2026: тема theme_nexus красит каждый
+        .o_input рамкой со скруглением, в фокусе — лаймовым свечением, в
+        тёмной теме — плашкой, и всё с !important. Без !important у нас
+        дата в заголовке рисовалась полем ввода в рамке: «СМ-00024 от
+        [27 сентября 2026 г.]». Глазами смотрит основной агент; здесь — что
+        !important не сняли как «лишний»."""
+        from odoo.tools.misc import file_path
+
+        with open(file_path("pmk_calc/static/src/scss/spec_form.scss"), encoding="utf-8") as f:
+            scss = f.read()
+        block = scss[scss.index(".pmk-spec-title__date {"):]
+        for decl in ("color: inherit !important", "background: transparent !important",
+                     "border: 0 !important", "border-bottom: 1px dashed transparent !important",
+                     "border-radius: 0 !important", "box-shadow: none !important",
+                     "outline: 0 !important", "border-bottom-color: currentColor !important"):
+            with self.subTest(decl=decl):
+                self.assertIn(decl, block)
+
+    def test_form_without_new_button(self):
+        """R6: «Новое» с формы убрано своим контроллером, «Дублировать» — на
+        месте (create="0" унёс бы и его)."""
+        arch = self._form()
+        self.assertEqual(arch.get("js_class"), "pmk_spec_form")
+        self.assertIsNone(arch.get("create"), "Не create=\"0\": «Дублировать» живёт при create.")
+        self.assertIsNone(arch.get("duplicate"))
+        from odoo.modules.module import get_manifest
+        assets = get_manifest("pmk_calc")["assets"]["web.assets_backend"]
+        for path in ("pmk_calc/static/src/js/spec_form_view.js",
+                     "pmk_calc/static/src/js/long_date_field.js",
+                     "pmk_calc/static/src/scss/spec_form.scss"):
+            with self.subTest(asset=path):
+                self.assertIn(path, assets)
+        # Окно изделия — встроенная форма без своего контроллера: не задето.
+        product_form = arch.xpath("//field[@name='product_ids']/form")[0]
+        self.assertIsNone(product_form.get("js_class"))
+
+    def test_list_keeps_new_button(self):
+        views = self.env["pmk.metal.spec"].get_views([(False, "list")])
+        arch = etree.fromstring(views["views"]["list"]["arch"])
+        self.assertNotIn(arch.get("create"), ("0", "false", "False"),
+                         "«Новое» в списке расчётов остаётся.")
+
+    def test_contact_shows_only_the_person(self):
+        """R2: в поле «Контактное лицо» — только имя человека. Ключ ядра в
+        контексте поля, display_name в других местах прежний."""
+        Partner = self.env["res.partner"]
+        company = Partner.create({"name": "ООО «Арестак-Строй» (тест)", "is_company": True})
+        person = Partner.create({"name": "Цыганов Михаил Анатольевич",
+                                 "parent_id": company.id})
+        # Сначала — без ключа: имя попадает в кэш полным.
+        self.assertEqual(person.display_name,
+                         "ООО «Арестак-Строй» (тест), Цыганов Михаил Анатольевич")
+        hide = {"partner_display_name_hide_company": True}
+        self.assertEqual(person.with_context(**hide).display_name,
+                         "Цыганов Михаил Анатольевич",
+                         "Ключ в depends_context: кэш без ключа не мешает.")
+        self.assertEqual(company.with_context(**hide).display_name, company.name)
+        self.assertEqual(person.display_name,
+                         "ООО «Арестак-Строй» (тест), Цыганов Михаил Анатольевич",
+                         "Без ключа — по-прежнему «Компания, Человек».")
+
+        # Как читает браузер: контекст поля — в спецификации чтения.
+        spec = self.Spec.create({"partner_id": company.id, "contact_id": person.id})
+        contact = self._form().xpath("//field[@name='contact_id']")[0]
+        context = contact.get("context")
+        self.assertIn("partner_display_name_hide_company", context)
+        self.assertIn("default_parent_id", context)
+        [data] = spec.web_read({
+            "partner_id": {"fields": {"display_name": {}}},
+            "contact_id": {"fields": {"display_name": {}}, "context": hide},
+        })
+        self.assertEqual(data["contact_id"]["display_name"], "Цыганов Михаил Анатольевич")
+        self.assertEqual(data["partner_id"]["display_name"], company.name)
+        # КП печатает имя человека полем name — от ключа не зависит.
+        self.assertEqual(spec.contact_id.name, "Цыганов Михаил Анатольевич")

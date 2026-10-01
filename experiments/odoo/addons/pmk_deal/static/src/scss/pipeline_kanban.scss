@@ -1,0 +1,95 @@
+// Воронка сделок: колонки этапов раздельно (приёмка 01.10.2026, R10, вариант
+// Б). Разметка шапки — xml/pipeline_kanban.xml, логика — js/pipeline_kanban.js.
+//
+// Было: колонки того же цвета, что страница, без зазора — этапы сливались в
+// одно поле. Стало: колонка — нейтральная подложка чуть темнее страницы
+// (тёплый серый темы, тон «grey» плашек стадий), между колонками заметный
+// зазор, скругление как у карточек темы, над названием — полоса 3 px цвета
+// этапа. Цвет этапа повторён словом — названием этапа под полосой.
+//
+// Область — только канбан воронки: класс o_opportunity_kanban стоит в разметке
+// вида (crm.crm_case_kanban_view_leads), ядро кладёт его на корень вида
+// (computeViewClassName). Прочие канбаны не задеты, кроме «Прогноза»: он
+// наследует разметку воронки вместе с классом — колонки у него так же
+// раздельные, а шапка штатная (полосы этапа в ней нет).
+
+$pmk-pipe-column-light: #f1f0ec; // тон «grey» темы (forms_nexus.scss, $pmk-stage-tones)
+$pmk-pipe-radius: 10px;
+
+.o_kanban_view.o_opportunity_kanban .o_kanban_renderer {
+  --Kanban-gap: 12px;
+  // Сверху — небольшой отступ от панели над видом, по бокам — воздух у
+  // крайних колонок. Снизу 0: колонка тянется до низа, как у ядра.
+  --Kanban-padding: 8px 12px 0;
+  --KanbanGroup-background: #{$pmk-pipe-column-light};
+}
+
+.o_kanban_view.o_opportunity_kanban .o_kanban_renderer.o_kanban_grouped .o_kanban_group {
+  border-radius: $pmk-pipe-radius;
+}
+
+// Полоса цвета этапа — во всю ширину колонки, по верхнему краю. Шапка
+// колонки «липкая» (position: sticky у ядра) — полоса едет вместе с ней при
+// прокрутке. Отступ шапки от края колонки — переменная ядра
+// --KanbanGroup-padding-h (у свёрнутой колонки она 0). Цвет — классом палитры
+// ядра o_colorlist_item_color_N (web/core/colorlist), насыщенный: полоса
+// тонкая, приглушать не нужно.
+//
+// ⚠️ ГЕОМЕТРИЯ. Полосу нельзя сделать элементом высотой 3 px со скруглением
+// колонки: радиус больше высоты, браузер ужимает все радиусы до 3 px, и в
+// верхних пикселях углы полосы торчали за скруглённый силуэт колонки
+// цветными «ушками» (на 5–7 px с каждой стороны). Обрезать колонку
+// (overflow) тоже не стали: на телефоне ядро прокручивает колонку саму
+// (overflow-y: scroll), а clip-path на колонке срезал бы перетаскиваемую
+// карточку. Поэтому элемент полосы — высотой в радиус и с тем же
+// скруглением, что у колонки, его края совпадают с краями колонки, а видны
+// из него только верхние 3 px (clip-path на самой полосе): цвет идёт ровно
+// по дуге угла колонки.
+//
+// Область — только воронка (o_opportunity_kanban). Шапку рисует тот же
+// компонент и в канбане лидов, но там полосы нет (js/pipeline_kanban.js,
+// env.pmkPipeline) — а это правило не даст ей появиться и без того.
+.o_kanban_view.o_opportunity_kanban .o_kanban_header > .pmk-stage-strip {
+  position: absolute;
+  top: 0;
+  left: calc(-1 * var(--KanbanGroup-padding-h, 0px));
+  right: calc(-1 * var(--KanbanGroup-padding-h, 0px));
+  height: $pmk-pipe-radius;
+  border-radius: $pmk-pipe-radius $pmk-pipe-radius 0 0;
+  clip-path: inset(0 0 calc(100% - 3px) 0);
+  pointer-events: none;
+}
+
+// Колонка под перетаскиваемой карточкой: ядро растягивает шапку до краёв
+// колонки (kanban_controller.scss, .o_kanban_hover) — полосе отступ не нужен.
+.o_kanban_view.o_opportunity_kanban .o_kanban_group.o_kanban_hover .o_kanban_header > .pmk-stage-strip {
+  left: -1px;
+  right: -1px;
+}
+
+// Значок зависших сделок — первым в строке счётчика: полоски задач перед ним
+// больше нет, и штатный отступ ms-3 оставлял дыру слева. :first-child —
+// только там, где полоски действительно нет: «Прогноз» наследует класс вида
+// воронки, а шапка у него штатная, с полоской, и значок зависших в ней тоже
+// бывает (поле is_rotting из той же разметки) — там отступ нужен.
+.o_kanban_view.o_opportunity_kanban .o_kanban_counter > .o_mail_resource_rotting_bg:first-child {
+  margin-left: 0 !important; // перекрыть утилиту ms-3 (у неё !important)
+}
+
+// ─── Тёмная тема (body.o_nexus_dark, pmk_theme/dark.scss) ─────────────────
+// Тема делает колонки прозрачными правилом (0,4,1); здесь (0,6,1) —
+// поверхность темы на фоне страницы (--pmk-bg).
+@media screen {
+  body.o_nexus_dark .o_kanban_view.o_opportunity_kanban .o_kanban_renderer.o_kanban_grouped .o_kanban_group {
+    background-color: var(--pmk-surface, #1e2025);
+  }
+}
+
+// Название этапа — обычным регистром, как в утверждённом макете варианта Б
+// («Заявка», а не «ЗАЯВКА»): капс ставит тема всем канбанам (text-transform
+// на .o_column_title), здесь снимаем только у воронки. Осмотр копии
+// 01.10.2026.
+.o_kanban_view.o_opportunity_kanban .o_kanban_header .o_column_title {
+  text-transform: none;
+  letter-spacing: normal;
+}

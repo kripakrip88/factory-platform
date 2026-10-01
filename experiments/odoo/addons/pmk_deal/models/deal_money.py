@@ -96,8 +96,21 @@ class CrmLeadMoney(models.Model):
         "Без цены", compute="_compute_pmk_money_text",
         help="Позиция без цены закупки — сигнал «в городе нет», не ошибка. "
              "Итог по металлу занижен на эти позиции.")
+    # Прежняя строка денег на форме сделки (шаг 31). С приёмки 01.10.2026
+    # (R1) форма показывает карточки ниже; поле оставлено — его читают тесты
+    # и оно пригодится в выгрузке.
     pmk_spec_summary = fields.Char(
         "Расчёт одной строкой", compute="_compute_pmk_money_text")
+    # Карточки денег под названием сделки (приёмка 01.10.2026, R1): «подпись
+    # серым над значением», как в форме расчёта. Текст значений —
+    # tools/money_text.py (неразрывные пробелы внутри чисел).
+    pmk_kpi_weight = fields.Char("Вес", compute="_compute_pmk_money_text")
+    pmk_kpi_price = fields.Char("Цена клиенту", compute="_compute_pmk_money_text")
+    pmk_kpi_metal = fields.Char("Металл", compute="_compute_pmk_money_text")
+    pmk_kpi_margin = fields.Char(
+        "Маржа", compute="_compute_pmk_money_text",
+        help="Цена клиенту минус металл, в процентах от цены. «≤» — у части "
+             "позиций нет цены закупки: металл занижен, маржа — верхняя граница.")
     pmk_spec_card = fields.Char(
         "Расчёт на карточке", compute="_compute_pmk_money_text")
     pmk_source = fields.Selection(
@@ -188,6 +201,7 @@ class CrmLeadMoney(models.Model):
         "pmk_spec_id.total_cost_fact",
         "pmk_spec_id.margin_pct",
         "pmk_spec_id.no_price_count",
+        "pmk_spec_id.price_incomplete",
     )
     def _compute_pmk_money_text(self):
         for lead in self:
@@ -196,6 +210,10 @@ class CrmLeadMoney(models.Model):
                 lead.pmk_spec_summary = False
                 lead.pmk_spec_card = False
                 lead.pmk_no_price_label = False
+                lead.pmk_kpi_weight = False
+                lead.pmk_kpi_price = False
+                lead.pmk_kpi_metal = False
+                lead.pmk_kpi_margin = False
                 continue
             lead.pmk_spec_summary = money_text.spec_line(
                 spec.name, spec.total_weight, spec.price_customer_total,
@@ -203,6 +221,11 @@ class CrmLeadMoney(models.Model):
             lead.pmk_spec_card = money_text.card_line(
                 spec.total_weight, spec.price_customer_total, spec.margin_pct)
             lead.pmk_no_price_label = money_text.no_price_label(spec.no_price_count) or False
+            lead.pmk_kpi_weight = money_text.weight(spec.total_weight)
+            lead.pmk_kpi_price = money_text.kpi_price(spec.price_customer_total)
+            lead.pmk_kpi_metal = money_text.rub(spec.total_cost_fact)
+            lead.pmk_kpi_margin = money_text.kpi_margin(
+                spec.price_customer_total, spec.margin_pct, spec.price_incomplete)
 
     def _merge_get_fields_specific(self):
         """Объединение сделок (мастер «Преобразовать в сделку» → «Объединить»,

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+  <!-- Воронка, шапка колонки (приёмка 01.10.2026, R10). Логика —
+       js/pipeline_kanban.js, оформление — scss/pipeline_kanban.scss.
+       Всё наше — только в воронке (env.pmkPipeline): тот же компонент
+       рисует шапку канбана лидов, и там она остаётся штатной. -->
+
+  <!-- Сумма и значок зависших — штатные; полоски задач в воронке нет (задачи
+       на заводе не ведутся, полоска читалась как «непонятная»). Полоска
+       скрыта условием, а не вырезана: в канбане лидов она штатная. Сумма —
+       «Цена клиенту»: доход сделки берётся из главного расчёта
+       (deal_money.py). -->
+  <t t-name="pmk_deal.ColumnProgress" t-inherit="crm.ColumnProgress" t-inherit-mode="primary">
+    <xpath expr="//div[hasclass('o_column_progress')]" position="attributes">
+      <attribute name="t-if">!env.pmkPipeline</attribute>
+    </xpath>
+    <AnimatedNumber position="attributes">
+      <attribute name="title">env.pmkPipeline ? 'Цена клиенту — сумма по сделкам этапа' : props.aggregate.title</attribute>
+    </AnimatedNumber>
+  </t>
+
+  <!-- Полоса цвета этапа над названием; число сделок «(N)» в воронке —
+       всегда (ядро прятало его, когда в виде есть полоска задач; вне
+       воронки — как у ядра). -->
+  <t t-name="pmk_deal.KanbanHeader" t-inherit="mail.RottingKanbanHeader" t-inherit-mode="primary">
+    <xpath expr="//div[hasclass('o_kanban_header_title')]" position="before">
+      <div t-if="pmkStageColor" class="pmk-stage-strip"
+           t-attf-class="o_colorlist_item_color_{{ pmkStageColor }}"/>
+    </xpath>
+    <xpath expr="//span[@t-if='!progressBar and !props.list.model.useSampleModel']" position="attributes">
+      <attribute name="t-if">(env.pmkPipeline or !progressBar) and !props.list.model.useSampleModel</attribute>
+    </xpath>
+  </t>
+</templates>

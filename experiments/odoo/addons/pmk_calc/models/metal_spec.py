@@ -99,6 +99,17 @@ class MetalSpec(models.Model):
                 vals["name"] = self.env["ir.sequence"].next_by_code("pmk.metal.spec") or "Черновик"
         return super().create(vals_list)
 
+    def copy_data(self, default=None):
+        """Копия расчёта — новый расчёт на сегодня (приёмка 01.10.2026, R4).
+
+        «Дублировать» делают, чтобы посчитать заявку заново. Копия со старой
+        датой вставала в списке и в сделке ниже оригинала, хотя она новее.
+        Цены на сегодня ставит мост (pmk_bridge, spec_cost.py).
+        """
+        default = dict(default or {})
+        default.setdefault("date", fields.Date.context_today(self))
+        return super().copy_data(default)
+
 
 class MetalSpecProduct(models.Model):
     """Изделие спецификации: название, количество и состав."""

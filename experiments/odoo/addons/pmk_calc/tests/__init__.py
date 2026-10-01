@@ -5,3 +5,4 @@ from . import test_sheet_use
 from . import test_spec_form
 from . import test_list_units
 from . import test_dobor_fit
+from . import test_dobor_copy

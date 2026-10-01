@@ -67,8 +67,33 @@ class TestDealViews(TransactionCase):
         self.assertTrue(hidden(title.find("h2")), "Доход и вероятность скрыты целиком.")
         money = title.find("div[@class='pmk-deal-money']")
         self.assertIsNotNone(money)
-        self.assertIsNotNone(money.find("field[@name='pmk_spec_summary']"))
-        self.assertIsNotNone(money.find("field[@name='pmk_no_price_label']"))
+        # Приёмка 01.10.2026 (R1): карточки вместо одной строки.
+        self.assertIsNone(money.find(".//field[@name='pmk_spec_summary']"),
+                          "Строка «СМ · т · цена · металл · маржа» сливалась.")
+        kpi = money.find("div[@class='pmk-deal-kpi']")
+        self.assertIsNotNone(kpi)
+        self.assertEqual(kpi.get("invisible"), "not pmk_spec_id")
+        cards = [c for c in kpi if c.tag == "div"]
+        labels = [c.find("div[@class='pmk-kpi__label']").text for c in cards]
+        self.assertEqual(labels, ["Расчёт", "Вес", "Цена клиенту", "Металл",
+                                  "Маржа", "Маржа", "Без цены"])
+        for card in cards:
+            self.assertIn("pmk-kpi__card", card.get("class").split(), "Классы темы.")
+        spec = cards[0].find(".//field[@name='pmk_spec_id']")
+        self.assertFalse(hidden(spec), "Номер расчёта — видимой ссылкой.")
+        names = [c.find(".//field").get("name") for c in cards]
+        self.assertEqual(names, ["pmk_spec_id", "pmk_kpi_weight", "pmk_kpi_price",
+                                 "pmk_kpi_metal", "pmk_kpi_margin", "pmk_kpi_margin",
+                                 "pmk_no_price_count"])
+        margin, margin_bad, no_price = cards[4], cards[5], cards[6]
+        self.assertNotIn("pmk-deal-kpi__card--bad", margin.get("class"))
+        self.assertIn("pmk-deal-kpi__card--bad", margin_bad.get("class"))
+        self.assertEqual(margin.get("invisible"), "pmk_price_incomplete and pmk_spec_price")
+        self.assertEqual(margin_bad.get("invisible"),
+                         "not pmk_price_incomplete or not pmk_spec_price")
+        self.assertIn("pmk-deal-kpi__card--bad", no_price.get("class"))
+        self.assertEqual(no_price.get("invisible"), "not pmk_no_price_count",
+                         "«Без цены» — только когда больше нуля.")
         # Подсказка про кнопку — только там, где кнопка есть: у проигранной
         # (архивной) сделки «Расчёт и КП» скрыта.
         hint = money.find("span[@class='pmk-deal-money__empty']")
@@ -124,6 +149,59 @@ class TestDealViews(TransactionCase):
         progressbar = arch.find("progressbar")
         self.assertEqual(progressbar.get("sum_field"), "expected_revenue",
                          "Сумма в шапке колонки — доход, то есть цена клиенту.")
+
+    def test_pipeline_header_assets(self):
+        """Приёмка 01.10.2026 (R10): шапка колонки воронки — свои шаблоны
+        поверх штатных crm/mail. Сам вид смотрит основной агент глазами;
+        здесь — что файлы подключены и шаблоны наследуют то, что надо."""
+        from odoo.modules.module import get_manifest
+        from odoo.tools.misc import file_path
+
+        assets = get_manifest("pmk_deal")["assets"]["web.assets_backend"]
+        for path in ("pmk_deal/static/src/js/money_short.js",
+                     "pmk_deal/static/src/js/pipeline_kanban.js",
+                     "pmk_deal/static/src/xml/pipeline_kanban.xml",
+                     "pmk_deal/static/src/scss/pipeline_kanban.scss"):
+            with self.subTest(asset=path):
+                self.assertIn(path, assets)
+        with open(file_path("pmk_deal/static/src/xml/pipeline_kanban.xml"), "rb") as f:
+            templates = etree.fromstring(f.read())
+        by_name = {t.get("t-name"): t for t in templates.findall("t")}
+        progress = by_name["pmk_deal.ColumnProgress"]
+        self.assertEqual(progress.get("t-inherit"), "crm.ColumnProgress")
+        self.assertEqual(progress.get("t-inherit-mode"), "primary")
+        # Полоски задач нет только в воронке: тот же компонент рисует шапку
+        # канбана лидов, там она штатная (находка проверки 01.10.2026).
+        bar = progress.find("xpath")
+        self.assertIn("o_column_progress", bar.get("expr"))
+        self.assertEqual(bar.get("position"), "attributes", "Скрыта условием, не вырезана.")
+        self.assertEqual(bar.find("attribute[@name='t-if']").text, "!env.pmkPipeline")
+        header = by_name["pmk_deal.KanbanHeader"]
+        self.assertEqual(header.get("t-inherit"), "mail.RottingKanbanHeader")
+        self.assertEqual(header.get("t-inherit-mode"), "primary")
+        strip = header.find(".//div[@class='pmk-stage-strip']")
+        self.assertIsNotNone(strip)
+        self.assertIn("o_colorlist_item_color_", strip.get("t-attf-class"))
+        count = header.find("xpath[@position='attributes']/attribute[@name='t-if']")
+        self.assertIn("env.pmkPipeline or !progressBar", count.text,
+                      "«(N)» всегда — только в воронке.")
+        # Цвет этапа — поле «Цвет» в «Настройки CRM → Этапы».
+        self.assertIn("color", self.env["crm.stage"]._fields)
+
+    def test_pipeline_marker_only_on_pipeline(self):
+        """Признак, по которому шапка воронки отличает себя от канбана лидов
+        (js/pipeline_kanban.js, isPipelineArch): класс o_opportunity_kanban.
+        Он должен быть у воронки и НЕ быть у канбана лидов — у того полоска
+        задач без суммы, число в шапке — счёт лидов, и наш денежный формат
+        написал бы «5 ₽»."""
+        pipeline = self._arch("kanban", "crm.crm_case_kanban_view_leads")
+        self.assertEqual(pipeline.get("js_class"), "crm_kanban")
+        self.assertIn("o_opportunity_kanban", (pipeline.get("class") or "").split())
+        leads = self._arch("kanban", "crm.view_crm_lead_kanban")
+        self.assertEqual(leads.get("js_class"), "crm_kanban", "Тот же рендерер.")
+        self.assertNotIn("o_opportunity_kanban", (leads.get("class") or "").split())
+        self.assertFalse(leads.find("progressbar").get("sum_field"),
+                         "У лидов в шапке счёт, а не деньги.")
 
     def test_forecast_kanban_still_builds(self):
         """Прогнозный канбан заменяет узел дохода своим xpath'ом."""

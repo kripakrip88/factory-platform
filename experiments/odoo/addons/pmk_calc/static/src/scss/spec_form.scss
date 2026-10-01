@@ -1,0 +1,90 @@
+// Форма расчёта металлопроката: заголовок «СМ-00024 от 27 сентября 2026 г.»
+// (приёмка 01.10.2026, R3). Разметка — views/metal_spec_views.xml
+// (div.oe_title.pmk-spec-title), дата словами — js/long_date_field.js.
+//
+// Номер, «от» и дата — одной строкой заголовка, одним кеглем. Номер СМ- не
+// обрезается никогда: строка переносится целиком по словам, а не режет номер
+// троеточием.
+
+.o_form_view.pmk-spec-form .oe_title.pmk-spec-title {
+  // Ядро ограничивает заголовок 75 % ширины листа (form_controller.scss);
+  // «СМ-00024 от 27 сентября 2026 г.» туда помещается, но запас нужен
+  // «Новому расчёту от …» на узком экране.
+  max-width: 100%;
+
+  > h1 {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 0.3em;
+    row-gap: 0.1em;
+  }
+
+  // ⚠️ Ядро в режиме правки растягивает Char-поля заголовка на всю ширину:
+  // `.o_form_view .o_form_editable .oe_title .o_field_char { width: 100% }`
+  // (web/views/form/form_controller.scss, вес 0,4,0) — номер занимал бы всю
+  // строку, и «от» с датой уезжали бы вниз. Здесь вес 0,5,0.
+  > h1 > .o_field_widget,
+  > h1 > span {
+    width: auto;
+    flex: 0 0 auto;
+    min-width: 0;
+    white-space: nowrap;
+  }
+
+  .pmk-spec-title__from {
+    font-weight: 400;
+    opacity: 0.6;
+  }
+
+  // Дата: виджет ядра рисует вне фокуса кнопку (o_daterange_start, класс
+  // w-100), в фокусе — поле ввода. Шрифт заголовка, рамки нет, при
+  // наведении и в фокусе — пунктир снизу цветом текста: видно, что дату
+  // можно поменять.
+  //
+  // ⚠️ !important ЗДЕСЬ ОБЯЗАТЕЛЕН. Чужая тема theme_nexus (установлена, её
+  // стили в бандле) красит КАЖДЫЙ .o_input с !important: рамка со
+  // скруглением (forms.scss: `.form-control, .o_input`), в фокусе — лаймовое
+  // свечение и толстая лаймовая черта снизу (forms.scss `.o_input:focus`,
+  // lists.scss `.o_input:focus`, buttons.scss `button:focus-visible`), в
+  // тёмной теме — тёмная плашка и светлый текст (dark_mode.scss
+  // `body.o_nexus_dark .o_input`, `.o_input:focus`). Без !important дата в
+  // заголовке рисовалась полем ввода в рамке: «СМ-00024 от [27 сентября
+  // 2026 г.]», пунктир не появлялся никогда. Среди правил с !important
+  // побеждает вес: здесь от 0,6,0, у темы — не больше 0,3,1. Так же тема
+  // pmk_theme снимает рамку у денежных полей (forms_nexus.scss, «Рамка в
+  // рамке»). Лаймового свечения в фокусе нет намеренно: лайм — только «где
+  // я», фокус здесь показывает пунктир.
+  .pmk-spec-title__date {
+    .o_input {
+      font: inherit;
+      color: inherit !important;
+      letter-spacing: inherit;
+      padding: 0;
+      background: transparent !important;
+      border: 0 !important;
+      border-bottom: 1px dashed transparent !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      outline: 0 !important;
+    }
+
+    button.o_input {
+      width: auto !important; // перекрыть .w-100 ядра (у неё !important)
+      text-align: left;
+      cursor: pointer;
+    }
+
+    button.o_input:hover,
+    button.o_input:focus,
+    button.o_input:focus-visible,
+    input.o_input {
+      border-bottom-color: currentColor !important;
+    }
+
+    // Поле ввода в фокусе: «27.09.2026» и место под курсор.
+    input.o_input {
+      width: 11ch;
+    }
+  }
+}

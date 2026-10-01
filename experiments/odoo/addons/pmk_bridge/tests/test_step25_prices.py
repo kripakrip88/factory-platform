@@ -220,6 +220,22 @@ class TestStep25Prices(TransactionCase):
         self.assertEqual(info.pmk_variant_label, "Ст3сп, 1500x6000",
                          "По порядку характеристик: марка, потом габарит.")
 
+    def test_linear_flag_only_for_rolled_metal(self):
+        """Приёмка 01.10.2026 (R11): длина хлыста — свойство проката. Признак
+        «прокат» — у карточки есть строка справочника сортамента."""
+        self.assertTrue(self.angle_tmpl.pmk_is_linear)
+        self.assertTrue(self.bare_tmpl.pmk_is_linear, "Прокат и без прайса — прокат.")
+        self.assertFalse(self.sheet_tmpl.pmk_is_linear, "Лист продают листами.")
+        plain = self.env["product.template"].create({"name": "Болт (тест R11)"})
+        self.assertFalse(plain.pmk_is_linear)
+        self.assertTrue(self.angle_line.pmk_is_linear, "Строка прайса — по своей карточке.")
+        self.assertFalse(self.sheet_line.pmk_is_linear)
+        variant = self.angle_tmpl.product_variant_ids[:1]
+        self.assertTrue(variant.pmk_is_linear, "Вариант товара — тот же признак.")
+        # Форма нового товара: записи ещё нет — не прокат, без ошибки.
+        draft = self.env["product.template"].new({"name": "Новый (тест R11)"})
+        self.assertFalse(draft.pmk_is_linear)
+
     def test_supplierinfo_group_sums_off(self):
         info = self.env["product.supplierinfo"].fields_get(
             ["price", "min_qty", "pmk_bar_length_mm", "pmk_price_ton"], ["aggregator"])
