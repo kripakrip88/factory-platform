@@ -21,7 +21,7 @@
     # Версию поднимаем не для красоты: по ней Odoo решает, запускать ли скрипты
     # из migrations/. 19.0.1.0.1 — пересчёт хранимых эскизов доборки, см.
     # migrations/19.0.1.0.1/post-migrate.py.
-    "version": "19.0.1.0.2",
+    "version": "19.0.1.0.3",
     "category": "Manufacturing",
     "author": "ПМК Парк",
     "license": "LGPL-3",

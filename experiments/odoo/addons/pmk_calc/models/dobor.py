@@ -274,13 +274,30 @@ class DoborOrderLine(models.Model):
         "pmk.metal.sheet", "Металл",
         domain=[("sheet_type", "=", "Оцинкованный")],
         help="Оцинкованный лист, из которого гнётся доборка")
-    thickness = fields.Float("Толщина, мм", default=0.5, digits=(6, 2))
+    # Толщина — из выбранного металла, хранимая. Раньше её ставил onchange,
+    # но поля нет ни в списке позиций, ни в окне позиции, а значение поля вне
+    # вида браузер на сервер не отправляет: у всех позиций из формы оставалось
+    # умолчание 0,5, и печатный лист печатал «Толщина 0,5 мм» и вес по 0,5 мм
+    # при металле 0,40/0,45/0,65 (найдено при приёмке 01.10.2026; вес в форме
+    # был верным — он считается от металла, _mass_per_sqm). Теперь толщина
+    # считается на сервере от металла при любом способе записи; старые позиции
+    # выправила миграция 19.0.1.0.3. Без металла — прежнее значение (0,5).
+    # ⚠️ БЕЗ default=: умолчание поля ядро кладёт в данные при создании
+    # (_add_missing_default_values), и такое значение отменяет вычисление —
+    # новая позиция снова получила бы 0,5 при любом металле. 0,5 для позиции
+    # без металла ставит само вычисление.
+    thickness = fields.Float(
+        "Толщина, мм", compute="_compute_thickness", store=True, readonly=False,
+        digits=(6, 2))
 
-    @api.onchange("sheet_id")
-    def _onchange_sheet_id(self):
+    @api.depends("sheet_id.thickness_mm")
+    def _compute_thickness(self):
         """Толщина приходит из справочника — вводить её вторично незачем."""
-        if self.sheet_id:
-            self.thickness = self.sheet_id.thickness_mm
+        for line in self:
+            if line.sheet_id:
+                line.thickness = line.sheet_id.thickness_mm
+            else:
+                line.thickness = line.thickness or 0.5
     # 2500 — стандартная длина планки доборки.
     plank_length = fields.Float("Длина планки, мм", required=True, default=2500.0, digits=(12, 1))
     qty = fields.Integer("Количество, шт", required=True, default=1)

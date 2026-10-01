@@ -48,9 +48,9 @@ class TestDoborCopyLine(TransactionCase):
             mail_create_nolog=True, mail_create_nosubscribe=True)
 
     def _order(self):
-        # Толщину НЕ задаём — как форма: поля толщины в ней нет, позиция
-        # получает умолчание 0,5 при металле 0,7. Так на живой базе у строк
-        # 12, 18, 19, 20 (металл 0,40–0,65, толщина 0,5).
+        # Толщину НЕ задаём — как форма: поля толщины в ней нет. С 01.10.2026
+        # она считается на сервере от металла (0,7); до этого оставалось
+        # умолчание 0,5, как у строк 12, 18, 19, 20 живой базы.
         line = {"coating_id": self.coating.id, "sheet_id": self.sheet.id,
                 "plank_length": 2000.0, "qty": 3}
         return self.Order.create({
@@ -84,11 +84,8 @@ class TestDoborCopyLine(TransactionCase):
                           "Список по-прежнему открывает окно позиции с построителем.")
 
     def test_thickness_not_in_line_views(self):
-        """Толщины нет ни в списке позиций, ни в окне позиции. Появись она в
-        любом из них — onchange по металлу начнёт её сохранять: у копии
-        толщина станет толщиной листа, а у исходной останется 0,5, и в
-        печатном листе одна планка выйдет двумя толщинами (находка проверки
-        01.10.2026). Брать толщину из металла — отдельное решение."""
+        """Толщины нет ни в списке позиций, ни в окне позиции: она считается на
+        сервере от металла (dobor.py, _compute_thickness), вводить её незачем."""
         line_ids = self._form_arch().xpath("//field[@name='line_ids']")[0]
         self.assertFalse(line_ids.xpath(".//field[@name='thickness']"))
 
@@ -133,12 +130,12 @@ class TestDoborCopyLine(TransactionCase):
     def test_saved_copy_goes_right_below(self):
         """Сохранение: копия — сразу под исходной, строки ниже сдвинуты
         (как их сдвигает браузер), чертёж и параметры — те же. Толщину
-        браузер не присылает (её нет в виде) — у копии та же, что у исходной:
+        браузер не присылает (её нет в виде) — у обеих она от металла:
         в печатном листе одна толщина и один вес на один металл."""
         order = self._order()
         source = order.line_ids.filtered(lambda l: l.title == "Отлив")
         below = order.line_ids.filtered(lambda l: l.title == "Планка")
-        self.assertEqual(source.thickness, 0.5, "Умолчание, как у позиций из формы.")
+        self.assertEqual(source.thickness, 0.7, "Толщина — от металла, а не умолчание 0,5.")
         order.write({"line_ids": [
             Command.create({
                 "title": source.title, "coating_id": self.coating.id,
@@ -224,3 +221,41 @@ class TestDoborCopyLine(TransactionCase):
         })
         titles = order.line_ids.sorted(lambda l: (l.sequence, l.id)).mapped("title")
         self.assertEqual(titles, ["Отлив", "Доборка 2"])
+
+
+@tagged("post_install", "-at_install")
+class TestDoborThickness(TransactionCase):
+    """Толщина позиции доборки — от металла (приёмка 01.10.2026: печатный лист
+    печатал «Толщина 0,5 мм» и вес по 0,5 мм при металле 0,40–0,65)."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        Sheet = cls.env["pmk.metal.sheet"]
+        cls.thin = Sheet.create({"sheet_type": "Оцинкованный", "thickness_mm": 0.4,
+                                 "gost": "ГОСТ (тест)", "mass_per_sqm": 3.14})
+        cls.thick = Sheet.create({"sheet_type": "Оцинкованный", "thickness_mm": 0.65,
+                                  "gost": "ГОСТ (тест)", "mass_per_sqm": 5.1})
+        cls.Order = cls.env["pmk.dobor.order"].with_context(
+            mail_create_nolog=True, mail_create_nosubscribe=True)
+
+    def _line(self, **extra):
+        order = self.Order.create({"customer": "Тест толщины", "line_ids": [Command.create({
+            "plank_length": 2000.0, "qty": 1, "profile_snapshot_json": SNAPSHOT, **extra})]})
+        return order.line_ids
+
+    def test_thickness_follows_metal(self):
+        line = self._line(sheet_id=self.thin.id)
+        self.assertEqual(line.thickness, 0.4)
+        line.sheet_id = self.thick
+        self.assertEqual(line.thickness, 0.65, "Смена металла — новая толщина.")
+
+    def test_without_metal_keeps_half_mm(self):
+        self.assertEqual(self._line().thickness, 0.5)
+
+    def test_print_uses_metal_thickness(self):
+        """Печатный лист — «Толщина 0.4 мм», а не прежние 0.5."""
+        line = self._line(sheet_id=self.thin.id)
+        html = str(line.order_id._sheet_html())
+        self.assertIn("0.4 мм", html)
+        self.assertNotIn("0.5 мм", html)
