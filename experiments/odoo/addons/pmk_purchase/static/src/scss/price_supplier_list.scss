@@ -1,0 +1,82 @@
+// «Поставщики прайсов» и «Закупки → Поставщики» — строка в одну линию
+// (разбор UX, шаг 26, 01.10.2026). Вид — views/res_partner_views.xml,
+// view_price_supplier_list (класс o_pmk_price_supplier_list на <list>).
+//
+// БЫЛО. Метки «Что возит» вставали столбиком: строка 124 px, на экран — три
+// поставщика. Переключатель «В рассылке» стоял у верха строки, а галочка
+// выбора — по центру (у ячейки выбора ядро ставит vertical-align: middle,
+// у остальных ячеек Bootstrap держит top).
+// СТАЛО. Метки в одну строку с «+N» (виджет pmk_tags_line,
+// js/tags_line_field.js), всё в строке — по центру по вертикали. Строка
+// ~33 px вместо 124.
+//
+// Почему файл модуля, а не тема: стили pmk_theme на стенде живут только в
+// трёх файлах (navbar_nexus, forms_nexus, dark), а этот список — наш, и
+// стиль едет вместе с ним (assets модуля, web.assets_backend).
+
+.o_pmk_price_supplier_list .o_list_table > tbody > tr.o_data_row > td {
+  vertical-align: middle;
+}
+
+// Переключатель и галочка «Склад ДВ»: у .form-check Bootstrap отступ снизу
+// 2 px — из-за него значок сидел на 1 px выше середины.
+.o_pmk_price_supplier_list .o_data_row .form-check {
+  margin-bottom: 0;
+}
+
+// Метки в одну строку. Ширина колонки задана в виде (width="200px"), ядро
+// фиксирует её (table-layout: fixed). Метки сжимаются с многоточием (полное
+// название — в подсказке метки), «+N» не сжимается никогда.
+.o_field_pmk_tags_line {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+
+  // !important — перенос ядро задаёт утилитой Bootstrap flex-wrap, а
+  // утилиты идут с !important.
+  .o_field_tags {
+    flex-wrap: nowrap !important;
+    align-items: center;
+    max-width: 100%;
+  }
+
+  .o_tag {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+
+  // Первая метка не сжимается (до 60 % ширины): при двух метках сжималась
+  // каждая, и короткая «Лист» рядом с «Тонкий лист с покрытием» становилась
+  // «Л…», а «Метизы» — «Мет…» (осмотр копии 01.10.2026). Многоточие теперь
+  // только у второй. Одна метка — во всю ширину колонки.
+  .o_tag:first-child {
+    flex-shrink: 0;
+    max-width: 60%;
+  }
+
+  .o_tag:only-child {
+    max-width: 100%;
+  }
+
+  // «+N» — ядро рисует его классом аватаров (o_m2m_avatar_empty), своего
+  // стиля у него вне аватаров нет. Делаем серой плашкой, как метка, но
+  // без цвета: это не группа, а «ещё N».
+  .o_m2m_avatar_empty {
+    flex: 0 0 auto;
+    padding: 0.25em 0.5em;
+    font-size: var(--Tag-font-size, 0.75rem);
+    font-weight: 500 !important;
+    line-height: 1.2;
+    border: 1px solid #dedbd2;
+    background-color: #f1f0ec;
+    color: #444441;
+  }
+}
+
+// Тёмная тема: серый тон тёмных плашек (pmk_theme/static/src/scss/dark.scss,
+// $pmk-dark-tones, «grey»), текст 8,0 к фону.
+body.o_nexus_dark .o_field_pmk_tags_line .o_m2m_avatar_empty {
+  border-color: #696866;
+  background-color: #404143;
+  color: #e6e4dd;
+}

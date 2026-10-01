@@ -40,6 +40,10 @@
         # галочки платных модулей IAP в Настройках.
         "data/dangerous_actions.xml",
         "views/res_config_settings_views.xml",
+        # Пустые приёмки, отгрузки и перемещения — наследник шаблона
+        # stock.help_message_template (разбор UX, шаг 26): ядро рисует его и
+        # в меню, и в карточках «Обзора операций», поверх подсказки действия.
+        "views/stock_empty_help.xml",
     ],
     "assets": {
         "web.assets_backend": [
@@ -105,6 +109,11 @@
             "pmk_theme/static/src/xml/statusbar_compact.xml",
             "pmk_theme/static/src/xml/navbar.xml",
             "pmk_theme/static/src/xml/chatter.xml",
+            # Пустые экраны без «помощников» (разбор UX, шаг 26, 01.10.2026):
+            # видео в КП и BillGuide у счетов поставщиков. Текст подсказки и
+            # отключение демо-строк — models/, стиль — forms_nexus.scss,
+            # раздел 7.
+            "pmk_theme/static/src/xml/empty_screens.xml",
         ],
         # ⚠️ ОТЛОЖЕННЫЙ БАНДЛ, И ЭТО НЕ ВКУСОВЩИНА.
         # canvas_text.js красит подписи осей и легенду графика: до них CSS не

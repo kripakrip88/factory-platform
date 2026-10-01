@@ -105,12 +105,24 @@
     </field>
   </record>
 
+  <!--
+    Подсказка пустого списка (разбор UX, шаг 26, 01.10.2026). Без неё пустой
+    список был одной шапкой на белом — «сломалось». По умолчанию включён
+    фильтр «На стеллаже», а обрезки рождаются предложенными: пока технолог
+    не подтвердил ни одного, список пуст, хотя обрезки есть. Вторая строка
+    подсказки говорит, где они. Сам фильтр по умолчанию не менялся — это
+    вопрос раздела «Лазер» разбора.
+  -->
   <record id="action_laser_offcut" model="ir.actions.act_window">
     <field name="name">Обрезки</field>
     <field name="res_model">pmk.laser.offcut</field>
     <field name="view_mode">list,form</field>
     <field name="search_view_id" ref="view_laser_offcut_search"/>
     <field name="context">{'search_default_confirmed': 1}</field>
+    <field name="help" type="html">
+      <p>Обрезки появляются из задания на резку кнопкой «Предложить обрезки».</p>
+      <p>Предложенные и ещё не подтверждённые — фильтр «Ждут подтверждения».</p>
+    </field>
   </record>
 
 </odoo>

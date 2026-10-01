@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Пустые экраны без «помощников» (разбор UX, шаг 26, 01.10.2026).
+
+  Подсказку пустого экрана в двух местах рисует не help действия, а свой
+  клиентский шаблон. Текст help туда приходит наш (models/
+  ir_actions_act_window.py), а картинка остаётся — её и гасим здесь.
+
+  • «Продажи → Коммерческие предложения» (и их канбан): над подсказкой —
+    превью английского видео с YouTube (sale.SaleActionHelper, ссылка
+    o_sale_action_preview). Гасим только ссылку; рамка компонента и наш
+    текст остаются.
+  • «Деньги → Счета от поставщиков»: вместо подсказки — BillGuide
+    (account.AccountUploadListRenderer): «Drag & drop», «try our sample»
+    (кнопка создаёт тестовый счёт в базе), «Send a bill to
+    purchases@pmkpark.ru» (шлюз не работает). Условие «это счета
+    поставщиков» ставим в false — срабатывает ветка t-else ядра, то есть
+    штатный ActionHelper с нашим текстом.
+
+  Обратимо: удалить нужный <t t-inherit> и выложить pmk_theme. Таблица —
+  docs/disabled-features.md.
+-->
+<templates xml:space="preserve">
+  <t t-inherit="sale.SaleActionHelper" t-inherit-mode="extension">
+    <xpath expr="//a[hasclass('o_sale_action_preview')]" position="attributes">
+      <attribute name="t-if">false</attribute>
+    </xpath>
+  </t>
+
+  <t t-inherit="account.AccountUploadListRenderer" t-inherit-mode="extension">
+    <xpath expr="//t[contains(@t-if, 'in_invoice')]" position="attributes">
+      <attribute name="t-if">false</attribute>
+    </xpath>
+  </t>
+</templates>

@@ -12,6 +12,21 @@
 -->
 <templates xml:space="preserve">
   <t t-inherit="purchase.PurchaseDashboard" t-inherit-mode="extension">
+    <!--
+      «Дней до заказа» — подпись из models/purchase_order.py (разбор UX,
+      шаг 26): прочерк, когда заказов за три месяца не было, иначе число в
+      русском формате («2,5», а не «2.50»). Сравнение со сроком компании
+      (жёлтая карточка) по-прежнему идёт по сырому значению ядра.
+      Запасной путь — значение ядра, если ответ сервера пришёл без нашей
+      подписи (окно выкладки: новые скрипты раньше нового кода).
+      ⚠️ Эти два xpath — ДО смены title ниже: ищут по штатному title.
+    -->
+    <xpath expr="//div[@title='All Days to Order']//div[@t-out]" position="attributes">
+      <attribute name="t-out">purchaseData.pmk_days_to_order ? purchaseData.pmk_days_to_order['global'] : purchaseData['global']['days_to_order']</attribute>
+    </xpath>
+    <xpath expr="//div[@title='My Days to Order']//div[@t-out]" position="attributes">
+      <attribute name="t-out">purchaseData.pmk_days_to_order ? purchaseData.pmk_days_to_order['my'] : purchaseData['my']['days_to_order']</attribute>
+    </xpath>
     <xpath expr="//div[@filter_name='draft_rfqs']" position="attributes">
       <attribute name="title">Все новые запросы КП</attribute>
     </xpath>

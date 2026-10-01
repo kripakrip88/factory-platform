@@ -44,11 +44,22 @@
     ],
     "post_init_hook": "post_init_hook",
     "license": "LGPL-3",
-    # Панель над «Запросами КП» — подписи и подсказки по-русски (29.09.2026).
+    # Панель над «Запросами КП» — подписи и подсказки по-русски (29.09.2026);
+    # пустые показатели прочерком (шаг 26 — числа считает
+    # models/purchase_order.py).
     "assets": {
         "web.assets_backend": [
             "pmk_purchase/static/src/scss/purchase_dashboard.scss",
             "pmk_purchase/static/src/xml/purchase_dashboard.xml",
+            # Разбор UX, шаг 26 (01.10.2026): в «Запросах КП» запрос КП из
+            # файла погашен целиком — «Загрузить», перетаскивание, вставка из
+            # буфера, плюс «Загрузить счёт»; «Что возит» в одну строку с «+N»
+            # и строка по центру в «Поставщиках прайсов».
+            "pmk_purchase/static/src/js/purchase_list_upload.js",
+            "pmk_purchase/static/src/xml/purchase_list_upload.xml",
+            "pmk_purchase/static/src/js/tags_line_field.js",
+            "pmk_purchase/static/src/xml/tags_line_field.xml",
+            "pmk_purchase/static/src/scss/price_supplier_list.scss",
         ],
     },
     "installable": True,

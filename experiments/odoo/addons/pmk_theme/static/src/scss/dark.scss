@@ -518,9 +518,16 @@ $pmk-dark-alerts: (
     background-color: transparent;
   }
 
-  body.o_nexus_dark .o_view_nocontent .o_nocontent_help,
-  body.o_nexus_dark .o_view_nocontent .o_nocontent_help > p:first-of-type {
-    color: var(--pmk-ink);
+  // Подсказка пустого экрана (шаг 26, светлая — forms_nexus.scss, раздел 7):
+  // бледная, как в светлой теме. Вторая строка — приглушённый текст темы
+  // (7,0 на фоне страницы), первая — чуть ярче (10,5). Раньше обе строки
+  // были полной яркости: подсказка кричала громче самой таблицы.
+  body.o_nexus_dark .o_view_nocontent .o_nocontent_help {
+    color: var(--pmk-ink-3);
+  }
+
+  body.o_nexus_dark .o_view_nocontent .o_nocontent_help p:first-of-type {
+    color: var(--pmk-ink-2);
   }
 
   body.o_nexus_dark .o_base_settings_view .o_form_renderer .o_setting_container .settings {

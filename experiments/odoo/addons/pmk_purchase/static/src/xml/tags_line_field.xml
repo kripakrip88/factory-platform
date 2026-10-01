@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Метки в одну строку с «+N» — js/tags_line_field.js (разбор UX, шаг 26).
+  Шаблон — штатный many2many_tags, только со счётчиком лишних меток.
+-->
+<templates xml:space="preserve">
+  <t t-name="pmk_purchase.TagsLineField" t-inherit="web.Many2ManyTagsField" t-inherit-mode="primary">
+    <xpath expr="//TagsList" position="attributes">
+      <attribute name="visibleItemsLimit">2</attribute>
+    </xpath>
+  </t>
+</templates>
