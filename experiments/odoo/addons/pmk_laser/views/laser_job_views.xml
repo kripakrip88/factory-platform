@@ -51,10 +51,33 @@
     <field name="name">pmk.laser.job.form</field>
     <field name="model">pmk.laser.job</field>
     <field name="arch" type="xml">
-      <form string="Задание на резку">
+      <!-- pmk-doc-form — общий класс наших документов (разбор UX, шаг 27;
+           pmk_theme, forms_nexus.scss, раздел 9): колонка подписей одна на
+           все группы — поля «Заказа» и «Файла раскроя», «Материала» и
+           «Металла и денег» на одной вертикали; «Станок» и «Лист» со
+           значением той же ширины, что соседние поля; «Ширина реза» и
+           «Обрезок от» в рамке поля. -->
+      <form string="Задание на резку" class="pmk-doc-form">
         <header>
+          <!-- Залитая — только пока файл не разобран: это следующий шаг
+               (разбор UX, шаг 27; одна залитая кнопка на экран). После
+               разбора та же кнопка контурная — «Разобрать заново». По
+               заданию с замерами сервер откажет и объяснит почему
+               (action_parse_file): листы пересоздались бы, а замеры
+               операторов пропали.
+               «Разобран» — не «есть листы»: файл приложили заново после
+               разбора (file_replaced ставит write, снимает разбор) —
+               залитая возвращается, листы на экране от прежнего файла.
+               Заменили файл у задания с замерами — разбирать нельзя, и
+               кнопок разбора нет: сигнал ниже велит завести новое задание
+               (доводка шага 27). -->
           <button name="action_parse_file" type="object" string="Разобрать файл"
-                  class="btn-primary" icon="fa-file-archive-o" invisible="not file"/>
+                  class="btn-primary" icon="fa-file-archive-o"
+                  invisible="not file or (sheet_ids and not file_replaced) or (file_replaced and measure_ids)"/>
+          <button name="action_parse_file" type="object" string="Разобрать заново"
+                  class="btn-secondary" icon="fa-file-archive-o"
+                  invisible="not file or not sheet_ids or file_replaced"
+                  title="Перечитать файл раскроя: листы и детали пересоздадутся, приложенные чертежи деталей сохранятся. Если по заданию уже есть замеры — откажет"/>
           <!-- fa-object-ungroup, а не fa-drafting-compass: в Odoo 19 шрифт
                значков — Font Awesome 4.7, циркуля там нет, и кнопка стояла без
                значка (разбор UX, шаг 15). «Фигуры, разобранные на контуры» —
@@ -69,26 +92,44 @@
         <sheet>
           <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
 
-          <div class="alert alert-info" role="alert" invisible="not technical_is_demo">
-            Параметры резки в файле демонстрационные — <field name="technical_note" readonly="1" nolabel="1"/>.
-            Толщина взята из имени файла, режимы из файла не используются.
-          </div>
-          <div class="alert alert-warning" role="alert" invisible="not parse_warning">
-            <field name="parse_warning" readonly="1" nolabel="1"/>
-          </div>
-          <div class="alert alert-warning" role="alert" invisible="not balance_broken">
-            Баланс не сходится: обрезков оприходовано больше, чем было металла.
-            Проверьте размеры обрезков — лом не может быть отрицательным.
-          </div>
-          <div class="alert alert-secondary" role="alert" invisible="plan_state != 'no_norm'">
-            На толщине <field name="thickness_mm" readonly="1" nolabel="1"/> мм ещё нет ни одного
-            замера, поэтому плана нет. Среднее по соседним толщинам не подставляется:
-            двойка и десятка режутся с разницей в разы.
-          </div>
-          <div class="alert alert-secondary" role="alert" invisible="plan_state != 'no_drawing'">
-            Длина реза не разобрана: у <field name="parts_without_drawing" readonly="1" nolabel="1"/>
-            деталей нет чертежа. Без знаменателя замер оператора останется числом
-            «47 минут», которое нельзя перенести на другой заказ.
+          <!--
+            Сигналы задания — одной строкой коротких плашек (разбор UX, шаг 27).
+            Было пять плашек-абзацев (alert) друг под другом: у ЛР-00001 две
+            подряд, с теорией про знаменатель замера. Теперь строка-действие —
+            что не так и что сделать; объяснение — в подсказке при наведении.
+            Цвет повторён словом: красный — «не сходится», жёлтый — сделать
+            руками, серый — к сведению. Ничего не блокирует. Стили —
+            static/src/scss/laser_job.scss.
+            «Длина реза не разобрана у N дет.» — только когда такие детали
+            есть: это состояние бывает и у задания без деталей (файл ещё не
+            разобран), и прежняя плашка писала «у 0 деталей нет чертежа».
+            Слова «приложите И РАЗБЕРИТЕ»: счётчик parts_without_drawing
+            считает детали без длины реза (models/job.py, _compute_denominator),
+            а не без файла — приложенный, но не разобранный чертёж (или
+            разобранный с нулевой длиной) тоже в счёте. «Приложите чертежи»
+            велело бы сделать то, что уже сделано (доводка шага 27).
+          -->
+          <div class="pmk-job-signals"
+               invisible="not (technical_is_demo or parse_warning or balance_broken or plan_state == 'no_norm' or (plan_state == 'no_drawing' and parts_without_drawing) or (file and file_replaced))">
+            <span class="pmk-job-signal pmk-job-signal--bad" invisible="not balance_broken"
+                  title="Обрезков оприходовано больше, чем было металла: лом вышел отрицательным. Лом не вводят — он получается вычитанием, значит, ошибка в размерах обрезков на вкладке «Обрезки»">Баланс не сходится — проверьте размеры обрезков</span>
+            <!-- Файл приложили заново после разбора (доводка шага 27): всё,
+                 что ниже на форме, — от прежнего файла. Без замеров — «Разобрать
+                 файл» снова залита; с замерами разбор откажет, поэтому слова
+                 другие. Ничего не блокирует. -->
+            <span class="pmk-job-signal pmk-job-signal--warn" invisible="not file or not file_replaced or measure_ids"
+                  title="Файл раскроя приложен заново после разбора. «Разобрать файл» пересоздаст листы и детали по новому файлу, приложенные чертежи деталей сохранятся">Файл заменён — листы и детали от прежнего, разберите файл</span>
+            <span class="pmk-job-signal pmk-job-signal--warn" invisible="not file or not file_replaced or not measure_ids"
+                  title="Файл раскроя приложен заново, а по листам уже есть замеры операторов. Перечитать файл нельзя — пересоздание листов стёрло бы замеры. Если раскрой переделали, заведите новое задание и приложите файл туда">Файл заменён после замеров — листы от прежнего; новый файл приложите к новому заданию</span>
+            <span class="pmk-job-signal pmk-job-signal--warn"
+                  invisible="plan_state != 'no_drawing' or not parts_without_drawing"
+                  title="Длину реза даёт разобранный чертёж: приложите .dxf к детали и нажмите «Разобрать» в её строке (или «Разобрать чертежи» в шапке, когда чертежи есть у всех деталей). Чертёж — знаменатель замера: метры реза и проколы. Без него замер оператора останется числом «47 минут», которое нельзя перенести на другой заказ">Длина реза не разобрана у <field name="parts_without_drawing" readonly="1" nolabel="1"/> дет. — приложите и разберите чертежи на вкладке «Детали и чертежи»</span>
+            <span class="pmk-job-signal" invisible="plan_state != 'no_norm'"
+                  title="Норматив выводится только из замеров этой толщины. Среднее по соседним толщинам не подставляется: двойка и десятка режутся с разницей в разы">Плана нет: на толщине <field name="thickness_mm" readonly="1" nolabel="1" options="{'hide_trailing_zeros': True}"/> мм ещё нет замеров</span>
+            <span class="pmk-job-signal pmk-job-signal--warn" invisible="not parse_warning"
+                  title="Замечания разбора файла раскроя"><field name="parse_warning" readonly="1" nolabel="1"/></span>
+            <span class="pmk-job-signal" invisible="not technical_is_demo"
+                  title="Раздел режимов резки в файле у технолога демонстрационный — один и тот же во всех файлах. Толщина берётся из имени файла, режимы из файла не используются">Режимы в файле — образец, толщина из имени файла · <field name="technical_note" readonly="1" nolabel="1"/></span>
           </div>
 
           <group>
@@ -98,7 +139,9 @@
               <field name="sale_order_id"/>
               <!-- Расчёт рядом с заказом: заказов в базе пока нет, режут по
                    расчёту, и по этой ссылке задание видно на схеме связей. -->
-              <field name="spec_id" options="{'no_create': True}"/>
+              <!-- Подписи короче названий полей (разбор UX, шаг 27): подписи
+                   в одну строку. Полный смысл — в подсказке «?» поля. -->
+              <field name="spec_id" string="Расчёт" options="{'no_create': True}"/>
               <field name="machine_id"/>
               <field name="note" placeholder="Примечание…"/>
             </group>
@@ -106,10 +149,13 @@
               <!-- Вид листа из имени файла не виден: «3мм» не говорит, гладкий
                    он или рифлёный. По умолчанию разбор ставит гладкий, здесь
                    технолог может выбрать другой — масса квадрата у них разная. -->
-              <field name="sheet_id" options="{'no_create': True}"/>
+              <field name="sheet_id" string="Лист" options="{'no_create': True}"/>
               <field name="sheet_type" readonly="1"/>
-              <field name="thickness_mm" readonly="1"/>
-              <field name="mass_per_sqm" readonly="1"/>
+              <!-- «3», а не «3,00»; масса квадрата — два знака, а не четыре
+                   («23,55», шаг 27): в справочнике четыре знака нужны для
+                   расчёта, на экране они шум. -->
+              <field name="thickness_mm" readonly="1" options="{'hide_trailing_zeros': True}"/>
+              <field name="mass_per_sqm" readonly="1" digits="[12,2]"/>
               <field name="grade_id"/>
               <field name="kerf_mm"/>
               <field name="min_offcut_mm"/>
@@ -118,13 +164,15 @@
 
           <group>
             <group string="Файл раскроя">
-              <field name="file" filename="file_name" widget="binary"/>
+              <field name="file" string="Файл" filename="file_name" widget="binary"
+                     help="Управляющий файл раскроя CypCut (.lxds). Толщина листа берётся из имени файла"/>
               <field name="file_name" invisible="1"/>
               <field name="file_app" readonly="1" invisible="not file_app"/>
               <field name="file_operator" readonly="1" invisible="not file_operator"/>
               <field name="file_saved_text" readonly="1" invisible="not file_saved_text"/>
               <field name="contour_count" readonly="1" invisible="not contour_count"/>
               <field name="technical_is_demo" invisible="1"/>
+              <field name="file_replaced" invisible="1"/>
             </group>
             <group string="Металл и деньги">
               <field name="sheet_count"/>
@@ -189,7 +237,7 @@
                   <field name="cut_length_m"/>
                   <field name="pierce_count"/>
                   <field name="parts_without_drawing"/>
-                  <field name="contour_gap_pct"/>
+                  <field name="contour_gap_pct" string="Расхождение, %"/>
                 </group>
                 <group string="План и факт">
                   <field name="plan_state"/>

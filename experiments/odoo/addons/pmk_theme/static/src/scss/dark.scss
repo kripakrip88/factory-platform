@@ -367,7 +367,9 @@ $pmk-dark-alerts: (
     background-color: transparent;
   }
 
-  body.o_nexus_dark .pmk-field > label,
+  // Подпись поля шапки документа (.pmk-field > label) здесь больше не серая
+  // (разбор UX, шаг 27): как у штатных групп — цвет текста (body), тот же,
+  // что .text-900 подписей групп в разделе 2.
   body.o_nexus_dark .pmk-kpi__label,
   body.o_nexus_dark .pmk-kpi__note,
   body.o_nexus_dark .pmk-kpi__sub {

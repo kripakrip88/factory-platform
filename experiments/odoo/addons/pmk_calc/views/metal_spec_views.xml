@@ -5,12 +5,17 @@
     <field name="name">pmk.metal.spec.form</field>
     <field name="model">pmk.metal.spec</field>
     <field name="arch" type="xml">
-      <form string="Спецификация" class="pmk-spec-form" js_class="pmk_spec_form">
+      <form string="Спецификация" class="pmk-spec-form pmk-doc-form" js_class="pmk_spec_form">
         <!--
           class="pmk-spec-form" — крючок для стилей формы расчёта (разбор UX,
           шаг 32: одна залитая кнопка на экран, см. scss/dobor_builder.scss).
           Ядро кладёт класс на корень вида (div.o_form_view), а не на лист:
           под ним и панель над документом, и лента документа.
+
+          pmk-doc-form — общий класс наших документов (расчёт, доборка,
+          раскрой, задание лазеру; разбор UX, шаг 27): подписи слева, одна
+          колонка подписей, поля-ссылки одной ширины с соседями, дробные
+          поля в рамке (pmk_theme, forms_nexus.scss, раздел 9).
 
           js_class="pmk_spec_form" — форма без кнопки «Новое» (приёмка
           01.10.2026, R6: новый расчёт заводят из списка «Калькулятор
@@ -95,8 +100,14 @@
                 <field name="contact_id" nolabel="1"
                        context="{'default_parent_id': partner_id, 'partner_display_name_hide_company': True}"/>
               </div>
+              <!-- Подпись короче названия поля (разбор UX, шаг 27): подписи
+                   теперь слева и в одну строку, «Предмет КП (видит клиент)»
+                   раздула бы колонку подписей всей шапки. «Видит клиент» —
+                   в подсказке «?» (описание поля: печатается в КП строкой
+                   «Предмет»). Название поля в списке, поиске и выгрузке
+                   прежнее; печать КП берёт свою подпись «Предмет:». -->
               <div class="pmk-field pmk-field--wide" name="pmk_f_note">
-                <label for="note"/>
+                <label for="note" string="Предмет КП"/>
                 <field name="note" nolabel="1"
                        placeholder="Например: металлоконструкции для ОФ «Солнечная», п. Горный"/>
               </div>

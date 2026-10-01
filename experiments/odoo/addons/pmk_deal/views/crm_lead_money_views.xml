@@ -18,7 +18,8 @@
       блока. Компания, имя контакта и должность подняты наверх, под «Клиента»,
       и видны, пока клиент не выбран: выбрали — всё это уже есть в карточке
       клиента. Команда продаж (у всех одна, «Продажи») скрыта и у лида.
-    • «Откуда пришёл» — у сделки над сроком, у лида под менеджером.
+    • «Откуда пришёл» — у сделки над сроком, у лида под менеджером (с шага
+      27 — в левой колонке, под компанией; см. ниже).
     • «Ожидаемое закрытие» → «Ответить клиенту до»: это срок ответа клиенту,
       а не прогноз закрытия. Просрочен — красный в списке; ничего не
       запрещается. Подпись и подсказка «?» заданы и в поле (deal_money.py),
@@ -103,8 +104,10 @@
       <xpath expr="//page[@name='lead']" position="attributes">
         <attribute name="invisible">1</attribute>
       </xpath>
+      <!-- «Компания», а не «Название компании» — подпись в одну строку,
+           как у лида (шаг 27). -->
       <xpath expr="//group[@name='opportunity_partner']/field[@name='partner_id']" position="after">
-        <field name="partner_name" invisible="partner_id"/>
+        <field name="partner_name" string="Компания" invisible="partner_id"/>
         <field name="contact_name" invisible="partner_id"/>
         <field name="function" invisible="partner_id"/>
       </xpath>
@@ -115,12 +118,61 @@
         <attribute name="id">contact_name_group_lead_info</attribute>
       </xpath>
 
-      <!-- Лид: команда продаж скрыта, «Откуда пришёл» — на её месте. -->
+      <!-- Лид: команда продаж скрыта (шаг 31). Узел на месте: на него
+           ссылаются context и teamField «Менеджера». -->
       <xpath expr="/form/sheet/group/group/field[@name='team_id']" position="attributes">
         <attribute name="invisible">1</attribute>
       </xpath>
-      <xpath expr="/form/sheet/group/group/field[@name='team_id']" position="after">
+
+      <!--
+        Лид: левая колонка без дыры (разбор UX, шаг 27).
+        Было: слева одна «Название компании» (адрес, сайт и язык скрыты шагом
+        8), справа четыре поля; группа «Менеджер» стояла вторым рядом — ниже
+        всей правой колонки, и под «Названием компании» зияло ~100 px. Теперь
+        менеджер, «Откуда пришёл», приоритет и теги — в той же левой группе,
+        под компанией:
+          слева  — Компания · Менеджер · Откуда пришёл · Приоритет · Теги;
+          справа — Имя контакта · Эл. почта · Должность · Телефон.
+        Поля ПЕРЕНЕСЕНЫ (position="move"), а не добавлены вторыми: у
+        «Менеджера» штатные context и teamField. Опустевшие группы скрыты, не
+        удалены — узел team_id в своей группе нужен «Менеджеру» и тесту шага
+        31. Подписи короткие, в одну строку: «Компания», «Менеджер».
+        Наследников, которые цеплялись бы за перенесённые узлы, на стенде нет
+        (ir_ui_view, 02.10.2026): только наши виды, sale_crm и website_crm с
+        xpath по кнопкам и pmk_flow по вкладкам.
+      -->
+      <xpath expr="//group[@name='lead_partner']/field[@name='partner_name']" position="attributes">
+        <attribute name="string">Компания</attribute>
+        <attribute name="help">Организация клиента. Станет карточкой клиента, когда лид переведут в сделку.</attribute>
+      </xpath>
+      <xpath expr="//group[@name='lead_partner']/field[@name='partner_name']" position="after">
+        <xpath expr="/form/sheet/group/group[field[@name='team_id']]/field[@name='user_id']" position="move"/>
         <field name="pmk_source"/>
+        <xpath expr="//group[@name='lead_priority']/field[@name='priority']" position="move"/>
+        <xpath expr="//group[@name='lead_priority']/field[@name='tag_ids']" position="move"/>
+      </xpath>
+      <xpath expr="//group[@name='lead_partner']/field[@name='user_id']" position="attributes">
+        <attribute name="string">Менеджер</attribute>
+      </xpath>
+      <xpath expr="/form/sheet/group/group[field[@name='team_id']]" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//group[@name='lead_priority']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+
+      <!-- Сделка: «Менеджер», а не «Менеджер по продажам» — как в списке
+           сделок (шаг 25) и у лида (шаг 27). -->
+      <xpath expr="/form/sheet/group/group[label[@for='date_deadline']]/field[@name='user_id']" position="attributes">
+        <attribute name="string">Менеджер</attribute>
+      </xpath>
+      <!-- Подписи верхних групп лида и сделки — в одну строку (шаг 27):
+           штатный класс ядра o_label_nowrap (form_controller.scss, с 992 px).
+           Колонка подписей ядра — fit-content(150px), и «Ответить клиенту
+           до» со знаком «?» (160 px) ложилась в две строки; теперь колонка
+           раздвигается под подпись. -->
+      <xpath expr="/form/sheet/group" position="attributes">
+        <attribute name="class" add="o_label_nowrap" separator=" "/>
       </xpath>
 
       <!-- Сделка: «Откуда пришёл» и «Ответить клиенту до». -->

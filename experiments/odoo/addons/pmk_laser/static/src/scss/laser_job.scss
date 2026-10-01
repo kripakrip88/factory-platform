@@ -1,0 +1,62 @@
+// ─── Задание лазеру: сигналы одной строкой (разбор UX, шаг 27) ─────────────
+//
+// Над группами формы было до пяти плашек-абзацев (alert): «Параметры резки
+// в файле демонстрационные…», «Длина реза не разобрана… число «47 минут»…».
+// Теперь — строка коротких плашек, как «есть прайс от 21.09» в расчёте
+// (pmk_bridge, .pmk-signal): что не так и что сделать, объяснение — в
+// подсказке при наведении. Разметка — views/laser_job_views.xml.
+//
+// Цвет повторён словом: красный (--bad) — «Баланс не сходится», жёлтый
+// (--warn) — сделать руками («Файл заменён», «Длина реза не разобрана»,
+// замечания разбора), серый — к сведению («Плана нет», «Режимы в файле —
+// образец»).
+//
+// Тона — CSS-переменные темы pmk_theme: фон и рамка в светлой заданы на
+// :root (forms_nexus.scss), в тёмной — все три под body.o_nexus_dark
+// (dark.scss). Второй аргумент var() — то же светлое значение на случай,
+// если тема не установлена; текста в светлой теме переменной нет — берётся
+// тёмный оттенок из запасного. Правка dark.scss не нужна. Свой класс, а не
+// .pmk-signal моста: лазер от pmk_bridge не зависит.
+.pmk-job-signals {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 12px;
+}
+
+.pmk-job-signal {
+  display: inline-block;
+  max-width: 100%;
+  padding: 1px 8px;
+  border: 1px solid var(--pmk-tone-grey-bd, #dedbd2);
+  border-radius: 10px;
+  background: var(--pmk-tone-grey-bg, #f1f0ec);
+  color: var(--pmk-tone-grey-ink, #444441);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+
+  &--warn {
+    border-color: var(--pmk-tone-yellow-bd, #ead68e);
+    background: var(--pmk-tone-yellow-bg, #fbf3d5);
+    color: var(--pmk-tone-yellow-ink, #633806);
+  }
+
+  &--bad {
+    border-color: var(--pmk-tone-red-bd, #efc3bc);
+    background: var(--pmk-tone-red-bg, #fbe7e4);
+    color: var(--pmk-tone-red-ink, #791f1f);
+  }
+
+  // Внутри — поле формы (div.o_field_widget): пусть идёт строкой и берёт
+  // цвет плашки, а не свой. Замечания разбора — текст в несколько строк:
+  // переносы ядро сохраняет (pre-wrap у текстового поля), плашка растёт.
+  .o_field_widget,
+  .o_field_widget > span {
+    display: inline;
+    color: inherit !important;
+    font-size: inherit;
+    font-weight: inherit;
+  }
+}

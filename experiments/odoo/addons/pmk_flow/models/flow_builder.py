@@ -27,6 +27,10 @@ from collections import deque
 from odoo import api, fields, models
 from odoo.exceptions import AccessError
 
+# Разбор «Имя <адрес>» — тот же, что у кнопки «Лид»: pmk_mail_ui в
+# зависимостях модуля (поле письма pmk_lead_id).
+from odoo.addons.pmk_mail_ui.tools import lead_text
+
 _STATE_COLOR = {
     'draft': 'grey', 'sent': 'grey', 'cancel': 'red',
     'sale': 'blue', 'done': 'green', 'purchase': 'blue',
@@ -231,6 +235,28 @@ class PmkFlowBuilder(models.AbstractModel):
         return '\n'.join(lines)
 
     @api.model
+    def _letter_label(self, record):
+        """Первая строка узла письма — от кого, а не тема (разбор UX, шаг 27).
+
+        Лид из письма называется по его теме — с шага 27 ещё и без «RE:», —
+        и на «Связях» рядом стояли два одинаковых узла «Запрос стоимости
+        изготов…»: «Письмо» и «Сделка» (ночной осмотр 29.09, СМ-00024). Тема
+        осталась в подсказке при наведении (_hint), дата — второй строкой
+        («письмо от 16.09.2026»). Имя — из «Имя <адрес>» отправителя (те же
+        правила, что у кнопки «Лид», pmk_mail_ui/tools/lead_text.py); нет
+        имени — карточка контакта, адрес, тема.
+        """
+        name, address = lead_text.split_sender(record.email_from or '')
+        if not name:
+            try:
+                partner = _field(record, 'partner_id')
+                name = partner.name if partner else ''
+            except AccessError:
+                # Карточка контакта под правами — обойдёмся адресом.
+                name = ''
+        return name or address or record.subject or '(без темы)'
+
+    @api.model
     def _open_target(self, record):
         """Какую запись открывать кликом по узлу.
 
@@ -259,9 +285,10 @@ class PmkFlowBuilder(models.AbstractModel):
             # под группой). Лучше узел без подписи, чем схема, упавшая целиком.
             state, color, hint = '', 'grey', kind
         target = self._open_target(record)
-        label = record.display_name
-        if not label:
-            label = '(без темы)' if record._name == 'mail.client.message' else '—'
+        if record._name == 'mail.client.message':
+            label = self._letter_label(record)
+        else:
+            label = record.display_name or '—'
         return {
             'id': self._node_id(record),
             'model': record._name,

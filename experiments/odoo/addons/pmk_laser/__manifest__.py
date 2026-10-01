@@ -98,6 +98,15 @@ MD5), с Thickness="1.5" и «чёрной сталью» — на 2, 3 и 10 м
         "views/laser_load_views.xml",
         "views/menus.xml",
     ],
+    # Сигналы задания одной строкой коротких плашек вместо пяти абзацев
+    # (разбор UX, шаг 27). Свой файл стилей, а не тема: живые файлы pmk_theme —
+    # только navbar_nexus, forms_nexus и dark, а цвета плашек — её
+    # CSS-переменные с запасными значениями (тема не обязательна).
+    "assets": {
+        "web.assets_backend": [
+            "pmk_laser/static/src/scss/laser_job.scss",
+        ],
+    },
     "installable": True,
     "application": True,
     "auto_install": False,

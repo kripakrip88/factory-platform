@@ -103,6 +103,18 @@ class LaserJob(models.Model):
     technical_is_demo = fields.Boolean("Режимы демонстрационные", readonly=True, copy=False)
     technical_note = fields.Char("Что объявлено в файле", readonly=True, copy=False)
     parse_warning = fields.Text("Замечания разбора", readonly=True, copy=False)
+    # Разбор UX, шаг 27 (доводка): признаком «файл разобран» в форме служили
+    # листы (sheet_ids). Технолог перевыгрузил раскладку и приложил новый
+    # .lxds — листы и детали на экране от прежнего файла, а в шапке только
+    # контурная «Разобрать заново»: залитой кнопки следующего шага нет, и то,
+    # что листы старые, легко не заметить. Флаг ставит write() при смене
+    # файла у разобранного задания (сверка контрольной суммы вложения: тот же
+    # файл заново — не замена), снимает action_parse_file. Хранимый, без
+    # миграции: у заданий до этой версии он пуст (False) — как и было.
+    file_replaced = fields.Boolean(
+        "Файл заменён после разбора", readonly=True, copy=False,
+        help="Файл раскроя приложили заново, а листы и детали — от прежнего "
+             "файла. Снимается разбором файла.")
 
     # ------------------------------------------------------------------
     # Материал
@@ -314,6 +326,41 @@ class LaserJob(models.Model):
                 vals["name"] = self.env["ir.sequence"].next_by_code("pmk.laser.job") or "Черновик"
         return super().create(vals_list)
 
+    def _file_checksums(self):
+        """Контрольные суммы приложенных файлов раскроя: {id задания: sha1}.
+
+        Файл хранится вложением (attachment=True), сумму ведёт ядро
+        (ir.attachment.checksum). sudo — как у самого поля в ядре
+        (fields_binary.py): читаем только суммы вложений этих заданий."""
+        if not self.ids:
+            return {}
+        attachments = self.env["ir.attachment"].sudo().search([
+            ("res_model", "=", self._name),
+            ("res_field", "=", "file"),
+            ("res_id", "in", self.ids),
+        ])
+        return {attachment.res_id: attachment.checksum for attachment in attachments}
+
+    def write(self, vals):
+        """Новый файл у разобранного задания — флаг «Файл заменён после
+        разбора» (file_replaced, доводка шага 27): листы и детали остаются от
+        прежнего файла, пока технолог не разберёт новый, и форма снова
+        показывает залитую «Разобрать файл». Тот же файл заново (сумма та
+        же) — не замена. Файл убрали — флаг не трогаем: без файла кнопки
+        разбора и сигнал скрыты, а новый файл сверится с пустотой. Флаг,
+        переданный явно, не перебиваем."""
+        if "file" not in vals or "file_replaced" in vals:
+            return super().write(vals)
+        parsed = self.filtered("sheet_ids")
+        before = parsed._file_checksums()
+        result = super().write(vals)
+        after = parsed._file_checksums()
+        replaced = parsed.filtered(
+            lambda job: after.get(job.id) and after[job.id] != before.get(job.id))
+        if replaced:
+            replaced.write({"file_replaced": True})
+        return result
+
     @api.onchange("spec_id")
     def _onchange_spec_id(self):
         """Заказчик берётся из расчёта, если в задании его ещё нет.
@@ -417,6 +464,8 @@ class LaserJob(models.Model):
                 "parse_warning": "\n".join(layout.warnings),
                 "part_ids": job._part_commands(layout),
                 "sheet_ids": job._sheet_commands(layout),
+                # Листы теперь от этого файла (доводка шага 27, см. write).
+                "file_replaced": False,
             }
             if layout.saved_at:
                 # Берём только ДАТУ: время в файле местное, и переводить его в

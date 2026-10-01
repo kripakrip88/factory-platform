@@ -5,3 +5,4 @@
 from . import test_list_units
 from . import test_list_columns
 from . import test_offcut_empty
+from . import test_step27_form

@@ -5,7 +5,10 @@
     <field name="name">pmk.dobor.order.form</field>
     <field name="model">pmk.dobor.order</field>
     <field name="arch" type="xml">
-      <form string="Заказ доборки">
+      <!-- pmk-doc-form — подписи шапки слева, как в штатных формах (разбор
+           UX, шаг 27; pmk_theme, forms_nexus.scss, раздел 9). Окно позиции
+           ниже — своя форма в своём диалоге, класс до неё не доходит. -->
+      <form string="Заказ доборки" class="pmk-doc-form">
         <header>
           <button name="action_print_sheet" type="object" string="Печать листа"
                   class="btn-primary" icon="fa-print"/>

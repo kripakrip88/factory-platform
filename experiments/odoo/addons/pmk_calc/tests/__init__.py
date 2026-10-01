@@ -6,3 +6,4 @@ from . import test_spec_form
 from . import test_list_units
 from . import test_dobor_fit
 from . import test_dobor_copy
+from . import test_step27_forms

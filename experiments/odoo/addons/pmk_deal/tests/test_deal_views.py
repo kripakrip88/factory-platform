@@ -131,6 +131,50 @@ class TestDealViews(TransactionCase):
         self.assertTrue(hidden(lead_team[0]))
         self.assertTrue(arch.xpath("//page[@name='lead']//field[@name='team_id']"))
 
+    def test_lead_left_column_step27(self):
+        """Лид без дыры в левой колонке (разбор UX, шаг 27): слева Компания ·
+        Менеджер · Откуда пришёл · Приоритет · Теги, справа — контакт.
+        Поля перенесены (move), не продублированы; опустевшие группы скрыты,
+        узел «Команды продаж» на месте."""
+        arch = self._arch("form")
+        lead = arch.xpath("//group[@name='lead_partner']")[0]
+        visible = [f.get("name") for f in lead.findall("field")
+                   if not hidden(f) and f.get("name") != "partner_id"]
+        self.assertEqual(visible, ["partner_name", "user_id", "pmk_source", "priority", "tag_ids"])
+        self.assertEqual(lead.find("field[@name='partner_name']").get("string"), "Компания")
+        self.assertTrue(lead.find("field[@name='partner_name']").get("help"))
+        user = lead.find("field[@name='user_id']")
+        self.assertEqual(user.get("string"), "Менеджер")
+        self.assertEqual(user.get("widget"), "many2one_avatar_leader_user",
+                         "Перенесён штатный узел — со своим виджетом и teamField.")
+        self.assertEqual(user.get("teamField"), "team_id")
+        self.assertEqual(lead.find("field[@name='priority']").get("widget"), "priority")
+        # Одна «Откуда пришёл» у лида, одна у сделки.
+        self.assertEqual(len(arch.xpath("//group[@name='lead_partner']/field[@name='pmk_source']")), 1)
+        # Группа «Менеджер / Команда продаж» лида — скрыта, в ней только команда.
+        team_group = arch.xpath("/form/sheet/group/group[field[@name='team_id']]")
+        self.assertEqual(len(team_group), 1)
+        self.assertTrue(hidden(team_group[0]))
+        self.assertEqual([f.get("name") for f in team_group[0].findall("field")], ["team_id"])
+        priority_group = arch.xpath("//group[@name='lead_priority']")[0]
+        self.assertTrue(hidden(priority_group))
+        self.assertFalse(priority_group.findall("field"), "Приоритет и теги перенесены.")
+        # Правая колонка лида — без изменений.
+        info = arch.xpath("//group[@name='lead_info']")[0]
+        self.assertTrue({"contact_name", "email_from", "function", "phone"}
+                        <= {f.get("name") for f in info.iter("field")})
+        # Сделка: «Менеджер» и «Компания» — те же слова.
+        deal = arch.xpath("/form/sheet/group/group[label[@for='date_deadline']]")[0]
+        self.assertEqual(deal.find("field[@name='user_id']").get("string"), "Менеджер")
+        opp = arch.find(".//group[@name='opportunity_partner']")
+        self.assertEqual(opp.find("field[@name='partner_name']").get("string"), "Компания")
+        # «Вероятность» у лида скрыта с шага 31 — блок h2 целиком.
+        self.assertTrue(hidden(arch.xpath("//div[contains(concat(' ', @class, ' '), ' oe_title ')]/h2")[0]))
+        # Подписи верхних групп — в одну строку (штатный o_label_nowrap):
+        # «Ответить клиенту до» со знаком «?» шире колонки ядра в 150 px.
+        top = arch.xpath("/form/sheet/group")[0]
+        self.assertIn("o_label_nowrap", (top.get("class") or "").split())
+
     def test_kanban_card(self):
         arch = self._arch("kanban", "crm.crm_case_kanban_view_leads")
         card = arch.find(".//t[@t-name='card']")

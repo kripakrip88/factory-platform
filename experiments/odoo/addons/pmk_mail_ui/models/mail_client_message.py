@@ -1,13 +1,27 @@
 # -*- coding: utf-8 -*-
 """Создание лида CRM из письма.
 
-Главное требование к этому коду — лид из кнопки не должен отличаться от лида,
-который создаёт почтовый алиас `zakaz@`. Иначе в воронке заведутся два сорта
-лидов с разным заполнением, и любой отчёт по ним начнёт врать.
+Повторён путь ядра (`crm.lead.message_new` + `message_post`), а не написан
+свой: то же письмо в чате тем же подтипом, те же вложения парами (имя,
+байты).
 
-Поэтому здесь повторён путь ядра (`crm.lead.message_new` + `message_post`), а
-не написан свой: те же три поля при создании, то же письмо в чате тем же
-подтипом, те же вложения парами (имя, байты).
+Поля лида при создании — НАШИ (разбор UX, шаг 27, 02.10.2026): название —
+тема без «RE:», «FW:», «Fwd:» и т. п., «Эл. почта» — чистый адрес, «Имя
+контакта» — имя отправителя (tools/lead_text.py). Ядро на алиасе кладёт тему
+и «Имя <адрес>» как есть. Раньше требование было обратное — лид из кнопки
+не отличается от лида алиаса, иначе в воронке два сорта лидов. Оно снято:
+приёмник zakaz@ → лид выключен 28.09 (у алиаса mail_alias id 7 снято имя).
+
+Боевая база, SELECT по crm_lead.create_uid 02.10.2026: до 28.09 алиас
+(OdooBot, 20–22.09) завёл лиды 3–11 — 3 и 4 с тех пор сделки, 5–11 —
+лиды; их название, адрес и имя по этим же правилам приводит миграция
+19.0.1.0.6 (сделки она не трогает). Кнопкой заведены 12 и 14–19. С 28.09
+лиды из писем заводятся только кнопкой.
+
+⚠️ Алиас info@ (mail_alias id 2 → crm.lead, команда «Продажи») ещё
+настроен: письмо на info@pmkpark.ru, если дойдёт до входящего сервера Odoo,
+заведёт лид путём ядра — мимо этих правил. Включат zakaz@ снова или оживёт
+info@ — тот же разбор темы и адреса нужен и в `crm.lead.message_new`.
 """
 
 import base64
@@ -23,10 +37,11 @@ from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 from odoo.fields import Domain
 from odoo.http import request
+from odoo.tools import email_normalize
 
 from odoo.addons.mail_client.tools.imap_client import ImapError
 
-from ..tools import quote_fold, remote_paths
+from ..tools import lead_text, quote_fold, remote_paths
 
 _logger = logging.getLogger(__name__)
 
@@ -787,6 +802,22 @@ class MailClientMessage(models.Model):
             return self.env["crm.lead"]
         return self.env["crm.lead"].browse(posted.res_id).exists()
 
+    @api.model
+    def _pmk_own_addresses(self):
+        """Адреса завода, нормализованные: ящики «Почты» (и выключенные),
+        почта организаций и их карточек, логины исходящих серверов. Из них
+        «Имя контакта» лида не берётся (шаг 27): письмо от pmkpark@mail.ru —
+        это пересылка коллеги, а не клиент. sudo: это настройки, у менеджера
+        прав на них может не быть, а читаем мы только адреса."""
+        env = self.env
+        companies = env["res.company"].sudo().search([])
+        raw = list(companies.mapped("email")) + list(companies.partner_id.mapped("email"))
+        raw += env["mail.client.account"].sudo().with_context(
+            active_test=False).search([]).mapped("email")
+        raw += env["ir.mail_server"].sudo().with_context(
+            active_test=False).search([]).mapped("smtp_user")
+        return {email for email in map(email_normalize, filter(None, raw)) if email}
+
     def _pmk_create_lead(self):
         self.ensure_one()
         attachments, failed = self._pmk_letter_attachments()
@@ -811,12 +842,25 @@ class MailClientMessage(models.Model):
         # руководителя команды ниже.
         user = self.env.user
         assignee = user if user._is_internal() and not user._is_superuser() else False
+        # Название без «RE:», «FW:», «Fwd:», «: …» и т. п.; «Эл. почта» —
+        # чистый адрес, имя из «Имя <адрес>» — в «Имя контакта» (разбор UX,
+        # шаг 27; правила — tools/lead_text.py). Адреса нет вовсе — как было.
+        sender, address = lead_text.split_sender(self.email_from)
         values = {
-            "name": self.subject or _("Без темы"),
-            "email_from": self.email_from,
+            "name": lead_text.clean_subject(self.subject) or _("Без темы"),
+            "email_from": address or self.email_from,
             "partner_id": self.partner_id.id or False,
             "user_id": assignee.id if assignee else False,
         }
+        # «Имя контакта» — только если письмо не привязано к человеку: найден
+        # контакт-человек — имя из карточки ставит ядро (_compute_contact_name
+        # по partner_id), у компании оно пустое, и тогда берём имя из письма.
+        # Наш ящик имени не даёт: пересланное коллегой письмо не делает его
+        # контактом клиента.
+        if not self.partner_id or self.partner_id.is_company:
+            person = lead_text.contact_name(sender, address, self._pmk_own_addresses())
+            if person:
+                values["contact_name"] = person
         # «Откуда пришёл = Почта» (разбор UX, шаг 31, 30.09.2026): через месяц
         # группировкой видно, какой канал приносит заявки и маржу. Поле
         # объявлено в pmk_deal; проверка наличия — чтобы почта не зависела от
