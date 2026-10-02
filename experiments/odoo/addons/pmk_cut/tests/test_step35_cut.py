@@ -415,8 +415,11 @@ class TestCutStep35(TransactionCase):
         search = etree.fromstring(views["views"]["search"]["arch"])
         self.assertEqual(self._one(search, "//field[@name='spec_id']").get("string"), "Расчёт")
         action = self.env.ref("pmk_cut.action_cut_plan")
-        self.assertIn("Заполнить из расчёта", action.help)
-        self.assertNotIn("спецификаци", action.help)
+        # Пробелы и переносы строк XML браузер сворачивает в один пробел —
+        # сравниваем текст так же.
+        help_text = " ".join(str(action.help).split())
+        self.assertIn("Заполнить из расчёта", help_text)
+        self.assertNotIn("спецификаци", help_text)
 
     # ─── отход ──────────────────────────────────────────────────────────
     def test_waste_label_and_bar_name(self):
