@@ -11,3 +11,4 @@ from . import test_dobor_fit
 from . import test_dobor_copy
 from . import test_step27_forms
 from . import test_step30_tracking
+from . import test_step35_dobor

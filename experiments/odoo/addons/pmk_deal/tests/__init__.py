@@ -10,3 +10,5 @@ from . import test_kp_sent
 from . import test_list_columns
 from . import test_partner_specs
 from . import test_step29_utm
+# Разбор UX, шаг 35: доборка и сделка.
+from . import test_step35_dobor_deal

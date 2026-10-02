@@ -10,9 +10,29 @@
            «Клиент» рядом (разбор UX, шаг 27; pmk_theme, forms_nexus.scss,
            раздел 9). -->
       <form string="Раскрой" class="pmk-doc-form">
+        <!--
+          Разбор UX, шаг 35 (02.10.2026): «Заполнить из расчёта» — в шапке, а
+          не во второй вкладке. Залита одна кнопка — следующий шаг процесса:
+            • расчёт выбран, отрезков нет — «Заполнить из расчёта»;
+            • иначе — «Рассчитать»; при выбранном расчёте рядом контурная
+              «Заполнить из расчёта» с вопросом: отрезки заменятся.
+          Тот же приём, что у задания лазеру («Разобрать файл» до разбора).
+        -->
         <header>
+          <button name="action_fill_from_spec" type="object" string="Заполнить из расчёта"
+                  class="btn-primary" icon="fa-download"
+                  invisible="not spec_id or part_ids"/>
           <button name="action_compute" type="object" string="Рассчитать"
-                  class="btn-primary" icon="fa-cogs"/>
+                  class="btn-primary" icon="fa-cogs"
+                  invisible="spec_id and not part_ids"/>
+          <!-- Доводка шага 35: вопрос называет, что будет с заготовками, —
+               хлыст из прайса добавится только типоразмерам без заготовок
+               (то же правило, что у «Рассчитать», cut_plan.py,
+               _pmk_bare_profiles); свой набор не расширяется. -->
+          <button name="action_fill_from_spec" type="object" string="Заполнить из расчёта"
+                  class="btn-secondary" icon="fa-download"
+                  invisible="not spec_id or not part_ids"
+                  confirm="Отрезки заменятся деталями расчёта, прежний результат сбросится. Заготовки останутся как есть: хлыст из прайса добавится только типоразмерам, у которых заготовок нет. Продолжить?"/>
           <button name="%(pmk_cut.action_report_cut_sheet)d" type="action"
                   string="Печать листа" icon="fa-print"
                   invisible="not result_ids"/>
@@ -20,26 +40,35 @@
         <sheet>
           <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
 
-          <!-- Шапка тем же приёмом, что в остальных документах. -->
+          <!-- Шапка тем же приёмом, что в остальных документах.
+               Шаг 35: «Расчёт» — первым и во всю ширину (из него приходят
+               отрезки, клиент и хлысты), за ним Клиент | Дата, Пропил |
+               Годный остаток, Примечание. Имена блоков pmk_f_* — опора для
+               xpath и тестов, как у расчёта и доборки. -->
           <div class="pmk-doc-head">
             <div class="pmk-doc-head__fields">
-              <div class="pmk-field">
+              <div class="pmk-field pmk-field--wide" name="pmk_f_spec">
+                <label for="spec_id"/>
+                <field name="spec_id" nolabel="1" options="{'no_create': True}"
+                       placeholder="Без расчёта…"/>
+              </div>
+              <div class="pmk-field" name="pmk_f_partner">
                 <label for="partner_id"/>
                 <field name="partner_id" nolabel="1"/>
               </div>
-              <div class="pmk-field">
+              <div class="pmk-field" name="pmk_f_date">
                 <label for="date"/>
                 <field name="date" nolabel="1"/>
               </div>
-              <div class="pmk-field">
+              <div class="pmk-field" name="pmk_f_kerf">
                 <label for="kerf_mm"/>
                 <field name="kerf_mm" nolabel="1"/>
               </div>
-              <div class="pmk-field">
+              <div class="pmk-field" name="pmk_f_min_useful">
                 <label for="min_useful_mm"/>
                 <field name="min_useful_mm" nolabel="1"/>
               </div>
-              <div class="pmk-field pmk-field--wide">
+              <div class="pmk-field pmk-field--wide" name="pmk_f_note">
                 <label for="note"/>
                 <field name="note" nolabel="1" placeholder="Примечание…"/>
               </div>
@@ -50,9 +79,17 @@
                 <div class="pmk-kpi__label">Взято металла, кг</div>
                 <div class="pmk-kpi__value"><field name="total_weight"/></div>
               </div>
-              <div class="pmk-kpi__card">
+              <!-- Шаг 35: отход больше 10 % — карточка жёлтая (жёлтый вариант
+                   карточки темы, как «Металл к закупке» неполного расчёта у
+                   моста) и словом «много». Сигнал, а не запрет. -->
+              <div class="pmk-kpi__card" invisible="waste_high">
                 <div class="pmk-kpi__label">Отход, %</div>
                 <div class="pmk-kpi__value"><field name="waste_ratio"/></div>
+              </div>
+              <div class="pmk-kpi__card pmk-kpi__card--warn" invisible="not waste_high">
+                <div class="pmk-kpi__label">Отход, %</div>
+                <div class="pmk-kpi__value"><field name="waste_ratio"/></div>
+                <div class="pmk-kpi__sub">много: больше 10 %</div>
               </div>
               <div class="pmk-kpi__note">
                 <span>Заготовок:</span><field name="total_bars"/>
@@ -61,24 +98,48 @@
               </div>
             </div>
           </div>
+          <field name="waste_high" invisible="1"/>
 
+          <!-- Доводка шага 35: типоразмер без заготовок (нет длины хлыста в
+               прайсе) расчёт больше не останавливает — его отрезки встают в
+               «Не размещено» с пометкой «нет заготовок». Плашка называет все
+               три причины. Сигнал, а не запрет. -->
           <div class="alert alert-warning" role="alert" invisible="not has_unplaced">
-            Не все отрезки удалось разместить — смотрите колонку «Не размещено».
-            Обычно это значит, что деталь длиннее любой заготовки.
+            Не все отрезки удалось разместить — смотрите «Не размещено» во
+            вкладке «Результат»: деталь длиннее любой заготовки, заготовок не
+            хватило или у типоразмера их нет совсем.
           </div>
 
           <notebook>
             <page string="Заготовки" name="stock">
+              <!-- Шаг 35: «В наличии» 0 — сколько нужно (так и считает
+                   расчёт: cut_plan.py, qty 0 → не ограничено). Было «Пустое
+                   количество означает „не ограничено“», а в колонке стоял
+                   «0»: целое поле пустым не бывает. -->
+              <!-- Доводка шага 35: порядок «своё — первым, докупка —
+                   последней» назван словами. Хлыст из прайса получает
+                   очерёдность 100 (cut_plan.py, PRICE_BAR_PRIORITY), иначе
+                   расчёт мог взять его вместо хлыстов со склада. -->
               <p class="text-muted">
                 Хлысты и обрезки со склада — в одной таблице. Обрезкам ставьте
-                очерёдность 1, чтобы уходили в дело первыми. Пустое количество
-                означает «не ограничено».
+                очерёдность 1 и их число — уйдут в дело первыми, свои хлысты
+                (10) — следом. Хлыст по длине из прайса — докупка: он
+                добавляется сам типоразмерам без заготовок (при «Заполнить из
+                расчёта» и при расчёте) и идёт в дело последним (100).
+                «В наличии» 0 — сколько нужно.
               </p>
+              <!-- Шаг 35: где длины хлыста в прайсе нет (позиции нет в прайсах
+                   или строка без длины) — ручной ввод, и это видно серым
+                   словом. Сигнал, а не запрет. -->
+              <div class="text-muted mb-2" invisible="not stock_missing_text">
+                Нет длины хлыста в прайсе — заготовку введите вручную:
+                <field name="stock_missing_text" nolabel="1" class="d-inline text-muted"/>
+              </div>
               <!-- class="o_pmk_zero_muted" — нули в таблице бледные, как в
                    списках (разбор UX, шаг 27; pmk_theme, js/list_zero.js):
                    во вложенных таблицах тема глушит нули только по этому
-                   согласию вида. Здесь ноль значит «ничего» — «Количество 0»
-                   = не ограничено, «0,00» в результате = ничего не ушло, — а
+                   согласию вида. Здесь ноль значит «ничего» — «В наличии 0»
+                   = сколько нужно, «0,00» в результате = ничего не ушло, — а
                    не «нет цены», как в строках расчёта. -->
               <field name="stock_ids" class="pmk-rows">
                 <list editable="bottom" class="o_pmk_zero_muted">
@@ -86,9 +147,21 @@
                   <field name="profile_id" options="{'no_create': True}"/>
                   <!-- Миллиметры без хвоста «,0» (разбор UX, шаг 24). -->
                   <field name="length_mm" options="{'hide_trailing_zeros': True}"/>
-                  <field name="qty"/>
+                  <!-- Доводка шага 35: ширина задана. Целое поле Odoo 19
+                       держит колонку ровно 71 px (column_width_hook.js,
+                       FIELD_WIDTHS.integer), и подпись в 33 знака вставала в
+                       четыре строки. 150 px — две: «В наличии, шт» и «(0 —
+                       сколько нужно)»; скобка склеена неразрывными
+                       пробелами, чтобы строка не разрывалась внутри неё
+                       (Manrope 13/600: 91 и 134 px). -->
+                  <field name="qty" string="В наличии, шт (0&#160;—&#160;сколько&#160;нужно)"
+                         width="150px"/>
                   <field name="priority"/>
-                  <field name="name"/>
+                  <!-- Доводка шага 35: «Название» снова на виду (шаг 29 убирал
+                       его в ⚙ как повтор длины) — в нём пометка «(из
+                       прайса)» у хлыста, который добавила система: это
+                       докупка, а не склад. В ⚙ его можно убрать. -->
+                  <field name="name" optional="show"/>
                   <control>
                     <create string="Добавить заготовку"/>
                   </control>
@@ -97,16 +170,12 @@
             </page>
 
             <page string="Отрезки" name="parts">
-              <group>
-                <group>
-                  <field name="spec_id" options="{'no_create': True}"/>
-                </group>
-                <group>
-                  <button name="action_fill_from_spec" type="object"
-                          string="Заполнить из спецификации" icon="fa-download"
-                          class="btn-secondary" invisible="not spec_id"/>
-                </group>
-              </group>
+              <!-- Шаг 35: поле «Расчёт» и кнопка переехали в шапку. -->
+              <p class="text-muted">
+                Отрезки приходят из расчёта кнопкой «Заполнить из расчёта»
+                вверху: линейные детали с длиной, количество — на все изделия.
+                Можно добавить и вручную.
+              </p>
               <field name="part_ids" class="pmk-rows">
                 <list editable="bottom" class="o_pmk_zero_muted">
                   <field name="sequence" widget="handle"/>
@@ -130,7 +199,23 @@
                   <field name="weight_total" sum="Взято, кг"/>
                   <field name="leftover_weight" sum="В остатки, кг" optional="show"/>
                   <field name="scrap_weight" sum="В лом, кг"/>
-                  <field name="waste_ratio"/>
+                  <!-- Шаг 35: отход словом — больше 10 % жёлтой плашкой и
+                       словом «много», ноль серым, остальное обычным текстом
+                       (pmk_cut/static/src/scss/cut.scss; тёмная пара —
+                       pmk_theme, dark.scss). Тот же приём, что «Использование»
+                       листа в расчёте (шаг 32). Число «Отход, %» — в меню
+                       колонок (⚙).
+                       ⚠️ decoration-secondary работает здесь потому, что
+                       список вложен в форму: самостоятельный список Odoo
+                       проверяет схемой base/rng/list_view.rng, а в ней из
+                       decoration-* только восемь штатных — secondary там
+                       уронил бы загрузку вида. Muted не годится: BadgeField
+                       превращает его в ту же плашку text-bg-300, что и норма. -->
+                  <field name="waste_label" string="Отход" widget="badge" class="pmk-cut-waste"
+                         decoration-warning="waste_level == 'high'"
+                         decoration-secondary="waste_level == 'zero'"/>
+                  <field name="waste_level" column_invisible="1"/>
+                  <field name="waste_ratio" optional="hide"/>
                   <field name="leftovers_text" optional="show"/>
                   <field name="unplaced_text" optional="show"/>
                 </list>
@@ -186,7 +271,19 @@
         <field name="total_bars" optional="hide"/>
         <field name="total_weight" digits="[12,1]" sum="Взято, кг" optional="show"/>
         <field name="scrap_weight" digits="[12,1]" sum="В лом, кг" optional="show"/>
-        <field name="waste_ratio" optional="show"/>
+        <!-- Доводка шага 35: отход словом и в списке, как во вкладке
+             «Результат» (правило 7: сигнал там, где решают — в списке).
+             Больше 10 % — бледно-жёлтой плашкой темы и «· много», норма —
+             обычным текстом (pmk_cut/static/src/scss/cut.scss: правило
+             .pmk-cut-waste действует в любом списке), не посчитан — пусто.
+             Порог 10 — тот же, что у фильтра «Отход больше 10%» и
+             cutting.WASTE_WARN_PCT (тест сверяет). Серого нуля здесь нет:
+             в самостоятельном списке из decoration-* схема пускает только
+             восемь штатных, а muted значок рисует как норму. Число «Отход, %»
+             — в ⚙: по нему сортируют. -->
+        <field name="waste_label" string="Отход" widget="badge" class="pmk-cut-waste"
+               decoration-warning="waste_ratio &gt; 10" optional="show"/>
+        <field name="waste_ratio" optional="hide"/>
       </list>
     </field>
   </record>
@@ -198,7 +295,7 @@
       <search>
         <field name="name" string="Номер"/>
         <field name="partner_id" string="Клиент"/>
-        <field name="spec_id" string="Спецификация"/>
+        <field name="spec_id" string="Расчёт"/>
         <filter name="this_month" string="Этот месяц"
                 domain="[('date', '&gt;=', (context_today() + relativedelta(day=1)).strftime('%Y-%m-%d'))]"/>
         <separator/>
@@ -217,10 +314,13 @@
     <field name="name">Раскрой сортамента</field>
     <field name="res_model">pmk.cut.plan</field>
     <field name="view_mode">list,form</field>
+    <!-- Шаг 35: пустой экран подсказывает следующий шаг (правило шага 26:
+         первая строка — что с экраном, вторая — куда идти). -->
     <field name="help" type="html">
-      <p class="o_view_nocontent_smiling_face">Создайте первый раскрой</p>
-      <p>Укажите, из чего режете (хлысты и обрезки со склада) и что нужно получить.
-         Отрезки можно перенести из спецификации одной кнопкой.</p>
+      <p>По выбранным фильтрам раскроев нет.</p>
+      <p>Новый раскрой — кнопка «Новое»: укажите расчёт и нажмите «Заполнить из
+         расчёта» — отрезки, клиент и хлысты из прайса подставятся сами.
+         Обрезки со склада — во вкладку «Заготовки».</p>
     </field>
   </record>
 

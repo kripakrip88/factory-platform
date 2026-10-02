@@ -9,6 +9,32 @@
 швеллер не выкроить. Поэтому и у заготовки, и у отрезка есть позиция
 сортамента, а расчёт группирует по ней и считает каждую группу сама по
 себе. Один документ при этом может закрывать всю спецификацию.
+
+РАСЧЁТ В ШАПКЕ, ХЛЫСТЫ ИЗ ПРАЙСА (разбор UX, шаг 35, 02.10.2026). Связь с
+расчётом пряталась во второй вкладке, клиента вводили заново, хлысты
+набирали руками по две строки на профиль («6 м» и «12 м»). Теперь:
+  • «Расчёт» — первым полем шапки, кнопка «Заполнить из расчёта» — в шапке;
+  • клиент подставляется сам из расчёта (поле можно поправить руками);
+  • хлыст по длине из прайса поставщика добавляется сам типоразмерам, у
+    которых нет ни одной заготовки, — одним правилом у обеих кнопок
+    («Заполнить из расчёта» и «Рассчитать»): свой набор заготовок —
+    решение человека, его не расширяем. Строку прайса выбирает та же
+    дверь, что у расчёта и справочника (product.template._pmk_find_seller,
+    pmk_bridge): поставщик расчёта или лучший по рейтингу, базовый уровень
+    объёма, прайс на сегодня. Длины нет — позиции нет в прайсах («в городе
+    нет»: 418 типоразмеров из 665 на 02.10.2026) или в строке прайса не
+    было длины (3) — заготовку вводят руками, и форма говорит об этом
+    серой строкой: сигнал, а не запрет;
+  • хлыст из прайса — ДОКУПКА, и в дело он идёт последним: очерёдность
+    PRICE_BAR_PRIORITY (100) против 10 у своих заготовок и 1 у обрезков.
+    При общей очерёдности расчёт выбирал длину по наименьшему лому и брал
+    3 хлыста 12 м к закупке, а 5 своих по 6 м оставлял лежать (доводка).
+Мост (pmk_bridge) — МЯГКАЯ связь, в зависимостях модуля его нет: мост
+зависит от mrp, stock_account и модулей RuOdoo, и удаление любого из них
+каскадом снесло бы pmk_cut со всеми раскроями. Без моста длины нет —
+ручной ввод, как до шага 35 (_pmk_price_bars_ready).
+Существующие раскрои не пересчитываются: клиент у РК-00001 остаётся, как
+был (Odoo досчитывает вычисляемые поля только у НОВЫХ колонок).
 """
 
 import json
@@ -17,11 +43,22 @@ import logging
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
-from .cutting import cut_plan
+from .cutting import WASTE_WARN_PCT, bar_name, cut_plan
+from .cutting import waste_label as waste_label_of
 
 _logger = logging.getLogger(__name__)
 
 MM_IN_M = 1000.0
+
+# Очерёдность хлыста из прайса (доводка шага 35, 02.10.2026). Хлыст из
+# прайса — докупка, а не то, что лежит на складе, и в дело он идёт ПОСЛЕДНИМ:
+# свои заготовки по умолчанию 10, обрезкам советуем 1. Внутри одной
+# очерёдности расчёт сам выбирает длину по наименьшему лому
+# (cutting._orderings), и при общих 10 хлыст из прайса «выигрывал» у
+# складских: склад 6 м × 5 и прайс 12 м, отрезки 5000 × 6 → 3 хлыста 12 м к
+# закупке, а свои 6 м не тронуты. Человек может поставить хлысту из прайса
+# очерёдность меньше — это его решение.
+PRICE_BAR_PRIORITY = 100
 
 
 class PmkCutPlan(models.Model):
@@ -32,12 +69,25 @@ class PmkCutPlan(models.Model):
 
     name = fields.Char("Номер", required=True, copy=False, readonly=True, default="Черновик")
     date = fields.Date("Дата", required=True, default=fields.Date.context_today, tracking=True)
-    partner_id = fields.Many2one("res.partner", "Клиент", tracking=True)
+    # Шаг 35: клиент подставляется сам из расчёта. Вычисляемое и хранимое с
+    # правкой (readonly=False), а не onchange: подставится и при создании
+    # из кода; выбор человека важнее — сменили расчёт без клиента, прежний
+    # клиент остаётся. Существующая колонка при -u не пересчитывается
+    # (Odoo досчитывает только новые колонки) — РК-00001 не тронут.
+    # copy=True — как было до шага: вычисляемое поле Odoo по умолчанию не
+    # копирует, и копия раскроя с клиентом, поправленным руками, получила
+    # бы клиента расчёта.
+    partner_id = fields.Many2one(
+        "res.partner", "Клиент", tracking=True, copy=True,
+        compute="_compute_partner_id", store=True, readonly=False,
+        help="Подставляется из расчёта; можно поправить руками.")
     note = fields.Char("Примечание")
 
     spec_id = fields.Many2one(
-        "pmk.metal.spec", "Из спецификации",
-        help="Откуда взять отрезки. Кнопка «Заполнить» перенесёт линейные детали.")
+        "pmk.metal.spec", "Расчёт", index=True,
+        help="Из какого расчёта раскрой. «Заполнить из расчёта» перенесёт "
+             "линейные детали (количество — на все изделия), клиента и хлысты "
+             "по длине из прайса — типоразмерам, у которых заготовок ещё нет.")
 
     # Пропил — свойство станка, а не металла: ленточная пила съедает больше,
     # дисковая меньше. Поэтому поле документа, а не справочника.
@@ -58,6 +108,58 @@ class PmkCutPlan(models.Model):
     # бессмысленна, а простое среднее не взвешено по металлу.
     waste_ratio = fields.Float("Отход, %", compute="_compute_totals", store=True, digits=(5, 2), aggregator=None)
     has_unplaced = fields.Boolean("Есть неразмещённые", compute="_compute_totals", store=True)
+
+    # Шаг 35: отход больше 10 % — карточка «Отход, %» в шапке жёлтая и с
+    # пометкой «много». Не хранится: следует за хранимым waste_ratio.
+    waste_high = fields.Boolean(
+        "Отход больше 10 %", compute="_compute_waste_high",
+        help="Сигнал, а не запрет: раскрой стоит пересмотреть — нет ли "
+             "заготовки выгоднее.")
+    # Доводка шага 35: отход словом и в СПИСКЕ раскроев — правило 7: сигнал
+    # виден там, где принимают решение (список, шапка), а не только внутри
+    # документа. Больше 10 % — жёлтой плашкой и «· много» (cutting.waste_label,
+    # тот же текст, что во вкладке «Результат»). Не хранится: следует за
+    # хранимыми waste_ratio и total_weight. Металла не взято (не посчитан,
+    # заготовок нет) — пусто: «0 %» читался бы как идеальный раскрой.
+    waste_label = fields.Char("Отход", compute="_compute_waste_label")
+    # Шаг 35: типоразмеры отрезков без единой заготовки, у которых в прайсе
+    # нет длины хлыста, — им заготовку вводят руками. Остальным хлыст из
+    # прайса добавится сам при расчёте. Правило «без единой заготовки» —
+    # то же, что у обеих кнопок (_pmk_bare_profiles).
+    stock_missing_text = fields.Char(
+        "Нет длины хлыста в прайсе", compute="_compute_stock_missing_text",
+        help="Типоразмеры отрезков без заготовок, для которых в прайсе нет "
+             "длины хлыста: заготовку для них введите вручную.")
+
+    @api.depends("spec_id")
+    def _compute_partner_id(self):
+        for plan in self:
+            plan.partner_id = plan.spec_id.partner_id or plan.partner_id
+
+    @api.depends("waste_ratio")
+    def _compute_waste_high(self):
+        for plan in self:
+            plan.waste_high = (plan.waste_ratio or 0.0) > WASTE_WARN_PCT
+
+    @api.depends("waste_ratio", "total_weight")
+    def _compute_waste_label(self):
+        for plan in self:
+            plan.waste_label = (
+                waste_label_of(plan.waste_ratio)[0] if plan.total_weight else False)
+
+    # Зависимость от поставщика расчёта — только если стоит мост: поле
+    # supplier_id объявлено в pmk_bridge, а связь с ним мягкая. Строкой в
+    # @api.depends без моста реестр не собрался бы («Dependency field not
+    # found»), поэтому функцией: Odoo зовёт её при сборке реестра.
+    @api.depends(lambda self: ("part_ids.profile_id", "stock_ids.profile_id") + (
+        ("spec_id.supplier_id",)
+        if "supplier_id" in self.env["pmk.metal.spec"]._fields else ()))
+    def _compute_stock_missing_text(self):
+        for plan in self:
+            bare = plan._pmk_bare_profiles()
+            lengths = plan._pmk_price_bar_lengths(bare)
+            missing = bare.filtered(lambda p: not lengths.get(p.id))
+            plan.stock_missing_text = ", ".join(missing.mapped("display_name")) or False
 
     @api.depends("result_ids.bars_used", "result_ids.weight_total",
                  "result_ids.scrap_weight", "result_ids.unplaced_text")
@@ -81,19 +183,112 @@ class PmkCutPlan(models.Model):
         return super().create(vals_list)
 
     # ------------------------------------------------------------------
-    # Заполнение из спецификации
+    # Хлысты из прайса (разбор UX, шаг 35)
+    # ------------------------------------------------------------------
+
+    def _pmk_price_bars_ready(self):
+        """Стоит ли мост номенклатуры (pmk_bridge) — источник длины хлыста.
+
+        Связь МЯГКАЯ (доводка шага 35): в зависимостях pmk_cut моста нет.
+        Мост держит mrp, stock_account и модули RuOdoo, и при жёсткой
+        зависимости удаление любого из них в «Приложениях» каскадом снесло бы
+        pmk_bridge, а за ним pmk_cut — с таблицами всех раскроев РК-….
+        Раскрою от моста нужны: связь типоразмера с карточкой
+        (pmk.metal.profile.product_tmpl_id), выбор строки прайса
+        (product.template._pmk_find_seller), длина в ней
+        (product.supplierinfo.pmk_bar_length_mm) и поставщик расчёта
+        (pmk.metal.spec.supplier_id). Нет моста — нет длины: заготовку
+        вводят руками, как до шага 35.
+        """
+        env = self.env
+        return (
+            "product.supplierinfo" in env
+            and "pmk_bar_length_mm" in env["product.supplierinfo"]._fields
+            and "product_tmpl_id" in env["pmk.metal.profile"]._fields
+            and hasattr(env["product.template"], "_pmk_find_seller"))
+
+    def _pmk_bare_profiles(self):
+        """Типоразмеры отрезков, у которых нет ни одной заготовки.
+
+        ОДНО ПРАВИЛО для обеих кнопок и серой строки «Нет длины хлыста в
+        прайсе»: хлыст из прайса получают только они. Типоразмер, у которого
+        заготовки уже есть, не трогаем — их набор решение человека («только
+        эти 5 хлыстов», «режем только 6 м»). Раньше «Заполнить из расчёта»
+        добавляло хлыст всем типоразмерам без заготовки той же длины и
+        возвращало хлыст, который человек удалил (доводка шага 35).
+        """
+        self.ensure_one()
+        return self.part_ids.profile_id - self.stock_ids.profile_id
+
+    def _pmk_price_bar_lengths(self, profiles):
+        """{id типоразмера: длина хлыста, мм} по строке прайса; 0 — длины нет.
+
+        Строку выбирает product.template._pmk_find_seller (pmk_bridge) — та
+        же дверь, через которую расчёт берёт цену: поставщик расчёта, а если
+        он не задан — лучший по рейтингу; базовый уровень объёма. Прайс — на
+        СЕГОДНЯ, а не на дату документа: хлысты покупают сейчас, а у прайсов
+        до 21.09.2026 длины не записаны вовсе. Моста нет — у всех 0.
+        """
+        self.ensure_one()
+        lengths = dict.fromkeys(profiles.ids, 0.0)
+        if not profiles or not self._pmk_price_bars_ready():
+            return lengths
+        today = fields.Date.context_today(self)
+        spec = self.spec_id
+        supplier = spec.supplier_id if "supplier_id" in spec._fields else None
+        for profile in profiles:
+            tmpl = profile.product_tmpl_id
+            seller = tmpl._pmk_find_seller(today, supplier=supplier) if tmpl else False
+            lengths[profile.id] = (seller.pmk_bar_length_mm if seller else 0.0) or 0.0
+        return lengths
+
+    def _pmk_add_price_bars(self):
+        """Добавить «хлыст из прайса» типоразмерам без единой заготовки.
+
+        Кто их получает — _pmk_bare_profiles (одно правило у обеих кнопок).
+        Количество 0 — «сколько нужно» (докупим), очерёдность
+        PRICE_BAR_PRIORITY — в дело последним, после своих заготовок и
+        обрезков. Длины в прайсе нет — строку не добавляем (её вводят руками,
+        stock_missing_text). Возвращает число добавленных строк.
+        """
+        self.ensure_one()
+        bare = self._pmk_bare_profiles()
+        lengths = self._pmk_price_bar_lengths(bare)
+        values = [{
+            "plan_id": self.id,
+            "profile_id": profile.id,
+            "length_mm": lengths[profile.id],
+            "qty": 0,
+            "priority": PRICE_BAR_PRIORITY,
+            # Пометка видна в колонке «Название» (её вернул шаг 35): без неё
+            # докупку не отличить от своего хлыста той же длины.
+            "name": "%s (из прайса)" % bar_name(lengths[profile.id]),
+        } for profile in bare if lengths.get(profile.id, 0.0) > 0]
+        if values:
+            self.env["pmk.cut.stock"].create(values)
+            # Набор заготовок документа перечитываем: расчёт ниже смотрит на
+            # него сразу после добавления.
+            self.invalidate_recordset(["stock_ids"])
+        return len(values)
+
+    # ------------------------------------------------------------------
+    # Заполнение из расчёта
     # ------------------------------------------------------------------
 
     def action_fill_from_spec(self):
-        """Перенести линейные детали спецификации в отрезки.
+        """Перенести линейные детали расчёта в отрезки.
 
-        Количество перемножаем: в спецификации количество указано НА ОДНО
+        Количество перемножаем: в расчёте количество указано НА ОДНО
         изделие, а изделий в документе может быть сто. Не перемножить —
         значит посчитать раскрой на одну ферму вместо партии.
+
+        Шаг 35: заодно клиент (если пуст) и хлысты по длине из прайса —
+        типоразмерам без заготовок; прежний результат сбрасывается — он
+        посчитан по прежним отрезкам.
         """
         self.ensure_one()
         if not self.spec_id:
-            raise UserError(_("Не выбрана спецификация."))
+            raise UserError(_("Не выбран расчёт."))
 
         rows = {}
         for product in self.spec_id.product_ids:
@@ -110,8 +305,12 @@ class PmkCutPlan(models.Model):
                     rows[key]["names"].add(line.detail_name)
 
         if not rows:
-            raise UserError(_("В спецификации нет линейного проката с длиной."))
+            raise UserError(_("В расчёте нет линейного проката с длиной."))
 
+        if not self.partner_id and self.spec_id.partner_id:
+            self.partner_id = self.spec_id.partner_id
+        # Результат считали по прежним отрезкам — к новым он не относится.
+        self.result_ids.unlink()
         self.part_ids.unlink()
         self.env["pmk.cut.part"].create([
             {
@@ -125,8 +324,14 @@ class PmkCutPlan(models.Model):
             }
             for (profile_id, length), data in sorted(rows.items(), key=lambda kv: -kv[0][1])
         ])
-        # Заготовки не трогаем: какие хлысты есть в наличии, знает человек,
-        # а не спецификация.
+        self.invalidate_recordset(["part_ids"])
+        # Заготовки, заведённые руками, не трогаем: какие обрезки лежат на
+        # складе, знает человек, а не расчёт. Хлыст из прайса — добавляем
+        # (шаг 35): что продаёт поставщик, знает прайс. Только типоразмерам
+        # без заготовок — то же правило, что у «Рассчитать»: удалённый
+        # человеком хлыст из прайса повторное заполнение не вернёт, и «только
+        # эти 5 хлыстов» не превратятся в «5 хлыстов и сколько угодно 12 м».
+        self._pmk_add_price_bars()
         return True
 
     # ------------------------------------------------------------------
@@ -142,8 +347,13 @@ class PmkCutPlan(models.Model):
         self.ensure_one()
         if not self.part_ids:
             raise UserError(_("Нечего резать: не задано ни одного отрезка."))
-        if not self.stock_ids:
-            raise UserError(_("Не из чего резать: не задано ни одной заготовки."))
+
+        # Шаг 35: отрезки ввели руками — типоразмеру без единой заготовки
+        # хлыст по длине из прайса добавляется сам, как при «Заполнить из
+        # расчёта» (одно правило — _pmk_bare_profiles). Типоразмер, у которого
+        # заготовки уже есть, не трогаем: их набор — решение человека
+        # (например, «только эти 5 хлыстов»).
+        self._pmk_add_price_bars()
 
         self.result_ids.unlink()
 
@@ -152,16 +362,23 @@ class PmkCutPlan(models.Model):
         for profile in profiles:
             parts = self.part_ids.filtered(lambda p, pr=profile: p.profile_id == pr)
             stocks = self.stock_ids.filtered(lambda s, pr=profile: s.profile_id == pr)
-            if not stocks:
-                raise UserError(_(
-                    "Для «%s» не задано ни одной заготовки — не из чего резать.",
-                    profile.display_name))
 
+            # Доводка шага 35: типоразмер без заготовок (длины хлыста в прайсе
+            # нет — «в городе нет», или моста нет) расчёт НЕ останавливает.
+            # Сигнал, а не запрет: его отрезки встают в «Не размещено» с
+            # пометкой «нет заготовок» — это видно плашкой над вкладками, в
+            # таблице «Результат», на листе раскроя («НЕ РАЗМЕЩЕНО») и серой
+            # строкой во вкладке «Заготовки». Остальные типоразмеры
+            # считаются. Раньше одна такая позиция роняла ошибкой весь расчёт.
+            # Пустой набор заготовок cut_plan разбирает сам: всё — в
+            # неразмещённые, заготовок 0.
             res = cut_plan(
                 [{
                     "length": s.length_mm,
-                    # Пустое количество — заготовка неограничена: докупим
-                    # столько, сколько понадобится.
+                    # 0 — «сколько нужно»: заготовка не ограничена, докупим
+                    # столько, сколько понадобится (None для cut_plan). Пустым
+                    # поле не бывает — целое поле хранит стёртое число нулём.
+                    # Число больше нуля — столько штук есть, не больше.
                     "qty": s.qty or None,
                     "name": s.name or s.display_name,
                     "priority": s.priority,
@@ -170,13 +387,13 @@ class PmkCutPlan(models.Model):
                 kerf=self.kerf_mm,
                 min_useful=self.min_useful_mm,
             )
-            created.append(self._result_values(profile, res))
+            created.append(self._result_values(profile, res, no_stock=not stocks))
 
         self.env["pmk.cut.result"].create(created)
         _logger.info("pmk_cut: %s — посчитано групп: %s", self.name, len(created))
         return True
 
-    def _result_values(self, profile, res):
+    def _result_values(self, profile, res, no_stock=False):
         mass = profile.mass_per_meter or 0.0
         to_kg = lambda mm: mm / MM_IN_M * mass  # noqa: E731
 
@@ -200,7 +417,7 @@ class PmkCutPlan(models.Model):
             "lower_bound": res["lower_bound"],
             "layout_html": self._layout_html(res),
             "leftovers_text": self._leftovers_text(res),
-            "unplaced_text": self._unplaced_text(res),
+            "unplaced_text": self._unplaced_text(res, no_stock=no_stock),
             "result_json": json.dumps(res, ensure_ascii=False),
         }
 
@@ -252,11 +469,15 @@ class PmkCutPlan(models.Model):
             return False
         return ", ".join("%s мм" % self._fmt(x) for x in res["useful_leftovers"])
 
-    def _unplaced_text(self, res):
+    def _unplaced_text(self, res, no_stock=False):
         if not res["unplaced"]:
             return False
-        return "; ".join(
+        text = "; ".join(
             "%s мм — %s шт" % (self._fmt(u["length"]), u["qty"]) for u in res["unplaced"])
+        # Доводка шага 35: у типоразмера нет ни одной заготовки — так и
+        # пишем. Голое «1450 мм — 6 шт» читалось бы как «деталь длиннее
+        # хлыста» или «хлыстов не хватило».
+        return "нет заготовок: %s" % text if no_stock else text
 
     @staticmethod
     def _fmt(value):
@@ -275,15 +496,27 @@ class PmkCutStock(models.Model):
     sequence = fields.Integer("№", default=10)
     profile_id = fields.Many2one("pmk.metal.profile", "Типоразмер", required=True)
     length_mm = fields.Float("Длина, мм", required=True, digits=(10, 1))
+    # Шаг 35: подпись говорила «Пусто или 0 — не ограничено», а в колонке
+    # стоял «0»: целое поле пустым не бывает. Честно: 0 значит «сколько
+    # нужно» — расчёт возьмёт столько, сколько понадобится (cutting.py, qty
+    # None), число — не больше стольких штук.
     qty = fields.Integer(
-        "Количество", default=0,
-        help="Сколько таких заготовок в наличии. Пусто или 0 — не ограничено, "
-             "докупим сколько понадобится.")
-    name = fields.Char("Название", help="Например «Хлыст 6 м» или «Обрезок от РК-00007».")
+        "В наличии, шт", default=0,
+        help="Сколько таких заготовок есть. 0 — сколько нужно: расчёт возьмёт "
+             "столько, сколько понадобится (докупим). Пустым поле не бывает — "
+             "стёртое число сохраняется нулём.")
+    name = fields.Char(
+        "Название",
+        help="Например «Хлыст 6 м» или «Обрезок от РК-00007». Хлыст, который "
+             "добавила система по длине из прайса, помечен «(из прайса)» — "
+             "это докупка, а не то, что лежит на складе.")
+    # Доводка шага 35: хлыст из прайса получает очерёдность 100 — в дело
+    # последним (cut_plan.PRICE_BAR_PRIORITY); подсказка говорит об этом.
     priority = fields.Integer(
         "Очерёдность", default=10,
         help="Меньше — раньше идёт в дело. Обрезкам со склада ставьте 1, "
-             "чтобы расходовались первыми.")
+             "чтобы расходовались первыми. Хлыст из прайса (докупка) стоит с "
+             "очерёдностью 100 — идёт в дело последним, после своих.")
 
 
 class PmkCutPart(models.Model):
@@ -322,6 +555,13 @@ class PmkCutResult(models.Model):
     leftover_weight = fields.Float("В годные остатки, кг", digits=(12, 2))
     scrap_weight = fields.Float("В лом, кг", digits=(12, 2))
     waste_ratio = fields.Float("Отход, %", digits=(5, 2))
+    # Шаг 35: отход словом для таблицы «Результат» — больше 10 % жёлтой
+    # плашкой и словом «много», ноль серым (cutting.waste_label). Не хранится:
+    # следует за waste_ratio.
+    waste_label = fields.Char("Отход", compute="_compute_waste_label")
+    waste_level = fields.Selection(
+        [("zero", "Ничего"), ("ok", "Норма"), ("high", "Много")],
+        "Уровень отхода", compute="_compute_waste_label")
     # Грубая нижняя граница: показывает, есть ли куда ужиматься вообще.
     lower_bound = fields.Integer("Теоретический минимум")
 
@@ -329,3 +569,8 @@ class PmkCutResult(models.Model):
     leftovers_text = fields.Char("Годные остатки")
     unplaced_text = fields.Char("Не размещено")
     result_json = fields.Text("Расчёт (json)")
+
+    @api.depends("waste_ratio")
+    def _compute_waste_label(self):
+        for result in self:
+            result.waste_label, result.waste_level = waste_label_of(result.waste_ratio)

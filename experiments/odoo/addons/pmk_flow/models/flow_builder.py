@@ -56,6 +56,11 @@ _STAGES = {
     'sale.order': (3, 'Заказ'),
     'pmk.cut.plan': (4, 'Раскрой'),
     'pmk.laser.job': (4, 'Лазер'),
+    # Доборка — изготовление гнутых планок по сделке, работа цеха рядом с
+    # раскроем и лазером (разбор UX, шаг 35: поле «Сделка» у доборки,
+    # счётчик «Доборки» на сделке — pmk_deal, dobor_link.py). Вторая строка
+    # узла — штатное состояние: Черновик / В работе / Изготовлен.
+    'pmk.dobor.order': (4, 'Доборка'),
     'mrp.production': (4, 'Производство'),
     'project.project': (4, 'Проект'),
     'project.task': (4, 'Задача'),
@@ -444,6 +449,9 @@ class PmkFlowBuilder(models.AbstractModel):
             linked.append(self._referrers('mail.client.message', 'pmk_lead_id', record.id, hidden))
             # Расчёты металлопроката висят на сделке (модуль pmk_deal).
             linked.append(self._optional_rel(record, 'spec_ids', hidden))
+            # Доборки — тоже (pmk_deal, шаг 35): счётчик «Доборки» над формой
+            # и схема на вкладке «Связи» говорят одно и то же.
+            linked.append(self._optional_rel(record, 'dobor_ids', hidden))
             # Заказы клиента из сделки (sale_crm). Поле opportunity_id у
             # заказа появляется только с sale_crm — отсюда проверка поля.
             linked.append(self._referrers('sale.order', 'opportunity_id', record.id, hidden))
@@ -455,6 +463,9 @@ class PmkFlowBuilder(models.AbstractModel):
             linked.append(self._referrers('pmk.laser.job', 'spec_id', record.id, hidden))
         elif model == 'pmk.cut.plan':
             linked.append(self._optional_rel(record, 'spec_id', hidden))
+        elif model == 'pmk.dobor.order':
+            # Доборка знает свою сделку (pmk_deal, шаг 35).
+            linked.append(self._optional_rel(record, 'opportunity_id', hidden))
         elif model == 'pmk.laser.job':
             linked.append(self._optional_rel(record, 'spec_id', hidden))
             linked.append(self._optional_rel(record, 'sale_order_id', hidden))

@@ -47,3 +47,36 @@
 // деньгам. Цвет не единственный признак — у остатка своя подпись в мм.
 .pmk-cut__rest--useful { background: rgba(77, 208, 177, 0.32); color: #fff; }
 .pmk-cut__rest--scrap  { background: rgba(240, 143, 176, 0.28); color: #fff; }
+
+// ─── Шаг 35: отход словом в таблице «Результат» и в списке раскроев ─────────
+//
+// Разбор UX, шаг 35 (02.10.2026). Колонка «Отход» — виджет badge со словом,
+// как «Использование» листа в расчёте (pmk_calc, dobor_builder.scss, шаг 32).
+// Доводка: та же колонка в списке «Раскрой сортамента» — правила ниже
+// действуют в любом списке (.o_list_renderer); серого нуля там нет (в
+// самостоятельном списке нет decoration-secondary), ноль — обычным текстом:
+//   • больше 10 % — бледно-жёлтой плашкой темы и словом «много»
+//     (decoration-warning → text-bg-warning; тон и тёмная пара — pmk_theme,
+//     forms_nexus.scss и dark.scss, «Плашки статусов»);
+//   • норма — обычным текстом: колонка молчит, когда всё в порядке, иначе
+//     жёлтое среди серых плашек не бросается в глаза. Норма — text-bg-300
+//     (так BadgeField помечает значение без подходящего decoration);
+//   • ноль — серым текстом, как нули таблицы (td.o_pmk_zero, js/list_zero.js:
+//     ячейку с виджетом тема не глушит). decoration-secondary, а не -muted:
+//     muted ядро превращает в тот же text-bg-300, что и норма.
+// Вес (0,5,0) выше светлого правила темы (0,3,0) и тёмного (0,4,1) — оба с
+// !important, поэтому и здесь !important. Тёмная пара серого — dark.scss,
+// раздел «Шаг 35». Файл подключён манифестом модуля (web.assets_backend) и
+// на стенде живой, в отличие от выключенных файлов темы.
+.o_list_renderer .o_field_badge.pmk-cut-waste > .badge.text-bg-300,
+.o_list_renderer .o_field_badge.pmk-cut-waste > .badge.text-bg-secondary {
+  background: transparent !important;
+  border-color: transparent !important;
+  color: inherit !important;
+  font-weight: 400;
+  padding-left: 0;
+}
+
+.o_list_renderer .o_field_badge.pmk-cut-waste > .badge.text-bg-secondary {
+  color: #b4b2a9 !important;
+}

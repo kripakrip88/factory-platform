@@ -28,8 +28,13 @@
             parent="menu_pmk_calc_reference" action="action_metal_grade" sequence="40"/>
   <menuitem id="menu_pmk_calc_fastener" name="Метизы"
             parent="menu_pmk_calc_reference" action="action_metal_fastener" sequence="25"/>
-  <menuitem id="menu_pmk_calc_paint" name="Лакокрасочные покрытия"
+  <!-- Разбор UX, шаг 35 (02.10.2026): «Лакокрасочные покрытия» и «Покрытия
+       доборки» стояли рядом, а экран второго назывался просто «Покрытия».
+       Теперь «Краски (ЛКП)» — краски расчёта металлопроката, «Цвета доборки
+       (RAL)» — цвета, из которых гнут доборку. Имена — только в en_US базы
+       (перевода ru_RU нет), поэтому правка в XML видна сразу после -u. -->
+  <menuitem id="menu_pmk_calc_paint" name="Краски (ЛКП)"
             parent="menu_pmk_calc_reference" action="action_paint_coating" sequence="45"/>
-  <menuitem id="menu_pmk_calc_coating" name="Покрытия доборки"
+  <menuitem id="menu_pmk_calc_coating" name="Цвета доборки (RAL)"
             parent="menu_pmk_calc_reference" action="action_dobor_coating" sequence="50"/>
 </odoo>

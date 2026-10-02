@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Доборка ↔ сделка — разбор UX, шаг 35 (02.10.2026). Модель —
+    models/dobor_link.py. Отдельный файл видов: шаг возвращается одним куском
+    (снять файл из манифеста и выложить), поле «Сделка» и данные остаются.
+    Все виды — с active в XML (грабли Odoo 19: выключенный вид не
+    проверяется, и упавший xpath незаметен).
+  -->
+
+  <!--
+    Кнопка-счётчик «Доборки» на сделке — сразу за «Расчётами». По правилу
+    кнопок-счётчиков это НАШ шаг: видна всегда, ноль серым (тема,
+    stat_buttons.js). У лида нет — как и «Расчётов»: доборку делают по
+    сделке. Наследник нашего же вида со «Расчётами»: якорь гарантированно
+    на месте, и кнопка встаёт сразу за ним, а не по очерёдности видов.
+    Xpath — внутри button_box: кнопка «Расчёт и КП» в шапке сделки тоже
+    зовёт action_open_specs.
+  -->
+  <record id="view_crm_lead_form_dobors" model="ir.ui.view">
+    <field name="name">crm.lead.form.pmk.dobors</field>
+    <field name="model">crm.lead</field>
+    <field name="inherit_id" ref="pmk_deal.view_crm_lead_form_specs"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//div[@name='button_box']/button[@name='action_open_specs']" position="after">
+        <button name="action_open_dobors" type="object"
+                class="oe_stat_button" icon="fa-clone"
+                invisible="type == 'lead'">
+          <field name="dobor_count" widget="statinfo" string="Доборки"/>
+        </button>
+      </xpath>
+    </field>
+  </record>
+
+  <!--
+    «Сделка» в шапке доборки — первым полем и во всю ширину, перед клиентом:
+    тем же приёмом, что у расчёта (views/metal_spec_views.xml) — по имени
+    блока pmk_f_partner. Клиент подставляется из сделки (onchange).
+  -->
+  <record id="view_dobor_order_form_deal" model="ir.ui.view">
+    <field name="name">pmk.dobor.order.form.deal</field>
+    <field name="model">pmk.dobor.order</field>
+    <field name="inherit_id" ref="pmk_calc.view_dobor_order_form"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//div[@name='pmk_f_partner']" position="before">
+        <div class="pmk-field pmk-field--wide" name="pmk_f_deal">
+          <label for="opportunity_id"/>
+          <field name="opportunity_id" nolabel="1"
+                 options="{'no_create': True}"
+                 placeholder="Без сделки…"/>
+        </div>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- «Сделка» в списке доборок — в меню колонок (⚙): ищут чаще по клиенту,
+       сделка видна в самой доборке. -->
+  <record id="view_dobor_order_list_deal" model="ir.ui.view">
+    <field name="name">pmk.dobor.order.list.deal</field>
+    <field name="model">pmk.dobor.order</field>
+    <field name="inherit_id" ref="pmk_calc.view_dobor_order_list"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='partner_id']" position="after">
+        <field name="opportunity_id" optional="hide"/>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="view_dobor_order_search_deal" model="ir.ui.view">
+    <field name="name">pmk.dobor.order.search.deal</field>
+    <field name="model">pmk.dobor.order</field>
+    <field name="inherit_id" ref="pmk_calc.view_dobor_order_search"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='partner_id']" position="after">
+        <field name="opportunity_id" string="Сделка"/>
+      </xpath>
+      <xpath expr="//filter[@name='by_partner']" position="after">
+        <filter name="by_deal" string="Сделка" context="{'group_by': 'opportunity_id'}"/>
+      </xpath>
+    </field>
+  </record>
+
+</odoo>

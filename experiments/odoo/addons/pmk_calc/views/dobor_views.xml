@@ -31,14 +31,25 @@
             бы шапку вниз.
           -->
           <div class="pmk-doc-head">
+            <!--
+              Разбор UX, шаг 35 (02.10.2026): «Клиент» — полем-контрагентом,
+              текст — «Изделие / объект» во всю ширину. Порядок: Клиент | Дата
+              → Изделие / объект. «Сделку» ставит pmk_deal перед клиентом —
+              по имени блока pmk_f_partner, как у расчёта (views/dobor_views.xml
+              в pmk_deal). ⚠️ Имена блоков pmk_f_* — опора для xpath, не менять.
+            -->
             <div class="pmk-doc-head__fields">
-              <div class="pmk-field">
-                <label for="customer"/>
-                <field name="customer" nolabel="1" placeholder="Кому или на какое изделие"/>
+              <div class="pmk-field" name="pmk_f_partner">
+                <label for="partner_id"/>
+                <field name="partner_id" nolabel="1"/>
               </div>
-              <div class="pmk-field">
+              <div class="pmk-field" name="pmk_f_date">
                 <label for="order_date"/>
                 <field name="order_date" nolabel="1"/>
+              </div>
+              <div class="pmk-field pmk-field--wide" name="pmk_f_customer">
+                <label for="customer"/>
+                <field name="customer" nolabel="1" placeholder="На какое изделие или объект"/>
               </div>
             </div>
 
@@ -190,13 +201,22 @@
     <field name="name">pmk.dobor.order.list</field>
     <field name="model">pmk.dobor.order</field>
     <field name="arch" type="xml">
-      <list string="Заказы доборки">
+      <!-- Разбор UX, шаг 35: пустой заказ (0 позиций) — серой строкой
+           целиком: черновик, который так и не заполнили. Цвет повторён
+           словом — «Черновик» в статусе и «0» в «Позиций». Ничего не
+           прячется и не запрещается. -->
+      <list string="Заказы доборки" decoration-muted="total_positions == 0">
         <!-- Разбор UX, шаг 24: номер «ДОБ-00012» целиком и без лишней
              ширины (было 270–290 px на номер — половина таблицы пустая);
              площадь до сотых вместо «1,0950», вес без граммов. -->
         <field name="name" width="105px"/>
         <field name="order_date"/>
-        <field name="customer"/>
+        <!-- Шаг 35: «Клиент» — контрагент; «Изделие / объект» — прежний
+             текст. Оба в меню колонок (⚙). Ширина клиента задана: без неё
+             свободное место уходит самой длинной колонке, а клиент сжимается
+             до «ООО «Ар…» (как в списке сделок, шаг 25). -->
+        <field name="partner_id" optional="show" width="160px"/>
+        <field name="customer" optional="show"/>
         <field name="total_positions"/>
         <field name="total_qty"/>
         <field name="total_area" digits="[12,2]" sum="Площадь, м²" optional="show"/>
@@ -222,9 +242,11 @@
     <field name="model">pmk.dobor.order</field>
     <field name="arch" type="xml">
       <search>
-        <!-- Поиск по номеру и заказчику: по ним заказ и ищут, когда звонит клиент. -->
+        <!-- Поиск по номеру, клиенту и изделию: по ним заказ и ищут, когда
+             звонит клиент (шаг 35: клиент — полем, текст — изделие / объект). -->
         <field name="name" string="Номер заказа"/>
-        <field name="customer" string="Заказчик"/>
+        <field name="partner_id" string="Клиент"/>
+        <field name="customer" string="Изделие / объект"/>
         <field name="line_ids" string="Позиция"
                filter_domain="[('line_ids.title', 'ilike', self)]"/>
 
@@ -241,7 +263,8 @@
                 domain="[('order_date', '&gt;=', (context_today() + relativedelta(month=1, day=1)).strftime('%Y-%m-%d'))]"/>
 
         <group>
-          <filter name="by_customer" string="Заказчик" context="{'group_by': 'customer'}"/>
+          <filter name="by_partner" string="Клиент" context="{'group_by': 'partner_id'}"/>
+          <filter name="by_customer" string="Изделие / объект" context="{'group_by': 'customer'}"/>
           <filter name="by_state" string="Статус" context="{'group_by': 'state'}"/>
           <filter name="by_date" string="Дата" context="{'group_by': 'order_date'}"/>
         </group>
@@ -249,17 +272,30 @@
     </field>
   </record>
 
+  <!--
+    Шаг 35: по умолчанию — «Не изготовлены»: цеху каждый день нужно то, что
+    ещё не сделано (фильтр в поиске был и раньше). Изготовленные — снять
+    фильтр. Пустой экран подсказывает, куда идти (правило шага 26).
+  -->
   <record id="action_dobor_order" model="ir.actions.act_window">
     <field name="name">Доборные элементы</field>
     <field name="res_model">pmk.dobor.order</field>
     <field name="view_mode">list,form</field>
+    <field name="context">{'search_default_open': 1}</field>
+    <field name="help" type="html">
+      <p>По выбранным фильтрам заказов доборки нет.</p>
+      <p>Изготовленные — снимите фильтр «Не изготовлены». Новый заказ — кнопка «Новое».</p>
+    </field>
   </record>
 
+  <!-- Шаг 35: «Цвета доборки (RAL)», а не «Покрытия»: рядом в справочниках
+       «Краски (ЛКП)» расчёта, и два «покрытия» путались. Справочник — цвета,
+       из которых гнут доборку (RAL и цинк). -->
   <record id="view_dobor_coating_list" model="ir.ui.view">
     <field name="name">pmk.dobor.coating.list</field>
     <field name="model">pmk.dobor.coating</field>
     <field name="arch" type="xml">
-      <list string="Покрытия" editable="bottom">
+      <list string="Цвета доборки (RAL)" editable="bottom">
         <field name="name"/>
         <field name="ral_code"/>
         <field name="hex_color" widget="color"/>
@@ -281,7 +317,7 @@
   </record>
 
   <record id="action_dobor_coating" model="ir.actions.act_window">
-    <field name="name">Покрытия</field>
+    <field name="name">Цвета доборки (RAL)</field>
     <field name="res_model">pmk.dobor.coating</field>
     <field name="view_mode">list</field>
   </record>

@@ -4,9 +4,11 @@
 Гонять ТОЛЬКО на одноразовой базе (см. pmk_calc/tests/test_list_units.py).
 Разметка — собранная, как её получает браузер (get_views).
 
-Что ловим: вид шага жив; «Название» заготовки и «Теоретический минимум»
-ушли в меню колонок (⚙), минимум скрыт и в окне строки результата;
-«Очерёдность» заготовок — на виду (по ней обрезки идут в дело первыми).
+Что ловим: вид шага жив; «Теоретический минимум» ушёл в меню колонок (⚙)
+и скрыт в окне строки результата; «Очерёдность» заготовок — на виду (по ней
+обрезки идут в дело первыми). «Название» заготовки шаг 29 тоже прятал — его
+вернул шаг 35 (пометка «(из прайса)» у хлыста-докупки), см.
+test_stock_name_back_since_step35.
 """
 from lxml import etree
 
@@ -31,10 +33,13 @@ class TestCutHideStep29(TransactionCase):
     def test_view_active(self):
         self.assertTrue(self.env.ref("pmk_cut.view_cut_plan_form_step29").active)
 
-    def test_stock_name_in_gear(self):
+    def test_stock_name_back_since_step35(self):
+        """Шаг 35 вернул «Название»: в нём «(из прайса)» у хлыста-докупки."""
         arch = self._form()
         name = self._one(arch, "//field[@name='stock_ids']/list/field[@name='name']")
-        self.assertEqual(name.get("optional"), "hide")
+        self.assertEqual(name.get("optional"), "show", "На виду, убрать — галочкой в ⚙.")
+        step29 = self.env.ref("pmk_cut.view_cut_plan_form_step29").arch
+        self.assertNotIn("@name='name'", step29, "Xpath шага 29 на «Название» снят.")
         priority = self._one(arch, "//field[@name='stock_ids']/list/field[@name='priority']")
         self.assertNotIn(priority.get("optional"), ("hide",))
         self.assertNotIn(priority.get("column_invisible"), HIDDEN)

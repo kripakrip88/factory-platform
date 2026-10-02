@@ -193,7 +193,7 @@
     <field name="name">pmk.paint.coating.list</field>
     <field name="model">pmk.paint.coating</field>
     <field name="arch" type="xml">
-      <list string="Покрытия" editable="bottom">
+      <list string="Краски (ЛКП)" editable="bottom">
         <field name="paint_type"/>
         <field name="name"/>
         <field name="color"/>
@@ -204,8 +204,10 @@
     </field>
   </record>
 
+  <!-- Разбор UX, шаг 35: «Краски (ЛКП)» — пункт меню и заголовок экрана
+       (было «Лакокрасочные покрытия», рядом — «Покрытия доборки»). -->
   <record id="action_paint_coating" model="ir.actions.act_window">
-    <field name="name">Лакокрасочные покрытия</field>
+    <field name="name">Краски (ЛКП)</field>
     <field name="res_model">pmk.paint.coating</field>
     <field name="view_mode">list</field>
   </record>

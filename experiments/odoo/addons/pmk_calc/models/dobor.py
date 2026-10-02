@@ -145,7 +145,21 @@ class DoborOrder(models.Model):
     _order = "order_date desc, id desc"
 
     name = fields.Char("Номер", required=True, copy=False, readonly=True, default="Черновик")
-    customer = fields.Char("Клиент / изделие", tracking=True)
+    # Разбор UX, шаг 35 (02.10.2026): «Клиент / изделие» был свободным
+    # текстом — связи с клиентом не было, и доборки клиента не собрать ни
+    # поиском, ни группировкой. Теперь клиент — полем-контрагентом, а текст
+    # остался про изделие или объект («навес», адрес). Старые записи не
+    # переносились: текст на месте, «Клиент» у них пуст — заполняется по ходу.
+    # Сделку к доборке добавляет pmk_deal (models/dobor_link.py): калькулятор
+    # о CRM не знает.
+    partner_id = fields.Many2one(
+        "res.partner", "Клиент", tracking=True,
+        help="Кому делаем. В листе — строкой «Заказчик» вместе с изделием / "
+             "объектом.")
+    customer = fields.Char(
+        "Изделие / объект", tracking=True,
+        help="На какое изделие или объект (навес, адрес). Клиент — полем "
+             "«Клиент».")
     order_date = fields.Date("Дата", required=True, default=fields.Date.context_today)
     state = fields.Selection(
         [("draft", "Черновик"), ("confirmed", "В работе"), ("done", "Изготовлен")],
@@ -164,6 +178,23 @@ class DoborOrder(models.Model):
             order.total_qty = sum(order.line_ids.mapped("qty"))
             order.total_area = sum(order.line_ids.mapped("area_total"))
             order.total_weight = sum(order.line_ids.mapped("weight_total"))
+
+    @api.onchange("partner_id")
+    def _onchange_partner_company(self):
+        """Выбрали человека компании — клиентом становится его компания.
+
+        Доводка шага 35 — то же правило, что у расчёта (metal_spec.py, шаг 11,
+        решение Антона 28.09.2026): клиент — всегда компания. По нему список,
+        поиск и группировка «Клиент», и доборки одной компании не должны
+        расходиться по её инженерам. Сделка подставляет компанию сама
+        (pmk_deal, dobor_link.py); здесь — выбор руками в поле «Клиент».
+        Контактного лица у доборки нет, поэтому человек не сохраняется —
+        только его компания. Частное лицо без компании остаётся клиентом.
+        """
+        for order in self:
+            person = order.partner_id
+            if person and not person.is_company and person.parent_id:
+                order.partner_id = person.commercial_partner_id
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -200,7 +231,7 @@ class DoborOrder(models.Model):
 
         order = {
             "name": self.name,
-            "customer": self.customer or "—",
+            "customer": self._sheet_customer(),
             "order_date": fields.Date.to_string(self.order_date) if self.order_date else "",
             "items": [{
                 "title": line.title,
@@ -218,6 +249,17 @@ class DoborOrder(models.Model):
         return Markup(
             '<div class="article" data-oe-model="%s" data-oe-id="%s">%s</div>'
             % (self._name, self.id, order_html(order, mps, author=self.env.user.name or "")))
+
+    def _sheet_customer(self):
+        """Строка «Заказчик» листа: клиент и изделие / объект через точку.
+
+        Шаг 35: клиент стал отдельным полем, а лист выверен под печать с
+        цехом — строку не делим на две, кладём в прежнюю ячейку «Заказчик:».
+        Старые доборки (только текст) печатаются как раньше; пусто — «—».
+        """
+        self.ensure_one()
+        parts = [self.partner_id.display_name or "", (self.customer or "").strip()]
+        return " · ".join(part for part in parts if part) or "—"
 
     def action_print_sheet(self):
         return self.env.ref("pmk_calc.action_report_dobor_sheet").report_action(self)
