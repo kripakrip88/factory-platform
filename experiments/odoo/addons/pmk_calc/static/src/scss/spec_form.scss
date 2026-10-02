@@ -88,3 +88,135 @@
     }
   }
 }
+
+// ─── Окно изделия (разбор UX, шаг 34, 02.10.2026) ──────────────────────────
+//
+// Разметка — views/metal_spec_views.xml: <form class="pmk-product-form
+// pmk-dialog-fullscreen pmk-dialog-own-title">; размер окна и заголовок
+// «Изделие» ставит js/dobor_dialog_fullscreen.js. Классы формы ядро кладёт
+// на .modal-content окна (вместе с o_form_view), поэтому селекторы — от
+// него. Правила .pmk-doc-form (pmk_theme, forms_nexus.scss, раздел 9) сюда
+// не достают: окно — вне корня формы расчёта.
+//
+// Цветов здесь нет — подписи и поля красит тема, тёмная пара не нужна.
+
+// Во весь экран без полос сверху и снизу. Odoo даёт ЛЮБОМУ .modal-dialog
+// вертикальные поля 1.75rem (web, bootstrap_review.scss: «:not(.s_popup) >
+// .modal .modal-dialog», вес 0,3,0), а штатный modal-fullscreen (0,1,0) их
+// не снимает — так же, как у окна доборки (dobor_builder.scss). Здесь вес
+// 0,4,0. Прокрутку не трогаем: листается тело окна, шапка с заголовком и
+// подвал с кнопками остаются на месте (ядро: .modal-body { overflow: auto }).
+.modal-dialog.modal-fullscreen:has(> .modal-content.pmk-product-form) {
+  padding: 0;
+}
+
+.modal-content.pmk-product-form {
+  // Шапка — два ряда вместо четырёх: ввод (название, количество, заметка) и
+  // числа (вес; у моста — металл, цена, сумма). Подпись — СЛЕВА от поля
+  // (доводка шага 34): так в шапках наших документов с шага 27 — плотнее
+  // по высоте, и в одном сценарии «расчёт → изделие» один стиль подписей.
+  // Ряд переносится по ширине окна блоками: подпись от своего поля не
+  // отрывается. Без этих стилей блоки встают столбиком — форма не ломается.
+  .pmk-product-head {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  // Блоки ряда — по линии текста: подписи и значения на одной строке.
+  .pmk-product-head__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 10px 32px;
+  }
+
+  // Блок: подпись в одну строку, за ней поле. Ширина — по содержимому:
+  // плашка «≥ 2 807,72 · без 3 поз.» у «Металла на 1 шт» шире числа — в
+  // блоке заданной ширины она наезжала бы на соседа.
+  .pmk-product-head__field {
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
+    gap: 10px;
+    flex: 0 0 auto;
+    min-width: 0;
+
+    > .o_form_label {
+      flex: 0 0 auto;
+      margin: 0;
+      white-space: nowrap;
+    }
+
+    > .o_field_widget {
+      flex: 1 1 auto;
+      width: auto;
+      min-width: 0;
+    }
+
+    // Название — текст, ему нужна ширина.
+    &--wide {
+      flex: 1 1 22rem;
+
+      > .o_field_widget {
+        min-width: 10rem;
+      }
+    }
+
+    // Количество — узкое.
+    &--narrow > .o_field_widget {
+      flex: 0 0 5rem;
+    }
+
+    // Заметка — многострочная (widget="text" в виде): ей ширины больше,
+    // чем названию; окно уже ~1100 px — она уходит в свою строку и берёт
+    // её целиком. Подпись — к ПЕРВОЙ строке текста: «линия текста»
+    // многострочного поля для браузера — его нижний край, по ней подпись
+    // съехала бы вниз. Поэтому по верху, с тем же отступом, что у текста в
+    // поле (ядро: $o-input-padding-y = 2px, рамки сверху у поля нет).
+    &--note {
+      flex: 2 1 30rem;
+      align-items: flex-start;
+
+      > .o_form_label {
+        padding-top: 2px;
+      }
+
+      > .o_field_widget {
+        min-width: 12rem;
+      }
+    }
+  }
+
+  // Узкий экран (до 700 px) — подпись над полем, как у шапок шага 27: в
+  // строку с подписью «Заметка для себя (в КП не идёт)» поле не влезает.
+  // Правило ниже блоков: при равном весе побеждает порядок.
+  @media (max-width: 700px) {
+    .pmk-product-head__field {
+      flex: 1 1 100%;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 4px;
+
+      > .o_form_label {
+        padding-top: 0;
+        white-space: normal;
+      }
+
+      // В столбике основа гибкости — высота: «5rem» количества растянул бы
+      // поле на 80 px вниз.
+      > .o_field_widget {
+        flex: 0 0 auto;
+      }
+    }
+  }
+}
+
+// Редактор строки состава под изделием (static/src/xml/product_lines_field.xml):
+// «Типоразмер» шире прочих справочников — «Труба профильная прямоугольная
+// 100x50x3» в 200 px не помещалась. Место освободило снятое поле «Вид
+// проката» (шаг 34). Вес 0,2,0 — выше «--wide» в dobor_builder.scss.
+.pmk-edit__field.pmk-edit__field--xwide {
+  flex: 0 1 320px;
+}

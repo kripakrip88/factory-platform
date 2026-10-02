@@ -104,11 +104,13 @@ class TestListUnitsStep24(TransactionCase):
             .get("digits"), "[12,1]", "Карточка веса — один знак.")
         products = "//field[@name='product_ids']"
         dialog = products + "/form"
+        # Шапка окна изделия — блоки в два ряда, а не группы (шаг 34).
+        head = dialog + "/div[@name='pmk_product_head']"
         one_digit = [
             products + "/list/field[@name='weight_one']",
             products + "/list/field[@name='weight_total']",
-            dialog + "/group//field[@name='weight_one']",
-            dialog + "/group//field[@name='weight_total']",
+            head + "//field[@name='weight_one']",
+            head + "//field[@name='weight_total']",
         ]
         for tab in ("line_linear_ids", "line_sheet_ids", "line_paint_ids"):
             one_digit += [

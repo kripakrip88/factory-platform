@@ -32,7 +32,15 @@ import { X2ManyField, x2ManyField } from "@web/views/fields/x2many/x2many_field"
 //
 // inputs — что показывает редактор строки. Порядок тот же, что в диалоге
 // изделия, чтобы привычка работала в обоих местах. wide — поле текстовое или
-// со справочником, ему нужна ширина; остальные числовые и узкие.
+// со справочником, ему нужна ширина; xwide — справочник с длинными именами
+// («Труба профильная прямоугольная 100x50x3»); остальные числовые и узкие.
+// placeholder — подсказка пустого поля.
+//
+// Типоразмер одним полем (разбор UX, шаг 34): поля «Вид проката» больше
+// нет — вид подставляется сам из типоразмера (metal_spec.py, type_id), а
+// поиск понимает сокращения вида: «уг 50х5», «двут 20ш», «тр 57х3,5»
+// (models/size_search.py). Порядок разделов — тот же, что у вкладок окна
+// изделия: Прокат · Лист · Метизы · Покрытие.
 const SECTIONS = [
     {
         mode: "linear",
@@ -42,8 +50,13 @@ const SECTIONS = [
         accent: "#6bb6f5",
         inputs: [
             { name: "detail_name", label: "Деталь", wide: true },
-            { ref: true, name: "type_id", label: "Вид проката", wide: true },
-            { ref: true, name: "profile_id", label: "Типоразмер", wide: true },
+            {
+                ref: true,
+                name: "profile_id",
+                label: "Типоразмер",
+                xwide: true,
+                placeholder: "уг 50х5, двут 20ш, тр 57х3,5",
+            },
             { name: "length_mm", label: "Длина, мм" },
             { name: "qty", label: "Кол-во" },
         ],
@@ -56,7 +69,13 @@ const SECTIONS = [
         accent: "#4dd0b1",
         inputs: [
             { name: "detail_name", label: "Деталь", wide: true },
-            { ref: true, name: "sheet_id", label: "Лист", wide: true },
+            {
+                ref: true,
+                name: "sheet_id",
+                label: "Лист",
+                wide: true,
+                placeholder: "лист 4, оц 0,5, риф 5",
+            },
             { name: "a_mm", label: "A, мм" },
             { name: "b_mm", label: "B, мм" },
             { name: "qty", label: "Кол-во" },
@@ -262,6 +281,22 @@ export class ProductLinesRenderer extends ListRenderer {
     }
 
     /**
+     * Контекст поля-справочника в редакторе строки (разбор UX, шаг 34).
+     *
+     * Типоразмеру — вид строки: его позиции первыми в подсказке
+     * (name_search справочника, ключ pmk_prefer_type_id). Передаём сами:
+     * поле здесь рисуется без разметки (<Field> без fieldInfo), и контекст
+     * из вида до него не доходит (web, Field.fieldComponentProps).
+     */
+    refContext(line, input) {
+        if (input.name !== "profile_id") {
+            return {};
+        }
+        const type = line.data.type_id;
+        return { pmk_prefer_type_id: (type && type.id) || false };
+    }
+
+    /**
      * Открыть строку в редакторе.
      *
      * Через enterEditMode, а не своим признаком: поле Odoo рисуется
@@ -287,6 +322,11 @@ export class ProductLinesRenderer extends ListRenderer {
      * Вид детали передаём контекстом: он обязателен, и без него строка
      * попала бы не в тот раздел. Запись создаётся в наборе документа, а не
      * в базе — сохранится вместе со спецификацией.
+     *
+     * Новая строка проката берёт вид проката предыдущей (разбор UX, шаг 34):
+     * двутавры вводят подряд, и подсказка типоразмера показывает их первыми.
+     * Предыдущая — последняя строка раздела, у которой вид есть. Так же
+     * делает окно изделия (next_type_id изделия, metal_spec.py).
      */
     async addLine(record, section) {
         const list = record.data[section.field];
@@ -295,10 +335,18 @@ export class ProductLinesRenderer extends ListRenderer {
                 await record.data[other.field].leaveEditMode();
             }
         }
+        const context = { default_calc_mode: section.mode };
+        if (section.mode === "linear") {
+            const typed = list.records.filter((line) => line.data.type_id);
+            const last = typed[typed.length - 1];
+            if (last) {
+                context.default_type_id = last.data.type_id.id;
+            }
+        }
         const line = await list.addNewRecord({
             position: "bottom",
             mode: "edit",
-            context: { default_calc_mode: section.mode },
+            context,
         });
         this.pmk.open[record.id] = true;
         this.pmk.editing = line.id;

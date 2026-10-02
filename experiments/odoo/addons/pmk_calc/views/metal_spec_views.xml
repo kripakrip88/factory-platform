@@ -239,36 +239,137 @@
                     <create string="Добавить изделие"/>
                   </control>
                 </list>
-                <form string="Изделие">
-                  <group>
-                    <group>
-                      <field name="name" placeholder="Например: Ферма ФС-1"/>
-                      <field name="qty"/>
-                    </group>
-                    <group>
-                      <field name="weight_one" readonly="1" digits="[12,1]"/>
-                      <field name="weight_total" readonly="1" digits="[12,1]"/>
-                      <field name="note"/>
-                    </group>
-                  </group>
+                <!--
+                  ОКНО ИЗДЕЛИЯ (разбор UX, шаг 34, 02.10.2026).
 
+                  Классы формы ядро кладёт на .modal-content окна (вместе с
+                  o_form_view), а не внутрь формы расчёта: правила
+                  .pmk-doc-form и .pmk-spec-form сюда не достают, класс
+                  pmk-doc-form окну не ставится (шаг 27, тест
+                  test_step27_forms).
+                  • pmk-dialog-fullscreen — во весь экран, как окно позиции
+                    доборки: штатный размер диалога size="fullscreen"
+                    (static/src/js/dobor_dialog_fullscreen.js). В обычном
+                    окне было видно 6 деталей из 22. Значка «развернуть» у
+                    такого окна нет: своей формы у изделия нет, и ядро
+                    открывало автоформу со всеми полями подряд.
+                  • pmk-dialog-own-title — заголовок окна из string формы:
+                    «Изделие» вместо ядрового «Открыть: Изделия» / «Создать
+                    Изделия» (тот же файл: ядро собирает заголовок из
+                    подписи поля product_ids, атрибутом его не поменять).
+                  • pmk-product-form — крючок стилей шапки окна
+                    (scss/spec_form.scss, раздел «Окно изделия»).
+                -->
+                <form string="Изделие" class="pmk-product-form pmk-dialog-fullscreen pmk-dialog-own-title">
+                  <!--
+                    Шапка — два ряда вместо четырёх: ввод (название,
+                    количество, заметка) и числа (вес, у моста — металл и
+                    цена). Подпись — слева от поля, как в шапках наших
+                    документов (шаг 27: слева плотнее по высоте); ряды
+                    переносятся по ширине окна, без стилей блоки встают
+                    столбиком, не ломаясь.
+                    «Всего» (вес, у моста — сумма) — только при количестве
+                    больше одного: при одном изделии они повторяли число
+                    рядом.
+                    ⚠️ Имена блоков (name="pmk_pf_…") — опора для xpath моста
+                    pmk_bridge (металл и цена встают после
+                    pmk_pf_weight_total). Не менять.
+                  -->
+                  <div class="pmk-product-head" name="pmk_product_head">
+                    <div class="pmk-product-head__row" name="pmk_product_row_main">
+                      <!-- «Название», а не «Изделие» (имя поля): окно и так
+                           называется «Изделие» — два «Изделия» рядом. В
+                           списке изделий колонка прежняя. -->
+                      <div class="pmk-product-head__field pmk-product-head__field--wide" name="pmk_pf_name">
+                        <label for="name" string="Название"/>
+                        <field name="name" nolabel="1" placeholder="Например: Ферма ФС-1"/>
+                      </div>
+                      <div class="pmk-product-head__field pmk-product-head__field--narrow" name="pmk_pf_qty">
+                        <label for="qty"/>
+                        <field name="qty" nolabel="1"/>
+                      </div>
+                      <!-- Поле в КП не печатается (pmk_bridge,
+                           report/quotation_report.xml: у изделия — только
+                           название, цена и количество). Подпись говорит это
+                           прямо, подробности — в подсказке «?».
+                           Многострочное поле (widget="text" ядра понимает и
+                           char): длинная заметка переносится на вторую
+                           строку, а не обрезается — у СМ-00024 она в 101
+                           знак. Ввод — одной строкой, как был: Enter строку
+                           не рвёт, вставка с переносами склеивается
+                           (line_breaks: False). -->
+                      <div class="pmk-product-head__field pmk-product-head__field--note" name="pmk_pf_note">
+                        <label for="note" string="Заметка для себя (в КП не идёт)"/>
+                        <field name="note" nolabel="1" widget="text"
+                               options="{'line_breaks': False}"
+                               placeholder="Как считали, что уточнить у технолога"/>
+                      </div>
+                    </div>
+                    <div class="pmk-product-head__row" name="pmk_product_row_numbers">
+                      <div class="pmk-product-head__field" name="pmk_pf_weight_one">
+                        <label for="weight_one"/>
+                        <field name="weight_one" nolabel="1" readonly="1" digits="[12,1]"/>
+                      </div>
+                      <div class="pmk-product-head__field" name="pmk_pf_weight_total"
+                           invisible="qty &lt;= 1">
+                        <label for="weight_total"/>
+                        <field name="weight_total" nolabel="1" readonly="1" digits="[12,1]"/>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- Вид для новой строки проката: контекст списка «Прокат»
+                       ниже (default_type_id) — двутавры вводят подряд. -->
+                  <field name="next_type_id" invisible="1"/>
+
+                  <!-- Вкладки — в порядке разделов состава под строкой
+                       изделия (product_lines_field.js, SECTIONS): Прокат ·
+                       Лист · Метизы · Покрытие (шаг 34). -->
                   <notebook>
                     <page string="Прокат" name="linear">
-                      <field name="line_linear_ids" context="{'default_calc_mode': 'linear'}">
+                      <field name="line_linear_ids"
+                             context="{'default_calc_mode': 'linear', 'default_type_id': next_type_id}">
                         <list editable="bottom">
                           <field name="sequence" widget="handle"/>
                           <field name="calc_mode" column_invisible="1"/>
                           <field name="detail_name"/>
-                          <field name="type_id" options="{'no_create': True}"/>
-                          <!-- Типоразмеры показываем только выбранного вида -->
+                          <!-- Типоразмер одним полем (шаг 34): «уг 50х5»,
+                               «двут 20ш», «тр 57х3,5» — правила поиска в
+                               models/size_search.py. Вид строки поднимает
+                               свои типоразмеры наверх, но других не прячет:
+                               отбора по виду нет. -->
                           <field name="profile_id" options="{'no_create': True}"
-                                 domain="[('type_id', '=', type_id)]"/>
+                                 context="{'pmk_prefer_type_id': type_id}"
+                                 placeholder="уг 50х5, двут 20ш, тр 57х3,5"/>
+                          <!-- Вид подставляется из типоразмера — колонка в
+                               меню колонок (скрыта, не удалена): по ней
+                               можно сменить вид руками. -->
+                          <field name="type_id" options="{'no_create': True}" optional="hide"/>
                           <!-- Миллиметры без хвоста «,0» (шаг 24): «2 500», а
                                дробная длина остаётся дробной — «2 500,5». -->
                           <field name="length_mm" options="{'hide_trailing_zeros': True}"/>
                           <field name="qty"/>
                           <field name="grade_id" options="{'no_create': True}" optional="hide"/>
                           <!-- Вес с одним знаком, как в списке изделий (шаг 24). -->
+                          <field name="weight_one" readonly="1" digits="[12,1]"/>
+                          <field name="weight_total" readonly="1" digits="[12,1]" sum="Итого, кг"/>
+                        </list>
+                      </field>
+                    </page>
+
+                    <page string="Лист" name="sheet">
+                      <field name="line_sheet_ids" context="{'default_calc_mode': 'sheet'}">
+                        <list editable="bottom">
+                          <field name="sequence" widget="handle"/>
+                          <field name="calc_mode" column_invisible="1"/>
+                          <field name="detail_name"/>
+                          <!-- Тот же поиск, что у типоразмера: «лист 4»,
+                               «оц 0,5», «риф 4», «пвл 5» (шаг 34). -->
+                          <field name="sheet_id" options="{'no_create': True}"
+                                 placeholder="лист 4, оц 0,5, риф 5"/>
+                          <field name="a_mm" options="{'hide_trailing_zeros': True}"/>
+                          <field name="b_mm" options="{'hide_trailing_zeros': True}"/>
+                          <field name="qty"/>
+                          <field name="grade_id" options="{'no_create': True}" optional="hide"/>
                           <field name="weight_one" readonly="1" digits="[12,1]"/>
                           <field name="weight_total" readonly="1" digits="[12,1]" sum="Итого, кг"/>
                         </list>
@@ -312,23 +413,6 @@
                           <field name="paint_thickness_um"/>
                           <field name="qty" column_invisible="1"/>
                           <field name="weight_one" string="Расход, кг" readonly="1" digits="[12,1]"/>
-                          <field name="weight_total" readonly="1" digits="[12,1]" sum="Итого, кг"/>
-                        </list>
-                      </field>
-                    </page>
-
-                    <page string="Лист" name="sheet">
-                      <field name="line_sheet_ids" context="{'default_calc_mode': 'sheet'}">
-                        <list editable="bottom">
-                          <field name="sequence" widget="handle"/>
-                          <field name="calc_mode" column_invisible="1"/>
-                          <field name="detail_name"/>
-                          <field name="sheet_id" options="{'no_create': True}"/>
-                          <field name="a_mm" options="{'hide_trailing_zeros': True}"/>
-                          <field name="b_mm" options="{'hide_trailing_zeros': True}"/>
-                          <field name="qty"/>
-                          <field name="grade_id" options="{'no_create': True}" optional="hide"/>
-                          <field name="weight_one" readonly="1" digits="[12,1]"/>
                           <field name="weight_total" readonly="1" digits="[12,1]" sum="Итого, кг"/>
                         </list>
                       </field>

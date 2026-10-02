@@ -81,14 +81,20 @@
                           <div class="pmk-edit">
                             <t t-foreach="section.inputs" t-as="input" t-key="input.name">
                               <label class="pmk-edit__field"
-                                     t-att-class="{ 'pmk-edit__field--wide': input.wide }">
+                                     t-att-class="{ 'pmk-edit__field--wide': input.wide, 'pmk-edit__field--xwide': input.xwide }">
                                 <span class="pmk-edit__label" t-esc="input.label"/>
                                 <!-- Позиции справочника из подсказки не заводим:
                                      опечатка не должна порождать новый сортамент.
-                                     Справочники правят отдельным разделом. -->
+                                     Справочники правят отдельным разделом.
+                                     context — вид строки для подсказки
+                                     типоразмера, placeholder — пример ввода
+                                     (шаг 34): разметки у поля здесь нет, оба
+                                     передаём сами (refContext). -->
                                 <Field t-if="input.ref" record="line" name="input.name"
                                        canCreate="false" canCreateEdit="false"
-                                       canQuickCreate="false"/>
+                                       canQuickCreate="false"
+                                       context="refContext(line, input)"
+                                       placeholder="input.placeholder"/>
                                 <Field t-else="" record="line" name="input.name"/>
                               </label>
                             </t>

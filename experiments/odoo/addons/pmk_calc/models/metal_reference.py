@@ -8,6 +8,9 @@
 """
 
 from odoo import api, fields, models
+from odoo.fields import Domain
+
+from . import size_search
 
 # aggregator=None у чисел справочников (разбор UX, шаг 24, 01.10.2026).
 # У дробного и целого поля Odoo по умолчанию складывает значения в строке
@@ -21,8 +24,16 @@ from odoo import api, fields, models
 
 
 class MetalProfileType(models.Model):
-    """Вид проката. Нужен, чтобы в расчёте сначала выбирался вид, а типоразмер
-    искался уже внутри него: в общем списке из 665 позиций не найтись."""
+    """Вид проката: двутавр, уголок, труба…
+
+    До шага 34 разбора UX (02.10.2026) в строке расчёта сначала выбирали вид,
+    а типоразмер искался уже внутри него. Теперь поле одно — «Типоразмер»:
+    поиск понимает сокращения вида («уг 50х5», «двут 20ш»), а вид строки
+    подставляется сам из выбранного типоразмера (metal_spec.py, type_id).
+    Вид нужен по-прежнему: по нему группируется справочник, его sequence
+    решает, кто первым в подсказке при равном совпадении (уголок раньше
+    профтрубы — size_search.py), а вид предыдущей строки поднимает свои
+    типоразмеры наверх при вводе подряд."""
 
     _name = "pmk.metal.profile.type"
     _description = "Вид проката"
@@ -82,6 +93,37 @@ class MetalProfile(models.Model):
         for rec in self:
             rec.display_name = f"{rec.profile_type} {rec.size_label}".strip()
 
+    @api.model
+    @api.readonly
+    def name_search(self, name="", domain=None, operator="ilike", limit=100):
+        """Подсказка поля «Типоразмер»: сокращения и начало слова (разбор UX,
+        шаг 34). Правила и порядок — size_search.py.
+
+        Её зовут и выпадающий список поля (web_name_search), и «Искать ещё…»
+        — оба через этот метод. Вид строки приходит контекстом
+        pmk_prefer_type_id: его типоразмеры — первыми (ввод деталей подряд).
+        Отбор поля (domain) соблюдается — ранжируется то, что он пропустил.
+        Точное сравнение (operator «=», импорт) и пустой ввод без вида строки
+        — штатные. Правила ничего не нашли — штатный поиск подстроки имени:
+        хуже прежнего не стало.
+        """
+        prefer = self.env.context.get("pmk_prefer_type_id")
+        if operator != "ilike" or not ((name or "").strip() or prefer):
+            return super().name_search(name, domain, operator, limit)
+        records = self.search_fetch(
+            Domain(domain or Domain.TRUE), ["type_id", "profile_type", "size_label"])
+        entries = [
+            (rec.id, rec.type_id.id, rec.type_id.name or rec.profile_type,
+             rec.type_id.sequence, rec.size_label)
+            for rec in records
+        ]
+        ids = size_search.rank_profiles(entries, name or "", prefer)
+        if not ids:
+            return super().name_search(name, domain, operator, limit)
+        if limit:
+            ids = ids[:limit]
+        return [(rec.id, rec.display_name) for rec in self.browse(ids).sudo()]
+
 
 class MetalSheet(models.Model):
     """Лист: гладкий, рифлёный, просечно-вытяжной, оцинкованный.
@@ -122,6 +164,27 @@ class MetalSheet(models.Model):
             # Толщину показываем без хвоста нулей: «4 мм», а не «4.00 мм».
             thick = ("%g" % rec.thickness_mm)
             rec.display_name = f"Лист {rec.sheet_type.lower()} {thick} мм{size}"
+
+    @api.model
+    @api.readonly
+    def name_search(self, name="", domain=None, operator="ilike", limit=100):
+        """Подсказка поля «Лист»: «лист 4», «оц 0,5», «риф 4», «пвл 5» (разбор
+        UX, шаг 34; правила — size_search.py). Штатный поиск искал подстроку
+        имени: «0,5» не находил ничего (в имени «0.5»), «4» отдавал и 0.45, и
+        40. Отбор поля соблюдается (доборка — только оцинкованный); пустой
+        ввод и точное сравнение — штатные; ничего не нашлось — штатный поиск.
+        """
+        if operator != "ilike" or not (name or "").strip():
+            return super().name_search(name, domain, operator, limit)
+        records = self.search_fetch(
+            Domain(domain or Domain.TRUE), ["sheet_type", "thickness_mm", "size_label"])
+        entries = [(rec.id, rec.sheet_type, rec.thickness_mm, rec.size_label) for rec in records]
+        ids = size_search.rank_sheets(entries, name)
+        if not ids:
+            return super().name_search(name, domain, operator, limit)
+        if limit:
+            ids = ids[:limit]
+        return [(rec.id, rec.display_name) for rec in self.browse(ids).sudo()]
 
 
 class MetalGrade(models.Model):

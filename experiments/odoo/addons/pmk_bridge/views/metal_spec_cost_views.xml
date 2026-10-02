@@ -391,7 +391,15 @@
         не редактируется на месте: клик открывает карточку. Колонка без поля в
         карточке означала «вижу, но не ввести» — поймано при проверке глазами.
       -->
-      <xpath expr="//field[@name='product_ids']/form//field[@name='qty']"
+      <!--
+        Шапка окна изделия — два ряда (разбор UX, шаг 34): металл и цена
+        встают во второй ряд, за весом — по имени блока pmk_calc
+        (pmk_pf_weight_total), а не за количеством, как было в группе.
+        Подписи — как колонки списка изделий и КП: «Цена за шт», «Сумма».
+        «Сумма» — только при количестве больше одного: при одном изделии
+        она повторяла цену за штуку.
+      -->
+      <xpath expr="//field[@name='product_ids']/form//div[@name='pmk_pf_weight_total']"
              position="after">
         <!-- Металл рядом с ценой (шаг 32): КП = материал + переделы +
              маржа, цену ставят, видя стоимость металла на штуку.
@@ -399,16 +407,26 @@
              вместо голого числа стоит бледно-жёлтая плашка «≥ 2 807,72 ·
              без 3 поз.» (или «нет в прайсах: 2 поз.»). Два поля с одной
              подписью, видно одно. -->
-        <field name="cost_fact_one" string="Металл на 1 шт" readonly="1"
-               widget="monetary" invisible="no_price_count"/>
-        <field name="metal_one_label" string="Металл на 1 шт" readonly="1"
-               widget="badge" class="pmk-metal-one"
-               decoration-warning="no_price_count &gt; 0"
-               invisible="not no_price_count"/>
-        <field name="no_price_count" invisible="1"/>
-        <field name="price_customer_unit" widget="monetary"/>
-        <field name="price_customer_total" widget="monetary" readonly="1"/>
-        <field name="currency_id" invisible="1"/>
+        <div class="pmk-product-head__field" name="pmk_pf_metal_one">
+          <label for="cost_fact_one" string="Металл на 1 шт"/>
+          <field name="cost_fact_one" string="Металл на 1 шт" nolabel="1" readonly="1"
+                 widget="monetary" invisible="no_price_count"/>
+          <field name="metal_one_label" string="Металл на 1 шт" nolabel="1" readonly="1"
+                 widget="badge" class="pmk-metal-one"
+                 decoration-warning="no_price_count &gt; 0"
+                 invisible="not no_price_count"/>
+          <field name="no_price_count" invisible="1"/>
+        </div>
+        <div class="pmk-product-head__field" name="pmk_pf_price_unit">
+          <label for="price_customer_unit" string="Цена за шт"/>
+          <field name="price_customer_unit" nolabel="1" widget="monetary"/>
+          <field name="currency_id" invisible="1"/>
+        </div>
+        <div class="pmk-product-head__field" name="pmk_pf_price_total"
+             invisible="qty &lt;= 1">
+          <label for="price_customer_total" string="Сумма"/>
+          <field name="price_customer_total" nolabel="1" widget="monetary" readonly="1"/>
+        </div>
       </xpath>
 
       <xpath expr="//field[@name='product_ids']/list/field[@name='weight_total']"

@@ -15,6 +15,7 @@ from lxml import etree
 
 from odoo import Command
 from odoo.tests import TransactionCase, tagged
+from odoo.tools.safe_eval import safe_eval
 
 NB = " "
 D = datetime.date
@@ -301,3 +302,44 @@ class TestSpecFormStep32(TransactionCase):
         self.assertEqual(labels["Гайки"], "нет в прайсах: 1 поз.")
         self.assertEqual(labels["тест"], "—")
         self.assertEqual(spec.no_price_count, 2, "Карточка KPI считает те же позиции.")
+
+    # ─── Окно изделия, шаг 34 ───────────────────────────────────────────
+    def test_product_window_money_row(self):
+        """Шапка окна изделия в два ряда: металл и цена — во втором, за
+        весом (блоки pmk_calc по именам); подписи — как колонки списка
+        изделий и КП; «Сумма» — только при количестве больше одного."""
+        form = self._form().xpath("//field[@name='product_ids']/form")[0]
+        self.assertIsNone(form.find("group"), "Без групп в две колонки.")
+        row = form.xpath(".//div[@name='pmk_product_row_numbers']")[0]
+        self.assertEqual([d.get("name") for d in row if d.tag == "div"],
+                         ["pmk_pf_weight_one", "pmk_pf_weight_total", "pmk_pf_metal_one",
+                          "pmk_pf_price_unit", "pmk_pf_price_total"])
+
+        def label(block):
+            return row.find("div[@name='%s']/label" % block).get("string")
+
+        self.assertEqual(label("pmk_pf_metal_one"), "Металл на 1 шт")
+        self.assertEqual(label("pmk_pf_price_unit"), "Цена за шт")
+        self.assertEqual(label("pmk_pf_price_total"), "Сумма")
+        unit = row.find("div[@name='pmk_pf_price_unit']")
+        self.assertIsNone(unit.get("invisible"), "Цену за штуку видно всегда.")
+        self.assertNotIn(unit.find("field[@name='price_customer_unit']").get("readonly"),
+                         ("1", "True"), "Цену ставят здесь.")
+        total = row.find("div[@name='pmk_pf_price_total']")
+        for qty, hidden in ((1, True), (2, False)):
+            with self.subTest(qty=qty):
+                self.assertEqual(bool(safe_eval(total.get("invisible"), {"qty": qty})), hidden)
+
+    def test_product_note_not_printed(self):
+        """Шаг 34: заметка изделия подписана «в КП не идёт» — проверено
+        печатью: в КП название, цена и количество, заметки нет."""
+        spec = self._spec(products=[{
+            "name": "Каркас", "qty": 2, "price_customer_unit": 5000.0,
+            "note": "уточнить толщину у технолога (тест 34)"}])
+        # Как печатает менеджер (так же test_kp_send.py, _print_html).
+        report = self.env["ir.actions.report"].with_user(self.env.ref("base.user_admin"))
+        html, _fmt = report._render_qweb_html(
+            "pmk_bridge.action_report_metal_spec_quotation", spec.ids)
+        html = html.decode()
+        self.assertIn("Каркас", html)
+        self.assertNotIn("уточнить толщину у технолога", html)

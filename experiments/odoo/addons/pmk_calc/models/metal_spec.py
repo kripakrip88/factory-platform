@@ -124,7 +124,15 @@ class MetalSpecProduct(models.Model):
     sequence = fields.Integer("№", default=10)
     name = fields.Char("Изделие", required=True)
     qty = fields.Integer("Количество, шт", required=True, default=1)
-    note = fields.Char("Примечание")
+    # Разбор UX, шаг 34: «Примечание» звало написать что-то для клиента, а
+    # поле в КП не печатается (pmk_bridge/report/quotation_report.xml берёт
+    # у изделия только название, цену и количество; письмо и тема КП — «Предмет
+    # КП» расчёта). Поле рабочее, для себя — так и называется. В окне изделия
+    # подпись длиннее: «Заметка для себя (в КП не идёт)».
+    note = fields.Char(
+        "Заметка для себя",
+        help="В КП не идёт: как считали, что уточнить у технолога, откуда "
+             "взяли размеры. Клиент видит название изделия, цену и количество.")
 
     line_ids = fields.One2many("pmk.metal.spec.line", "product_id", "Детали", copy=True)
     # Две отдельные таблицы вместо одной: у проката спрашивают длину, у листа
@@ -141,6 +149,22 @@ class MetalSpecProduct(models.Model):
     line_paint_ids = fields.One2many(
         "pmk.metal.spec.line", "product_id", "Покрытие",
         domain=[("calc_mode", "=", "paint")], context={"default_calc_mode": "paint"})
+    # Разбор UX, шаг 34: новая строка проката берёт вид предыдущей — двутавры
+    # вводят подряд, и подсказка типоразмера показывает их первыми. Окно
+    # изделия передаёт его в default_type_id контекстом списка «Прокат»
+    # (views/metal_spec_views.xml); редактор под строкой изделия берёт вид
+    # прямо из строк (static/src/js/product_lines_field.js, addLine). Не
+    # хранится: это подсказка экрану, а не свойство изделия.
+    next_type_id = fields.Many2one(
+        "pmk.metal.profile.type", "Вид для новой строки проката",
+        compute="_compute_next_type_id",
+        help="Вид последней строки проката, у которой он есть.")
+
+    @api.depends("line_linear_ids.type_id", "line_linear_ids.sequence")
+    def _compute_next_type_id(self):
+        for product in self:
+            typed = product.line_linear_ids.sorted("sequence").filtered("type_id")
+            product.next_type_id = typed[-1:].type_id
 
     weight_one = fields.Float("Вес изделия, кг", compute="_compute_weight", store=True, digits=(12, 3))
     weight_total = fields.Float("Вес всего, кг", compute="_compute_weight", store=True, digits=(12, 3))
@@ -258,16 +282,39 @@ class MetalSpecLine(models.Model):
          ("fastener", "Метиз"), ("paint", "Покрытие")],
         "Вид", required=True, default="linear")
 
-    # Каскад: сперва вид проката, типоразмер ищется уже внутри него.
-    # В общем списке из 665 позиций поиск превращается в перебор.
-    type_id = fields.Many2one("pmk.metal.profile.type", "Вид проката")
-    # Домен на самом поле, а не только в разметке: состав правится и в
-    # диалоге изделия, и в раскрытом списке — правило отбора должно быть
-    # одно. Пока вид не выбран, показываем весь сортамент: иначе поиск
-    # молча не находит ничего.
-    profile_id = fields.Many2one(
-        "pmk.metal.profile", "Типоразмер",
-        domain="[('type_id', '=', type_id)] if type_id else []")
+    # Вид проката подставляется сам из типоразмера (разбор UX, шаг 34). Было
+    # два списка на деталь — сперва вид, потом типоразмер внутри вида («Двутавр»
+    # / «Двутавр 12Б2»). Теперь поле одно — «Типоразмер»: его поиск понимает
+    # сокращения вида («уг 50х5», «двут 20ш»; size_search.py), а вид строки
+    # берётся из выбранной позиции.
+    #
+    # Вычисляемое с правкой, а не related: у новой строки вид приходит раньше
+    # типоразмера — от предыдущей строки (default_type_id, см. next_type_id
+    # изделия), и по нему подсказка показывает свои типоразмеры первыми.
+    # Без типоразмера вид остаётся каким был. Колонка в базе прежняя: при
+    # обновлении модуля Odoo не пересчитывает существующую колонку, старые
+    # строки не меняются. Выбрать вид руками можно колонкой «Вид проката» в
+    # меню колонок окна изделия (скрыта по умолчанию) — тогда чужой
+    # типоразмер очищается (_onchange_type_id).
+    type_id = fields.Many2one(
+        "pmk.metal.profile.type", "Вид проката",
+        compute="_compute_type_id", store=True, readonly=False, copy=True,
+        help="Подставляется сам из типоразмера. У новой строки — вид "
+             "предыдущей: подсказка типоразмера показывает его первым.")
+    # Отбора по виду у поля больше нет (шаг 34): вид предыдущей строки
+    # прятал бы все прочие типоразмеры, и «уг 50х5» после двутавров не
+    # находил бы ничего. Вместо отбора — порядок: свой вид первым
+    # (контекст pmk_prefer_type_id в виде, name_search справочника).
+    profile_id = fields.Many2one("pmk.metal.profile", "Типоразмер")
+
+    @api.depends("profile_id")
+    def _compute_type_id(self):
+        for line in self:
+            # Без типоразмера — вид как был (у новой строки — от предыдущей).
+            # Прежнее значение читать здесь можно: ядро на время вычисления
+            # отдаёт его из кэша или базы (fields.py, compute_value).
+            line.type_id = line.profile_id.type_id if line.profile_id else line.type_id
+
     sheet_id = fields.Many2one("pmk.metal.sheet", "Лист")
     grade_id = fields.Many2one("pmk.metal.grade", "Марка стали")
     fastener_id = fields.Many2one("pmk.metal.fastener", "Метиз")
