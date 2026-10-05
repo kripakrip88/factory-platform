@@ -24,7 +24,11 @@ BRANCH="${BRANCH:-feature/experiment-carbon}"
 # pmk_deal_sms добавлен 30.09.2026 (разбор UX, шаг 31) — мостик, который
 # прячет кнопки «СМС» в списке сделок; вынесен из pmk_deal, чтобы удаление
 # «SMS»/iap не снесло сделку ↔ расчёт. Первый раз: INSTALL="pmk_deal_sms".
-OURS="pmk_calc pmk_theme pmk_pdf pmk_cut pmk_mail_ui pmk_partner pmk_purchase pmk_dadata pmk_laser pmk_bridge pmk_deal pmk_deal_sms pmk_flow"
+# pmk_drawing добавлен 06.10.2026 (разбор UX, шаг 46) — просмотр чертежей DXF
+# (ezdxf из образа) в ленте, почте и у детали лазера. Почта и лазер зовут его
+# мягко ('pmk.drawing' in env), жёсткой зависимости нет. Первый раз:
+# INSTALL="pmk_drawing" (вместе с обычным -u почты и лазера).
+OURS="pmk_calc pmk_theme pmk_pdf pmk_cut pmk_mail_ui pmk_partner pmk_purchase pmk_dadata pmk_laser pmk_bridge pmk_deal pmk_deal_sms pmk_flow pmk_drawing"
 # Вендорские — только раскладываются. -u им не нужен: мы правим в них код и
 # переводы, а не данные, а лишнее обновление перезапускает их data-файлы.
 #

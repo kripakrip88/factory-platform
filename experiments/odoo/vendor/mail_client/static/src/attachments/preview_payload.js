@@ -56,6 +56,17 @@
  *     «Скачать» у строки списка — запрос GET того же адреса с ?download=1;
  *               отказ приходит текстом с кодом (см. downloadRefusal).
  *
+ * ПРАВКА ПМК (шаг 46, 06.10.2026) — чертежи DXF:
+ *
+ *     kind      ещё 'drawing' — чертёж DXF, нарисованный сервером
+ *               (модуль pmk_drawing, библиотека ezdxf)
+ *     drawing   для kind='drawing': готовые пути по слоям — договор в шапке
+ *               pmk_drawing/tools/dxf_render.py. Здесь он только
+ *               пробрасывается: проверяет и рисует его окно чертежа
+ *               pmk_drawing (normalizeDrawing), которое окно почты берёт из
+ *               реестра pmk_file_viewers. Строка архива с kind 'drawing'
+ *               открывается «Посмотреть», как PDF.
+ *
  * Второй метод, price_scan(attachment_id, sheet) -> price, зовётся только при
  * переходе на другую вкладку: сводка считается по ЛИСТУ, и у листа «Сервис»
  * она своя. Считать её сразу для всех листов значило бы гонять разборщик
@@ -73,15 +84,26 @@ export const KINDS = {
     PDF: "pdf",
     IMAGE: "image",
     ARCHIVE: "archive",
+    // ПРАВКА ПМК (шаг 46): чертёж DXF.
+    DRAWING: "drawing",
     NONE: "none",
 };
 
-const KNOWN_KINDS = new Set([KINDS.SHEET, KINDS.PDF, KINDS.IMAGE, KINDS.ARCHIVE, KINDS.NONE]);
+const KNOWN_KINDS = new Set([
+    KINDS.SHEET,
+    KINDS.PDF,
+    KINDS.IMAGE,
+    KINDS.ARCHIVE,
+    KINDS.DRAWING,
+    KINDS.NONE,
+]);
 
 // Вид строки в списке архива. Посмотреть можно то, что окно умеет рисовать;
-// вложенный архив и прочее — только скачать.
-const ENTRY_KINDS = new Set(["pdf", "sheet", "image", "archive", "other"]);
-const VIEWABLE_KINDS = new Set(["pdf", "sheet", "image"]);
+// вложенный архив и прочее — только скачать. ПРАВКА ПМК (шаг 46): чертёж
+// DXF — тоже «Посмотреть» (сервер ставит 'drawing', только если модуль
+// просмотра чертежей установлен).
+const ENTRY_KINDS = new Set(["pdf", "sheet", "image", "drawing", "archive", "other"]);
+const VIEWABLE_KINDS = new Set(["pdf", "sheet", "image", "drawing"]);
 
 /** Пустая строка вместо null/undefined/числа: в разметку идёт только текст. */
 function text(value) {
@@ -453,9 +475,23 @@ export function normalizePreview(raw) {
         archive: null,
         member,
         archiveName: text(source.archive_name),
+        drawing: null,
     };
 
-    if (kind === KINDS.SHEET) {
+    if (kind === KINDS.DRAWING) {
+        // ПРАВКА ПМК (шаг 46): пути чертежа проверяет окно чертежа
+        // (pmk_drawing, normalizeDrawing) — здесь только «пришёл ли он».
+        const drawing = source.drawing;
+        if (drawing && typeof drawing === "object" && !Array.isArray(drawing) && drawing.ok) {
+            preview.drawing = drawing;
+        } else {
+            preview.kind = KINDS.NONE;
+            preview.reason =
+                preview.reason ||
+                text(drawing && drawing.reason) ||
+                "Чертёж не удалось показать. Файл можно скачать.";
+        }
+    } else if (kind === KINDS.SHEET) {
         const sheets = Array.isArray(source.sheets) ? source.sheets : [];
         preview.sheets = sheets.map(normalizeSheet).filter((sheet) => sheet.rows.length);
         preview.price = normalizePrice(source.price);

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ПМК: карточка чертежа DXF в ленте выглядит открываемой (шаг 46).
+     Щелчок по ней открывает окно чертежа (js/attachment_list_patch.js), но
+     штатная разметка этого не показывала: курсор-стрелка и при наведении
+     только «Скачать» и «Удалить». Помечаем карточку data-pmk-dxf (курсор-
+     лупа — scss/dxf_viewer.scss, как штатный o-viewable у картинок и PDF) и
+     дописываем к подсказке с именем файла «посмотреть чертёж».
+     Класс o-viewable не ставим: его t-att-class у карточки — объект, а
+     дописать в объект наследованием нельзя; атрибут отдельный и безопасный. -->
+<templates xml:space="preserve">
+    <t t-inherit="mail.AttachmentList" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('o-mail-AttachmentContainer')]" position="attributes">
+            <attribute name="t-att-data-pmk-dxf">pmkIsDxf(attachment) ? 'drawing' : undefined</attribute>
+            <attribute name="t-att-title">pmkIsDxf(attachment) ? attachment.name + ' — посмотреть чертёж' : (attachment.name ? attachment.name : undefined)</attribute>
+        </xpath>
+    </t>
+</templates>

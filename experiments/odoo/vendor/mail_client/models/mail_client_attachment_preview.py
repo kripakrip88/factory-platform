@@ -23,10 +23,13 @@
 и отдаём сводку. Разборщик именно ИМПОРТИРУЕТСЯ: вторая копия правил разойдётся
 с первой молча, и расхождение вылезет уже на деньгах.
 
-ЧТО СЮДА НЕ ПОПАЛО
-Чертежи DXF определяются как вид файла, но не разбираются: рисовать их в
-браузере нам пока нечем, а обещать просмотр, которого нет, хуже, чем честно
-предложить скачать.
+ЧЕРТЕЖИ DXF (ПРАВКА ПМК, шаг 46 разбора удобства, 06.10.2026)
+Чертёж здесь не разбирается: его рисует наш модуль pmk_drawing (ezdxf,
+отдельным процессом, с пределами и кэшем) — тот же, что показывает DXF в
+ленте расчёта и у детали лазера. Почта только спрашивает его серверным
+вызовом (_drawing_preview) и отдаёт окну вид 'drawing' с готовыми путями.
+Жёсткой зависимости нет: модуля нет — «Просмотр DXF недоступен», как было
+до шага 46, остальная почта работает.
 
 АРХИВЫ (ПРАВКА ПМК, шаг 45 разбора удобства, 05.10.2026)
 Архив ZIP показывается списком файлов, а PDF, таблица или картинка из него
@@ -350,10 +353,10 @@ def detect_format(blob, filename=''):
 
 
 # Виды, которыми говорят с браузером, — по числу способов показать файл:
-# таблица, pdf.js, <img>, список файлов архива (ПРАВКА ПМК, шаг 45) и честный
-# отказ. Внутренние виды подробнее (doc, cad2d, other), но клиенту от этой
-# подробности толку нет: рисовать чертёж DXF ему всё равно нечем.
-WIRE_KINDS = ('sheet', 'pdf', 'image', 'archive', 'none')
+# таблица, pdf.js, <img>, список файлов архива (ПРАВКА ПМК, шаг 45), чертёж
+# DXF окном pmk_drawing (ПРАВКА ПМК, шаг 46) и честный отказ. Внутренние виды
+# подробнее (doc, cad2d, other), но клиенту от этой подробности толку нет.
+WIRE_KINDS = ('sheet', 'pdf', 'image', 'archive', 'drawing', 'none')
 
 
 def wire_kind(fmt, kind):
@@ -365,6 +368,10 @@ def wire_kind(fmt, kind):
     # Списком показывается только ZIP: RAR и 7z на сервере распаковать нечем.
     if fmt == 'zip':
         return 'archive'
+    # ПРАВКА ПМК (шаг 46): чертёж DXF рисует pmk_drawing. Есть ли он на
+    # сервере — решает preview() (_drawing_preview), а не эта чистая функция.
+    if fmt == 'dxf':
+        return 'drawing'
     # Не `kind == 'image'`, а список форматов: TIFF по виду картинка, но ни
     # один браузер её не рисует, и <img> дал бы человеку битый значок.
     if fmt in BROWSER_IMAGE_FORMATS:
@@ -380,7 +387,9 @@ def no_preview_reason(fmt, kind):
     делать — скачать и открыть в своей программе.
     """
     if kind == 'cad2d':
-        return "Это чертёж DXF — в системе он не рисуется."
+        # ПРАВКА ПМК (шаг 46): рисует pmk_drawing; сюда попадаем, только
+        # если его на сервере нет.
+        return DRAWING_UNAVAILABLE
     if fmt == 'tiff':
         return "Это картинка TIFF — её не показывает ни один браузер."
     if fmt == 'svg':
@@ -401,11 +410,14 @@ def no_preview_reason(fmt, kind):
 
 ARCHIVE_FORMATS = ('zip', 'rar', '7z')
 NESTED_ARCHIVE = "Это архив внутри архива — скачайте его и откройте отдельно."
+# ПРАВКА ПМК (шаг 46): чертёж DXF, а модуля просмотра чертежей на сервере нет.
+DRAWING_UNAVAILABLE = ("Просмотр DXF недоступен: модуль просмотра чертежей не "
+                       "установлен. Файл можно скачать и открыть у себя.")
 
 
 def entry_kind(filename):
     """Вид строки в списке архива — по расширению: 'pdf', 'sheet', 'image',
-    'archive' или 'other'. ПРАВКА ПМК (шаг 45).
+    'drawing' (ПРАВКА ПМК, шаг 46), 'archive' или 'other'. ПРАВКА ПМК (шаг 45).
 
     Те же словари, что решают вид вложения (EXT_FORMAT → KIND_BY_FORMAT →
     wire_kind), — второго списка «что можно посмотреть» нет. По расширению,
@@ -420,7 +432,7 @@ def entry_kind(filename):
     if fmt in ARCHIVE_FORMATS:
         return 'archive'
     kind = wire_kind(fmt, KIND_BY_FORMAT.get(fmt, 'other'))
-    return kind if kind in ('pdf', 'sheet', 'image') else 'other'
+    return kind if kind in ('pdf', 'sheet', 'image', 'drawing') else 'other'
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -1103,8 +1115,8 @@ class MailClientAttachment(models.Model):
         только вместе с ним: имена полей здесь — это имена, которые читает
         разбор на клиенте, а не свободный набор.
 
-            kind    'sheet' | 'pdf' | 'image' | 'archive' | 'none' — ЧЕМ
-                    ПОКАЗЫВАТЬ. Не «что за файл», а именно чем: вид считается
+            kind    'sheet' | 'pdf' | 'image' | 'archive' | 'drawing' | 'none'
+                    — ЧЕМ ПОКАЗЫВАТЬ. Не «что за файл», а именно чем: вид считается
                     по содержимому (заявленному типу в письме верить нельзя)
                     и сводится к способам показа.
             name, mimetype, size  — подпись окна. size РАСКОДИРОВАННЫЙ:
@@ -1133,6 +1145,11 @@ class MailClientAttachment(models.Model):
                     download_url — он же с ?download=1. Остальное — как у
                     вложения: вид файла решается по его содержимому. ПРАВКА
                     ПМК (шаг 45).
+            drawing для kind='drawing' — чертёж DXF, готовые пути по слоям от
+                    pmk_drawing (договор — шапка его tools/dxf_render.py:
+                    ok, viewbox, layers, palette, items, size_mm, units,
+                    notes). Не нарисовался (предел, порча, нет модуля) —
+                    kind='none' и reason. ПРАВКА ПМК (шаг 46).
 
         Ошибка разбора — это тоже ответ (kind='none' и reason), а не
         исключение: сорванный разбор чужого файла не повод показывать
@@ -1164,6 +1181,7 @@ class MailClientAttachment(models.Model):
             'archive': None,
             'member': None,
             'archive_name': '',
+            'drawing': None,
         }
         try:
             blob = record._preview_bytes()
@@ -1211,6 +1229,14 @@ class MailClientAttachment(models.Model):
                 payload.update(image_info(blob))
             elif payload['kind'] == 'archive':
                 payload['archive'] = record._archive_listing(blob)
+            elif payload['kind'] == 'drawing':
+                # ПРАВКА ПМК (шаг 46): чертёж DXF — окном pmk_drawing.
+                drawing = record._drawing_preview(blob, name)
+                if drawing.get('ok'):
+                    payload['drawing'] = drawing
+                else:
+                    payload.update({'kind': 'none',
+                                    'reason': drawing.get('reason') or DRAWING_UNAVAILABLE})
 
             if payload['kind'] == 'none' and not payload['reason']:
                 payload['reason'] = no_preview_reason(fmt, kind)
@@ -1247,12 +1273,36 @@ class MailClientAttachment(models.Model):
         return read_zip_member(blob, index)
 
     def _archive_listing(self, blob):
-        """Список файлов архива для окна, с видом каждой строки."""
+        """Список файлов архива для окна, с видом каждой строки.
+
+        ПРАВКА ПМК (шаг 46): чертёж DXF — «Посмотреть», если на сервере есть
+        модуль просмотра чертежей; нет его — только «Скачать», как раньше.
+        """
         self.ensure_one()
         listing = list_zip(blob)
+        drawings = self._drawing_available()
         for entry in listing['entries']:
             entry['kind'] = entry_kind(entry['name'])
+            if entry['kind'] == 'drawing' and not drawings:
+                entry['kind'] = 'other'
         return listing
+
+    # ------------------------------------------------------------------
+    # чертежи DXF (ПРАВКА ПМК, шаг 46)
+    # ------------------------------------------------------------------
+    def _drawing_available(self):
+        """Стоит ли модуль просмотра чертежей. Без жёсткой зависимости:
+        удалят pmk_drawing — почта останется и скажет «недоступен»."""
+        return 'pmk.drawing' in self.env
+
+    def _drawing_preview(self, blob, name):
+        """Чертёж DXF для окна: ответ pmk_drawing (ok, пути по слоям…) или
+        {'ok': False, 'reason': …}. Права уже проверил preview() — по письму.
+        Рисует pmk_drawing отдельным процессом с пределами и кэшем по
+        контрольной сумме: второй раз тот же файл открывается сразу."""
+        if not self._drawing_available():
+            return {'ok': False, 'reason': DRAWING_UNAVAILABLE}
+        return self.env['pmk.drawing']._render_blob(blob, name)
 
     def _preview_sheet(self, blob, fmt, sheet_index, offset, limit):
         """Листы книги со строками и сводка по прайсу.

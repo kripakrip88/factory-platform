@@ -11,3 +11,6 @@ from . import test_step29_hide
 # лом в кг и ₽, с доводкой (деньги с ценой — только с мостом:
 # -i pmk_laser,pmk_bridge,pmk_flow --test-tags /pmk_laser).
 from . import test_step36_laser
+# Разбор UX, шаг 46: «Посмотреть» чертёж детали окном DXF (pmk_drawing —
+# мягко; с ним: -i pmk_laser,pmk_drawing).
+from . import test_step46_drawing

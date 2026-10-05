@@ -19,10 +19,16 @@
  * «Скачать» у строки списка — запросом с разбором ответа, а не ссылкой: порча
  * файла выясняется только при распаковке, и причина отказа должна встать в
  * строку, а не пропасть в «Сбой» панели загрузок браузера.
+ *
+ * ПРАВКА ПМК (шаг 46, 06.10.2026): чертёж DXF (вложение и файл из архива) —
+ * окном чертежа нашего модуля pmk_drawing: масштаб, сдвиг, слои. Окно
+ * берётся из реестра pmk_file_viewers (ключ "dxf"), а не импортом: почта
+ * ставится и работает без pmk_drawing, тогда DXF — «скачайте».
  */
-import { Component, onWillDestroy, useEffect, useRef, useState } from "@odoo/owl";
+import { Component, markRaw, onWillDestroy, useEffect, useRef, useState } from "@odoo/owl";
 import { Dialog } from "@web/core/dialog/dialog";
 import { _t } from "@web/core/l10n/translation";
+import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { downloadFile } from "@web/core/network/download";
 import { hidePDFJSButtons } from "@web/core/utils/pdfjs";
@@ -43,6 +49,8 @@ const ENTRY_ICONS = {
     pdf: "fa-file-pdf-o",
     sheet: "fa-file-excel-o",
     image: "fa-file-image-o",
+    // ПРАВКА ПМК (шаг 46): чертёж DXF — значком «Разобрать чертежи» лазера.
+    drawing: "fa-object-ungroup",
     archive: "fa-file-archive-o",
     other: "fa-file-o",
 };
@@ -129,6 +137,20 @@ export class AttachmentPreviewDialog extends Component {
                 return;
             }
             const preview = normalizePreview(raw);
+            if (preview.kind === KINDS.DRAWING) {
+                // ПРАВКА ПМК (шаг 46): до 150 000 путей чертежа — мимо
+                // реактивного состояния (следить за каждым незачем). Окна
+                // чертежа нет (модуль на сервере есть, а его скрипт не
+                // загрузился) — честный отказ, а не пустое окно.
+                if (this.drawingViewer) {
+                    preview.drawing = markRaw(preview.drawing);
+                } else {
+                    preview.kind = KINDS.NONE;
+                    preview.drawing = null;
+                    // prettier-ignore
+                    preview.reason = _t("The drawing viewer is not loaded — download the file to open it on your computer.").toString();
+                }
+            }
             this.state.preview = preview;
             // Какой лист сервер уже разобрал — говорит он сам. Под нулём
             // сводку класть нельзя: пустые листы из показа выпадают, и первая
@@ -177,6 +199,14 @@ export class AttachmentPreviewDialog extends Component {
 
     get preview() {
         return this.state.preview;
+    }
+
+    /**
+     * Окно чертежа DXF из модуля pmk_drawing (ПРАВКА ПМК, шаг 46) или null.
+     * Реестр, а не импорт: без pmk_drawing почта собирается и работает.
+     */
+    get drawingViewer() {
+        return registry.category("pmk_file_viewers").get("dxf", null);
     }
 
     get dialogTitle() {

@@ -1042,6 +1042,58 @@ class LaserJobPart(models.Model):
             })
         return True
 
+    def action_view_drawing(self):
+        """«Посмотреть» в строке детали — чертёж окном просмотра DXF
+        (разбор удобства, шаг 46): масштаб, сдвиг, слои, габарит.
+
+        Окно — модуля pmk_drawing, и связь МЯГКАЯ, как с мостом цен
+        (_pmk_price_ready): жёсткая зависимость не нужна лазеру ради одной
+        кнопки, а удаление pmk_drawing каскадом снесло бы задания. Модуля
+        нет — всплывающее «Просмотр DXF недоступен», чертёж по-прежнему
+        скачивается в той же строке.
+        """
+        self.ensure_one()
+        if not self.drawing:
+            raise UserError(_("У детали «%s» не приложен чертёж") % self.name)
+        if not self._pmk_drawing_ready():
+            return {
+                "type": "ir.actions.client",
+                "tag": "display_notification",
+                "params": {
+                    "title": _("Просмотр DXF недоступен"),
+                    "message": _("Модуль просмотра чертежей не установлен — чертёж можно "
+                                 "скачать в строке детали."),
+                    "type": "warning",
+                    "sticky": False,
+                },
+            }
+        # Вложение поля «Чертёж»: поиск по res_field обязан называть поле
+        # явно, иначе ir.attachment прячет вложения полей. Права на него
+        # проверит окно (pmk.drawing.attachment_preview) — по детали.
+        attachment = self.env["ir.attachment"].sudo().search([
+            ("res_model", "=", self._name),
+            ("res_id", "=", self.id),
+            ("res_field", "=", "drawing"),
+        ], limit=1)
+        if not attachment:
+            raise UserError(_("Чертёж детали «%s» не найден — приложите его заново.") % self.name)
+        return {
+            "type": "ir.actions.client",
+            "tag": "pmk_drawing.view",
+            "params": {
+                "attachment_id": attachment.id,
+                "name": self.drawing_name or attachment.name or "",
+                # Вложение поля называется «drawing» — скачиваем под именем
+                # чертежа.
+                "download_url": "/web/content/%s/%d/drawing?download=true&filename_field=drawing_name"
+                                % (self._name, self.id),
+            },
+        }
+
+    def _pmk_drawing_ready(self):
+        """Стоит ли модуль просмотра чертежей (pmk_drawing) — мягкая связь."""
+        return "pmk.drawing" in self.env
+
 
 class LaserJobSheet(models.Model):
     """Физический лист на столе станка.

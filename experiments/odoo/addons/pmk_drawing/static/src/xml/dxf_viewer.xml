@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ПМК: окно чертежа DXF (разбор удобства, шаг 46). -->
+<templates xml:space="preserve">
+
+    <!-- Сам чертёж: строка управления, оговорки, белый лист и список слоёв.
+         Залитых кнопок нет: залитая на экране одна — «Закрыть» в подвале
+         окна. Лист рисует dxf_viewer.js (createElementNS) внутри пустого
+         div t-ref="sheet" — Owl его содержимое не трогает. -->
+    <t t-name="pmk_drawing.DxfViewer">
+        <div class="o_pmk_dxf">
+            <t t-if="drawing.ok">
+                <div class="o_pmk_dxf_bar">
+                    <div class="btn-group btn-group-sm" role="group" aria-label="Масштаб">
+                        <button type="button" class="btn btn-light"
+                                title="Весь чертёж в окне (клавиша 0)"
+                                t-on-click="() => this.fitDrawing()">
+                            <i class="fa fa-arrows-alt me-1" aria-hidden="true"/>Вписать
+                        </button>
+                        <button type="button" class="btn btn-light" title="Мельче (клавиша −)"
+                                aria-label="Мельче" t-on-click="() => this.zoomOut()">
+                            <i class="fa fa-minus" aria-hidden="true"/>
+                        </button>
+                        <span class="btn btn-light o_pmk_dxf_zoom" role="status"
+                              title="Масштаб: 100 % — весь чертёж в окне" t-esc="zoomText"/>
+                        <button type="button" class="btn btn-light" title="Крупнее (клавиша +)"
+                                aria-label="Крупнее" t-on-click="() => this.zoomIn()">
+                            <i class="fa fa-plus" aria-hidden="true"/>
+                        </button>
+                    </div>
+                    <span class="o_pmk_dxf_size" t-if="drawing.sizeLabel"
+                          title="Габарит чертежа по слоям, включённым в файле: ширина × высота">
+                        <i class="fa fa-arrows-h me-1" aria-hidden="true"/>
+                        <t t-esc="drawing.sizeLabel"/>
+                    </span>
+                    <span class="o_pmk_dxf_units" t-if="drawing.unitsLabel" t-esc="drawing.unitsLabel"/>
+                    <span class="o_pmk_dxf_hint d-none d-lg-inline"
+                          title="Колесо или два пальца — масштаб к курсору, перетаскивание — сдвиг, двойной щелчок — крупнее; клавиши + − 0 и стрелки">
+                        Колесо — масштаб, перетаскивание — сдвиг
+                    </span>
+                    <button type="button" class="btn btn-sm btn-light ms-auto o_pmk_dxf_layers_toggle"
+                            t-if="layers.length"
+                            t-att-aria-expanded="state.showLayers ? 'true' : 'false'"
+                            t-att-class="{ active: state.showLayers }"
+                            t-on-click="() => this.toggleLayers()">
+                        <i class="fa fa-list me-1" aria-hidden="true"/>
+                        <t t-esc="layersLabel"/>
+                    </button>
+                </div>
+                <div class="o_pmk_dxf_notes" role="note" t-if="drawing.notes.length">
+                    <i class="fa fa-info-circle" aria-hidden="true"/>
+                    <div>
+                        <div t-foreach="drawing.notes" t-as="note" t-key="note_index" t-esc="note"/>
+                    </div>
+                </div>
+                <div class="o_pmk_dxf_main">
+                    <!-- Без title: системная подсказка вставала бы у курсора
+                         поверх того самого узла, который рассматривают, при
+                         каждой остановке мыши. Подсказка — строкой над листом
+                         и в aria-label. -->
+                    <div class="o_pmk_dxf_sheet" t-ref="sheet" tabindex="0" role="img"
+                         t-att-aria-label="'Чертёж ' + (drawing.sizeLabel or '') + '. Колесо или два пальца — масштаб, перетаскивание — сдвиг, двойной щелчок — крупнее, клавиша 0 — вписать.'"/>
+                    <aside class="o_pmk_dxf_layers" t-if="state.showLayers and layers.length"
+                           aria-label="Слои чертежа">
+                        <div class="o_pmk_dxf_layers_head">
+                            <span class="fw-semibold">Слои</span>
+                            <button type="button" class="btn btn-link btn-sm p-0"
+                                    t-on-click="() => this.setAllLayers(true)">все</button>
+                            <span aria-hidden="true">·</span>
+                            <button type="button" class="btn btn-link btn-sm p-0"
+                                    t-on-click="() => this.setAllLayers(false)">ни одного</button>
+                        </div>
+                        <div class="o_pmk_dxf_layers_list">
+                            <label t-foreach="layers" t-as="layer" t-key="layer.id"
+                                   class="o_pmk_dxf_layer" t-att-title="layerTitle(layer)">
+                                <input type="checkbox" class="form-check-input"
+                                       t-att-checked="state.layerOn[layer.id]"
+                                       t-on-change="() => this.toggleLayer(layer)"/>
+                                <span class="o_pmk_dxf_swatch" aria-hidden="true"
+                                      t-att-style="swatchStyle(layer)"/>
+                                <span class="o_pmk_dxf_layer_name" t-esc="layer.name"/>
+                                <span class="o_pmk_dxf_layer_off" t-if="!layer.on">выкл. в файле</span>
+                            </label>
+                        </div>
+                    </aside>
+                </div>
+            </t>
+            <div t-else="" class="o_pmk_dxf_center">
+                <i class="fa fa-file-o fa-2x" aria-hidden="true"/>
+                <div class="small mt-2 text-center" t-esc="drawing.reason"/>
+            </div>
+        </div>
+    </t>
+
+    <!-- Окно для ленты документа и лазера. Подвал как у окна «Посмотреть»
+         почты: «Скачать» контурная, «Закрыть» — единственная залитая. -->
+    <t t-name="pmk_drawing.DxfViewerDialog">
+        <Dialog size="'xl'" title="title"
+                contentClass="'o_pmk_dxf_dialog'"
+                bodyClass="'o_pmk_dxf_dialog_body'"
+                withBodyPadding="false">
+            <div class="o_pmk_dxf_subtitle" t-esc="subtitle"/>
+            <t t-if="state.loading">
+                <div class="o_pmk_dxf_center">
+                    <i class="fa fa-circle-o-notch fa-spin fa-2x" aria-hidden="true"/>
+                    <div class="small mt-2">Рисую чертёж…</div>
+                    <div class="small opacity-75" t-esc="title"/>
+                </div>
+            </t>
+            <t t-elif="failed">
+                <div class="o_pmk_dxf_center px-4">
+                    <i class="fa fa-exclamation-triangle fa-2x" aria-hidden="true"/>
+                    <div class="small mt-2 text-center" t-esc="reason"/>
+                    <div class="small opacity-75 mt-2">Файл можно скачать и открыть у себя.</div>
+                </div>
+            </t>
+            <t t-else="">
+                <DxfViewer data="payload"/>
+            </t>
+            <t t-set-slot="footer">
+                <a class="btn btn-secondary" t-att-href="downloadUrl" download="">
+                    <i class="fa fa-download me-1" aria-hidden="true"/>Скачать
+                </a>
+                <button type="button" class="btn btn-primary" t-on-click="() => this.onClose()">
+                    Закрыть
+                </button>
+            </t>
+        </Dialog>
+    </t>
+
+</templates>

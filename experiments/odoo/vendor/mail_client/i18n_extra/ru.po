@@ -3045,3 +3045,9 @@ msgstr "Архив целиком можно скачать в окне со с�
 #: code:addons/mail_client/static/src/attachments/attachment_preview_dialog.js:0
 msgid "No connection to the server — the file was not downloaded. Try again."
 msgstr "Нет связи с сервером — файл не скачался. Попробуйте ещё раз."
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/attachments/attachment_preview_dialog.js:0
+msgid "The drawing viewer is not loaded — download the file to open it on your computer."
+msgstr "Окно чертежа не загрузилось — скачайте файл и откройте его у себя."

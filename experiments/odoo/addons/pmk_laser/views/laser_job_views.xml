@@ -352,6 +352,11 @@
                   <field name="pierces_total" sum="Проколов всего"/>
                   <button name="action_parse_drawing" type="object" string="Разобрать"
                           icon="fa-magic" invisible="not drawing"/>
+                  <!-- Чертёж окном просмотра DXF (разбор UX, шаг 46): масштаб,
+                       сдвиг, слои, габарит — без АвтоКАДа. Окно — модуля
+                       pmk_drawing; его нет — всплывающее «недоступен». -->
+                  <button name="action_view_drawing" type="object" string="Посмотреть"
+                          icon="fa-eye" invisible="not drawing"/>
                 </list>
               </field>
               <group>

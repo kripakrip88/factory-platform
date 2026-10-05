@@ -1,0 +1,254 @@
+// ПМК: окно чертежа DXF (разбор удобства, шаг 46).
+//
+// Свой файл модуля, а не тема: живые файлы pmk_theme — только navbar_nexus,
+// forms_nexus и dark (ir.asset), остальные выключены. Цвета — переменные
+// Bootstrap/Odoo с запасными значениями; тёмная пара — в конце файла, под
+// классом режима body.o_nexus_dark (как в почте, шаг 45).
+//
+// ЛИСТ ЧЕРТЕЖА БЕЛЫЙ В ОБЕИХ ТЕМАХ — как страница PDF в окне почты. Цвета
+// линий проверены на читаемость именно на белом (sheetColor), а чертёж,
+// который в АвтоКАДе рисуется на чёрном, на белом листе привычен цеху по
+// печати.
+
+// --- карточка чертежа в ленте (xml/attachment_list.xml) ----------------------
+// Курсор-лупа, как штатный .o-viewable у картинок и PDF: щелчок откроет
+// чертёж, а не скачает его.
+.o-mail-AttachmentContainer[data-pmk-dxf] {
+    cursor: zoom-in;
+}
+
+// --- окно ленты и лазера ----------------------------------------------------
+// Высота фиксированная, как у окна «Посмотреть» почты: чертёж вписывается
+// в окно, а не окно — в чертёж.
+.o_pmk_dxf_dialog .o_pmk_dxf_dialog_body {
+    display: flex;
+    flex-direction: column;
+    height: 72vh;
+    max-height: calc(100vh - 11rem);
+    min-height: 16rem;
+    overflow: hidden;
+}
+
+.o_pmk_dxf_subtitle {
+    flex: 0 0 auto;
+    padding: .5rem 1rem;
+    font-size: .875rem;
+    opacity: .75;
+}
+
+.o_pmk_dxf_center {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+// --- сам чертёж -------------------------------------------------------------
+.o_pmk_dxf {
+    --pmk-dxf-border: var(--border-color, #dee2e6);
+    --pmk-dxf-muted: #5f6368;
+    --pmk-dxf-panel: var(--body-bg, #fff);
+    --pmk-dxf-note-bg: rgba(255, 193, 7, .14);
+    --pmk-dxf-note-ink: inherit;
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    min-width: 0;
+}
+
+.o_pmk_dxf_bar {
+    flex: 0 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem 1rem;
+    padding: .5rem 1rem;
+    border-top: 1px solid var(--pmk-dxf-border);
+    font-size: .875rem;
+}
+
+// Масштаб в процентах — между «−» и «+», шириной под «500 000 %», чтобы
+// кнопки не прыгали при каждом щелчке колеса.
+.o_pmk_dxf .o_pmk_dxf_zoom {
+    min-width: 5.5rem;
+    cursor: default;
+    font-variant-numeric: tabular-nums;
+    pointer-events: none;
+}
+
+.o_pmk_dxf_size {
+    font-weight: 600;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.o_pmk_dxf_units,
+.o_pmk_dxf_hint {
+    color: var(--pmk-dxf-muted);
+    white-space: nowrap;
+}
+
+// Оговорки к чертежу: кодировка, починка, «не показано: N». Сигнал, а не
+// запрет — чертёж под ними показан.
+.o_pmk_dxf_notes {
+    flex: 0 0 auto;
+    display: flex;
+    gap: .5rem;
+    padding: .5rem 1rem;
+    font-size: .8125rem;
+    background: var(--pmk-dxf-note-bg);
+    color: var(--pmk-dxf-note-ink);
+    border-top: 1px solid var(--pmk-dxf-border);
+
+    .fa {
+        margin-top: .2rem;
+    }
+}
+
+.o_pmk_dxf_main {
+    flex: 1 1 auto;
+    display: flex;
+    min-height: 0;
+    border-top: 1px solid var(--pmk-dxf-border);
+}
+
+// Лист: белый всегда. touch-action: none — на планшете палец двигает
+// чертёж, а не страницу, а два пальца — масштаб чертежа своим щипком
+// (dxf_viewer.js, pinchView): масштаб страницы браузера здесь выключен.
+.o_pmk_dxf_sheet {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    background-color: #fff;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+
+    // Рамка фокуса — внутри листа, то есть на белом в обеих темах.
+    &:focus-visible {
+        outline: 2px solid #16191c;
+        outline-offset: -2px;
+    }
+
+    &.o_pmk_dxf_dragging {
+        cursor: grabbing;
+    }
+}
+
+.o_pmk_dxf_svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+// --- список слоёв -----------------------------------------------------------
+.o_pmk_dxf_layers {
+    flex: 0 0 16rem;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    border-left: 1px solid var(--pmk-dxf-border);
+    background: var(--pmk-dxf-panel);
+    font-size: .875rem;
+}
+
+.o_pmk_dxf_layers_head {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: baseline;
+    gap: .5rem;
+    padding: .5rem .75rem;
+    border-bottom: 1px solid var(--pmk-dxf-border);
+}
+
+.o_pmk_dxf_layers_list {
+    flex: 1 1 auto;
+    overflow: auto;
+    padding: .25rem 0;
+}
+
+.o_pmk_dxf_layer {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    margin: 0;
+    padding: .25rem .75rem;
+    cursor: pointer;
+
+    &:hover {
+        background: rgba(128, 128, 128, .08);
+    }
+
+    .form-check-input {
+        flex: 0 0 auto;
+        margin: 0;
+    }
+}
+
+// Образец цвета слоя — как его линии на белом листе, в белой рамке: тот же
+// цвет и в тёмной теме читается образцом с листа.
+.o_pmk_dxf_swatch {
+    flex: 0 0 auto;
+    width: .875rem;
+    height: .875rem;
+    border-radius: 2px;
+    box-shadow: 0 0 0 2px #fff, 0 0 0 3px rgba(128, 128, 128, .5);
+}
+
+// Имя слоя переносится, а не режется: «КМД_узлы_фланцы_М16» читается целиком.
+.o_pmk_dxf_layer_name {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.o_pmk_dxf_layer_off {
+    flex: 0 0 auto;
+    color: var(--pmk-dxf-muted);
+    font-size: .75rem;
+    white-space: nowrap;
+}
+
+// Узкое окно (телефон, планшет стоя): список слоёв — под листом, не сбоку.
+@media (max-width: 767.98px) {
+    .o_pmk_dxf_main {
+        flex-direction: column;
+    }
+
+    .o_pmk_dxf_layers {
+        flex: 0 0 auto;
+        max-height: 35%;
+        border-left: 0;
+        border-top: 1px solid var(--pmk-dxf-border);
+    }
+}
+
+// --- тёмная тема (pmk_theme: класс o_nexus_dark на body) -------------------
+// Тона словаря тёмной темы (pmk_theme/dark.scss, раздел 0): рамки #33363d,
+// приглушённый текст #a3a29f, подложка панели #1e2025, жёлтая оговорка —
+// фон и текст плашки «yellow» ($pmk-dark-tones). Лист остаётся белым.
+// Только на экране: печать из тёмной темы светлая.
+@media screen {
+    body.o_nexus_dark .o_pmk_dxf {
+        --pmk-dxf-border: #33363d;
+        --pmk-dxf-muted: #a3a29f;
+        --pmk-dxf-panel: #1e2025;
+        --pmk-dxf-note-bg: #473f30;
+        --pmk-dxf-note-ink: #efe0aa;
+    }
+
+    body.o_nexus_dark .o_pmk_dxf_layer:hover {
+        background: rgba(255, 255, 255, .06);
+    }
+
+    body.o_nexus_dark .o_pmk_dxf_swatch {
+        box-shadow: 0 0 0 2px #fff, 0 0 0 3px #464a52;
+    }
+}
