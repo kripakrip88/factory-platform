@@ -2997,3 +2997,51 @@ msgstr "Письмо рядом со списком"
 #: code:addons/mail_client/static/src/panes/reading_pane.js:0
 msgid "Open the message on full screen"
 msgstr "Письмо на весь экран"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/attachments/attachment_preview_dialog.js:0
+msgid "from the archive «%s»"
+msgstr "из архива «%s»"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/attachments/attachment_preview_dialog.js:0
+msgid "Files: %s"
+msgstr "Файлов: %s"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/attachments/attachment_preview_dialog.js:0
+msgid "size when unpacked: %s"
+msgstr "в распакованном виде: %s"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/attachments/attachment_preview_dialog.js:0
+msgid "archiver service files hidden: %s"
+msgstr "скрыто служебных файлов архиватора: %s"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/attachments/attachment_preview_dialog.xml:0
+msgid "Files in the archive"
+msgstr "Файлы архива"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/attachments/attachment_preview_dialog.xml:0
+msgid "Download archive"
+msgstr "Скачать архив"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/attachments/attachment_preview_dialog.xml:0
+msgid "The whole archive can be downloaded in the window with the list of files."
+msgstr "Архив целиком можно скачать в окне со списком файлов."
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/attachments/attachment_preview_dialog.js:0
+msgid "No connection to the server — the file was not downloaded. Try again."
+msgstr "Нет связи с сервером — файл не скачался. Попробуйте ещё раз."

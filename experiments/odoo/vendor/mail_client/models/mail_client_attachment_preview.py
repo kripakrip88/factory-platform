@@ -27,6 +27,14 @@
 Чертежи DXF определяются как вид файла, но не разбираются: рисовать их в
 браузере нам пока нечем, а обещать просмотр, которого нет, хуже, чем честно
 предложить скачать.
+
+АРХИВЫ (ПРАВКА ПМК, шаг 45 разбора удобства, 05.10.2026)
+Архив ZIP показывается списком файлов, а PDF, таблица или картинка из него
+открываются тем же окном — параметром member (номер файла в архиве). Сам
+архив читает tools/archive_reader.py: только в память, по одному файлу, с
+пределами против «бомб» и поддельных размеров. RAR и 7z опознаются, но не
+читаются: на сервере нет распаковщика (unrar/bsdtar/7z), и ставить его —
+решение владельца (меняется образ Docker).
 """
 
 import csv as csv_module
@@ -41,6 +49,11 @@ from xml.etree import ElementTree
 
 from odoo import api, models
 from odoo.exceptions import UserError
+
+from ..tools.archive_reader import (
+    ArchiveError, archive_format, check_book, directory_info, list_zip,
+    read_part_head, read_zip_member, MAX_DIRECTORY_BYTES, MAX_ENTRIES,
+)
 
 _logger = logging.getLogger(__name__)
 
@@ -111,6 +124,9 @@ KIND_BY_FORMAT = {
     'png': 'image', 'jpeg': 'image', 'gif': 'image', 'bmp': 'image',
     'webp': 'image', 'tiff': 'image',
     'dxf': 'cad2d',
+    # ПРАВКА ПМК (шаг 45): архивы. Показывается списком только ZIP — RAR и 7z
+    # распаковать на сервере нечем (см. wire_kind).
+    'zip': 'archive', 'rar': 'archive', '7z': 'archive',
 }
 
 FORMAT_TITLE = {
@@ -118,8 +134,31 @@ FORMAT_TITLE = {
     'ods': 'таблица OpenDocument', 'csv': 'таблица CSV',
     'html': 'таблица HTML', 'pdf': 'документ PDF', 'dxf': 'чертёж DXF',
     'svg': 'векторная картинка SVG', 'docx': 'документ Word',
-    'zip': 'архив', 'ole2': 'документ Microsoft Office',
+    'zip': 'архив ZIP', 'ole2': 'документ Microsoft Office',
+    # ПРАВКА ПМК (шаг 45): подпись окна словами, а не «application/zip».
+    'rar': 'архив RAR', '7z': 'архив 7z',
+    'ooxml': 'документ Microsoft Office', 'odf': 'документ OpenDocument',
+    'png': 'картинка PNG', 'jpeg': 'картинка JPEG', 'gif': 'картинка GIF',
+    'bmp': 'картинка BMP', 'webp': 'картинка WebP', 'tiff': 'картинка TIFF',
 }
+
+_EXT_WORD = re.compile(r'^[A-Za-z0-9]{1,8}$')
+
+
+def title_of(fmt, filename=''):
+    """Что за файл словами — подпись окна у ВСЕХ вложений. ПРАВКА ПМК (шаг 45).
+
+    Неопознанный по содержимому файл (чертёж DWG, модель STEP, документ
+    Word .doc) — «файл DWG» по расширению, а не тип для программ
+    «application/octet-stream», который прислал отправитель. Расширение —
+    только латиница и цифры до 8 знаков: имя пришло от постороннего.
+    """
+    title = FORMAT_TITLE.get(fmt)
+    if title:
+        return title
+    ext = os.path.splitext(filename or '')[1].lstrip('.')
+    return 'файл %s' % ext.upper() if _EXT_WORD.match(ext) else 'файл'
+
 
 # Расширение и содержимое сплошь и рядом расходятся: 1С и старые ERP отдают
 # «прайс.xls», внутри которого HTML-таблица или CSV, а .xlsx — это zip.
@@ -130,6 +169,9 @@ EXT_FORMAT = {
     'htm': 'html', 'html': 'html', 'pdf': 'pdf', 'dxf': 'dxf', 'svg': 'svg',
     'png': 'png', 'jpg': 'jpeg', 'jpeg': 'jpeg', 'gif': 'gif', 'bmp': 'bmp',
     'webp': 'webp', 'tif': 'tiff', 'tiff': 'tiff', 'doc': 'ole2', 'docx': 'docx',
+    # ПРАВКА ПМК (шаг 45): «назван .rar, а внутри ZIP» — оговоркой, и вид
+    # строки в списке архива (значок, можно ли посмотреть) — по расширению.
+    'zip': 'zip', 'rar': 'rar', '7z': '7z',
 }
 
 # Настоящий тип файла — по содержимому, а не по тому, что написал отправитель.
@@ -144,6 +186,7 @@ FORMAT_MIME = {
     'dxf': 'image/vnd.dxf', 'svg': 'image/svg+xml',
     'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     'zip': 'application/zip', 'ole2': 'application/x-ole-storage',
+    'rar': 'application/vnd.rar', '7z': 'application/x-7z-compressed',
 }
 
 # Картинки, которые браузер рисует сам и в которых нет исполняемого кода.
@@ -174,22 +217,44 @@ def decode_text(blob, limit=None):
 
 
 def _zip_format(blob):
-    """Что внутри zip: xlsx, ods, docx или просто архив."""
+    """Что внутри zip: xlsx, ods, docx, другой документ Office или просто архив.
+
+    ПРАВКА ПМК (шаг 45):
+    - сначала число записей и размер оглавления по концу архива (той же
+      функцией, которой ищет его zipfile): zipfile разбирает оглавление
+      целиком, и вложение на 50 МБ с миллионом записей съело бы сотни
+      мегабайт памяти ещё до ответа «это архив». Конца архива нет — тоже
+      'zip': список архива скажет «повреждён»;
+    - mimetype книги OpenDocument читается своим распаковщиком с потолком
+      (read_part_head), а не archive.read(): read() сжатой части — распаковка
+      без потолка;
+    - pptx, odt и прочие документы Office/OpenDocument — документ, а не
+      архив: иначе окно показало бы вместо презентации список её XML.
+    """
+    info = directory_info(blob)
+    if (info is None or info['entries'] > MAX_ENTRIES
+            or info['size'] > MAX_DIRECTORY_BYTES):
+        return 'zip'
     try:
         with zipfile.ZipFile(io.BytesIO(blob)) as archive:
             names = set(archive.namelist()[:200])
-            if 'xl/workbook.xml' in names:
-                return 'xlsx'
-            if 'mimetype' in names:
-                mimetype = archive.read('mimetype')[:100]
-                if b'opendocument.spreadsheet' in mimetype:
-                    return 'ods'
-            if 'word/document.xml' in names:
-                return 'docx'
-            if any(n.startswith('xl/') for n in names):
-                return 'xlsx'
-    except (zipfile.BadZipFile, KeyError, OSError):
+    except (zipfile.BadZipFile, KeyError, OSError, ValueError, EOFError,
+            NotImplementedError, RuntimeError, IndexError):
         return 'zip'
+    if 'xl/workbook.xml' in names:
+        return 'xlsx'
+    if 'mimetype' in names:
+        mimetype = read_part_head(blob, 'mimetype', 100) or b''
+        if b'opendocument.spreadsheet' in mimetype:
+            return 'ods'
+        if b'opendocument' in mimetype:
+            return 'odf'
+    if 'word/document.xml' in names:
+        return 'docx'
+    if any(n.startswith('xl/') for n in names):
+        return 'xlsx'
+    if '[Content_Types].xml' in names:
+        return 'ooxml'
     return 'zip'
 
 
@@ -233,15 +298,24 @@ def detect_format(blob, filename=''):
     ext = os.path.splitext(filename or '')[1].lower().lstrip('.')
 
     fmt = None
-    if b'%PDF-' in head[:1024]:
+    # ПРАВКА ПМК (шаг 45): сигнатуры архивов — ДО поиска %PDF- в первом
+    # килобайте. Архив «без сжатия» (так пишут zip -0, zipfile Python,
+    # 7-Zip и WinRAR в режиме «без сжатия», а Info-ZIP и 7-Zip — для
+    # несжимаемого PDF) хранит байты первого файла как есть, и %PDF- лежит
+    # в нём на 30-м байте с именем. Поиск первым объявил бы весь архив PDF:
+    # вместо списка файлов — pdf.js на байтах архива.
+    if head.startswith(b'PK\x03\x04'):
+        fmt = _zip_format(blob)
+    elif (packed := archive_format(head)):
+        # ПРАВКА ПМК (шаг 45): пустой ZIP (только конец архива), RAR4/RAR5, 7z.
+        fmt = packed
+    elif b'%PDF-' in head[:1024]:
         # По стандарту перед %PDF- допускается мусор, поэтому не startswith.
         fmt = 'pdf'
     elif head.startswith(b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1'):
         # OLE2 — это и .xls, и .doc, и .msg. Различит только чтение книги,
         # поэтому здесь ставим xls, а окончательно решает читатель.
         fmt = 'xls'
-    elif head.startswith(b'PK\x03\x04'):
-        fmt = _zip_format(blob)
     elif head.startswith(b'\x89PNG\r\n\x1a\n'):
         fmt = 'png'
     elif head.startswith(b'\xff\xd8\xff'):
@@ -275,11 +349,11 @@ def detect_format(blob, filename=''):
     return fmt, kind, note
 
 
-# Виды, которыми говорят с браузером. Их ровно четыре, по числу способов
-# показать файл: таблица, pdf.js, <img> и честный отказ. Внутренние виды
-# подробнее (doc, cad2d, other), но клиенту от этой подробности толку нет:
-# рисовать чертёж DXF ему всё равно нечем.
-WIRE_KINDS = ('sheet', 'pdf', 'image', 'none')
+# Виды, которыми говорят с браузером, — по числу способов показать файл:
+# таблица, pdf.js, <img>, список файлов архива (ПРАВКА ПМК, шаг 45) и честный
+# отказ. Внутренние виды подробнее (doc, cad2d, other), но клиенту от этой
+# подробности толку нет: рисовать чертёж DXF ему всё равно нечем.
+WIRE_KINDS = ('sheet', 'pdf', 'image', 'archive', 'none')
 
 
 def wire_kind(fmt, kind):
@@ -288,6 +362,9 @@ def wire_kind(fmt, kind):
         return 'sheet'
     if fmt == 'pdf':
         return 'pdf'
+    # Списком показывается только ZIP: RAR и 7z на сервере распаковать нечем.
+    if fmt == 'zip':
+        return 'archive'
     # Не `kind == 'image'`, а список форматов: TIFF по виду картинка, но ни
     # один браузер её не рисует, и <img> дал бы человеку битый значок.
     if fmt in BROWSER_IMAGE_FORMATS:
@@ -311,10 +388,39 @@ def no_preview_reason(fmt, kind):
         # картинкой не отдаёт. Человеку честнее сказать причину, чем сделать
         # вид, что формат неизвестен.
         return "Картинки SVG в системе не показываются: внутри них бывает код."
+    if fmt in ('rar', '7z'):
+        # ПРАВКА ПМК (шаг 45): распаковщика RAR и 7z на сервере нет — ставить
+        # его значит менять образ Docker, это решение владельца.
+        return "Просмотр архивов %s пока недоступен — скачайте архив." % (
+            'RAR' if fmt == 'rar' else '7z')
     title = FORMAT_TITLE.get(fmt)
     if title:
         return "Это %s — показать его в системе нечем." % title
     return "Этот вид файла в системе не показывается."
+
+
+ARCHIVE_FORMATS = ('zip', 'rar', '7z')
+NESTED_ARCHIVE = "Это архив внутри архива — скачайте его и откройте отдельно."
+
+
+def entry_kind(filename):
+    """Вид строки в списке архива — по расширению: 'pdf', 'sheet', 'image',
+    'archive' или 'other'. ПРАВКА ПМК (шаг 45).
+
+    Те же словари, что решают вид вложения (EXT_FORMAT → KIND_BY_FORMAT →
+    wire_kind), — второго списка «что можно посмотреть» нет. По расширению,
+    а не по содержимому: разжимать каждый файл ради значка — это распаковать
+    весь архив. Ошибётся расширение — окно файла скажет правду, вид там
+    решается по содержимому.
+    """
+    ext = os.path.splitext(filename or '')[1].lower().lstrip('.')
+    fmt = EXT_FORMAT.get(ext)
+    if not fmt:
+        return 'other'
+    if fmt in ARCHIVE_FORMATS:
+        return 'archive'
+    kind = wire_kind(fmt, KIND_BY_FORMAT.get(fmt, 'other'))
+    return kind if kind in ('pdf', 'sheet', 'image') else 'other'
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -433,6 +539,11 @@ def _read_xlsx(blob):
         import openpyxl
     except ImportError:                                    # pragma: no cover
         raise PreviewError("На сервере нет библиотеки openpyxl — таблицу .xlsx не прочитать.")
+    # ПРАВКА ПМК (шаг 45): книга — тоже zip, и openpyxl распаковывает её
+    # части без потолка. Сначала проверка размеров и способов сжатия.
+    refusal = check_book(blob)
+    if refusal:
+        raise PreviewError(refusal)
     try:
         # data_only=True — берём посчитанные значения, а не тексты формул:
         # формула чужого файла нам и не нужна, и небезопасна как подсказка.
@@ -493,6 +604,11 @@ def _read_ods(blob):
     Поэтому повторы разворачиваем только внутри пределов и никогда — для
     пустого хвоста.
     """
+    # ПРАВКА ПМК (шаг 45): content.xml читается целиком — сначала проверка,
+    # что книга не «бомба» (см. _read_xlsx).
+    refusal = check_book(blob)
+    if refusal:
+        raise PreviewError(refusal)
     try:
         with zipfile.ZipFile(io.BytesIO(blob)) as archive:
             content = archive.read('content.xml')
@@ -979,7 +1095,7 @@ class MailClientAttachment(models.Model):
     # просмотр
     # ------------------------------------------------------------------
     @api.model
-    def preview(self, attachment_id, sheet=0, offset=0, limit=None):
+    def preview(self, attachment_id, sheet=0, offset=0, limit=None, member=None):
         """Что показать вместо кнопки «скачать».
 
         ОТВЕТ — ЭТО ДОГОВОР С ОКНОМ ПРОСМОТРА. Второй его конец описан в
@@ -987,12 +1103,15 @@ class MailClientAttachment(models.Model):
         только вместе с ним: имена полей здесь — это имена, которые читает
         разбор на клиенте, а не свободный набор.
 
-            kind    'sheet' | 'pdf' | 'image' | 'none' — ЧЕМ ПОКАЗЫВАТЬ.
-                    Не «что за файл», а именно чем: вид считается по
-                    содержимому (заявленному типу в письме верить нельзя) и
-                    сводится к четырём способам показа.
+            kind    'sheet' | 'pdf' | 'image' | 'archive' | 'none' — ЧЕМ
+                    ПОКАЗЫВАТЬ. Не «что за файл», а именно чем: вид считается
+                    по содержимому (заявленному типу в письме верить нельзя)
+                    и сводится к способам показа.
             name, mimetype, size  — подпись окна. size РАСКОДИРОВАННЫЙ:
                     в письме стоит размер base64, он на треть больше.
+            format_title  что за файл словами («таблица Excel», «архив
+                    ZIP», неопознанный — «файл DWG» по расширению, title_of)
+                    — для подписи окна вместо mimetype. ПРАВКА ПМК (шаг 45).
             url     путь к байтам на нашем сервере — для pdf.js и <img>.
             sheets  [{name, columns, rows, total_rows}] для kind='sheet'.
                     Ячейки уже строки: форматирует их сервер, он один знает
@@ -1001,6 +1120,19 @@ class MailClientAttachment(models.Model):
             note    предупреждение, которое показывается и при удавшемся
                     просмотре: «назван .xls, а внутри HTML».
             reason  для kind='none' — почему просмотра нет.
+            archive для kind='archive' — список файлов архива ZIP
+                    (tools/archive_reader.list_zip): {entries: [{index, path,
+                    dir, name, size, date, kind, reason, warn}], total, size,
+                    encrypted, hidden, notes}. kind строки — 'pdf' | 'sheet' |
+                    'image' | 'archive' | 'other' (entry_kind). ПРАВКА ПМК
+                    (шаг 45).
+            member, archive_name, download_url — для файла ИЗ архива
+                    (аргумент member — номер файла в архиве, index строки
+                    списка): member = {index, path}, archive_name — имя
+                    вложения-архива, url — /mail_client/attachment/N/member/I,
+                    download_url — он же с ?download=1. Остальное — как у
+                    вложения: вид файла решается по его содержимому. ПРАВКА
+                    ПМК (шаг 45).
 
         Ошибка разбора — это тоже ответ (kind='none' и reason), а не
         исключение: сорванный разбор чужого файла не повод показывать
@@ -1020,6 +1152,7 @@ class MailClientAttachment(models.Model):
             # отправителем — чтобы подпись окна не пустовала, если файл не
             # удастся даже получить.
             'mimetype': record.content_type or '',
+            'format_title': '',
             'kind': 'none',
             'format': 'other',
             'note': '',
@@ -1028,21 +1161,44 @@ class MailClientAttachment(models.Model):
             'download_url': '',
             'sheets': [],
             'price': None,
+            'archive': None,
+            'member': None,
+            'archive_name': '',
         }
         try:
             blob = record._preview_bytes()
             payload['download_url'] = ('/web/content/%s?download=true'
                                        % record.attachment_id.id)
+            name = record.name
+            if member is not None:
+                # Файл из архива: дальше всё как у вложения, только байты —
+                # его, а ссылки — на него. Ссылки на архив убираем сразу:
+                # «Скачать» в окне файла должно отдать файл, а не архив, и
+                # при отказе чтения — не отдать ничего.
+                payload.update({'archive_name': record.name, 'url': '',
+                                'download_url': '', 'mimetype': ''})
+                blob, entry = record._archive_member(blob, member)
+                name = entry['name']
+                url = '/mail_client/attachment/%d/member/%d' % (record.id, entry['index'])
+                payload.update({
+                    'name': name,
+                    'member': {'index': entry['index'], 'path': entry['path']},
+                    'url': url,
+                    'download_url': url + '?download=1',
+                })
             payload['size'] = len(blob)
-            fmt, kind, note = detect_format(blob, record.name)
+            fmt, kind, note = detect_format(blob, name)
             payload.update({
                 'format': fmt,
+                'format_title': title_of(fmt, name),
                 'note': note,
                 'kind': wire_kind(fmt, kind),
-                'mimetype': FORMAT_MIME.get(fmt) or record.content_type or '',
+                'mimetype': FORMAT_MIME.get(fmt) or payload['mimetype'] or '',
             })
 
-            if kind == 'sheet':
+            if kind == 'archive' and member is not None:
+                payload.update({'kind': 'none', 'reason': NESTED_ARCHIVE})
+            elif kind == 'sheet':
                 payload.update(record._preview_sheet(blob, fmt, sheet, offset, limit))
             elif kind == 'doc':
                 payload.update(pdf_info(blob))
@@ -1053,10 +1209,12 @@ class MailClientAttachment(models.Model):
                     payload['note'] = "Документ закрыт паролем — просмотрщик его спросит."
             elif kind == 'image':
                 payload.update(image_info(blob))
+            elif payload['kind'] == 'archive':
+                payload['archive'] = record._archive_listing(blob)
 
-            if payload['kind'] == 'none':
+            if payload['kind'] == 'none' and not payload['reason']:
                 payload['reason'] = no_preview_reason(fmt, kind)
-        except PreviewError as exc:
+        except (PreviewError, ArchiveError) as exc:
             payload.update({'kind': 'none', 'reason': str(exc)})
         except UserError as exc:
             # Сюда попадает отказ IMAP из _fetch вендорского модуля.
@@ -1068,6 +1226,33 @@ class MailClientAttachment(models.Model):
             payload.update({'kind': 'none',
                             'reason': "Файл не удалось разобрать."})
         return payload
+
+    # ------------------------------------------------------------------
+    # архивы (ПРАВКА ПМК, шаг 45)
+    # ------------------------------------------------------------------
+    def _archive_member(self, blob, member):
+        """(байты, строка списка) файла номер `member` из архива-вложения.
+
+        Только из вложения, которое само опознано как архив ZIP: «файл номер
+        3» у книги Excel — это её служебный XML, показывать его незачем.
+        Чтение — tools/archive_reader.read_zip_member: в память, с пределом.
+        """
+        self.ensure_one()
+        if detect_format(blob, self.name)[0] != 'zip':
+            raise ArchiveError("Это вложение не архив ZIP — файлов внутри у него нет.")
+        try:
+            index = int(member)
+        except (TypeError, ValueError):
+            raise ArchiveError("В архиве нет такого файла. Откройте архив заново.", 404) from None
+        return read_zip_member(blob, index)
+
+    def _archive_listing(self, blob):
+        """Список файлов архива для окна, с видом каждой строки."""
+        self.ensure_one()
+        listing = list_zip(blob)
+        for entry in listing['entries']:
+            entry['kind'] = entry_kind(entry['name'])
+        return listing
 
     def _preview_sheet(self, blob, fmt, sheet_index, offset, limit):
         """Листы книги со строками и сводка по прайсу.
@@ -1187,8 +1372,11 @@ class MailClientAttachment(models.Model):
         return summary
 
     @api.model
-    def price_scan(self, attachment_id, sheet=0):
-        """Только сводка по прайсу — для повторного пересчёта без страницы строк."""
+    def price_scan(self, attachment_id, sheet=0, member=None):
+        """Только сводка по прайсу — для повторного пересчёта без страницы строк.
+
+        member — номер файла в архиве, как у preview() (ПРАВКА ПМК, шаг 45).
+        """
         record = self.browse(attachment_id).exists()
         if not record:
             raise UserError("Это вложение больше не существует.")
@@ -1196,7 +1384,11 @@ class MailClientAttachment(models.Model):
         record = record.sudo()
         try:
             blob = record._preview_bytes()
-            fmt, kind, _note = detect_format(blob, record.name)
+            name = record.name
+            if member is not None:
+                blob, entry = record._archive_member(blob, member)
+                name = entry['name']
+            fmt, kind, _note = detect_format(blob, name)
             if kind != 'sheet':
                 return {'is_price': False,
                         'reason': "Это не таблица, а %s."
@@ -1206,7 +1398,7 @@ class MailClientAttachment(models.Model):
             summary = record._price_summary(sheets[index])
             summary['sheet'] = index
             return summary
-        except PreviewError as exc:
+        except (PreviewError, ArchiveError) as exc:
             return {'is_price': False, 'reason': str(exc)}
         except UserError as exc:
             return {'is_price': False, 'reason': str(exc)}

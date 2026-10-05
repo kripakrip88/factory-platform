@@ -10,16 +10,42 @@
  * Его не надо восстанавливать после обновления списка, он живёт ровно столько,
  * сколько открыто окно, и тянуть его через корень значило бы добавить в корень
  * поле, которое никто, кроме этого окна, не читает.
+ *
+ * ПРАВКА ПМК (шаг 45, 05.10.2026): архив ZIP — список файлов внутри. Файл
+ * из архива открывается ВТОРЫМ таким же окном поверх списка (props.member):
+ * Esc и «Закрыть» возвращают к списку, а не к письму. Окно файла ходит на
+ * сервер тем же preview() с аргументом member — таблица, «Показать ещё»,
+ * сводка прайса, pdf.js и картинка работают как у обычного вложения.
+ * «Скачать» у строки списка — запросом с разбором ответа, а не ссылкой: порча
+ * файла выясняется только при распаковке, и причина отказа должна встать в
+ * строку, а не пропасть в «Сбой» панели загрузок браузера.
  */
 import { Component, onWillDestroy, useEffect, useRef, useState } from "@odoo/owl";
 import { Dialog } from "@web/core/dialog/dialog";
 import { _t } from "@web/core/l10n/translation";
 import { useService } from "@web/core/utils/hooks";
+import { downloadFile } from "@web/core/network/download";
 import { hidePDFJSButtons } from "@web/core/utils/pdfjs";
 import { url } from "@web/core/utils/urls";
 
-import { formatSize } from "../utils";
-import { KINDS, appendSheetRows, normalizePreview, normalizePrice } from "./preview_payload";
+import {
+    KINDS,
+    appendSheetRows,
+    downloadRefusal,
+    formatBytes,
+    memberUrl,
+    normalizePreview,
+    normalizePrice,
+} from "./preview_payload";
+
+// Значок строки архива по её виду (ПРАВКА ПМК, шаг 45).
+const ENTRY_ICONS = {
+    pdf: "fa-file-pdf-o",
+    sheet: "fa-file-excel-o",
+    image: "fa-file-image-o",
+    archive: "fa-file-archive-o",
+    other: "fa-file-o",
+};
 
 export class AttachmentPreviewDialog extends Component {
     static template = "mail_client.AttachmentPreviewDialog";
@@ -32,12 +58,21 @@ export class AttachmentPreviewDialog extends Component {
         // Скачивание остаётся за панелью чтения: там уже есть и колесо на
         // кнопке, и разбор ошибок. Второй такой же код здесь был бы лишним.
         onDownload: { type: Function, optional: true },
+        // ПРАВКА ПМК (шаг 45): файл ИЗ архива — номер в архиве и путь;
+        // archiveName — имя архива для подписи окна.
+        member: {
+            type: Object,
+            optional: true,
+            shape: { index: Number, path: String },
+        },
+        archiveName: { type: String, optional: true },
         // Кладёт служба диалогов.
         close: { type: Function, optional: true },
     };
 
     setup() {
         this.orm = useService("orm");
+        this.dialog = useService("dialog");
         this.KINDS = KINDS;
         this.state = useState({
             loading: true,
@@ -55,6 +90,10 @@ export class AttachmentPreviewDialog extends Component {
             prices: {},
             scanningPrice: false,
             loadingMore: false,
+            // «Скачать» у строк архива (ПРАВКА ПМК, шаг 45): по номеру файла в
+            // архиве — идёт ли скачивание и почему не вышло.
+            downloading: {},
+            rowErrors: {},
         });
         this.pdfFrameRef = useRef("pdfFrame");
 
@@ -85,9 +124,7 @@ export class AttachmentPreviewDialog extends Component {
 
     async load() {
         try {
-            const raw = await this.orm.call("mail.client.attachment", "preview", [], {
-                attachment_id: this.props.attachmentId,
-            });
+            const raw = await this.orm.call("mail.client.attachment", "preview", [], this.serverKwargs());
             if (!this.alive) {
                 return;
             }
@@ -124,6 +161,20 @@ export class AttachmentPreviewDialog extends Component {
         }
     }
 
+    /**
+     * Аргументы вызова сервера: вложение и, у файла из архива, его номер.
+     * Один помощник на preview, price_scan и «Показать ещё» — иначе одна
+     * из трёх дорог забыла бы member и показала бы лист архива вместо листа
+     * файла (ПРАВКА ПМК, шаг 45).
+     */
+    serverKwargs(extra = {}) {
+        const kwargs = { attachment_id: this.props.attachmentId, ...extra };
+        if (this.props.member) {
+            kwargs.member = this.props.member.index;
+        }
+        return kwargs;
+    }
+
     get preview() {
         return this.state.preview;
     }
@@ -135,19 +186,163 @@ export class AttachmentPreviewDialog extends Component {
         return (this.props.name || _t("Attachment")).toString();
     }
 
-    /** Подпись под заголовком: что это за файл и сколько весит. */
+    /**
+     * Подпись под заголовком: откуда файл, что это и сколько весит.
+     *
+     * ПРАВКА ПМК (шаг 45): вид файла — словами с сервера («таблица Excel»,
+     * «архив ZIP»), а не «application/vnd.openxmlformats-…»; размер — «КБ»,
+     * а не «KB»; у файла из архива — «из архива «Заказ.zip»».
+     */
     get subtitle() {
         const parts = [];
-        if (this.preview && this.preview.mimetype) {
-            parts.push(this.preview.mimetype);
+        const archiveName = this.props.archiveName || (this.preview && this.preview.archiveName);
+        if (this.props.member && archiveName) {
+            parts.push(_t("from the archive «%s»", archiveName));
+        }
+        if (this.preview && (this.preview.formatTitle || this.preview.mimetype)) {
+            parts.push(this.preview.formatTitle || this.preview.mimetype);
         }
         // Размер берём только у сервера. В списке вложений письма стоит
         // размер MIME-части, то есть base64: он на треть больше настоящего,
         // и показывать его рядом с открытым файлом — врать в мелочи.
         if (this.preview && this.preview.size) {
-            parts.push(formatSize(this.preview.size));
+            parts.push(formatBytes(this.preview.size));
         }
         return parts.join(" · ");
+    }
+
+    // ------------------------------------------------------------------
+    // Архив (ПРАВКА ПМК, шаг 45)
+    // ------------------------------------------------------------------
+
+    get archive() {
+        return (this.preview && this.preview.archive) || null;
+    }
+
+    /**
+     * «Файлов: 12 · в распакованном виде: 34,5 МБ · скрыто служебных файлов
+     * архиватора: 2». «В распакованном виде», а не «распаковано»: это объём
+     * по оглавлению, распаковки не было.
+     */
+    get archiveSummary() {
+        const archive = this.archive;
+        if (!archive) {
+            return "";
+        }
+        const parts = [_t("Files: %s", archive.total)];
+        if (archive.size) {
+            parts.push(_t("size when unpacked: %s", formatBytes(archive.size)));
+        }
+        if (archive.hidden) {
+            parts.push(_t("archiver service files hidden: %s", archive.hidden));
+        }
+        return parts.join(" · ");
+    }
+
+    /**
+     * Оговорки к архиву целиком («закрыт паролем», «Показано файлов: 1000 из N») —
+     * полосой над списком. Оговорка про сам файл («назван .rar, а внутри
+     * ZIP») стоит своей полосой выше, как у любого вложения.
+     */
+    get archiveNotes() {
+        return this.archive ? this.archive.notes : [];
+    }
+
+    iconClass(entry) {
+        return ENTRY_ICONS[entry.kind] || ENTRY_ICONS.other;
+    }
+
+    sizeLabel(entry) {
+        return formatBytes(entry.size) || "0 Б";
+    }
+
+    /** Адрес «Скачать» у строки архива — только этот файл. */
+    entryUrl(entry) {
+        return memberUrl(this.props.attachmentId, entry.index, true);
+    }
+
+    /**
+     * «Скачать» у строки архива — один файл.
+     *
+     * Не ссылкой <a download>: отказ сервера (порча, контрольная сумма,
+     * поддельный размер — всё это видно только при распаковке) браузер
+     * показал бы в загрузках словом «Сбой», без причины. Здесь ответ читается:
+     * файл — сохраняется, отказ — встаёт красной строкой под именем файла.
+     * Файл до 50 МБ (предел сервера) спокойно помещается в память вкладки.
+     */
+    async downloadEntry(entry) {
+        const address = this.entryUrl(entry);
+        if (!address || this.state.downloading[entry.index]) {
+            return;
+        }
+        this.state.downloading[entry.index] = true;
+        this.state.rowErrors[entry.index] = "";
+        try {
+            const response = await fetch(url(address), { credentials: "same-origin" });
+            if (!response.ok) {
+                const body = await response.text();
+                if (this.alive) {
+                    this.state.rowErrors[entry.index] = downloadRefusal(
+                        response.status,
+                        response.headers.get("Content-Type"),
+                        body
+                    );
+                }
+                return;
+            }
+            const blob = await response.blob();
+            downloadFile(blob, entry.name, "application/octet-stream");
+        } catch {
+            if (this.alive) {
+                // Строка целиком в одном вызове _t — см. priceLoaderHint.
+                // prettier-ignore
+                this.state.rowErrors[entry.index] = _t("No connection to the server — the file was not downloaded. Try again.").toString();
+            }
+        } finally {
+            if (this.alive) {
+                this.state.downloading[entry.index] = false;
+            }
+        }
+    }
+
+    /** Подсказка строки: полный путь в архиве и пометка про путь. */
+    entryTitle(entry) {
+        return entry.warn ? `${entry.path} — ${entry.warn}` : entry.path;
+    }
+
+    /**
+     * Открыть файл из архива вторым окном поверх списка. То же окно, что у
+     * вложения письма: вид файла сервер решит по содержимому.
+     */
+    openMember(entry) {
+        if (!entry || !entry.canView) {
+            return;
+        }
+        this.dialog.add(AttachmentPreviewDialog, {
+            attachmentId: this.props.attachmentId,
+            name: entry.name,
+            member: { index: entry.index, path: entry.path },
+            archiveName: this.props.name || "",
+        });
+    }
+
+    /**
+     * «Скачать» в окне файла из архива — только этот файл (свой адрес).
+     *
+     * Сервер отказал прочитать файл (пароль, «бомба», порча) — адреса нет и
+     * кнопки нет: по ней пришёл бы текст отказа вместо файла. Не дошёл сам
+     * запрос (связь) — окно пишет «Файл всё равно можно скачать», и адрес
+     * собирается из номера файла.
+     */
+    get memberDownloadUrl() {
+        const member = this.props.member;
+        if (!member) {
+            return "";
+        }
+        if (this.state.error) {
+            return memberUrl(this.props.attachmentId, member.index, true);
+        }
+        return this.preview ? this.preview.downloadUrl : "";
     }
 
     get sheets() {
@@ -178,10 +373,12 @@ export class AttachmentPreviewDialog extends Component {
         }
         this.state.scanningPrice = true;
         try {
-            const raw = await this.orm.call("mail.client.attachment", "price_scan", [], {
-                attachment_id: this.props.attachmentId,
-                sheet: sheet.index,
-            });
+            const raw = await this.orm.call(
+                "mail.client.attachment",
+                "price_scan",
+                [],
+                this.serverKwargs({ sheet: sheet.index })
+            );
             if (this.alive) {
                 // null тоже запоминаем — это ответ «лист на прайс не похож»,
                 // и спрашивать его второй раз незачем.
@@ -216,11 +413,12 @@ export class AttachmentPreviewDialog extends Component {
         }
         this.state.loadingMore = true;
         try {
-            const raw = await this.orm.call("mail.client.attachment", "preview", [], {
-                attachment_id: this.props.attachmentId,
-                sheet: sheet.index,
-                offset: sheet.shownRows,
-            });
+            const raw = await this.orm.call(
+                "mail.client.attachment",
+                "preview",
+                [],
+                this.serverKwargs({ sheet: sheet.index, offset: sheet.shownRows })
+            );
             if (!this.alive) {
                 return;
             }

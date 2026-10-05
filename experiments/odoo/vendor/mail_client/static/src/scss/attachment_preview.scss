@@ -202,3 +202,195 @@
         white-space: nowrap;
     }
 }
+
+// --- архив: список файлов (ПРАВКА ПМК, шаг 45, 05.10.2026) -------------------
+//
+// Список — не документ, а наша обвязка: он в цветах темы (светлой и тёмной),
+// а не белым листом, как таблица и PDF. Цвета — токенами --mc-archive-*:
+// светлые здесь, тёмная пара — в конце файла (body.o_nexus_dark).
+//
+// Строка — сетка: значок · имя · размер · дата · действия. Имя переносится,
+// а не режется многоточием: «Счёт №ХБ-00004581 от 01.10.2026.pdf» должен
+// читаться целиком, полный путь — в подсказке. В узком окне размер и дата
+// уходят под имя, действия — строкой ниже.
+//
+// Сетка у каждой строки своя, поэтому все колонки, кроме имени, должны быть
+// одной ширины во всех строках: размер и дата — постоянной, действия — по
+// содержимому, а содержимое одинаковое — кнопки, которой у строки нет, стоит
+// невидимая заглушка той же ширины (.o_mail_client_archive_slot). Так
+// «Скачать», размер и дата стоят столбцами при любом шрифте и переводе.
+.o_mail_client_archive {
+    --mc-archive-border: rgba(128, 128, 128, .2);
+    --mc-archive-hover: rgba(22, 25, 28, .04);
+    --mc-archive-dir-bg: #f4f5f7;
+    --mc-archive-muted: #6b7079;
+    --mc-archive-warn: #7a5200;
+    --mc-archive-refused: #a3302a;
+
+    // Растягивается и прокручивается внутри окна (см. min-height у документа).
+    min-height: 0;
+    overflow: auto;
+}
+
+// Группа папки — обычный блок: в нём заголовок прилипает к верху, пока видна
+// его группа, и уезжает вместе с её последней строкой. Без своего блока
+// каждый прошедший заголовок оставался бы прилипшим до конца списка, и хвост
+// длинного пути торчал бы из-под следующего, более низкого заголовка.
+.o_mail_client_archive_dir {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .375rem 1rem;
+    background-color: var(--mc-archive-dir-bg);
+    border-bottom: 1px solid var(--mc-archive-border);
+    font-size: .8125rem;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+
+    .fa {
+        color: var(--mc-archive-muted);
+    }
+}
+
+.o_mail_client_archive_row {
+    display: grid;
+    grid-template-columns: 1.25rem minmax(0, 1fr) 5.5rem 8.25rem auto;
+    align-items: center;
+    column-gap: .75rem;
+    padding: .375rem 1rem;
+    border-bottom: 1px solid var(--mc-archive-border);
+
+    &:hover {
+        background-color: var(--mc-archive-hover);
+    }
+}
+
+// Файл в папке — со сдвигом под заголовком папки.
+.o_mail_client_archive_row_nested {
+    padding-left: 2rem;
+}
+
+.o_mail_client_archive_icon {
+    color: var(--mc-archive-muted);
+    text-align: center;
+}
+
+.o_mail_client_archive_main {
+    min-width: 0;
+}
+
+// Имя: кнопка у того, что можно посмотреть, текст у остального — одним
+// видом. Вес 500 перебивает 600 у .btn-link чужой темы: иначе открываемые
+// файлы были бы жирнее прочих, и список читался бы как два списка.
+.o_mail_client_archive .o_mail_client_archive_name {
+    display: inline;
+    font-size: .875rem;
+    font-weight: 500;
+    line-height: 1.35;
+    text-align: left;
+    text-decoration: none;
+    vertical-align: baseline;
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+
+.o_mail_client_archive button.o_mail_client_archive_name:hover,
+.o_mail_client_archive button.o_mail_client_archive_name:focus-visible {
+    text-decoration: underline;
+}
+
+.o_mail_client_archive_size,
+.o_mail_client_archive_date {
+    color: var(--mc-archive-muted);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.o_mail_client_archive_size {
+    text-align: right;
+}
+
+// Сигналы словами: путь из архива странный (жёлтым), почему файл не
+// открыть и почему «Скачать» не вышло (красным). Ничего не блокируют, кроме
+// того, что открыть нельзя и так: «Скачать архив» внизу окна остаётся.
+.o_mail_client_archive_warn {
+    color: var(--mc-archive-warn);
+}
+
+.o_mail_client_archive_reason {
+    color: var(--mc-archive-refused);
+}
+
+.o_mail_client_archive_actions {
+    display: flex;
+    gap: .375rem;
+    justify-content: flex-end;
+    white-space: nowrap;
+}
+
+// Узкое окно — строка переносится. Граница — 992 px, а не 576: ниже 768 px
+// окно Odoo разворачивается на весь экран (env.isSmall), а от 768 до 991 px
+// окно размера xl — 650 px. В обоих случаях постоянные колонки (значок,
+// размер, дата, кнопки ≈ 33rem) оставили бы имени 40–110 px, и «Лист 10.pdf»
+// встал бы в три строки.
+@media (max-width: 991.98px) {
+    .o_mail_client_archive_row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        column-gap: .5rem;
+        row-gap: .25rem;
+    }
+
+    .o_mail_client_archive_icon {
+        flex: 0 0 1.25rem;
+    }
+
+    .o_mail_client_archive_main {
+        flex: 1 1 calc(100% - 2rem);
+    }
+
+    .o_mail_client_archive_size {
+        margin-left: 1.75rem;
+        text-align: left;
+    }
+
+    .o_mail_client_archive_actions {
+        flex: 1 1 100%;
+        padding-left: 1.75rem;
+        justify-content: flex-start;
+    }
+
+    // Действия здесь — своей строкой слева: столбцов нет, и пустое место
+    // заглушки сдвинуло бы «Скачать» вправо без причины. Два класса — чтобы
+    // перебить display у .btn Bootstrap без оглядки на порядок в бандле.
+    .o_mail_client_archive .o_mail_client_archive_slot {
+        display: none;
+    }
+}
+
+// --- Тёмная тема (pmk_theme: класс o_nexus_dark на body) -----------------
+// Как в mail_client.scss шага 41: раздел шага 40 в pmk_theme/dark.scss
+// закрыт проверкой test_step40_source (один блок до конца файла), поэтому
+// пара новых токенов — здесь. Тона — словаря тёмной темы: рамки #33363d,
+// подложка папки #25272d, приглушённый текст #a3a29f, жёлтый и красный —
+// светлые тона плашек тёмной темы (текст на фоне окна 7–12:1). Имя файла —
+// цветом текста, а не приглушённым цветом ссылок (.btn-link в dark.scss).
+// Только на экране: печать из тёмной темы светлая.
+@media screen {
+    body.o_nexus_dark .o_mail_client_archive {
+        --mc-archive-border: #33363d;
+        --mc-archive-hover: rgba(255, 255, 255, .06);
+        --mc-archive-dir-bg: #25272d;
+        --mc-archive-muted: #a3a29f;
+        --mc-archive-warn: #efe0aa;
+        --mc-archive-refused: #f3d2cd;
+    }
+
+    body.o_nexus_dark .o_mail_client_archive .o_mail_client_archive_name.btn-link {
+        color: #f4f1ea !important;
+    }
+}

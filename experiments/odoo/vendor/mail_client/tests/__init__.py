@@ -16,3 +16,4 @@ from . import test_oauth
 from . import test_sync_scope
 from . import test_sync_lock
 from . import test_step41_list
+from . import test_step45_archive

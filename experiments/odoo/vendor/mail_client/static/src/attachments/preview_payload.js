@@ -11,11 +11,12 @@
  * models/mail_client_attachment_preview.py. Имена полей ниже — это имена,
  * которые он кладёт в ответ; менять их можно только с обеих сторон сразу.
  *
- *     mail.client.attachment.preview(attachment_id, sheet, offset, limit)
+ *     mail.client.attachment.preview(attachment_id, sheet, offset, limit, member)
  *
  * Ответ:
  *
- *     kind      'sheet' | 'pdf' | 'image' | 'none'   — ВИД ФАЙЛА ПО СОДЕРЖИМОМУ.
+ *     kind      'sheet' | 'pdf' | 'image' | 'archive' | 'none' — ВИД ФАЙЛА ПО
+ *               СОДЕРЖИМОМУ.
  *               Определяет сервер, а не клиент: в письме от постороннего
  *               заявленный content-type регулярно врёт (прайс приходит
  *               как application/octet-stream), а расширение — тем более.
@@ -38,25 +39,49 @@
  *               внутри HTML», «документ закрыт паролем»
  *     reason    для kind='none': почему просмотра нет, человеческими словами
  *
+ * ПРАВКА ПМК (шаг 45, 05.10.2026) — архивы:
+ *
+ *     format_title  что за файл словами («архив ZIP», «таблица Excel») —
+ *               подпись окна вместо mimetype
+ *     archive   для kind='archive': {entries: [{index, path, dir, name, size,
+ *               date, kind, reason, warn}], total, size, encrypted, hidden,
+ *               notes} — см. normalizeArchive. kind строки — 'pdf' | 'sheet' |
+ *               'image' | 'archive' | 'other'; reason — почему файл не
+ *               открыть («закрыт паролем»), warn — пометка про путь
+ *     member    для файла ИЗ архива: {index, path}; тогда же archive_name —
+ *               имя архива, url — /mail_client/attachment/N/member/I,
+ *               download_url — он же с ?download=1. Файл из архива
+ *               спрашивается тем же preview() с аргументом member = index
+ *               (и price_scan(attachment_id, sheet, member) — тоже).
+ *     «Скачать» у строки списка — запрос GET того же адреса с ?download=1;
+ *               отказ приходит текстом с кодом (см. downloadRefusal).
+ *
  * Второй метод, price_scan(attachment_id, sheet) -> price, зовётся только при
  * переходе на другую вкладку: сводка считается по ЛИСТУ, и у листа «Сервис»
  * она своя. Считать её сразу для всех листов значило бы гонять разборщик
  * названий по всей книге ради вкладки, на которую человек может и не перейти.
  *
- * Две запасные строки про отказ написаны по-русски прямо здесь, а не через _t:
+ * Запасные строки про отказ написаны по-русски прямо здесь, а не через _t:
  * перевод тянет за собой импорт Odoo, а вместе с ним и невозможность гонять
- * этот файл обычным node. Система русская, строк две, и видны они только
- * тогда, когда сервер не прислал своего объяснения.
+ * этот файл обычным node. Система русская, а видны эти строки только тогда,
+ * когда сервер не прислал своего объяснения. По той же причине здесь
+ * русские единицы размера (formatBytes): «КБ», а не «KB».
  */
 
 export const KINDS = {
     SHEET: "sheet",
     PDF: "pdf",
     IMAGE: "image",
+    ARCHIVE: "archive",
     NONE: "none",
 };
 
-const KNOWN_KINDS = new Set([KINDS.SHEET, KINDS.PDF, KINDS.IMAGE, KINDS.NONE]);
+const KNOWN_KINDS = new Set([KINDS.SHEET, KINDS.PDF, KINDS.IMAGE, KINDS.ARCHIVE, KINDS.NONE]);
+
+// Вид строки в списке архива. Посмотреть можно то, что окно умеет рисовать;
+// вложенный архив и прочее — только скачать.
+const ENTRY_KINDS = new Set(["pdf", "sheet", "image", "archive", "other"]);
+const VIEWABLE_KINDS = new Set(["pdf", "sheet", "image"]);
 
 /** Пустая строка вместо null/undefined/числа: в разметку идёт только текст. */
 function text(value) {
@@ -86,6 +111,126 @@ export function safeUrl(value) {
         return "";
     }
     return raw;
+}
+
+/**
+ * Размер по-русски: «512 Б», «2,0 КБ», «5,3 МБ». ПРАВКА ПМК (шаг 45).
+ *
+ * Общий formatSize почты пишет «KB» — английское слово на экране. Окно
+ * просмотра своё, и в нём размер — русскими единицами.
+ */
+export function formatBytes(bytes) {
+    const value = count(bytes);
+    if (!value) {
+        return "";
+    }
+    const units = ["Б", "КБ", "МБ", "ГБ"];
+    let size = value;
+    let unit = 0;
+    while (size >= 1024 && unit < units.length - 1) {
+        size /= 1024;
+        unit++;
+    }
+    const number = unit === 0 ? String(size) : size.toFixed(1).replace(".", ",");
+    return `${number} ${units[unit]}`;
+}
+
+/**
+ * Адрес файла из архива на нашем сервере. ПРАВКА ПМК (шаг 45).
+ *
+ * Собирается из двух целых чисел и ничего больше: номер вложения и номер
+ * файла в архиве. Не число — пустая строка, и кнопки «Скачать» у строки нет.
+ */
+export function memberUrl(attachmentId, index, download = false) {
+    if (!Number.isInteger(attachmentId) || attachmentId <= 0 || !Number.isInteger(index) || index < 0) {
+        return "";
+    }
+    return `/mail_client/attachment/${attachmentId}/member/${index}${download ? "?download=1" : ""}`;
+}
+
+/**
+ * Что сказать у строки архива, если «Скачать» не удалось. ПРАВКА ПМК (шаг 45).
+ *
+ * Порча, неверная контрольная сумма, поддельный размер выясняются только при
+ * распаковке, то есть уже по нажатию «Скачать». Сервер отвечает на отказ
+ * простым текстом с кодом 413/422/502 — этот текст и показываем. Отказ «нет
+ * такого файла» Odoo отдаёт страницей HTML: её разметка человеку ни к чему,
+ * поэтому текст берётся только из ответа text/plain.
+ */
+export function downloadRefusal(status, contentType, body) {
+    const plain = text(contentType).toLowerCase().startsWith("text/plain");
+    const message = plain ? text(body).trim().slice(0, 500) : "";
+    if (message) {
+        return message;
+    }
+    if (status === 404) {
+        return "Файл не найден: архив или письмо изменились, либо к письму нет доступа. Откройте архив заново.";
+    }
+    return "Файл не скачался. Скачайте архив целиком.";
+}
+
+/**
+ * Список файлов архива. ПРАВКА ПМК (шаг 45).
+ *
+ * Строки приходят отсортированными с сервера (папка, потом имя, «Лист 2»
+ * раньше «Лист 10»); здесь они только раскладываются по папкам — группа на
+ * папку, корень первым, порядок групп — как пришли строки. Строка без
+ * целого номера выбрасывается: открыть её нечем.
+ */
+export function normalizeArchive(raw) {
+    const source = raw || {};
+    const rawEntries = Array.isArray(source.entries) ? source.entries : [];
+    const entries = [];
+    for (const item of rawEntries) {
+        if (!item || !Number.isInteger(item.index) || item.index < 0) {
+            continue;
+        }
+        const kind = ENTRY_KINDS.has(item.kind) ? item.kind : "other";
+        const reason = text(item.reason);
+        const name = text(item.name) || text(item.path) || "без имени";
+        entries.push({
+            index: item.index,
+            path: text(item.path) || name,
+            dir: text(item.dir),
+            name,
+            size: count(item.size),
+            date: text(item.date),
+            kind,
+            reason,
+            warn: text(item.warn),
+            canView: !reason && VIEWABLE_KINDS.has(kind),
+            canDownload: !reason,
+        });
+    }
+    const groups = [];
+    const byDir = new Map();
+    for (const entry of entries) {
+        let group = byDir.get(entry.dir);
+        if (!group) {
+            group = {
+                dir: entry.dir,
+                // «Чертежи / Узел 1»: путь папки читается, а не разбирается.
+                label: entry.dir.split("/").filter(Boolean).join(" / "),
+                entries: [],
+            };
+            byDir.set(entry.dir, group);
+            groups.push(group);
+        }
+        group.entries.push(entry);
+    }
+    // Корень — первым, даже если сервер прислал его позже.
+    groups.sort((left, right) => (left.dir ? 1 : 0) - (right.dir ? 1 : 0));
+    const notes = Array.isArray(source.notes) ? source.notes.map(text).filter(Boolean) : [];
+    return {
+        entries,
+        groups,
+        total: Math.max(count(source.total), entries.length),
+        shown: entries.length,
+        size: count(source.size),
+        encrypted: count(source.encrypted),
+        hidden: count(source.hidden),
+        notes,
+    };
 }
 
 /**
@@ -285,12 +430,19 @@ export function normalizePrice(raw) {
 export function normalizePreview(raw) {
     const source = raw || {};
     const kind = KNOWN_KINDS.has(source.kind) ? source.kind : KINDS.NONE;
+    const member = source.member && Number.isInteger(source.member.index) && source.member.index >= 0
+        ? { index: source.member.index, path: text(source.member.path) }
+        : null;
     const preview = {
         kind,
         name: text(source.name),
         mimetype: text(source.mimetype),
+        formatTitle: text(source.format_title),
         size: count(source.size),
         url: safeUrl(source.url),
+        // Скачать файл из архива — наш адрес; у обычного вложения поле не
+        // читается (скачивание идёт кнопкой письма).
+        downloadUrl: safeUrl(source.download_url),
         reason: text(source.reason),
         // Предупреждение живёт отдельно от отказа: файл показался, но с
         // оговоркой («назван .xls, а внутри HTML»). Слить их в одно поле
@@ -298,6 +450,9 @@ export function normalizePreview(raw) {
         note: text(source.note),
         sheets: [],
         price: null,
+        archive: null,
+        member,
+        archiveName: text(source.archive_name),
     };
 
     if (kind === KINDS.SHEET) {
@@ -309,6 +464,18 @@ export function normalizePreview(raw) {
             // чем рисовать пустую сетку и оставлять человека гадать.
             preview.kind = KINDS.NONE;
             preview.reason = preview.reason || "В файле не нашлось ни одной строки.";
+        }
+    } else if (kind === KINDS.ARCHIVE) {
+        preview.archive = normalizeArchive(source.archive);
+        if (!preview.archive.entries.length) {
+            // Пустой список — не список: говорим прямо, почему смотреть нечего.
+            preview.kind = KINDS.NONE;
+            preview.reason =
+                preview.reason ||
+                (preview.archive.hidden
+                    ? "В архиве только служебные файлы архиватора."
+                    : "В архиве нет ни одного файла.");
+            preview.archive = null;
         }
     } else if ((kind === KINDS.PDF || kind === KINDS.IMAGE) && !preview.url) {
         // Сюда попадает и пустой адрес, и отброшенный чужой: показывать нечем

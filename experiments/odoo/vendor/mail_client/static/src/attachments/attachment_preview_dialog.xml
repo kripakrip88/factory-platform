@@ -140,6 +140,99 @@
                          t-att-alt="props.name"/>
                 </div>
             </t>
+            <t t-elif="preview.kind === KINDS.ARCHIVE and archive">
+                <!-- ПРАВКА ПМК (шаг 45): список файлов архива ZIP. Строка —
+                     значок вида, имя (папки — заголовками групп, полный путь
+                     в подсказке), размер, дата из архива и два действия:
+                     «Посмотреть» (PDF, таблица, картинка — вторым окном
+                     поверх списка) и «Скачать» (только этот файл). Файл,
+                     который не открыть (пароль, «бомба», больше 50 МБ), —
+                     причина словами вместо кнопок. Залитых кнопок в строках
+                     нет: залитая на экране одна — «Закрыть» внизу.
+                     Группа папки — свой блок: заголовок прилипает, пока видна
+                     его группа, и уходит вместе с её последней строкой (без
+                     блока прошедшие заголовки копились бы друг под другом).
+                     Место кнопок одинаковое во всех строках: кнопки, которой
+                     нет, стоит невидимая заглушка той же ширины, — иначе
+                     столбцы размера и даты в соседних строках разъезжаются. -->
+                <div class="o_mail_client_preview_bar o_mail_client_archive_summary px-3 py-2 small"
+                     t-esc="archiveSummary"/>
+                <div class="o_mail_client_preview_note px-3 py-2 small d-flex gap-2"
+                     t-if="archiveNotes.length">
+                    <i class="fa fa-exclamation-triangle mt-1" aria-hidden="true"/>
+                    <div>
+                        <div t-foreach="archiveNotes" t-as="item" t-key="item_index" t-esc="item"/>
+                    </div>
+                </div>
+                <div class="o_mail_client_archive flex-grow-1" role="region"
+                     aria-label="Files in the archive">
+                    <div t-foreach="archive.groups" t-as="group" t-key="group.dir"
+                         class="o_mail_client_archive_group">
+                        <div class="o_mail_client_archive_dir" t-if="group.dir" t-att-title="group.dir">
+                            <i class="fa fa-folder-open-o" aria-hidden="true"/>
+                            <span t-esc="group.label"/>
+                        </div>
+                        <div t-foreach="group.entries" t-as="entry" t-key="entry.index"
+                             class="o_mail_client_archive_row"
+                             t-att-class="{ o_mail_client_archive_row_nested: group.dir }">
+                            <i class="fa o_mail_client_archive_icon" t-att-class="iconClass(entry)"
+                               aria-hidden="true"/>
+                            <div class="o_mail_client_archive_main">
+                                <button t-if="entry.canView" type="button"
+                                        class="o_mail_client_archive_name btn btn-link p-0"
+                                        t-att-title="entryTitle(entry)"
+                                        t-on-click="() => this.openMember(entry)"
+                                        t-esc="entry.name"/>
+                                <span t-else="" class="o_mail_client_archive_name"
+                                      t-att-title="entryTitle(entry)" t-esc="entry.name"/>
+                                <div class="o_mail_client_archive_warn small" t-if="entry.warn">
+                                    <i class="fa fa-exclamation-triangle me-1" aria-hidden="true"/>
+                                    <span t-esc="entry.warn"/>
+                                </div>
+                                <div class="o_mail_client_archive_reason small" t-if="entry.reason">
+                                    <i class="fa fa-ban me-1" aria-hidden="true"/>
+                                    <span t-esc="entry.reason"/>
+                                </div>
+                                <!-- «Скачать» не вышло: причина от сервера
+                                     («повреждён: контрольная сумма не сходится»). -->
+                                <div class="o_mail_client_archive_reason small" role="alert"
+                                     t-if="state.rowErrors[entry.index]">
+                                    <i class="fa fa-exclamation-triangle me-1" aria-hidden="true"/>
+                                    <span t-esc="state.rowErrors[entry.index]"/>
+                                </div>
+                            </div>
+                            <span class="o_mail_client_archive_size small" t-esc="sizeLabel(entry)"/>
+                            <span class="o_mail_client_archive_date small" t-esc="entry.date"/>
+                            <div class="o_mail_client_archive_actions">
+                                <button t-if="entry.canView" type="button"
+                                        class="btn btn-sm btn-light"
+                                        t-on-click="() => this.openMember(entry)">
+                                    <i class="fa fa-eye me-1" aria-hidden="true"/>
+                                    <span>View</span>
+                                </button>
+                                <span t-else="" aria-hidden="true"
+                                      class="btn btn-sm btn-light invisible o_mail_client_archive_slot">
+                                    <i class="fa fa-eye me-1"/>
+                                    <span>View</span>
+                                </span>
+                                <button t-if="entry.canDownload" type="button"
+                                        class="btn btn-sm btn-light"
+                                        t-att-disabled="state.downloading[entry.index]"
+                                        t-on-click="() => this.downloadEntry(entry)">
+                                    <i class="fa me-1" aria-hidden="true"
+                                       t-att-class="state.downloading[entry.index] ? 'fa-circle-o-notch fa-spin' : 'fa-download'"/>
+                                    <span>Download</span>
+                                </button>
+                                <span t-else="" aria-hidden="true"
+                                      class="btn btn-sm btn-light invisible o_mail_client_archive_slot">
+                                    <i class="fa fa-download me-1"/>
+                                    <span>Download</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </t>
             <t t-else="">
                 <div class="o_mail_client_preview_center flex-grow-1 px-4">
                     <i class="fa fa-file-o fa-2x"/>
@@ -147,16 +240,33 @@
                         <t t-if="preview.reason" t-esc="preview.reason"/>
                         <t t-else="">Files of this kind cannot be shown here yet.</t>
                     </div>
-                    <div class="small opacity-75 mt-2">Download the file to open it on your computer.</div>
+                    <!-- ПРАВКА ПМК (шаг 45): файл из архива не прочитался —
+                         своей кнопки «Скачать» у него нет (отдать вместо файла
+                         архив было бы неправдой), поэтому совет — куда идти
+                         за архивом, а не «скачайте файл». -->
+                    <div class="small opacity-75 mt-2" t-if="props.member and !memberDownloadUrl">The whole archive can be downloaded in the window with the list of files.</div>
+                    <div class="small opacity-75 mt-2" t-else="">Download the file to open it on your computer.</div>
                 </div>
             </t>
 
             <t t-set-slot="footer">
+                <!-- ПРАВКА ПМК (шаг 45): в окне списка архива — «Скачать
+                     архив»: у строк свои «Скачать» (один файл), и одно слово
+                     не должно значить два действия. -->
                 <button class="btn btn-secondary" t-if="props.onDownload"
                         t-on-click="() => this.onDownload()">
                     <i class="fa fa-download me-1"/>
-                    Download
+                    <t t-if="preview.kind === KINDS.ARCHIVE">Download archive</t>
+                    <t t-else="">Download</t>
                 </button>
+                <!-- ПРАВКА ПМК (шаг 45): у файла из архива — скачать только
+                     его, своим адресом. Файл не прочитался — кнопки нет:
+                     отдавать вместо него архив было бы неправдой. -->
+                <a class="btn btn-secondary" t-elif="memberDownloadUrl"
+                   t-att-href="memberDownloadUrl" download="">
+                    <i class="fa fa-download me-1"/>
+                    Download
+                </a>
                 <button class="btn btn-primary" t-on-click="() => this.onClose()">
                     Close
                 </button>
