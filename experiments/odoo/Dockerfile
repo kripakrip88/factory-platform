@@ -54,4 +54,15 @@ ARG PYDEPS="pytils num2words docxcompose docxtpl beautifulsoup4 polib siphashc w
 RUN pip3 install --no-cache-dir --break-system-packages --ignore-installed typing_extensions \
     && pip3 install --no-cache-dir --break-system-packages ${PYDEPS}
 
+# RAR в почте (разбор UX, шаг 45, решение Антона 06.10.2026): rarfile читает
+# оглавление RAR на Python (ISC), распаковывает через unrar (multiverse Ubuntu —
+# уже включён в базовом образе; лицензия несвободная, но бесплатная).
+# На сервере образ odoo-ru:19.0-20261006 собран слоем ПОВЕРХ 19.0-20260908
+# (/opt/experiments/odoo/rar-layer/Dockerfile — эти же две команды), чтобы не
+# пересобирать остальные незакреплённые пакеты. Полная сборка по этому файлу даёт
+# тот же состав.
+RUN apt-get update && apt-get install -y --no-install-recommends unrar \
+    && rm -rf /var/lib/apt/lists/*
+RUN pip3 install --no-cache-dir --break-system-packages rarfile==4.5
+
 USER odoo

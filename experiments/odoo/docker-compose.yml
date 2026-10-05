@@ -39,7 +39,7 @@ services:
     # сменить версию (прецедент с frappe/erpnext, см. CLAUDE.md «Версии»).
     build:
       context: .
-    image: odoo-ru:19.0-20260908
+    image: odoo-ru:19.0-20261006
     container_name: odoo-app
     restart: unless-stopped
     depends_on:
