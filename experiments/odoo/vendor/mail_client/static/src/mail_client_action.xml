@@ -1,25 +1,38 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
 
+    <!-- ПРАВКА ПМК (шаг 41 разбора удобства, 05.10.2026): корень почты.
+         - класс раскладки (layoutClass): o_mc_rail — колонка папок полосой
+           значков; o_mc_full — письмо вместо списка («на весь экран»,
+           на телефоне всегда); o_mc_reader_open — сейчас на экране письмо;
+           o_mc_small — телефон; o_mc_drawer — шторка папок на телефоне;
+           o_mc_resizing — тянут границу колонки;
+         - ширины колонок — CSS-переменными в style (paneStyle);
+         - поиск по мере ввода (onSearchInput, Enter — сразу, Esc —
+           очистить), «/» ставит в него курсор;
+         - две границы колонок (o_mail_client_resizer): перетаскивание,
+           стрелки ← →, Home и двойной щелчок — ширина по умолчанию;
+         - подписи кнопок верхней строки — в o_mail_client_label: на телефоне
+           остаются значки (mail_client.scss). -->
     <t t-name="mail_client.Inbox">
-        <div class="o_mail_client d-flex flex-column h-100">
+        <div class="o_mail_client d-flex flex-column h-100" t-ref="root"
+             t-att-class="layoutClass" t-att-style="paneStyle">
             <div class="o_mail_client_topbar d-flex align-items-center gap-2 px-3 py-2">
-                <button class="btn btn-light btn-sm"
+                <button class="btn btn-light btn-sm o_mail_client_folders_toggle"
                         t-att-title="sidebarTitle"
-                        t-on-click="() => this.toggleSidebar()">
-                    <i class="fa" t-att-class="state.sidebarPinned ? 'fa-angle-double-left' : 'fa-bars'"/>
+                        t-att-aria-label="sidebarTitle"
+                        t-on-click="() => this.toggleFolders()">
+                    <i class="fa" t-att-class="sidebarIcon" aria-hidden="true"/>
                 </button>
                 <button class="btn btn-primary btn-sm"
                         t-att-disabled="!activeAccount"
                         t-on-click="() => this.compose('new')">
-                    <i class="fa fa-pencil me-1"/>
-                    Compose
+                    <i class="fa fa-pencil" aria-hidden="true"/><span class="o_mail_client_label ms-1">Compose</span>
                 </button>
                 <button class="btn btn-light btn-sm"
                         t-on-click="() => this.syncNow()"
                         t-att-disabled="state.syncing or !activeAccount">
-                    <i class="fa fa-refresh me-1" t-att-class="state.syncing ? 'fa-spin' : ''"/>
-                    Sync
+                    <i class="fa fa-refresh" t-att-class="state.syncing ? 'fa-spin' : ''" aria-hidden="true"/><span class="o_mail_client_label ms-1">Sync</span>
                 </button>
                 <button class="btn btn-light btn-sm"
                         t-att-class="state.threaded ? 'active' : ''"
@@ -33,8 +46,7 @@
                     <button class="btn btn-light btn-sm"
                             t-att-class="state.filter !== 'all' ? 'active' : ''"
                             title="Filter messages">
-                        <i class="fa fa-filter me-1"/>
-                        <t t-esc="activeFilter.label"/>
+                        <i class="fa fa-filter" aria-hidden="true"/><span class="o_mail_client_label ms-1" t-esc="activeFilter.label"/>
                     </button>
                     <t t-set-slot="content">
                         <DropdownItem t-foreach="filters" t-as="item" t-key="item.id"
@@ -46,35 +58,52 @@
                     </t>
                 </Dropdown>
                 <div class="o_mail_client_search flex-grow-1 d-flex gap-1">
-                    <!-- ПРАВКА ПМК (шаг 18, Г11): ищем и по получателю. -->
+                    <!-- ПРАВКА ПМК (шаг 18, Г11): ищем и по получателю.
+                         ПРАВКА ПМК (шаг 41, А7): по мере ввода, во всех
+                         папках, кроме Спама и Корзины; «/» — сюда. -->
                     <input type="text" class="form-control form-control-sm"
+                           t-ref="search"
                            placeholder="Search subject, sender, recipient or preview…"
-                           t-att-value="state.search"
-                           t-on-change="(ev) => this.onSearch(ev.target.value)"/>
+                           aria-keyshortcuts="/"
+                           t-att-value="state.searchInput"
+                           t-on-input="(ev) => this.onSearchInput(ev.target.value)"
+                           t-on-keydown="(ev) => this.onSearchKeydown(ev)"/>
                     <button class="btn btn-light btn-sm flex-shrink-0"
                             t-if="state.search and state.activeFolderId"
                             t-att-disabled="state.searchingServer"
                             title="Search on the mail server, including messages not stored here"
                             t-on-click="() => this.searchOnServer()">
-                        <i class="fa" t-att-class="state.searchingServer ? 'fa-circle-o-notch fa-spin' : 'fa-server'"/>
-                        Server
+                        <i class="fa" t-att-class="state.searchingServer ? 'fa-circle-o-notch fa-spin' : 'fa-server'" aria-hidden="true"/><span class="o_mail_client_label ms-1">Server</span>
                     </button>
                 </div>
-                <span class="text-muted small" t-if="activeAccount">
+                <span class="o_mail_client_account_email text-muted small d-none d-lg-inline" t-if="activeAccount">
                     <t t-esc="activeAccount.email"/>
                 </span>
             </div>
 
             <div class="o_mail_client_body d-flex flex-grow-1 overflow-hidden">
-                <t t-if="state.sidebarPinned">
-                    <FolderTree accounts="state.accounts"
-                                activeFolderId="state.activeFolderId"
-                                unified="state.unified"
-                                drafts="state.drafts"
-                                onSelectFolder.bind="selectFolder"
-                                onSelectUnified.bind="selectUnified"
-                                onResumeDraft.bind="resumeDraft"/>
-                </t>
+                <FolderTree t-if="showFolderPane"
+                            accounts="state.accounts"
+                            activeFolderId="state.activeFolderId"
+                            unified="state.unified"
+                            drafts="state.drafts"
+                            rail="folderRail"
+                            drawer="isPhone"
+                            onSelectFolder.bind="selectFolder"
+                            onSelectUnified.bind="selectUnified"
+                            onResumeDraft.bind="resumeDraft"/>
+                <!-- Телефон: шторка папок поверх списка, щелчок мимо — закрыть. -->
+                <div t-if="isPhone and state.folderDrawer" class="o_mail_client_backdrop"
+                     t-on-click="() => this.closeDrawer()"/>
+                <div t-if="showFolderResizer" class="o_mail_client_resizer"
+                     role="separator" aria-orientation="vertical" tabindex="0"
+                     t-att-title="resizeTitle" t-att-aria-label="resizeTitle"
+                     t-att-aria-valuenow="resizerValue('folders')"
+                     t-att-aria-valuemin="resizerLimits('folders')[0]"
+                     t-att-aria-valuemax="resizerLimits('folders')[1]"
+                     t-on-pointerdown="(ev) => this.startResize(ev, 'folders')"
+                     t-on-keydown="(ev) => this.onResizerKeydown(ev, 'folders')"
+                     t-on-dblclick="() => this.resetPaneWidth('folders')"/>
 
                 <t t-if="state.draft">
                     <!-- Writing gets the full width: the message list is of no
@@ -87,7 +116,10 @@
                 <t t-else="">
                     <!-- ПРАВКА ПМК (шаг 22): список обновляется без сброса —
                          плашка новых писем, подсветка открытой переписки,
-                         прокрутка для корня (refreshList). -->
+                         прокрутка для корня (refreshList).
+                         ПРАВКА ПМК (шаг 41): кнопки-фильтры, где искали,
+                         значки строки при наведении; щелчок по строке —
+                         selectRow (от неё считают ↑/↓). -->
                     <MessageList messages="state.messages"
                                  selectedMessageId="state.selectedMessageId"
                                  selectedIds="state.selectedIds"
@@ -101,12 +133,20 @@
                                  digests="state.digests"
                                  pendingNew="state.pendingNew"
                                  selectedThreadKey="selectedThreadKey"
+                                 quickFilters="quickFilters"
+                                 activeFilter="state.filter"
+                                 searchScope="searchScope"
+                                 folderNames="folderNames"
+                                 activeFolderId="state.activeFolderId"
+                                 onQuickFilter.bind="setQuickFilter"
+                                 onRowSeen.bind="rowSeen"
+                                 onRowFlag.bind="rowFlagged"
                                  onShowNew.bind="showNewMessages"
                                  onReachTop.bind="onListTop"
                                  onListApi.bind="setListApi"
                                  onOpenFolder.bind="selectFolder"
                                  onClearFilter="() => this.setFilter('all')"
-                                 onSelectMessage.bind="selectMessage"
+                                 onSelectMessage.bind="selectRow"
                                  onLoadMore.bind="loadMore"
                                  onToggleSelected.bind="toggleSelected"
                                  onToggleAll.bind="toggleAll"
@@ -114,12 +154,27 @@
                                  onBulkFlagged.bind="bulkFlagged"
                                  onBulkMove.bind="bulkMove"
                                  onBulkDelete.bind="bulkDelete"/>
+                    <div t-if="showListResizer" class="o_mail_client_resizer"
+                         role="separator" aria-orientation="vertical" tabindex="0"
+                         t-att-title="resizeTitle" t-att-aria-label="resizeTitle"
+                         t-att-aria-valuenow="resizerValue('list')"
+                         t-att-aria-valuemin="resizerLimits('list')[0]"
+                         t-att-aria-valuemax="resizerLimits('list')[1]"
+                         t-on-pointerdown="(ev) => this.startResize(ev, 'list')"
+                         t-on-keydown="(ev) => this.onResizerKeydown(ev, 'list')"
+                         t-on-dblclick="() => this.resetPaneWidth('list')"/>
                     <ReadingPane detail="state.detail"
                                  loading="state.loadingDetail"
                                  moveTargets="state.moveTargets"
                                  canAct="canAct"
                                  thread="state.thread"
                                  contact="state.contact"
+                                 layout="readerLayout"
+                                 hasPrev="neighbours.prev"
+                                 hasNext="neighbours.next"
+                                 onBack.bind="backToList"
+                                 onNeighbour.bind="moveSelection"
+                                 onToggleLayout.bind="toggleReaderLayout"
                                  onSelectMessage.bind="selectMessage"
                                  onDownloadEml.bind="downloadEml"
                                  onAllowImages.bind="allowImages"

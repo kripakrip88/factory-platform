@@ -1,0 +1,92 @@
+// ═══════════════════════════════════════════════════════════════════════
+// Почта, остальное — разбор удобства, шаг 41 (05.10.2026)
+// ═══════════════════════════════════════════════════════════════════════
+//
+// Свой файл модуля (manifest → web.assets_backend), а не pmk_theme: живые
+// стили темы — только navbar_nexus, forms_nexus, dark и hidden (ir.asset),
+// а этот модуль обновляется при каждой выкладке. Тёмные пары — здесь же,
+// под body.o_nexus_dark и только на экране (печать из тёмной темы светлая).
+
+// ─── Значок сделки в строке письма ─────────────────────────────────────────
+// Рукопожатие тёмно-серым: «в работе» (слово — в подсказке «Сделка «…»» /
+// «Лид «…»»). Архивный или проигранный — приглушённый, «в архиве» словом в
+// подсказке. Кнопка-значок без рамки: тема делает все кнопки полужирными и
+// со скруглением — гасим вес.
+.pmk-mail-deal {
+  --#{$prefix}btn-padding-y: 0;
+  --#{$prefix}btn-padding-x: .2rem;
+  flex-shrink: 0;
+  border: 0;
+  color: #4b4f58;
+  font-weight: 400;
+  line-height: 1.25;
+
+  &:hover,
+  &:focus-visible {
+    background-color: rgba(22, 25, 28, 0.07);
+    color: #16191c;
+  }
+
+  &.pmk-mail-deal--archived {
+    color: #8a8c91;
+  }
+}
+
+.o_mail_client_row.active .pmk-mail-deal:not(.pmk-mail-deal--archived) {
+  color: #16191c;
+}
+
+@include media-breakpoint-up(xl) {
+  // Компактный вид — одна строка: значок рядом со звездой и скрепкой.
+  .o_mail_client_list.o_compact .pmk-mail-deal {
+    order: 5;
+  }
+}
+
+// ─── Счётчик новых на пункте «Продажи → Почта» ─────────────────────────────
+// Число ставит static/src/js/mail_counter.js атрибутом data-pmk-count. Вид —
+// как счётчики шапки: в светлой теме чёрный с белой цифрой, в тёмной —
+// светлый с тёмной цифрой (как у значков шапки, шаг 40). Подсказка пункта —
+// словами: «Непрочитанных во «Входящих» за 30 дней: N».
+header.o_navbar .o_menu_sections [data-pmk-count]::after,
+.o_app_menu_sidebar [data-pmk-count]::after {
+  content: attr(data-pmk-count);
+  display: inline-block;
+  min-width: 1.15rem;
+  margin-left: .35rem;
+  padding: 0 .3rem;
+  border-radius: 999px;
+  background-color: #16191c;
+  color: #ffffff;
+  font-size: .6875rem;
+  font-weight: 600;
+  line-height: 1.1rem;
+  text-align: center;
+  vertical-align: 1px;
+}
+
+@media screen {
+  body.o_nexus_dark .pmk-mail-deal {
+    color: #c9c6bf;
+
+    &:hover,
+    &:focus-visible {
+      background-color: rgba(255, 255, 255, 0.1);
+      color: #f4f1ea;
+    }
+
+    &.pmk-mail-deal--archived {
+      color: #7d7f85;
+    }
+  }
+
+  body.o_nexus_dark .o_mail_client_row.active .pmk-mail-deal:not(.pmk-mail-deal--archived) {
+    color: #f4f1ea;
+  }
+
+  body.o_nexus_dark header.o_navbar .o_menu_sections [data-pmk-count]::after,
+  body.o_nexus_dark .o_app_menu_sidebar [data-pmk-count]::after {
+    background-color: #f4f1ea;
+    color: #16171b;
+  }
+}

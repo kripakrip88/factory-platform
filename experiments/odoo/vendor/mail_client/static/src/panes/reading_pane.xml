@@ -27,13 +27,29 @@
          Держатся за эту разметку: pmk_mail_ui/static/src/xml/reading_pane.xml
          (кнопка «Лид» — перед div.vr в o_mail_client_toolbar, он там один) и
          pmk_theme/static/src/scss/third_party.scss, dark.scss (классы
-         o_mail_client_*). -->
+         o_mail_client_*).
+
+         ПРАВКА ПМК (шаг 41 разбора удобства, 05.10.2026):
+         - «Ответить», «Всем», «Переслать» несут data-mc-key (r, a, f):
+           горячая клавиша — щелчок по видимой кнопке (mail_client_action.js,
+           keyButton); кнопка «Лид» pmk_mail_ui — data-mc-key="l";
+         - письмо на весь экран (layout 'full') и на телефоне ('phone'):
+           «← К списку» в начале строки, на весь экран ещё ↑ ↓ (соседнее
+           письмо); ⤢ — переключить «рядом со списком» / «на весь экран».
+           Новые кнопки — без второго div.vr: разделитель в строке ОДИН
+           (на него встаёт «Лид» pmk_mail_ui). -->
     <t t-name="mail_client.ReadingPane">
         <div class="o_mail_client_reading flex-grow-1 d-flex flex-column overflow-hidden"
              t-att-class="{'o_mail_client_stale': stale}"
              t-att-inert="stale">
             <t t-if="!props.detail">
-                <div class="d-flex flex-column align-items-center justify-content-center h-100 text-muted">
+                <div class="o_mail_client_reading_empty d-flex flex-column align-items-center justify-content-center h-100 text-muted">
+                    <button t-if="showBack" type="button"
+                            class="btn btn-sm btn-light o_mail_client_back mb-3"
+                            t-att-title="backTitle" aria-keyshortcuts="Escape"
+                            t-on-click="() => props.onBack()">
+                        <i class="fa fa-arrow-left me-1" aria-hidden="true"/>Back to list
+                    </button>
                     <i class="fa fa-envelope-o fa-3x mb-3 opacity-50"/>
                     <span t-if="props.loading">Fetching message…</span>
                     <span t-else="">Select a message to read it.</span>
@@ -42,6 +58,13 @@
             <t t-else="">
                 <div class="o_mail_client_toolbar d-flex align-items-center gap-1 px-4 py-2"
                      t-on-wheel="onToolbarWheel">
+                    <button t-if="showBack" type="button"
+                            class="btn btn-sm btn-light flex-shrink-0 o_mail_client_back"
+                            t-att-title="backTitle" t-att-aria-label="backTitle"
+                            aria-keyshortcuts="Escape"
+                            t-on-click="() => props.onBack()">
+                        <i class="fa fa-arrow-left" aria-hidden="true"/><span class="o_mail_client_label ms-1">Back to list</span>
+                    </button>
                     <div class="o_mail_client_subject text-truncate"
                          t-att-title="props.detail.subject"
                          t-esc="props.detail.subject"/>
@@ -54,14 +77,17 @@
                          «Ответить / Всем» — на последнее письмо клиента
                          (replyTargetId), а не нам же. -->
                     <button class="btn btn-sm btn-light flex-shrink-0" title="Reply" aria-label="Reply"
+                            data-mc-key="r" aria-keyshortcuts="R"
                             t-on-click="() => props.onReply('reply', replyTargetId)">
                         <i class="fa fa-reply" aria-hidden="true"/><span class="o_mail_client_label ms-1">Reply</span>
                     </button>
                     <button class="btn btn-sm btn-light flex-shrink-0" title="Reply all" aria-label="Reply all"
+                            data-mc-key="a" aria-keyshortcuts="A"
                             t-on-click="() => props.onReply('reply_all', replyTargetId)">
                         <i class="fa fa-reply-all" aria-hidden="true"/><span class="o_mail_client_label ms-1">To all</span>
                     </button>
                     <button class="btn btn-sm btn-light flex-shrink-0" title="Forward" aria-label="Forward"
+                            data-mc-key="f" aria-keyshortcuts="F"
                             t-on-click="() => props.onReply('forward')">
                         <i class="fa fa-share" aria-hidden="true"/><span class="o_mail_client_label ms-1">Forward</span>
                     </button>
@@ -116,6 +142,33 @@
                             </t>
                         </t>
                     </Dropdown>
+
+                    <!-- ПРАВКА ПМК (шаг 41, А10): на весь экран — соседние
+                         письма ↑ ↓ (те же, что клавиши), и ⤢ / ⤡. -->
+                    <t t-if="showNeighbours">
+                        <button type="button" class="btn btn-sm btn-light flex-shrink-0 o_mail_client_prev"
+                                t-att-title="prevTitle" t-att-aria-label="prevTitle"
+                                aria-keyshortcuts="ArrowUp"
+                                t-att-disabled="!props.hasPrev"
+                                t-on-click="() => props.onNeighbour(-1)">
+                            <i class="fa fa-chevron-up" aria-hidden="true"/>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-light flex-shrink-0 o_mail_client_next"
+                                t-att-title="nextTitle" t-att-aria-label="nextTitle"
+                                aria-keyshortcuts="ArrowDown"
+                                t-att-disabled="!props.hasNext"
+                                t-on-click="() => props.onNeighbour(1)">
+                            <i class="fa fa-chevron-down" aria-hidden="true"/>
+                        </button>
+                    </t>
+                    <button t-if="showLayoutToggle" type="button"
+                            class="btn btn-sm btn-light flex-shrink-0 o_mail_client_layout_toggle"
+                            t-att-title="layoutTitle" t-att-aria-label="layoutTitle"
+                            t-att-aria-pressed="props.layout === 'full' ? 'true' : 'false'"
+                            t-on-click="() => props.onToggleLayout()">
+                        <i class="fa" aria-hidden="true"
+                           t-att-class="props.layout === 'full' ? 'fa-compress' : 'fa-expand'"/>
+                    </button>
                 </div>
 
                 <!-- ПРАВКА ПМК (шаг 20): письмо без переписки — карточка MessageCard

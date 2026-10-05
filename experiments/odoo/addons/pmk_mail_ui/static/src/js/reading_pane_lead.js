@@ -74,7 +74,11 @@ patch(ReadingPane.prototype, {
                 [[this.props.detail.id]]
             );
             this.notification.add(
-                result.created ? _t("Лид создан") : _t("Из этого письма лид уже есть"),
+                result.created
+                    ? _t("Лид создан")
+                    : result.from_thread
+                      ? _t("У этой переписки лид уже есть — открыт он")
+                      : _t("Из этого письма лид уже есть"),
                 { type: result.created ? "success" : "info" }
             );
             await this.action.doAction(result.action);

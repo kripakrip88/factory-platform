@@ -22,6 +22,14 @@
     --mc-ours-bg: #f5f6f1;
     --mc-ours-badge-bg: #{$gray-200};
     --mc-ours-badge-color: #{$gray-700};
+    // ПРАВКА ПМК (шаг 41): нажатая кнопка-фильтр над списком — бледный лайм
+    // под тёмным текстом, как выбранный вид шага 47 (лайм — только «где я» и
+    // только приглушённый); плашки имён вложений в строке — бледно-серые.
+    // Тёмные пары — в конце этого файла (body.o_nexus_dark).
+    --mc-chip-active-bg: #eef5c8;
+    --mc-chip-active-border: #c9da7c;
+    --mc-chip-active-color: #3b4a0b;
+    --mc-att-bg: #{$gray-100};
 
     background-color: var(--mc-panel-bg);
 }
@@ -35,8 +43,10 @@
     }
 }
 
+// ПРАВКА ПМК (шаг 41, А9): ширина колонки — переменная корня, если человек
+// её менял (перетаскиванием границы), иначе как было.
 .o_mail_client_folders {
-    width: 15rem;
+    width: var(--mc-folders-w, 15rem);
     border-right: 1px solid var(--mc-border);
 }
 
@@ -70,9 +80,19 @@
 
 .o_mail_client_folder {
     border-radius: 0;
-    padding: .35rem .75rem .35rem 1rem;
+    // ПРАВКА ПМК (шаг 41, А8): подпапка — с отступом под родителем
+    // (--mc-depth ставит folder_tree.xml).
+    padding: .35rem .75rem .35rem calc(1rem + var(--mc-depth, 0) * 1.1rem);
     color: inherit;
     text-decoration: none;
+
+    // ПРАВКА ПМК (шаг 41, осмотр копии 05.10): число непрочитанных не
+    // сжимается — сокращается имя папки. С отступом подпапки длинное имя
+    // («Авито Фарпост …») обрезало число до «1…».
+    > .badge,
+    > .o_mail_client_count_quiet {
+        flex-shrink: 0;
+    }
 
     &:hover {
         background-color: var(--mc-hover-bg);
@@ -90,7 +110,7 @@
 }
 
 .o_mail_client_list {
-    width: 24rem;
+    width: var(--mc-list-w, 24rem);
     border-right: 1px solid var(--mc-border);
 }
 
@@ -334,7 +354,7 @@
 // ряд (display: contents), порядок задаёт order.
 @include media-breakpoint-up(xl) {
     .o_mail_client_list.o_compact {
-        width: 34rem;
+        width: var(--mc-list-w-compact, 34rem);
 
         .o_mail_client_row {
             padding-top: .3rem;
@@ -383,7 +403,7 @@
 
 @media (min-width: 1400px) {
     .o_mail_client_list.o_compact {
-        width: 40rem;
+        width: var(--mc-list-w-compact, 40rem);
 
         .o_mail_client_who {
             flex-basis: 13rem;
@@ -891,10 +911,397 @@
 // simply shrink so nothing is unreachable.
 @include media-breakpoint-down(lg) {
     .o_mail_client_folders {
-        width: 11rem;
+        width: var(--mc-folders-w, 11rem);
     }
 
     .o_mail_client_list {
-        width: 18rem;
+        width: var(--mc-list-w, 18rem);
+    }
+}
+
+// =========================================================================
+// ПРАВКА ПМК: почта, остальное — шаг 41 разбора удобства (05.10.2026)
+// =========================================================================
+// Всё на токенах --mc-*: светлые значения — выше и в pmk_theme
+// forms_nexus.scss, тёмные — pmk_theme dark.scss (раздел 13) и в конце
+// этого файла (новые токены шага 41).
+
+// --- А5: значки строки при наведении ------------------------------------
+// Справа, поверх даты: «прочитано / не прочитано», звезда, «Лид»
+// (pmk_mail_ui). Фон — как у строки под курсором (у открытой — лайм, у
+// отмеченной — тон отметки), чтобы дата под ними не просвечивала. С
+// клавиатуры видны, пока фокус в строке. На сенсорном экране наведения
+// нет — значков тоже: действия есть в окне письма и в «Выбрано».
+.o_mail_client_row {
+    position: relative;
+}
+
+.o_mail_client_row_actions {
+    position: absolute;
+    top: .3rem;
+    right: .5rem;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: .1rem;
+    padding: 0 .15rem;
+    border-radius: .375rem;
+    background-color: var(--mc-panel-bg);
+    background-image: linear-gradient(var(--mc-hover-bg), var(--mc-hover-bg));
+    visibility: hidden;
+
+    .o_mail_client_row_action {
+        --#{$prefix}btn-padding-y: .1rem;
+        --#{$prefix}btn-padding-x: .3rem;
+        border: 0;
+        color: inherit;
+        font-weight: 400;
+        line-height: 1.25;
+
+        &:hover,
+        &:focus-visible {
+            background-color: rgba(0, 0, 0, .07);
+        }
+    }
+}
+
+.o_mail_client_row:hover .o_mail_client_row_actions,
+.o_mail_client_row:focus-within .o_mail_client_row_actions {
+    visibility: visible;
+}
+
+.o_mail_client_row.o_ticked .o_mail_client_row_actions {
+    background-image: linear-gradient(var(--mc-ticked-bg), var(--mc-ticked-bg));
+}
+
+.o_mail_client_row.active .o_mail_client_row_actions {
+    background-color: var(--mc-active-bg);
+    background-image: none;
+}
+
+@media (hover: none) {
+    .o_mail_client_row_actions {
+        display: none;
+    }
+}
+
+// --- А7: кнопки-фильтры под шапкой списка --------------------------------
+// Нажатая — бледный лайм и слово на кнопке (цвет повторён словом), повторный
+// щелчок снимает. Не помещаются — переносятся на вторую строку (доводка: в
+// одну строку четыре кнопки занимают около 32rem, а список по умолчанию —
+// 24rem, ниже lg — 18rem; прокрутка вбок была без полосы, и «С лидом» с
+// частью «Ждут ответа» оставались за краем без признака, что они есть).
+.o_mail_client_quick {
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--mc-border);
+
+    .o_mail_client_quick_btn {
+        --#{$prefix}btn-padding-y: .1rem;
+        --#{$prefix}btn-padding-x: .55rem;
+        --#{$prefix}btn-font-size: .8125rem;
+        border: 1px solid var(--mc-border);
+        border-radius: 999px;
+        background-color: transparent;
+        color: inherit;
+        font-weight: 500;
+        white-space: nowrap;
+
+        &:hover {
+            background-color: var(--mc-hover-bg);
+        }
+
+        &.active {
+            border-color: var(--mc-chip-active-border);
+            background-color: var(--mc-chip-active-bg);
+            color: var(--mc-chip-active-color);
+            font-weight: 600;
+        }
+    }
+}
+
+// Шапка списка при поиске — где искали.
+.o_mail_client_search_scope {
+    font-weight: 600;
+}
+
+// У найденного не в открытой папке — её имя серой капсулой.
+.o_mail_client_folder_tag {
+    flex: 0 1 auto;
+    min-width: 2rem;
+    max-width: 9rem;
+    padding: 0 .4rem;
+    border-radius: .25rem;
+    background-color: var(--mc-await-client-bg);
+    color: var(--mc-await-client-color);
+    font-size: .6875rem;
+    line-height: 1.5;
+    white-space: nowrap;
+}
+
+// --- В4: имена вложений плашками в строке -------------------------------
+.o_mail_client_line3 {
+    display: flex;
+    align-items: center;
+    gap: .3rem;
+    min-width: 0;
+    margin-top: .2rem;
+    overflow: hidden;
+    font-size: .75rem;
+}
+
+.o_mail_client_att {
+    flex: 0 1 auto;
+    min-width: 2.5rem;
+    max-width: 12rem;
+    padding: 0 .45rem;
+    overflow: hidden;
+    border: 1px solid var(--mc-border);
+    border-radius: .25rem;
+    background-color: var(--mc-att-bg);
+    line-height: 1.5;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.o_mail_client_att_more {
+    flex-shrink: 0;
+}
+
+@include media-breakpoint-up(xl) {
+    // Компактный вид — одна строка: имён нет, они в подсказке скрепки.
+    .o_mail_client_list.o_compact {
+        .o_mail_client_line3 {
+            display: none;
+        }
+
+        .o_mail_client_folder_tag {
+            order: 4;
+        }
+    }
+}
+
+// --- А8: дерево папок, «Ещё папки», полоса значков ------------------------
+.o_mail_client_more_toggle {
+    font-size: .875rem;
+    opacity: .8;
+
+    &:hover,
+    &:focus-visible {
+        opacity: 1;
+    }
+}
+
+// Папки под «Ещё папки» — с отступом под ним (полное имя — в подсказке).
+.o_mail_client_more_item {
+    --mc-depth: 1;
+}
+
+.o_mail_client_folders.o_mail_client_rail {
+    display: flex;
+    flex-direction: column;
+    width: 3.5rem;
+    padding: .25rem 0;
+    overflow-x: hidden;
+}
+
+.o_mail_client_rail_item {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    padding: .55rem 0 !important;
+    font-size: 1.05rem;
+}
+
+.o_mail_client_rail_badge {
+    position: absolute;
+    top: .15rem;
+    right: .2rem;
+    padding: .15em .4em;
+    font-size: .625rem;
+    line-height: 1.1;
+}
+
+.o_mail_client_rail_sep {
+    height: 1px;
+    margin: .3rem .6rem;
+    background-color: var(--mc-border);
+}
+
+// --- А9: границы колонок перетаскиваются --------------------------------
+// Граница шириной 6 px поверх черты между колонками (отрицательные поля —
+// колонки не сдвигаются); под курсором и в фокусе — синяя полоса.
+.o_mail_client_body {
+    position: relative;
+}
+
+.o_mail_client_resizer {
+    position: relative;
+    z-index: 3;
+    flex: 0 0 6px;
+    margin: 0 -3px;
+    cursor: col-resize;
+    touch-action: none;
+
+    &::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 50%;
+        width: 3px;
+        transform: translateX(-50%);
+        background-color: transparent;
+        transition: background-color .12s ease;
+    }
+
+    &:hover::after,
+    &:focus-visible::after {
+        background-color: var(--mc-unread-dot);
+    }
+
+    &:focus-visible {
+        outline: none;
+    }
+}
+
+// Пока тянут: курсор везде «граница», текст не выделяется, рамки писем не
+// перехватывают мышь.
+.o_mc_resizing {
+    cursor: col-resize;
+    user-select: none;
+
+    iframe {
+        pointer-events: none;
+    }
+
+    .o_mail_client_resizer::after {
+        background-color: var(--mc-unread-dot);
+    }
+}
+
+// Список рядом с письмом не съедает окно чтения: письму не меньше 22,5rem
+// (360 px) при любой ширине окна браузера и колонки папок. Предел считается
+// от всей области почты за вычетом колонки папок — её ширины (своей или по
+// умолчанию 15rem, ниже lg — 11rem) или полосы значков (3,5rem). Доводка:
+// раньше папки не вычитались, и сохранённая широкая колонка списка после
+// разворота папок (☰) или сужения окна оставляла письму около 180 px.
+.o_mail_client:not(.o_mc_full) .o_mail_client_list {
+    max-width: calc(100% - var(--mc-folders-w, 15rem) - 22.5rem);
+}
+
+.o_mail_client.o_mc_rail:not(.o_mc_full) .o_mail_client_list {
+    max-width: calc(100% - 3.5rem - 22.5rem);
+}
+
+@include media-breakpoint-down(lg) {
+    .o_mail_client:not(.o_mc_full):not(.o_mc_rail) .o_mail_client_list {
+        max-width: calc(100% - var(--mc-folders-w, 11rem) - 22.5rem);
+    }
+}
+
+// --- А10: письмо на весь экран; телефон ----------------------------------
+// Вместо списка — письмо (o_mc_reader_open), список на своём месте не
+// убирается из раскладки, а прячется: прокрутка и подтянутая строка
+// сохраняются до возврата «← К списку».
+.o_mc_full {
+    // Список занимает ровно остаток. У корня списка утилита flex-shrink-0
+    // (!important), а при width: auto основа — ширина самой длинной строки
+    // (тема и начало текста без переноса, около 2000 px): список вылезал за
+    // экран, дата и значки строк обрезались без многоточия (доводка).
+    // Основа 0 и min-width: 0 перебивают и утилиту, и ширину содержимого.
+    .o_mail_client_list {
+        flex: 1 1 0% !important;
+        width: auto;
+        min-width: 0;
+        max-width: none;
+        border-right: 0;
+    }
+
+    &:not(.o_mc_reader_open) .o_mail_client_reading {
+        display: none !important;
+    }
+
+    &.o_mc_reader_open .o_mail_client_list {
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        visibility: hidden;
+        pointer-events: none;
+    }
+}
+
+@include media-breakpoint-up(xl) {
+    .o_mc_full .o_mail_client_list.o_compact {
+        width: auto;
+    }
+}
+
+.o_mc_small {
+    .o_mail_client_topbar {
+        gap: .35rem !important;
+        padding: .5rem !important;
+
+        .o_mail_client_label {
+            display: none;
+        }
+
+        .o_mail_client_search {
+            min-width: 0;
+            max-width: none;
+        }
+    }
+
+    // Письмо открыто — его закреплённая строка с «← К списку» и есть шапка.
+    &.o_mc_reader_open .o_mail_client_topbar {
+        display: none !important;
+    }
+
+    .o_mail_client_toolbar {
+        padding-right: .5rem !important;
+        padding-left: .5rem !important;
+    }
+
+    // Папки — шторкой поверх списка; щелчок мимо (подложка) закрывает.
+    .o_mail_client_folders.o_mail_client_drawer {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 5;
+        // Не min(): libsass Odoo считает его своей функцией и падает на
+        // разных единицах.
+        width: 85%;
+        max-width: 20rem;
+        background-color: var(--mc-panel-bg);
+        box-shadow: 0 0 24px rgba(0, 0, 0, .25);
+    }
+}
+
+.o_mail_client_backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    background-color: rgba(0, 0, 0, .35);
+}
+
+// --- Тёмная тема (pmk_theme: класс o_nexus_dark на body) -----------------
+// Тёмные значения прежних токенов --mc-* — в pmk_theme dark.scss, раздел 13;
+// здесь — только новые токены шага 41 (раздел шага 40 в dark.scss закрыт
+// проверкой test_step40_source: один блок до конца файла). Нажатая
+// кнопка-фильтр — тёмный оливковый тон выбранного (как открытое письмо) под
+// светлым текстом; плашки имён вложений — светлая вуаль, как подложка
+// наших писем; кнопка-значок строки под курсором — светлая вуаль. Только на
+// экране: печать из тёмной темы светлая.
+@media screen {
+    body.o_nexus_dark .o_mail_client {
+        --mc-chip-active-bg: #3d451e;
+        --mc-chip-active-border: #5d6a2c;
+        --mc-chip-active-color: #f4f1ea;
+        --mc-att-bg: rgba(255, 255, 255, .06);
+    }
+
+    body.o_nexus_dark .o_mail_client .o_mail_client_row_action:hover,
+    body.o_nexus_dark .o_mail_client .o_mail_client_row_action:focus-visible {
+        background-color: rgba(255, 255, 255, .1);
     }
 }

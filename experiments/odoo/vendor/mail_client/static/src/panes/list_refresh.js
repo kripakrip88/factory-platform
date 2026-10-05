@@ -49,11 +49,70 @@ export function rowKey(row, threaded) {
     return threaded && row.thread_key ? `t:${row.thread_key}` : `m:${row.id}`;
 }
 
+/**
+ * Второй ключ порядка строки (при равной дате): у строки-переписки —
+ * thread_max_id (наибольший id писем переписки в списке, ПРАВКА ПМК шаг 41:
+ * так сервер упорядочивает переписки с равной датой и так ведёт «Загрузить
+ * ещё»), у письма — его id.
+ */
+export function orderId(row) {
+    return row.thread_max_id ?? row.id;
+}
+
 /** Строка a стоит в списке выше строки b. */
 export function isAbove(a, b) {
     const da = a.date || "";
     const db = b.date || "";
-    return da > db || (da === db && a.id > b.id);
+    return da > db || (da === db && orderId(a) > orderId(b));
+}
+
+/**
+ * ПРАВКА ПМК (шаг 41): ключ «Загрузить ещё» — после последней строки
+ * списка: дата и второй ключ (orderId). Пустой список — с начала.
+ */
+export function pageAfter(rows) {
+    const last = rows && rows.length ? rows[rows.length - 1] : null;
+    return last ? { before: last.date || null, before_id: orderId(last) || null } : { before: null, before_id: null };
+}
+
+/**
+ * ПРАВКА ПМК (шаг 22, вынесено в чистую функцию шагом 41): изменения прохода
+ * синхронизации (папки folderIds) касаются списка на экране. Касаются, если
+ * изменилась:
+ * - открытая папка («Все входящие» — «Входящие» ящика);
+ * - папка строки рассылок (digestIds);
+ * - в режиме переписок — любая не тихая папка ящика: строка переписки
+ *   считает её письма по всему ящику (ответ в «Отправленных», в архиве, в
+ *   своей папке). Тихие — Спам, Корзина, сортировщики mail.ru
+ *   (folder.quiet) — нет: их письма переписку не решают;
+ * - при поиске «по всем папкам» (everywhere, шаг 41) — любая папка ящика,
+ *   кроме Спама и Корзины: найденное лежит где угодно.
+ * folderIds не пришли (старый сервер) или папки нет в дереве — касаются.
+ *
+ * view — {unified, threaded, activeFolderId, digestIds, everywhere};
+ * folders — папки ящика из дерева (get_inbox_state).
+ */
+export function showsChange(view, folders, folderIds) {
+    if (!Array.isArray(folderIds)) {
+        return true;
+    }
+    const digests = new Set(view.digestIds || []);
+    return folderIds.some((id) => {
+        if (id === view.activeFolderId || digests.has(id)) {
+            return true;
+        }
+        const folder = (folders || []).find((f) => f.id === id);
+        if (!folder) {
+            return true;
+        }
+        if (view.unified && folder.role === "inbox") {
+            return true;
+        }
+        if (view.everywhere && !["spam", "trash"].includes(folder.role)) {
+            return true;
+        }
+        return Boolean(view.threaded && !folder.quiet);
+    });
 }
 
 function differs(was, row) {

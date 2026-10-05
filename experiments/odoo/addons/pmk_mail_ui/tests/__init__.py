@@ -21,3 +21,6 @@ from . import test_step30_token_button
 # Почта в меню (шаг 38): одна — в Продажах; «Почтовые ящики» — администратору.
 from . import test_step38_mail_menus
 from . import test_thread_seen
+# Почта, остальное (шаг 41): имена вложений, лид у строки, «С лидом», звезда
+# переписки, счётчик новых, ассеты.
+from . import test_step41_mail

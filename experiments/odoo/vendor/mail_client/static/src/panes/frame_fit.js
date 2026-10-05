@@ -53,6 +53,8 @@
  * Пара allow-same-origin + allow-scripts снимает песочницу целиком.
  */
 
+import { forwardableKey, isTypingTarget } from "./hotkeys";
+
 const XLINK = "http://www.w3.org/1999/xlink";
 // Рамка подогнана (высота инлайном); без класса — прежнее поведение из CSS.
 const FIT_CLASS = "o_mail_client_frame_fit";
@@ -164,6 +166,8 @@ export function fitFrame(frame, { getScroller } = {}) {
     observer.observe(doc.body);
     doc.addEventListener("load", schedule, true);
     doc.addEventListener("error", schedule, true);
+    const forward = forwardKeys(frame, view);
+    doc.addEventListener("keydown", forward);
     measure();
 
     return () => {
@@ -175,6 +179,38 @@ export function fitFrame(frame, { getScroller } = {}) {
         }
         doc.removeEventListener("load", schedule, true);
         doc.removeEventListener("error", schedule, true);
+        doc.removeEventListener("keydown", forward);
+    };
+}
+
+/**
+ * ПРАВКА ПМК (шаг 41, А6): горячие клавиши почты работают и тогда, когда
+ * фокус в тексте письма (щёлкнули по письму, чтобы выделить текст). Рамка
+ * своих клавиш наружу не отдаёт, поэтому знакомые почте клавиши
+ * (forwardableKey, hotkeys.js: R A F L / Esc — без Ctrl, Cmd, Alt; стрелки
+ * не пересылаются — в тексте письма они прокручивают письмо)
+ * пересылаются копией на элемент рамки в окне почты: оттуда она всплывает к
+ * сервису клавиш ядра и к «/» корня почты. Почта клавишу взяла — у
+ * исходной отменяется действие браузера (прокрутка рамки, быстрый поиск).
+ * Поле ввода внутри письма (бывает в рассылках) — не трогаем.
+ */
+function forwardKeys(frame, view) {
+    return (ev) => {
+        if (!forwardableKey(ev) || isTypingTarget(ev.target)) {
+            return;
+        }
+        const copy = new view.KeyboardEvent("keydown", {
+            key: ev.key,
+            code: ev.code,
+            repeat: ev.repeat,
+            shiftKey: ev.shiftKey,
+            bubbles: true,
+            cancelable: true,
+        });
+        frame.dispatchEvent(copy);
+        if (copy.defaultPrevented) {
+            ev.preventDefault();
+        }
     };
 }
 

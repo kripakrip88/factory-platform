@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+  <!--
+    Почта, остальное (разбор удобства, шаг 41, 05.10.2026).
+
+    Строка списка (mail_client.MessageList):
+      - значок сделки — перед значками строки (звезда, скрепка), виден
+        всегда, если у письма или его переписки есть лид или сделка
+        (message.pmk_lead, сервер — models/mail_client_step41.py). Щелчок
+        открывает лид окном, строку не открывает (o_mail_client_no_open);
+      - «Лид» — среди значков при наведении: входящему письму без лида и
+        только тому, кто видит кнопку «Лид» окна письма (env.pmkCrm).
+    Якоря — классы модуля почты o_mail_client_marks и
+    o_mail_client_row_actions (по одному в строке): промах уронит сборку с
+    внятной ошибкой, а не оставит значки молча не появившимися.
+
+    Окно письма (mail_client.ReadingPane): кнопке «Лид» (её ставит
+    reading_pane.xml этого модуля — файл раньше по алфавиту) — клавиша L.
+
+    Подписи — по-русски прямо здесь: перевод вставленного узла ищется в
+    контексте этого модуля, а не mail_client.
+  -->
+  <t t-name="pmk_mail_ui.MessageListStep41"
+     t-inherit="mail_client.MessageList"
+     t-inherit-mode="extension">
+
+    <xpath expr="//span[hasclass('o_mail_client_marks')]" position="before">
+      <button type="button" t-if="message.pmk_lead"
+              class="btn btn-sm pmk-mail-deal o_mail_client_no_open"
+              t-att-class="{ 'pmk-mail-deal--archived': !message.pmk_lead.active }"
+              t-att-title="pmkDealTitle(message.pmk_lead)"
+              t-att-aria-label="pmkDealTitle(message.pmk_lead)"
+              t-on-click.stop="() => this.pmkOpenLead(message)">
+        <i class="fa fa-handshake-o" aria-hidden="true"/>
+      </button>
+    </xpath>
+
+    <xpath expr="//span[hasclass('o_mail_client_row_actions')]" position="inside">
+      <button type="button" t-if="env.pmkCrm and !message.pmk_lead and !message.is_outgoing"
+              class="btn btn-sm o_mail_client_row_action pmk-mail-row-lead"
+              t-att-disabled="pmkLead.busy"
+              title="Создать лида из этого письма"
+              aria-label="Создать лида из этого письма"
+              t-on-click.stop="() => this.pmkRowLead(message)">
+        <i class="fa fa-fw" aria-hidden="true"
+           t-att-class="pmkLead.busy === message.id ? 'fa-circle-o-notch fa-spin' : 'fa-user-plus'"/>
+      </button>
+    </xpath>
+  </t>
+
+  <t t-name="pmk_mail_ui.ReadingPaneStep41"
+     t-inherit="mail_client.ReadingPane"
+     t-inherit-mode="extension">
+    <xpath expr="//button[hasclass('pmk-mail-lead')]" position="attributes">
+      <attribute name="data-mc-key">l</attribute>
+      <attribute name="aria-keyshortcuts">L</attribute>
+    </xpath>
+  </t>
+
+</templates>

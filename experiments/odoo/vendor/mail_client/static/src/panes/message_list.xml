@@ -8,7 +8,20 @@
          число писем переписки серым; плашки «ждёт ответа / ждём клиента»;
          группы «Сегодня / Вчера / Раньше»; рассылки одной строкой (крючок
          сервера _list_digests). Меню «Переместить» — штатное меню Odoo:
-         самодельное не закрывалось ни щелчком мимо, ни клавишей Esc. -->
+         самодельное не закрывалось ни щелчком мимо, ни клавишей Esc.
+
+         ПРАВКА ПМК (шаг 41 разбора удобства, 05.10.2026):
+         - кнопки-фильтры под шапкой (o_mail_client_quick, А7): нажатая —
+           бледным лаймом и aria-pressed, повторный щелчок снимает;
+         - при поиске шапка говорит, где искали, а у найденного не в
+           открытой папке — метка его папки (o_mail_client_folder_tag);
+         - значки при наведении справа (o_mail_client_row_actions, А5):
+           «прочитано / не прочитано», звезда; pmk_mail_ui дописывает туда
+           «Лид», а перед значками строки — значок сделки (xpath по классам
+           o_mail_client_row_actions и o_mail_client_marks);
+         - имена вложений плашками (o_mail_client_line3, В4): до трёх и «+N»;
+           в компактном виде — в подсказке скрепки;
+         - строка несёт data-message-id: по нему ↑/↓ подтягивают её в виду. -->
     <t t-name="mail_client.MessageList">
         <t t-set="listItems" t-value="items"/>
         <div class="o_mail_client_list d-flex flex-column flex-shrink-0"
@@ -19,11 +32,14 @@
                        t-att-indeterminate="someTicked"
                        t-on-change="() => props.onToggleAll()"
                        title="Select all"/>
-                <span class="fw-bold text-truncate flex-grow-1" t-if="!props.selectedIds.length">
-                    <t t-esc="props.folderName"/>
-                </span>
-                <span class="fw-bold flex-grow-1" t-else="">
+                <span class="fw-bold text-truncate flex-grow-1" t-if="props.selectedIds.length">
                     <t t-esc="props.selectedIds.length"/> selected
+                </span>
+                <span class="o_mail_client_search_scope text-truncate flex-grow-1"
+                      t-elif="searchScopeLabel" t-att-title="searchScopeLabel"
+                      t-esc="searchScopeLabel"/>
+                <span class="fw-bold text-truncate flex-grow-1" t-else="">
+                    <t t-esc="props.folderName"/>
                 </span>
                 <!-- Ниже xl компактный вид не помещается и сам становится
                      удобным (mail_client.scss), поэтому и переключателя нет. -->
@@ -42,6 +58,18 @@
                         <i class="fa fa-bars" aria-hidden="true"/>
                     </button>
                 </div>
+            </div>
+
+            <div class="o_mail_client_quick d-flex align-items-center gap-1 px-2 py-1"
+                 role="group" t-att-aria-label="quickFiltersLabel"
+                 t-if="props.quickFilters and props.quickFilters.length">
+                <button type="button" t-foreach="props.quickFilters" t-as="quick" t-key="quick.id"
+                        class="btn btn-sm o_mail_client_quick_btn flex-shrink-0"
+                        t-att-class="{ active: isQuickActive(quick.id) }"
+                        t-att-aria-pressed="isQuickActive(quick.id) ? 'true' : 'false'"
+                        t-on-click="() => this.onQuickFilter(quick.id)">
+                    <i t-if="quick.icon" class="fa fa-fw me-1" t-att-class="quick.icon" aria-hidden="true"/><t t-esc="quick.label"/>
+                </button>
             </div>
 
             <div class="o_mail_client_bulkbar d-flex align-items-center gap-1 px-2 py-1"
@@ -154,8 +182,11 @@
                              'active': isSelected(item.message),
                              'o_ticked': isTicked(item.message.id),
                          }"
+                         t-att-data-message-id="item.message.id"
                          t-on-click="(ev) => this.onRowClick(ev, item.message.id)">
                         <t t-set="message" t-value="item.message"/>
+                        <t t-set="rowChips" t-value="chips(message)"/>
+                        <t t-set="rowFolder" t-value="folderTag(message)"/>
                         <label class="o_mail_client_lead">
                             <span class="o_mail_client_dot" t-if="!message.flag_seen" aria-hidden="true"/>
                             <input type="checkbox" class="form-check-input o_mail_client_tick"
@@ -181,9 +212,12 @@
                                       t-att-class="message.awaiting === 'us' ? 'o_await_us' : 'o_await_client'"
                                       t-att-title="awaitTitle(message.awaiting)"
                                       t-esc="awaitLabel(message.awaiting)"/>
+                                <span t-if="rowFolder" class="o_mail_client_folder_tag text-truncate"
+                                      t-att-title="folderTagTitle(message)" t-esc="rowFolder"/>
                                 <span class="o_mail_client_marks" t-if="message.flag_flagged or message.has_attachment">
                                     <i t-if="message.flag_flagged" class="fa fa-star text-warning small"/>
-                                    <i t-if="message.has_attachment" class="fa fa-paperclip text-muted small"/>
+                                    <i t-if="message.has_attachment" class="fa fa-paperclip text-muted small"
+                                       t-att-title="attachmentTitle(message)"/>
                                 </span>
                                 <small class="o_mail_client_date text-muted" t-esc="formatDate(message.date)"/>
                             </div>
@@ -194,7 +228,32 @@
                                     — <t t-esc="message.preview"/>
                                 </span>
                             </div>
+                            <div class="o_mail_client_line3" t-if="rowChips.shown.length">
+                                <i class="fa fa-paperclip text-muted" aria-hidden="true"/>
+                                <span t-foreach="rowChips.shown" t-as="name" t-key="name_index"
+                                      class="o_mail_client_att" t-att-title="name" t-esc="name"/>
+                                <span t-if="rowChips.more" class="o_mail_client_att_more text-muted"
+                                      t-att-title="moreChipsTitle(message)"
+                                      t-esc="moreChipsLabel(rowChips.more)"/>
+                            </div>
                         </div>
+                        <span class="o_mail_client_row_actions">
+                            <button type="button" class="btn btn-sm o_mail_client_row_action"
+                                    t-att-title="rowSeenTitle(message)"
+                                    t-att-aria-label="rowSeenTitle(message)"
+                                    t-on-click.stop="() => this.onRowSeen(message)">
+                                <i class="fa fa-fw" aria-hidden="true"
+                                   t-att-class="message.flag_seen ? 'fa-envelope' : 'fa-envelope-open-o'"/>
+                            </button>
+                            <button type="button" class="btn btn-sm o_mail_client_row_action"
+                                    t-att-title="rowFlagTitle(message)"
+                                    t-att-aria-label="rowFlagTitle(message)"
+                                    t-att-aria-pressed="message.flag_flagged ? 'true' : 'false'"
+                                    t-on-click.stop="() => this.onRowFlag(message)">
+                                <i class="fa fa-fw" aria-hidden="true"
+                                   t-att-class="message.flag_flagged ? 'fa-star text-warning' : 'fa-star-o'"/>
+                            </button>
+                        </span>
                     </div>
                 </t>
 

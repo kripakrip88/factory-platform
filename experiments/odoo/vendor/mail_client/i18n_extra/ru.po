@@ -2884,3 +2884,116 @@ msgstr "%s новых письма"
 #: code:addons/mail_client/static/src/panes/message_list.js:0
 msgid "%s new messages"
 msgstr "%s новых писем"
+
+# ПМК, шаг 41 разбора удобства (05.10.2026): почта, остальное — колонка папок
+# сворачивается в полосу значков, «Ещё папки», ширина колонок, поиск по всем
+# папкам, кнопки-фильтры, значки строки при наведении, письмо на весь экран.
+# «Прочитано / не прочитано», «Отметить / Снять отметку», «С вложениями»,
+# «Непрочитанные», «Ждут ответа», «Все входящие» — прежние строки выше.
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/mail_client_action.js:0
+msgid "Expand folders"
+msgstr "Развернуть папки"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/mail_client_action.js:0
+msgid "Collapse folders"
+msgstr "Свернуть папки"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/mail_client_action.js:0
+msgid "Drag to change the width; double-click to reset"
+msgstr "Потяните, чтобы изменить ширину; двойной щелчок — как было"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/message_list.js:0
+msgid "Quick filters"
+msgstr "Быстрые фильтры"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/message_list.js:0
+msgid "Search in all folders except Spam and Trash"
+msgstr "Поиск во всех папках, кроме Спама и Корзины"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/message_list.js:0
+msgid "Search in “%s”"
+msgstr "Поиск в папке «%s»"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/message_list.js:0
+msgid "Folder “%(folder)s”, mailbox %(mailbox)s"
+msgstr "Папка «%(folder)s», ящик %(mailbox)s"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/message_list.js:0
+msgid "%s more attachments"
+msgstr "Ещё вложений: %s"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/folder_tree.js:0
+msgid "More folders (%s)"
+msgstr "Ещё папки (%s)"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/folder_tree.js:0
+msgid "Folders with no messages in the sync window"
+msgstr "Папки, где за срок синхронизации нет писем"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/folder_tree.js:0
+msgid "%(title)s: %(count)s unread"
+msgstr "%(title)s: непрочитанных %(count)s"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/folder_tree.js:0
+msgid "Mail folders"
+msgstr "Папки почты"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/reading_pane.js:0
+msgid "Back to the list (Esc)"
+msgstr "К списку (Esc)"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/reading_pane.xml:0
+msgid "Back to list"
+msgstr "К списку"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/reading_pane.js:0
+msgid "Previous message (↑)"
+msgstr "Предыдущее письмо (↑)"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/reading_pane.js:0
+msgid "Next message (↓)"
+msgstr "Следующее письмо (↓)"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/reading_pane.js:0
+msgid "Show the message next to the list"
+msgstr "Письмо рядом со списком"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/reading_pane.js:0
+msgid "Open the message on full screen"
+msgstr "Письмо на весь экран"

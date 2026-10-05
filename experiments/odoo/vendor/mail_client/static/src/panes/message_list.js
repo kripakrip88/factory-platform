@@ -1,4 +1,5 @@
 import { Component, onMounted, onPatched, onWillUnmount, useRef, useState } from "@odoo/owl";
+import { browser } from "@web/core/browser/browser";
 import { Dropdown } from "@web/core/dropdown/dropdown";
 import { DropdownItem } from "@web/core/dropdown/dropdown_item";
 import { _t } from "@web/core/l10n/translation";
@@ -14,6 +15,7 @@ import {
     writePref,
 } from "../utils";
 import { buildListItems } from "./list_items";
+import { attachmentChips } from "./quick_filters";
 
 // ПРАВКА ПМК (шаг 18): вид списка — «удобный» (две строки) или «компактный»
 // (одна строка, колонка шире). Помнится в браузере; значение по умолчанию —
@@ -54,6 +56,16 @@ export class MessageList extends Component {
         onShowNew: { type: Function, optional: true },
         onReachTop: { type: Function, optional: true },
         onListApi: { type: Function, optional: true },
+        // ПРАВКА ПМК (шаг 41): кнопки-фильтры над списком (А7), где искали
+        // (метка папки у найденного), значки строки при наведении (А5).
+        quickFilters: { type: Array, optional: true },
+        activeFilter: { type: String, optional: true },
+        searchScope: { type: String, optional: true },
+        folderNames: { type: Object, optional: true },
+        activeFolderId: { optional: true },
+        onQuickFilter: { type: Function, optional: true },
+        onRowSeen: { type: Function, optional: true },
+        onRowFlag: { type: Function, optional: true },
         onClearFilter: { type: Function },
         onSelectMessage: { type: Function },
         onLoadMore: { type: Function },
@@ -81,6 +93,9 @@ export class MessageList extends Component {
             this.props.onListApi?.({
                 isAtTop: () => this.isAtTop(),
                 keepTop: () => this.keepTop(),
+                // ПРАВКА ПМК (шаг 41): строку соседнего письма (↑/↓) и строку,
+                // к которой вернулись из письма на весь экран, — в виду.
+                revealRow: (id) => this.revealRow(id),
             })
         );
         onPatched(() => {
@@ -124,6 +139,25 @@ export class MessageList extends Component {
     onShowNew() {
         this.toTop();
         this.props.onShowNew?.();
+    }
+
+    /**
+     * ПРАВКА ПМК (шаг 41): строка письма — в виду, ближайшим краем (список не
+     * прыгает, если строка и так видна). Строки может ещё не быть (только
+     * что догрузили страницу) — ещё раз после отрисовки.
+     */
+    revealRow(id) {
+        const reveal = () => {
+            const el = this.scrollRef.el;
+            const row = el && el.querySelector(`[data-message-id="${id}"]`);
+            if (row) {
+                row.scrollIntoView({ block: "nearest" });
+            }
+            return Boolean(row);
+        };
+        if (!reveal()) {
+            browser.requestAnimationFrame(() => browser.requestAnimationFrame(reveal));
+        }
     }
 
     get newLabel() {
@@ -246,11 +280,104 @@ export class MessageList extends Component {
         );
     }
 
+    // ------------------------------------------------------------------
+    // ПРАВКА ПМК (шаг 41): кнопки-фильтры, где искали, значки при
+    // наведении, метка папки и имена вложений у строки
+    // ------------------------------------------------------------------
+    isQuickActive(id) {
+        return this.props.activeFilter === id;
+    }
+
+    onQuickFilter(id) {
+        this.props.onQuickFilter?.(id);
+    }
+
+    get quickFiltersLabel() {
+        return _t("Quick filters");
+    }
+
+    /** Шапка списка при поиске: где искали. */
+    get searchScopeLabel() {
+        if (this.props.searchScope === "everywhere") {
+            return _t("Search in all folders except Spam and Trash");
+        }
+        if (this.props.searchScope === "folder") {
+            return _t("Search in “%s”", this.props.folderName || "");
+        }
+        return "";
+    }
+
+    /** У найденного не в открытой папке — имя его папки. */
+    folderTag(message) {
+        if (this.props.searchScope !== "everywhere" || !message.folder_id) {
+            return "";
+        }
+        if (message.folder_id === this.props.activeFolderId) {
+            return "";
+        }
+        const folder = (this.props.folderNames || {})[message.folder_id];
+        return folder ? folder.name : "";
+    }
+
+    folderTagTitle(message) {
+        const folder = (this.props.folderNames || {})[message.folder_id];
+        return folder ? _t("Folder “%(folder)s”, mailbox %(mailbox)s", {
+            folder: folder.name,
+            mailbox: folder.account,
+        }) : "";
+    }
+
+    /** Имена вложений плашками: до трёх и «+N» (attachmentChips). */
+    chips(message) {
+        return attachmentChips(message.attachment_names, message.attachment_count);
+    }
+
+    moreChipsLabel(count) {
+        return `+${count}`;
+    }
+
+    moreChipsTitle(message) {
+        const chips = this.chips(message);
+        return _t("%s more attachments", chips.more);
+    }
+
+    /** Подсказка скрепки: имена вложений (в компактном виде плашек нет). */
+    attachmentTitle(message) {
+        const chips = this.chips(message);
+        if (!chips.shown.length) {
+            return _t("Has attachments");
+        }
+        const names = chips.shown.join(", ");
+        return chips.more ? `${names} ${this.moreChipsLabel(chips.more)}` : names;
+    }
+
+    rowSeenTitle(message) {
+        return message.flag_seen ? _t("Mark as unread") : _t("Mark as read");
+    }
+
+    rowFlagTitle(message) {
+        return message.flag_flagged ? _t("Remove star") : _t("Star");
+    }
+
+    onRowSeen(message) {
+        this.props.onRowSeen?.(message, !message.flag_seen);
+    }
+
+    onRowFlag(message) {
+        this.props.onRowFlag?.(message, !message.flag_flagged);
+    }
+
     onRowClick(ev, messageId) {
         // A click on the checkbox is a selection, not a request to open.
         // ПРАВКА ПМК (шаг 18): и щелчок по месту галочки в начале строки —
         // там же точка непрочитанного, галочка видна при наведении.
-        if (ev.target.closest(".o_mail_client_tick, .o_mail_client_lead")) {
+        // ПРАВКА ПМК (шаг 41): и по значкам строки (наведение, значок
+        // сделки надстройки — класс o_mail_client_no_open).
+        if (
+            ev.target.closest(
+                ".o_mail_client_tick, .o_mail_client_lead, .o_mail_client_row_actions, .o_mail_client_no_open"
+            )
+        ) {
             return;
         }
         this.props.onSelectMessage(messageId);

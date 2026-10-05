@@ -1,91 +1,162 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
 
+    <!-- ПРАВКА ПМК (шаг 41 разбора удобства, А8, 05.10.2026): дерево папок
+         как в Mail.ru — подпапки с отступом (переменная mc-depth), пустые прочие папки
+         под «Ещё папки (N)» (folder_layout.js), узкая полоса значков
+         (o_mail_client_rail) и шторка на телефоне (o_mail_client_drawer).
+         Кнопка папки — прежняя o_mail_client_folder: на неё рассчитаны лайм
+         открытой папки (pmk_theme forms_nexus.scss) и тёмные пары (dark.scss). -->
     <t t-name="mail_client.FolderTree">
-        <div class="o_mail_client_folders flex-shrink-0 overflow-auto">
-            <t t-if="!props.accounts.length">
-                <div class="text-muted p-3 small">
-                    No mailbox is available to you yet. Ask an administrator to add one.
-                </div>
-            </t>
+        <div class="o_mail_client_folders flex-shrink-0 overflow-auto" role="navigation"
+             t-att-class="{ o_mail_client_rail: props.rail, o_mail_client_drawer: props.drawer }"
+             t-att-aria-label="foldersLabel">
+            <t t-if="props.rail" t-call="mail_client.FolderRail"/>
+            <t t-else="">
+                <t t-if="!props.accounts.length">
+                    <div class="text-muted p-3 small">
+                        No mailbox is available to you yet. Ask an administrator to add one.
+                    </div>
+                </t>
 
-            <!-- Only worth showing once there is more than one mailbox to unify. -->
-            <ul class="list-unstyled mb-2" t-if="props.accounts.length > 1">
-                <li>
-                    <button class="o_mail_client_folder btn btn-link w-100 text-start d-flex align-items-center"
-                            t-att-class="props.unified ? 'active' : ''"
-                            t-on-click="() => props.onSelectUnified()">
-                        <i class="fa fa-fw fa-inbox me-2"/>
-                        <span class="text-truncate flex-grow-1">All Inboxes</span>
-                        <span t-if="totalInboxUnread"
-                              class="badge rounded-pill text-bg-primary ms-2">
-                            <t t-esc="totalInboxUnread"/>
+                <!-- Only worth showing once there is more than one mailbox to unify. -->
+                <ul class="list-unstyled mb-2" t-if="props.accounts.length > 1">
+                    <li>
+                        <button class="o_mail_client_folder btn btn-link w-100 text-start d-flex align-items-center"
+                                t-att-class="props.unified ? 'active' : ''"
+                                t-on-click="() => props.onSelectUnified()">
+                            <i class="fa fa-fw fa-inbox me-2"/>
+                            <span class="text-truncate flex-grow-1">All Inboxes</span>
+                            <span t-if="totalInboxUnread"
+                                  class="badge rounded-pill text-bg-primary ms-2">
+                                <t t-esc="totalInboxUnread"/>
+                            </span>
+                        </button>
+                    </li>
+                </ul>
+
+                <t t-foreach="props.accounts" t-as="account" t-key="account.id">
+                    <button class="o_mail_client_account_header btn btn-link w-100 text-start d-flex align-items-center px-3 py-2"
+                            t-att-class="{ 'o_reading': holdsActiveFolder(account) }"
+                            t-on-click="() => this.toggleAccount(account.id)">
+                        <i class="fa fa-fw me-1 o_mail_client_caret"
+                           t-att-class="isCollapsed(account.id) ? 'fa-caret-right' : 'fa-caret-down'"/>
+                        <span class="text-truncate flex-grow-1" t-att-title="account.email">
+                            <t t-esc="account.name"/>
+                        </span>
+                        <i t-if="account.is_shared" class="fa fa-users ms-1 small opacity-50"
+                           title="Shared mailbox"/>
+                        <i t-if="account.state === 'error'"
+                           class="fa fa-exclamation-triangle ms-1 text-danger"
+                           t-att-title="account.error_message"/>
+                        <span t-if="isCollapsed(account.id) and unreadFor(account)"
+                              class="badge rounded-pill text-bg-primary ms-1">
+                            <t t-esc="unreadFor(account)"/>
                         </span>
                     </button>
-                </li>
-            </ul>
 
-            <t t-foreach="props.accounts" t-as="account" t-key="account.id">
-                <button class="o_mail_client_account_header btn btn-link w-100 text-start d-flex align-items-center px-3 py-2"
-                        t-att-class="{ 'o_reading': holdsActiveFolder(account) }"
-                        t-on-click="() => this.toggleAccount(account.id)">
-                    <i class="fa fa-fw me-1 o_mail_client_caret"
-                       t-att-class="isCollapsed(account.id) ? 'fa-caret-right' : 'fa-caret-down'"/>
-                    <span class="text-truncate flex-grow-1" t-att-title="account.email">
-                        <t t-esc="account.name"/>
-                    </span>
-                    <i t-if="account.is_shared" class="fa fa-users ms-1 small opacity-50"
-                       title="Shared mailbox"/>
-                    <i t-if="account.state === 'error'"
-                       class="fa fa-exclamation-triangle ms-1 text-danger"
-                       t-att-title="account.error_message"/>
-                    <span t-if="isCollapsed(account.id) and unreadFor(account)"
-                          class="badge rounded-pill text-bg-primary ms-1">
-                        <t t-esc="unreadFor(account)"/>
-                    </span>
-                </button>
+                    <ul class="list-unstyled mb-2" t-if="!isCollapsed(account.id)">
+                        <t t-set="layout" t-value="layoutFor(account)"/>
+                        <li t-foreach="layout.main" t-as="entry" t-key="entry.folder.id">
+                            <t t-call="mail_client.FolderButton"/>
+                        </li>
+                        <t t-if="layout.more.length">
+                            <t t-set="moreIsOpen" t-value="moreOpen(account, layout)"/>
+                            <li>
+                                <button class="o_mail_client_folder o_mail_client_more_toggle btn btn-link w-100 text-start d-flex align-items-center"
+                                        t-att-title="moreTitle()"
+                                        t-att-aria-expanded="moreIsOpen ? 'true' : 'false'"
+                                        t-on-click="() => this.toggleMore(account.id)">
+                                    <i class="fa fa-fw me-2" aria-hidden="true"
+                                       t-att-class="moreIsOpen ? 'fa-caret-down' : 'fa-caret-right'"/>
+                                    <span class="text-truncate flex-grow-1" t-esc="moreLabel(layout.more.length)"/>
+                                </button>
+                            </li>
+                            <t t-if="moreIsOpen">
+                                <li t-foreach="layout.more" t-as="entry" t-key="entry.folder.id"
+                                    class="o_mail_client_more_item">
+                                    <t t-call="mail_client.FolderButton"/>
+                                </li>
+                            </t>
+                        </t>
+                    </ul>
+                </t>
 
-                <ul class="list-unstyled mb-2" t-if="!isCollapsed(account.id)">
-                    <li t-foreach="account.folders" t-as="folder" t-key="folder.id">
-                        <button class="o_mail_client_folder btn btn-link w-100 text-start d-flex align-items-center"
-                                t-att-class="isActive(folder.id) ? 'active' : ''"
-                                t-on-click="() => props.onSelectFolder(folder.id)">
-                            <i class="fa fa-fw me-2" t-att-class="iconFor(folder.role)"/>
-                            <span class="text-truncate flex-grow-1"><t t-esc="folder.name"/></span>
-                            <!-- ПРАВКА ПМК (шаг 18): у тихой папки (Спам, Корзина,
-                                 рассылки) число серым текстом, без плашки: оно не
-                                 зовёт читать. -->
-                            <span t-if="folder.unread and folder.quiet"
-                                  class="o_mail_client_count_quiet ms-2">
-                                <t t-esc="folder.unread"/>
-                            </span>
-                            <span t-elif="folder.unread"
-                                  class="badge rounded-pill text-bg-primary ms-2">
-                                <t t-esc="folder.unread"/>
-                            </span>
-                        </button>
-                    </li>
-                </ul>
-            </t>
-
-            <!-- Unsent drafts live in Odoo, not on the IMAP server, so they are
-                 listed separately rather than pretending to be the Drafts folder. -->
-            <t t-if="props.drafts and props.drafts.length">
-                <div class="o_mail_client_account_header px-3 py-2">Unsent drafts</div>
-                <ul class="list-unstyled mb-2">
-                    <li t-foreach="props.drafts" t-as="draft" t-key="draft.id">
-                        <button class="o_mail_client_folder btn btn-link w-100 text-start d-flex align-items-center"
-                                t-on-click="() => props.onResumeDraft(draft.id)">
-                            <i class="fa fa-fw fa-pencil-square-o me-2"/>
-                            <span class="text-truncate flex-grow-1" t-att-title="draft.email_to">
-                                <t t-esc="draft.subject"/>
-                            </span>
-                            <i t-if="draft.attachment_count" class="fa fa-paperclip small ms-1"/>
-                        </button>
-                    </li>
-                </ul>
+                <!-- Unsent drafts live in Odoo, not on the IMAP server, so they are
+                     listed separately rather than pretending to be the Drafts folder. -->
+                <t t-if="props.drafts and props.drafts.length">
+                    <div class="o_mail_client_account_header px-3 py-2">Unsent drafts</div>
+                    <ul class="list-unstyled mb-2">
+                        <li t-foreach="props.drafts" t-as="draft" t-key="draft.id">
+                            <button class="o_mail_client_folder btn btn-link w-100 text-start d-flex align-items-center"
+                                    t-on-click="() => props.onResumeDraft(draft.id)">
+                                <i class="fa fa-fw fa-pencil-square-o me-2"/>
+                                <span class="text-truncate flex-grow-1" t-att-title="draft.email_to">
+                                    <t t-esc="draft.subject"/>
+                                </span>
+                                <i t-if="draft.attachment_count" class="fa fa-paperclip small ms-1"/>
+                            </button>
+                        </li>
+                    </ul>
+                </t>
             </t>
         </div>
+    </t>
+
+    <!-- Папка в дереве: entry = {folder, depth, parentName}. -->
+    <t t-name="mail_client.FolderButton">
+        <t t-set="folder" t-value="entry.folder"/>
+        <button class="o_mail_client_folder btn btn-link w-100 text-start d-flex align-items-center"
+                t-att-class="isActive(folder.id) ? 'active' : ''"
+                t-att-style="depthStyle(entry.depth)"
+                t-att-title="folderTitle(entry)"
+                t-att-aria-current="isActive(folder.id) ? 'true' : false"
+                t-on-click="() => props.onSelectFolder(folder.id)">
+            <i class="fa fa-fw me-2" t-att-class="iconFor(folder.role)"/>
+            <span class="text-truncate flex-grow-1"><t t-esc="folder.name"/></span>
+            <!-- ПРАВКА ПМК (шаг 18): у тихой папки (Спам, Корзина,
+                 рассылки) число серым текстом, без плашки: оно не
+                 зовёт читать. -->
+            <span t-if="folder.unread and folder.quiet"
+                  class="o_mail_client_count_quiet ms-2">
+                <t t-esc="folder.unread"/>
+            </span>
+            <span t-elif="folder.unread"
+                  class="badge rounded-pill text-bg-primary ms-2">
+                <t t-esc="folder.unread"/>
+            </span>
+        </button>
+    </t>
+
+    <!-- ПРАВКА ПМК (шаг 41, А8): узкая полоса значков — «Все входящие» и
+         служебные папки ящиков (у открытой не служебной — она тоже). Число —
+         только у не тихих папок, до 99, дальше «99+». Ящики разделены чертой;
+         имя папки и ящик — в подсказке. -->
+    <t t-name="mail_client.FolderRail">
+        <button t-if="props.accounts.length > 1"
+                class="o_mail_client_folder o_mail_client_rail_item btn btn-link"
+                t-att-class="props.unified ? 'active' : ''"
+                t-att-title="unifiedTitle" t-att-aria-label="unifiedTitle"
+                t-on-click="() => props.onSelectUnified()">
+            <i class="fa fa-fw fa-envelope-o" aria-hidden="true"/>
+            <span t-if="totalInboxUnread" class="badge rounded-pill text-bg-primary o_mail_client_rail_badge"
+                  t-esc="railCount(totalInboxUnread)"/>
+        </button>
+        <t t-foreach="props.accounts" t-as="account" t-key="account.id">
+            <div class="o_mail_client_rail_sep" t-if="props.accounts.length > 1" aria-hidden="true"/>
+            <button t-foreach="railFor(account)" t-as="folder" t-key="folder.id"
+                    class="o_mail_client_folder o_mail_client_rail_item btn btn-link"
+                    t-att-class="isActive(folder.id) ? 'active' : ''"
+                    t-att-title="railTitle(folder, account)"
+                    t-att-aria-label="railTitle(folder, account)"
+                    t-att-aria-current="isActive(folder.id) ? 'true' : false"
+                    t-on-click="() => props.onSelectFolder(folder.id)">
+                <i class="fa fa-fw" t-att-class="iconFor(folder.role)" aria-hidden="true"/>
+                <span t-if="folder.unread and !folder.quiet"
+                      class="badge rounded-pill text-bg-primary o_mail_client_rail_badge"
+                      t-esc="railCount(folder.unread)"/>
+            </button>
+        </t>
     </t>
 
 </templates>

@@ -60,6 +60,15 @@ export class ReadingPane extends Component {
         // ПРАВКА ПМК (разбор шага 20): письмо ленты показано — крючок корня
         // conversationShown (отметку «прочитано» ставит pmk_mail_ui).
         onConversationShown: { type: Function, optional: true },
+        // ПРАВКА ПМК (шаг 41, А10): где окно чтения — 'right' (рядом со
+        // списком), 'full' (на весь экран: «← К списку», ↑ ↓) или 'phone'
+        // (телефон: всегда вместо списка). ⤢ — переключить 'right' / 'full'.
+        layout: { type: String, optional: true },
+        hasPrev: { type: Boolean, optional: true },
+        hasNext: { type: Boolean, optional: true },
+        onBack: { type: Function, optional: true },
+        onNeighbour: { type: Function, optional: true },
+        onToggleLayout: { type: Function, optional: true },
     };
 
     setup() {
@@ -119,6 +128,37 @@ export class ReadingPane extends Component {
 
     get threadCountTitle() {
         return _t("%s messages", this.threadCount);
+    }
+
+    // ПРАВКА ПМК (шаг 41, А10): «на весь экран», «← К списку», ↑ ↓.
+    get showBack() {
+        return Boolean(this.props.onBack && this.props.layout && this.props.layout !== "right");
+    }
+
+    get showNeighbours() {
+        return Boolean(this.props.onNeighbour && this.props.layout === "full");
+    }
+
+    get showLayoutToggle() {
+        return Boolean(this.props.onToggleLayout && this.props.layout && this.props.layout !== "phone");
+    }
+
+    get backTitle() {
+        return _t("Back to the list (Esc)");
+    }
+
+    get prevTitle() {
+        return _t("Previous message (↑)");
+    }
+
+    get nextTitle() {
+        return _t("Next message (↓)");
+    }
+
+    get layoutTitle() {
+        return this.props.layout === "full"
+            ? _t("Show the message next to the list")
+            : _t("Open the message on full screen");
     }
 
     /**

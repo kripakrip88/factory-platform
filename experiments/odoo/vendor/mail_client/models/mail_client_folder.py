@@ -32,6 +32,10 @@ ROLE_ORDER = {
 # добавляет свои папки через _is_quiet() (pmk_mail_ui: сортировщики mail.ru).
 QUIET_ROLES = ('spam', 'trash')
 
+# ПРАВКА ПМК (шаг 41, А7, 05.10.2026): поиск идёт по всем папкам ящика, кроме
+# этих, — как в Mail.ru. В самих Спаме и Корзине поиск — только по ним.
+SEARCH_SKIP_ROLES = ('spam', 'trash')
+
 # Quick filters for the message list.
 #
 # Every one of these reads a column that is filled in at sync time, so it is
@@ -129,6 +133,19 @@ class MailClientFolder(models.Model):
             ('account_id', 'in', list(account_ids or [])),
             ('role', '=', 'inbox'),
             ('subscribed', '=', True),
+        ])
+
+    @api.model
+    def _search_scope_folders(self, account_ids):
+        """ПРАВКА ПМК (шаг 41, А7): где ищет поиск «по всем папкам».
+
+        Подписанные папки этих ящиков, кроме Спама и Корзины
+        (SEARCH_SKIP_ROLES): в Спаме у pmkpark@ больше трёх тысяч писем, и
+        найденное там забивало бы ответ. Те же папки, что видны в дереве."""
+        return self.search([
+            ('account_id', 'in', list(account_ids or [])),
+            ('subscribed', '=', True),
+            ('role', 'not in', SEARCH_SKIP_ROLES),
         ])
 
     @api.model
@@ -575,10 +592,21 @@ class MailClientFolder(models.Model):
 
     @api.model
     def _message_domain(self, folder_id=None, account_ids=None, search=None, before=None,
-                        message_filter=None):
-        """Domain shared by the folder view and the unified inbox."""
+                        message_filter=None, folder_ids=None, before_id=None):
+        """Domain shared by the folder view and the unified inbox.
+
+        ПРАВКА ПМК (шаг 41, 05.10.2026):
+        - ``folder_ids`` — поиск «по всем папкам» (А7): письма этих папок
+          (_search_scope_folders), а не одной открытой и не «Входящих» ящиков;
+          ``account_ids`` при этом — ящики, на которые смотрит фильтр «Ждут
+          ответа»;
+        - ``before_id`` — второй ключ страницы (Б1, _keyset_domain). Без него
+          — как было: только дата.
+        """
         domain = self._filter_domain(message_filter)
-        if folder_id:
+        if folder_ids is not None:
+            domain.append(('folder_id', 'in', list(folder_ids)))
+        elif folder_id:
             domain.append(('folder_id', '=', folder_id))
         # ПРАВКА ПМК (шаг 18, 30.09.2026): было «elif account_ids:» — пустой
         # список ящиков (у пользователя нет своего ящика) читался как «без
@@ -593,8 +621,7 @@ class MailClientFolder(models.Model):
             scope = (self.browse(folder_id).account_id.ids if folder_id
                      else list(account_ids or []))
             domain += self.env['mail.client.message']._awaiting_domain(scope)
-        if before:
-            domain.append(('date', '<', before))
+        domain += self._keyset_domain(before, before_id)
         if search:
             # ПРАВКА ПМК (шаг 18, Г11): ищем и по получателю — «Кому» и
             # «Копия». Иначе в «Отправленных» письмо клиенту не найти по его
@@ -608,8 +635,26 @@ class MailClientFolder(models.Model):
         return domain
 
     @api.model
+    def _keyset_domain(self, before, before_id=None):
+        """ПРАВКА ПМК (шаг 41, Б1): «старше последней строки» для порядка
+        «дата ↓, id ↓».
+
+        Раньше ключом страницы была одна дата (``date < before``), и письма с
+        той же датой, что у последней строки, на следующую страницу не
+        попадали никогда (в базе 19 групп писем с равной датой в одной папке,
+        43 письма). С ``before_id`` ключ составной — (дата, id), и порядок
+        равных определён. Без ``before_id`` — как было (старый клиент)."""
+        if not before:
+            return []
+        if not before_id:
+            return [('date', '<', before)]
+        return ['|', ('date', '<', before),
+                '&', ('date', '=', before), ('id', '<', before_id)]
+
+    @api.model
     def get_messages(self, folder_id=None, limit=50, before=None, search=None,
-                     threaded=False, unified=False, message_filter=None):
+                     threaded=False, unified=False, message_filter=None,
+                     before_id=None, search_everywhere=False):
         """Keyset-paginated message list.
 
         Paging on ``date`` rather than OFFSET keeps the query fast on mailboxes
@@ -620,6 +665,20 @@ class MailClientFolder(models.Model):
         any of its messages in this folder matches, and the row shown is the
         newest matching one - so filtering on unread opens on the message that
         is actually unread rather than on a reply you have already read.
+
+        ПРАВКА ПМК (шаг 41, 05.10.2026):
+        - ``before_id`` — второй ключ страницы (Б1, _keyset_domain). Без
+          переписок — id последней строки; в режиме переписок —
+          ``thread_max_id`` последней строки (наибольший id писем переписки в
+          списке, _threaded_page). Раньше равные даты на границе страницы
+          терялись, а порядок переписок с равной датой был не определён;
+        - ``search_everywhere`` — поиск по всем папкам ящика (у «Все
+          входящие» — всех доступных ящиков), кроме Спама и Корзины (А7,
+          _search_scope_folders). Открыты Спам или Корзина — ищем только в
+          них. Ответ говорит, где искали: ``scope`` — 'everywhere' или
+          'folder' (без поиска — False). Без переписок копии одного письма в
+          двух папках («Входящие» + «Отправленные», 103 пары у pmkpark@) —
+          одна строка (_first_copies; остаётся копия во «Входящих»).
         """
         Message = self.env['mail.client.message']
         limit = min(limit or 50, 200)
@@ -628,15 +687,22 @@ class MailClientFolder(models.Model):
         # письма. В домене оно пропускало на вторую страницу переписку с
         # первой — её более старым письмом («Загрузить ещё» повторяло 234
         # переписки «Входящих» pmkpark@). Переписки получают before в
-        # _threaded_page (having date:max < before).
-        domain_before = None if threaded else before
+        # _threaded_page (having date:max < before). С шага 41 ключ страницы
+        # к домену добавляется ниже, после выбора режима: поиску «везде»
+        # нужен и домен без него (_first_copies).
+        everywhere = bool(search) and bool(search_everywhere)
+        scope = 'folder'
 
         if unified:
             # Same scope as the sidebar: own and shared mailboxes only, never
             # everything an administrator's record rule would allow.
             accounts = self.env['mail.client.account']._accessible_accounts()
+            scope_folders = None
+            if everywhere:
+                scope_folders = self._search_scope_folders(accounts.ids).ids
+                scope = 'everywhere'
             domain = self._message_domain(
-                account_ids=accounts.ids, search=search, before=domain_before,
+                account_ids=accounts.ids, folder_ids=scope_folders, search=search,
                 message_filter=message_filter)
             title = _("All Inboxes")
             folder_id = False
@@ -647,9 +713,15 @@ class MailClientFolder(models.Model):
             if not folder:
                 raise UserError(_("This folder no longer exists."))
             folder.check_access('read')
-            domain = self._message_domain(
-                folder_id=folder.id, search=search, before=domain_before,
-                message_filter=message_filter)
+            if everywhere and folder.role not in SEARCH_SKIP_ROLES:
+                domain = self._message_domain(
+                    account_ids=folder.account_id.ids,
+                    folder_ids=self._search_scope_folders(folder.account_id.ids).ids,
+                    search=search, message_filter=message_filter)
+                scope = 'everywhere'
+            else:
+                domain = self._message_domain(
+                    folder_id=folder.id, search=search, message_filter=message_filter)
             title = folder.name
             # Scope for conversation contents: threads reach into Sent, but
             # never into somebody else's mailbox that happens to sit on the
@@ -663,11 +735,28 @@ class MailClientFolder(models.Model):
             payload, has_more = [], False
         elif threaded:
             payload, has_more = Message._threaded_page(
-                domain, limit, account_ids, before=before)
+                domain, limit, account_ids, before=before, before_id=before_id)
         else:
-            messages = Message.search(domain, order='date desc, id desc', limit=limit)
-            payload = messages._to_list_payload()
-            has_more = len(messages) == limit
+            page = Message.search(domain + self._keyset_domain(before, before_id),
+                                  order='date desc, id desc', limit=limit)
+            has_more = len(page) == limit
+            if scope == 'everywhere':
+                kept = page._first_copies(domain)
+                # Страница из одних повторов (их оставленные копии — на
+                # другой странице): берём следующую, иначе ключ страницы у
+                # клиента не сдвинется и «Загрузить ещё» приносило бы пустоту
+                # по кругу.
+                for __ in range(5):
+                    if kept or not has_more or not page[-1].date:
+                        break
+                    last = page[-1]
+                    page = Message.search(
+                        domain + self._keyset_domain(last.date, last.id),
+                        order='date desc, id desc', limit=limit)
+                    has_more = len(page) == limit
+                    kept = page._first_copies(domain)
+                page = kept
+            payload = page._to_list_payload()
 
         # ПРАВКА ПМК (шаг 18): рассылки одной строкой — только на первой
         # странице «Входящих» без поиска и фильтра (крючок _list_digests).
@@ -683,6 +772,9 @@ class MailClientFolder(models.Model):
             'threaded': bool(threaded),
             'filter': message_filter or 'all',
             'digests': digests,
+            # ПРАВКА ПМК (шаг 41): где искали — шапка списка и метка папки у
+            # строки (mail_client_action.js, searchScope).
+            'scope': scope if search else False,
         }
 
     @api.model

@@ -986,6 +986,10 @@ class MailClientAccount(models.Model):
                     # текстом и не в итоге свёрнутого ящика («Спам 3374»
                     # кричал громче «Входящих»).
                     'quiet': folder._is_quiet(),
+                    # ПРАВКА ПМК (шаг 41, А8): писем в папке (в окне
+                    # синхронизации). Пустые прочие папки дерево убирает под
+                    # «Ещё папки» (panes/folder_layout.js).
+                    'total': folder.total_count,
                 } for folder in folders],
             })
         return {'accounts': payload}

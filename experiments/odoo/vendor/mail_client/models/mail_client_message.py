@@ -399,9 +399,14 @@ class MailClientMessage(models.Model):
         ``is_outgoing`` — у нашего письма строка показывает «Кому: …», а не
         себя отправителем («Владимир Голубенко» на каждой строке
         «Отправленных»).
+
+        ПРАВКА ПМК (шаг 41): ``folder_id`` — папка письма. Поиск идёт по всем
+        папкам ящика, и строка показывает, где лежит найденное; по ней же
+        «прочитано» при наведении правит счётчик нужной папки.
         """
         return [{
             'id': message.id,
+            'folder_id': message.folder_id.id,
             'subject': message.subject or _("(no subject)"),
             'email_from': message.email_from or '',
             'email_to': (message.email_to or '')[:512],
@@ -526,8 +531,48 @@ class MailClientMessage(models.Model):
             keep.append(message.id)
         return self.browse(keep)
 
+    def _first_copies(self, domain):
+        """ПРАВКА ПМК (шаг 41, А7): строки страницы без копий, которые уже
+        показаны выше.
+
+        Поиск «по всем папкам» видит одно письмо дважды, если оно лежит в двух
+        папках ящика (у pmkpark@ 103 пары «Входящие + Отправленные»). Из копий
+        остаётся копия во «Входящих», если она есть, иначе первая в порядке
+        списка («дата ↓, id ↓»), — среди писем, подходящих под ``domain``
+        (домен поиска БЕЗ ключа страницы). Выбор общий для всех страниц, так
+        что строка одна и на границе страниц: отбор на одной странице
+        (_without_duplicates) не годится — пара на границе показалась бы
+        дважды. Один запрос на страницу, по индексу Message-ID.
+
+        Почему «Входящие» (доводка шага 41): без переписок строка = одна
+        копия, и значки строки («прочитано», звезда) и открытие строки меняют
+        только её. Первой в порядке списка почти всегда оказывалась копия в
+        «Отправленных» (больший id; 109 пар из 110) — уже прочитанная, а копия
+        во «Входящих» оставалась жирной: число у «Входящих» и счётчик на
+        пункте «Почта» не уменьшались. Копия во «Входящих» — та, что видна в
+        самой папке и считается в её числе.
+        """
+        identities = {(m.account_id.id, m.message_id) for m in self if m.message_id}
+        if not identities:
+            return self
+        pool = self | self.search(Domain.AND([domain, [
+            ('message_id', 'in', sorted({mid for __, mid in identities})),
+            ('account_id', 'in', sorted({acc for acc, __ in identities})),
+        ]]))
+        first = {}
+        for message in pool:
+            identity = (message.account_id.id, message.message_id)
+            if identity not in identities:
+                continue
+            rank = (message.folder_id.role == 'inbox', message.date or datetime.min,
+                    message.id)
+            if identity not in first or rank > first[identity][0]:
+                first[identity] = (rank, message.id)
+        return self.filtered(lambda m: not m.message_id
+                             or first[(m.account_id.id, m.message_id)][1] == m.id)
+
     @api.model
-    def _threaded_page(self, domain, limit, account_ids=None, before=None):
+    def _threaded_page(self, domain, limit, account_ids=None, before=None, before_id=None):
         """One row per conversation, newest first.
 
         ``domain`` decides *which* conversations appear and in what order, so
@@ -550,16 +595,38 @@ class MailClientMessage(models.Model):
         нашего ответа), 'client' (ждём клиента) или False; считается по тем же
         письмам переписки, что и счётчики, без лишних запросов на письмо. У
         строки из тихой папки (Спам, Корзина…) плашки нет.
+
+        ПРАВКА ПМК (шаг 41, Б1): порядок переписок с равной датой последнего
+        письма определён — второй ключ ``id:max`` (наибольший id писем
+        переписки в ``domain``), строка несёт его как ``thread_max_id``, и
+        «Загрузить ещё» передаёт его ``before_id``: having (дата, id) меньше
+        ключа последней строки. Раньше порядок равных был любым, а ключ
+        страницы — одна дата: переписка с той же датой, что у последней
+        строки, на следующую страницу не попадала (в базе 18 таких групп).
+        Целое число, а не thread_key: строки сравниваются одинаково в
+        Postgres и в браузере (list_refresh.js, isAbove) при любой
+        сортировке базы.
+
+        ПРАВКА ПМК (шаг 41): крючок ``_decorate_thread_rows(payload,
+        members)`` — надстройка добавляет строке то, что считается по всей
+        переписке (pmk_mail_ui: имена вложений со всех её писем).
         """
-        having = [('date:max', '<', fields.Datetime.to_datetime(before))] if before else ()
+        having = ()
+        if before:
+            moment = fields.Datetime.to_datetime(before)
+            having = [('date:max', '<', moment)]
+            if before_id:
+                having = ['|', ('date:max', '<', moment),
+                          '&', ('date:max', '=', moment), ('id:max', '<', before_id)]
         groups = self._read_group(
-            domain, ['thread_key'], ['__count', 'date:max'],
-            having=having, order='date:max desc', limit=limit,
+            domain, ['thread_key'], ['__count', 'date:max', 'id:max'],
+            having=having, order='date:max desc, id:max desc', limit=limit,
         )
         if not groups:
             return [], False
 
         keys = [group[0] for group in groups]
+        max_ids = {group[0]: group[3] for group in groups}
 
         local = self.search(
             Domain.AND([domain, [('thread_key', 'in', keys)]]),
@@ -586,15 +653,16 @@ class MailClientMessage(models.Model):
             flagged[key] = flagged.get(key, False) or message.flag_flagged
             attachments[key] = attachments.get(key, False) or message.has_attachment
 
+        # ПРАВКА ПМК (шаг 41): строки одним вызовом — надстройка читает для
+        # них лиды и имена вложений пачкой, а не по запросу на строку.
+        rows = self.browse([latest[key].id for key in keys if key in latest])
         payload = []
-        for key in keys:
-            message = latest.get(key)
-            if not message:
-                continue
-            row = message._to_list_payload()[0]
+        for message, row in zip(rows, rows._to_list_payload()):
+            key = message.thread_key
             row.update({
                 'thread_key': key,
                 'thread_count': counts.get(key, 1),
+                'thread_max_id': max_ids.get(key) or message.id,
                 # A conversation is unread while any message in it is.
                 'flag_seen': not unread.get(key),
                 'unread_count': unread.get(key, 0),
@@ -604,7 +672,19 @@ class MailClientMessage(models.Model):
                              else awaiting.get(key, False)),
             })
             payload.append(row)
+        payload = self._decorate_thread_rows(payload, members)
         return payload, len(groups) == limit
+
+    @api.model
+    def _decorate_thread_rows(self, payload, members):
+        """ПРАВКА ПМК (шаг 41): крючок — дополнить строки-переписки.
+
+        ``payload`` — строки страницы (ключ переписки — ``thread_key``),
+        ``members`` — все письма этих переписок в ящике(ах), без копий, новые
+        первыми (как их считают счётчики строки). Вернуть строки. У модуля
+        почты дополнять нечего; pmk_mail_ui ставит имена вложений со всех
+        писем переписки."""
+        return payload
 
     @api.model
     def get_thread(self, message_id):

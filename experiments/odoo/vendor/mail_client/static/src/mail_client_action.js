@@ -1,27 +1,74 @@
-import { Component, onWillStart, useState } from "@odoo/owl";
+import { Component, onMounted, onWillStart, useExternalListener, useRef, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { browser } from "@web/core/browser/browser";
 import { Dropdown } from "@web/core/dropdown/dropdown";
 import { DropdownItem } from "@web/core/dropdown/dropdown_item";
+import { useHotkey } from "@web/core/hotkeys/hotkey_hook";
+import { useDebounced } from "@web/core/utils/timing";
+import { user } from "@web/core/user";
 import { _t } from "@web/core/l10n/translation";
 
 import { FolderTree } from "./panes/folder_tree";
 import { MessageList } from "./panes/message_list";
 import { ReadingPane } from "./panes/reading_pane";
-import { mergeListHead, rowKey } from "./panes/list_refresh";
+import { mergeListHead, pageAfter, rowKey, showsChange } from "./panes/list_refresh";
+import {
+    KEY_BUTTONS,
+    arrowsMoveRows,
+    isSearchKey,
+    isTypingTarget,
+    neighbourId,
+    pickKeyButton,
+} from "./panes/hotkeys";
+import {
+    QUICK_FILTER_IDS,
+    SEARCH_DELAY_MS,
+    searchDecision,
+    toggleQuickFilter,
+} from "./panes/quick_filters";
+import {
+    KEY_STEP,
+    PANE_DEFAULTS,
+    PANE_LIMITS,
+    clampPane,
+    paneVars,
+    parseWidths,
+    widthsKey,
+} from "./panes/pane_widths";
 import { Composer } from "./composer/composer";
 import { readPref, writePref } from "./utils";
 
 const PAGE_SIZE = 50;
 // ПРАВКА ПМК (шаг 22): больше строк сервер за раз не отдаёт (get_messages).
 const REFRESH_MAX_ROWS = 200;
+// ПРАВКА ПМК (шаг 41): прежний ключ «колонка папок видна» — читается один раз,
+// чтобы перенести выбор в новый ключ (folders_view): скрытая колонка стала
+// узкой полосой значков.
 const SIDEBAR_KEY = "mail_client.sidebar_pinned";
 // ПРАВКА ПМК (шаг 18, А2): переписки — режим по умолчанию, как в Mail.ru.
 // Ключ новый (было "mail_client.threaded", по умолчанию выключено): прежний
 // выбор сбрасывается у всех (решение владельца 30.09.2026), а «выключено»
 // дальше запоминается.
 const THREADED_KEY = "mail_client.threaded.v2";
+
+/**
+ * ПРАВКА ПМК (шаг 41): настройки вида шага 41 — у человека в этом браузере,
+ * ключ с номером пользователя: на общем компьютере у каждого свои.
+ */
+function prefKey(name) {
+    return `mail_client.${name}.u${user.userId || 0}`;
+}
+
+/** ПРАВКА ПМК (шаг 41, доводка): элемент — в окне письма (вместе с рамкой). */
+function inReadingPane(el) {
+    return Boolean(el && typeof el.closest === "function" && el.closest(".o_mail_client_reading"));
+}
+
+// ПРАВКА ПМК (шаг 41, А9): CSS-переменная ширины колонки.
+const WIDTH_VARS = { folders: "--mc-folders-w", list: "--mc-list-w", listCompact: "--mc-list-w-compact" };
+// Компактный вид списка действует от xl (mail_client.scss).
+const COMPACT_MEDIA = "(min-width: 1200px)";
 
 /**
  * Quick filters, in menu order. The names must match MESSAGE_FILTERS in
@@ -59,6 +106,11 @@ export class MailClientInbox extends Component {
         this.orm = useService("orm");
         this.notification = useService("notification");
         this.busService = useService("bus_service");
+        // ПРАВКА ПМК (шаг 41): размер экрана (телефон — ui.isSmall, до 767 px)
+        // и окно поверх почты (диалог) — у сервиса ui ядра.
+        this.ui = useState(useService("ui"));
+        this.rootRef = useRef("root");
+        this.searchRef = useRef("search");
 
         this.state = useState({
             accounts: [],
@@ -91,14 +143,79 @@ export class MailClientInbox extends Component {
             // переписки, у которой сменилось письмо строки.
             pendingNew: 0,
             selectedRow: null,
-            // Remembered across sessions: a collapsed sidebar is a layout
-            // preference, not something to re-choose on every visit.
-            sidebarPinned: browser.localStorage.getItem(SIDEBAR_KEY) !== "false",
+            // ПРАВКА ПМК (шаг 41, А7): что набрано в поиске (searchInput) и
+            // по чему список ищет сейчас (search) — разные вещи: поиск идёт
+            // по мере ввода с паузой. searchScope — где искал сервер
+            // ('everywhere' — во всех папках, кроме Спама и Корзины).
+            searchInput: "",
+            searchScope: false,
+            // ПРАВКА ПМК (шаг 41, А8): колонка папок — 'full' или узкая полоса
+            // значков 'rail' (помнится). На телефоне папки — шторкой поверх
+            // списка (folderDrawer).
+            foldersView: this.readFoldersView(),
+            folderDrawer: false,
+            // ПРАВКА ПМК (шаг 41, А10): письмо на весь экран (помнится; на
+            // телефоне — всегда) и открыто ли сейчас письмо, а не список.
+            readerFull: readPref(prefKey("reader_full")) === "true",
+            readerOpen: false,
+            // ПРАВКА ПМК (шаг 41, А9): ширины колонок, которые человек менял.
+            widths: parseWidths(readPref(widthsKey(user.userId))),
+            resizing: null,
         });
 
         this.busService.subscribe("mail_client.sync", (payload) =>
             this.onSyncNotification(payload)
         );
+
+        // ПРАВКА ПМК (шаг 41, А7): поиск по мере ввода — после паузы.
+        this.debouncedSearch = useDebounced(() => this.applySearch(), SEARCH_DELAY_MS);
+        // Строка списка, по которой открыли письмо последней: от неё ↑/↓
+        // ищут соседнее, когда открыто письмо из переписки под письмом.
+        this.listRowId = null;
+        this.listLoads = 0;
+
+        // ПРАВКА ПМК (шаг 41, А6): горячие клавиши. Сервис клавиш ядра сам
+        // молчит, пока фокус в поле ввода или в редакторе и пока открыто
+        // окно поверх почты (диалог). Без allowRepeat: зажатая стрелка не
+        // листает и не помечает прочитанными пачку писем.
+        // Доводка: стрелки листают письма, только когда человек «в списке»
+        // (arrowsMoveRows, hotkeys.js); щёлкнул по окну письма — стрелки
+        // прокручивают письмо, а не открывают соседнее (и не гасят его).
+        // Где был последний щелчок — pointerInReader (щелчок по шапке окна
+        // фокуса не даёт, а прокрутку браузер ведёт по месту щелчка).
+        this.pointerInReader = false;
+        useExternalListener(
+            window,
+            "pointerdown",
+            (ev) => {
+                this.pointerInReader = inReadingPane(ev.target);
+            },
+            { capture: true }
+        );
+        const arrowKeys = (target) =>
+            arrowsMoveRows({
+                rows: this.state.messages.length,
+                current: Boolean(this.rowOnScreen()),
+                draft: Boolean(this.state.draft),
+                readerCovers: this.fullLayout && this.readerShown,
+                inReader:
+                    this.pointerInReader ||
+                    inReadingPane(target) ||
+                    inReadingPane(document.activeElement),
+            });
+        useHotkey("arrowdown", () => this.moveSelection(1), { isAvailable: arrowKeys });
+        useHotkey("arrowup", () => this.moveSelection(-1), { isAvailable: arrowKeys });
+        for (const key of KEY_BUTTONS) {
+            useHotkey(key, () => this.clickKeyButton(key), {
+                isAvailable: () => !this.state.draft && Boolean(this.keyButton(key)),
+            });
+        }
+        useHotkey("escape", () => this.onEscape(), { isAvailable: () => this.canEscape });
+        // «/» сервис ядра не принимает — свой слушатель.
+        useExternalListener(window, "keydown", (ev) => this.onWindowKeydown(ev));
+        onMounted(() => {
+            this.ownActiveElement = this.ui.activeElement;
+        });
 
         // ПРАВКА ПМК (шаг 22): обновление списка без сброса (refreshList).
         // listApi — прокрутка списка (MessageList отдаёт её при монтировании;
@@ -135,7 +252,15 @@ export class MailClientInbox extends Component {
     async loadAccounts() {
         const result = await this.orm.call("mail.client.account", "get_inbox_state", []);
         this.state.accounts = result.accounts;
+        this.inboxUnreadChanged();
     }
+
+    /**
+     * ПРАВКА ПМК (шаг 41): крючок — счётчики папок могли измениться
+     * (перечитаны ящики, письмо отмечено). У модуля почты пусто; pmk_mail_ui
+     * обновляет по нему счётчик новых на пункте «Почта» и во вкладке.
+     */
+    inboxUnreadChanged() {}
 
     firstFolderId() {
         for (const account of this.state.accounts) {
@@ -154,8 +279,290 @@ export class MailClientInbox extends Component {
     // переводов Odoo берёт только статические title=/placeholder=/alt=, а
     // литералы внутри выражений t-att-* не видит вовсе — из-за этого подсказки
     // кнопок оставались английскими при полностью переведённом модуле.
+    // ПРАВКА ПМК (шаг 41, А8): кнопка сворачивает колонку папок в полосу
+    // значков и разворачивает обратно; на телефоне — шторка поверх списка.
     get sidebarTitle() {
-        return this.state.sidebarPinned ? _t("Hide folders") : _t("Show folders");
+        if (this.isPhone) {
+            return this.state.folderDrawer ? _t("Hide folders") : _t("Show folders");
+        }
+        return this.folderRail ? _t("Expand folders") : _t("Collapse folders");
+    }
+
+    get sidebarIcon() {
+        if (this.isPhone) {
+            return "fa-bars";
+        }
+        return this.folderRail ? "fa-angle-double-right" : "fa-angle-double-left";
+    }
+
+    // ------------------------------------------------------------------
+    // ПРАВКА ПМК (шаг 41): раскладка — полоса папок, письмо на весь экран,
+    // телефон, ширина колонок
+    // ------------------------------------------------------------------
+    /** Прежний выбор «колонка папок скрыта» становится полосой значков. */
+    readFoldersView() {
+        const saved = readPref(prefKey("folders_view"));
+        if (saved === "full" || saved === "rail") {
+            return saved;
+        }
+        return readPref(SIDEBAR_KEY) === "false" ? "rail" : "full";
+    }
+
+    /** Телефон и узкое окно (до 767 px): список и письмо — по очереди. */
+    get isPhone() {
+        return Boolean(this.ui && this.ui.isSmall);
+    }
+
+    get folderRail() {
+        return !this.isPhone && this.state.foldersView === "rail";
+    }
+
+    /**
+     * Письмо не рядом со списком, а вместо него: «на весь экран» на широком
+     * экране (кнопка ⤢ в строке над письмом) и всегда на телефоне (вопрос 3
+     * плана почты: «справа» на широком, «на весь экран» на телефоне).
+     */
+    get fullLayout() {
+        return this.isPhone || this.state.readerFull;
+    }
+
+    /** На экране письмо (а не список) — в раскладке «на весь экран». */
+    get readerShown() {
+        return Boolean(this.state.readerOpen && (this.state.detail || this.state.loadingDetail));
+    }
+
+    get readerLayout() {
+        if (this.isPhone) {
+            return "phone";
+        }
+        return this.state.readerFull ? "full" : "right";
+    }
+
+    get layoutClass() {
+        return {
+            o_mc_small: this.isPhone,
+            o_mc_rail: this.folderRail,
+            o_mc_full: this.fullLayout,
+            o_mc_reader_open: this.fullLayout && this.readerShown,
+            o_mc_drawer: this.isPhone && this.state.folderDrawer,
+            o_mc_resizing: Boolean(this.state.resizing),
+        };
+    }
+
+    /** Ширины колонок, которые человек менял (не на телефоне). */
+    get paneStyle() {
+        return this.isPhone ? "" : paneVars(this.state.widths);
+    }
+
+    get showFolderPane() {
+        return !this.isPhone || this.state.folderDrawer;
+    }
+
+    get showFolderResizer() {
+        return !this.isPhone && !this.folderRail;
+    }
+
+    get showListResizer() {
+        return !this.fullLayout && !this.state.draft;
+    }
+
+    toggleFolders() {
+        if (this.isPhone) {
+            this.state.folderDrawer = !this.state.folderDrawer;
+            return;
+        }
+        this.state.foldersView = this.folderRail ? "full" : "rail";
+        writePref(prefKey("folders_view"), this.state.foldersView);
+    }
+
+    closeDrawer() {
+        this.state.folderDrawer = false;
+    }
+
+    /** ⤢ в строке над письмом: письмо на весь экран и обратно. */
+    toggleReaderLayout() {
+        this.state.readerFull = !this.state.readerFull;
+        writePref(prefKey("reader_full"), this.state.readerFull);
+        this.state.readerOpen = Boolean(this.state.detail);
+    }
+
+    /** «← К списку» и Esc: список на место письма, строка — в виду. */
+    backToList() {
+        this.state.readerOpen = false;
+        // Окна письма на экране больше нет — стрелки снова листают список.
+        this.pointerInReader = false;
+        const id = this.rowOnScreen();
+        if (id && this.listApi) {
+            this.listApi.revealRow(id);
+        }
+    }
+
+    get canEscape() {
+        if (this.state.draft) {
+            return false;
+        }
+        return (this.isPhone && this.state.folderDrawer) || (this.fullLayout && this.readerShown);
+    }
+
+    onEscape() {
+        if (this.isPhone && this.state.folderDrawer) {
+            this.closeDrawer();
+            return;
+        }
+        this.backToList();
+    }
+
+    get resizeTitle() {
+        return _t("Drag to change the width; double-click to reset");
+    }
+
+    /** Ключ ширины колонки: папки, список или компактный список. */
+    widthKeyFor(pane, el) {
+        if (pane === "folders") {
+            return "folders";
+        }
+        const compact =
+            el && el.classList.contains("o_compact") && browser.matchMedia(COMPACT_MEDIA).matches;
+        return compact ? "listCompact" : "list";
+    }
+
+    paneElements() {
+        const body = this.rootRef.el && this.rootRef.el.querySelector(".o_mail_client_body");
+        if (!body) {
+            return {};
+        }
+        return {
+            body,
+            folders: body.querySelector(":scope > .o_mail_client_folders"),
+            list: body.querySelector(":scope > .o_mail_client_list"),
+            handles: body.querySelectorAll(":scope > .o_mail_client_resizer"),
+        };
+    }
+
+    /**
+     * Сколько занимают соседние колонки и границы — для предела ширины.
+     * Доводка: в раскладке «на весь экран» список (или письмо на его месте)
+     * сам занимает весь остаток — его ширину не вычитаем, иначе предел
+     * папок выходил отрицательным и колонка схлопывалась до 160 px при любом
+     * движении границы (и это запоминалось). Остатку и там — не меньше
+     * READER_MIN.
+     */
+    paneOthers(pane, els) {
+        let others = 0;
+        for (const handle of els.handles || []) {
+            others += handle.getBoundingClientRect().width;
+        }
+        let other = pane === "folders" ? els.list : els.folders;
+        if (pane === "folders" && this.fullLayout) {
+            other = null;
+        }
+        if (other) {
+            others += other.getBoundingClientRect().width;
+        }
+        return others;
+    }
+
+    paneWidth(pane) {
+        const els = this.paneElements();
+        const el = els[pane];
+        if (!el) {
+            return null;
+        }
+        return {
+            els,
+            el,
+            key: this.widthKeyFor(pane, el),
+            width: el.getBoundingClientRect().width,
+            available: els.body.getBoundingClientRect().width,
+            others: this.paneOthers(pane, els),
+        };
+    }
+
+    setPaneWidth(key, width) {
+        this.state.widths = { ...this.state.widths, [key]: width };
+        writePref(widthsKey(user.userId), JSON.stringify(this.state.widths));
+    }
+
+    /**
+     * Перетаскивание границы колонки. Пока тянут, ширина ставится прямо в
+     * стиль корня (без перерисовки списка на каждое движение мыши), в конце —
+     * в состояние и в память браузера. Рамки писем на это время не ловят
+     * мышь (o_mc_resizing, mail_client.scss): иначе курсор над письмом
+     * «терял» границу.
+     */
+    startResize(ev, pane) {
+        if (ev.button !== 0 || this.isPhone) {
+            return;
+        }
+        const info = this.paneWidth(pane);
+        if (!info) {
+            return;
+        }
+        const handle = ev.currentTarget;
+        const root = this.rootRef.el;
+        const x0 = ev.clientX;
+        let width = Math.round(info.width);
+        ev.preventDefault();
+        try {
+            handle.setPointerCapture(ev.pointerId);
+        } catch {
+            // Без захвата тоже тянется, пока мышь над границей.
+        }
+        this.state.resizing = info.key;
+        const onMove = (move) => {
+            width = clampPane(info.key, info.width + move.clientX - x0, info);
+            root.style.setProperty(WIDTH_VARS[info.key], `${width}px`);
+        };
+        const onUp = () => {
+            handle.removeEventListener("pointermove", onMove);
+            handle.removeEventListener("pointerup", onUp);
+            handle.removeEventListener("pointercancel", onUp);
+            this.state.resizing = null;
+            this.setPaneWidth(info.key, width);
+        };
+        handle.addEventListener("pointermove", onMove);
+        handle.addEventListener("pointerup", onUp);
+        handle.addEventListener("pointercancel", onUp);
+    }
+
+    /** Граница колонки с клавиатуры: ← → по 16 px, Home — по умолчанию. */
+    onResizerKeydown(ev, pane) {
+        if (ev.key === "Home") {
+            ev.preventDefault();
+            this.resetPaneWidth(pane);
+            return;
+        }
+        const step = ev.key === "ArrowLeft" ? -KEY_STEP : ev.key === "ArrowRight" ? KEY_STEP : 0;
+        if (!step) {
+            return;
+        }
+        ev.preventDefault();
+        const info = this.paneWidth(pane);
+        if (info) {
+            this.setPaneWidth(info.key, clampPane(info.key, info.width + step, info));
+        }
+    }
+
+    /** Двойной щелчок по границе — ширина по умолчанию (из стилей). */
+    resetPaneWidth(pane) {
+        const info = this.paneWidth(pane);
+        const key = info ? info.key : pane;
+        const widths = { ...this.state.widths };
+        delete widths[key];
+        this.state.widths = widths;
+        if (this.rootRef.el) {
+            this.rootRef.el.style.removeProperty(WIDTH_VARS[key]);
+        }
+        writePref(widthsKey(user.userId), JSON.stringify(widths));
+    }
+
+    resizerValue(pane) {
+        const key = pane === "folders" ? "folders" : "list";
+        return this.state.widths[key] || PANE_DEFAULTS[key];
+    }
+
+    resizerLimits(pane) {
+        return PANE_LIMITS[pane === "folders" ? "folders" : "list"];
     }
 
     get activeFolder() {
@@ -193,15 +600,14 @@ export class MailClientInbox extends Component {
         return Boolean(account && account.can_act);
     }
 
-    toggleSidebar() {
-        this.state.sidebarPinned = !this.state.sidebarPinned;
-        browser.localStorage.setItem(SIDEBAR_KEY, String(this.state.sidebarPinned));
-    }
-
+    // ПРАВКА ПМК (шаг 41): выбор папки сбрасывает поиск (как в Mail.ru),
+    // закрывает шторку папок на телефоне и возвращает список на экран.
     async selectFolder(folderId) {
         this.state.activeFolderId = folderId;
         this.state.unified = false;
         this.clearSelection();
+        this.resetSearchState();
+        this.leaveReader();
         await this.loadMessages({ reset: true });
         await this.loadDrafts();
     }
@@ -210,7 +616,24 @@ export class MailClientInbox extends Component {
         this.state.unified = true;
         this.state.activeFolderId = null;
         this.clearSelection();
+        this.resetSearchState();
+        this.leaveReader();
         await this.loadMessages({ reset: true });
+    }
+
+    /** ПРАВКА ПМК (шаг 41): поиск — пусто, отложенный запуск — отменён. */
+    resetSearchState() {
+        this.debouncedSearch.cancel();
+        this.state.search = "";
+        this.state.searchInput = "";
+        this.state.searchScope = false;
+    }
+
+    /** ПРАВКА ПМК (шаг 41): на экран — список (шторка папок закрыта). */
+    leaveReader() {
+        this.state.folderDrawer = false;
+        this.state.readerOpen = false;
+        this.listRowId = null;
     }
 
     clearSelection() {
@@ -221,12 +644,54 @@ export class MailClientInbox extends Component {
         this.state.contact = null;
     }
 
+    /**
+     * ПРАВКА ПМК (шаг 41): фильтры модуля почты и надстройки (крючок
+     * extraFilters — pmk_mail_ui: «С лидом»). Без env (hoot-тест
+     * filters.test.js собирает компонент без него) крючок отдаёт пусто.
+     */
     get filters() {
-        return MESSAGE_FILTERS;
+        return [...MESSAGE_FILTERS, ...this.extraFilters()];
+    }
+
+    extraFilters() {
+        return [];
     }
 
     get activeFilter() {
-        return MESSAGE_FILTERS.find((f) => f.id === this.state.filter) || MESSAGE_FILTERS[0];
+        return this.filters.find((f) => f.id === this.state.filter) || MESSAGE_FILTERS[0];
+    }
+
+    /**
+     * ПРАВКА ПМК (шаг 41, А7): кнопки-фильтры над списком — «Непрочитанные»,
+     * «С вложениями», «Ждут ответа» и кнопки надстройки (extraQuickFilters).
+     * Подписи — строкой (prop списка — строка, а _t при загрузке модуля
+     * отдаёт ленивый перевод).
+     */
+    get quickFilters() {
+        const byId = new Map(this.filters.map((f) => [f.id, f]));
+        return [...QUICK_FILTER_IDS.map((id) => byId.get(id)), ...this.extraQuickFilters()]
+            .filter(Boolean)
+            .map((f) => ({ id: f.id, label: String(f.label), icon: f.icon || "" }));
+    }
+
+    extraQuickFilters() {
+        return [];
+    }
+
+    /** Повторный щелчок по нажатой кнопке-фильтру снимает фильтр. */
+    async setQuickFilter(filterId) {
+        await this.setFilter(toggleQuickFilter(this.state.filter, filterId));
+    }
+
+    /** ПРАВКА ПМК (шаг 41): имена папок для метки у строки найденного. */
+    get folderNames() {
+        const names = {};
+        for (const account of this.state.accounts) {
+            for (const folder of account.folders) {
+                names[folder.id] = { name: folder.name, account: account.email };
+            }
+        }
+        return names;
     }
 
     /**
@@ -270,6 +735,7 @@ export class MailClientInbox extends Component {
             return;
         }
         this.state.searchingServer = true;
+        this.showListForResults(); // ПРАВКА ПМК (шаг 41, доводка)
         try {
             const result = await this.orm.call("mail.client.folder", "search_server", [], {
                 folder_id: this.state.activeFolderId,
@@ -391,10 +857,32 @@ export class MailClientInbox extends Component {
         await this.runBulk("delete_bulk", {}, { removesRows: true });
     }
 
+    /**
+     * ПРАВКА ПМК (шаг 41): параметры списка — ОДНИМ местом для загрузки
+     * (loadMessages) и для обновления после синхронизации (refreshListOnce).
+     * Иначе обновление перечитало бы список с другим поиском или фильтром, и
+     * вернулся бы «прыжок» списка (Б2). Поиск — по всем папкам, кроме Спама
+     * и Корзины (А7): в них самих сервер ищет только в открытой.
+     */
+    listQuery(extra = {}) {
+        return {
+            folder_id: this.state.activeFolderId,
+            search: this.state.search || null,
+            search_everywhere: Boolean(this.state.search),
+            threaded: this.state.threaded,
+            unified: this.state.unified,
+            message_filter: this.state.filter,
+            ...extra,
+        };
+    }
+
     async loadMessages({ reset = false } = {}) {
         if (!this.state.activeFolderId && !this.state.unified) {
             return;
         }
+        // ПРАВКА ПМК (шаг 41): загрузок разом бывает несколько (поиск по мере
+        // ввода) — «грузится», пока идёт хоть одна.
+        this.listLoads++;
         this.state.loadingList = true;
         if (reset) {
             // ПРАВКА ПМК (шаг 22): на экране будет другой список — отложенное
@@ -405,25 +893,30 @@ export class MailClientInbox extends Component {
             this.state.pendingNew = 0;
             this.listStale = false;
         }
+        // ПРАВКА ПМК (шаг 41): ответ для списка, которого уже нет на экране
+        // (набрали ещё букву, сменили папку или фильтр), выбрасывается — иначе
+        // медленный ответ на «сч» затёр бы быстрый на «счёт».
+        const generation = this.listGeneration;
         try {
             // Keyset paging: ask for what is older than the last row we hold,
             // rather than an OFFSET that Postgres has to walk past.
-            const before =
-                !reset && this.state.messages.length
-                    ? this.state.messages[this.state.messages.length - 1].date
-                    : null;
-            const result = await this.orm.call("mail.client.folder", "get_messages", [], {
-                folder_id: this.state.activeFolderId,
-                limit: PAGE_SIZE,
-                before,
-                search: this.state.search || null,
-                threaded: this.state.threaded,
-                unified: this.state.unified,
-                message_filter: this.state.filter,
-            });
+            // ПРАВКА ПМК (шаг 41, Б1): ключ составной — дата и id строки (у
+            // переписки — thread_max_id): равные даты на границе страницы не
+            // теряются (pageAfter, list_refresh.js).
+            const page = reset ? { before: null, before_id: null } : pageAfter(this.state.messages);
+            const result = await this.orm.call(
+                "mail.client.folder",
+                "get_messages",
+                [],
+                this.listQuery({ limit: PAGE_SIZE, ...page })
+            );
+            if (generation !== this.listGeneration) {
+                return;
+            }
             if (reset) {
                 this.state.messages = result.messages;
                 this.state.digests = result.digests || [];
+                this.state.searchScope = result.scope || false;
             } else {
                 // ПРАВКА ПМК (шаг 22): страница могла разминуться с
                 // обновлением списка (refreshList) — строк, которые уже на
@@ -436,7 +929,8 @@ export class MailClientInbox extends Component {
             }
             this.state.hasMore = result.has_more;
         } finally {
-            this.state.loadingList = false;
+            this.listLoads--;
+            this.state.loadingList = this.listLoads > 0;
             if (reset) {
                 this.resetLoads--;
             }
@@ -447,9 +941,75 @@ export class MailClientInbox extends Component {
         await this.loadMessages({ reset: false });
     }
 
-    async onSearch(value) {
-        this.state.search = value;
+    // ------------------------------------------------------------------
+    // ПРАВКА ПМК (шаг 41, А7): поиск по мере ввода
+    // ------------------------------------------------------------------
+    /** Набрали в поле поиска — искать после паузы (SEARCH_DELAY_MS). */
+    onSearchInput(value) {
+        this.state.searchInput = value;
+        this.debouncedSearch();
+    }
+
+    /** Enter — искать сразу; Esc — очистить поиск (и не дальше: иначе Esc
+     *  ещё и вернул бы из письма к списку). */
+    onSearchKeydown(ev) {
+        if (ev.key === "Enter") {
+            ev.preventDefault();
+            this.debouncedSearch.cancel();
+            this.applySearch({ enter: true });
+        } else if (ev.key === "Escape" && (this.state.searchInput || this.state.search)) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            this.debouncedSearch.cancel();
+            this.state.searchInput = "";
+            this.applySearch();
+        }
+    }
+
+    /**
+     * Применить набранное: от двух знаков (Enter — и с одного), пусто —
+     * обычный список, тот же текст — ничего (searchDecision,
+     * quick_filters.js).
+     */
+    async applySearch({ enter = false } = {}) {
+        const decision = searchDecision(this.state.searchInput, {
+            enter,
+            applied: this.state.search,
+        });
+        if (decision === "same" || decision === "wait") {
+            return;
+        }
+        this.state.search = decision === "reset" ? "" : this.state.searchInput.trim();
+        if (!this.state.search) {
+            this.state.searchScope = false;
+        }
+        this.showListForResults();
         await this.loadMessages({ reset: true });
+    }
+
+    /**
+     * ПРАВКА ПМК (шаг 41, доводка): найденное — на экран. В раскладке «на
+     * весь экран» открытое письмо закрывает список, и результат поиска
+     * (и «Искать на сервере») оставался под ним невидимым до «← К списку».
+     * Письмо не закрываем — строка его остаётся выделенной, как после
+     * «← К списку».
+     */
+    showListForResults() {
+        if (this.fullLayout && this.state.readerOpen) {
+            this.state.readerOpen = false;
+            this.pointerInReader = false;
+        }
+    }
+
+    /** Прежний вход (поиск по Enter) — для надстроек. */
+    async onSearch(value) {
+        this.state.searchInput = value || "";
+        await this.applySearch({ enter: true });
+    }
+
+    /** ПРАВКА ПМК (шаг 41): где искали — для шапки списка. */
+    get searchScope() {
+        return this.state.search ? this.state.searchScope || "folder" : "";
     }
 
     // ------------------------------------------------------------------
@@ -490,6 +1050,9 @@ export class MailClientInbox extends Component {
             this.openToken === token && this.state.selectedMessageId === messageId;
         this.state.selectedMessageId = messageId;
         this.state.loadingDetail = true;
+        // ПРАВКА ПМК (шаг 41, А10): в раскладке «на весь экран» и на
+        // телефоне открытое письмо встаёт на место списка.
+        this.state.readerOpen = true;
         try {
             // The body is fetched from IMAP on this call when it is not stored
             // yet, so the round trip can be slower than a normal read.
@@ -535,6 +1098,160 @@ export class MailClientInbox extends Component {
     }
 
     // ------------------------------------------------------------------
+    // ПРАВКА ПМК (шаг 41, А6): соседнее письмо и горячие клавиши
+    // ------------------------------------------------------------------
+    /**
+     * Щелчок по строке списка. Запоминаем строку: если дальше открыть письмо
+     * из переписки под письмом, ↑/↓ продолжают от неё. Само открытие —
+     * selectMessage (его перехватывает pmk_mail_ui, thread_seen.js).
+     */
+    selectRow(messageId) {
+        this.listRowId = messageId;
+        return this.selectMessage(messageId);
+    }
+
+    /** Строка списка, на которой человек сейчас: открытая или последняя. */
+    rowOnScreen() {
+        const rows = this.state.messages;
+        const open = this.state.selectedMessageId;
+        if (open && rows.some((row) => row.id === open)) {
+            return open;
+        }
+        const key = this.selectedThreadKey;
+        const byKey = key && rows.find((row) => row.thread_key === key);
+        if (byKey) {
+            return byKey.id;
+        }
+        return rows.some((row) => row.id === this.listRowId) ? this.listRowId : null;
+    }
+
+    neighbour(dir) {
+        return neighbourId(
+            this.state.messages,
+            { selectedId: this.rowOnScreen(), hasMore: this.state.hasMore },
+            dir
+        );
+    }
+
+    /** Для кнопок ↑ ↓ в строке над письмом (на весь экран). */
+    get neighbours() {
+        const next = this.neighbour(1);
+        return { prev: Boolean(this.neighbour(-1).id), next: Boolean(next.id || next.needMore) };
+    }
+
+    /**
+     * ↑ / ↓ и кнопки ↑ ↓: открыть соседнее письмо списка. Внизу
+     * загруженного — сначала «Загрузить ещё». Строка подтягивается в виду.
+     */
+    async moveSelection(dir) {
+        let target = this.neighbour(dir);
+        if (target.needMore) {
+            await this.loadMore();
+            target = this.neighbour(dir);
+        }
+        if (!target.id) {
+            return;
+        }
+        if (this.listApi) {
+            this.listApi.revealRow(target.id);
+        }
+        await this.selectRow(target.id);
+    }
+
+    /**
+     * Кнопка строки над письмом для клавиши (data-mc-key: r, a, f; l — у
+     * кнопки «Лид» pmk_mail_ui). Только видимая и доступная: нет кнопки —
+     * клавиша ничего не делает (pickKeyButton, hotkeys.js).
+     */
+    keyButton(key) {
+        const root = this.rootRef.el;
+        if (!root) {
+            return null;
+        }
+        return pickKeyButton(
+            root.querySelectorAll(`.o_mail_client_reading [data-mc-key="${key}"]`),
+            key,
+            {
+                isVisible: (el) =>
+                    el.getClientRects().length > 0 &&
+                    window.getComputedStyle(el).visibility !== "hidden",
+                isInert: (el) => Boolean(el.closest("[inert]")),
+            }
+        );
+    }
+
+    clickKeyButton(key) {
+        const button = this.keyButton(key);
+        if (button) {
+            button.click();
+        }
+    }
+
+    /**
+     * «/» — курсор в поиск. Не в поле ввода и не в редакторе, не поверх
+     * диалога (у сервиса ui ядра активный элемент тогда — окно диалога).
+     */
+    onWindowKeydown(ev) {
+        if (ev.defaultPrevented || !isSearchKey(ev)) {
+            return;
+        }
+        if (isTypingTarget(ev.target) || isTypingTarget(document.activeElement)) {
+            return;
+        }
+        if (this.ownActiveElement && this.ui.activeElement !== this.ownActiveElement) {
+            return;
+        }
+        const input = this.searchRef.el;
+        if (!input || !input.getClientRects().length) {
+            return;
+        }
+        ev.preventDefault();
+        input.focus();
+        input.select();
+    }
+
+    // ------------------------------------------------------------------
+    // ПРАВКА ПМК (шаг 41, А5): значки строки при наведении
+    // ------------------------------------------------------------------
+    /**
+     * «Прочитано / не прочитано» у строки списка — без открытия письма.
+     * Строка и счётчик папки (папка строки — folder_id) меняются сразу,
+     * запись — через trackListWrite (обновление списка её дождётся), потом
+     * точные счётчики с сервера. В режиме переписок pmk_mail_ui ведёт это
+     * так же, как кнопка «Прочитано» окна: вся переписка
+     * (step41_mail.js).
+     */
+    async rowSeen(message, value) {
+        if (Boolean(message.flag_seen) === Boolean(value)) {
+            return;
+        }
+        const values = { flag_seen: value };
+        if (message.unread_count !== undefined) {
+            values.unread_count = value ? 0 : Math.max(message.unread_count || 0, 1);
+        }
+        this.updateRow(message.id, values);
+        this.adjustUnread(message.folder_id || this.state.activeFolderId, value ? -1 : 1);
+        await this.trackListWrite(
+            this.orm.call("mail.client.message", "set_seen", [], {
+                message_id: message.id,
+                value,
+            })
+        );
+        await this.loadAccounts();
+    }
+
+    /** Звезда у строки списка («Отметить» / «Снять отметку»). */
+    async rowFlagged(message, value) {
+        this.updateRow(message.id, { flag_flagged: value });
+        await this.trackListWrite(
+            this.orm.call("mail.client.message", "set_flagged", [], {
+                message_id: message.id,
+                value,
+            })
+        );
+    }
+
+    // ------------------------------------------------------------------
     // message actions - optimistic, then queued to the server
     // ------------------------------------------------------------------
     updateRow(messageId, values) {
@@ -567,6 +1284,7 @@ export class MailClientInbox extends Component {
                 folder.unread = Math.max(0, (folder.unread || 0) + delta);
             }
         }
+        this.inboxUnreadChanged(); // ПРАВКА ПМК (шаг 41)
     }
 
     /**
@@ -904,29 +1622,26 @@ export class MailClientInbox extends Component {
      *   в своей папке). Тихие — Спам, Корзина, сортировщики mail.ru
      *   (folder.quiet) — нет: их письма переписку не решают.
      * folderIds не пришли (старый сервер) или папки нет в дереве — касаются.
+     * ПРАВКА ПМК (шаг 41): правило — чистая функция showsChange
+     * (panes/list_refresh.js); при поиске «по всем папкам» касается любая
+     * папка ящика, кроме Спама и Корзины.
      */
     listShowsChange(accountId, folderIds) {
         if (!this.showsAccount(accountId)) {
             return false;
         }
-        if (!Array.isArray(folderIds)) {
-            return true;
-        }
         const account = this.state.accounts.find((a) => a.id === accountId);
-        const digests = new Set((this.state.digests || []).map((d) => d.folder_id));
-        return folderIds.some((id) => {
-            if (id === this.state.activeFolderId || digests.has(id)) {
-                return true;
-            }
-            const folder = account && account.folders.find((f) => f.id === id);
-            if (!folder) {
-                return true;
-            }
-            if (this.state.unified && folder.role === "inbox") {
-                return true;
-            }
-            return Boolean(this.state.threaded && !folder.quiet);
-        });
+        return showsChange(
+            {
+                unified: this.state.unified,
+                threaded: this.state.threaded,
+                activeFolderId: this.state.activeFolderId,
+                digestIds: (this.state.digests || []).map((d) => d.folder_id),
+                everywhere: Boolean(this.state.search) && this.state.searchScope === "everywhere",
+            },
+            account ? account.folders : [],
+            folderIds
+        );
     }
 
     /** ПРАВКА ПМК (шаг 22): письма этого ящика сейчас в списке. */
@@ -995,18 +1710,19 @@ export class MailClientInbox extends Component {
         }
         const generation = this.listGeneration;
         const edits = this.listEdits;
-        const result = await this.orm.call("mail.client.folder", "get_messages", [], {
-            folder_id: this.state.activeFolderId,
-            // Запас в страницу: начало дойдёт до последней строки экрана, даже
-            // если сверху пришли новые, а у загруженного целиком списка ответ
-            // выйдет короче запроса (panes/list_refresh.js).
-            limit: Math.min(this.state.messages.length + PAGE_SIZE, REFRESH_MAX_ROWS),
-            before: null,
-            search: this.state.search || null,
-            threaded: this.state.threaded,
-            unified: this.state.unified,
-            message_filter: this.state.filter,
-        });
+        // ПРАВКА ПМК (шаг 41): те же параметры, что у загрузки (listQuery).
+        const result = await this.orm.call(
+            "mail.client.folder",
+            "get_messages",
+            [],
+            this.listQuery({
+                // Запас в страницу: начало дойдёт до последней строки экрана,
+                // даже если сверху пришли новые, а у загруженного целиком
+                // списка ответ выйдет короче запроса (panes/list_refresh.js).
+                limit: Math.min(this.state.messages.length + PAGE_SIZE, REFRESH_MAX_ROWS),
+                before: null,
+            })
+        );
         if (generation !== this.listGeneration || this.resetLoads) {
             return; // пока шёл ответ, на экране стал другой список
         }
