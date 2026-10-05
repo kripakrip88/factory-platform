@@ -67,8 +67,11 @@
       <xpath expr="//field[@name='pmk_price_email']" position="attributes">
         <attribute name="string">Адрес</attribute>
       </xpath>
+      <!-- Плашка «Проверен» обрезалась до «Провер…» (осмотр копии 05.10):
+           ядро отдавало колонке ~80 px. «Не проверен» — самая длинная. -->
       <xpath expr="//field[@name='pmk_price_email_state']" position="attributes">
         <attribute name="invisible">not pmk_price_email</attribute>
+        <attribute name="width">105px</attribute>
       </xpath>
       <xpath expr="//field[@name='pmk_price_period_days']" position="attributes">
         <attribute name="string">Раз в, дн</attribute>
