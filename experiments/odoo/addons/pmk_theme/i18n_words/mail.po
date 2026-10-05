@@ -1,0 +1,518 @@
+# Слова завода поверх перевода модуля mail (разбор UX, шаг 39).
+#
+# Каждая запись — копия записи из mail/i18n/ru.po ядра: тот же msgid,
+# те же ссылки «#:», другой msgstr. Строки кода («#. odoo-python»,
+# «#. odoo-javascript») процесс Odoo доливает поверх перевода модуля при
+# запуске, строки базы (подписи полей, значения списков, термины видов)
+# ложатся при каждом -u pmk_theme. Механизм — pmk_theme/models/words.py,
+# список «было -> стало» — docs/disabled-features.md, шаг 39.
+#
+# Слово поменять — поправить msgstr здесь и выложить pmk_theme.
+# Слово вернуть штатное — удалить запись и выложить: строки кода вернутся
+# сами, строку базы вернёт загрузка перевода с перезаписью (режим
+# разработчика: Настройки -> Переводы -> Языки -> Русский -> «Обновить»,
+# галочка «Перезаписать существующие термины»).
+# Имена действий и пунктов меню здесь не живут — это ACTION_TITLES
+# (pmk_theme/models/ir_actions_act_window.py).
+msgid ""
+msgstr ""
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. module: mail
+#. odoo-python
+#: code:addons/mail/models/mail_activity.py:0
+msgid "\"%(activity_name)s: %(summary)s\" assigned to you"
+msgstr "Вам назначена задача «%(activity_name)s: %(summary)s»"
+
+#. module: mail
+#: model_terms:ir.ui.view,arch_db:mail.message_activity_assigned
+msgid "has just assigned you the following activity:"
+msgstr "только что назначил вам задачу:"
+
+#. module: mail
+#. odoo-python
+#: code:addons/mail/models/ir_actions_server.py:0
+msgid "A next activity can only be planned on models that use activities."
+msgstr "Следующую задачу можно запланировать только для документов с задачами."
+
+#. module: mail
+#. odoo-javascript
+#: code:addons/mail/static/src/core/web/activity_menu.xml:0
+#: model:ir.model.fields,field_description:mail.field_ir_actions_server__activity_ids
+#: model:ir.model.fields,field_description:mail.field_ir_cron__activity_ids
+#: model:ir.model.fields,field_description:mail.field_mail_activity_mixin__activity_ids
+#: model:ir.model.fields,field_description:mail.field_mail_activity_plan__template_ids
+#: model:ir.model.fields,field_description:mail.field_res_partner__activity_ids
+#: model:ir.model.fields,field_description:mail.field_res_users__activity_ids
+#: model_terms:ir.ui.view,arch_db:mail.mail_activity_plan_template_view_tree
+#: model_terms:ir.ui.view,arch_db:mail.mail_activity_type_view_form
+#: model_terms:ir.ui.view,arch_db:mail.mail_activity_type_view_search
+#: model_terms:ir.ui.view,arch_db:mail.mail_activity_type_view_tree
+#: model_terms:ir.ui.view,arch_db:mail.res_config_settings_view_form
+msgid "Activities"
+msgstr "Задачи"
+
+#. module: mail
+#. odoo-javascript
+#: code:addons/mail/static/src/chatter/web/chatter.xml:0
+#: code:addons/mail/static/src/core/web/activity_menu.js:0
+#: code:addons/mail/static/src/core/web/activity_menu.xml:0
+#: model:ir.model,name:mail.model_mail_activity
+#: model_terms:ir.ui.view,arch_db:mail.mail_activity_plan_template_view_form
+#: model_terms:ir.ui.view,arch_db:mail.mail_activity_view_calendar
+#: model_terms:ir.ui.view,arch_db:mail.mail_activity_view_form_popup
+#: model_terms:ir.ui.view,arch_db:mail.mail_activity_view_form_without_record_access
+#: model_terms:ir.ui.view,arch_db:mail.mail_activity_view_kanban_open_target
+#: model_terms:ir.ui.view,arch_db:mail.mail_activity_view_search
+msgid "Activity"
+msgstr "Задача"
+
+#. module: mail
+#: model_terms:ir.ui.view,arch_db:mail.mail_activity_type_view_form
+msgid "Activity Settings"
+msgstr "Настройки задачи"
+
+#. module: mail
+#: model:ir.model.fields,field_description:mail.field_ir_actions_server__activity_state
+#: model:ir.model.fields,field_description:mail.field_ir_cron__activity_state
+#: model:ir.model.fields,field_description:mail.field_mail_activity_mixin__activity_state
+#: model:ir.model.fields,field_description:mail.field_res_partner__activity_state
+#: model:ir.model.fields,field_description:mail.field_res_users__activity_state
+msgid "Activity State"
+msgstr "Состояние задачи"
+
+#. module: mail
+#: model:ir.model,name:mail.model_mail_activity_type
+#: model:ir.model.fields,field_description:mail.field_ir_actions_server__activity_type_id
+#: model:ir.model.fields,field_description:mail.field_mail_activity__activity_type_id
+#: model:ir.model.fields,field_description:mail.field_mail_activity_plan_template__activity_type_id
+#: model:ir.model.fields,field_description:mail.field_mail_activity_schedule__activity_type_id
+#: model_terms:ir.ui.view,arch_db:mail.mail_activity_plan_view_form
+#: model_terms:ir.ui.view,arch_db:mail.mail_activity_view_search
+msgid "Activity Type"
+msgstr "Тип задачи"
+
+#. module: mail
+#: model:ir.model.fields,field_description:mail.field_ir_actions_server__activity_type_icon
+#: model:ir.model.fields,field_description:mail.field_ir_cron__activity_type_icon
+#: model:ir.model.fields,field_description:mail.field_mail_activity_mixin__activity_type_icon
+#: model:ir.model.fields,field_description:mail.field_res_partner__activity_type_icon
+#: model:ir.model.fields,field_description:mail.field_res_users__activity_type_icon
+msgid "Activity Type Icon"
+msgstr "Значок типа задачи"
+
+#. module: mail
+#: model_terms:ir.ui.view,arch_db:mail.mail_activity_type_view_kanban
+msgid "Activity Type Name"
+msgstr "Название типа задачи"
+
+#. module: mail
+#. odoo-javascript
+#: code:addons/mail/static/src/core/web/activity.xml:0
+msgid "Activity type"
+msgstr "Тип задачи"
+
+#. module: mail
+#. odoo-python
+#: code:addons/mail/models/mail_activity.py:0
+msgid "Activity: %s"
+msgstr "Задача: %s"
+
+#. module: mail
+#: model:ir.model.fields,field_description:mail.field_mail_activity__automated
+msgid "Automated activity"
+msgstr "Автоматическая задача"
+
+#. module: mail
+#: model:ir.model.fields,help:mail.field_mail_activity_type__triggered_next_type_id
+msgid "Automatically schedule this activity once the current one is marked as done."
+msgstr "Автоматически планировать эту задачу, когда текущая выполнена."
+
+#. module: mail
+#. odoo-python
+#: code:addons/mail/wizard/mail_activity_schedule.py:0
+msgid "Can't schedule activities without either a record or a user."
+msgstr "Нельзя запланировать задачи без документа или пользователя."
+
+#. module: mail
+#: model:ir.model.fields,help:mail.field_mail_activity__activity_decoration
+#: model:ir.model.fields,help:mail.field_mail_activity_type__decoration_type
+msgid "Change the background color of the related activities of this type."
+msgstr "Цвет фона задач этого типа."
+
+#. module: mail
+#: model:ir.model.fields,help:mail.field_mail_activity_schedule__plan_on_demand_user_id
+msgid "Choose assignation for activities with on demand assignation."
+msgstr "Выберите ответственного для задач с назначением по запросу."
+
+#. module: mail
+#. odoo-javascript
+#: code:addons/mail/static/src/core/web/activity_menu.xml:0
+msgid "Congratulations, you're done with your activities."
+msgstr "Все задачи выполнены."
+
+#. module: mail
+#: model_terms:ir.ui.view,arch_db:mail.mail_activity_schedule_view_form
+msgid "Default deadline for the activities..."
+msgstr "Срок по умолчанию для задач..."
+
+#. module: mail
+#. odoo-python
+#: code:addons/mail/models/ir_model.py:0
+msgid "Field \"Mail Activity\" cannot be changed to \"False\"."
+msgstr "Поле «Задачи» нельзя изменить на «False»."
+
+#. module: mail
+#: model:ir.model.fields,help:mail.field_mail_activity__automated
+msgid "Indicates this activity has been created automatically and not by any user."
+msgstr "Задача создана автоматически, а не пользователем."
+
+#. module: mail
+#. odoo-javascript
+#: code:addons/mail/static/src/views/web/fields/list_activity/list_activity.js:0
+msgid "List Activity"
+msgstr "Список задач"
+
+#. module: mail
+#: model_terms:ir.ui.view,arch_db:mail.mail_activity_view_form_popup
+#: model_terms:ir.ui.view,arch_db:mail.mail_activity_view_form_without_record_access
+msgid "Log an Activity"
+msgstr "Запланировать задачу"
+
+#. module: mail
+#: model:ir.model.fields,field_description:mail.field_ir_actions_server__my_activity_date_deadline
+#: model:ir.model.fields,field_description:mail.field_ir_cron__my_activity_date_deadline
+#: model:ir.model.fields,field_description:mail.field_mail_activity_mixin__my_activity_date_deadline
+#: model:ir.model.fields,field_description:mail.field_res_partner__my_activity_date_deadline
+#: model:ir.model.fields,field_description:mail.field_res_users__my_activity_date_deadline
+msgid "My Activity Deadline"
+msgstr "Срок моей задачи"
+
+#. module: mail
+#: model:ir.model.fields,field_description:mail.field_mail_activity_plan_template__next_activity_ids
+#: model_terms:ir.ui.view,arch_db:mail.mail_activity_view_tree
+msgid "Next Activities"
+msgstr "Следующие задачи"
+
+#. module: mail
+#: model_terms:ir.ui.view,arch_db:mail.mail_activity_type_view_form
+msgid "Next Activity"
+msgstr "Следующая задача"
+
+#. module: mail
+#: model:ir.model.fields,field_description:mail.field_ir_actions_server__activity_date_deadline
+#: model:ir.model.fields,field_description:mail.field_ir_cron__activity_date_deadline
+#: model:ir.model.fields,field_description:mail.field_mail_activity_mixin__activity_date_deadline
+#: model:ir.model.fields,field_description:mail.field_res_partner__activity_date_deadline
+#: model:ir.model.fields,field_description:mail.field_res_users__activity_date_deadline
+msgid "Next Activity Deadline"
+msgstr "Срок следующей задачи"
+
+#. module: mail
+#: model:ir.model.fields,field_description:mail.field_ir_cron__activity_summary
+#: model:ir.model.fields,field_description:mail.field_mail_activity_mixin__activity_summary
+#: model:ir.model.fields,field_description:mail.field_res_partner__activity_summary
+#: model:ir.model.fields,field_description:mail.field_res_users__activity_summary
+msgid "Next Activity Summary"
+msgstr "Описание следующей задачи"
+
+#. module: mail
+#: model:ir.model.fields,field_description:mail.field_ir_cron__activity_type_id
+#: model:ir.model.fields,field_description:mail.field_mail_activity_mixin__activity_type_id
+#: model:ir.model.fields,field_description:mail.field_res_partner__activity_type_id
+#: model:ir.model.fields,field_description:mail.field_res_users__activity_type_id
+msgid "Next Activity Type"
+msgstr "Тип следующей задачи"
+
+#. module: mail
+#: model:ir.model.fields,field_description:mail.field_mail_activity__has_recommended_activities
+msgid "Next activities available"
+msgstr "Доступны следующие задачи"
+
+#. module: mail
+#. odoo-python
+#: code:addons/mail/models/res_users.py:0
+msgid "Other activities"
+msgstr "Другие задачи"
+
+#. module: mail
+#. odoo-javascript
+#: code:addons/mail/static/src/chatter/web/chatter.xml:0
+msgid "Planned Activities"
+msgstr "Запланированные задачи"
+
+#. module: mail
+#: model:ir.model.fields,field_description:mail.field_mail_activity_type__previous_type_ids
+msgid "Preceding Activities"
+msgstr "Предшествующие задачи"
+
+#. module: mail
+#: model:ir.model.fields,field_description:mail.field_mail_activity__previous_activity_type_id
+msgid "Previous Activity Type"
+msgstr "Тип предыдущей задачи"
+
+#. module: mail
+#: model_terms:ir.ui.view,arch_db:mail.mail_activity_view_form_popup
+msgid "Recommended Activities"
+msgstr "Рекомендованные задачи"
+
+#. module: mail
+#: model:ir.model.fields,field_description:mail.field_mail_activity__recommended_activity_type_id
+msgid "Recommended Activity Type"
+msgstr "Рекомендованный тип задачи"
+
+#. module: mail
+#. odoo-javascript
+#: code:addons/mail/static/src/core/web/activity_model_patch.js:0
+#: code:addons/mail/static/src/core/web/store_service_patch.js:0
+msgid "Schedule Activity"
+msgstr "Запланировать задачу"
+
+#. module: mail
+#. odoo-javascript
+#: code:addons/mail/static/src/core/web/store_service_patch.js:0
+msgid "Schedule Activity On Selected Records"
+msgstr "Запланировать задачу для выбранных записей"
+
+#. module: mail
+#. odoo-javascript
+#: code:addons/mail/static/src/core/web/activity_list_popover.xml:0
+msgid "Schedule activities to help you get things done."
+msgstr "Планируйте задачи, чтобы ничего не упустить."
+
+#. module: mail
+#. odoo-javascript
+#: code:addons/mail/static/src/views/web/activity/activity_renderer.xml:0
+msgid "Schedule activity"
+msgstr "Запланировать задачу"
+
+#. module: mail
+#. odoo-python
+#: code:addons/mail/models/mail_activity.py:0
+msgid "Schedule an Activity"
+msgstr "Запланировать задачу"
+
+#. module: mail
+#. odoo-javascript
+#: code:addons/mail/static/src/core/web/activity_list_popover.xml:0
+msgid "Schedule an activity"
+msgstr "Запланировать задачу"
+
+#. module: mail
+#. odoo-javascript
+#: code:addons/mail/static/src/core/web/activity_list_popover.xml:0
+msgid "Schedule an activity on selected records"
+msgstr "Запланировать задачу для выбранных записей"
+
+#. module: mail
+#. odoo-python
+#: code:addons/mail/wizard/mail_activity_schedule.py:0
+msgid "Scheduling personal activities requires an assigned user."
+msgstr "Для личной задачи нужен ответственный."
+
+#. module: mail
+#. odoo-javascript
+#: code:addons/mail/static/src/core/web/command_palette.js:0
+msgid "Show All Activities"
+msgstr "Показать все задачи"
+
+#. module: mail
+#. odoo-javascript
+#: code:addons/mail/static/src/core/web/command_palette.js:0
+msgid "Show My Activities"
+msgstr "Показать мои задачи"
+
+#. module: mail
+#. odoo-javascript
+#: code:addons/mail/static/src/core/web/activity_button.js:0
+msgid "Show activities"
+msgstr "Показать задачи"
+
+#. module: mail
+#: model:ir.model.fields,help:mail.field_mail_activity_plan__res_model
+#: model:ir.model.fields,help:mail.field_mail_activity_plan_template__res_model
+#: model:ir.model.fields,help:mail.field_mail_activity_type__res_model
+msgid "Specify a model if the activity should be specific to a model and not available when managing activities for other models."
+msgstr "Укажите модель, если задача нужна только для неё и не должна предлагаться в других документах."
+
+#. module: mail
+#: model:ir.model.fields,help:mail.field_ir_actions_server__activity_state
+#: model:ir.model.fields,help:mail.field_ir_cron__activity_state
+#: model:ir.model.fields,help:mail.field_mail_activity_mixin__activity_state
+#: model:ir.model.fields,help:mail.field_res_partner__activity_state
+#: model:ir.model.fields,help:mail.field_res_users__activity_state
+msgid ""
+"Status based on activities\n"
+"Overdue: Due date is already passed\n"
+"Today: Activity date is today\n"
+"Planned: Future activities."
+msgstr ""
+"Статус по задачам\n"
+"Просроченные: срок уже прошёл\n"
+"Сегодня: срок сегодня\n"
+"Запланированные: будущие задачи."
+
+#. module: mail
+#: model:ir.model.fields.selection,name:mail.selection__mail_activity_type__chaining_type__suggest
+msgid "Suggest Next Activity"
+msgstr "Предложить следующую задачу"
+
+#. module: mail
+#: model:ir.model.fields,help:mail.field_mail_activity_type__suggested_next_type_ids
+msgid "Suggest these activities once the current one is marked as done."
+msgstr "Предлагать эти задачи, когда текущая выполнена."
+
+#. module: mail
+#. odoo-python
+#: code:addons/mail/models/mail_activity_type.py:0
+msgid "The 'To-Do' activity type is used to create reminders from the top bar menu and the command palette. Consequently, it cannot be archived or deleted."
+msgstr "Тип «Напоминание» нужен для напоминаний из верхнего меню и палитры команд, поэтому его нельзя архивировать или удалить."
+
+#. module: mail
+#. odoo-python
+#: code:addons/mail/wizard/mail_activity_schedule.py:0
+msgid "The activity can be launched, with these additional effects:"
+msgstr "Задачу можно запустить, при этом:"
+
+#. module: mail
+#. odoo-python
+#: code:addons/mail/wizard/mail_activity_schedule.py:0
+msgid "The activity cannot be launched:"
+msgstr "Задачу нельзя запустить:"
+
+#. module: mail
+#. odoo-python
+#: code:addons/mail/models/mail_activity_plan_template.py:0
+msgid "The activity type \"%(activity_type_name)s\" is not compatible with the plan \"%(plan_name)s\" because it is limited to the model \"%(activity_type_model)s\"."
+msgstr "Тип задачи «%(activity_type_name)s» не подходит к плану «%(plan_name)s»: он только для модели «%(activity_type_model)s»."
+
+#. module: mail
+#. odoo-javascript
+#: code:addons/mail/static/src/views/web/fields/activity_exception/activity_exception.xml:0
+msgid "This record has an exception activity."
+msgstr "У записи есть задача-исключение."
+
+#. module: mail
+#: model:ir.model.fields.selection,name:mail.selection__mail_activity_type__chaining_type__trigger
+msgid "Trigger Next Activity"
+msgstr "Запустить следующую задачу"
+
+#. module: mail
+#: model_terms:ir.ui.view,arch_db:mail.mail_activity_view_search
+msgid "Unassigned Activities"
+msgstr "Неназначенные задачи"
+
+#. module: mail
+#. odoo-javascript
+#: code:addons/mail/static/src/core/web/activity_menu.xml:0
+msgid "View all activities"
+msgstr "Мои задачи"
+
+#. module: mail
+#: model:ir.model.fields.selection,name:mail.selection__mail_activity_type__delay_from__current_date
+msgid "after previous activity completion date"
+msgstr "после выполнения предыдущей задачи"
+
+#. module: mail
+#: model:ir.model.fields.selection,name:mail.selection__mail_activity_type__delay_from__previous_activity
+msgid "after previous activity deadline"
+msgstr "после срока предыдущей задачи"
+
+#. module: mail
+#: model_terms:ir.ui.view,arch_db:mail.res_partner_view_search_inherit_mail
+msgid "Future Activities"
+msgstr "Будущие задачи"
+
+#. module: mail
+#: model_terms:ir.ui.view,arch_db:mail.res_partner_view_search_inherit_mail
+msgid "Late Activities"
+msgstr "Просроченные задачи"
+
+#. module: mail
+#: model_terms:ir.ui.view,arch_db:mail.mail_activity_view_search
+#: model_terms:ir.ui.view,arch_db:mail.res_partner_view_search_inherit_mail
+msgid "My Activities"
+msgstr "Мои задачи"
+
+#. module: mail
+#: model_terms:ir.ui.view,arch_db:mail.mail_activity_view_search
+#: model_terms:ir.ui.view,arch_db:mail.res_partner_view_search_inherit_mail
+msgid "Show all records whose next activity date is past"
+msgstr "Показать записи с просроченной следующей задачей"
+
+#. module: mail
+#: model_terms:ir.ui.view,arch_db:mail.res_partner_view_search_inherit_mail
+msgid "Today Activities"
+msgstr "Задачи на сегодня"
+
+#. module: mail
+#: model:ir.model.fields,field_description:mail.field_mail_blacklist_remove__email
+#: model:ir.model.fields,field_description:mail.field_mail_followers__email
+#: model:ir.model.fields,field_description:mail.field_mail_guest__email
+#: model:ir.model.fields,field_description:mail.field_res_partner__email
+#: model:ir.model.fields,field_description:mail.field_res_users__email
+#: model:ir.model.fields.selection,name:mail.selection__ir_actions_server__mail_post_method__email
+#: model:ir.model.fields.selection,name:mail.selection__mail_notification__notification_type__email
+#: model_terms:ir.ui.view,arch_db:mail.view_mail_search
+msgid "Email"
+msgstr "Эл. почта"
+
+#. module: mail
+#: model:ir.model.fields,field_description:mail.field_mail_gateway_allowed__email_normalized
+#: model:ir.model.fields,field_description:mail.field_mail_thread_blacklist__email_normalized
+#: model:ir.model.fields,field_description:mail.field_res_partner__email_normalized
+#: model:ir.model.fields,field_description:mail.field_res_users__email_normalized
+msgid "Normalized Email"
+msgstr "Нормализованная эл. почта"
+
+#. module: mail
+#: model_terms:ir.ui.view,arch_db:mail.res_partner_view_form_inherit_mail
+msgid "This email is blacklisted for mass mailings. Click to unblacklist."
+msgstr "Эл. почта в чёрном списке рассылок. Нажмите, чтобы убрать."
+
+#. module: mail
+#. odoo-javascript
+#: code:addons/mail/static/src/core/web/messaging_menu_patch.js:0
+msgid "Email Failure: %(modelName)s"
+msgstr "Письмо не отправлено: %(modelName)s"
+
+#. module: mail
+#. odoo-javascript
+#: code:addons/mail/static/src/core/common/failure_model.js:0
+msgid "An error occurred when sending an email"
+msgstr "Ошибка при отправке письма"
+
+#. module: mail
+#. odoo-javascript
+#: code:addons/mail/static/src/core/common/failure_model.js:0
+msgid "An error occurred when sending an email on “%(record_name)s”"
+msgstr "Ошибка при отправке письма по «%(record_name)s»"
+
+#. module: mail
+#. odoo-javascript
+#: code:addons/mail/static/src/core/common/notification_model.js:0
+#: model:ir.model.fields.selection,name:mail.selection__mail_mail__failure_type__mail_dup
+#: model:ir.model.fields.selection,name:mail.selection__mail_notification__failure_type__mail_dup
+msgid "Duplicated Email"
+msgstr "Повторный адрес эл. почты"
+
+#. module: mail
+#. odoo-javascript
+#: code:addons/mail/static/src/core/web/recipients_input_tags_list_popover.xml:0
+msgid "Set Email"
+msgstr "Указать эл. почту"
+
+#. module: mail
+#. odoo-python
+#: code:addons/mail/wizard/mail_followers_edit.py:0
+msgid "Unable to post message, please configure the sender's email address."
+msgstr "Сообщение не отправлено: у отправителя не указан адрес эл. почты."
+
+#. module: mail
+#: model:ir.model.fields,field_description:mail.field_res_partner__user_id
+#: model:ir.model.fields,field_description:mail.field_res_users__user_id
+msgid "Salesperson"
+msgstr "Менеджер"

@@ -12,3 +12,7 @@ from . import test_partner_specs
 from . import test_step29_utm
 # Разбор UX, шаг 35: доборка и сделка.
 from . import test_step35_dobor_deal
+# Разбор UX, шаг 39: старая история сделок словами завода.
+from . import test_step39_tracking
+# Разбор UX, шаг 39: один фильтр «В работе» в поиске сделок.
+from . import test_step39_filters

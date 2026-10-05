@@ -24,6 +24,12 @@ created», «Заказ доборных элементов created» — док
 
 Функции чистые: ими пользуются миграция pmk_calc 19.0.1.0.4 и тест
 tests/test_step30_tracking.py.
+
+СЛОВО ДОКУМЕНТА (разбор UX, шаг 39, 05.10.2026): «расчёт», а не
+«спецификация» — так называется модель с этого шага. Запись ядра о создании
+хранит имя модели, каким оно было в момент записи: «Создано: Спецификация
+металлопроката» → «Создано: Расчёт металлопроката» (renamed_created;
+миграция 19.0.1.0.5, тест tests/test_step39_words.py).
 """
 import re
 from html import unescape
@@ -59,6 +65,12 @@ NO_TITLE = "доборка"
 # («Bank Account <a …>#1</a> created») не наши и не трогаются.
 CREATED = re.compile(r"^<p>([^<]+) created</p>$")
 CREATED_RU = "<p>Создано: %s</p>"
+CREATED_RU_RE = re.compile(r"^<p>Создано: ([^<]+)</p>$")
+# Имена моделей до шага 39 → нынешние (pmk_calc/models/metal_spec.py).
+RENAMED_MODELS = {
+    "Спецификация металлопроката": "Расчёт металлопроката",
+    "Изделие спецификации": "Изделие расчёта",
+}
 
 
 def dobor_ids(text):
@@ -113,3 +125,19 @@ def created_ru(body):
     """
     match = CREATED.match(body or "")
     return CREATED_RU % match.group(1) if match else body
+
+
+def renamed_created(body):
+    """Запись о создании — с нынешним именем модели (шаг 39).
+
+    «<p>Создано: Спецификация металлопроката</p>» → «<p>Создано: Расчёт
+    металлопроката</p>». Английская запись «… created» сначала приводится к
+    русской (created_ru). Только запись целиком и только имена из
+    RENAMED_MODELS: «Создано: Изделие спецификации КМ1» или текст клиента со
+    словом «спецификация» (чертёж клиента) не трогаются. Повтор ничего не
+    меняет.
+    """
+    body = created_ru(body)
+    match = CREATED_RU_RE.match(body or "")
+    new = RENAMED_MODELS.get(match.group(1)) if match else None
+    return CREATED_RU % new if new else body

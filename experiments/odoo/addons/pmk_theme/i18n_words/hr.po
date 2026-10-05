@@ -1,0 +1,203 @@
+# Слова завода поверх перевода модуля hr (разбор UX, шаг 39).
+#
+# Каждая запись — копия записи из hr/i18n/ru.po ядра: тот же msgid,
+# те же ссылки «#:», другой msgstr. Строки кода («#. odoo-python»,
+# «#. odoo-javascript») процесс Odoo доливает поверх перевода модуля при
+# запуске, строки базы (подписи полей, значения списков, термины видов)
+# ложатся при каждом -u pmk_theme. Механизм — pmk_theme/models/words.py,
+# список «было -> стало» — docs/disabled-features.md, шаг 39.
+#
+# Слово поменять — поправить msgstr здесь и выложить pmk_theme.
+# Слово вернуть штатное — удалить запись и выложить: строки кода вернутся
+# сами, строку базы вернёт загрузка перевода с перезаписью (режим
+# разработчика: Настройки -> Переводы -> Языки -> Русский -> «Обновить»,
+# галочка «Перезаписать существующие термины»).
+# Имена действий и пунктов меню здесь не живут — это ACTION_TITLES
+# (pmk_theme/models/ir_actions_act_window.py).
+msgid ""
+msgstr ""
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. module: hr
+#: model:ir.model.fields,field_description:hr.field_hr_employee__private_email
+#: model:ir.model.fields,field_description:hr.field_res_users__private_email
+#: model_terms:ir.ui.view,arch_db:hr.res_users_view_form_preferences
+msgid "Private Email"
+msgstr "Личная эл. почта"
+
+#. module: hr
+#: model:ir.model.fields,field_description:hr.field_hr_employee__private_state_id
+#: model:ir.model.fields,field_description:hr.field_hr_version__private_state_id
+#: model:ir.model.fields,field_description:hr.field_res_users__private_state_id
+msgid "Private State"
+msgstr "Регион (домашний адрес)"
+
+#. module: hr
+#: model:ir.model.fields,field_description:hr.field_hr_employee__private_country_id
+#: model:ir.model.fields,field_description:hr.field_hr_version__private_country_id
+#: model:ir.model.fields,field_description:hr.field_res_users__private_country_id
+msgid "Private Country"
+msgstr "Страна (домашний адрес)"
+
+#. module: hr
+#: model_terms:ir.ui.view,arch_db:hr.res_users_view_form_preferences
+#: model_terms:ir.ui.view,arch_db:hr.view_employee_form
+#: model_terms:ir.ui.view,arch_db:hr.view_partner_bank_form_inherit_hr
+msgid "State"
+msgstr "Регион"
+
+#. module: hr
+#: model_terms:ir.ui.view,arch_db:hr.res_users_view_form
+msgid ""
+"<i class=\"fa fa-fw fa-envelope me-1 text-primary\" title=\"Login / Email\" invisible=\"login != work_email\"/>\n"
+"                            <i class=\"fa fa-fw fa-key me-1 text-primary\" title=\"Login\" invisible=\"login == work_email\"/>"
+msgstr ""
+"<i class=\"fa fa-fw fa-envelope me-1 text-primary\" title=\"Логин / эл. почта\" invisible=\"login != work_email\"/>\n"
+"                            <i class=\"fa fa-fw fa-key me-1 text-primary\" title=\"Логин\" invisible=\"login == work_email\"/>"
+
+#. module: hr
+#: model_terms:ir.ui.view,arch_db:hr.res_users_view_form
+msgid "<i class=\"fa fa-envelope fa-fw me-1 text-primary\" title=\"Work Email\" invisible=\"login == work_email\"/>"
+msgstr "<i class=\"fa fa-envelope fa-fw me-1 text-primary\" title=\"Рабочая эл. почта\" invisible=\"login == work_email\"/>"
+
+#. module: hr
+#: model:ir.model.fields,field_description:hr.field_hr_employee__work_email
+#: model:ir.model.fields,field_description:hr.field_hr_employee_public__work_email
+#: model:ir.model.fields,field_description:hr.field_res_users__work_email
+#: model:ir.model.fields,field_description:hr.field_resource_resource__work_email
+#: model_terms:ir.ui.view,arch_db:hr.hr_employee_public_view_form
+#: model_terms:ir.ui.view,arch_db:hr.res_users_view_form
+#: model_terms:ir.ui.view,arch_db:hr.res_users_view_form_preferences
+#: model_terms:ir.ui.view,arch_db:hr.view_employee_form
+msgid "Work Email"
+msgstr "Рабочая эл. почта"
+
+#. module: hr
+#: model_terms:ir.ui.view,arch_db:hr.hr_employee_public_view_form
+#: model_terms:ir.ui.view,arch_db:hr.res_users_view_form_preferences
+#: model_terms:ir.ui.view,arch_db:hr.view_employee_form
+msgid "<i class=\"fa fa-envelope fa-fw me-1 text-primary\" title=\"Work Email\"/>"
+msgstr "<i class=\"fa fa-envelope fa-fw me-1 text-primary\" title=\"Рабочая эл. почта\"/>"
+
+#. module: hr
+#: model:ir.model.fields,field_description:hr.field_account_setup_bank_manual_config__bank_email
+#: model:ir.model.fields,field_description:hr.field_hr_employee__email
+#: model:ir.model.fields,field_description:hr.field_hr_employee_public__email
+#: model:ir.model.fields,field_description:hr.field_res_partner_bank__bank_email
+#: model_terms:ir.ui.view,arch_db:hr.view_employee_form
+msgid "Email"
+msgstr "Эл. почта"
+
+#. module: hr
+#: model_terms:ir.ui.view,arch_db:hr.hr_employee_public_view_kanban
+#: model_terms:ir.ui.view,arch_db:hr.hr_kanban_view_employees
+msgid "<i class=\"fa fa-fw me-2 fa-envelope text-primary\" title=\"Email\"/>"
+msgstr "<i class=\"fa fa-fw me-2 fa-envelope text-primary\" title=\"Эл. почта\"/>"
+
+#. module: hr
+#: model_terms:ir.ui.view,arch_db:hr.hr_employee_list_activites_view
+#: model_terms:ir.ui.view,arch_db:hr.view_employee_tree
+msgid "Activity by"
+msgstr "Исполнитель задачи"
+
+#. module: hr
+#: model:ir.model.fields,field_description:hr.field_hr_department__activity_ids
+#: model:ir.model.fields,field_description:hr.field_hr_employee__activity_ids
+#: model:ir.model.fields,field_description:hr.field_hr_version__activity_ids
+msgid "Activities"
+msgstr "Задачи"
+
+#. module: hr
+#: model:ir.model.fields,field_description:hr.field_hr_department__activity_state
+#: model:ir.model.fields,field_description:hr.field_hr_employee__activity_state
+#: model:ir.model.fields,field_description:hr.field_hr_version__activity_state
+msgid "Activity State"
+msgstr "Состояние задачи"
+
+#. module: hr
+#: model:ir.model.fields,field_description:hr.field_hr_department__activity_type_icon
+#: model:ir.model.fields,field_description:hr.field_hr_employee__activity_type_icon
+#: model:ir.model.fields,field_description:hr.field_hr_version__activity_type_icon
+msgid "Activity Type Icon"
+msgstr "Значок типа задачи"
+
+#. module: hr
+#: model:ir.model.fields,field_description:hr.field_hr_department__my_activity_date_deadline
+#: model:ir.model.fields,field_description:hr.field_hr_employee__my_activity_date_deadline
+#: model:ir.model.fields,field_description:hr.field_hr_version__my_activity_date_deadline
+msgid "My Activity Deadline"
+msgstr "Срок моей задачи"
+
+#. module: hr
+#: model:ir.model.fields,field_description:hr.field_hr_department__activity_calendar_event_id
+#: model:ir.model.fields,field_description:hr.field_hr_employee__activity_calendar_event_id
+#: model:ir.model.fields,field_description:hr.field_hr_version__activity_calendar_event_id
+msgid "Next Activity Calendar Event"
+msgstr "Событие календаря следующей задачи"
+
+#. module: hr
+#: model:ir.model.fields,field_description:hr.field_hr_department__activity_date_deadline
+#: model:ir.model.fields,field_description:hr.field_hr_employee__activity_date_deadline
+#: model:ir.model.fields,field_description:hr.field_hr_version__activity_date_deadline
+msgid "Next Activity Deadline"
+msgstr "Срок следующей задачи"
+
+#. module: hr
+#: model:ir.model.fields,field_description:hr.field_hr_department__activity_summary
+#: model:ir.model.fields,field_description:hr.field_hr_employee__activity_summary
+#: model:ir.model.fields,field_description:hr.field_hr_version__activity_summary
+msgid "Next Activity Summary"
+msgstr "Описание следующей задачи"
+
+#. module: hr
+#: model:ir.model.fields,field_description:hr.field_hr_department__activity_type_id
+#: model:ir.model.fields,field_description:hr.field_hr_employee__activity_type_id
+#: model:ir.model.fields,field_description:hr.field_hr_version__activity_type_id
+msgid "Next Activity Type"
+msgstr "Тип следующей задачи"
+
+#. module: hr
+#: model:ir.model.fields,help:hr.field_hr_department__activity_state
+#: model:ir.model.fields,help:hr.field_hr_employee__activity_state
+#: model:ir.model.fields,help:hr.field_hr_version__activity_state
+msgid ""
+"Status based on activities\n"
+"Overdue: Due date is already passed\n"
+"Today: Activity date is today\n"
+"Planned: Future activities."
+msgstr ""
+"Статус по задачам\n"
+"Просроченные: срок уже прошёл\n"
+"Сегодня: срок сегодня\n"
+"Запланированные: будущие задачи."
+
+#. module: hr
+#: model_terms:ir.ui.view,arch_db:hr.hr_version_search_view
+#: model_terms:ir.ui.view,arch_db:hr.view_employee_filter
+msgid "Future Activities"
+msgstr "Будущие задачи"
+
+#. module: hr
+#: model_terms:ir.ui.view,arch_db:hr.hr_version_search_view
+#: model_terms:ir.ui.view,arch_db:hr.view_employee_filter
+msgid "Late Activities"
+msgstr "Просроченные задачи"
+
+#. module: hr
+#: model_terms:ir.ui.view,arch_db:hr.view_employee_filter
+msgid "My Activities"
+msgstr "Мои задачи"
+
+#. module: hr
+#: model_terms:ir.ui.view,arch_db:hr.hr_version_search_view
+msgid "Show all records whose next activity date is past"
+msgstr "Показать записи с просроченной следующей задачей"
+
+#. module: hr
+#: model_terms:ir.ui.view,arch_db:hr.hr_version_search_view
+#: model_terms:ir.ui.view,arch_db:hr.view_employee_filter
+msgid "Today Activities"
+msgstr "Задачи на сегодня"

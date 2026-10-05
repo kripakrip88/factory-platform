@@ -245,10 +245,14 @@ class TestMenusStep38(TransactionCase):
                     self.assertEqual(by_id["display_name"], title)
 
     def test_window_titles_only_ours(self):
-        """Соседнее действие — со своим именем; в базе имя не тронуто."""
-        record = self.env.ref("purchase.purchase_form_action")
+        """Соседнее действие — со своим именем; в базе имя не тронуто.
+
+        Сосед — «Лиды»: «Подтверждённые заказы» (purchase_form_action), сосед
+        до шага 39, с шага 39 тоже в ACTION_TITLES (одно понятие — одно слово).
+        """
+        record = self.env.ref("crm.crm_lead_all_leads")
         self.assertEqual(self.env["ir.actions.act_window"]._for_xml_id(
-            "purchase.purchase_form_action")["name"], record.name)
+            "crm.crm_lead_all_leads")["name"], record.name)
         self.assertNotEqual(self.env.ref("purchase.purchase_rfq").name, "Заказы поставщикам",
                             "Подмена при отдаче браузеру, запись ядра прежняя.")
 

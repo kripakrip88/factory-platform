@@ -1,0 +1,62 @@
+# Слова завода поверх перевода модуля calendar (разбор UX, шаг 39).
+#
+# Каждая запись — копия записи из calendar/i18n/ru.po ядра: тот же msgid,
+# те же ссылки «#:», другой msgstr. Строки кода («#. odoo-python»,
+# «#. odoo-javascript») процесс Odoo доливает поверх перевода модуля при
+# запуске, строки базы (подписи полей, значения списков, термины видов)
+# ложатся при каждом -u pmk_theme. Механизм — pmk_theme/models/words.py,
+# список «было -> стало» — docs/disabled-features.md, шаг 39.
+#
+# Слово поменять — поправить msgstr здесь и выложить pmk_theme.
+# Слово вернуть штатное — удалить запись и выложить: строки кода вернутся
+# сами, строку базы вернёт загрузка перевода с перезаписью (режим
+# разработчика: Настройки -> Переводы -> Языки -> Русский -> «Обновить»,
+# галочка «Перезаписать существующие термины»).
+# Имена действий и пунктов меню здесь не живут — это ACTION_TITLES
+# (pmk_theme/models/ir_actions_act_window.py).
+msgid ""
+msgstr ""
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. module: calendar
+#: model_terms:ir.ui.view,arch_db:calendar.view_calendar_event_form
+msgid "EMAIL"
+msgstr "Эл. почта"
+
+#. module: calendar
+#: model_terms:ir.ui.view,arch_db:calendar.view_calendar_event_form
+msgid "Send email"
+msgstr "Отправить письмо"
+
+#. module: calendar
+#. odoo-javascript
+#: code:addons/calendar/static/src/views/fields/attendee_tags_list.xml:0
+msgid "no email"
+msgstr "нет эл. почты"
+
+#. module: calendar
+#: model:ir.model.fields,field_description:calendar.field_calendar_event__activity_ids
+msgid "Activities"
+msgstr "Задачи"
+
+#. module: calendar
+#: model:ir.model,name:calendar.model_mail_activity
+msgid "Activity"
+msgstr "Задача"
+
+#. module: calendar
+#: model:ir.model,name:calendar.model_mail_activity_type
+msgid "Activity Type"
+msgstr "Тип задачи"
+
+#. module: calendar
+#: model:ir.model.fields,field_description:calendar.field_ir_actions_server__activity_calendar_event_id
+#: model:ir.model.fields,field_description:calendar.field_ir_cron__activity_calendar_event_id
+#: model:ir.model.fields,field_description:calendar.field_mail_activity_mixin__activity_calendar_event_id
+#: model:ir.model.fields,field_description:calendar.field_res_partner__activity_calendar_event_id
+#: model:ir.model.fields,field_description:calendar.field_res_users__activity_calendar_event_id
+msgid "Next Activity Calendar Event"
+msgstr "Событие календаря следующей задачи"

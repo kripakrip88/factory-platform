@@ -30,8 +30,18 @@
 Вернуть один пункт — убрать его строку из HIDDEN_BINDINGS и выложить
 pmk_theme; кучку — добавить себя в группу. Таблица —
 docs/disabled-features.md, раздел «шаг 29».
+
+ИМЕНА ПУНКТОВ — СЛОВАМИ ЗАВОДА (разбор UX, шаг 39, 05.10.2026). Там же, после
+ядра, пункт получает имя из ACTION_TITLES (models/ir_actions_act_window.py),
+если оно там есть: «Пометить потерянным» → «Отметить проигрыш» у сделки,
+«Заказ на покупку» → «Заказ поставщику» и «Запрос на коммерческое
+предложение» → «Запрос КП» в «Печати» закупки, «запрос котировок» →
+«запросы КП» в её «Действиях». Окно, которое пункт откроет, называется так
+же: имя действия-окна подменяет _get_action_dict. В базе имена штатные.
 """
 from odoo import api, models
+
+from .ir_actions_act_window import ACTION_TITLES
 
 REMOVED = "pmk_theme.group_pmk_removed"
 STOCK = "pmk_theme.group_pmk_stock"
@@ -70,16 +80,34 @@ class IrActionsActions(models.Model):
     def get_bindings(self, model_name):
         result = super().get_bindings(model_name)
         hidden = self._pmk_hidden_binding_groups()
-        if not hidden:
+        titles = self._pmk_binding_titles()
+        if not hidden and not titles:
             return result
         user = self.env.user
         filtered = {}
         for kind, actions in result.items():
-            kept = [action for action in actions
-                    if action["id"] not in hidden or user.has_group(hidden[action["id"]])]
+            kept = []
+            for action in actions:
+                if action["id"] in hidden and not user.has_group(hidden[action["id"]]):
+                    continue
+                title = titles.get(action["id"])
+                if title:
+                    action = dict(action, name=title)
+                kept.append(action)
             if kept:
                 filtered[kind] = kept
         return filtered
+
+    @api.model
+    def _pmk_binding_titles(self):
+        """id действия → имя словами завода (ACTION_TITLES; только существующие)."""
+        to_id = self.env["ir.model.data"]._xmlid_to_res_id
+        result = {}
+        for xmlid, title in ACTION_TITLES.items():
+            action_id = to_id(xmlid, raise_if_not_found=False)
+            if action_id:
+                result[action_id] = title
+        return result
 
     @api.model
     def _pmk_hidden_binding_groups(self):

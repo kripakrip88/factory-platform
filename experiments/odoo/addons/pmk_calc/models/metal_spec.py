@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
-"""Спецификация металлопроката: изделия и их детали.
+"""Расчёт металлопроката: изделия и их детали.
+
+Слово — «расчёт» (разбор UX, шаг 39, 05.10.2026: одно понятие — одно слово).
+«Спецификация» на заводе — только чертёж клиента; в коде модель по-прежнему
+pmk.metal.spec, поля spec_id — техническое имя не меняется.
 
 Структура трёхуровневая, и это не украшение, а суть задачи. Считают не «сколько
 всего уголка», а «сколько металла на партию изделий»: изделие Б в ста
@@ -26,7 +30,7 @@ MM_IN_M = 1000.0
 
 class MetalSpec(models.Model):
     _name = "pmk.metal.spec"
-    _description = "Спецификация металлопроката"
+    _description = "Расчёт металлопроката"
     _inherit = ["mail.thread"]
     _order = "date desc, id desc"
 
@@ -114,13 +118,13 @@ class MetalSpec(models.Model):
 
 
 class MetalSpecProduct(models.Model):
-    """Изделие спецификации: название, количество и состав."""
+    """Изделие расчёта: название, количество и состав."""
 
     _name = "pmk.metal.spec.product"
-    _description = "Изделие спецификации"
+    _description = "Изделие расчёта"
     _order = "sequence, id"
 
-    spec_id = fields.Many2one("pmk.metal.spec", "Спецификация", required=True, ondelete="cascade")
+    spec_id = fields.Many2one("pmk.metal.spec", "Расчёт", required=True, ondelete="cascade")
     sequence = fields.Integer("№", default=10)
     name = fields.Char("Изделие", required=True)
     qty = fields.Integer("Количество, шт", required=True, default=1)
@@ -239,7 +243,7 @@ class MetalSpecLine(models.Model):
     _order = "sequence, id"
 
     product_id = fields.Many2one("pmk.metal.spec.product", "Изделие", required=True, ondelete="cascade")
-    spec_id = fields.Many2one(related="product_id.spec_id", store=True, string="Спецификация")
+    spec_id = fields.Many2one(related="product_id.spec_id", store=True, string="Расчёт")
 
     def _compute_display_name(self):
         """Человеческое имя детали — для истории документа и ссылок.

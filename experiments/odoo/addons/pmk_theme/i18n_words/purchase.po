@@ -1,0 +1,313 @@
+# Слова завода поверх перевода модуля purchase (разбор UX, шаг 39).
+#
+# Каждая запись — копия записи из purchase/i18n/ru.po ядра: тот же msgid,
+# те же ссылки «#:», другой msgstr. Строки кода («#. odoo-python»,
+# «#. odoo-javascript») процесс Odoo доливает поверх перевода модуля при
+# запуске, строки базы (подписи полей, значения списков, термины видов)
+# ложатся при каждом -u pmk_theme. Механизм — pmk_theme/models/words.py,
+# список «было -> стало» — docs/disabled-features.md, шаг 39.
+#
+# Слово поменять — поправить msgstr здесь и выложить pmk_theme.
+# Слово вернуть штатное — удалить запись и выложить: строки кода вернутся
+# сами, строку базы вернёт загрузка перевода с перезаписью (режим
+# разработчика: Настройки -> Переводы -> Языки -> Русский -> «Обновить»,
+# галочка «Перезаписать существующие термины»).
+# Имена действий и пунктов меню здесь не живут — это ACTION_TITLES
+# (pmk_theme/models/ir_actions_act_window.py).
+msgid ""
+msgstr ""
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. module: purchase
+#: model:ir.model.fields,field_description:purchase.field_purchase_order__user_id
+#: model:ir.model.fields,field_description:purchase.field_purchase_report__user_id
+#: model:ir.model.fields,field_description:purchase.field_res_partner__buyer_id
+#: model:ir.model.fields,field_description:purchase.field_res_users__buyer_id
+#: model_terms:ir.ui.view,arch_db:purchase.purchase_order_view_search
+#: model_terms:ir.ui.view,arch_db:purchase.view_purchase_order_filter
+#: model_terms:ir.ui.view,arch_db:purchase.view_purchase_order_search
+msgid "Buyer"
+msgstr "Снабженец"
+
+#. module: purchase
+#: model:ir.model.fields,field_description:purchase.field_purchase_bill_union__partner_id
+#: model:ir.model.fields,field_description:purchase.field_purchase_order__partner_id
+#: model:ir.model.fields,field_description:purchase.field_purchase_report__partner_id
+#: model_terms:ir.ui.view,arch_db:purchase.product_template_search_view_purchase
+#: model_terms:ir.ui.view,arch_db:purchase.product_view_search_catalog
+#: model_terms:ir.ui.view,arch_db:purchase.purchase_bill_line_match_tree
+#: model_terms:ir.ui.view,arch_db:purchase.purchase_history_tree
+#: model_terms:ir.ui.view,arch_db:purchase.purchase_order_line_search
+#: model_terms:ir.ui.view,arch_db:purchase.purchase_order_line_tree
+#: model_terms:ir.ui.view,arch_db:purchase.purchase_order_view_search
+#: model_terms:ir.ui.view,arch_db:purchase.view_purchase_order_filter
+#: model_terms:ir.ui.view,arch_db:purchase.view_purchase_order_search
+msgid "Vendor"
+msgstr "Поставщик"
+
+#. module: purchase
+#: model:ir.model.fields,help:purchase.field_purchase_order__date_planned
+msgid "Delivery date promised by vendor. This date is used to determine expected arrival of products."
+msgstr "Дата поставки, обещанная поставщиком. По ней считается ожидаемое поступление товара."
+
+#. module: purchase
+#: model:ir.model.fields,help:purchase.field_purchase_order__partner_id
+#: model:ir.model.fields,help:purchase.field_purchase_order_line__partner_id
+msgid "You can find a vendor by its Name, TIN, Email or Internal Reference."
+msgstr "Поставщика можно найти по названию, ИНН, эл. почте или внутреннему коду."
+
+#. module: purchase
+#: model:ir.model,name:purchase.model_purchase_order
+#: model:ir.model.fields,field_description:purchase.field_account_bank_statement_line__purchase_id
+#: model:ir.model.fields,field_description:purchase.field_account_move__purchase_id
+#: model:ir.model.fields,field_description:purchase.field_account_move_line__purchase_order_id
+#: model:ir.model.fields,field_description:purchase.field_bill_to_po_wizard__purchase_order_id
+#: model:ir.model.fields,field_description:purchase.field_purchase_bill_line_match__purchase_order_id
+#: model:ir.model.fields,field_description:purchase.field_purchase_bill_union__purchase_order_id
+#: model:ir.model.fields.selection,name:purchase.selection__account_analytic_applicability__business_domain__purchase_order
+#: model:ir.model.fields.selection,name:purchase.selection__purchase_order__state__purchase
+#: model:ir.model.fields.selection,name:purchase.selection__purchase_report__state__purchase
+#: model_terms:ir.ui.view,arch_db:purchase.purchase_order_form
+#: model_terms:ir.ui.view,arch_db:purchase.purchase_order_graph
+#: model_terms:ir.ui.view,arch_db:purchase.purchase_order_kpis_tree
+#: model_terms:ir.ui.view,arch_db:purchase.purchase_order_pivot
+#: model_terms:ir.ui.view,arch_db:purchase.purchase_order_tree
+#: model_terms:ir.ui.view,arch_db:purchase.purchase_order_view_activity
+#: model_terms:ir.ui.view,arch_db:purchase.purchase_order_view_tree
+msgid "Purchase Order"
+msgstr "Заказ поставщику"
+
+#. module: purchase
+#: model:ir.model,name:purchase.model_purchase_order_line
+#: model:ir.model.fields,field_description:purchase.field_account_move_line__purchase_line_id
+#: model_terms:ir.ui.view,arch_db:purchase.purchase_order_form
+#: model_terms:ir.ui.view,arch_db:purchase.purchase_order_line_form2
+msgid "Purchase Order Line"
+msgstr "Позиция заказа поставщику"
+
+#. module: purchase
+#. odoo-python
+#: code:addons/purchase/models/analytic_account.py:0
+#: model_terms:ir.ui.view,arch_db:purchase.account_analytic_account_view_form_purchase
+#: model_terms:ir.ui.view,arch_db:purchase.view_purchase_bill_union_filter
+#: model_terms:ir.ui.view,arch_db:purchase.view_purchase_order_filter
+#: model_terms:ir.ui.view,arch_db:purchase.view_purchase_order_search
+msgid "Purchase Orders"
+msgstr "Подтверждённые заказы"
+
+#. module: purchase
+#. odoo-python
+#: code:addons/purchase/models/res_partner.py:0
+#: model_terms:ir.ui.view,arch_db:purchase.res_partner_view_purchase_buttons
+#: model_terms:ir.ui.view,arch_db:purchase.view_move_form_inherit_purchase
+msgid "Purchases"
+msgstr "Закупки"
+
+#. module: purchase
+#: model_terms:ir.ui.view,arch_db:purchase.purchase_order_line_search
+#: model_terms:ir.ui.view,arch_db:purchase.purchase_order_view_search
+#: model_terms:ir.ui.view,arch_db:purchase.view_purchase_order_filter
+msgid "Search Purchase Order"
+msgstr "Поиск заказа поставщику"
+
+#. module: purchase
+#: model:ir.model.fields,field_description:purchase.field_res_partner__purchase_warn_msg
+#: model:ir.model.fields,field_description:purchase.field_res_users__purchase_warn_msg
+msgid "Message for Purchase Order"
+msgstr "Сообщение для заказа поставщику"
+
+#. module: purchase
+#. odoo-python
+#: code:addons/purchase/models/product.py:0
+msgid "Purchase History for %s"
+msgstr "История закупок: %s"
+
+#. module: purchase
+#: model:res.groups.privilege,name:purchase.res_groups_privilege_purchase
+#: model_terms:ir.ui.view,arch_db:purchase.product_template_search_view_purchase
+#: model_terms:ir.ui.view,arch_db:purchase.res_config_settings_view_form_purchase
+msgid "Purchase"
+msgstr "Закупки"
+
+#. module: purchase
+#: model_terms:ir.ui.view,arch_db:purchase.view_product_supplier_inherit
+msgid "Purchase Description"
+msgstr "Описание для закупки"
+
+#. module: purchase
+#: model:ir.model.fields.selection,name:purchase.selection__purchase_order__state__draft
+msgid "RFQ"
+msgstr "Запрос КП"
+
+#. module: purchase
+#. odoo-javascript
+#: code:addons/purchase/static/src/views/purchase_dashboard.xml:0
+#: model:ir.model.fields.selection,name:purchase.selection__purchase_order__state__sent
+#: model:ir.model.fields.selection,name:purchase.selection__purchase_report__state__sent
+msgid "RFQ Sent"
+msgstr "Запрос КП отправлен"
+
+#. module: purchase
+#: model_terms:ir.ui.view,arch_db:purchase.purchase_order_kpis_tree
+#: model_terms:ir.ui.view,arch_db:purchase.purchase_order_view_tree
+msgid "Are you sure you want to cancel the selected RFQs/Orders?"
+msgstr "Отменить выбранные запросы КП и заказы?"
+
+#. module: purchase
+#. odoo-python
+#: code:addons/purchase/models/purchase_order.py:0
+msgid "Merged RFQs"
+msgstr "Объединённые запросы КП"
+
+#. module: purchase
+#. odoo-python
+#: code:addons/purchase/models/purchase_order.py:0
+msgid "RFQ merged with %(oldest_rfq_name)s and %(cancelled_rfq)s"
+msgstr "Запрос КП объединён с %(oldest_rfq_name)s и %(cancelled_rfq)s"
+
+#. module: purchase
+#. odoo-python
+#: code:addons/purchase/models/purchase_order.py:0
+msgid "RFQ merged with %s"
+msgstr "Запрос КП объединён с %s"
+
+#. module: purchase
+#. odoo-python
+#: code:addons/purchase/models/purchase_order.py:0
+msgid "Please select at least two purchase orders with state RFQ and RFQ sent to merge."
+msgstr "Для объединения выберите хотя бы два заказа в статусе «Запрос КП» или «Запрос КП отправлен»."
+
+#. module: purchase
+#: model:ir.actions.report,print_report_name:purchase.report_purchase_quotation
+msgid "'Request for Quotation - %s' % (object.name)"
+msgstr "'Запрос КП - %s' % (object.name)"
+
+#. module: purchase
+#: model:ir.actions.report,print_report_name:purchase.action_report_purchase_order
+msgid ""
+"\n"
+"                (object.state in ('draft', 'sent') and 'Request for Quotation - %s' % (object.name) or\n"
+"                'Purchase Order - %s' % (object.name))"
+msgstr ""
+"\n"
+"                (object.state in ('draft', 'sent') and 'Запрос КП - %s' % (object.name) or\n"
+"                'Заказ поставщику - %s' % (object.name))"
+
+#. module: purchase
+#: model_terms:ir.ui.view,arch_db:purchase.purchase_order_view_search
+msgid "Activities of"
+msgstr "Исполнитель задачи"
+
+#. module: purchase
+#: model_terms:ir.ui.view,arch_db:purchase.purchase_order_view_search
+msgid "Activity type"
+msgstr "Тип задачи"
+
+#. module: purchase
+#: model_terms:ir.ui.view,arch_db:purchase.purchase_order_tree
+msgid "Next Activity"
+msgstr "Следующая задача"
+
+#. module: purchase
+#: model:ir.model.fields,field_description:purchase.field_purchase_order__activity_ids
+msgid "Activities"
+msgstr "Задачи"
+
+#. module: purchase
+#: model:ir.model.fields,field_description:purchase.field_purchase_order__activity_state
+msgid "Activity State"
+msgstr "Состояние задачи"
+
+#. module: purchase
+#: model:ir.model.fields,field_description:purchase.field_purchase_order__activity_type_icon
+msgid "Activity Type Icon"
+msgstr "Значок типа задачи"
+
+#. module: purchase
+#: model:ir.model.fields,field_description:purchase.field_purchase_order__my_activity_date_deadline
+msgid "My Activity Deadline"
+msgstr "Срок моей задачи"
+
+#. module: purchase
+#: model:ir.model.fields,field_description:purchase.field_purchase_order__activity_calendar_event_id
+msgid "Next Activity Calendar Event"
+msgstr "Событие календаря следующей задачи"
+
+#. module: purchase
+#: model:ir.model.fields,field_description:purchase.field_purchase_order__activity_date_deadline
+msgid "Next Activity Deadline"
+msgstr "Срок следующей задачи"
+
+#. module: purchase
+#: model:ir.model.fields,field_description:purchase.field_purchase_order__activity_summary
+msgid "Next Activity Summary"
+msgstr "Описание следующей задачи"
+
+#. module: purchase
+#: model:ir.model.fields,field_description:purchase.field_purchase_order__activity_type_id
+msgid "Next Activity Type"
+msgstr "Тип следующей задачи"
+
+#. module: purchase
+#: model:ir.model.fields,help:purchase.field_purchase_order__activity_state
+msgid ""
+"Status based on activities\n"
+"Overdue: Due date is already passed\n"
+"Today: Activity date is today\n"
+"Planned: Future activities."
+msgstr ""
+"Статус по задачам\n"
+"Просроченные: срок уже прошёл\n"
+"Сегодня: срок сегодня\n"
+"Запланированные: будущие задачи."
+
+#. module: purchase
+#: model_terms:ir.ui.view,arch_db:purchase.purchase_order_view_search
+#: model_terms:ir.ui.view,arch_db:purchase.view_purchase_order_filter
+msgid "Future Activities"
+msgstr "Будущие задачи"
+
+#. module: purchase
+#: model_terms:ir.ui.view,arch_db:purchase.purchase_order_view_search
+#: model_terms:ir.ui.view,arch_db:purchase.view_purchase_order_filter
+msgid "Late Activities"
+msgstr "Просроченные задачи"
+
+#. module: purchase
+#: model_terms:ir.ui.view,arch_db:purchase.purchase_order_view_search
+#: model_terms:ir.ui.view,arch_db:purchase.view_purchase_order_filter
+msgid "My Activities"
+msgstr "Мои задачи"
+
+#. module: purchase
+#: model_terms:ir.ui.view,arch_db:purchase.purchase_order_view_search
+#: model_terms:ir.ui.view,arch_db:purchase.view_purchase_order_filter
+msgid "Show all records whose next activity date is past"
+msgstr "Показать записи с просроченной следующей задачей"
+
+#. module: purchase
+#: model_terms:ir.ui.view,arch_db:purchase.purchase_order_view_search
+#: model_terms:ir.ui.view,arch_db:purchase.view_purchase_order_filter
+msgid "Today Activities"
+msgstr "Задачи на сегодня"
+
+#. module: purchase
+#: model:ir.model.fields.selection,name:purchase.selection__res_company__po_lock__lock
+msgid "Confirmed purchase orders are not editable"
+msgstr "Подтверждённые заказы поставщикам не редактируются"
+
+#. module: purchase
+#: model_terms:ir.ui.view,arch_db:purchase.purchase_order_form
+msgid ""
+"<span class=\"o_form_label\" invisible=\"state not in ('draft', 'sent')"
+"\">Request for Quotation </span>\n"
+"                        <span class=\"o_form_label\" invisible=\"state in "
+"('draft', 'sent')\">Purchase Order </span>"
+msgstr ""
+"<span class=\"o_form_label\" invisible=\"state not in ('draft', 'sent')\">"
+"Запрос КП </span>\n"
+"                        <span class=\"o_form_label\" invisible=\"state in "
+"('draft', 'sent')\">Заказ поставщику </span>"

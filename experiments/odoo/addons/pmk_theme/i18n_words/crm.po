@@ -1,0 +1,400 @@
+# Слова завода поверх перевода модуля crm (разбор UX, шаг 39).
+#
+# Каждая запись — копия записи из crm/i18n/ru.po ядра: тот же msgid,
+# те же ссылки «#:», другой msgstr. Строки кода («#. odoo-python»,
+# «#. odoo-javascript») процесс Odoo доливает поверх перевода модуля при
+# запуске, строки базы (подписи полей, значения списков, термины видов)
+# ложатся при каждом -u pmk_theme. Механизм — pmk_theme/models/words.py,
+# список «было -> стало» — docs/disabled-features.md, шаг 39.
+#
+# Слово поменять — поправить msgstr здесь и выложить pmk_theme.
+# Слово вернуть штатное — удалить запись и выложить: строки кода вернутся
+# сами, строку базы вернёт загрузка перевода с перезаписью (режим
+# разработчика: Настройки -> Переводы -> Языки -> Русский -> «Обновить»,
+# галочка «Перезаписать существующие термины»).
+# Имена действий и пунктов меню здесь не живут — это ACTION_TITLES
+# (pmk_theme/models/ir_actions_act_window.py).
+msgid ""
+msgstr ""
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. module: crm
+#: model:ir.model.fields,field_description:crm.field_calendar_event__opportunity_id
+#: model:ir.model.fields,field_description:crm.field_crm_activity_report__lead_id
+#: model:ir.model.fields,field_description:crm.field_crm_lead__name
+#: model:ir.model.fields.selection,name:crm.selection__crm_activity_report__lead_type__opportunity
+#: model:ir.model.fields.selection,name:crm.selection__crm_lead__type__opportunity
+#: model_terms:ir.ui.view,arch_db:crm.crm_activity_report_view_search
+#: model_terms:ir.ui.view,arch_db:crm.crm_case_tree_view_oppor
+#: model_terms:ir.ui.view,arch_db:crm.crm_team_view_kanban_dashboard
+#: model_terms:ir.ui.view,arch_db:crm.view_crm_case_opportunities_filter
+msgid "Opportunity"
+msgstr "Сделка"
+
+#. module: crm
+#. odoo-python
+#: code:addons/crm/models/res_partner.py:0
+#: model:ir.model.fields,field_description:crm.field_crm_lead2opportunity_partner__duplicated_lead_ids
+#: model:ir.model.fields,field_description:crm.field_crm_lead2opportunity_partner_mass__duplicated_lead_ids
+#: model:ir.model.fields,field_description:crm.field_res_partner__opportunity_ids
+#: model:ir.model.fields,field_description:crm.field_res_users__opportunity_ids
+#: model_terms:ir.ui.view,arch_db:crm.crm_activity_report_view_search
+#: model_terms:ir.ui.view,arch_db:crm.crm_case_tree_view_oppor
+#: model_terms:ir.ui.view,arch_db:crm.crm_lead_view_graph
+#: model_terms:ir.ui.view,arch_db:crm.crm_opportunity_report_view_search
+#: model_terms:ir.ui.view,arch_db:crm.crm_team_view_kanban_dashboard
+#: model_terms:ir.ui.view,arch_db:crm.utm_campaign_view_kanban
+#: model_terms:ir.ui.view,arch_db:crm.view_crm_lead2opportunity_partner
+#: model_terms:ir.ui.view,arch_db:crm.view_partners_form_crm1
+msgid "Opportunities"
+msgstr "Сделки"
+
+#. module: crm
+#. odoo-python
+#: code:addons/crm/models/crm_lead.py:0
+msgid "%s's opportunity"
+msgstr "Сделка %s"
+
+#. module: crm
+#: model_terms:ir.ui.view,arch_db:crm.view_crm_case_opportunities_filter
+msgid "Open Opportunities"
+msgstr "Сделки в работе"
+
+#. module: crm
+#. odoo-python
+#: code:addons/crm/models/crm_team.py:0
+#: model:ir.model,website_form_label:crm.model_crm_lead
+msgid "Create an Opportunity"
+msgstr "Создать сделку"
+
+#. module: crm
+#: model_terms:ir.ui.view,arch_db:crm.view_crm_lead2opportunity_partner
+msgid "Create Opportunity"
+msgstr "Создать сделку"
+
+#. module: crm
+#. odoo-python
+#: code:addons/crm/models/crm_lead.py:0
+#: model_terms:ir.ui.view,arch_db:crm.crm_action_helper
+msgid "Create an opportunity to start playing with your pipeline."
+msgstr "Создайте сделку — с неё начинается воронка."
+
+#. module: crm
+#: model_terms:ir.ui.view,arch_db:crm.view_crm_lead2opportunity_partner
+msgid "Assign this opportunity to"
+msgstr "Назначить сделку"
+
+#. module: crm
+#: model_terms:ir.ui.view,arch_db:crm.view_crm_lead2opportunity_partner_mass
+msgid "Assign these opportunities to"
+msgstr "Назначить сделки"
+
+#. module: crm
+#: model_terms:ir.ui.view,arch_db:crm.merge_opportunity_form
+msgid "Assign opportunities to"
+msgstr "Назначить сделки"
+
+#. module: crm
+#: model_terms:ir.ui.view,arch_db:crm.merge_opportunity_form
+msgid "Merge Leads/Opportunities"
+msgstr "Объединить лиды и сделки"
+
+#. module: crm
+#: model:ir.model,name:crm.model_crm_merge_opportunity
+msgid "Merge Opportunities"
+msgstr "Объединение сделок"
+
+#. module: crm
+#: model:ir.model.fields.selection,name:crm.selection__crm_lead2opportunity_partner__name__merge
+#: model:ir.model.fields.selection,name:crm.selection__crm_lead2opportunity_partner_mass__name__merge
+msgid "Merge with existing opportunities"
+msgstr "Объединить с существующими сделками"
+
+#. module: crm
+#: model:ir.model.fields,help:crm.field_crm_lead2opportunity_partner_mass__deduplicate
+msgid "Merge with existing leads/opportunities of each partner"
+msgstr "Объединить с лидами и сделками того же клиента"
+
+#. module: crm
+#: model:ir.model.fields,field_description:crm.field_crm_merge_opportunity__opportunity_ids
+msgid "Leads/Opportunities"
+msgstr "Лиды и сделки"
+
+#. module: crm
+#: model_terms:ir.ui.view,arch_db:crm.crm_lead_view_activity
+msgid "Leads or Opportunities"
+msgstr "Лиды и сделки"
+
+#. module: crm
+#. odoo-python
+#: code:addons/crm/models/crm_lead.py:0
+msgid "Lead or Opportunity"
+msgstr "Сделка или лид"
+
+#. module: crm
+#: model:ir.model.fields,field_description:crm.field_res_partner__opportunity_count
+#: model:ir.model.fields,field_description:crm.field_res_users__opportunity_count
+msgid "Opportunity Count"
+msgstr "Кол-во сделок"
+
+#. module: crm
+#: model_terms:ir.ui.view,arch_db:crm.quick_create_opportunity_form
+msgid "Opportunity's Name"
+msgstr "Название сделки"
+
+#. module: crm
+#: model_terms:ir.ui.view,arch_db:crm.quick_create_opportunity_form
+msgid "<i class=\"fa fa-briefcase\" title=\"Opportunity Name\"/>"
+msgstr "<i class=\"fa fa-briefcase\" title=\"Название сделки\"/>"
+
+#. module: crm
+#: model_terms:ir.ui.view,arch_db:crm.view_crm_case_opportunities_filter
+msgid "Overdue Opportunities"
+msgstr "Просроченные сделки"
+
+#. module: crm
+#: model_terms:ir.ui.view,arch_db:crm.view_crm_case_my_activities_filter
+#: model_terms:ir.ui.view,arch_db:crm.view_crm_case_opportunities_filter
+msgid "Opportunities that are assigned to me"
+msgstr "Сделки, назначенные мне"
+
+#. module: crm
+#: model_terms:ir.ui.view,arch_db:crm.crm_opportunity_report_view_search
+msgid "Opportunities Analysis"
+msgstr "Анализ сделок"
+
+#. module: crm
+#: model_terms:ir.ui.view,arch_db:crm.crm_lead_view_graph_forecast
+msgid "Opportunities Forecast"
+msgstr "Прогноз сделок"
+
+#. module: crm
+#: model_terms:ir.ui.view,arch_db:crm.crm_lost_reason_view_search
+#: model_terms:ir.ui.view,arch_db:crm.view_crm_case_opportunities_filter
+msgid "Search Opportunities"
+msgstr "Поиск сделок"
+
+#. module: crm
+#: model_terms:ir.ui.view,arch_db:crm.crm_opportunity_report_view_search
+msgid "Show only opportunities"
+msgstr "Показать только сделки"
+
+#. module: crm
+#: model_terms:ir.ui.view,arch_db:crm.view_crm_case_leads_filter
+#: model_terms:ir.ui.view,arch_db:crm.view_crm_case_my_activities_filter
+#: model_terms:ir.ui.view,arch_db:crm.view_crm_case_opportunities_filter
+msgid "Show all opportunities for which the next action date is before today"
+msgstr "Показать сделки с просроченной задачей"
+
+#. module: crm
+#: model_terms:ir.ui.view,arch_db:crm.crm_case_kanban_view_leads
+msgid "This bar allows to filter the opportunities based on scheduled activities."
+msgstr "Полоса фильтрует сделки по запланированным задачам."
+
+#. module: crm
+#: model:ir.model.fields,help:crm.field_crm_lead__partner_name
+msgid "The name of the future partner company that will be created while converting the lead into opportunity"
+msgstr "Название компании клиента, которая будет создана при переводе лида в сделку"
+
+#. module: crm
+#: model:ir.model.fields,help:crm.field_crm_lead__partner_id
+msgid "Linked partner (optional). Usually created when converting the lead. You can find a partner by its Name, TIN, Email or Internal Reference."
+msgstr "Связанный клиент (необязательно). Обычно заводится при переводе лида в сделку. Найти клиента можно по названию, ИНН, эл. почте или внутреннему коду."
+
+#. module: crm
+#: model:ir.model.fields,help:crm.field_crm_activity_report__tag_ids
+#: model:ir.model.fields,help:crm.field_crm_lead__tag_ids
+msgid "Classify and analyze your lead/opportunity categories like: Training, Service"
+msgstr "Метки лидов и сделок для отбора: например, Генподрядчик, Постоянный, Госзаказ"
+
+#. module: crm
+#: model:ir.model.fields,help:crm.field_crm_lead2opportunity_partner__force_assignment
+#: model:ir.model.fields,help:crm.field_crm_lead2opportunity_partner_mass__force_assignment
+msgid "If checked, forces salesman to be updated on updated opportunities even if already set."
+msgstr "Если отмечено, менеджер сделок будет заменён, даже если уже назначен."
+
+#. module: crm
+#. odoo-python
+#: code:addons/crm/wizard/crm_lead_to_opportunity.py:0
+msgid "Closed/Dead leads cannot be converted into opportunities."
+msgstr "Закрытые лиды нельзя перевести в сделки."
+
+#. module: crm
+#. odoo-python
+#: code:addons/crm/models/crm_lead.py:0
+msgid "Select at least two Leads/Opportunities from the list to merge them."
+msgstr "Выберите в списке хотя бы два лида или сделки, чтобы объединить их."
+
+#. module: crm
+#. odoo-python
+#: code:addons/crm/models/crm_lead.py:0
+msgid "To prevent data loss, Leads and Opportunities can only be merged by groups of %(max_length)s."
+msgstr "Чтобы не потерять данные, лиды и сделки объединяются группами не больше %(max_length)s."
+
+#. module: crm
+#. odoo-python
+#: code:addons/crm/models/crm_lead.py:0
+msgid "Import Template for Leads & Opportunities"
+msgstr "Шаблон импорта лидов и сделок"
+
+#. module: crm
+#: model_terms:ir.ui.view,arch_db:crm.crm_lead_merge_summary
+msgid "<span>Merged the Lead/Opportunity</span>"
+msgstr "<span>Объединено с лидом или сделкой</span>"
+
+#. module: crm
+#. odoo-javascript
+#: code:addons/crm/static/src/views/crm_form/crm_pls_tooltip_button.xml:0
+msgid "Close opportunities to get insights."
+msgstr "Закрывайте сделки, чтобы видеть аналитику."
+
+#. module: crm
+#. odoo-python
+#: code:addons/crm/models/crm_team.py:0
+msgid "Lead/Opportunities automatic assignment is limited to managers or administrators"
+msgstr "Автоматическое распределение лидов и сделок доступно только руководителям и администраторам"
+
+#. module: crm
+#: model:ir.model.fields.selection,name:crm.selection__crm_activity_report__won_status__lost
+#: model:ir.model.fields.selection,name:crm.selection__crm_lead__won_status__lost
+#: model_terms:ir.ui.view,arch_db:crm.crm_activity_report_view_search
+#: model_terms:ir.ui.view,arch_db:crm.crm_case_kanban_view_leads
+#: model_terms:ir.ui.view,arch_db:crm.crm_lead_view_form
+#: model_terms:ir.ui.view,arch_db:crm.crm_opportunity_report_view_search
+#: model_terms:ir.ui.view,arch_db:crm.view_crm_case_leads_filter
+#: model_terms:ir.ui.view,arch_db:crm.view_crm_case_opportunities_filter
+msgid "Lost"
+msgstr "Проиграно"
+
+#. module: crm
+#: model:ir.model.fields,field_description:crm.field_crm_lead__lost_reason_id
+#: model:ir.model.fields,field_description:crm.field_crm_lead_lost__lost_reason_id
+#: model_terms:ir.ui.view,arch_db:crm.crm_lost_reason_view_form
+#: model_terms:ir.ui.view,arch_db:crm.crm_opportunity_report_view_search
+#: model_terms:ir.ui.view,arch_db:crm.view_crm_case_opportunities_filter
+msgid "Lost Reason"
+msgstr "Причина проигрыша"
+
+#. module: crm
+#: model:ir.model.fields,field_description:crm.field_crm_lead__won_status
+msgid "Won/Lost"
+msgstr "Выиграно/проиграно"
+
+#. module: crm
+#: model_terms:ir.ui.view,arch_db:crm.crm_lead_lost_view_form
+msgid "Lost Lead"
+msgstr "Проигрыш"
+
+#. module: crm
+#: model_terms:ir.ui.view,arch_db:crm.crm_case_tree_view_leads
+#: model_terms:ir.ui.view,arch_db:crm.crm_case_tree_view_oppor
+msgid "Mark Lost"
+msgstr "Отметить проигрыш"
+
+#. module: crm
+#: model_terms:ir.ui.view,arch_db:crm.crm_lead_lost_view_form
+msgid "Mark as Lost"
+msgstr "Отметить проигрыш"
+
+#. module: crm
+#: model_terms:ir.ui.view,arch_db:crm.crm_lead_view_form
+msgid "Mark as lost"
+msgstr "Отметить проигрыш"
+
+#. module: crm
+#: model_terms:ir.ui.view,arch_db:crm.crm_lead_lost_view_form
+msgid "Select a Lost Reason..."
+msgstr "Выберите причину проигрыша..."
+
+#. module: crm
+#: model:ir.model,name:crm.model_crm_lead_lost
+msgid "Get Lost Reason"
+msgstr "Указать причину проигрыша"
+
+#. module: crm
+#: model:ir.model,name:crm.model_crm_lost_reason
+msgid "Opp. Lost Reason"
+msgstr "Причина проигрыша"
+
+#. module: crm
+#. odoo-python
+#: code:addons/crm/wizard/crm_lead_lost.py:0
+msgid "Lost Comment"
+msgstr "Комментарий к проигрышу"
+
+#. module: crm
+#. odoo-python
+#: code:addons/crm/models/crm_lead.py:0
+msgid "A lead in a Won stage cannot be lost. Move it to another stage first."
+msgstr "Сделку на стадии «Выиграно» нельзя отметить проигранной: сначала переведите её на другую стадию."
+
+#. module: crm
+#. odoo-python
+#: code:addons/crm/models/crm_lead.py:0
+msgid "The lead %s cannot be won and lost at the same time."
+msgstr "Сделка «%s» не может быть одновременно выигранной и проигранной."
+
+#. module: crm
+#: model:ir.model.fields.selection,name:crm.selection__crm_activity_report__won_status__pending
+#: model:ir.model.fields.selection,name:crm.selection__crm_lead__won_status__pending
+msgid "Pending"
+msgstr "В работе"
+
+#. module: crm
+#: model_terms:ir.ui.view,arch_db:crm.view_crm_case_opportunities_filter
+msgid "Ongoing"
+msgstr "В работе"
+
+#. module: crm
+#: model:ir.model.fields,field_description:crm.field_crm_activity_report__user_id
+#: model:ir.model.fields,field_description:crm.field_crm_lead2opportunity_partner__user_id
+#: model:ir.model.fields,field_description:crm.field_crm_lead2opportunity_partner_mass__user_id
+#: model:ir.model.fields,field_description:crm.field_crm_lead__user_id
+#: model:ir.model.fields,field_description:crm.field_crm_merge_opportunity__user_id
+#: model_terms:ir.ui.view,arch_db:crm.crm_activity_report_view_search
+#: model_terms:ir.ui.view,arch_db:crm.crm_opportunity_report_view_search
+#: model_terms:ir.ui.view,arch_db:crm.view_crm_case_leads_filter
+#: model_terms:ir.ui.view,arch_db:crm.view_crm_case_opportunities_filter
+msgid "Salesperson"
+msgstr "Менеджер"
+
+#. module: crm
+#: model:ir.model.fields,field_description:crm.field_crm_lead2opportunity_partner_mass__user_ids
+msgid "Salespersons"
+msgstr "Менеджеры"
+
+#. module: crm
+#: model_terms:ir.ui.view,arch_db:crm.view_crm_case_opportunities_filter
+msgid "No salesperson"
+msgstr "Без менеджера"
+
+#. module: crm
+#: model_terms:ir.ui.view,arch_db:crm.view_crm_case_leads_filter
+msgid "Activities of"
+msgstr "Исполнитель задачи"
+
+#. module: crm
+#: model_terms:ir.ui.view,arch_db:crm.view_crm_case_leads_filter
+msgid "Activity type"
+msgstr "Тип задачи"
+
+#. module: crm
+#: model:ir.model.fields,help:crm.field_crm_lead__activity_state
+msgid ""
+"Status based on activities\n"
+"Overdue: Due date is already passed\n"
+"Today: Activity date is today\n"
+"Planned: Future activities."
+msgstr ""
+"Статус по задачам\n"
+"Просроченные: срок уже прошёл\n"
+"Сегодня: срок сегодня\n"
+"Запланированные: будущие задачи."
+
+#. module: crm
+#: model:ir.model,name:crm.model_crm_lead
+msgid "Lead"
+msgstr "Сделка или лид"

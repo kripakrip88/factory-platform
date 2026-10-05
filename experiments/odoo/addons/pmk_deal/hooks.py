@@ -13,7 +13,7 @@
 
 from markupsafe import Markup
 
-from odoo.tools import html2plaintext
+from odoo.tools import SQL, html2plaintext
 from odoo.tools.sql import column_exists
 
 # Сколько дней сделка может стоять в стадии, пока не «зависла».
@@ -31,6 +31,20 @@ FACTORY_LOST_REASON = "pmk_deal.lost_reason_price"
 
 ADMIN_OLD_NAME = "Administrator"
 ADMIN_NEW_NAME = "Антон Карнеев"
+
+# Значения в старой истории сделки — словами завода (разбор UX, шаг 39).
+# Поле → {записанное значение: наше}. Подписи этих списков с шага 39 —
+# «В работе», «Проиграно», «Сделка» (pmk_theme/i18n_words/crm.po), а
+# отслеживание хранит подпись текстом на момент изменения: скрипты без языка
+# писали «Pending → Lost», люди — «Ожидает → Выиграно», «Лид → Возможность».
+TRACKING_WORDS = {
+    "won_status": {
+        "Pending": "В работе", "Ожидает": "В работе",
+        "Lost": "Проиграно", "Потерян": "Проиграно",
+        "Won": "Выиграно",
+    },
+    "type": {"Opportunity": "Сделка", "Возможность": "Сделка", "Lead": "Лид"},
+}
 
 
 def post_init_hook(env):
@@ -145,3 +159,27 @@ def rename_admin(env):
         user.partner_id.name = ADMIN_NEW_NAME
     if html2plaintext(user.signature or "").strip() == ADMIN_OLD_NAME:
         user.signature = Markup("<div>%s</div>") % ADMIN_NEW_NAME
+
+
+def tracking_words_ru(env):
+    """Старые значения «Выиграно/проиграно» и «Тип» в истории сделок — словами
+    завода (шаг 39). Только точное совпадение со штатным словом (TRACKING_WORDS):
+    повтор ничего не меняет, чужое значение не трогается. SQL — это история.
+    Возвращает число исправленных значений.
+    """
+    cr = env.cr
+    changed = 0
+    for fname, words in TRACKING_WORDS.items():
+        for column in ("old_value_char", "new_value_char"):
+            for old, new in words.items():
+                cr.execute(SQL(
+                    "UPDATE mail_tracking_value t SET %(col)s = %(new)s"
+                    "  FROM ir_model_fields f"
+                    " WHERE f.id = t.field_id AND f.model = 'crm.lead' AND f.name = %(fname)s"
+                    "   AND t.%(col)s = %(old)s",
+                    col=SQL.identifier(column), new=new, fname=fname, old=old,
+                ))
+                changed += cr.rowcount
+    if changed:
+        env["mail.tracking.value"].invalidate_model(["old_value_char", "new_value_char"])
+    return changed

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Один фильтр «В работе» в поиске сделок — разбор UX, шаг 39 (05.10.2026),
+    «Одно понятие — одно слово».
+
+    В «Фильтрах» воронки стояли два пункта одного понятия: «Сделки в работе»
+    (open_opportunities: вероятность < 100, тип «сделка», не в архиве) и
+    «В работе» (filter_won_status_pending: не выиграна и не проиграна, не в
+    архиве). В воронке и в «Аналитике воронки» (домен — только сделки) они
+    дают один и тот же набор; расходятся только на сделке с вручную
+    поставленной вероятностью 100 % не на стадии «Выиграно» — на боевой
+    базе таких 0 (05.10.2026). «Сделки в работе» стоит в одной группе с
+    «Моими сделками» и «Без менеджера» — нажатые вместе они складываются
+    через «ИЛИ», и «Мои сделки» + «Сделки в работе» показывали чужие сделки.
+
+    Остаётся «В работе» рядом с «Выиграно / Зависшие / Проиграно»: его же
+    включают кнопка «Сделки» контрагента (pmk_partner, partner_card.py) и
+    окно перевода лида в сделку (search_default_filter_won_status_pending).
+    «Сделки в работе» не ставит по умолчанию ни одно действие, ни один
+    сохранённый фильтр (проверено по боевой базе и коду ядра, RuOdoo и
+    нашим модулям 05.10.2026).
+
+    Атрибутом invisible, а не удалением: узел на месте, перевод «Сделки в
+    работе» в файле слов темы остаётся. active в XML — грабли Odoo 19
+    (выключенный вид не проверяется). В КП ничего не печатается.
+
+    ВЕРНУТЬ: удалить этот файл из __manifest__.py (или запись целиком) и
+    выложить pmk_deal. Таблица — docs/disabled-features.md, раздел «шаг 39».
+  -->
+  <record id="view_crm_opportunities_search_step39" model="ir.ui.view">
+    <field name="name">crm.lead.search.opportunity.pmk.step39</field>
+    <field name="model">crm.lead</field>
+    <field name="inherit_id" ref="crm.view_crm_case_opportunities_filter"/>
+    <field name="priority">99</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//filter[@name='open_opportunities']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+    </field>
+  </record>
+</odoo>

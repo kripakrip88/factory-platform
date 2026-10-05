@@ -467,7 +467,7 @@ class PmkFlowBuilder(models.AbstractModel):
             linked.append(self._referrers('sale.order', 'opportunity_id', record.id, hidden))
         elif model == 'pmk.metal.spec':
             linked.append(self._optional_rel(record, 'opportunity_id', hidden))
-            # Раскрой сортамента ссылается на расчёт полем «Из спецификации».
+            # Раскрой сортамента ссылается на расчёт полем «Расчёт» (spec_id).
             linked.append(self._referrers('pmk.cut.plan', 'spec_id', record.id, hidden))
             # Задание лазеру ссылается на расчёт с 27.09.2026 (pmk_laser, spec_id).
             linked.append(self._referrers('pmk.laser.job', 'spec_id', record.id, hidden))

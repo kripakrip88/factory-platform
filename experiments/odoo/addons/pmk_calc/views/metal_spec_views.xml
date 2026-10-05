@@ -5,7 +5,7 @@
     <field name="name">pmk.metal.spec.form</field>
     <field name="model">pmk.metal.spec</field>
     <field name="arch" type="xml">
-      <form string="Спецификация" class="pmk-spec-form pmk-doc-form" js_class="pmk_spec_form">
+      <form string="Расчёт" class="pmk-spec-form pmk-doc-form" js_class="pmk_spec_form">
         <!--
           class="pmk-spec-form" — крючок для стилей формы расчёта (разбор UX,
           шаг 32: одна залитая кнопка на экран, см. scss/dobor_builder.scss).
@@ -502,7 +502,7 @@
     <field name="name">pmk.metal.spec.list</field>
     <field name="model">pmk.metal.spec</field>
     <field name="arch" type="xml">
-      <list string="Спецификации">
+      <list string="Расчёты">
         <!-- Номер расчёта не обрезается никогда (разбор UX, шаг 2): без
              ширины Odoo отдавал место клиенту и сделке, и «СМ-00024»
              превращался в «СМ-00…» (29.09.2026). -->
@@ -532,7 +532,7 @@
     <field name="model">pmk.metal.spec</field>
     <field name="arch" type="xml">
       <search>
-        <!-- Номер, клиент и содержимое: спецификацию ищут по всем трём —
+        <!-- Номер, клиент и содержимое: расчёт ищут по всем трём —
              по номеру из переписки, по клиенту и «где мы считали уголок». -->
         <field name="name" string="Номер"/>
         <field name="partner_id" string="Клиент"/>
@@ -563,7 +563,7 @@
     <field name="view_mode">list,form</field>
     <field name="help" type="html">
       <p class="o_view_nocontent_smiling_face">Создайте первый расчёт</p>
-      <p>Спецификация состоит из изделий, у каждого своё количество.
+      <p>Расчёт состоит из изделий, у каждого своё количество.
          Вес детали умножается и на количество в изделии, и на количество изделий.</p>
     </field>
   </record>

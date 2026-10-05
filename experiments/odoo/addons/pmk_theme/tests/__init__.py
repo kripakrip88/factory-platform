@@ -22,3 +22,10 @@ from . import test_step29_hidden
 #        --stop-after-init --http-port 8099
 from . import test_step38_menus
 from . import test_step40_dark
+# Одно понятие — одно слово (шаг 39): файлы слов, строки кода, DATA_WORDS,
+# крючок загрузки переводов, заголовки окон; экраны — со штатным русским
+# переводом модулей (TestStep39Screens грузит его сам, это дольше):
+#   odoo -d pmk39_test -i pmk_theme,pmk_purchase,pmk_deal --test-enable \
+#        --test-tags /pmk_theme:TestStep39Words,/pmk_theme:TestStep39Screens \
+#        --stop-after-init --http-port 8099
+from . import test_step39_words
