@@ -21,3 +21,4 @@ from . import test_step29_hidden
 #        --test-enable --test-tags /pmk_theme,/pmk_purchase,/pmk_mail_ui \
 #        --stop-after-init --http-port 8099
 from . import test_step38_menus
+from . import test_step40_dark

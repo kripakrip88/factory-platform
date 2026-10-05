@@ -436,6 +436,11 @@ class PmkCutPlan(models.Model):
         if not res["patterns"]:
             return False
 
+        # Цвет отрезка повторён словом (правило разбора UX; доводка шага 40):
+        # в подсказке — «лом, 150 мм», а не голое «150 мм». В самом отрезке —
+        # только число: узкий отрезок слова не вместит. Легенда цветов под
+        # схемой — в форме строки (views/cut_views.xml): она видна и у
+        # раскроев, посчитанных до этой правки (их HTML уже лежит в базе).
         blocks = []
         for pattern in res["patterns"]:
             total = pattern["stock_length"] or 1
@@ -443,15 +448,16 @@ class PmkCutPlan(models.Model):
             for piece in pattern["pieces"]:
                 width = 100.0 * piece / total
                 cells.append(
-                    '<div class="pmk-cut__piece" style="width:%.3f%%" title="%s мм">%s</div>'
+                    '<div class="pmk-cut__piece" style="width:%.3f%%" title="деталь, %s мм">%s</div>'
                     % (width, escape(self._fmt(piece)), escape(self._fmt(piece)))
                 )
             if pattern["leftover"] > 0:
                 width = 100.0 * pattern["leftover"] / total
                 kind = "useful" if pattern["leftover"] >= self.min_useful_mm else "scrap"
+                word = "годный остаток" if kind == "useful" else "лом"
                 cells.append(
-                    '<div class="pmk-cut__rest pmk-cut__rest--%s" style="width:%.3f%%" title="%s мм">%s</div>'
-                    % (kind, width, escape(self._fmt(pattern["leftover"])),
+                    '<div class="pmk-cut__rest pmk-cut__rest--%s" style="width:%.3f%%" title="%s, %s мм">%s</div>'
+                    % (kind, width, word, escape(self._fmt(pattern["leftover"])),
                        escape(self._fmt(pattern["leftover"])))
                 )
             blocks.append(

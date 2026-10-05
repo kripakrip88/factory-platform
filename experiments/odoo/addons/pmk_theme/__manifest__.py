@@ -11,7 +11,7 @@
 и работает как «все приложения». Так ничего не становится недостижимым,
 когда модулей больше, чем влезает по ширине.
     """,
-    "version": "19.0.2.6.0",
+    "version": "19.0.2.7.0",
     "category": "Theme/Backend",
     "author": "ПМК Парк",
     "license": "LGPL-3",
@@ -65,6 +65,10 @@
         # ir_actions.py): без зависимостей от website / project / maintenance.
         "views/step29_user_prefs.xml",
         "data/digest_off.xml",
+        # Тема у человека (разбор UX, шаг 40): сервер ставит тёмный класс на
+        # body до первой отрисовки — без белой вспышки при загрузке.
+        # Поле и session_info — models/color_scheme.py.
+        "views/webclient_color_scheme.xml",
     ],
     "assets": {
         "web.assets_backend": [
@@ -135,6 +139,12 @@
             # отключение демо-строк — models/, стиль — forms_nexus.scss,
             # раздел 7.
             "pmk_theme/static/src/xml/empty_screens.xml",
+            # Тема у человека (разбор UX, шаг 40, 05.10.2026): переключатель
+            # пишет выбор в res.users, до первой отрисовки шапки состояние
+            # берётся с сервера. Правила — чистые функции (их гоняет node),
+            # идут раньше патча, который их импортирует.
+            "pmk_theme/static/src/js/color_scheme_rules.js",
+            "pmk_theme/static/src/js/color_scheme.js",
         ],
         # ⚠️ ОТЛОЖЕННЫЙ БАНДЛ, И ЭТО НЕ ВКУСОВЩИНА.
         # canvas_text.js красит подписи осей и легенду графика: до них CSS не

@@ -238,6 +238,19 @@
                     <field name="unplaced_text" readonly="1"/>
                   </group>
                   <field name="layout_html" nolabel="1" readonly="1"/>
+                  <!-- Доводка шага 40 (разбор UX, 05.10.2026): цвет схемы
+                       повторён словом. Плашки — те же классы, что отрезки
+                       схемы, поэтому цвет у них общий в обеих темах
+                       (pmk_cut/static/src/scss/cut.scss; тёмная пара —
+                       pmk_theme, dark.scss, 40.5). Легенда в форме, а не в
+                       HTML схемы: у раскроев, посчитанных раньше, HTML уже
+                       лежит в базе. Убрать — удалить этот div и выложить
+                       pmk_cut. -->
+                  <div class="pmk-cut__legend" invisible="not layout_html">
+                    <span class="pmk-cut__key pmk-cut__piece">деталь</span>
+                    <span class="pmk-cut__key pmk-cut__rest pmk-cut__rest--useful">годный остаток</span>
+                    <span class="pmk-cut__key pmk-cut__rest pmk-cut__rest--scrap">лом</span>
+                  </div>
                 </form>
               </field>
             </page>

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Тема у человека — до первой отрисовки (разбор UX, шаг 40, 05.10.2026).
+
+    БЫЛО. Класс o_nexus_dark ставил на body скрипт чужой темы theme_nexus
+    после загрузки страницы: первая отрисовка шла светлой, и тёмная тема
+    на долю секунды мелькала белым.
+
+    СТАЛО. Штатный web.layout рисует <body t-att-class="body_classname">, а
+    web.webclient_bootstrap кладёт туда «o_web_client». Дописываем
+    «o_nexus_dark», если у человека выбрана тёмная тема
+    (session_info.pmk_color_scheme, models/color_scheme.py). Все тёмные
+    правила (dark.scss, чужая тема) начинаются с body.o_nexus_dark, стили
+    подключены в <head> и задерживают первую отрисовку — значит, первая же
+    отрисовка тёмная, без белой вспышки до старта скриптов.
+
+    Дописываем ПОСЛЕ штатного t-set, а не переписываем его значение: правка
+    ядра в «o_web_client» до нас доедет. t-if на том же узле вычисляется
+    раньше t-set (порядок директив ir.qweb), значения из тела t-call уходят в
+    web.layout.
+
+    Вернуть прежнее (класс ставит только скрипт после загрузки): выключить
+    этот вид (режим разработчика → Настройки → Технические → Представления →
+    «ПМК — тема человека…» → архивировать) или убрать файл из
+    __manifest__.py и выложить.
+  -->
+  <template id="webclient_color_scheme" inherit_id="web.webclient_bootstrap"
+            name="ПМК — тема человека до первой отрисовки (шаг 40)">
+    <xpath expr="//t[@t-set='body_classname']" position="after">
+      <t t-if="session_info.get('pmk_color_scheme') == 'dark'"
+         t-set="body_classname" t-value="body_classname + ' o_nexus_dark'"/>
+    </xpath>
+  </template>
+</odoo>

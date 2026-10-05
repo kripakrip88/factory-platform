@@ -12,3 +12,6 @@ from . import ir_ui_view
 from . import hidden_nodes
 from . import ir_actions
 from . import digest
+# Тема у человека (разбор UX, шаг 40, 05.10.2026): выбор светлой или тёмной
+# темы хранится в res.users, сервер ставит тёмный класс до первой отрисовки.
+from . import color_scheme
