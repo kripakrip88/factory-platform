@@ -43,11 +43,18 @@ class LaserNorm(models.Model):
     # разброс в строке группы не складываем (у Odoo по умолчанию сумма).
     thickness_mm = fields.Float("Толщина, мм", required=True, digits=(6, 2), aggregator=None)
 
+    # Разбор UX, шаг 36: те же слова, что у плана задания (job.py,
+    # plan_state) и в узле схемы связей — одно понятие, одно слово.
     mode = fields.Selection(
-        [(timing.MODE_NONE, "Норматива нет"),
-         (timing.MODE_AGGREGATE, "Рез и проколы не разделены"),
-         (timing.MODE_FULL, "Норматив выведен")],
-        "Состояние", default=timing.MODE_NONE, required=True, readonly=True)
+        [(timing.MODE_NONE, "Нет норматива"),
+         (timing.MODE_AGGREGATE, "Норматив грубый"),
+         (timing.MODE_FULL, "Норматив есть")],
+        "Состояние", default=timing.MODE_NONE, required=True, readonly=True,
+        help="Норматив есть — разделены скорость реза и время прокола. "
+             "Норматив грубый — рез и проколы не разделены: есть минуты на "
+             "метр реза, время прокола отдельно не выведено (нужны замеры с "
+             "разным соотношением метров и проколов). Нет норматива — по этой "
+             "толщине не закрыто ни одного задания с замерами.")
     reason = fields.Char(
         "Почему так", readonly=True,
         help="Если норматив неполный — здесь написано, какого замера не хватает.")

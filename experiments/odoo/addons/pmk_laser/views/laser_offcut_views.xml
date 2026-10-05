@@ -28,8 +28,11 @@
                decoration-muted="state == 'proposal'"
                decoration-success="state == 'confirmed'"
                decoration-danger="state == 'scrap'"/>
+        <!-- Разбор UX, шаг 36: «Подтвердить» контурная, как «В лом». Список
+             теперь открывается и с предложенными обрезками — залитая кнопка
+             в каждой их строке дала бы десяток «главных» кнопок на экране. -->
         <button name="action_confirm" type="object" string="Подтвердить"
-                class="btn-primary" icon="fa-check" invisible="state == 'confirmed'"/>
+                icon="fa-check" invisible="state == 'confirmed'"/>
         <button name="action_scrap" type="object" string="В лом"
                 icon="fa-trash" invisible="state == 'scrap'"/>
       </list>
@@ -107,21 +110,24 @@
 
   <!--
     Подсказка пустого списка (разбор UX, шаг 26, 01.10.2026). Без неё пустой
-    список был одной шапкой на белом — «сломалось». По умолчанию включён
-    фильтр «На стеллаже», а обрезки рождаются предложенными: пока технолог
-    не подтвердил ни одного, список пуст, хотя обрезки есть. Вторая строка
-    подсказки говорит, где они. Сам фильтр по умолчанию не менялся — это
-    вопрос раздела «Лазер» разбора.
+    список был одной шапкой на белом — «сломалось».
+
+    Фильтры по умолчанию (разбор UX, шаг 36, 02.10.2026): «Ждут
+    подтверждения» + «На стеллаже». Был один «На стеллаже», а обрезки
+    рождаются предложенными: пока технолог не подтвердил ни одного, список
+    был пуст, хотя обрезки есть, — и как раз те, что ждут его решения, были
+    не видны. Оба фильтра в одной группе поиска (без разделителя) — Odoo
+    складывает их через «или». Ушедшие в лом — снять фильтры.
   -->
   <record id="action_laser_offcut" model="ir.actions.act_window">
     <field name="name">Обрезки</field>
     <field name="res_model">pmk.laser.offcut</field>
     <field name="view_mode">list,form</field>
     <field name="search_view_id" ref="view_laser_offcut_search"/>
-    <field name="context">{'search_default_confirmed': 1}</field>
+    <field name="context">{'search_default_proposal': 1, 'search_default_confirmed': 1}</field>
     <field name="help" type="html">
       <p>Обрезки появляются из задания на резку кнопкой «Предложить обрезки».</p>
-      <p>Предложенные и ещё не подтверждённые — фильтр «Ждут подтверждения».</p>
+      <p>Открыто с фильтрами «Ждут подтверждения» и «На стеллаже»; обрезки, ушедшие в лом, — без них.</p>
     </field>
   </record>
 

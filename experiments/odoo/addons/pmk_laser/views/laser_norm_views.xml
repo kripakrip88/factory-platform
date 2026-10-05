@@ -10,7 +10,9 @@
            норматив по двадцати выглядят одинаково солидно, пока не увидишь
            колонку «Заданий в выборке». -->
       <list string="Нормативы" decoration-muted="mode == 'none'" decoration-warning="mode == 'aggregate'">
-        <field name="machine_id"/>
+        <!-- Станок мощностью («6 кВт»), как в списке заданий (разбор UX,
+             шаг 36). -->
+        <field name="machine_id" context="{'pmk_machine_short': True}"/>
         <field name="sheet_type"/>
         <!-- Толщина без хвоста нулей (разбор UX, шаг 24). -->
         <field name="thickness_mm" options="{'hide_trailing_zeros': True}"/>
@@ -42,14 +44,16 @@
         <sheet>
           <div class="oe_title"><h1><field name="display_name" readonly="1" nolabel="1"/></h1></div>
 
+          <!-- Первые слова — как у значка состояния (разбор UX, шаг 36: «Нет
+               норматива», «Норматив грубый» — одно понятие, одно слово). -->
           <div class="alert alert-secondary" role="alert" invisible="mode != 'none'">
-            Норматива нет: по этой толщине ещё не закрыто ни одного задания с
+            Нет норматива: по этой толщине ещё не закрыто ни одного задания с
             замерами. Среднее по соседним толщинам сюда не подставляется — двойка
             и десятка режутся с разницей в разы, и такое «среднее» выглядело бы
             как норматив, считалось как норматив и врало бы как норматив.
           </div>
           <div class="alert alert-warning" role="alert" invisible="mode != 'aggregate'">
-            Рез и проколы не разделены: <field name="reason" readonly="1" nolabel="1"/>.
+            Норматив грубый, рез и проколы не разделены: <field name="reason" readonly="1" nolabel="1"/>.
             Планировать можно — минут на метр реза хватает, — но время прокола
             отдельной цифрой не показывается, потому что его не из чего вывести.
           </div>

@@ -21,7 +21,8 @@ from odoo.modules.module import get_manifest
 from odoo.tests import TransactionCase, tagged
 from odoo.tools.safe_eval import safe_eval
 
-SIGNALS = "not (technical_is_demo or parse_warning or balance_broken or plan_state == 'no_norm' or (plan_state == 'no_drawing' and parts_without_drawing) or (file and file_replaced))"
+# Доводка шага 36: восьмая плашка — «Снято с очереди — не отрезано: N листов».
+SIGNALS = "not (technical_is_demo or parse_warning or balance_broken or plan_state == 'no_norm' or (plan_state == 'no_drawing' and parts_without_drawing) or (file and file_replaced) or queue_closed_note)"
 PARSE_FILLED = "not file or (sheet_ids and not file_replaced) or (file_replaced and measure_ids)"
 PARSE_AGAIN = "not file or not sheet_ids or file_replaced"
 
@@ -91,7 +92,7 @@ class TestLaserJobFormStep27(TransactionCase):
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0].get("invisible"), SIGNALS)
         chips = rows[0].findall("span")
-        self.assertEqual(len(chips), 7)
+        self.assertEqual(len(chips), 8)
         bad = [c for c in chips if "pmk-job-signal--bad" in c.get("class")]
         self.assertEqual(len(bad), 1)
         self.assertIn("Баланс не сходится", "".join(bad[0].itertext()), "Цвет повторён словом.")
@@ -101,9 +102,10 @@ class TestLaserJobFormStep27(TransactionCase):
         self.assertIn("pmk-job-signal--warn", no_drawing.get("class"))
         # Счётчик — детали без ДЛИНЫ РЕЗА, а не без файла: приложенный, но не
         # разобранный чертёж тоже в счёте. Плашка не велит только
-        # «приложить» то, что уже приложено (доводка шага 27).
+        # «приложить» то, что уже приложено (доводка шага 27). Слово — то же,
+        # что у плана и фильтра: «Рез не разобран» (доводка шага 36).
         text = "".join(no_drawing.itertext())
-        self.assertTrue(text.startswith("Длина реза не разобрана у"), text)
+        self.assertTrue(text.startswith("Рез не разобран у"), text)
         self.assertIn("приложите и разберите", text)
         self.assertNotIn("Деталей без чертежа", text)
         # Файл заменён после разбора — две плашки, по замерам взаимоисключающие.

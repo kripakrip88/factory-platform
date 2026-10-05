@@ -5,3 +5,5 @@
 from . import test_letter_node
 # Доводка шага 35: доборка на «Связях» сделки.
 from . import test_step35_dobor_node
+# Шаг 36: вкладка «Связи» у задания лазеру.
+from . import test_step36_laser_tab

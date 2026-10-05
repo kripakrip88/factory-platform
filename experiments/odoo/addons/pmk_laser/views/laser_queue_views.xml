@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    «Очередь листов» — экран оператора (разбор UX, шаг 36, 02.10.2026).
+
+    Было: экрана для оператора нет, до кнопки «Начал» около семи действий —
+    раздел, «Задания на резку», найти задание, открыть, вкладка «Листы»,
+    прокрутить под 25 строк верха формы, нажать. Стало: все неотрезанные
+    листы всех заданий одним списком, по станкам, с нужной кнопкой прямо в
+    строке — ждёт «Начал», режется «Закончил». Пункт первый в «Лазерной
+    резке», поэтому раздел открывается очередью: щелчок по разделу и «Начал»
+    — два действия.
+
+    Учётных записей у операторов пока нет (вопрос владельцу) — кнопка пишет
+    в замер текущего пользователя, как и в задании (action_start_cut).
+
+    Щелчок по строке открывает задание (action_open_job): у листа своей формы
+    нет, а чертежи, детали и замеры — в задании. Создавать и удалять листы
+    отсюда нельзя: листы рождает разбор файла раскроя, а удаление листа
+    унесло бы его замеры.
+
+    Доводка шага 36:
+      • «Замечание» — «файл заменён», когда в задании приложили новый файл
+        раскроя, а листы от прежнего (колонка «Файл» показывает уже имя
+        нового). Сигнал, «Начал» не запрещён;
+      • снять листы с очереди — задание целиком, ⚙ «Действие» → «Снять с
+        очереди» (брошенное, пробное, отрезанное без кнопок, старое после
+        замены файла). Иначе их листы «Ждали» бы навсегда над текущей
+        работой, а убрать их можно было только фиктивным замером;
+      • «Начал» у листа, который уже отрезан на другом устройстве, сервер
+        отклоняет словами «обновите страницу» (action_start_cut).
+  -->
+
+  <!-- Простой список листов — по умолчанию (priority 10, у очереди 20):
+       его берут окна выбора листа («Поиск ещё…» у поля «Лист» в замере и
+       обрезке). Без него окно выбора открыло бы очередь — с кнопками
+       «Начал» прямо в окне выбора. Очередь действие берёт явно (view_id). -->
+  <record id="view_laser_job_sheet_list" model="ir.ui.view">
+    <field name="name">pmk.laser.job.sheet.list</field>
+    <field name="model">pmk.laser.job.sheet</field>
+    <field name="priority">10</field>
+    <field name="arch" type="xml">
+      <list string="Листы" create="0">
+        <field name="job_id" width="105px"/>
+        <field name="number"/>
+        <field name="size_label"/>
+        <field name="utilization_pct"/>
+        <field name="cut_state" widget="badge"
+               decoration-muted="cut_state == 'waiting'"
+               decoration-info="cut_state == 'running'"
+               decoration-success="cut_state == 'done'"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="view_laser_sheet_queue_list" model="ir.ui.view">
+    <field name="name">pmk.laser.job.sheet.queue.list</field>
+    <field name="model">pmk.laser.job.sheet</field>
+    <field name="priority">20</field>
+    <field name="arch" type="xml">
+      <!-- default_order «job_id desc»: задание упорядочено «дата убыв.»,
+           обратный порядок по ссылке — старые задания первыми: очередь
+           режется в порядке поступления. Внутри задания — по номеру листа:
+           «number» в порядке нужен и без групп — ядро добавляет _order
+           модели только записям внутри группы (web_read_group), простой
+           список его не добавляет.
+           Порядок ГРУПП строится из того же default_order
+           (_get_read_group_order): поле с агрегатором превращается в
+           «поле:sum». Поэтому у номера и использования листа агрегатора нет
+           (models/job.py, доводка шага 36) — иначе станки вставали по сумме
+           номеров листов и менялись местами по ходу резки, а в строке
+           группы стояло «Лист № 36». Теперь группы — по станку.
+           expand — группы станков раскрыты сразу, без лишнего щелчка. -->
+      <list string="Очередь листов" create="0" delete="0" expand="1"
+            action="action_open_job" type="object"
+            default_order="job_id desc, number">
+        <field name="job_id" width="105px"/>
+        <field name="number"/>
+        <field name="job_file_name" optional="show"/>
+        <!-- «файл заменён» жёлтой плашкой: листы от прежнего файла, а
+             «Файл» — имя нового. Колонка молчит, когда всё в порядке. -->
+        <field name="queue_note" widget="badge" decoration-warning="queue_note"
+               optional="show"/>
+        <field name="thickness_mm" options="{'hide_trailing_zeros': True}"/>
+        <field name="size_label"/>
+        <field name="utilization_pct" optional="show"/>
+        <field name="mass_kg" optional="hide"/>
+        <field name="machine_id" optional="hide"/>
+        <!-- Цвет повторён словом: серый «Ждёт», синий «Режется». -->
+        <field name="cut_state" widget="badge"
+               decoration-muted="cut_state == 'waiting'"
+               decoration-info="cut_state == 'running'"
+               decoration-success="cut_state == 'done'"/>
+        <!-- Одна нужная кнопка в строке. Контурные: строк много, а залитая
+             кнопка на экране — одна, и она здесь не нужна. -->
+        <button name="action_start_cut" type="object" string="Начал"
+                class="btn-secondary" icon="fa-play"
+                invisible="cut_state != 'waiting'"/>
+        <button name="action_finish_cut" type="object" string="Закончил"
+                class="btn-secondary" icon="fa-stop"
+                invisible="cut_state != 'running'"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="view_laser_sheet_queue_search" model="ir.ui.view">
+    <field name="name">pmk.laser.job.sheet.queue.search</field>
+    <field name="model">pmk.laser.job.sheet</field>
+    <field name="arch" type="xml">
+      <search string="Очередь листов">
+        <field name="job_id"/>
+        <field name="machine_id"/>
+        <filter name="waiting" string="Ждут" domain="[('cut_state', '=', 'waiting')]"/>
+        <filter name="running" string="Режутся" domain="[('cut_state', '=', 'running')]"/>
+        <group>
+          <filter name="group_machine" string="Станок" context="{'group_by': 'machine_id'}"/>
+          <filter name="group_job" string="Задание" context="{'group_by': 'job_id'}"/>
+        </group>
+      </search>
+    </field>
+  </record>
+
+  <!-- Отбор «не отрезан» — доменом действия, а не фильтром: очередь — это
+       именно неотрезанные листы, снять такой отбор щелчком нельзя. Готовые
+       листы — в задании, вкладка «Листы».
+       Доводка шага 36: листы задания, снятого с очереди, — не здесь; лист,
+       который режется, остаётся и у снятого задания: «Закончил» должно быть
+       где нажать. -->
+  <record id="action_laser_sheet_queue" model="ir.actions.act_window">
+    <field name="name">Очередь листов</field>
+    <field name="res_model">pmk.laser.job.sheet</field>
+    <field name="view_mode">list</field>
+    <field name="view_id" ref="view_laser_sheet_queue_list"/>
+    <field name="search_view_id" ref="view_laser_sheet_queue_search"/>
+    <field name="domain">[('cut_state', '!=', 'done'), '|', ('cut_state', '=', 'running'), ('job_id.queue_closed', '=', False)]</field>
+    <field name="context">{'search_default_group_machine': 1}</field>
+    <field name="help" type="html">
+      <p>Очередь пуста: все листы отрезаны.</p>
+      <p>Листы появляются, когда технолог разберёт файл раскроя в задании на резку.
+         Задания, снятые с очереди, — в «Заданиях на резку», фильтр «Сняты с очереди».</p>
+    </field>
+  </record>
+
+  <!-- Снять задание с очереди и вернуть — пунктами ⚙ «Действие» в задании и
+       в списке заданий (доводка шага 36), а не кнопкой в шапке: нужны
+       редко, а шапку шаг 36 и сжимал. Ничего не удаляют. -->
+  <record id="action_laser_job_queue_close" model="ir.actions.server">
+    <field name="name">Снять с очереди</field>
+    <field name="model_id" ref="model_pmk_laser_job"/>
+    <field name="binding_model_id" ref="model_pmk_laser_job"/>
+    <field name="binding_view_types">list,form</field>
+    <field name="state">code</field>
+    <field name="code">records.action_queue_close()</field>
+  </record>
+
+  <record id="action_laser_job_queue_open" model="ir.actions.server">
+    <field name="name">Вернуть в очередь</field>
+    <field name="model_id" ref="model_pmk_laser_job"/>
+    <field name="binding_model_id" ref="model_pmk_laser_job"/>
+    <field name="binding_view_types">list,form</field>
+    <field name="state">code</field>
+    <field name="code">records.action_queue_open()</field>
+  </record>
+</odoo>

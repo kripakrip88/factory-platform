@@ -51,7 +51,9 @@
     <field name="arch" type="xml">
       <list string="Загрузка по дням" default_order="date, machine_id">
         <field name="date"/>
-        <field name="machine_id"/>
+        <!-- Станок мощностью («6 кВт») в колонке, полное имя — в строке
+             группы (разбор UX, шаг 36). -->
+        <field name="machine_id" context="{'pmk_machine_short': True}"/>
         <!-- Номер задания целиком (разбор UX, шаг 24). -->
         <field name="name" width="105px"/>
         <field name="sheet_id" string="Лист"/>

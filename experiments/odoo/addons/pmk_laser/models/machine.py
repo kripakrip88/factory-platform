@@ -30,6 +30,9 @@ mrp тому, кто заведёт на этом же центре рабоче
 """
 
 from odoo import api, fields, models
+from odoo.fields import Domain
+
+from . import labels
 
 
 def table_size_label(width_mm, length_mm):
@@ -101,6 +104,74 @@ class LaserMachine(models.Model):
         for machine in self:
             machine.table_size_label = table_size_label(
                 machine.max_width_mm, machine.max_length_mm)
+
+    # ------------------------------------------------------------------
+    # Короткое имя в колонках списков (разбор UX, шаг 36)
+    # ------------------------------------------------------------------
+    # В списке заданий «Лазер №1» и «Лазер №2» обрезались и ничего не
+    # говорили: станки отличаются мощностью, по ней технолог и выбирает,
+    # куда отдать десятку. В колонке списка — мощность («6 кВт»), в формах и
+    # строках групп — полное имя. Включает короткое имя контекст поля в
+    # списке: context="{'pmk_machine_short': True}". Отдельного поля
+    # «Короткое имя» не заводим: мощность заполнена у обоих станков и разная.
+
+    @api.depends("name", "power_kw")
+    @api.depends_context("pmk_machine_short")
+    def _compute_display_name(self):
+        short = self._short_labels() if self.env.context.get("pmk_machine_short") else {}
+        for machine in self:
+            machine.display_name = short.get(machine.id) or machine.name
+
+    def _short_labels(self):
+        """{id станка: «6 кВт»} — только у станков с мощностью, которой нет у
+        другого активного станка. Два «6 кВт» в одной колонке не различить —
+        у таких остаётся полное имя."""
+        count = {}
+        for machine in self.with_context(active_test=True).search([]):
+            key = round(machine.power_kw or 0.0, 1)
+            count[key] = count.get(key, 0) + 1
+        result = {}
+        for machine in self:
+            label = labels.power_label(machine.power_kw)
+            if label and count.get(round(machine.power_kw or 0.0, 1), 0) <= 1:
+                result[machine.id] = label
+        return result
+
+    # Поиск понимает и короткое имя (доводка шага 36). Колонка списка
+    # показывает «6 кВт», а поиск по станку шёл только по имени («Лазер №2»):
+    # набрал «6 кВт» в поиске заданий, загрузки, замеров, нормативов или
+    # «Очереди листов» — пусто, и выпадашка выбора станка тоже пуста. Короткие
+    # имена считаются тем же правилом, что в колонке (_short_labels): станков
+    # два-три, перебор их в памяти дешевле отдельного хранимого поля.
+    # Сравнение — без пробелов и регистра (labels.search_key): «6кВт»,
+    # «6 квт» и «6 к» на полпути набора находят «6 кВт».
+
+    @api.model
+    def _search_display_name(self, operator, value):
+        if operator in Domain.NEGATIVE_OPERATORS:
+            # Ядро возьмёт положительный оператор и само построит отрицание
+            # (orm/domains.py, _optimize_field_search_method) — короткое имя
+            # учтётся и в «не содержит».
+            return NotImplemented
+        domain = Domain(super()._search_display_name(operator, value))
+        hits = self._short_label_hits(operator, value)
+        if hits:
+            domain |= Domain("id", "in", hits)
+        return domain
+
+    @api.model
+    def _short_label_hits(self, operator, value):
+        """id станков, чьё короткое имя подходит под условие поиска."""
+        if operator in ("ilike", "like") and isinstance(value, str) and value.strip():
+            needle = labels.search_key(value)
+            match = lambda label: needle in labels.search_key(label)  # noqa: E731
+        elif operator == "in" and isinstance(value, (list, tuple, set, frozenset)):
+            wanted = {labels.search_key(v) for v in value if isinstance(v, str) and v.strip()}
+            match = lambda label: labels.search_key(label) in wanted  # noqa: E731
+        else:
+            return []
+        short = self.search([])._short_labels()
+        return [machine_id for machine_id, label in short.items() if match(label)]
 
     _load_positive = models.Constraint(
         "CHECK(load_min >= 0 AND unload_min >= 0)",

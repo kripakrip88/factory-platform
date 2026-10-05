@@ -20,13 +20,30 @@
         <field name="partner_id" optional="hide"/>
         <field name="sheet_id" string="Лист" optional="hide"/>
         <field name="thickness_mm" options="{'hide_trailing_zeros': True}"/>
-        <field name="machine_id"/>
+        <!-- Разбор UX, шаг 36: станок коротким именем — мощностью («6 кВт»):
+             «Лазер №1» / «Лазер №2» обрезались и не говорили, чем станки
+             отличаются (models/machine.py, _compute_display_name). В формах
+             и строках групп — полное имя. -->
+        <field name="machine_id" context="{'pmk_machine_short': True}"/>
         <field name="sheet_count" sum="Листов"/>
         <field name="utilization_pct" optional="show"/>
         <field name="useful_mass_kg" sum="Полезный вес, кг"/>
         <!-- Лом — главная цифра экономии металла (премия от маржи): с итогом
              внизу. Считается вычитанием, не вводится. -->
         <field name="scrap_mass_kg" sum="Лом, кг" optional="show"/>
+        <!-- Разбор UX, шаг 36: лом долей и словом, как «Отход» в раскроях
+             (pmk_cut, шаг 35). Больше порога (money.SCRAP_HIGH_PCT, 20 %) —
+             бледно-жёлтой плашкой и «· много», баланс не сходится — красной
+             «не сходится», норма — обычным текстом (laser_job.scss,
+             .pmk-job-scrap). Сигнал, а не запрет. То же число — колонкой
+             «Лом, % (число)» в ⚙: по ней сортируют (доводка: была «Доля
+             лома, %» — в меню колонок одно число под двумя названиями). -->
+        <field name="scrap_label" string="Лом, %" widget="badge" class="pmk-job-scrap"
+               decoration-warning="scrap_high" decoration-danger="balance_broken"
+               optional="show"/>
+        <field name="scrap_pct" optional="hide"/>
+        <field name="scrap_high" column_invisible="1"/>
+        <field name="balance_broken" column_invisible="1"/>
         <field name="premium_rub" digits="[10,0]" sum="Премия, ₽"/>
         <field name="planned_minutes" sum="План, мин" optional="hide"/>
         <field name="actual_minutes" sum="Факт, мин" optional="hide"/>
@@ -53,10 +70,10 @@
     <field name="arch" type="xml">
       <!-- pmk-doc-form — общий класс наших документов (разбор UX, шаг 27;
            pmk_theme, forms_nexus.scss, раздел 9): колонка подписей одна на
-           все группы — поля «Заказа» и «Файла раскроя», «Материала» и
-           «Металла и денег» на одной вертикали; «Станок» и «Лист» со
-           значением той же ширины, что соседние поля; «Ширина реза» и
-           «Обрезок от» в рамке поля. -->
+           все группы — поля групп и вкладок на одной вертикали; «Станок» и
+           «Лист» со значением той же ширины, что соседние поля; «Ширина
+           реза» и «Обрезок от» (с шага 36 — на вкладке «Обрезки») в рамке
+           поля. -->
       <form string="Задание на резку" class="pmk-doc-form">
         <header>
           <!-- Залитая — только пока файл не разобран: это следующий шаг
@@ -100,17 +117,22 @@
             Цвет повторён словом: красный — «не сходится», жёлтый — сделать
             руками, серый — к сведению. Ничего не блокирует. Стили —
             static/src/scss/laser_job.scss.
-            «Длина реза не разобрана у N дет.» — только когда такие детали
-            есть: это состояние бывает и у задания без деталей (файл ещё не
-            разобран), и прежняя плашка писала «у 0 деталей нет чертежа».
-            Слова «приложите И РАЗБЕРИТЕ»: счётчик parts_without_drawing
-            считает детали без длины реза (models/job.py, _compute_denominator),
-            а не без файла — приложенный, но не разобранный чертёж (или
+            «Рез не разобран у N дет.» — только когда такие детали есть: это
+            состояние бывает и у задания без деталей (файл ещё не разобран),
+            и прежняя плашка писала «у 0 деталей нет чертежа». Слова
+            «приложите И РАЗБЕРИТЕ»: счётчик parts_without_drawing считает
+            детали без длины реза (models/job.py, _compute_denominator), а не
+            без файла — приложенный, но не разобранный чертёж (или
             разобранный с нулевой длиной) тоже в счёте. «Приложите чертежи»
-            велело бы сделать то, что уже сделано (доводка шага 27).
+            велело бы сделать то, что уже сделано (доводка шага 27). «Рез не
+            разобран» — слово плана (plan_state) и фильтра; было «Длина реза
+            не разобрана» — одно понятие тремя словами (доводка шага 36).
+            «Снято с очереди — ждут: N листов» (серая, к сведению) —
+            задание сняли с «Очереди листов» (⚙ «Действие»), а неотрезанные
+            листы у него есть (доводка шага 36).
           -->
           <div class="pmk-job-signals"
-               invisible="not (technical_is_demo or parse_warning or balance_broken or plan_state == 'no_norm' or (plan_state == 'no_drawing' and parts_without_drawing) or (file and file_replaced))">
+               invisible="not (technical_is_demo or parse_warning or balance_broken or plan_state == 'no_norm' or (plan_state == 'no_drawing' and parts_without_drawing) or (file and file_replaced) or queue_closed_note)">
             <span class="pmk-job-signal pmk-job-signal--bad" invisible="not balance_broken"
                   title="Обрезков оприходовано больше, чем было металла: лом вышел отрицательным. Лом не вводят — он получается вычитанием, значит, ошибка в размерах обрезков на вкладке «Обрезки»">Баланс не сходится — проверьте размеры обрезков</span>
             <!-- Файл приложили заново после разбора (доводка шага 27): всё,
@@ -120,78 +142,157 @@
             <span class="pmk-job-signal pmk-job-signal--warn" invisible="not file or not file_replaced or measure_ids"
                   title="Файл раскроя приложен заново после разбора. «Разобрать файл» пересоздаст листы и детали по новому файлу, приложенные чертежи деталей сохранятся">Файл заменён — листы и детали от прежнего, разберите файл</span>
             <span class="pmk-job-signal pmk-job-signal--warn" invisible="not file or not file_replaced or not measure_ids"
-                  title="Файл раскроя приложен заново, а по листам уже есть замеры операторов. Перечитать файл нельзя — пересоздание листов стёрло бы замеры. Если раскрой переделали, заведите новое задание и приложите файл туда">Файл заменён после замеров — листы от прежнего; новый файл приложите к новому заданию</span>
+                  title="Файл раскроя приложен заново, а по листам уже есть замеры операторов. Перечитать файл нельзя — пересоздание листов стёрло бы замеры. Если раскрой переделали, заведите новое задание и приложите файл туда, а это снимите с очереди: ⚙ «Действие» → «Снять с очереди» — иначе его неотрезанные листы останутся в «Очереди листов» рядом с новыми">Файл заменён после замеров — листы от прежнего; новый файл приложите к новому заданию</span>
             <span class="pmk-job-signal pmk-job-signal--warn"
                   invisible="plan_state != 'no_drawing' or not parts_without_drawing"
-                  title="Длину реза даёт разобранный чертёж: приложите .dxf к детали и нажмите «Разобрать» в её строке (или «Разобрать чертежи» в шапке, когда чертежи есть у всех деталей). Чертёж — знаменатель замера: метры реза и проколы. Без него замер оператора останется числом «47 минут», которое нельзя перенести на другой заказ">Длина реза не разобрана у <field name="parts_without_drawing" readonly="1" nolabel="1"/> дет. — приложите и разберите чертежи на вкладке «Детали и чертежи»</span>
+                  title="Длину реза даёт разобранный чертёж: приложите .dxf к детали и нажмите «Разобрать» в её строке (или «Разобрать чертежи» в шапке, когда чертежи есть у всех деталей). Чертёж — знаменатель замера: метры реза и проколы. Без него замер оператора останется числом «47 минут», которое нельзя перенести на другой заказ">Рез не разобран у <field name="parts_without_drawing" readonly="1" nolabel="1"/> дет. — приложите и разберите чертежи на вкладке «Детали и чертежи»</span>
             <span class="pmk-job-signal" invisible="plan_state != 'no_norm'"
                   title="Норматив выводится только из замеров этой толщины. Среднее по соседним толщинам не подставляется: двойка и десятка режутся с разницей в разы">Плана нет: на толщине <field name="thickness_mm" readonly="1" nolabel="1" options="{'hide_trailing_zeros': True}"/> мм ещё нет замеров</span>
             <span class="pmk-job-signal pmk-job-signal--warn" invisible="not parse_warning"
                   title="Замечания разбора файла раскроя"><field name="parse_warning" readonly="1" nolabel="1"/></span>
             <span class="pmk-job-signal" invisible="not technical_is_demo"
                   title="Раздел режимов резки в файле у технолога демонстрационный — один и тот же во всех файлах. Толщина берётся из имени файла, режимы из файла не используются">Режимы в файле — образец, толщина из имени файла · <field name="technical_note" readonly="1" nolabel="1"/></span>
+            <span class="pmk-job-signal" invisible="not queue_closed_note"
+                  title="Неотрезанные листы задания не показываются в «Очереди листов». Замеры, премия и норматив не меняются; лист, который режется, остаётся в очереди, пока его не закончат. Вернуть — ⚙ «Действие» → «Вернуть в очередь»"><field name="queue_closed_note" readonly="1" nolabel="1"/></span>
           </div>
 
+          <!--
+            Верх формы — разбор UX, шаг 36 (02.10.2026). Было: над вкладками
+            четыре группы в два ряда — «Заказ» | «Материал», «Файл раскроя» |
+            «Металл и деньги», 25 строк, кнопки «Начал» / «Закончил» ниже
+            первого экрана 1440×900. Стало:
+              • первый ряд — «Задание» | «Станок и лист», по пять строк.
+                «Файл раскроя» (программа, кто сохранил, когда, контуров) —
+                одной серой строкой под полем «Файл» (file_info); «Вид листа»
+                убран — он в названии листа («Лист рифлёный 8 мм ромб»);
+                «Ширина реза» и «Обрезок от» — на вкладке «Обрезки»
+                («Параметры»): константы задания, меняют их редко, и считают
+                по ним обрезки и пропил; «Станок» — к листу: что и на чём
+                режем;
+              • второй ряд — «Металл» строкой карточек с балансом (списано =
+                полезный вес + обрезки + пропил + лом) и деньгами: «Металл, ₽»,
+                «Лом, ₽», «Премия, ₽». Вкладка «Баланс металла» ушла сюда,
+                «Куплено, м²» и «Полезно, м²» — с формы (поля на месте, в
+                модели). Теория абзацев — в подсказках «?» подписей.
+            Порядок — docs/disabled-features.md, раздел «шаг 36».
+          -->
           <group>
-            <group string="Заказ">
-              <field name="date"/>
-              <field name="partner_id"/>
-              <field name="sale_order_id"/>
-              <!-- Расчёт рядом с заказом: заказов в базе пока нет, режут по
-                   расчёту, и по этой ссылке задание видно на схеме связей. -->
+            <group string="Задание" name="pmk_job_task">
               <!-- Подписи короче названий полей (разбор UX, шаг 27): подписи
                    в одну строку. Полный смысл — в подсказке «?» поля. -->
+              <label for="file" string="Файл"/>
+              <div class="pmk-job-file" name="pmk_job_file">
+                <field name="file" string="Файл" filename="file_name" widget="binary" nolabel="1"
+                       help="Управляющий файл раскроя CypCut (.lxds). Толщина листа берётся из имени файла"/>
+                <field name="file_info" class="pmk-job-note" invisible="not file_info"/>
+              </div>
+              <field name="file_name" invisible="1"/>
+              <field name="technical_is_demo" invisible="1"/>
+              <field name="file_replaced" invisible="1"/>
+              <field name="date"/>
+              <!-- Расчёт рядом с заказом: заказов в базе пока нет, режут по
+                   расчёту, и по этой ссылке задание видно на схеме связей. -->
               <field name="spec_id" string="Расчёт" options="{'no_create': True}"/>
-              <field name="machine_id"/>
+              <field name="partner_id"/>
+              <field name="sale_order_id"/>
               <field name="note" placeholder="Примечание…"/>
             </group>
-            <group string="Материал">
+            <group string="Станок и лист" name="pmk_job_cut">
+              <field name="machine_id"/>
               <!-- Вид листа из имени файла не виден: «3мм» не говорит, гладкий
                    он или рифлёный. По умолчанию разбор ставит гладкий, здесь
                    технолог может выбрать другой — масса квадрата у них разная. -->
               <field name="sheet_id" string="Лист" options="{'no_create': True}"/>
-              <field name="sheet_type" readonly="1"/>
               <!-- «3», а не «3,00»; масса квадрата — два знака, а не четыре
                    («23,55», шаг 27): в справочнике четыре знака нужны для
                    расчёта, на экране они шум. -->
               <field name="thickness_mm" readonly="1" options="{'hide_trailing_zeros': True}"/>
               <field name="mass_per_sqm" readonly="1" digits="[12,2]"/>
               <field name="grade_id"/>
-              <field name="kerf_mm"/>
-              <field name="min_offcut_mm"/>
             </group>
           </group>
 
-          <group>
-            <group string="Файл раскроя">
-              <field name="file" string="Файл" filename="file_name" widget="binary"
-                     help="Управляющий файл раскроя CypCut (.lxds). Толщина листа берётся из имени файла"/>
-              <field name="file_name" invisible="1"/>
-              <field name="file_app" readonly="1" invisible="not file_app"/>
-              <field name="file_operator" readonly="1" invisible="not file_operator"/>
-              <field name="file_saved_text" readonly="1" invisible="not file_saved_text"/>
-              <field name="contour_count" readonly="1" invisible="not contour_count"/>
-              <field name="technical_is_demo" invisible="1"/>
-              <field name="file_replaced" invisible="1"/>
-            </group>
-            <group string="Металл и деньги">
-              <field name="sheet_count"/>
-              <field name="gross_area_m2"/>
-              <field name="useful_area_m2"/>
-              <field name="utilization_pct"/>
-              <field name="useful_mass_kg"/>
-              <field name="premium_rate_rub"/>
-              <field name="premium_rub"/>
-            </group>
-          </group>
+          <!--
+            «Металл» — баланс и деньги одной строкой карточек (разбор UX, шаг
+            36). Карточки — оформление темы (.pmk-kpi__card, как итоги расчёта
+            и раскроя; тёмная пара — в теме), строка — laser_job.scss
+            (.pmk-job-metal). До разбора файла металла нет — нет и строки.
+            Подписи — <label for>: у них знак «?» с подсказкой поля, туда ушла
+            теория бывшей вкладки «Баланс металла». Обрезки и пропил — только
+            ненулевые. Цены нет — «нет цены» словом, а не ноль: позиции нет в
+            прайсах, это сигнал «в городе нет». Деньги не хранятся и считаются
+            при открытии (models/job.py, _metal_price): связь с ценами моста —
+            мягкая.
+          -->
+          <div class="pmk-kpi pmk-job-metal" name="pmk_job_metal" invisible="not sheet_ids">
+            <div class="pmk-kpi__card">
+              <label for="mass_kg" string="Списано, кг" class="pmk-kpi__label"/>
+              <div class="pmk-kpi__value"><field name="mass_kg"/></div>
+              <div class="pmk-kpi__sub"><field name="sheets_note"/></div>
+            </div>
+            <div class="pmk-kpi__card">
+              <label for="useful_mass_kg" class="pmk-kpi__label"/>
+              <div class="pmk-kpi__value"><field name="useful_mass_kg"/></div>
+              <div class="pmk-kpi__sub">использование <field name="utilization_pct"/> %</div>
+            </div>
+            <div class="pmk-kpi__card" invisible="not offcut_mass_kg">
+              <label for="offcut_mass_kg" class="pmk-kpi__label"/>
+              <div class="pmk-kpi__value"><field name="offcut_mass_kg"/></div>
+            </div>
+            <div class="pmk-kpi__card" invisible="not kerf_mass_kg">
+              <label for="kerf_mass_kg" class="pmk-kpi__label"/>
+              <div class="pmk-kpi__value"><field name="kerf_mass_kg"/></div>
+            </div>
+            <div class="pmk-kpi__card">
+              <label for="scrap_mass_kg" class="pmk-kpi__label"/>
+              <div class="pmk-kpi__value"><field name="scrap_mass_kg"/></div>
+              <!-- Цвет повторён словом: «27 % · много» жёлтым, «не сходится»
+                   красным, норма — обычным текстом (.pmk-job-scrap). -->
+              <div class="pmk-kpi__sub">
+                <field name="scrap_label" widget="badge" class="pmk-job-scrap"
+                       decoration-warning="scrap_high" decoration-danger="balance_broken"/>
+              </div>
+            </div>
+            <div class="pmk-kpi__card">
+              <label for="metal_rub" class="pmk-kpi__label"/>
+              <div class="pmk-kpi__value">
+                <field name="metal_rub" digits="[12,0]" invisible="metal_price_missing"/>
+                <span class="pmk-job-noprice" invisible="not metal_price_missing">нет цены</span>
+              </div>
+            </div>
+            <!-- Баланс не сходится — вместо суммы «не сходится» (доводка
+                 шага 36): лом отрицательный, и его «стоимость» — «−897» без
+                 слова — ничего не значила. Слово — то же, что под «Лом, кг»;
+                 цены нет и баланс не сходится — главнее второе. -->
+            <div class="pmk-kpi__card">
+              <label for="scrap_rub" class="pmk-kpi__label"/>
+              <div class="pmk-kpi__value">
+                <field name="scrap_rub" digits="[12,0]" invisible="metal_price_missing or balance_broken"/>
+                <span class="pmk-job-noprice" invisible="not metal_price_missing or balance_broken">нет цены</span>
+                <span class="pmk-job-noprice" invisible="not balance_broken">не сходится</span>
+              </div>
+            </div>
+            <div class="pmk-kpi__card">
+              <label for="premium_rub" class="pmk-kpi__label"/>
+              <div class="pmk-kpi__value"><field name="premium_rub"/></div>
+              <div class="pmk-kpi__sub"><field name="premium_rate_rub"/> ₽/т</div>
+            </div>
+            <div class="pmk-kpi__note">
+              <span>Цена металла:</span>
+              <field name="metal_price_note"/>
+            </div>
+            <field name="metal_price_missing" invisible="1"/>
+            <field name="scrap_high" invisible="1"/>
+            <field name="balance_broken" invisible="1"/>
+          </div>
 
           <notebook>
+            <!-- Абзацы-пояснения вкладок (разбор UX, шаг 36) — одной строкой
+                 действия; теория — в подсказках «?» полей. У «Листов» строки
+                 нет: у каждого листа одна нужная кнопка, она и есть действие,
+                 а строка над таблицей отодвигала кнопки за первый экран
+                 (пояснение — в подсказке «Лист №» и «Состояние»). -->
             <page string="Листы" name="sheets">
-              <p class="text-muted">
-                Строка на каждый физический лист, даже если раскладка одна и та же:
-                лист кладут, режут и снимают поштучно. Оператору здесь два касания —
-                «Начал» и «Закончил», всё остальное подставится из задания.
-              </p>
               <field name="sheet_ids" readonly="1">
                 <list>
                   <field name="number"/>
@@ -202,18 +303,34 @@
                   <field name="mass_kg" sum="Масса, кг"/>
                   <field name="useful_mass_kg" sum="Полезный вес, кг"/>
                   <field name="actual_minutes" sum="Факт, мин"/>
+                  <!-- Разбор UX, шаг 36: состояние листа и ОДНА нужная
+                       кнопка — ждёт «Начал», режется «Закончил», у готового
+                       ничего. Было по две кнопки у каждого листа, «Начал»
+                       залитой: на задании из 8 листов — 16 кнопок, 8 из них
+                       залитые. Обе контурные: залитая кнопка на экране одна.
+                       Цвет повторён словом: серый «Ждёт», синий «Режется»,
+                       зелёный «Готов». -->
+                  <field name="cut_state" widget="badge"
+                         decoration-muted="cut_state == 'waiting'"
+                         decoration-info="cut_state == 'running'"
+                         decoration-success="cut_state == 'done'"/>
                   <button name="action_start_cut" type="object" string="Начал"
-                          class="btn-primary" icon="fa-play"/>
+                          class="btn-secondary" icon="fa-play"
+                          invisible="cut_state != 'waiting'"/>
                   <button name="action_finish_cut" type="object" string="Закончил"
-                          class="btn-secondary" icon="fa-stop"/>
+                          class="btn-secondary" icon="fa-stop"
+                          invisible="cut_state != 'running'"/>
                 </list>
               </field>
             </page>
 
+            <!-- Строки-действия — по состоянию, с числом (доводка шага 36):
+                 сделано — строки нет. Иначе все чертежи разобраны, а строка
+                 по-прежнему велит их приложить; операторы добавлены — а она
+                 велит добавить. -->
             <page string="Детали и чертежи" name="parts">
-              <p class="text-muted">
-                Чертёж даёт знаменатель: метры реза и проколы. Эскиз и метрики —
-                в одной строке, чтобы было видно, что разобрали именно эту деталь.
+              <p class="text-muted pmk-job-hint" invisible="not parts_without_drawing">
+                Рез не разобран у <field name="parts_without_drawing" readonly="1" nolabel="1"/> дет. — приложите чертёж .dxf и нажмите «Разобрать» в строке детали.
               </p>
               <field name="part_ids">
                 <list editable="bottom">
@@ -253,10 +370,8 @@
             </page>
 
             <page string="Операторы и премия" name="operators">
-              <p class="text-muted">
-                Премия считается от полезного веса и делится между операторами
-                поровну. Делёж идёт в копейках, поэтому сумма долей всегда равна
-                премии: 738,20 ₽ на троих — 246,07 + 246,07 + 246,06.
+              <p class="text-muted pmk-job-hint" invisible="operator_ids">
+                Добавьте операторов смены — премия задания разделится между ними поровну.
               </p>
               <field name="operator_ids">
                 <list editable="bottom">
@@ -267,12 +382,14 @@
               </field>
             </page>
 
+            <!-- Пока есть предложенные обрезки. Подтверждены или ушли в лом —
+                 строки нет; что в баланс идут только подтверждённые — в
+                 подсказке «?» у «Обрезки, кг» карточки «Металл» и у
+                 «Состояния» обрезка. Слова — как фильтр реестра обрезков
+                 «Ждут подтверждения». -->
             <page string="Обрезки" name="offcuts">
-              <p class="text-muted">
-                Система предлагает размер, технолог смотрит на лист и правит.
-                Предложение грубое: точный свободный прямоугольник считается по
-                геометрии раскладки, а она в двоичной части файла. В баланс идут
-                только подтверждённые обрезки.
+              <p class="text-muted pmk-job-hint" invisible="not offcut_proposed_count">
+                Ждут подтверждения: <field name="offcut_proposed_count" readonly="1" nolabel="1"/> — проверьте размер на листе и подтвердите.
               </p>
               <field name="offcut_ids">
                 <list editable="bottom" decoration-muted="state == 'scrap'">
@@ -296,26 +413,22 @@
                           icon="fa-trash" invisible="state == 'scrap'"/>
                 </list>
               </field>
-            </page>
-
-            <page string="Баланс металла" name="balance">
-              <p class="text-muted">
-                Вес списанных листов = детали + обрезки + пропил + лом. Лом не
-                вводят, он получается вычитанием — и именно поэтому по нему видно,
-                что обрезки не оприходуют или что раскладка плохая. Пропил считается
-                по ширине реза на всю толщину: на десятке метр реза уносит 15,7 г.
-              </p>
-              <group>
-                <group string="Списано">
-                  <field name="mass_kg"/>
+              <!-- Разбор UX, шаг 36: «Ширина реза» и «Обрезок от» — сюда из
+                   верха формы. Константы задания (0,2 мм и 300 мм по
+                   умолчанию), меняют их редко, а считают по ним пропил и
+                   предложение обрезков. В вопросах разбора — перенести их в
+                   карточку станка; до ответа владельца — здесь.
+                   Парой групп, как «Знаменатель задания | План и факт»
+                   (доводка шага 36): одиночная группа — внутренняя без
+                   внешней, без col-lg-6, и поле в сетке pmk-doc-form
+                   растягивалось на всю ширину листа (~1100 px на 1440).
+                   Правая половина пустая. -->
+              <group name="offcut_params">
+                <group string="Параметры">
+                  <field name="kerf_mm"/>
+                  <field name="min_offcut_mm"/>
                 </group>
-                <group string="Куда ушло">
-                  <field name="useful_mass_kg"/>
-                  <field name="offcut_mass_kg"/>
-                  <field name="kerf_mass_kg"/>
-                  <field name="scrap_mass_kg"/>
-                  <field name="balance_broken" invisible="1"/>
-                </group>
+                <group/>
               </group>
             </page>
 
@@ -329,7 +442,12 @@
                   <field name="finished_at"/>
                   <field name="duration_minutes" sum="Лист занял, мин"/>
                   <field name="cut_minutes" sum="Чистая резка, мин"/>
-                  <field name="state"/>
+                  <!-- Слова и цвета — как у листа на вкладке «Листы» (доводка
+                       шага 36): серый «Ждёт», синий «Режется», зелёный «Готов». -->
+                  <field name="state" widget="badge"
+                         decoration-muted="state == 'waiting'"
+                         decoration-info="state == 'running'"
+                         decoration-success="state == 'done'"/>
                   <field name="excluded"/>
                   <field name="exclude_reason" optional="show"/>
                 </list>
@@ -356,10 +474,17 @@
         <filter name="this_month" string="Этот месяц"
                 domain="[('date', '&gt;=', (context_today() + relativedelta(day=1)).strftime('%Y-%m-%d'))]"/>
         <separator/>
-        <filter name="no_norm" string="Без норматива" domain="[('plan_state', '=', 'no_norm')]"/>
-        <filter name="no_drawing" string="Чертежи не разобраны" domain="[('plan_state', '=', 'no_drawing')]"/>
+        <!-- Подписи фильтров — словами значков (разбор UX, шаг 36). -->
+        <filter name="no_norm" string="Нет норматива" domain="[('plan_state', '=', 'no_norm')]"/>
+        <filter name="no_drawing" string="Рез не разобран" domain="[('plan_state', '=', 'no_drawing')]"/>
         <filter name="not_measured" string="Не замерено" domain="[('measure_state', '!=', 'done')]"/>
         <filter name="balance_broken" string="Баланс не сходится" domain="[('balance_broken', '=', True)]"/>
+        <!-- Разбор UX, шаг 36: лом больше порога (money.SCRAP_HIGH_PCT) — где
+             на столе остался неоприходованный обрезок или раскладка плохая.
+             Ищет по хранимой доле (_search_scrap_high). -->
+        <filter name="scrap_high" string="Много лома" domain="[('scrap_high', '=', True)]"/>
+        <!-- Доводка шага 36: задания, снятые с «Очереди листов». -->
+        <filter name="queue_closed" string="Сняты с очереди" domain="[('queue_closed', '=', True)]"/>
         <group>
           <filter name="group_machine" string="Станок" context="{'group_by': 'machine_id'}"/>
           <filter name="group_date" string="Дата" context="{'group_by': 'date'}"/>

@@ -27,6 +27,19 @@ Shapes2D/data.bin), поэтому знаменатель мы честно зн
 сортамент доедет до номенклатуры Odoo (этим занят pmk_bridge). Считать баланс
 уже сейчас — не забегание вперёд: именно он показывает, что обрезки не
 оприходуют, а этого сегодня не видит никто.
+
+ДЕНЬГИ МЕТАЛЛА (разбор UX, шаг 36). «Металл, ₽» и «Лом, ₽» — списанный металл
+и лом по цене поставщика за тонну, той же, что берёт расчёт: задание привязано
+к расчёту и лист в нём есть с ценой — цена строки расчёта (её снимок); иначе
+строка прайса выбирается тем же правилом (дверь моста
+product.template._pmk_find_seller). Связь с мостом МЯГКАЯ, как у раскроя
+(pmk_cut, доводка шага 35): pmk_bridge держит stock_account и модули RuOdoo
+(l10n_ru_doc, l10n_ru_upd_xml), которых у лазера в зависимостях нет, и при
+жёсткой зависимости удаление любого из них в «Приложениях» каскадом снесло
+бы pmk_laser — со всеми заданиями, замерами и нормативами.
+Поэтому деньги не хранятся и считаются при открытии: моста нет — «цены
+поставщиков не подключены», цены нет — «нет в прайсах» (сигнал «в городе
+нет», а не ноль).
 """
 
 import base64
@@ -34,9 +47,10 @@ import os
 import tempfile
 
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError
+from odoo.exceptions import AccessError, UserError
 
-from . import money, timing
+from . import labels, money, timing
+from .machine import table_size_label
 
 # Вид листа по умолчанию. Из имени файла вид не виден, а режут обычно чёрную
 # сталь гладким листом — решение владельца.
@@ -115,6 +129,17 @@ class LaserJob(models.Model):
         "Файл заменён после разбора", readonly=True, copy=False,
         help="Файл раскроя приложили заново, а листы и детали — от прежнего "
              "файла. Снимается разбором файла.")
+    # Разбор UX, шаг 36: блок «Файл раскроя» — четыре строки служебных
+    # сведений (программа, кто сохранил, когда, контуров) над вкладками —
+    # стал одной серой строкой под полем «Файл»: «CypCut 6.3 · сохранил XE ·
+    # 08.09.2026 14:34 · 65 контуров». Четыре поля на месте, их пишет разбор
+    # файла; строка их только складывает (labels.file_info_line). Не хранится.
+    file_info = fields.Char(
+        "Сведения о файле", compute="_compute_file_info",
+        help="Программа раскроя, кто и когда сохранил файл, сколько в нём "
+             "контуров. Время — как его записал CypCut: местное время станка, "
+             "без пересчёта поясов. Контуров почти столько же, сколько "
+             "проколов, — перекрёстная проверка того, что дали чертежи.")
 
     # ------------------------------------------------------------------
     # Материал
@@ -155,11 +180,19 @@ class LaserJob(models.Model):
     sheet_count = fields.Integer("Листов", compute="_compute_metal", store=True)
     gross_area_m2 = fields.Float("Куплено, м²", compute="_compute_metal", store=True, digits=(12, 2))
     useful_area_m2 = fields.Float("Полезно, м²", compute="_compute_metal", store=True, digits=(12, 2))
-    mass_kg = fields.Float("Списано металла, кг", compute="_compute_metal", store=True, digits=(12, 1))
+    # Теория бывшей вкладки «Баланс металла» (разбор UX, шаг 36) — в
+    # подсказках «?» полей баланса: сама вкладка ушла строкой карточек над
+    # вкладками.
+    mass_kg = fields.Float(
+        "Списано металла, кг", compute="_compute_metal", store=True, digits=(12, 1),
+        help="Вес списанных листов = детали + обрезки + пропил + лом. Лом не "
+             "вводят, он получается вычитанием — и именно поэтому по нему "
+             "видно, что обрезки не оприходуют или что раскладка плохая.")
     useful_mass_kg = fields.Float(
         "Полезный вес, кг", compute="_compute_metal", store=True, digits=(12, 1),
         help="Вес разложенных деталей. За него платит заказчик и от него "
              "считается премия — не от веса купленного листа.")
+    sheets_note = fields.Char("Сколько листов", compute="_compute_sheets_note")
     # «Оживить таблицы» (29.09.2026): в строке группы пусто. Сумма процентов
     # (по умолчанию у Odoo) бессмысленна, а простое среднее обманывает:
     # задание без раскладки хранит 0 % и тянет группу вниз, и оно не
@@ -172,7 +205,11 @@ class LaserJob(models.Model):
     premium_rate_rub = fields.Float(
         "Ставка премии, ₽/т", compute="_compute_premium", store=True, digits=(8, 0), aggregator=None)
     premium_rub = fields.Float(
-        "Премия, ₽", compute="_compute_premium", store=True, digits=(10, 2), tracking=True)
+        "Премия, ₽", compute="_compute_premium", store=True, digits=(10, 2), tracking=True,
+        help="От полезного веса, а не от веса листа: 500 ₽/т на листе от 3 мм "
+             "включительно, 3000 ₽/т тоньше — на тонком листе деталей в разы "
+             "больше при том же весе. Делится между операторами смены поровну "
+             "(вкладка «Операторы и премия»).")
 
     cut_length_m = fields.Float("Длина реза, м", compute="_compute_denominator", store=True, digits=(12, 2))
     pierce_count = fields.Integer("Проколов", compute="_compute_denominator", store=True)
@@ -183,24 +220,133 @@ class LaserJob(models.Model):
              "контуров в файле раскроя. Большое расхождение значит, что "
              "к деталям приложены не те чертежи.")
 
-    kerf_mass_kg = fields.Float("Пропил, кг", compute="_compute_balance", store=True, digits=(12, 2))
-    offcut_mass_kg = fields.Float("Обрезки, кг", compute="_compute_balance", store=True, digits=(12, 1))
+    kerf_mass_kg = fields.Float(
+        "Пропил, кг", compute="_compute_balance", store=True, digits=(12, 2),
+        help="Металл, который рез уносит в пыль: длина реза × ширина реза "
+             "(вкладка «Обрезки», «Параметры») на всю толщину. На десятке метр "
+             "реза уносит 15,7 г. Без этой строки лом в балансе всегда "
+             "«больше расчётного», и непонятно почему.")
+    offcut_mass_kg = fields.Float(
+        "Обрезки, кг", compute="_compute_balance", store=True, digits=(12, 1),
+        help="Только подтверждённые обрезки: предложение системы — ещё не "
+             "кусок на стеллаже.")
     scrap_mass_kg = fields.Float(
         "Лом, кг", compute="_compute_balance", store=True, digits=(12, 1),
         help="Не вводится, а получается вычитанием: списано минус детали, "
              "обрезки и пропил. Систематический перекос в лом означает либо "
              "что обрезки не оприходуют, либо что раскладка плохая.")
     balance_broken = fields.Boolean("Баланс не сходится", compute="_compute_balance", store=True)
+    # Разбор UX, шаг 36: лом — главная цифра экономии металла (премия от
+    # маржи). Доля хранится: по ней сортирует список и ищет фильтр «Много
+    # лома». Подпись — «Лом, % (число)»: в меню колонок (⚙) рядом стоит
+    # «Лом, %» словом, и это одно и то же число (доводка шага 36).
+    scrap_pct = fields.Float(
+        "Лом, % (число)", compute="_compute_balance", store=True, digits=(5, 1), aggregator=None,
+        help="Лом от веса списанных листов — то же число, что «Лом, %» словом, "
+             "но им можно сортировать и фильтровать.")
+    # ⚠️ «МНОГО» НЕ ХРАНИТСЯ (доводка шага 36). Порог — решение по умолчанию
+    # (money.SCRAP_HIGH_PCT), владелец может его сменить. Хранимый признак
+    # после смены константы не пересчитался бы (зависимости те же, -u
+    # досчитывает только новые колонки): задание с 17 % при пороге 15 %
+    # писало бы «· много» без жёлтой плашки, и фильтр бы его не находил.
+    # Теперь подпись и признак считаются при открытии от хранимой доли одним
+    # решением (labels.scrap_signal), а фильтр ищет по той же доле
+    # (_search_scrap_high) — порог действует сразу и везде. Число в
+    # подсказках — из той же константы.
+    scrap_high = fields.Boolean(
+        "Много лома", compute="_compute_scrap_signal", search="_search_scrap_high",
+        help="Лом больше %s списанного металла. Сигнал, а не запрет: обычно "
+             "это неоприходованный цельный обрезок или плохая раскладка. "
+             "Подтвердили обрезок — лом уменьшится, сигнал погаснет сам."
+             % labels.pct(money.SCRAP_HIGH_PCT))
+    scrap_label = fields.Char(
+        "Лом, %", compute="_compute_scrap_signal",
+        help="Доля лома от списанного металла. Больше %s — жёлтым и словом "
+             "«много»; баланс не сходится — «не сходится»."
+             % labels.pct(money.SCRAP_HIGH_PCT))
+
+    # ------------------------------------------------------------------
+    # Деньги металла (разбор UX, шаг 36)
+    # ------------------------------------------------------------------
+    # Не хранятся: связь с ценами мягкая (шапка файла), а цену заводят и
+    # правят заливкой прайса — хранимое значение устаревало бы молча.
+    # ⚠️ ДВА ЗНАКА, А НЕ ЦЕЛЫЕ (доводка шага 36). Присвоение в вычислении
+    # проходит через кеш, а кеш Float округляет до знаков поля
+    # (orm/fields_numeric.py, convert_to_cache): с digits=(12, 0) поле
+    # хранило бы 72 914 вместо 72 913,52. Как у строки расчёта (price_ton,
+    # pmk_bridge) — до копеек; на экран цена идёт строкой «Цена металла»,
+    # округлённой до рубля.
+    metal_price_ton = fields.Float(
+        "Цена металла, ₽/т", compute="_compute_metal_money", digits=(12, 2))
+    metal_price_note = fields.Char("Цена металла", compute="_compute_metal_money")
+    metal_price_missing = fields.Boolean("Нет цены металла", compute="_compute_metal_money")
+    metal_rub = fields.Float(
+        "Металл, ₽", compute="_compute_metal_money", digits=(12, 2),
+        help="Списанный металл (вес списанных листов) по цене поставщика за "
+             "тонну — той же, что в расчёте: задание привязано к расчёту и "
+             "лист в нём с ценой — цена строки расчёта, как она стоит в нём "
+             "(«из расчёта»); иначе по правилу расчёта — его поставщик и дата "
+             "цен, без расчёта — поставщик с лучшим рейтингом на дату "
+             "задания, базовый уровень объёма. Цены нет — позиции нет в "
+             "прайсах («в городе нет»): это сигнал, а не ноль.")
+    scrap_rub = fields.Float(
+        "Лом, ₽", compute="_compute_metal_money", digits=(12, 2),
+        help="Столько стоил металл, ушедший в лом, — по той же цене за тонну. "
+             "Цены сдачи лома в базе нет; появится — лом можно будет считать "
+             "по ней. Баланс не сходится — вместо суммы «не сходится»: "
+             "стоимость отрицательного лома ничего не значит.")
+
+    # ------------------------------------------------------------------
+    # «Очередь листов» (доводка шага 36)
+    # ------------------------------------------------------------------
+    # Убрать листы из очереди было нечем: «Готов» у листа значит только «есть
+    # закрытый замер». Брошенное и пробное задание, раскрой, отрезанный без
+    # кнопок, старое задание, чей файл заменили после замеров, — их листы
+    # «Ждут» навсегда и стоят над текущей работой (старые задания первыми).
+    # Снять — фиктивным замером (ложь в факт и норматив) или удалив задание
+    # вместе с премией. Теперь задание снимают с очереди — ⚙ «Действие» →
+    # «Снять с очереди» (и «Вернуть в очередь»). Ничего не удаляется, замеры,
+    # премия и норматив не меняются; лист, который режется, из очереди не
+    # уходит, пока его не закончат.
+    queue_closed = fields.Boolean(
+        "Снято с очереди", copy=False, tracking=True,
+        help="Неотрезанные листы задания не показываются в «Очереди листов»: "
+             "задание брошено или пробное, раскрой отрезали без кнопок, файл "
+             "заменили после замеров и новый приложили к новому заданию. "
+             "Замеры, премия и норматив не меняются; лист, который режется, "
+             "остаётся в очереди, пока его не закончат. Снять и вернуть — "
+             "⚙ «Действие» в задании или в списке заданий.")
+    queue_closed_note = fields.Char(
+        "Очередь", compute="_compute_queue_closed_note",
+        help="Задание снято с «Очереди листов», а неотрезанные листы у него "
+             "есть. Вернуть — ⚙ «Действие» → «Вернуть в очередь».")
+
+    # Строка действия вкладки «Обрезки» — только пока есть что подтверждать.
+    offcut_proposed_count = fields.Integer(
+        "Ждут подтверждения", compute="_compute_offcut_proposed_count", aggregator=None,
+        help="Обрезки, предложенные системой и ещё не подтверждённые "
+             "технологом: в баланс металла они не идут.")
 
     # ------------------------------------------------------------------
     # План и факт
     # ------------------------------------------------------------------
+    # Разбор UX, шаг 36: подписи короткие — значки в списке заданий
+    # («Грубо: рез и проколы не разделены», «Все листы замерены») обрезались
+    # на полуслове. Те же слова — у норматива (norm.py, mode) и в узле схемы
+    # связей (pmk_flow, _LASER_PLAN): одно понятие — одно слово. Полный смысл
+    # каждого значения — в подсказке «?».
     plan_state = fields.Selection(
-        [("ok", "Норматив выведен"),
-         ("rough", "Грубо: рез и проколы не разделены"),
-         ("no_norm", "Норматива нет"),
-         ("no_drawing", "Длина реза не разобрана")],
-        "Состояние плана", compute="_compute_plan", store=True, default="no_drawing")
+        [("ok", "Норматив есть"),
+         ("rough", "Норматив грубый"),
+         ("no_norm", "Нет норматива"),
+         ("no_drawing", "Рез не разобран")],
+        "План", compute="_compute_plan", store=True, default="no_drawing",
+        help="Норматив есть — план считается по замерам этой толщины на этом "
+             "станке. Норматив грубый — рез и проколы не разделены: минуты на "
+             "метр реза есть, время прокола отдельно не выведено. Нет "
+             "норматива — на этой толщине ещё нет ни одного замера; среднее по "
+             "соседним толщинам не подставляется. Рез не разобран — у деталей "
+             "нет длины реза: приложите и разберите чертежи.")
     planned_minutes = fields.Float(
         "План, мин", compute="_compute_plan", store=True, digits=(10, 1),
         help="Загрузка и разгрузка стола на каждый лист плюс резка по "
@@ -214,8 +360,12 @@ class LaserJob(models.Model):
         help="1, если у задания нет норматива или не разобрана длина реза.")
     actual_minutes = fields.Float("Факт, мин", compute="_compute_fact", store=True, digits=(10, 1))
     measure_state = fields.Selection(
-        [("none", "Замеров нет"), ("partial", "Замерена часть листов"), ("done", "Все листы замерены")],
-        "Замеры", compute="_compute_fact", store=True, default="none")
+        [("none", "Не мерили"), ("partial", "Мерили часть"), ("done", "Замерено")],
+        "Замеры", compute="_compute_fact", store=True, default="none",
+        help="Не мерили — ни у одного листа нет замера. Мерили часть — "
+             "замерены не все листы. Замерено — замер есть у каждого листа; "
+             "только такое задание идёт в норматив: знаменатель (метры реза и "
+             "проколы) известен по заданию целиком, а не по листу.")
 
     # ==================================================================
     # Вычисления
@@ -272,6 +422,192 @@ class LaserJob(models.Model):
             job.scrap_mass_kg = money.scrap_mass_kg(
                 job.mass_kg, job.useful_mass_kg, job.offcut_mass_kg, job.kerf_mass_kg)
             job.balance_broken = job.mass_kg > 0.0 and job.scrap_mass_kg < 0.0
+            # Доля — от уже округлённых весов, как их видит человек (кеш
+            # хранимого поля округляет до знаков поля), и хранится с одним
+            # знаком: по ней же решают подпись, плашка и фильтр «Много лома».
+            job.scrap_pct = money.scrap_pct(job.scrap_mass_kg, job.mass_kg)
+
+    @api.depends("scrap_pct", "mass_kg", "balance_broken")
+    def _compute_scrap_signal(self):
+        """«Лом, %» словом и признак «много» — одним решением по хранимой доле
+        (labels.scrap_signal): «27 % · много» всегда с жёлтой плашкой, и
+        фильтр находит ровно эти задания (_search_scrap_high)."""
+        for job in self:
+            label, high = labels.scrap_signal(job.scrap_pct, job.mass_kg, job.balance_broken)
+            job.scrap_label = label or False
+            job.scrap_high = high
+
+    def _search_scrap_high(self, operator, value):
+        """Фильтр «Много лома» — по хранимой доле с тем же порогом, что у
+        признака: доля с одним знаком строго больше порога, баланс сходится,
+        металл списан. Порог читается при каждом поиске.
+
+        Odoo 19 приводит условие на логическое поле к «in [True]» (orm/
+        domains.py, _optimize_boolean_in); «не много» ядро получает само —
+        отрицанием этого же условия.
+        """
+        if operator != "in":
+            return NotImplemented
+        return [
+            ("balance_broken", "=", False),
+            ("mass_kg", ">", 0.0),
+            ("scrap_pct", ">", money.SCRAP_HIGH_PCT),
+        ]
+
+    @api.depends("file_app", "file_operator", "file_saved_text", "contour_count")
+    def _compute_file_info(self):
+        for job in self:
+            job.file_info = labels.file_info_line(
+                job.file_app, job.file_operator, job.file_saved_text, job.contour_count) or False
+
+    @api.depends("sheet_count")
+    def _compute_sheets_note(self):
+        for job in self:
+            job.sheets_note = labels.sheets_note(job.sheet_count) or False
+
+    @api.depends("queue_closed", "sheet_ids.cut_state")
+    def _compute_queue_closed_note(self):
+        for job in self:
+            waiting = len(job.sheet_ids.filtered(lambda s: s.cut_state == "waiting"))
+            job.queue_closed_note = (
+                labels.queue_closed_note(waiting) if job.queue_closed else "") or False
+
+    @api.depends("offcut_ids.state")
+    def _compute_offcut_proposed_count(self):
+        for job in self:
+            job.offcut_proposed_count = len(job.offcut_ids.filtered(lambda o: o.state == "proposal"))
+
+    # ------------------------------------------------------------------
+    # Деньги металла (разбор UX, шаг 36)
+    # ------------------------------------------------------------------
+
+    @api.depends("sheet_id", "date", "spec_id", "mass_kg", "scrap_mass_kg", "balance_broken")
+    def _compute_metal_money(self):
+        for job in self:
+            price_ton, note, missing = job._metal_price()
+            job.metal_price_ton = price_ton
+            job.metal_price_note = note
+            job.metal_price_missing = missing
+            # От локальной цены, а не от поля: кеш округлил бы её до знаков.
+            job.metal_rub = money.rub_from_ton(job.mass_kg, price_ton)
+            # Баланс не сходится — лом отрицательный, и его «стоимость» ничего
+            # не значит (доводка шага 36): в карточке вместо суммы слово «не
+            # сходится», отрицательных денег в задании нет.
+            job.scrap_rub = 0.0 if job.balance_broken else money.rub_from_ton(
+                job.scrap_mass_kg, price_ton)
+
+    @api.model
+    def _pmk_price_ready(self):
+        """Стоит ли мост номенклатуры (pmk_bridge) — источник цены листа.
+
+        Связь МЯГКАЯ, как у раскроя (pmk_cut, _pmk_price_bars_ready): в
+        зависимостях pmk_laser моста нет — удаление stock_account или
+        модулей RuOdoo, на которых он держится, каскадом снесло бы участок
+        со всеми заданиями и замерами. От моста нужны связь листа с карточкой
+        товара (pmk.metal.sheet.product_tmpl_id), выбор строки прайса
+        (product.template._pmk_find_seller) и масса единицы
+        (pmk.metal.sheet._pmk_mass_per_unit).
+        """
+        env = self.env
+        return (
+            "product_tmpl_id" in env["pmk.metal.sheet"]._fields
+            and hasattr(env["product.template"], "_pmk_find_seller")
+            and hasattr(env["pmk.metal.sheet"], "_pmk_mass_per_unit"))
+
+    def _spec_sheet_line(self, sheet):
+        """Строка расчёта с этим листом и ценой — или пустой набор.
+
+        Задание привязано к расчёту — металл в задании стоит столько же,
+        сколько в расчёте (доводка шага 36). Строка расчёта держит цену
+        снимком (pmk_bridge, spec_cost.py: price_ton, «Поставщик цены»,
+        «Прайс от») и сама не перечитывается: новая заливка прайса доходит до
+        неё только кнопкой «Перечитать цены». Выбирать строку прайса заново
+        значило бы разойтись с расчётом — когда цены в нём не перечитаны,
+        когда прайс залили заново, когда «Цены на дату» пусты (расчёт
+        посчитан «сегодня» того дня, а не нынешнего).
+
+        Строк с этим листом несколько — первая по порядку расчёта. Поля
+        цены строки ставит мост; без них (моста нет) — пустой набор.
+        """
+        Line = self.env["pmk.metal.spec.line"]
+        needed = ("calc_mode", "sheet_id", "price_state", "price_ton",
+                  "price_partner_id", "price_date_used")
+        if not self.spec_id or not sheet or any(name not in Line._fields for name in needed):
+            return Line
+        return Line.search([
+            ("spec_id", "=", self.spec_id.id),
+            ("calc_mode", "=", "sheet"),
+            ("sheet_id", "=", sheet.id),
+            ("price_state", "=", "ok"),
+            ("price_ton", ">", 0.0),
+        ], limit=1)
+
+    def _metal_price(self):
+        """Цена металла задания: (₽ за тонну, пояснение, цены нет).
+
+        ОДНА ДВЕРЬ С РАСЧЁТОМ. Задание привязано к расчёту, и лист в нём
+        есть с ценой — цена этой строки расчёта, как она в нём стоит
+        (_spec_sheet_line, пояснение «из расчёта»). Иначе строку прайса
+        выбирает тот же метод, что и расчёт (product.template.
+        _pmk_find_seller: действует на дату, поставщик расчёта или лучший по
+        рейтингу, базовый уровень объёма), и масса листа — то же правило
+        (_pmk_mass_per_unit: вес листа с карточки): при расчёте — его дата
+        цен (пусто — сегодня, как у расчёта) и поставщик, без расчёта — дата
+        задания (день резки) и лучший поставщик.
+
+        Цены нет — не ноль, а слово: «нет в прайсах» — позиции нет у
+        поставщиков города (сигнал, не ошибка данных; на 02.10.2026 цены
+        есть у 14 листов справочника из 57). Валюту не пересчитываем: без
+        курса пересчёт прошёл бы один к одному.
+        """
+        self.ensure_one()
+        sheet = self.sheet_id
+        if not sheet:
+            return 0.0, "лист не выбран", True
+        if not self._pmk_price_ready():
+            return 0.0, "цены поставщиков не подключены", True
+        try:
+            line = self._spec_sheet_line(sheet)
+            if line:
+                currency = line.currency_id if "currency_id" in line._fields else False
+                if currency and currency != self.env.company.currency_id:
+                    return 0.0, "цена в расчёте не в рублях (%s)" % currency.name, True
+                return line.price_ton, labels.price_note(
+                    line.price_ton, line.price_partner_id.display_name,
+                    line.price_date_used, source="из расчёта"), False
+            tmpl = sheet.product_tmpl_id
+            if not tmpl:
+                return 0.0, "у листа нет карточки товара", True
+            spec = self.spec_id
+            if spec:
+                # Правило расчёта целиком (pmk_bridge, _cost_find_seller):
+                # «Цены на дату» пусты — сегодня, а не дата задания.
+                on_date = ((spec.price_date if "price_date" in spec._fields else False)
+                           or fields.Date.context_today(self))
+            else:
+                on_date = self.date or fields.Date.context_today(self)
+            supplier = spec.supplier_id if spec and "supplier_id" in spec._fields else False
+            seller = tmpl._pmk_find_seller(on_date, supplier=supplier or None)
+            if not seller:
+                if supplier:
+                    return 0.0, "нет в прайсе поставщика расчёта (%s)" % supplier.display_name, True
+                return 0.0, "нет в прайсах — позиции нет у поставщиков города", True
+            if seller.currency_id and seller.currency_id != self.env.company.currency_id:
+                return 0.0, "цена поставщика не в рублях (%s)" % seller.currency_id.name, True
+            mass_unit = sheet._pmk_mass_per_unit(tmpl)
+            if not mass_unit:
+                # Мина листа (pmk_bridge, reference_link.py): второй габарит
+                # обнулит вес карточки — цены за тонну не будет.
+                return 0.0, "неизвестен вес листа на карточке товара", True
+            if not seller.price_discounted:
+                return 0.0, "в прайсе цена 0", True
+            price_ton = money.per_ton(seller.price_discounted, mass_unit)
+            return price_ton, labels.price_note(
+                price_ton, seller.partner_id.display_name, seller.date_start), False
+        except AccessError:
+            # Прайсы и карточки товаров закрыты правами — деньги не покажем,
+            # но форма откроется.
+            return 0.0, "нет доступа к ценам поставщиков", True
 
     @api.depends("cut_length_m", "pierce_count", "sheet_count", "machine_id",
                  "machine_id.load_min", "machine_id.unload_min",
@@ -619,6 +955,24 @@ class LaserJob(models.Model):
         self.env["pmk.laser.norm"]._sync_from_measures()
         return True
 
+    # ==================================================================
+    # «Очередь листов» (доводка шага 36)
+    # ==================================================================
+
+    def action_queue_close(self):
+        """⚙ «Действие» → «Снять с очереди»: неотрезанные листы задания уходят
+        из «Очереди листов». Ничего не удаляет, замеры, премия и норматив не
+        меняются; лист, который режется, остаётся, пока его не закончат.
+        Обратимо — «Вернуть в очередь». Пункт меню, а не кнопка в шапке:
+        нужен редко, а шапку шаг 36 и сжимал."""
+        self.write({"queue_closed": True})
+        return True
+
+    def action_queue_open(self):
+        """⚙ «Действие» → «Вернуть в очередь»."""
+        self.write({"queue_closed": False})
+        return True
+
 
 class LaserJobPart(models.Model):
     """Деталь задания: сколько штук и что говорит её чертёж.
@@ -639,10 +993,19 @@ class LaserJobPart(models.Model):
         "Разложено", help="Отличается от заявленного, когда в раскладку влезли "
                           "не все детали — часть заказа уедет на следующий лист.")
 
-    drawing = fields.Binary("Чертёж (.dxf)", attachment=True)
+    # Теория вкладки «Детали и чертежи» — в подсказке «?» (разбор UX, шаг 36).
+    drawing = fields.Binary(
+        "Чертёж (.dxf)", attachment=True,
+        help="Чертёж даёт знаменатель замера: метры реза и проколы. Без него "
+             "«лист резался 47 минут» остаётся числом, которое нельзя "
+             "перенести на другой заказ. Эскиз и метрики — в одной строке с "
+             "деталью: видно, что разобран чертёж именно этой детали.")
     drawing_name = fields.Char("Имя чертежа")
 
-    cut_length_mm = fields.Float("Рез на деталь, мм", digits=(12, 1), readonly=True)
+    cut_length_mm = fields.Float(
+        "Рез на деталь, мм", digits=(12, 1), readonly=True,
+        help="Длина реза одной детали по чертежу — контур и все отверстия. "
+             "Появляется кнопкой «Разобрать» в строке детали.")
     pierce_count = fields.Integer("Проколов на деталь", readonly=True)
     preview_svg = fields.Text("Эскиз", readonly=True)
 
@@ -694,14 +1057,32 @@ class LaserJobSheet(models.Model):
     _rec_name = "number"
 
     job_id = fields.Many2one("pmk.laser.job", "Задание", required=True, ondelete="cascade", index=True)
-    number = fields.Integer("Лист №", required=True)
+    # Теория вкладки «Листы» — в подсказке «?» (разбор UX, шаг 36).
+    # ⚠️ aggregator=None у номера, раскладки, габарита и использования
+    # (доводка шага 36). «Очередь листов» сгруппирована по станку, а Odoo
+    # складывает в строке группы каждое число, у которого есть агрегатор
+    # (у Integer и Float по умолчанию сумма): «Лист № 36», «Использование,
+    # % 620,4» — та же бессмыслица, что шаг 24 убирал у задания. Хуже того,
+    # web_read_group строит порядок групп из default_order списка
+    # (_get_read_group_order): «number» с агрегатором превращался в
+    # «number:sum», и станки вставали по сумме номеров листов — менялись
+    # местами по ходу резки. Без агрегатора номер в порядок групп не идёт, и
+    # группы стоят по станку (его _order). Масса и минуты складываются, как
+    # и раньше.
+    number = fields.Integer(
+        "Лист №", required=True, aggregator=None,
+        help="Строка на каждый физический лист, даже если раскладка одна и та "
+             "же: лист кладут, режут и снимают поштучно, и замер привязан к "
+             "листу. Оператору два касания — «Начал» и «Закончил», всё "
+             "остальное подставится из задания.")
     nest_index = fields.Integer(
-        "Раскладка", help="Номер раскладки в файле. У листов одной раскладки "
-                          "картинка одна и та же — их время должно совпадать, "
-                          "и расхождение сразу видно в замерах.")
-    width_mm = fields.Float("Ширина, мм", digits=(8, 0), required=True)
-    length_mm = fields.Float("Длина, мм", digits=(8, 0), required=True)
-    utilization_pct = fields.Float("Использование, %", digits=(5, 1), required=True)
+        "Раскладка", aggregator=None,
+        help="Номер раскладки в файле. У листов одной раскладки картинка одна "
+             "и та же — их время должно совпадать, и расхождение сразу видно "
+             "в замерах.")
+    width_mm = fields.Float("Ширина, мм", digits=(8, 0), required=True, aggregator=None)
+    length_mm = fields.Float("Длина, мм", digits=(8, 0), required=True, aggregator=None)
+    utilization_pct = fields.Float("Использование, %", digits=(5, 1), required=True, aggregator=None)
 
     area_m2 = fields.Float("Габарит, м²", compute="_compute_metal", store=True, digits=(10, 3))
     useful_area_m2 = fields.Float("Полезно, м²", compute="_compute_metal", store=True, digits=(10, 3))
@@ -711,6 +1092,81 @@ class LaserJobSheet(models.Model):
     measure_ids = fields.One2many("pmk.laser.measure", "sheet_line_id", "Замеры")
     offcut_ids = fields.One2many("pmk.laser.offcut", "sheet_line_id", "Обрезки")
     actual_minutes = fields.Float("Факт, мин", compute="_compute_actual", store=True, digits=(8, 1))
+
+    # ------------------------------------------------------------------
+    # Резка листа: состояние и «Очередь листов» (разбор UX, шаг 36)
+    # ------------------------------------------------------------------
+    # У каждого листа горели обе кнопки — «Начал» и «Закончил», даже у
+    # отрезанного: на задании из 8 листов 16 кнопок. Теперь у листа
+    # состояние и одна нужная кнопка: ждёт — «Начал», режется — «Закончил»,
+    # готов — ничего. Хранится: по нему отбирает и группирует очередь.
+    cut_state = fields.Selection(
+        [("waiting", "Ждёт"), ("running", "Режется"), ("done", "Готов")],
+        "Состояние", compute="_compute_cut_state", store=True, index=True,
+        default="waiting",
+        help="Ждёт — «Начал» ещё не нажимали. Режется — «Начал» нажат, "
+             "«Закончил» ещё нет. Готов — лист снят. Замер, который мастер "
+             "исключил из норматива (обед, поломка), лист готовым оставляет: "
+             "лист отрезан, исключение касается только норматива.")
+    # Станок — копией из задания, хранимой: очередь группирует листы по
+    # станку, а группировать по полю другой таблицы список не умеет.
+    machine_id = fields.Many2one(
+        related="job_id.machine_id", string="Станок", store=True, index=True)
+    thickness_mm = fields.Float(
+        related="job_id.thickness_mm", string="Толщина, мм", aggregator=None)
+    # Имя файла — по нему оператор находит программу на станке.
+    job_file_name = fields.Char(related="job_id.file_name", string="Файл")
+    size_label = fields.Char(
+        "Габарит, мм", compute="_compute_size_label",
+        help="Ширина × длина листа, как пишут габарит в прайсе: «1500×3000».")
+    # Доводка шага 36: в задании приложили новый файл раскроя, а листы — от
+    # прежнего (file_replaced). В форме задания на это жёлтый сигнал, а в
+    # очереди колонка «Файл» показывала уже имя НОВОГО файла: оператор грузил
+    # новую программу и жал «Начал» на листе, которого в ней может не быть.
+    # Сигнал, а не запрет: «Начал» на месте. Колонка молчит, когда всё в
+    # порядке. Не хранится — читается при показе.
+    queue_note = fields.Char(
+        "Замечание", compute="_compute_queue_note",
+        help="«Файл заменён» — в задании приложили новый файл раскроя, а листы "
+             "от прежнего: программа на станке и лист в очереди могут не "
+             "совпасть. Без замеров технолог разбирает новый файл; после "
+             "замеров новый файл кладут в новое задание, а это снимают с "
+             "очереди (⚙ «Действие» в задании).")
+
+    @api.depends("measure_ids.state")
+    def _compute_cut_state(self):
+        for sheet in self:
+            states = set(sheet.measure_ids.mapped("state"))
+            if "running" in states:
+                sheet.cut_state = "running"
+            elif "done" in states:
+                # Исключённый мастером замер — тоже «Готов» (решение по
+                # умолчанию, утверждает владелец): иначе отрезанный лист
+                # вернулся бы в очередь, и оператор резал бы его второй раз.
+                sheet.cut_state = "done"
+            else:
+                sheet.cut_state = "waiting"
+
+    @api.depends("width_mm", "length_mm")
+    def _compute_size_label(self):
+        for sheet in self:
+            sheet.size_label = table_size_label(sheet.width_mm, sheet.length_mm)
+
+    @api.depends("job_id.file_replaced")
+    def _compute_queue_note(self):
+        for sheet in self:
+            sheet.queue_note = "файл заменён" if sheet.job_id.file_replaced else False
+
+    def action_open_job(self):
+        """Строка «Очереди листов» открывает задание: чертежи, детали, замеры."""
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "res_model": "pmk.laser.job",
+            "res_id": self.job_id.id,
+            "views": [[False, "form"]],
+            "target": "current",
+        }
 
     @api.depends("width_mm", "length_mm", "utilization_pct", "job_id.mass_per_sqm")
     def _compute_metal(self):
@@ -731,9 +1187,22 @@ class LaserJobSheet(models.Model):
             sheet.actual_minutes = sum(usable.mapped("duration_minutes"))
 
     def action_start_cut(self):
-        """Первое касание оператора: «начал». Всё остальное берётся из задания."""
+        """Первое касание оператора: «начал». Всё остальное берётся из задания.
+
+        Отрезанный лист заново не начинается (доводка шага 36). У готового
+        листа вид кнопку прячет, но страница могла устареть: у станка двое
+        или очередь открыта на двух устройствах. Второй замер лёг бы на
+        отрезанный лист — он снова «Режется», а реально режущийся остаётся
+        «Ждёт»; «Факт, мин» и норматив сложили бы оба замера. Это защита от
+        устаревшей страницы, а не запрет: лист правда режут заново — прежний
+        замер удаляют в «Замерах», и лист снова «Ждёт».
+        """
         measures = self.env["pmk.laser.measure"]
         for sheet in self:
+            if sheet.cut_state == "done":
+                raise UserError(_(
+                    "Лист %s уже отрезан — обновите страницу: очередь могла "
+                    "устареть.") % sheet.number)
             running = sheet.measure_ids.filtered(lambda m: m.state == "running")
             if running:
                 raise UserError(_("По листу %s замер уже идёт") % sheet.number)
@@ -771,7 +1240,12 @@ class LaserJobOperator(models.Model):
     job_id = fields.Many2one("pmk.laser.job", "Задание", required=True, ondelete="cascade", index=True)
     sequence = fields.Integer("Порядок", default=10)
     employee_id = fields.Many2one("hr.employee", "Оператор", required=True)
-    amount_rub = fields.Float("Премия, ₽", compute="_compute_amount", store=True, digits=(10, 2))
+    # Теория вкладки «Операторы и премия» — в подсказке «?» (разбор UX, шаг 36).
+    amount_rub = fields.Float(
+        "Премия, ₽", compute="_compute_amount", store=True, digits=(10, 2),
+        help="Доля оператора: премия задания поровну на всех в списке. Делёж "
+             "идёт в копейках, поэтому сумма долей всегда равна премии: "
+             "738,20 ₽ на троих — 246,07 + 246,07 + 246,06.")
 
     _employee_once = models.UniqueIndex(
         "(job_id, employee_id)",

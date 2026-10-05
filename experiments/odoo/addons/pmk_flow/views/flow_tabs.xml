@@ -35,6 +35,28 @@
         </field>
     </record>
 
+    <!--
+        Задание лазеру — разбор UX, шаг 36 (02.10.2026): у задания вкладки
+        «Связи» не было, хотя на схеме расчёта и сделки задание есть (узел
+        «Лазер»). Так же, как у расчёта: путь от корня, priority 99 —
+        последней вкладкой, после «Замеров». pmk_flow зависит от pmk_laser,
+        поэтому узел notebook на месте к загрузке этого вида.
+    -->
+    <record id="view_laser_job_form_pmk_flow" model="ir.ui.view">
+        <field name="name">pmk.laser.job.form.pmk.flow</field>
+        <field name="model">pmk.laser.job</field>
+        <field name="inherit_id" ref="pmk_laser.view_laser_job_form"/>
+        <field name="priority">99</field>
+        <field name="active" eval="True"/>
+        <field name="arch" type="xml">
+            <xpath expr="/form/sheet/notebook" position="inside">
+                <page string="Связи" name="pmk_flow">
+                    <widget name="pmk_flow_map"/>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
     <record id="view_crm_lead_form_pmk_flow" model="ir.ui.view">
         <field name="name">crm.lead.form.pmk.flow</field>
         <field name="model">crm.lead</field>

@@ -7,3 +7,7 @@ from . import test_list_columns
 from . import test_offcut_empty
 from . import test_step27_form
 from . import test_step29_hide
+# Разбор UX, шаг 36: компактный верх, одна кнопка на лист, «Очередь листов»,
+# лом в кг и ₽, с доводкой (деньги с ценой — только с мостом:
+# -i pmk_laser,pmk_bridge,pmk_flow --test-tags /pmk_laser).
+from . import test_step36_laser

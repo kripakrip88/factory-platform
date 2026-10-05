@@ -10,7 +10,9 @@
              нулей («3», «0,5»). -->
         <field name="job_id" width="105px"/>
         <field name="sheet_line_id"/>
-        <field name="machine_id"/>
+        <!-- Станок мощностью («6 кВт»), как в списке заданий (разбор UX,
+             шаг 36): в колонке списка — короткое имя, в форме — полное. -->
+        <field name="machine_id" context="{'pmk_machine_short': True}"/>
         <field name="thickness_mm" options="{'hide_trailing_zeros': True}"/>
         <field name="operator_id"/>
         <field name="started_at"/>
@@ -90,8 +92,10 @@
         <field name="job_id"/>
         <field name="operator_id"/>
         <field name="machine_id"/>
-        <filter name="running" string="Сейчас режет" domain="[('state', '=', 'running')]"/>
-        <filter name="done" string="Закончены" domain="[('state', '=', 'done')]"/>
+        <!-- Слова — как у состояния (доводка шага 36: «Ждёт / Режется /
+             Готов», как у листа). -->
+        <filter name="running" string="Режутся" domain="[('state', '=', 'running')]"/>
+        <filter name="done" string="Готовы" domain="[('state', '=', 'done')]"/>
         <separator/>
         <filter name="counted" string="Идут в норматив"
                 domain="[('excluded', '=', False), ('state', '=', 'done')]"/>
