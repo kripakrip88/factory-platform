@@ -11,7 +11,7 @@
         <!-- Разбор UX, шаг 24: номер «ЛР-00001» не обрезается; премия без
              копеек, как деньги в остальных списках (точная — в задании). -->
         <field name="name" width="105px"/>
-        <field name="date"/>
+        <field name="date" width="80px"/>
         <!-- Разбор UX, шаг 25. «Заказчик», «Лист» и «План / Факт, мин» — в
              меню колонок (⚙): заказчика у заданий нет, название листа
              обрезалось, а в нём важна одна толщина — она теперь своей
@@ -19,18 +19,18 @@
              каждый день. -->
         <field name="partner_id" optional="hide"/>
         <field name="sheet_id" string="Лист" optional="hide"/>
-        <field name="thickness_mm" options="{'hide_trailing_zeros': True}"/>
+        <field name="thickness_mm" options="{'hide_trailing_zeros': True}" width="80px"/>
         <!-- Разбор UX, шаг 36: станок коротким именем — мощностью («6 кВт»):
              «Лазер №1» / «Лазер №2» обрезались и не говорили, чем станки
              отличаются (models/machine.py, _compute_display_name). В формах
              и строках групп — полное имя. -->
-        <field name="machine_id" context="{'pmk_machine_short': True}"/>
-        <field name="sheet_count" sum="Листов"/>
-        <field name="utilization_pct" optional="show"/>
-        <field name="useful_mass_kg" sum="Полезный вес, кг"/>
+        <field name="machine_id" context="{'pmk_machine_short': True}" width="70px"/>
+        <field name="sheet_count" sum="Листов" width="60px"/>
+        <field name="utilization_pct" optional="show" width="85px"/>
+        <field name="useful_mass_kg" sum="Полезный вес, кг" width="85px"/>
         <!-- Лом — главная цифра экономии металла (премия от маржи): с итогом
              внизу. Считается вычитанием, не вводится. -->
-        <field name="scrap_mass_kg" sum="Лом, кг" optional="show"/>
+        <field name="scrap_mass_kg" sum="Лом, кг" optional="show" width="75px"/>
         <!-- Разбор UX, шаг 36: лом долей и словом, как «Отход» в раскроях
              (pmk_cut, шаг 35). Больше порога (money.SCRAP_HIGH_PCT, 20 %) —
              бледно-жёлтой плашкой и «· много», баланс не сходится — красной
@@ -38,16 +38,21 @@
              .pmk-job-scrap). Сигнал, а не запрет. То же число — колонкой
              «Лом, % (число)» в ⚙: по ней сортируют (доводка: была «Доля
              лома, %» — в меню колонок одно число под двумя названиями). -->
+        <!-- Ширины плашек заданы явно: ядро раздавало им по ~80 px, и
+             «27 % · много», «Рез не разобран», «Замерено» обрезались
+             многоточием (осмотр копии 05.10). Чтобы список с ними уместился
+             в 1440 px без прокрутки вбок, у даты и чисел ширины тоже заданы
+             (заголовки переносятся на вторую строку, шаг 24). -->
         <field name="scrap_label" string="Лом, %" widget="badge" class="pmk-job-scrap"
                decoration-warning="scrap_high" decoration-danger="balance_broken"
-               optional="show"/>
+               optional="show" width="115px"/>
         <field name="scrap_pct" optional="hide"/>
         <field name="scrap_high" column_invisible="1"/>
         <field name="balance_broken" column_invisible="1"/>
-        <field name="premium_rub" digits="[10,0]" sum="Премия, ₽"/>
+        <field name="premium_rub" digits="[10,0]" sum="Премия, ₽" width="85px"/>
         <field name="planned_minutes" sum="План, мин" optional="hide"/>
         <field name="actual_minutes" sum="Факт, мин" optional="hide"/>
-        <field name="plan_state" widget="badge"
+        <field name="plan_state" widget="badge" width="130px"
                decoration-success="plan_state == 'ok'"
                decoration-warning="plan_state == 'rough'"
                decoration-muted="plan_state in ('no_norm', 'no_drawing')"/>
@@ -56,7 +61,7 @@
              (list_zero темы). Сигнал, ничего не запрещает. -->
         <field name="parts_without_drawing" optional="show"
                decoration-danger="parts_without_drawing &gt; 0"/>
-        <field name="measure_state" widget="badge"
+        <field name="measure_state" widget="badge" width="105px"
                decoration-success="measure_state == 'done'"
                decoration-warning="measure_state == 'partial'"
                decoration-muted="measure_state == 'none'"/>

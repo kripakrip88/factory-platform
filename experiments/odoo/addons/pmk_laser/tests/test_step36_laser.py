@@ -21,12 +21,12 @@
 сделать сделанное, разные слова одного понятия.
 """
 import ast
-from datetime import date
+from datetime import date, timedelta
 from unittest.mock import patch
 
 from lxml import etree
 
-from odoo import Command
+from odoo import Command, fields
 from odoo.exceptions import UserError
 from odoo.modules.module import get_manifest
 from odoo.tests import TransactionCase, tagged
@@ -228,8 +228,13 @@ class TestSheetQueue(LaserStep36Case):
         job = self._job(sheets=3)
         first, second, third = job.sheet_ids.sorted("number")
         first.action_start_cut()
+        # «Мерили часть» считает листы с фактом больше нуля минут: «Начал» и
+        # «Закончил» в одну и ту же секунду дают 0 — отодвигаем начало
+        # (прогон 05.10 падал тут от скорости, а не от кода).
+        first.measure_ids.write({"started_at": fields.Datetime.now() - timedelta(minutes=5)})
         first.action_finish_cut()
         second.action_start_cut()
+        second.measure_ids.write({"started_at": fields.Datetime.now() - timedelta(minutes=5)})
         self.assertFalse(job.queue_closed_note)
         job.action_queue_close()
         self.assertTrue(job.queue_closed)
