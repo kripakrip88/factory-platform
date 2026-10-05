@@ -6,9 +6,20 @@
  * ReadingPane строгая схема props, лишний ключ завалит проверку Owl, а
  * протаскивать его через шаблон корня значило бы зависеть от расстановки
  * компонентов внутри чужого модуля.
+ *
+ * И только тому, кто может завести лид (разбор UX, шаг 38, доводка
+ * 05.10.2026). С шага 38 почта одна — «Продажи → Почта»: её читает и
+ * снабженец без прав на продажи, и кнопка «Лид» у него кончалась бы отказом
+ * в доступе. Право спрашиваем у сервера тем же вызовом, что ядро
+ * (user.checkAccessRight → has_access, ответ кэшируется на сессию), до
+ * первой отрисовки почты (onWillStart). env заморожен, поэтому признак в нём —
+ * свойство-геттер: шаблон кнопки по-прежнему читает env.pmkCrm. Ошибка
+ * запроса — кнопки нет: лучше не показать, чем показать отказ. Сервер
+ * проверяет то же самое (action_pmk_create_lead).
  */
-import { useState, useSubEnv } from "@odoo/owl";
+import { onWillStart, useState, useSubEnv } from "@odoo/owl";
 import { _t } from "@web/core/l10n/translation";
+import { user } from "@web/core/user";
 import { useService } from "@web/core/utils/hooks";
 import { patch } from "@web/core/utils/patch";
 
@@ -20,7 +31,22 @@ import { ReadingPane } from "@mail_client/panes/reading_pane";
 patch(MailClientInbox.prototype, {
     setup() {
         super.setup();
-        useSubEnv({ pmkCrm: Boolean(this.props.action?.params?.pmk_crm) });
+        const fromSales = Boolean(this.props.action?.params?.pmk_crm);
+        const lead = { allowed: false };
+        useSubEnv({
+            get pmkCrm() {
+                return lead.allowed;
+            },
+        });
+        if (fromSales) {
+            onWillStart(async () => {
+                try {
+                    lead.allowed = Boolean(await user.checkAccessRight("crm.lead", "create"));
+                } catch {
+                    lead.allowed = false;
+                }
+            });
+        }
     },
 });
 

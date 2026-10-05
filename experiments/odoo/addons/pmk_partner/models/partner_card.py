@@ -65,7 +65,12 @@ class ResPartnerCard(models.Model):
 
     def action_view_opportunity(self):
         action = super().action_view_opportunity()
+        # И display_name (разбор UX, шаг 38, доводка): клиент берёт его раньше
+        # name (action_service.js: action.display_name || action.name), а ядро
+        # собирает ответ через _for_xml_id — с display_name записи. Одного name
+        # мало: окно называлось «Возможности».
         action["name"] = "Сделки"
+        action["display_name"] = "Сделки"
         # Ядро (crm, Odoo 19) отдаёт домен списком, а контекст — словарём.
         # Строкой их могла бы вернуть чужая надстройка — тогда не трогаем, а
         # не режем строку на символы и не теряем её ключи.

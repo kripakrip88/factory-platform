@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    «Закупки → Заказы поставщикам»: даты подтверждённого заказа — разбор UX,
+    шаг 38, доводка (05.10.2026).
+
+    С шага 38 пункт открывает общий список всех стадий (действие
+    purchase.purchase_rfq, вид purchase.purchase_order_kpis_tree), а список
+    только подтверждённых («Подтверждённые заказы», purchase_form_action)
+    спрятан в «Убранное». Контекст общего списка — quotation_only, и ядро
+    убирало из него «Ожидаемое прибытие» и «Дату подтверждения» целиком
+    (column_invisible: их не было даже в меню колонок ⚙), а «Крайний срок» у
+    подтверждённой строки пустой (invisible). У подтверждённого заказа в
+    списке не было ни одной даты.
+
+    Стало:
+      • «Ожидаемое прибытие» видно сразу и стоит перед «Крайним сроком»: у
+        каждой строки дата своей стадии — у запроса КП крайний срок, у
+        подтверждённого заказа прибытие. У запросов КП и отменённых ячейка
+        пустая;
+      • «Дата подтверждения» — в меню колонок (⚙), тоже только у
+        подтверждённых;
+      • только дата, без часов (show_time): колонка уже, а время поставки не
+        назначают.
+    Подписи — ядра (слова — шаг 39). Сегодня подтверждённых заказов нет
+    (P00001 отменён), колонка пустая.
+
+    Вернуть как в ядре — убрать файл из __manifest__.py
+    (docs/disabled-features.md, раздел «шаг 38»).
+  -->
+  <record id="view_purchase_order_kpis_tree_step38" model="ir.ui.view">
+    <field name="name">purchase.order.kpis.list.pmk.step38</field>
+    <field name="model">purchase.order</field>
+    <field name="inherit_id" ref="purchase.purchase_order_kpis_tree"/>
+    <field name="priority">99</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='date_planned']" position="attributes">
+        <attribute name="column_invisible"/>
+        <attribute name="invisible">state != 'purchase'</attribute>
+        <attribute name="options">{'show_time': False}</attribute>
+      </xpath>
+      <xpath expr="//field[@name='date_approve']" position="attributes">
+        <attribute name="column_invisible"/>
+        <attribute name="invisible">state != 'purchase'</attribute>
+        <attribute name="optional">hide</attribute>
+        <attribute name="options">{'show_time': False}</attribute>
+      </xpath>
+      <xpath expr="//field[@name='date_order']" position="before">
+        <xpath expr="//field[@name='date_planned']" position="move"/>
+      </xpath>
+    </field>
+  </record>
+</odoo>

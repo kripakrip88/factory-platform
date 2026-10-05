@@ -56,6 +56,9 @@
         # После шага 29: те же формы, наследники с priority 100.
         "views/step37_product.xml",
         "views/step37_price_supplier.xml",
+        # Меню внутри разделов (разбор UX, шаг 38, доводка 05.10.2026): в
+        # общем списке «Заказы поставщикам» — даты подтверждённого заказа.
+        "views/step38_purchase.xml",
     ],
     "post_init_hook": "post_init_hook",
     "license": "LGPL-3",

@@ -132,6 +132,9 @@ class TestPartnerCardStep28(TransactionCase):
 
         action = company.action_view_opportunity()
         self.assertEqual(action["name"], "Сделки", "Заголовок — как подпись кнопки.")
+        # Шаг 38, доводка: клиент берёт display_name раньше name — без него
+        # окно называлось «Возможности» (перевод действия ядра).
+        self.assertEqual(action["display_name"], "Сделки")
         self.assertIn(("type", "=", "opportunity"), action["domain"])
         context = action["context"]
         for dead in ("search_default_filter_won", "search_default_filter_ongoing",

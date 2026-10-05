@@ -14,11 +14,21 @@
     Настройки ящиков и серверов — в Настройки, к остальной серверной
     конфигурации. В Продажах и Закупках им места нет: туда заходят читать
     письма, а не заводить IMAP-сервер.
+
+    Служебные пункты ящиков — только администратору (разбор UX, шаг 38,
+    05.10.2026): «Администрирование: Настройки» ВМЕСТО «Почтового клиента:
+    Администратор» (Command.set — у пункта меню группы складываются через
+    «или», и с прежней группой ящики видел бы и почтовый администратор с
+    «Правами доступа»). mail_client при своём -u вернёт свою группу ссылкой
+    (Command.link) — этот модуль обновляется следом и снова её снимает
+    (deploy.sh: OURS всегда, вендор — только с I18N=1, вместе с OURS).
+    Вернуть: Command.set([ref('mail_client.group_mail_client_admin')]).
   -->
   <record id="mail_client.menu_mail_client_configuration" model="ir.ui.menu">
     <field name="name">Почтовые ящики</field>
     <field name="parent_id" ref="base.menu_administration"/>
     <field name="sequence">80</field>
+    <field name="group_ids" eval="[Command.set([ref('base.group_system')])]"/>
   </record>
 
   <!--
@@ -38,6 +48,14 @@
     Признак живёт в данных, а не в догадке о состоянии интерфейса: по текущему
     приложению определять нельзя — оно протухает при заходе по прямой ссылке
     и при возврате по хлебным крошкам.
+
+    С шага 38 почта одна — в Продажах, пункт Закупок только с «Убранным»
+    (ниже): снабженец тоже читает почту здесь. Кнопку «Лид» видит только
+    тот, кто может завести лид (право на создание лида, доводка шага 38 —
+    static/src/js/reading_pane_lead.js; сервер проверяет то же). У
+    менеджера с правами на продажи кнопка есть и на письме поставщика:
+    случайное нажатие заведёт лид, но громко — уведомление «Лид создан» и
+    карточка лида поверх почты. Сегодня пользователь один (admin).
   -->
   <record id="action_mail_sale" model="ir.actions.client">
     <field name="name">Почта</field>
@@ -52,11 +70,19 @@
     <field name="sequence">15</field>
   </record>
 
+  <!--
+    Почта одна — в Продажах (разбор UX, шаг 38, 05.10.2026). Пункт в
+    Закупках не удалён: группа «Убранное (показать)». Ящик тот же, без
+    кнопки «Лид». Вернуть всем — Command.clear() и выложить. Снять группу в
+    режиме разработчика — не путь: следующий деплой (-u pmk_mail_ui) снова
+    поставит её через Command.set.
+  -->
   <record id="menu_mail_purchase" model="ir.ui.menu">
     <field name="name">Почта</field>
     <field name="parent_id" ref="pmk_theme.menu_pmk_purchase"/>
     <field name="action" ref="mail_client.mail_client_inbox_action"/>
     <field name="sequence">15</field>
+    <field name="group_ids" eval="[Command.set([ref('pmk_theme.group_pmk_removed')])]"/>
   </record>
 
 </odoo>

@@ -66,8 +66,14 @@ class ResPartnerSpecs(models.Model):
         context = {"default_partner_id": self.commercial_partner_id.id}
         if not self.is_company and self.parent_id:
             context["default_contact_id"] = self.id
+        # Заголовок — и в display_name (разбор UX, шаг 38, доводка): клиент
+        # берёт его раньше name (action_service.js), а _for_xml_id отдаёт
+        # display_name записи — окно называлось «Расчёт металлопроката», а не
+        # как кнопка.
+        title = _("Расчёты")
         action.update({
-            "name": _("Расчёты"),
+            "name": title,
+            "display_name": title,
             "domain": self._pmk_spec_domain(),
             "context": context,
         })

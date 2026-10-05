@@ -47,6 +47,9 @@ class TestPartnerSpecs(TransactionCase):
         action = self.company.action_pmk_view_specs()
         self.assertEqual(action["res_model"], "pmk.metal.spec")
         self.assertEqual(action["name"], "Расчёты")
+        # Шаг 38, доводка: клиент берёт display_name раньше name — без него
+        # окно называлось «Расчёт металлопроката», а не как кнопка.
+        self.assertEqual(action["display_name"], "Расчёты")
         self.assertEqual([mode for _view, mode in action["views"]][:1], ["list"],
                          "Всегда список — даже из одной строки.")
         found = self.env["pmk.metal.spec"].search(action["domain"])

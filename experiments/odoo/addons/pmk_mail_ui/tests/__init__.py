@@ -18,4 +18,6 @@ from . import test_remote_paths
 from . import test_sent_copy_guard
 from . import test_shared_flags
 from . import test_step30_token_button
+# Почта в меню (шаг 38): одна — в Продажах; «Почтовые ящики» — администратору.
+from . import test_step38_mail_menus
 from . import test_thread_seen

@@ -16,28 +16,67 @@
       действие, на которое он ссылается.
 
       Все action-адреса проверены на живой установке, а не взяты по памяти.
+
+      МЕНЮ ВНУТРИ РАЗДЕЛОВ — разбор UX, шаг 38 (05.10.2026).
+        • Разделы «Ещё» (Производство, Склад, Деньги, Отчёты) — по галочке у
+          человека: на корне раздела группа-выключатель
+          (security/pmk_step29_groups.xml, pmk_step38_groups.xml). В группах
+          никого, admin тоже. Модули и документы на месте: открываются
+          ссылками и вкладкой «Связи». «Сотрудники» — без группы (операторы
+          лазера).
+        • Только администратору (base.group_system): «Обслуживание
+          оборудования», «Ремонты», «Подразделения», все пункты «Отчётов».
+        • Пункты, которые прячутся, НЕ удаляются: группа «Убранное
+          (показать)» или «Деньги (показать)».
+      ⚠️ ВЕРНУТЬ ГРУППУ: просто стереть атрибут groups мало — загрузчик
+      <menuitem> группы только ДОБАВЛЯЕТ (Command.link, odoo/tools/convert.py,
+      _tag_menuitem), стёртый атрибут на боевой базе группу не снимет. Два
+      надёжных пути: человеку — галочка группы в его карточке; всем —
+      groups="-pmk_theme.group_…" (или "-base.group_system") и выложить.
+      Снять группу с пункта в режиме разработчика (Настройки → Технический →
+      Пункты меню) — НЕ путь: deploy.sh на каждом деплое делает -u pmk_theme,
+      этот файл грузится заново (noupdate нет), и Command.link вернёт группу —
+      раздел молча пропадёт снова. Реестр — docs/disabled-features.md, раздел
+      шага 38.
     -->
 
     <!-- ─── Корневые разделы ─────────────────────────────────────────── -->
     <menuitem id="menu_pmk_sales"      name="Продажи"      sequence="10"/>
-    <menuitem id="menu_pmk_production" name="Производство" sequence="20"/>
+    <menuitem id="menu_pmk_production" name="Производство" sequence="20"
+              groups="pmk_theme.group_pmk_production"/>
     <menuitem id="menu_pmk_purchase"   name="Закупки"      sequence="30"/>
-    <menuitem id="menu_pmk_stock"      name="Склад"        sequence="40"/>
-    <menuitem id="menu_pmk_money"      name="Деньги"       sequence="50"/>
-    <menuitem id="menu_pmk_reports"    name="Отчёты"       sequence="60"/>
+    <menuitem id="menu_pmk_stock"      name="Склад"        sequence="40"
+              groups="pmk_theme.group_pmk_stock"/>
+    <menuitem id="menu_pmk_money"      name="Деньги"       sequence="50"
+              groups="pmk_theme.group_pmk_money"/>
+    <!-- «Отчёты» возвращаются вместе с «Деньгами» (документ разбора, «Спрятать
+         до востребования»), а пункты внутри — только администратору: раздел
+         видит администратор с галочкой «Деньги (показать)». -->
+    <menuitem id="menu_pmk_reports"    name="Отчёты"       sequence="60"
+              groups="pmk_theme.group_pmk_money"/>
     <menuitem id="menu_pmk_people"     name="Сотрудники"   sequence="70"/>
 
-    <!-- ─── Продажи ──────────────────────────────────────────────────── -->
+    <!-- ─── Продажи ──────────────────────────────────────────────────────
+         Шаг 38: Воронка сделок · Почта (15, pmk_mail_ui) · Расчёты и КП ·
+         Клиенты · Лиды. Штатные КП и заказы клиентов (0 записей) — с
+         «Деньгами»: до переезда счетов из МоегоСклада КП завода — наше, из
+         расчёта. -->
     <menuitem id="menu_pmk_sales_pipeline" name="Воронка сделок"
               parent="menu_pmk_sales" action="crm.crm_lead_action_pipeline" sequence="10"/>
-    <menuitem id="menu_pmk_sales_leads" name="Лиды"
-              parent="menu_pmk_sales" action="crm.crm_lead_all_leads" sequence="20"/>
-    <menuitem id="menu_pmk_sales_quotations" name="Коммерческие предложения"
-              parent="menu_pmk_sales" action="sale.action_quotations_with_onboarding" sequence="30"/>
-    <menuitem id="menu_pmk_sales_orders" name="Заказы клиентов"
-              parent="menu_pmk_sales" action="sale.action_orders" sequence="40"/>
+    <!-- То же действие, что «Калькуляторы → Расчёт металлопроката» (там пункт
+         остаётся). Ради этой ссылки pmk_theme зависит от pmk_calc. -->
+    <menuitem id="menu_pmk_sales_specs" name="Расчёты и КП"
+              parent="menu_pmk_sales" action="pmk_calc.action_metal_spec" sequence="30"/>
     <menuitem id="menu_pmk_sales_customers" name="Клиенты"
               parent="menu_pmk_sales" action="account.res_partner_action_customer" sequence="50"/>
+    <menuitem id="menu_pmk_sales_leads" name="Лиды"
+              parent="menu_pmk_sales" action="crm.crm_lead_all_leads" sequence="60"/>
+    <menuitem id="menu_pmk_sales_quotations" name="Коммерческие предложения"
+              parent="menu_pmk_sales" action="sale.action_quotations_with_onboarding" sequence="70"
+              groups="pmk_theme.group_pmk_money"/>
+    <menuitem id="menu_pmk_sales_orders" name="Заказы клиентов"
+              parent="menu_pmk_sales" action="sale.action_orders" sequence="80"
+              groups="pmk_theme.group_pmk_money"/>
 
     <!-- ─── Производство ─────────────────────────────────────────────── -->
     <menuitem id="menu_pmk_prod_orders" name="Производственные заказы"
@@ -49,17 +88,41 @@
     <menuitem id="menu_pmk_prod_workcenters" name="Рабочие центры"
               parent="menu_pmk_production" action="mrp.mrp_workcenter_action" sequence="40"/>
     <menuitem id="menu_pmk_prod_maintenance" name="Обслуживание оборудования"
-              parent="menu_pmk_production" action="maintenance.hr_equipment_request_action" sequence="50"/>
+              parent="menu_pmk_production" action="maintenance.hr_equipment_request_action" sequence="50"
+              groups="base.group_system"/>
     <menuitem id="menu_pmk_prod_repairs" name="Ремонты"
-              parent="menu_pmk_production" action="repair.action_repair_order_tree" sequence="60"/>
+              parent="menu_pmk_production" action="repair.action_repair_order_tree" sequence="60"
+              groups="base.group_system"/>
 
-    <!-- ─── Закупки ──────────────────────────────────────────────────── -->
-    <menuitem id="menu_pmk_purch_rfq" name="Запросы КП"
-              parent="menu_pmk_purchase" action="purchase.purchase_rfq" sequence="10"/>
-    <menuitem id="menu_pmk_purch_orders" name="Заказы поставщикам"
-              parent="menu_pmk_purchase" action="purchase.purchase_form_action" sequence="20"/>
-    <menuitem id="menu_pmk_purch_suppliers" name="Поставщики"
-              parent="menu_pmk_purchase" action="account.res_partner_action_supplier" sequence="30"/>
+    <!-- ─── Закупки ──────────────────────────────────────────────────────
+         Шаг 38: Поставщики (10) · Цены поставщиков (20) · Номенклатура (25) ·
+         Рассылка прайсов (30) · Заказы поставщикам (40) · Группы поставки (90).
+         «Поставщики», «Цены», «Рассылка», «Группы» — pmk_purchase/views/menus.xml.
+         С «Убранным» видны ещё «Все поставщики», «Почта» (pmk_mail_ui) и
+         «Подтверждённые заказы» — разными словами, чтобы не было двух
+         одинаковых пунктов. -->
+    <!-- Штатный список поставщиков: после шагов 25/26 — тот же вид, что
+         «Поставщики» (pmk_purchase), только без их поиска и с канбаном. Строки
+         те же: в «Поставщиках» и реестр прайсов, и поставщики по штатному
+         признаку (доводка шага 38). -->
+    <menuitem id="menu_pmk_purch_suppliers" name="Все поставщики"
+              parent="menu_pmk_purchase" action="account.res_partner_action_supplier" sequence="12"
+              groups="pmk_theme.group_pmk_removed"/>
+    <!-- Номенклатура (список металла с ценой поставщика, шаг 37) — рядом с
+         ценами: «Склад» спрятан. В «Складе» свой пункт остался (то же
+         действие) — для тех, у кого «Склад (показать)». Окно называется
+         «Номенклатура» (ACTION_TITLES, models/ir_actions_act_window.py). -->
+    <menuitem id="menu_pmk_purch_products" name="Номенклатура"
+              parent="menu_pmk_purchase" action="stock.product_template_action_product" sequence="25"/>
+    <!-- Один документ — один пункт. Запрос КП и заказ поставщику — один
+         purchase.order разных стадий; «Заказы поставщикам» открывают общий
+         список всех стадий с панелью показателей (бывшие «Запросы КП»).
+         xml-id прежний: на него ссылаются тесты и база. -->
+    <menuitem id="menu_pmk_purch_rfq" name="Заказы поставщикам"
+              parent="menu_pmk_purchase" action="purchase.purchase_rfq" sequence="40"/>
+    <menuitem id="menu_pmk_purch_orders" name="Подтверждённые заказы"
+              parent="menu_pmk_purchase" action="purchase.purchase_form_action" sequence="45"
+              groups="pmk_theme.group_pmk_removed"/>
 
     <!-- ─── Склад ────────────────────────────────────────────────────── -->
     <menuitem id="menu_pmk_stock_overview" name="Обзор операций"
@@ -83,21 +146,29 @@
     <menuitem id="menu_pmk_money_payments_out" name="Платежи отправленные"
               parent="menu_pmk_money" action="account.action_account_payments_payable" sequence="40"/>
 
-    <!-- ─── Отчёты ──────────────────────────────────────────────────── -->
+    <!-- ─── Отчёты ───────────────────────────────────────────────────────
+         Все пункты — только администратору (шаг 38). -->
     <menuitem id="menu_pmk_rep_sales" name="Продажи"
-              parent="menu_pmk_reports" action="sale.action_order_report_all" sequence="10"/>
+              parent="menu_pmk_reports" action="sale.action_order_report_all" sequence="10"
+              groups="base.group_system"/>
     <menuitem id="menu_pmk_rep_quotations" name="Коммерческие предложения"
-              parent="menu_pmk_reports" action="sale.action_order_report_quotation_salesteam" sequence="20"/>
+              parent="menu_pmk_reports" action="sale.action_order_report_quotation_salesteam" sequence="20"
+              groups="base.group_system"/>
     <menuitem id="menu_pmk_rep_invoices" name="Счета"
-              parent="menu_pmk_reports" action="account.action_account_invoice_report_all" sequence="30"/>
+              parent="menu_pmk_reports" action="account.action_account_invoice_report_all" sequence="30"
+              groups="base.group_system"/>
     <menuitem id="menu_pmk_rep_workcenters" name="Загрузка рабочих центров"
-              parent="menu_pmk_reports" action="mrp.action_mrp_workcenter_load_report_graph" sequence="40"/>
+              parent="menu_pmk_reports" action="mrp.action_mrp_workcenter_load_report_graph" sequence="40"
+              groups="base.group_system"/>
 
-    <!-- ─── Сотрудники ───────────────────────────────────────────────── -->
+    <!-- ─── Сотрудники ───────────────────────────────────────────────────
+         Раздел остаётся (операторы лазера); «Подразделения» — только
+         администратору (шаг 38). -->
     <menuitem id="menu_pmk_people_list" name="Сотрудники"
               parent="menu_pmk_people" action="hr.open_view_employee_list_my" sequence="10"/>
     <menuitem id="menu_pmk_people_depts" name="Подразделения"
-              parent="menu_pmk_people" action="hr.hr_department_tree_action" sequence="20"/>
+              parent="menu_pmk_people" action="hr.hr_department_tree_action" sequence="20"
+              groups="base.group_system"/>
 
   </data>
 </odoo>

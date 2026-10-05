@@ -24,6 +24,8 @@ CRON_XMLID = "pmk_purchase.cron_price_request"
 TEMPLATE_XMLID = "pmk_purchase.mail_template_price_request"
 PARAM_ENABLED = "pmk.price_request.enabled"
 PARAM_MAX = "pmk.price_request.max_per_run"
+# Кому пишет рассылка — реестр прайсов (как у крона, _cron_send_price_requests).
+REGISTRY_DOMAIN = [("pmk_price_supplier", "=", True)]
 
 WEEKDAYS = [
     ("0", "Понедельник"), ("1", "Вторник"), ("2", "Среда"), ("3", "Четверг"),
@@ -219,28 +221,45 @@ class PriceMailing(models.Model):
     # ------------------------------------------------------------------
     # кнопки
     # ------------------------------------------------------------------
-    def action_choose_recipients(self):
-        """Весь список поставщиков — чтобы было кого отмечать."""
-        self.ensure_one()
+    # Окна получателей — список «Закупки → Поставщики» (тот же вид и поиск),
+    # но (доводка шага 38, 05.10.2026):
+    #   • только реестр прайсов. С шага 38 «Поставщики» показывают и
+    #     поставщиков по штатному признаку (домен действия,
+    #     views/res_partner_views.xml), а рассылка пишет только реестру —
+    #     отмечать там некого;
+    #   • заголовок — и в display_name. Клиент берёт его раньше name
+    #     (action_service.js: action.display_name || action.name), а
+    #     _for_xml_id отдаёт display_name записи: окно называлось бы
+    #     «Поставщики», как пункт меню.
+    # После F5 окно грузится по номеру действия (так было и до шага) — это
+    # уже «Поставщики» со своими доменом и заголовком.
+    def _pmk_recipients_action(self, title, context):
         action = self.env["ir.actions.act_window"]._for_xml_id(
             "pmk_purchase.action_price_supplier")
-        action["name"] = _("Выберите получателей рассылки")
+        action.update({
+            "name": title,
+            "display_name": title,
+            "domain": list(REGISTRY_DOMAIN),
+            "context": context,
+        })
+        return action
+
+    def action_choose_recipients(self):
+        """Весь реестр прайсов — чтобы было кого отмечать."""
+        self.ensure_one()
         # Группировку снимаем: отмечать галочками удобнее в плоском списке,
         # а по группам поставщик с несколькими группами встречается несколько раз.
-        action["context"] = {"default_pmk_price_supplier": True,
-                             "default_is_company": True}
-        return action
+        return self._pmk_recipients_action(
+            _("Выберите получателей рассылки"),
+            {"default_pmk_price_supplier": True, "default_is_company": True})
 
     def action_open_recipients(self):
         """Только те, кто уже в рассылке."""
         self.ensure_one()
-        action = self.env["ir.actions.act_window"]._for_xml_id(
-            "pmk_purchase.action_price_supplier")
-        action["name"] = _("Получатели рассылки")
-        action["context"] = {"default_pmk_price_supplier": True,
-                             "default_is_company": True,
-                             "search_default_in_mailing": 1}
-        return action
+        return self._pmk_recipients_action(
+            _("Получатели рассылки"),
+            {"default_pmk_price_supplier": True, "default_is_company": True,
+             "search_default_in_mailing": 1})
 
     def action_open_queue(self):
         self.ensure_one()

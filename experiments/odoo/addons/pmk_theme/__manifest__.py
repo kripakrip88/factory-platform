@@ -11,16 +11,20 @@
 и работает как «все приложения». Так ничего не становится недостижимым,
 когда модулей больше, чем влезает по ширине.
     """,
-    "version": "19.0.2.5.0",
+    "version": "19.0.2.6.0",
     "category": "Theme/Backend",
     "author": "ПМК Парк",
     "license": "LGPL-3",
     # Зависимости — все модули, на действия которых ссылается наше меню.
     # Без них Odoo не найдёт action при установке и упадёт.
+    # pmk_calc — ради «Продажи → Расчёты и КП» (разбор UX, шаг 38): пункт
+    # открывает действие расчётов. pmk_calc зависит только от base, web,
+    # mail и на pmk_theme не ссылается — цикла нет.
     "depends": [
         "web", "crm", "sale_management", "purchase", "stock",
         "mrp", "account", "repair", "maintenance", "hr",
         "mail", "calendar", "project", "contacts", "project_todo", "spreadsheet_dashboard",
+        "pmk_calc",
     ],
     "data": [
         # Группа-выключатель «Опасные действия (показать)» — первой: на неё
@@ -31,6 +35,9 @@
         # «Деньги» (показать). На них ссылаются виды этого модуля и
         # pmk_partner / pmk_purchase — поэтому тоже в начале.
         "security/pmk_step29_groups.xml",
+        # Группа-выключатель «Производство (показать)» (шаг 38, 05.10.2026):
+        # на неё ссылается корень «Производства» в data/menus.xml.
+        "security/pmk_step38_groups.xml",
         "data/menus.xml",
         "data/hide_menus.xml",
         # Наши стили в конец бандла. ВАЖНО: файл несёт сам подключение scss —

@@ -8,3 +8,5 @@ from . import test_step26_empty
 from . import test_step28_partner_mailing
 from . import test_step29_hidden
 from . import test_step37_purchase
+# Меню «Закупок» (шаг 38): шесть рабочих пунктов, спрятанные — с «Убранным».
+from . import test_step38_purchase_menu
