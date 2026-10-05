@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    «Поставщики прайсов» и «Закупки → Поставщики» (один список) — разбор
+    UX, шаг 37 (02.10.2026), доводка после проверки (05.10.2026).
+
+    • Над отмеченными строками — «Адрес проверен» и «Адрес не работает»:
+      меняют только «Состояние адреса» (models/res_partner.py). «В рассылке»
+      и «Эл. почту» контрагента не трогают: кому слать прайс-запросы — вопрос
+      владельцу. Обе контурные: залитая в строке кнопок одна — «В
+      рассылку». Фильтр «Адрес не работает» в поиске «Поставщиков прайсов».
+    • Строка кнопок — в одну линию при 1440 px: шесть кнопок с прежними
+      подписями занимают ≈1010 px при ≈810 свободных (зона выбора ядра без
+      переноса, list_controller.xml), и кнопки ломались бы на две строки;
+      с короткими — ≈765 px.
+      Короче — старые: «Включить в рассылку» → «В рассылку», «Исключить из
+      рассылки» → «Из рассылки» (как колонка «В рассылке»), «Спрашивать раз
+      в неделю» → «Раз в неделю», «Раз в две недели» → «Раз в 2 недели» (как
+      колонка «Раз в, дн»). Новые «Адрес проверен» / «Адрес не работает» —
+      как в плане шага. Оценка по метрикам шрифта — смотреть глазами.
+    • Одно понятие — одно слово: состояние «Проверен» / «Не проверен»
+      (было «Подтверждён»), фильтры «Адрес проверен» / «Адрес не проверен»
+      — тем же словом, что кнопка. Адрес для прайса — «Адрес» и в списке, и
+      в карточке (было «Почта» / «Адрес для прайса»): совпадает с
+      «Состоянием адреса», кнопками и фильтрами. «Раз в, дн» — и в
+      карточке; дата прайса — «Прайс от», как везде в системе.
+    • «Состояние адреса» — пусто, если адреса нет, и в списке, и в
+      карточке: оранжевое «Не проверен» у поставщика без адреса обещало
+      проверку, которой не может быть. Фильтр «Адрес не проверен» таких не
+      берёт — отметить всё и нажать «Адрес проверен» не упрётся в них.
+    • Колонка «Рейтинг» (pmk_supplier_rank, pmk_bridge: меньше — раньше в
+      очереди расчёта; итога в строке группы нет — models/res_partner.py).
+      Ширины шагов 25/26 (width=) не меняются.
+
+    Наследники наших же видов, файлы res_partner_views.xml и
+    price_mailing_views.xml не правятся. Вернуть — убрать файл из
+    __manifest__.py (docs/disabled-features.md, раздел «шаг 37»); подписи
+    состояний — в models/res_partner.py.
+  -->
+  <record id="view_price_supplier_list_step37" model="ir.ui.view">
+    <field name="name">res.partner.list.pmk.price.step37</field>
+    <field name="model">res.partner</field>
+    <field name="inherit_id" ref="pmk_purchase.view_price_supplier_list"/>
+    <field name="priority">99</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <!-- Сначала проверка адреса, потом рассылка — в порядке работы. -->
+      <xpath expr="//header/button[@name='action_pmk_mailing_on']" position="before">
+        <button name="action_pmk_confirm_price_email" type="object" string="Адрес проверен"/>
+        <button name="action_pmk_invalidate_price_email" type="object" string="Адрес не работает"/>
+      </xpath>
+      <xpath expr="//header/button[@name='action_pmk_mailing_on']" position="attributes">
+        <attribute name="string">В рассылку</attribute>
+      </xpath>
+      <xpath expr="//header/button[@name='action_pmk_mailing_off']" position="attributes">
+        <attribute name="string">Из рассылки</attribute>
+      </xpath>
+      <xpath expr="//header/button[@name='action_pmk_period_weekly']" position="attributes">
+        <attribute name="string">Раз в неделю</attribute>
+      </xpath>
+      <xpath expr="//header/button[@name='action_pmk_period_biweekly']" position="attributes">
+        <attribute name="string">Раз в 2 недели</attribute>
+      </xpath>
+      <xpath expr="//field[@name='pmk_has_stock']" position="after">
+        <field name="pmk_supplier_rank" string="Рейтинг" optional="show"/>
+      </xpath>
+      <xpath expr="//field[@name='pmk_price_email']" position="attributes">
+        <attribute name="string">Адрес</attribute>
+      </xpath>
+      <xpath expr="//field[@name='pmk_price_email_state']" position="attributes">
+        <attribute name="invisible">not pmk_price_email</attribute>
+      </xpath>
+      <xpath expr="//field[@name='pmk_price_period_days']" position="attributes">
+        <attribute name="string">Раз в, дн</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- Поиск: фильтры состояния адреса — тем же словом, что кнопка. -->
+  <record id="view_price_supplier_search_step37" model="ir.ui.view">
+    <field name="name">res.partner.search.pmk.price.step37</field>
+    <field name="model">res.partner</field>
+    <field name="inherit_id" ref="pmk_purchase.view_price_supplier_search"/>
+    <field name="priority">99</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//filter[@name='confirmed']" position="attributes">
+        <attribute name="string">Адрес проверен</attribute>
+      </xpath>
+      <!-- Без адреса проверять нечего: такие в «не проверенные» не идут. -->
+      <xpath expr="//filter[@name='draft']" position="attributes">
+        <attribute name="string">Адрес не проверен</attribute>
+        <attribute name="domain">[('pmk_price_email_state', '=', 'draft'), ('pmk_price_email', '!=', False)]</attribute>
+      </xpath>
+      <!-- К новой кнопке: кого отметили «Адрес не работает». -->
+      <xpath expr="//filter[@name='draft']" position="after">
+        <filter name="invalid" string="Адрес не работает"
+                domain="[('pmk_price_email_state', '=', 'invalid')]"/>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- Карточка поставщика, блок «Прайсы» (шаг 28: подписи — те же слова,
+       что в списке). Плашка состояния — только при адресе, как в списке. -->
+  <record id="view_partner_form_price_step37" model="ir.ui.view">
+    <field name="name">res.partner.form.pmk.price.step37</field>
+    <field name="model">res.partner</field>
+    <field name="inherit_id" ref="pmk_purchase.view_partner_form_price"/>
+    <field name="priority">99</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//group[@name='pmk_price']//field[@name='pmk_price_email']" position="attributes">
+        <attribute name="string">Адрес</attribute>
+      </xpath>
+      <xpath expr="//group[@name='pmk_price']//field[@name='pmk_price_email_state']" position="attributes">
+        <attribute name="invisible">not pmk_price_email</attribute>
+      </xpath>
+      <xpath expr="//group[@name='pmk_price']//field[@name='pmk_price_period_days']" position="attributes">
+        <attribute name="string">Раз в, дн</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- «Рассылка прайсов»: подсказка называет кнопку новым словом. -->
+  <record id="view_price_mailing_form_step37" model="ir.ui.view">
+    <field name="name">pmk.price.mailing.form.step37</field>
+    <field name="model">pmk.price.mailing</field>
+    <field name="inherit_id" ref="pmk_purchase.view_price_mailing_form"/>
+    <field name="priority">99</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='supplier_count']/following-sibling::div[hasclass('text-muted')][1]" position="replace">
+        <div colspan="2" class="text-muted small mb-2">
+          В списке поставщиков отметьте нужных галочкой слева и нажмите
+          сверху «В рассылку». Или щёлкните переключатель в колонке «В
+          рассылке» у одной строки.
+        </div>
+      </xpath>
+    </field>
+  </record>
+</odoo>

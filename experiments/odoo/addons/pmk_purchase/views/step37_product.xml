@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Номенклатура и карточка товара — разбор UX, шаг 37 (02.10.2026).
+
+    • Списки «Номенклатура» (product.template) и вариантов («Искать ещё…» у
+      поля «Товар» в строке запроса КП, product.product): Артикул · Название ·
+      Ед. · Вес единицы, кг · Цена, ₽ · Цена, ₽/т · Прайс от · Поставщик.
+      Цена — одной дверью с расчётом (models/product_template.py). Нет цены —
+      серым «нет в прайсах», как в справочниках шага 25; фильтр «Нет в
+      прайсах» в поиске «Номенклатуры».
+    • Масса — тоже одной дверью с расчётом (проверка шага 37): «Вес единицы,
+      кг» в списках и вес в карточке — pmk_mass_unit, та масса, по которой
+      расчёт и «Цена, ₽/т» переводят цену в тонны. У проката, метизов и
+      красок — из справочника, в карточке только чтение (подсказка «?» у
+      подписи: правится в справочнике); у листа и остального — вес карточки,
+      правится как раньше.
+    • Карточка: «Справка» → «Артикул»; кнопка «Цены N» первой (наш шаг —
+      видна всегда, ноль серым; N — поставщики с ценой на сегодня);
+      «Закуплено» — только при числе больше нуля (правило кнопок-счётчиков:
+      штатный процесс); вес — в «Основную информацию» («Вес метра» у
+      проката, «Вес единицы» у остального).
+    • Вкладка «Склад»: без веса в ней не осталось ничего, кроме убранного
+      шагом 29, — вкладка тем, кто включил «Убранное», и прослеживаемости
+      партий («Партии и серийные номера», stock.group_production_lot — сейчас
+      выключены). С «Партиями», но без «Убранного» на вкладке только блок
+      партий, а его ядро показывает лишь у позиции с учётом партиями, —
+      поэтому у метизов и красок (учёт количеством) вкладки нет и тогда
+      (pmk_inventory_tab, models/product_template.py). Заголовок
+      «Логистика», в котором после веса остались только узлы «Убранного», —
+      «Убранному», чтобы при включённых партиях он не висел пустым. «Склад
+      (показать)» здесь ничего не возвращает: шаг 29 не отдал ему на этой
+      вкладке ни одного узла.
+      ⚠️ base.group_no_one к вкладке НЕ дописывать: в режиме разработчика на
+      ней видны «Места расположения партнеров» (группа stock_property), но
+      Odoo 19 читает group_no_one в списке групп как «И», а не «ИЛИ»
+      (ir_ui_view._postprocess_debug_to_cache) — вкладка стала бы видна
+      ТОЛЬКО в режиме разработчика. Поэтому эти места теперь тоже за
+      «Убранным» (или за «Партиями» — у позиции с учётом партиями;
+      docs/disabled-features.md, шаг 37).
+
+    Существующие файлы видов не правятся: наследники priority 100 (после
+    шага 29 — 99), active в XML (грабли Odoo 19). Две формы — шаблон и
+    вариант: артикул и «Закуплено» у них из разных видов (как в шаге 29), а
+    базовая форма (product.product_template_form_view) артикула не знает.
+    Галочка «Продажи» (sale_ok) в базе не меняется: продажный блок спрятан
+    шагом 29 группой «Убранное».
+
+    В КП ничего из этого не печатается: печать (pmk_bridge/report/
+    quotation_report.xml) товар не печатает. Вернуть — убрать файл из
+    __manifest__.py; таблица — docs/disabled-features.md, раздел «шаг 37».
+  -->
+
+  <!-- ─── «Номенклатура» (шаблон) ───────────────────────────────────── -->
+  <record id="view_product_template_list_step37" model="ir.ui.view">
+    <field name="name">product.template.list.pmk.step37</field>
+    <field name="model">product.template</field>
+    <field name="inherit_id" ref="product.product_template_tree_view"/>
+    <field name="priority">100</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='name']" position="before">
+        <xpath expr="//field[@name='default_code']" position="move"/>
+      </xpath>
+      <!-- Артикул не обрезается, как номер документа: «MTZ-ANC-M16x150» —
+           15 знаков. Ширина задана: «Номенклатура» открывается свёрнутыми
+           группами, и ядро считает ширины по одной шапке, без строк. -->
+      <xpath expr="//field[@name='default_code']" position="attributes">
+        <attribute name="string">Артикул</attribute>
+        <attribute name="width">140px</attribute>
+      </xpath>
+      <xpath expr="//field[@name='name']" position="attributes">
+        <attribute name="string">Название</attribute>
+      </xpath>
+      <xpath expr="//field[@name='name']" position="after">
+        <xpath expr="//field[@name='uom_id']" position="move"/>
+        <!-- Масса — та, что у расчёта и «Цены, ₽/т» (pmk_mass_unit, не вес
+             карточки): у проката, метизов, красок — из справочника.
+             Вычисляемая, правится не здесь: у списка multi_edit. -->
+        <field name="pmk_mass_unit" optional="show"
+               options="{'hide_trailing_zeros': True}"/>
+        <field name="pmk_price_unit" optional="show" invisible="pmk_price_missing"/>
+        <field name="pmk_price_ton" optional="show" invisible="not pmk_price_ton"/>
+        <field name="pmk_price_date" optional="show"/>
+        <field name="pmk_price_supplier_label" optional="show"
+               decoration-muted="pmk_price_missing"/>
+        <field name="pmk_price_missing" column_invisible="1"/>
+      </xpath>
+      <!-- Единица — всем: у ядра колонка только с «Единицами измерения»
+           (uom.group_uom), а их на стенде нет ни у кого. Цена — за неё. -->
+      <xpath expr="//field[@name='uom_id']" position="attributes">
+        <attribute name="groups"/>
+        <attribute name="string">Ед.</attribute>
+        <attribute name="optional">show</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- ─── Список вариантов («Искать ещё…» у товара в строке запроса КП) ── -->
+  <record id="view_product_product_list_step37" model="ir.ui.view">
+    <field name="name">product.product.list.pmk.step37</field>
+    <field name="model">product.product</field>
+    <field name="inherit_id" ref="product.product_product_tree_view"/>
+    <field name="priority">100</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <!-- Артикул уже первым после звезды; ширина — как в «Номенклатуре». -->
+      <xpath expr="//field[@name='default_code']" position="attributes">
+        <attribute name="string">Артикул</attribute>
+        <attribute name="width">140px</attribute>
+      </xpath>
+      <xpath expr="//field[@name='name']" position="attributes">
+        <attribute name="string">Название</attribute>
+      </xpath>
+      <xpath expr="//field[@name='product_template_variant_value_ids']" position="after">
+        <xpath expr="//field[@name='uom_id']" position="move"/>
+        <field name="pmk_mass_unit" optional="show"
+               options="{'hide_trailing_zeros': True}"/>
+        <field name="pmk_price_unit" optional="show" invisible="pmk_price_missing"/>
+        <field name="pmk_price_ton" optional="show" invisible="not pmk_price_ton"/>
+        <field name="pmk_price_date" optional="show"/>
+        <field name="pmk_price_supplier_label" optional="show"
+               decoration-muted="pmk_price_missing"/>
+        <field name="pmk_price_missing" column_invisible="1"/>
+      </xpath>
+      <xpath expr="//field[@name='uom_id']" position="attributes">
+        <attribute name="groups"/>
+        <attribute name="string">Ед.</attribute>
+        <attribute name="optional">show</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- ─── Поиск «Номенклатуры»: «Нет в прайсах», как в справочниках ────── -->
+  <record id="view_product_template_search_step37" model="ir.ui.view">
+    <field name="name">product.template.search.pmk.step37</field>
+    <field name="model">product.template</field>
+    <field name="inherit_id" ref="product.product_template_search_view"/>
+    <field name="priority">100</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//filter[@name='favorites']" position="after">
+        <separator/>
+        <filter name="pmk_no_price" string="Нет в прайсах"
+                domain="[('pmk_price_missing', '=', True)]"/>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- ─── Карточка товара (шаблон, «Номенклатура») ───────────────────── -->
+  <record id="view_product_template_form_step37" model="ir.ui.view">
+    <field name="name">product.template.form.pmk.step37</field>
+    <field name="model">product.template</field>
+    <field name="inherit_id" ref="product.product_template_only_form_view"/>
+    <field name="priority">100</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <!-- «Цены N» — первой: наш шаг, видна всегда, ноль серым (тема,
+           pmk_theme/static/src/js/stat_buttons.js). -->
+      <xpath expr="//div[@name='button_box']/*[1]" position="before">
+        <button name="action_pmk_open_prices" type="object" class="oe_stat_button"
+                icon="fa-rub">
+          <field name="pmk_price_count" widget="statinfo" string="Цены"/>
+        </button>
+      </xpath>
+      <!-- «Закуплено» — штатный процесс: только при числе больше нуля. -->
+      <xpath expr="//button[@name='action_view_po']" position="attributes">
+        <attribute name="invisible">not purchase_ok or not purchased_product_qty</attribute>
+      </xpath>
+      <xpath expr="//group[@name='group_standard_price']/field[@name='default_code']" position="attributes">
+        <attribute name="string">Артикул</attribute>
+      </xpath>
+      <!-- Вес: подпись по виду позиции; условие группы «Логистика»
+           (type != 'consu') переезжает вместе со строкой. Несколько подписей
+           к одной строке — штатный приём (у account.move — «Клиент» /
+           «Поставщик»): невидимую ячейку сетка группы пропускает.
+           Масса — одной дверью с расчётом (проверка шага 37): у проката,
+           метизов и красок (pmk_mass_ref) в строке не вес карточки, а
+           pmk_mass_unit — масса из справочника, только чтение; подписи у них
+           — к ней, и «?» у подписи говорит, где масса правится. У листа и
+           остального — вес карточки, правится здесь, как раньше. -->
+      <xpath expr="//page[@name='inventory']//label[@for='weight']" position="attributes">
+        <attribute name="string">Вес единицы</attribute>
+        <attribute name="invisible">pmk_mass_ref or type != 'consu' or (product_variant_count &gt; 1 and not is_product_variant)</attribute>
+      </xpath>
+      <xpath expr="//page[@name='inventory']//div[@name='weight']" position="attributes">
+        <attribute name="invisible">type != 'consu' or (product_variant_count &gt; 1 and not is_product_variant)</attribute>
+      </xpath>
+      <xpath expr="//page[@name='inventory']//div[@name='weight']/field[@name='weight']" position="attributes">
+        <attribute name="invisible">pmk_mass_ref</attribute>
+      </xpath>
+      <xpath expr="//page[@name='inventory']//div[@name='weight']/field[@name='weight']" position="before">
+        <field name="pmk_mass_unit" class="oe_inline" style="max-width: 7rem;"
+               options="{'hide_trailing_zeros': True}" invisible="not pmk_mass_ref"/>
+      </xpath>
+      <xpath expr="//group[@name='group_standard_price']/field[@name='default_code']" position="after">
+        <label for="pmk_mass_unit" string="Вес метра"
+               invisible="not pmk_is_linear or type != 'consu' or (product_variant_count &gt; 1 and not is_product_variant)"/>
+        <label for="pmk_mass_unit" string="Вес единицы"
+               invisible="pmk_is_linear or not pmk_mass_ref or type != 'consu' or (product_variant_count &gt; 1 and not is_product_variant)"/>
+        <xpath expr="//page[@name='inventory']//label[@for='weight']" position="move"/>
+        <xpath expr="//page[@name='inventory']//div[@name='weight']" position="move"/>
+      </xpath>
+      <!-- «Склад»: без веса — только убранное и партии (см. шапку файла);
+           с «Партиями» без «Убранного» — только у позиции с учётом партиями
+           (pmk_inventory_tab): у остальных блок партий ядро прячет, и
+           вкладка была бы пустой. -->
+      <xpath expr="//page[@name='inventory']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed,stock.group_production_lot</attribute>
+        <attribute name="invisible" add="not pmk_inventory_tab" separator="or"/>
+      </xpath>
+      <xpath expr="//group[@name='group_lots_and_weight']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- ─── Карточка варианта (из строки запроса КП) — те же правки ─────── -->
+  <record id="view_product_product_form_step37" model="ir.ui.view">
+    <field name="name">product.product.form.pmk.step37</field>
+    <field name="model">product.product</field>
+    <field name="inherit_id" ref="product.product_normal_form_view"/>
+    <field name="priority">100</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//div[@name='button_box']/*[1]" position="before">
+        <button name="action_pmk_open_prices" type="object" class="oe_stat_button"
+                icon="fa-rub">
+          <field name="pmk_price_count" widget="statinfo" string="Цены"/>
+        </button>
+      </xpath>
+      <xpath expr="//button[@name='action_view_po']" position="attributes">
+        <attribute name="invisible">not purchase_ok or not purchased_product_qty</attribute>
+      </xpath>
+      <xpath expr="//group[@name='group_standard_price']/field[@name='default_code']" position="attributes">
+        <attribute name="string">Артикул</attribute>
+      </xpath>
+      <xpath expr="//page[@name='inventory']//label[@for='weight']" position="attributes">
+        <attribute name="string">Вес единицы</attribute>
+        <attribute name="invisible">pmk_mass_ref or type != 'consu' or (product_variant_count &gt; 1 and not is_product_variant)</attribute>
+      </xpath>
+      <xpath expr="//page[@name='inventory']//div[@name='weight']" position="attributes">
+        <attribute name="invisible">type != 'consu' or (product_variant_count &gt; 1 and not is_product_variant)</attribute>
+      </xpath>
+      <xpath expr="//page[@name='inventory']//div[@name='weight']/field[@name='weight']" position="attributes">
+        <attribute name="invisible">pmk_mass_ref</attribute>
+      </xpath>
+      <xpath expr="//page[@name='inventory']//div[@name='weight']/field[@name='weight']" position="before">
+        <field name="pmk_mass_unit" class="oe_inline" style="max-width: 7rem;"
+               options="{'hide_trailing_zeros': True}" invisible="not pmk_mass_ref"/>
+      </xpath>
+      <xpath expr="//group[@name='group_standard_price']/field[@name='default_code']" position="after">
+        <label for="pmk_mass_unit" string="Вес метра"
+               invisible="not pmk_is_linear or type != 'consu' or (product_variant_count &gt; 1 and not is_product_variant)"/>
+        <label for="pmk_mass_unit" string="Вес единицы"
+               invisible="pmk_is_linear or not pmk_mass_ref or type != 'consu' or (product_variant_count &gt; 1 and not is_product_variant)"/>
+        <xpath expr="//page[@name='inventory']//label[@for='weight']" position="move"/>
+        <xpath expr="//page[@name='inventory']//div[@name='weight']" position="move"/>
+      </xpath>
+      <xpath expr="//page[@name='inventory']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed,stock.group_production_lot</attribute>
+        <attribute name="invisible" add="not pmk_inventory_tab" separator="or"/>
+      </xpath>
+      <xpath expr="//group[@name='group_lots_and_weight']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+    </field>
+  </record>
+</odoo>

@@ -173,8 +173,11 @@ class TestPartnerTradeStep28(TransactionCase):
                          .get("string"), "Менеджер")
         self.assertEqual(self._one(arch, "//group[@name='purchase']/field[@name='buyer_id']")
                          .get("string"), "Снабженец")
-        short = {"pmk_has_stock": "Склад на ДВ", "pmk_price_email": "Адрес для прайса",
-                 "pmk_price_period_days": "Период, дней",
+        # Шаг 37 (проверка): «Адрес» и «Раз в, дн» — те же слова, что в
+        # списке «Поставщиков прайсов» (было «Адрес для прайса», «Период,
+        # дней»; pmk_purchase/views/step37_price_supplier.xml).
+        short = {"pmk_has_stock": "Склад на ДВ", "pmk_price_email": "Адрес",
+                 "pmk_price_period_days": "Раз в, дн",
                  "pmk_price_request_date": "Запрос отправлен", "pmk_price_last_date": "Прайс от"}
         for name, label in short.items():
             with self.subTest(field=name):

@@ -7,3 +7,4 @@ from . import test_step25_lists
 from . import test_step26_empty
 from . import test_step28_partner_mailing
 from . import test_step29_hidden
+from . import test_step37_purchase
