@@ -29,3 +29,11 @@ from . import test_step40_dark
 #        --test-tags /pmk_theme:TestStep39Words,/pmk_theme:TestStep39Screens \
 #        --stop-after-init --http-port 8099
 from . import test_step39_words
+# Шапка документа (шаг 48): кнопки и этап в строке пути, «Сохранить» /
+# «Отменить» и «⚙ Действия ▾» кнопками, листалка без счётчика, «Отметить
+# проигрыш» не в ⚙ формы. Вместе с pmk_deal (номер сделки, форма без «Новое»):
+#   odoo -d pmk48_test -i pmk_theme,pmk_deal,theme_nexus --test-enable \
+#        --test-tags /pmk_theme:TestHeaderStep48,/pmk_deal --stop-after-init \
+#        --http-port 8099
+# Правила без Odoo — node static/tests/form_head_step48.test.mjs.
+from . import test_step48_header

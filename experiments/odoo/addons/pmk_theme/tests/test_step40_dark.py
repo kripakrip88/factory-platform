@@ -677,11 +677,13 @@ class TestDarkPairsStep40(TransactionCase):
                          "#16171b !important")
 
     def test_step40_source(self):
-        """Раздел «Шаг 40» — в конце dark.scss одним блоком @media screen, без
+        """Раздел «Шаг 40» — в dark.scss одним блоком @media screen, без
         яркого лайма заливкой; прежние разделы на месте."""
         src = _read(SCSS + "dark.scss")
         start = src.index("// ═══ Шаг 40")
-        section = src[start:]
+        # раздел — до следующего «// ═══ Шаг …» (шаг 48 дописан после)
+        nxt = src.find("// ═══ Шаг", start + 1)
+        section = src[start:nxt if nxt != -1 else None]
         code = re.sub(r"//[^\n]*", "", section).lower()
         for lime in BRIGHT_LIME:
             with self.subTest(lime=lime):

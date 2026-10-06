@@ -1948,3 +1948,392 @@ body.o_nexus_dark .o_dialog .o_field_widget.o_mail_composer_message {
     }
   }
 }
+
+// ═══ Шаг 48: шапка документа (разбор UX, 06.10.2026) ═══════════════════════
+//
+// Строка пути над документом. Логика — js/form_head.js, разметка —
+// xml/form_head.xml и xml/breadcrumbs.xml; метку «кнопки наверх» ставит
+// views/step48_header_up.xml (сделка и лид, расчёт, доборка). Тёмная пара
+// всего, у чего есть свой цвет, — dark.scss, блок «Шаг 48» в конце файла.
+// Кнопки — штатные классы темы: «Сохранить» — .btn-primary (чёрная, в тёмной
+// — приглушённый лайм; у документа со своей главной кнопкой — контурная с
+// тёмной рамкой, 48.3), «Отменить» и «Действия» — .btn-secondary
+// (контурные); их тёмные пары уже есть (dark.scss, раздел 4).
+//
+// Только обычные @media (min-width/max-width): файл компилируется отдельно,
+// миксинов Bootstrap здесь нет. Пороги — границы ядра (SIZES): 992 px (LG) —
+// счётчики справа (48.2); 1200 px (XL) — кнопки и этап в строке пути (48.6,
+// js/form_head_rules.js, HEADER_UP_MIN_SIZE).
+
+// ─── 48.1 Заголовок сделки и лида — обычного размера ────────────────────────
+//
+// Было: название 28 px в поле с рамкой (44 px высотой) — повтор строки пути
+// крупнее всего на экране. Стало: 18 px полужирным, без рамки; при наведении
+// и в фокусе — пунктир снизу, как у даты в заголовке расчёта
+// (pmk_calc/static/src/scss/spec_form.scss). Название по-прежнему правится:
+// у сделки №12 к теме письма дописано «тест». Рамку даёт чужая тема
+// theme_nexus правилом .o_input с !important (0,1,0), в тёмной теме —
+// body.o_nexus_dark .o_input:focus (0,3,1); здесь вес (0,6,1).
+.o_form_view.o_lead_opportunity_form .oe_title h1 {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.o_form_view.o_lead_opportunity_form .oe_title h1 .o_field_widget[name="name"] .o_input {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  padding: 2px 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-bottom: 1px solid transparent !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  outline: 0 !important;
+
+  &:hover,
+  &:focus {
+    border-bottom: 1px dashed currentColor !important;
+  }
+}
+
+// Пустое название при сохранении — красная черта, как у поля с ошибкой ядра.
+.o_form_view.o_lead_opportunity_form .oe_title h1 .o_field_widget.o_field_invalid[name="name"] .o_input {
+  border-bottom: 1px solid #d23f3a !important;
+}
+
+// ─── 48.2 Кнопки-счётчики закреплены справа (все формы) ─────────────────────
+//
+// Ядро растягивает правую зону панели (листалку) классом flex-grow-1, и зона
+// счётчиков стоит посередине: при появлении «Сохранить» и «Отменить» она
+// съезжала на 116 px (замер разбора). Растягивается строка пути (её flex —
+// раздел «Кнопки-счётчики над формой»), счётчики и листалка — у правого
+// края; появление кнопок сохранения их не двигает (замер: 0 px). У
+// «Настроек» в этой зоне поиск — не трогаем.
+@media (min-width: 992px) {
+  .o_form_view:not(.o-settings-form-view) .o_control_panel .o_control_panel_navigation {
+    flex-grow: 0 !important;
+  }
+}
+
+// ─── 48.3 «Сохранить» и «Отменить» (все формы) ──────────────────────────────
+//
+// Было: облачко и крестик 28×20 px (ниже нормы нажатия 24×24), а в
+// сохранённой форме — прозрачные 56 px пустоты. Стало: «✓ Сохранить» и
+// «Отменить» высотой с соседние кнопки (33 px, штатный .btn темы), только
+// при правках. Значок у «Отменить» — только когда подпись спрятана
+// (телефон, узкая шапка 48.6). Селекторы — только внутри
+// .o_form_status_indicator: у «Настроек» свои o_form_button_save и
+// o_form_button_cancel в другом месте.
+.o_form_view .o_control_panel .o_form_status_indicator {
+  align-self: center !important;
+}
+
+.o_form_status_indicator {
+  .o_form_status_indicator_buttons {
+    margin-inline-start: 4px;
+  }
+
+  .o_form_button_save,
+  .o_form_button_cancel {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+
+  .o_form_button_cancel .o_pmk_btn_icon {
+    display: none;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .o_form_status_indicator {
+    .o_pmk_btn_label {
+      display: none;
+    }
+
+    .o_form_button_cancel .o_pmk_btn_icon {
+      display: inline-block;
+    }
+  }
+}
+
+// Залитая кнопка на экране одна — следующий шаг процесса (правило владельца,
+// шаг 6; вторые залитые погашены в шаге 30). У сделки это «Расчёт и КП», у
+// лида — «Конвертировать в сделку», у расчёта — «КП (PDF)», у доборки —
+// «Печать листа», у закупки — своя. Пока есть правки, «Сохранить» стояла
+// рядом второй залитой (проверка шага 48). Теперь у документа со своей
+// главной кнопкой «Сохранить» — контурная с тёмной рамкой и полужирной
+// подписью (как нажатая кнопка ленты, 30.1); у документа без неё (карточка
+// контрагента, справочники) — залитая, и она там единственная.
+// Главная кнопка ищется в строке кнопок шапки (.o_statusbar_buttons) — и в
+// листе, и в строке пути (48.6). Скрытую условием кнопку ядро в разметку не
+// кладёт (t-if), так что «есть в разметке» = «видна». Вес (0,6,0) выше
+// заливки темы (0,1,0) с !important; тёмная пара — dark.scss, «Шаг 48».
+.o_form_view:has(.o_statusbar_buttons .btn-primary) .o_form_status_indicator .btn.o_form_button_save {
+  background: #ffffff !important;
+  border: 1px solid #16191c !important;
+  color: #16171b !important;
+  box-shadow: none !important;
+  font-weight: 600;
+
+  &:hover {
+    background: #faf9f6 !important;
+    border-color: #16191c !important;
+    color: #16191c !important;
+  }
+
+  // box-shadow: none выше погасил бы и кольцо фокуса темы — то же кольцо,
+  // что у кнопок ленты (30.1).
+  &:focus-visible {
+    box-shadow: 0 0 0 3px rgba(22, 25, 28, 0.14) !important;
+  }
+}
+
+// ─── 48.4 «⚙ Действия ▾» (формы) ────────────────────────────────────────────
+//
+// Было: шестерёнка 18×18 px без подписи прямо в строке названия. Стало:
+// контурная кнопка той же высоты, что соседние, после названия. Ячейку
+// ядро ставит внутрь строки названия — шаблон (xml/form_head.xml) выносит её
+// в общий ряд только у форм; здесь — зазор после названия.
+.o_cp_action_menus .o_pmk_actions_btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+
+  .o_pmk_actions_caret {
+    color: #6b7078;
+  }
+}
+
+.o_form_view .o_control_panel_breadcrumbs > div.o_control_panel_breadcrumbs_actions:has(> *) {
+  margin-inline-start: 8px;
+}
+
+// ─── 48.5 Листалка в формах — две стрелки без счётчика ──────────────────────
+//
+// Было: «1 / 2 ‹ ›» — 97 px. Стало: две стрелки 28×28 (57 px); «2 из 6» и
+// клавиша — в подсказке стрелки (js/form_head.js). Клавиши Control+N /
+// Control+P (Alt на Windows) работают: стрелки видны. Списки и канбан — со
+// счётчиком, как были.
+.o_form_view .o_control_panel .o_cp_pager {
+  .o_pager_counter {
+    display: none !important;
+  }
+
+  .btn-group {
+    align-self: center;
+  }
+
+  .o_pager_previous,
+  .o_pager_next {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0 !important;
+  }
+}
+
+// ─── 48.6 Кнопки и этап в строке пути (формы с меткой, от 1200 px) ──────────
+//
+// Порядок: путь или номер → «Действия» → «Сохранить» / «Отменить» → кнопки
+// шапки → счётчики → этап → стрелки. Строка кнопок ядра (.o_form_statusbar)
+// здесь без своей коробки (display: contents): белый фон, черта снизу и
+// отступы — её, у темы и у ядра — в строке пути не нужны. Этап — в правой
+// зоне, перед листалкой (order). Уже 1200 px шапка в листе, как раньше
+// (порог — js/form_head_rules.js, HEADER_UP_MIN_SIZE).
+//
+// КТО СЖИМАЕТСЯ. Не хватает ширины — сжимается название этапа (многоточие,
+// полное — в подсказке), путь над номером и длинная тема лида. Не
+// сжимаются никогда: номер документа, «Действия», «Сохранить» / «Отменить»,
+// кнопки шапки, счётчики, деления и срок этапа, стрелки. Раньше колонка пути
+// сжималась долей от нехватки (у неё min-width: 0), а её содержимое — нет:
+// при правках «✕» наезжал на «Расчёт и КП», а стрелки — на этап (проверка
+// шага 48, замер 1024 px). Теперь колонка с номером не сжимается вовсе, а
+// правая зона — не уже своего содержимого (min-content): название этапа
+// переносится словами и показывает одну строку (-webkit-line-clamp: 1,
+// overflow-wrap: anywhere), поэтому его наименьшая ширина — одна буква, а
+// не всё название. Так же уже сделана плашка расчёта («.pmk-signal» ниже).
+// Если и этого мало (длинный путь на 1200–1535), путь над номером не шире
+// 240 px. Ужимание по ширине: 1200–1365 — «Действия» без подписи (⚙ ▾);
+// 1200–1279 — «Сохранить» и «Отменить» значками ✓ и ✕ (подсказка с
+// клавишей).
+@media (min-width: 1200px) {
+  .o_form_view.o_pmk_header_up .o_control_panel {
+    .o_pmk_cp_header > .o_form_statusbar {
+      display: contents !important;
+    }
+
+    // Ядро: .o_form_statusbar .o_field_widget { align-self: flex-start } —
+    // в строке пути поле этапа встало бы к верху ряда.
+    .o_pmk_cp_header .o_field_widget {
+      align-self: center !important;
+    }
+
+    .o_pmk_cp_header .o_statusbar_buttons {
+      flex-wrap: nowrap !important;
+      gap: 6px !important;
+
+      &:not(:has(> *)) {
+        display: none !important;
+      }
+
+      > * {
+        flex-shrink: 0;
+      }
+
+      // Плашка расчёта «В КП не попадут без цены: …» — мелко, не больше
+      // двух строк; полный список изделий — во вкладке «Состав».
+      > .pmk-signal {
+        display: -webkit-box;
+        flex: 0 1 auto;
+        min-width: 120px;
+        max-width: 360px;
+        overflow: hidden;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        font-size: 12px;
+        line-height: 1.35;
+      }
+    }
+
+    // Колонка пути с номером документа (звено o_pmk_bc_short, 48.7): номер,
+    // «Действия» и кнопки сохранения — не сжимаются, путь над номером
+    // ограничен шириной (48.7 и ниже). Колонку с длинной темой лида
+    // (без номера) сжимает тема — ей min-width: 0 оставлен.
+    .o_control_panel_breadcrumbs:has(.o_last_breadcrumb_item.o_pmk_bc_short) {
+      flex-shrink: 0;
+    }
+
+    .o_control_panel_actions {
+      flex: 0 1 auto;
+      min-width: auto !important;
+      justify-content: flex-end !important;
+      gap: 12px;
+    }
+
+    // Правая зона сжимается первой (вес 4 — раньше длинной темы лида), но не
+    // уже содержимого: этап до делений, срока и первой буквы названия,
+    // стрелки — целиком.
+    .o_control_panel_navigation {
+      flex-shrink: 4;
+      min-width: min-content;
+
+      > .o_pmk_cp_header_status {
+        order: -1;
+        flex: 0 1 auto;
+        min-width: 0;
+      }
+
+      // У лида этапа нет (поле скрыто условием) — пустая ячейка не даёт
+      // лишнего зазора перед стрелками.
+      > .o_pmk_cp_header_status:not(:has(.o_field_widget)) {
+        display: none !important;
+      }
+
+      > .o_cp_pager {
+        flex-shrink: 0;
+      }
+    }
+
+    .o_pmk_cp_header_status {
+      .o_field_widget,
+      .o_statusbar_status {
+        min-width: 0;
+        max-width: 100%;
+      }
+
+      .o_statusbar_status > .btn.o_pmk_stage_toggle:not(.d-none) {
+        flex-shrink: 1;
+        min-width: 120px;
+        max-width: 260px;
+      }
+
+      // Название этапа: при нехватке места — одна строка с многоточием, а
+      // наименьшая ширина — одна буква (а не всё название, как у nowrap):
+      // от неё считается min-content правой зоны выше. Полное название — в
+      // подсказке (title, js/statusbar_compact.js).
+      .o_statusbar_status > .btn.o_pmk_stage_toggle .o_pmk_stage_name {
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 1;
+        overflow: hidden;
+        overflow-wrap: anywhere;
+        white-space: normal;
+      }
+    }
+  }
+
+  // Путь над номером документа — не шире 240 px до 1535 px (дальше — 360,
+  // 48.7): сделка, открытая из карточки клиента («Контрагенты / ООО …»),
+  // иначе не помещалась бы на 1366 при правках. Номер в пути
+  // («СД-00001 от 27.09.2026» над расчётом) не сжимается (navbar_nexus.scss)
+  // — сжимается название раздела перед ним.
+  .o_form_view.o_pmk_header_up .o_control_panel .o_breadcrumb:has(.o_last_breadcrumb_item.o_pmk_bc_short) > ol.breadcrumb {
+    max-width: 240px;
+  }
+}
+
+@media (min-width: 1536px) {
+  .o_form_view.o_pmk_header_up .o_control_panel .o_breadcrumb:has(.o_last_breadcrumb_item.o_pmk_bc_short) > ol.breadcrumb {
+    max-width: 100%;
+  }
+}
+
+// Ужимание — только пока шапка в строке пути (.o_pmk_cp_header есть). Уже
+// 1200 px шапка в листе, и в строке пути места хватает с подписями.
+@media (min-width: 1200px) and (max-width: 1365.98px) {
+  .o_form_view.o_pmk_header_up .o_control_panel:has(.o_pmk_cp_header) .o_pmk_actions_btn .o_pmk_btn_label {
+    display: none;
+  }
+}
+
+@media (min-width: 1200px) and (max-width: 1279.98px) {
+  .o_form_view.o_pmk_header_up .o_control_panel:has(.o_pmk_cp_header) .o_form_status_indicator {
+    .o_pmk_btn_label {
+      display: none;
+    }
+
+    .o_form_button_cancel .o_pmk_btn_icon {
+      display: inline-block;
+    }
+  }
+}
+
+// ─── 48.7 Номер документа в строке пути не режется ──────────────────────────
+//
+// Текущее звено-номер документа («СД-00001 от 27.09.2026», «СМ-00025»;
+// класс o_pmk_bc_short — xml/breadcrumbs.xml) не сжимается вовсе. Колонка
+// пути над ним — не уже номера и не шире 360 px: длинный путь сжимается
+// многоточием, номер — никогда. Только формы: в списках текущее звено —
+// название раздела. Прежние звенья-номера не сжимаются с шага 2
+// (navbar_nexus.scss, «Строка пути»).
+//
+// ⚠️ НЕ width: 0 у пути (так предлагал план шага): путь перестал бы влиять
+// на ширину колонки и обрезался бы до ширины номера и на широком экране —
+// «Воронка / СД-0…» над «СМ-00025», «Расчёты и К…» над расчётом.
+.o_form_view .o_control_panel .o_breadcrumb {
+  .o_last_breadcrumb_item.o_pmk_bc_short {
+    flex-shrink: 0;
+
+    > span {
+      overflow: visible;
+    }
+  }
+}
+
+.o_form_view .o_control_panel .o_breadcrumb:has(.o_last_breadcrumb_item.o_pmk_bc_short) {
+  flex-shrink: 0;
+  max-width: 360px;
+
+  > .breadcrumb,
+  > ol.breadcrumb {
+    max-width: 100%;
+    overflow: hidden;
+  }
+}

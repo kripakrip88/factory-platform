@@ -8,7 +8,10 @@
            названием сделки. Звено до 16 знаков — это номер документа или
            короткое название раздела — получает класс o_pmk_bc_short, и стили
            (navbar_nexus.scss) запрещают ему сжиматься. Сжимается только
-           длинное название.
+           длинное название. С шага 48 (06.10.2026) «короткое» — и номер с
+           датой «СД-00001 от 27.09.2026» (22 знака), и текущее звено тоже
+           (стили — forms_nexus.scss, раздел «Шаг 48», 48.7). Правило —
+           pmkShortCrumb (js/form_head.js, js/form_head_rules.js).
         2. ПОДСКАЗКА ПО-РУССКИ. У видимых звеньев ядро собирает подсказку прямо
            в разметке строкой «Back to "…" form» — такую строку Odoo не
            переводит. Берём тот же метод, что уже использует выпадашка «…»:
@@ -21,7 +24,7 @@
     -->
     <t t-inherit="web.Breadcrumbs" t-inherit-mode="extension">
         <xpath expr="//t[@t-foreach='visiblePathBreadcrumbs']/li" position="attributes">
-            <attribute name="t-att-class">{ o_back_button: breadcrumb_last, o_pmk_bc_short: (breadcrumb.name || '').length &lt;= 16 }</attribute>
+            <attribute name="t-att-class">{ o_back_button: breadcrumb_last, o_pmk_bc_short: pmkShortCrumb(breadcrumb.name) }</attribute>
         </xpath>
         <xpath expr="//t[@t-foreach='visiblePathBreadcrumbs']/li/a" position="attributes">
             <attribute name="t-att-data-tooltip">getBreadcrumbTooltip(breadcrumb)</attribute>
@@ -31,6 +34,12 @@
         </xpath>
         <xpath expr="//div[hasclass('o_breadcrumb')]/div[hasclass('o_last_breadcrumb_item')]/span" position="attributes">
             <attribute name="t-att-title">breadcrumb.name</attribute>
+        </xpath>
+        <xpath expr="//div[hasclass('o_breadcrumb')]/div/div[hasclass('o_last_breadcrumb_item')]" position="attributes">
+            <attribute name="t-att-class">{ o_pmk_bc_short: pmkShortCrumb(breadcrumb.name) }</attribute>
+        </xpath>
+        <xpath expr="//div[hasclass('o_breadcrumb')]/div[hasclass('o_last_breadcrumb_item')]" position="attributes">
+            <attribute name="t-att-class">{ o_pmk_bc_short: pmkShortCrumb(breadcrumb.name) }</attribute>
         </xpath>
     </t>
 </templates>

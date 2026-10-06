@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Шапка документа — разбор UX, шаг 48 (06.10.2026). Логика — js/form_head.js,
+  стили — scss/forms_nexus.scss и dark.scss, раздел «Шаг 48».
+
+  ⚠️ ВСЁ — РАСШИРЕНИЯ ШАБЛОНОВ ЯДРА (extension). Узлы, на которые опираются
+  xpath, сверяет tests/test_step48_header.py: путь не нашёлся — Owl покажет
+  белый экран вместо формы. «Настройки» (web.SettingsFormView) и ещё четыре
+  primary-копии web.FormView (mrp_subcontracting, resource, website) берут
+  родителя в том виде, каким он был до нашего файла, — правка web.FormView
+  до них не доходит.
+-->
+<templates xml:space="preserve">
+
+  <!--
+    1. Кнопки и этап шапки — в строке пути (формы с меткой o_pmk_header_up,
+       от 1200 px). Кнопки — в слоте счётчиков, перед ними; этап — в правом
+       слоте панели (перед стрелками его ставит order в стилях). Контекст —
+       тот же, что у счётчиков ядра; state: {} — скомпилированная шапка
+       читает __comp__.state.isStatusbarStickyPinned (тень липкой шапки
+       листа), а у контроллера state нет.
+  -->
+  <t t-inherit="web.FormView" t-inherit-mode="extension">
+    <xpath expr="//t[@t-set-slot='layout-actions']/t[@t-if='!env.isSmall and buttonBoxTemplate']" position="before">
+      <div t-if="pmkHeaderButtonsTemplate and pmkHeaderInPanel()" class="o_pmk_cp_header o_pmk_cp_header_buttons d-flex align-items-center">
+        <t t-call="{{ pmkHeaderButtonsTemplate }}" t-call-context="{ __comp__: Object.assign(Object.create(this), { this, props: { ...this.props, record: this.model.root }, state: {} }) }"/>
+      </div>
+    </xpath>
+    <xpath expr="//t[@t-set-slot='control-panel-status-indicator']" position="after">
+      <t t-set-slot="control-panel-navigation-additional">
+        <div t-if="pmkHeaderStatusTemplate and pmkHeaderInPanel()" class="o_pmk_cp_header o_pmk_cp_header_status d-flex align-items-center">
+          <t t-call="{{ pmkHeaderStatusTemplate }}" t-call-context="{ __comp__: Object.assign(Object.create(this), { this, props: { ...this.props, record: this.model.root }, state: {} }) }"/>
+        </div>
+      </t>
+    </xpath>
+  </t>
+
+  <!--
+    2. Облачко и крестик → «✓ Сохранить» (класс главной кнопки темы:
+       чёрная, в тёмной теме приглушённый лайм; у документа со своей главной
+       кнопкой стили делают её контурной с тёмной рамкой — залитая на экране
+       одна, forms_nexus.scss 48.3) и «Отменить» (контурная),
+       высотой с соседние кнопки (33 px). Во всех формах. Видны, как и
+       раньше, только у новой записи и при несохранённых правках; без правок
+       их нет совсем (d-none вместо прозрачного invisible ядра — 56 px
+       пустоты уходят). Кнопка «Сохранить» остаётся в разметке: ядро
+       обращается к ней (t-ref="save") при смене «заполнено верно».
+       Клавиши Alt+S / Alt+J (data-hotkey) и красный треугольник ошибки —
+       как в ядре. У «Настроек» свои «Сохранить» и «Отменить»
+       (web.FormView.Buttons) — этот шаблон их не касается.
+  -->
+  <t t-inherit="web.FormStatusIndicator" t-inherit-mode="extension">
+    <xpath expr="//div[hasclass('o_form_status_indicator_buttons')]" position="attributes">
+      <attribute name="t-att-class">{ 'd-none': !(props.model.root.isNew or displayButtons) }</attribute>
+      <attribute name="class" add="gap-1" separator=" "/>
+    </xpath>
+    <xpath expr="//button[hasclass('o_form_button_save')]" position="attributes">
+      <attribute name="class">o_form_button_save btn btn-primary</attribute>
+      <attribute name="data-tooltip"/>
+      <attribute name="t-att-data-tooltip">pmkSaveTip</attribute>
+      <attribute name="aria-label">Сохранить</attribute>
+    </xpath>
+    <xpath expr="//button[hasclass('o_form_button_save')]/i" position="replace">
+      <i class="fa fa-check o_pmk_btn_icon"/>
+      <span class="o_pmk_btn_label">Сохранить</span>
+    </xpath>
+    <xpath expr="//button[hasclass('o_form_button_cancel')]" position="attributes">
+      <attribute name="class">o_form_button_cancel btn btn-secondary</attribute>
+      <attribute name="data-tooltip"/>
+      <attribute name="t-att-data-tooltip">pmkDiscardTip</attribute>
+      <attribute name="aria-label">Отменить все изменения</attribute>
+    </xpath>
+    <xpath expr="//button[hasclass('o_form_button_cancel')]/i" position="replace">
+      <i class="fa fa-times o_pmk_btn_icon"/>
+      <span class="o_pmk_btn_label">Отменить</span>
+    </xpath>
+  </t>
+
+  <!--
+    3. Шестерёнка формы → «⚙ Действия ▾» той же высоты, контурная (только
+       web.FormCogMenu — списки и канбан не тронуты). На телефоне — штатная
+       кнопка-значок. Клавиша Alt+U (data-hotkey) — как в ядре.
+  -->
+  <t t-inherit="web.FormCogMenu" t-inherit-mode="extension">
+    <xpath expr="//button[@data-hotkey='u']" position="attributes">
+      <attribute name="t-att-class">env.isSmall ? 'btn-secondary' : 'btn-secondary o_pmk_actions_btn'</attribute>
+      <attribute name="data-tooltip"/>
+      <attribute name="t-att-data-tooltip">pmkCogTip</attribute>
+    </xpath>
+    <xpath expr="//button[@data-hotkey='u']/i" position="after">
+      <span t-if="!env.isSmall" class="o_pmk_btn_label">Действия</span>
+      <i t-if="!env.isSmall" class="fa fa-angle-down o_pmk_actions_caret" aria-hidden="true"/>
+    </xpath>
+  </t>
+
+  <!--
+    4. «Действия» выходит из строки названия в общий ряд — только у форм
+       (breadcrumb.isFormView): иначе строка названия стала бы высотой
+       33 px и шапка выросла бы на ~15 px. Списки и канбан — как в ядре.
+       Две ячейки — по одной на вариант строки пути (с путём и без).
+  -->
+  <t t-inherit="web.Breadcrumbs" t-inherit-mode="extension">
+    <xpath expr="//div[hasclass('o_breadcrumb')]/div/t[@t-call='web.Breadcrumb.Actions']" position="attributes">
+      <attribute name="t-if">!breadcrumb.isFormView</attribute>
+    </xpath>
+    <xpath expr="//div[hasclass('o_breadcrumb')]/t[@t-call='web.Breadcrumb.Actions']" position="attributes">
+      <attribute name="t-if">!breadcrumb.isFormView</attribute>
+    </xpath>
+    <xpath expr="//t[@t-slot='breadcrumb-status-indicator']" position="before">
+      <t t-if="breadcrumb.isFormView" t-call="web.Breadcrumb.Actions"/>
+    </xpath>
+  </t>
+
+  <!--
+    5. Листалка: подсказка стрелок — своим методом (js/form_head.js): у формы
+       «Следующая — Control+N (2 из 6)», у списков и канбана — штатная.
+       Счётчик «1 / 2» в формах прячут стили. Клавиши (t-att-data-hotkey) —
+       как в ядре: работают, пока стрелки видны.
+  -->
+  <t t-inherit="web.Pager" t-inherit-mode="extension">
+    <xpath expr="//button[hasclass('o_pager_previous')]" position="attributes">
+      <attribute name="data-tooltip"/>
+      <attribute name="t-att-data-tooltip">pmkTooltip(-1)</attribute>
+    </xpath>
+    <xpath expr="//button[hasclass('o_pager_next')]" position="attributes">
+      <attribute name="data-tooltip"/>
+      <attribute name="t-att-data-tooltip">pmkTooltip(1)</attribute>
+    </xpath>
+  </t>
+
+</templates>

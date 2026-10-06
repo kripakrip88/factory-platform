@@ -1271,3 +1271,51 @@ $pmk-dark-alerts: (
   body.o_nexus_dark .pmk-cut__rest--useful { background: var(--pmk-tone-green-bd); }
   body.o_nexus_dark .pmk-cut__rest--scrap { background: var(--pmk-tone-red-bd); }
 }
+
+// ═══ Шаг 48: шапка документа — тёмная пара (разбор UX, 06.10.2026) ══════════
+// Светлые правила — forms_nexus.scss, раздел «Шаг 48». Кнопки «Сохранить»,
+// «Отменить», «Действия», кнопки шапки и этап в строке пути — штатные классы
+// темы, их тёмные пары уже есть (раздел 4 и «Полоса стадий»). Здесь — то, у
+// чего светлое правило задаёт свой цвет. Отдельный блок @media screen в конце
+// файла: возвращается одним куском, печать остаётся светлой.
+@media screen {
+
+  // 48.1 Заголовок сделки и лида: светлое правило (0,6,1) прозрачнее и
+  // сильнее тёмного фона поля чужой темы (body.o_nexus_dark .o_input с
+  // !important); здесь — светлый текст на листе, пара (0,7,2) сильнее
+  // светлого правила.
+  body.o_nexus_dark .o_form_view.o_lead_opportunity_form .oe_title h1 .o_field_widget[name="name"] .o_input {
+    background: transparent !important;
+    color: var(--pmk-ink) !important;
+  }
+
+  body.o_nexus_dark .o_form_view.o_lead_opportunity_form .oe_title h1 .o_field_widget.o_field_invalid[name="name"] .o_input {
+    border-bottom-color: #f08a85 !important;
+  }
+
+  // 48.4 Стрелка «Действия ▾» — приглушённым светлым, как подписи.
+  body.o_nexus_dark .o_cp_action_menus .o_pmk_actions_btn .o_pmk_actions_caret {
+    color: var(--pmk-ink-3);
+  }
+
+  // 48.3 «Сохранить» у документа со своей главной кнопкой — контурная:
+  // светлое правило (0,6,0) красило бы её белой на тёмном листе, заливка
+  // лаймом раздела 4 (0,2,1) слабее его. Пара (0,7,1): тёмный фон кнопок,
+  // светлая рамка и полужирный светлый текст — как нажатая кнопка ленты
+  // (30.1), а залитая лаймом на экране остаётся одна — главная документа.
+  body.o_nexus_dark .o_form_view:has(.o_statusbar_buttons .btn-primary) .o_form_status_indicator .btn.o_form_button_save {
+    background: var(--pmk-surface-2) !important;
+    border-color: var(--pmk-ink) !important;
+    color: var(--pmk-ink) !important;
+
+    &:hover {
+      background: var(--pmk-surface-3) !important;
+      border-color: var(--pmk-ink) !important;
+      color: var(--pmk-ink) !important;
+    }
+
+    &:focus-visible {
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.18) !important;
+    }
+  }
+}

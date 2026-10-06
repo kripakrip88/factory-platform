@@ -16,3 +16,5 @@ from . import test_step35_dobor_deal
 from . import test_step39_tracking
 # Разбор UX, шаг 39: один фильтр «В работе» в поиске сделок.
 from . import test_step39_filters
+# Разбор UX, шаг 48: номер сделки «СД-», карточка без «Новое».
+from . import test_step48_deal_head

@@ -38,6 +38,20 @@ docs/disabled-features.md, раздел «шаг 29».
 предложение» → «Запрос КП» в «Печати» закупки, «запрос котировок» →
 «запросы КП» в её «Действиях». Окно, которое пункт откроет, называется так
 же: имя действия-окна подменяет _get_action_dict. В базе имена штатные.
+
+ПУНКТ ТОЛЬКО В СПИСКЕ (разбор UX, шаг 48, 06.10.2026). «Отметить проигрыш» в
+⚙ формы сделки и лида повторял кнопку «Проиграно» в шапке. Ядро раскладывает
+пункты по видам по binding_view_types действия (ir_ui_view.py, get_views с
+toolbar): у crm.crm_lead_lost_action там «list,form». Здесь, после ядра,
+поле подменяется из BINDING_VIEW_TYPES — пункт остаётся в ⚙ списка сделок
+(массовая отметка), кнопка «Проиграно» ссылается на то же действие и не
+тронута. В базе ничего не меняется, -u crm правку не перетрёт. Вернуть —
+убрать строку из BINDING_VIEW_TYPES.
+⚠️ У выигранной и архивной сделки кнопки «Проиграно» нет (условие ядра
+won_status != 'pending' or not active), и пункт ⚙ был единственным путём из
+карточки. Теперь: сменить этап с «Выиграно» (архивную — «Восстановить»), затем
+«Проиграно»; или в списке сделок — галочка → ⚙ → «Отметить проигрыш»
+(docs/disabled-features.md, шаг 48).
 """
 from odoo import api, models
 
@@ -73,6 +87,13 @@ HIDDEN_BINDINGS = {
 }
 
 
+# xml-id действия → виды, в чьей ⚙ пункт остаётся (вместо binding_view_types).
+BINDING_VIEW_TYPES = {
+    # «Отметить проигрыш»: в форме — кнопка «Проиграно» (шаг 48).
+    "crm.crm_lead_lost_action": "list",
+}
+
+
 class IrActionsActions(models.Model):
     _inherit = "ir.actions.actions"
 
@@ -81,7 +102,8 @@ class IrActionsActions(models.Model):
         result = super().get_bindings(model_name)
         hidden = self._pmk_hidden_binding_groups()
         titles = self._pmk_binding_titles()
-        if not hidden and not titles:
+        view_types = self._pmk_binding_view_types()
+        if not hidden and not titles and not view_types:
             return result
         user = self.env.user
         filtered = {}
@@ -93,6 +115,9 @@ class IrActionsActions(models.Model):
                 title = titles.get(action["id"])
                 if title:
                     action = dict(action, name=title)
+                types = view_types.get(action["id"])
+                if types:
+                    action = dict(action, binding_view_types=types)
                 kept.append(action)
             if kept:
                 filtered[kind] = kept
@@ -107,6 +132,17 @@ class IrActionsActions(models.Model):
             action_id = to_id(xmlid, raise_if_not_found=False)
             if action_id:
                 result[action_id] = title
+        return result
+
+    @api.model
+    def _pmk_binding_view_types(self):
+        """id действия → виды его пункта (BINDING_VIEW_TYPES; только существующие)."""
+        to_id = self.env["ir.model.data"]._xmlid_to_res_id
+        result = {}
+        for xmlid, types in BINDING_VIEW_TYPES.items():
+            action_id = to_id(xmlid, raise_if_not_found=False)
+            if action_id:
+                result[action_id] = types
         return result
 
     @api.model

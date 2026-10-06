@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <data noupdate="1">
+    <!--
+      Нумератор сделок «СД-00001» (разбор UX, шаг 48, 06.10.2026). Образец —
+      pmk_calc/data/ir_sequence.xml. noupdate: при обновлении модуля счётчик
+      не сбрасывается на единицу. Без года в номере, как у СМ- и ДОБ-.
+      Номер выдаёт models/deal_number.py — когда запись становится активной
+      сделкой.
+    -->
+    <record id="seq_deal" model="ir.sequence">
+      <field name="name">Сделка</field>
+      <field name="code">pmk.deal</field>
+      <field name="prefix">СД-</field>
+      <field name="padding">5</field>
+      <field name="company_id" eval="False"/>
+    </record>
+  </data>
+</odoo>

@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Шапка сделки — разбор UX, шаг 48 (06.10.2026). Номер «СД-00001 от
+    27.09.2026» (models/deal_number.py) и карточка без «Новое».
+
+    active в XML у каждого вида — грабли Odoo 19: выключенный вид при
+    загрузке не проверяется, и упавший xpath остался бы незамеченным.
+    В КП ничего не печатается по-другому: печать
+    (pmk_bridge/report/quotation_report.xml) полей сделки не берёт, имя
+    сделки (display_name) прежнее — тема писем клиенту не меняется.
+
+    ВЕРНУТЬ: «Новое» — снять js_class у формы (ниже), карточка снова на
+    штатном crm_form; номер на карточке, в списке и в поиске — удалить
+    соответствующий вид и выложить pmk_deal. Таблица —
+    docs/disabled-features.md, раздел «шаг 48».
+  -->
+
+  <!--
+    Форма сделки и лида: свой вид pmk_crm_form (static/src/js/deal_form_view.js)
+    поверх штатного crm_form — та же модель (синхронизация почты и телефона с
+    клиентом, сообщение при «Выиграно»), свой контроллер:
+      • «Новое» и его клавиша убраны (canCreate=false). Не create="0": он
+        унёс бы и «Дублировать» в ⚙ (web/views/utils.js). Не контекстом
+        действия: ядро ставит create="0" всем видам пункта меню, и «Новое»
+        пропало бы в воронке и в списке;
+      • в строке пути у сделки с номером — «СД-00001 от 27.09.2026» вместо
+        темы письма; тема остаётся заголовком листа.
+    Поле подписи — невидимое: оно нужно контроллеру в данных записи.
+  -->
+  <record id="view_crm_lead_form_step48" model="ir.ui.view">
+    <field name="name">crm.lead.form.pmk.step48</field>
+    <field name="model">crm.lead</field>
+    <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="/form" position="attributes">
+        <attribute name="js_class">pmk_crm_form</attribute>
+      </xpath>
+      <xpath expr="//sheet" position="inside">
+        <field name="pmk_number_label" invisible="1"/>
+      </xpath>
+    </field>
+  </record>
+
+  <!--
+    Список сделок: «Номер» первой колонкой. 105 px — как номер расчёта СМ-
+    в списке расчётов (pmk_calc, metal_spec_views.xml): номер не обрезается.
+  -->
+  <record id="view_crm_lead_list_step48" model="ir.ui.view">
+    <field name="name">crm.lead.list.pmk.step48</field>
+    <field name="model">crm.lead</field>
+    <field name="inherit_id" ref="crm.crm_case_tree_view_oppor"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='name']" position="before">
+        <field name="pmk_number" string="Номер" optional="show" width="105px"/>
+      </xpath>
+    </field>
+  </record>
+
+  <!--
+    Карточка воронки: номер мелко серым в нижней строке, после звёзд и задач
+    — карточка не растёт. Пустой номер (лид, архивная) не рисуется.
+  -->
+  <record id="view_crm_lead_kanban_step48" model="ir.ui.view">
+    <field name="name">crm.lead.kanban.pmk.step48</field>
+    <field name="model">crm.lead</field>
+    <field name="inherit_id" ref="crm.crm_case_kanban_view_leads"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//footer/div[1]" position="inside">
+        <field name="pmk_number" class="pmk-deal-number small text-muted ms-1"
+               invisible="not pmk_number"/>
+      </xpath>
+    </field>
+  </record>
+
+  <!--
+    Поиск сделок: «Сделка» ищет и по номеру; отдельное поле «Номер» —
+    в подсказках строки поиска. Штатные условия строки «Сделка» сохранены.
+  -->
+  <record id="view_crm_opportunities_search_step48" model="ir.ui.view">
+    <field name="name">crm.lead.search.opportunity.pmk.step48</field>
+    <field name="model">crm.lead</field>
+    <field name="inherit_id" ref="crm.view_crm_case_opportunities_filter"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='name']" position="attributes">
+        <attribute name="filter_domain">['|', '|', '|', '|', '|', ('partner_id', 'ilike', self), ('partner_name', 'ilike', self), ('email_from', 'ilike', self), ('name', 'ilike', self), ('contact_name', 'ilike', self), ('pmk_number', 'ilike', self)]</attribute>
+      </xpath>
+      <xpath expr="//field[@name='name']" position="after">
+        <field name="pmk_number" string="Номер"/>
+      </xpath>
+    </field>
+  </record>
+</odoo>

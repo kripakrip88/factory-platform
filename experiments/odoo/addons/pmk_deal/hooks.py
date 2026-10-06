@@ -49,6 +49,7 @@ TRACKING_WORDS = {
 
 def post_init_hook(env):
     apply_factory_defaults(env)
+    number_active_deals(env)
 
 
 def apply_factory_defaults(env):
@@ -183,3 +184,22 @@ def tracking_words_ru(env):
     if changed:
         env["mail.tracking.value"].invalidate_model(["old_value_char", "new_value_char"])
     return changed
+
+
+def number_active_deals(env):
+    """Номера «СД-» активным сделкам без номера (разбор UX, шаг 48).
+
+    Решение Антона 06.10.2026: «присвоить всем сделкам активным, кроме
+    архивных». Архивные (и проигранные — они тоже в архиве) остаются без
+    номера, лиды — тоже. Порядок — по дню превращения в сделку
+    (date_conversion, у созданной сразу сделкой — create_date), дата номера —
+    тот же день по поясу менеджера сделки (models/deal_number.py). Повторный
+    запуск ничего не меняет: у пронумерованных номер уже есть. Возвращает
+    число выданных номеров.
+    """
+    deals = env["crm.lead"].search([
+        ("type", "=", "opportunity"),
+        ("pmk_number", "=", False),
+    ])
+    deals._pmk_assign_number()
+    return len(deals.filtered("pmk_number"))

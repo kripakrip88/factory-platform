@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Кнопки и этап документа — в строку пути (разбор UX, шаг 48, 06.10.2026).
+
+    Метка формы o_pmk_header_up — единственный выключатель механизма
+    (js/form_head.js): у формы с меткой строка кнопок <header> на экране от
+    1200 px рисуется в строке пути — кнопки после названия, этап перед
+    стрелками листалки; лист поднимается на ~56 px. Уже 1200 px и в окнах
+    (лид из почты) — шапка в листе, как раньше (почему не от 992 —
+    js/form_head_rules.js, HEADER_UP_MIN_SIZE).
+
+    Документы: сделка и лид (одна форма), расчёт, доборка. Закупки и
+    остальные штатные документы не трогаем: кнопок в шапке там больше.
+
+    XML форм и узел <header> не меняются — только класс у <form>: xpath
+    наследников (pmk_bridge, pmk_deal, pmk_laser) и тесты, которые ищут
+    кнопки в <header>, не ломаются. active в XML — грабли Odoo 19
+    (выключенный вид не проверяется).
+
+    ВЕРНУТЬ: убрать запись документа (или файл из __manifest__.py) и выложить
+    pmk_theme. Таблица — docs/disabled-features.md, раздел «шаг 48».
+  -->
+  <record id="view_crm_lead_form_header_up" model="ir.ui.view">
+    <field name="name">crm.lead.form.pmk.header.up</field>
+    <field name="model">crm.lead</field>
+    <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="/form" position="attributes">
+        <attribute name="class" add="o_pmk_header_up" separator=" "/>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="view_metal_spec_form_header_up" model="ir.ui.view">
+    <field name="name">pmk.metal.spec.form.pmk.header.up</field>
+    <field name="model">pmk.metal.spec</field>
+    <field name="inherit_id" ref="pmk_calc.view_metal_spec_form"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="/form" position="attributes">
+        <attribute name="class" add="o_pmk_header_up" separator=" "/>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="view_dobor_order_form_header_up" model="ir.ui.view">
+    <field name="name">pmk.dobor.order.form.pmk.header.up</field>
+    <field name="model">pmk.dobor.order</field>
+    <field name="inherit_id" ref="pmk_calc.view_dobor_order_form"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="/form" position="attributes">
+        <attribute name="class" add="o_pmk_header_up" separator=" "/>
+      </xpath>
+    </field>
+  </record>
+</odoo>
