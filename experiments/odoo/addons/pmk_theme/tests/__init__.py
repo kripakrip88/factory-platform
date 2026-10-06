@@ -37,3 +37,10 @@ from . import test_step39_words
 #        --http-port 8099
 # Правила без Odoo — node static/tests/form_head_step48.test.mjs.
 from . import test_step48_header
+# Ширина экрана (шаг 49): лист и лента до 1800 px, короткие поля 25rem,
+# подсветка по контуру поля; раздел в живом forms_nexus.scss, forms.scss
+# выключен. Вместе с шагами 48 и 40 (раздел 48 теперь не последний в файле):
+#   odoo -d pmk49_test -i pmk_theme,pmk_deal,theme_nexus --test-enable \
+#        --test-tags /pmk_theme:TestStep49Width,/pmk_theme:TestHeaderStep48,/pmk_theme:TestDarkPairsStep40,/pmk_theme \
+#        --stop-after-init --http-port 8099
+from . import test_step49_width

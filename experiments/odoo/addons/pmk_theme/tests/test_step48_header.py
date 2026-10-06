@@ -342,7 +342,9 @@ class TestHeaderStep48(TransactionCase):
         source = _read(path)
         start = source.find(STEP_MARK)
         self.assertGreater(start, -1, "Раздел шага 48 — в живом файле %s" % path)
-        css = sass.compile(string=source[start:])
+        # До следующего раздела («// ═══ Шаг 49» и далее) или до конца файла.
+        end = source.find("// ═══ Шаг", start + 1)
+        css = sass.compile(string=source[start:end if end != -1 else None])
         return re.sub(r"\s+", " ", css)
 
     def test_backend_css_compiles_with_step(self):
