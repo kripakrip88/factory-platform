@@ -660,13 +660,21 @@ class TestArchivePreview(_MailboxMixin, TransactionCase):
                 self.assertIsNone(payload['archive'])
 
     def test_rar_and_7z(self):
-        for name, blob, label in (('Чертежи.rar', b'Rar!\x1a\x07\x01\x00' + b'\0' * 64, 'RAR'),
-                                  ('Чертежи.7z', b'7z\xbc\xaf\x27\x1c' + b'\0' * 64, '7z')):
-            with self.subTest(name=name):
-                payload = self.Attachment.preview(self._attach(name, blob).id)
-                self.assertEqual(payload['kind'], 'none')
-                self.assertEqual(payload['reason'],
-                                 'Просмотр архивов %s пока недоступен — скачайте архив.' % label)
+        # ПРАВКА ПМК (шаг 45б): RAR читается (tests/test_step45b_rar.py), если
+        # в образе есть rarfile и unrar; без них — прежние слова. Сигнатура с
+        # нулями вместо заголовков — повреждённый архив. 7z — как было.
+        fake_rar = b'Rar!\x1a\x07\x01\x00' + b'\0' * 64
+        with patch.object(ar, 'rar_available', return_value=False):
+            payload = self.Attachment.preview(self._attach('Чертежи.rar', fake_rar).id)
+        self.assertEqual((payload['kind'], payload['reason']),
+                         ('none', 'Просмотр архивов RAR пока недоступен — скачайте архив.'))
+        if ar.rar_available():
+            payload = self.Attachment.preview(self._attach('Чертежи.rar', fake_rar).id)
+            self.assertEqual(payload['kind'], 'none')
+            self.assertIn('повреждён', payload['reason'])
+        payload = self.Attachment.preview(self._attach('Чертежи.7z', b'7z\xbc\xaf\x27\x1c' + b'\0' * 64).id)
+        self.assertEqual((payload['kind'], payload['reason']),
+                         ('none', 'Просмотр архивов 7z пока недоступен — скачайте архив.'))
         renamed = self.Attachment.preview(self._attach('Чертежи.rar', make_zip([('a.pdf', b'1')])).id)
         self.assertEqual(renamed['kind'], 'archive', "назван .rar, а внутри ZIP — показываем")
         self.assertIn('архив ZIP', renamed['note'])

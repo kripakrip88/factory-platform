@@ -322,6 +322,10 @@
 
 .o_mail_client_archive_reason {
     color: var(--mc-archive-refused);
+    // ПРАВКА ПМК (шаг 45б): в причине бывает цель ссылки RAR без пробелов
+    // («ссылка на «C:\Users\…\Узел.pdf»») и имя файла в ответе сервера —
+    // переносим, как имя, а не выпускаем на колонку размера.
+    overflow-wrap: anywhere;
 }
 
 .o_mail_client_archive_actions {

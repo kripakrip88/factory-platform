@@ -17,4 +17,5 @@ from . import test_sync_scope
 from . import test_sync_lock
 from . import test_step41_list
 from . import test_step45_archive
+from . import test_step45b_rar
 from . import test_step46_drawing

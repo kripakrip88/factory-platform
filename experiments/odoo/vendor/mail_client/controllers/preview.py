@@ -28,6 +28,13 @@
 не пишется, кроме штатного скачивания самого архива с IMAP, если он ещё не
 скачан (EXAMINE и BODY.PEEK — отметки «прочитано» это не ставит).
 ?download=1 — отдать файл на сохранение под его именем без папок архива.
+
+ПРАВКА ПМК (шаг 45б, 06.10.2026): тот же маршрут отдаёт и файл из архива
+RAR — номер у него позиция в RarFile.infolist(). Достаёт файл отдельный
+процесс (archive_reader.read_rar_member: rarfile и unrar с пределами и
+сроком, копия архива во временной папке, которая удаляется сразу).
+Отказы — словами с кодом из ArchiveError, как у ZIP: 404 нет файла, 413
+предел или срок, 422 пароль, порча, тома, нет распаковщика.
 """
 import logging
 
@@ -125,7 +132,7 @@ class MailClientPreview(http.Controller):
     @http.route('/mail_client/attachment/<int:attachment_id>/member/<int:index>',
                 type='http', auth='user', methods=['GET'])
     def attachment_member(self, attachment_id, index, download=None, **kwargs):
-        """Один файл из архива ZIP — для pdf.js, <img> и «Скачать».
+        """Один файл из архива ZIP или RAR (шаг 45б) — для pdf.js, <img> и «Скачать».
 
         ПРАВКА ПМК (шаг 45). Номер — index строки списка архива (preview()
         отдаёт его в archive.entries). Отказы — текстом с кодом из

@@ -35,9 +35,18 @@
 Архив ZIP показывается списком файлов, а PDF, таблица или картинка из него
 открываются тем же окном — параметром member (номер файла в архиве). Сам
 архив читает tools/archive_reader.py: только в память, по одному файлу, с
-пределами против «бомб» и поддельных размеров. RAR и 7z опознаются, но не
-читаются: на сервере нет распаковщика (unrar/bsdtar/7z), и ставить его —
-решение владельца (меняется образ Docker).
+пределами против «бомб» и поддельных размеров. 7z опознаётся, но не
+читается: распаковщика 7z на сервере нет.
+
+АРХИВЫ RAR (ПРАВКА ПМК, шаг 45б разбора удобства, 06.10.2026)
+RAR показывается так же, как ZIP: тот же список, то же окно, тот же
+параметр member — только номер файла у RAR — позиция в RarFile.infolist()
+(с папками). Читает его archive_reader.list_rar / read_rar_member: rarfile
+и unrar работают в отдельном процессе (tools/rar_child.py) с пределами и
+сроком, в рабочий процесс Odoo rarfile не загружается. В образе
+odoo-ru:19.0-20261006 (решение владельца 06.10) есть rarfile 4.5 и unrar;
+откатят образ — «Просмотр архивов RAR пока недоступен — скачайте архив.»,
+как раньше. Даты RAR5 записаны в UTC — показываются в поясе человека.
 """
 
 import csv as csv_module
@@ -54,8 +63,9 @@ from odoo import api, models
 from odoo.exceptions import UserError
 
 from ..tools.archive_reader import (
-    ArchiveError, archive_format, check_book, directory_info, list_zip,
-    read_part_head, read_zip_member, MAX_DIRECTORY_BYTES, MAX_ENTRIES,
+    ArchiveError, archive_format, check_book, directory_info, list_rar, list_zip,
+    read_part_head, read_rar_member, read_zip_member, MAX_DIRECTORY_BYTES, MAX_ENTRIES,
+    RAR_UNAVAILABLE,
 )
 
 _logger = logging.getLogger(__name__)
@@ -127,8 +137,8 @@ KIND_BY_FORMAT = {
     'png': 'image', 'jpeg': 'image', 'gif': 'image', 'bmp': 'image',
     'webp': 'image', 'tiff': 'image',
     'dxf': 'cad2d',
-    # ПРАВКА ПМК (шаг 45): архивы. Показывается списком только ZIP — RAR и 7z
-    # распаковать на сервере нечем (см. wire_kind).
+    # ПРАВКА ПМК (шаг 45): архивы. Показывается списком ZIP и (шаг 45б) RAR —
+    # 7z распаковать на сервере нечем (см. wire_kind).
     'zip': 'archive', 'rar': 'archive', '7z': 'archive',
 }
 
@@ -365,8 +375,10 @@ def wire_kind(fmt, kind):
         return 'sheet'
     if fmt == 'pdf':
         return 'pdf'
-    # Списком показывается только ZIP: RAR и 7z на сервере распаковать нечем.
-    if fmt == 'zip':
+    # Списком показываются ZIP и (ПРАВКА ПМК, шаг 45б) RAR; 7z на сервере
+    # распаковать нечем. Нет rarfile или unrar — список RAR откажет словами
+    # RAR_UNAVAILABLE (archive_reader.list_rar), это решает preview().
+    if fmt in ('zip', 'rar'):
         return 'archive'
     # ПРАВКА ПМК (шаг 46): чертёж DXF рисует pmk_drawing. Есть ли он на
     # сервере — решает preview() (_drawing_preview), а не эта чистая функция.
@@ -397,11 +409,14 @@ def no_preview_reason(fmt, kind):
         # картинкой не отдаёт. Человеку честнее сказать причину, чем сделать
         # вид, что формат неизвестен.
         return "Картинки SVG в системе не показываются: внутри них бывает код."
-    if fmt in ('rar', '7z'):
-        # ПРАВКА ПМК (шаг 45): распаковщика RAR и 7z на сервере нет — ставить
-        # его значит менять образ Docker, это решение владельца.
-        return "Просмотр архивов %s пока недоступен — скачайте архив." % (
-            'RAR' if fmt == 'rar' else '7z')
+    if fmt == 'rar':
+        # ПРАВКА ПМК (шаг 45б): сюда RAR не попадает (wire_kind — 'archive');
+        # текст тот же, что у отказа list_rar без rarfile и unrar.
+        return RAR_UNAVAILABLE
+    if fmt == '7z':
+        # ПРАВКА ПМК (шаг 45): распаковщика 7z на сервере нет — ставить его
+        # значит менять образ Docker, это решение владельца.
+        return "Просмотр архивов 7z пока недоступен — скачайте архив."
     title = FORMAT_TITLE.get(fmt)
     if title:
         return "Это %s — показать его в системе нечем." % title
@@ -1132,15 +1147,18 @@ class MailClientAttachment(models.Model):
             note    предупреждение, которое показывается и при удавшемся
                     просмотре: «назван .xls, а внутри HTML».
             reason  для kind='none' — почему просмотра нет.
-            archive для kind='archive' — список файлов архива ZIP
-                    (tools/archive_reader.list_zip): {entries: [{index, path,
-                    dir, name, size, date, kind, reason, warn}], total, size,
+            archive для kind='archive' — список файлов архива ZIP или RAR
+                    (tools/archive_reader.list_zip / list_rar — ПРАВКА ПМК,
+                    шаг 45б): {entries: [{index, path, dir, name, size,
+                    date, kind, reason, warn}], total, size,
                     encrypted, hidden, notes}. kind строки — 'pdf' | 'sheet' |
                     'image' | 'archive' | 'other' (entry_kind). ПРАВКА ПМК
                     (шаг 45).
             member, archive_name, download_url — для файла ИЗ архива
                     (аргумент member — номер файла в архиве, index строки
-                    списка): member = {index, path}, archive_name — имя
+                    списка; у ZIP — позиция в ZipFile.infolist(), у RAR —
+                    в RarFile.infolist(), с папками; шаг 45б): member =
+                    {index, path}, archive_name — имя
                     вложения-архива, url — /mail_client/attachment/N/member/I,
                     download_url — он же с ?download=1. Остальное — как у
                     вложения: вид файла решается по его содержимому. ПРАВКА
@@ -1228,7 +1246,7 @@ class MailClientAttachment(models.Model):
             elif kind == 'image':
                 payload.update(image_info(blob))
             elif payload['kind'] == 'archive':
-                payload['archive'] = record._archive_listing(blob)
+                payload['archive'] = record._archive_listing(blob, fmt)
             elif payload['kind'] == 'drawing':
                 # ПРАВКА ПМК (шаг 46): чертёж DXF — окном pmk_drawing.
                 drawing = record._drawing_preview(blob, name)
@@ -1259,27 +1277,38 @@ class MailClientAttachment(models.Model):
     def _archive_member(self, blob, member):
         """(байты, строка списка) файла номер `member` из архива-вложения.
 
-        Только из вложения, которое само опознано как архив ZIP: «файл номер
-        3» у книги Excel — это её служебный XML, показывать его незачем.
-        Чтение — tools/archive_reader.read_zip_member: в память, с пределом.
+        Только из вложения, которое само опознано как архив ZIP или (ПРАВКА
+        ПМК, шаг 45б) RAR: «файл номер 3» у книги Excel — это её служебный
+        XML, показывать его незачем. Чтение — tools/archive_reader:
+        read_zip_member в память с пределом, read_rar_member — отдельным
+        процессом с пределами и сроком.
         """
         self.ensure_one()
-        if detect_format(blob, self.name)[0] != 'zip':
-            raise ArchiveError("Это вложение не архив ZIP — файлов внутри у него нет.")
+        fmt = detect_format(blob, self.name)[0]
+        if fmt not in ('zip', 'rar'):
+            raise ArchiveError("Это вложение не архив ZIP или RAR — файлов внутри у него нет.")
         try:
             index = int(member)
         except (TypeError, ValueError):
             raise ArchiveError("В архиве нет такого файла. Откройте архив заново.", 404) from None
+        if fmt == 'rar':
+            return read_rar_member(blob, index, tz=self._archive_tz())
         return read_zip_member(blob, index)
 
-    def _archive_listing(self, blob):
+    def _archive_tz(self):
+        """Пояс человека для дат RAR5 (они записаны в UTC). ПРАВКА ПМК (шаг 45б)."""
+        return self.env.user.tz or 'UTC'
+
+    def _archive_listing(self, blob, fmt='zip'):
         """Список файлов архива для окна, с видом каждой строки.
 
         ПРАВКА ПМК (шаг 46): чертёж DXF — «Посмотреть», если на сервере есть
         модуль просмотра чертежей; нет его — только «Скачать», как раньше.
+        ПРАВКА ПМК (шаг 45б): fmt='rar' — список RAR (list_rar), строки того
+        же вида.
         """
         self.ensure_one()
-        listing = list_zip(blob)
+        listing = list_rar(blob, tz=self._archive_tz()) if fmt == 'rar' else list_zip(blob)
         drawings = self._drawing_available()
         for entry in listing['entries']:
             entry['kind'] = entry_kind(entry['name'])

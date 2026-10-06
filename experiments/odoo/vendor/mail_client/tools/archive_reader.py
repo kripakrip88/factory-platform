@@ -46,17 +46,61 @@
 кодировке cp866 — оттуда кракозябры «Б╤хЄ.pdf» у всех, кто читает по
 стандарту. Порядок разбора — в member_name().
 
+RAR (ПРАВКА ПМК, шаг 45б, 06.10.2026) — раздел 7
+Окно то же, договор тот же: list_rar() и read_rar_member() отдают ровно то,
+что list_zip() и read_zip_member(). Отличие одно — RAR сжимает своим
+форматом, Python его не разжимает, и файл достаёт unrar. Поэтому:
+- в рабочем процессе Odoo rarfile не загружается вовсе. И оглавление, и файл
+  читает отдельный процесс tools/rar_child.py (python3 -I) под пределами
+  памяти и процессора и со сроком (RAR_TIMEOUT); по сроку он убивается
+  вместе с unrar (своя группа процессов). Даже разбор оглавления rarfile
+  местами отдаёт unrar (сжатый комментарий RAR4 — с временным файлом в /tmp
+  и без срока), так что и он — там же;
+- оглавление: архив уходит процессу через трубу, на диск не пишется;
+- один файл: unrar читает архив только по имени файла на диске, поэтому
+  архив копируется во временную папку (mkdtemp — права 0700, файл 0600),
+  которая удаляется в finally при любом исходе. Распакованные байты на диск
+  не попадают: unrar печатает их в трубу, процесс читает кусками до предела
+  и передаёт дальше; файл «без сжатия» читается вовсе без unrar;
+- защиты и тексты — те же, что у ZIP (5000 файлов, 4 МБ оглавления, 50 МБ
+  на файл, сжатие не больше 100 при файле крупнее 1 МБ, пароль, порча,
+  «..» и путь от корня); свои — тома, пароль на оглавление, ссылки (с
+  целью словами), срок распаковки «непрерывного» (solid) архива и имя,
+  которое ловит другой файл, у такого архива (CLASH);
+- копия и жёсткая ссылка RAR5 (WinRAR «сохранять одинаковые файлы как
+  ссылки») — обычный файл: читаются байты оригинала (_rar_source), пределы
+  — тоже его;
+- нет rarfile или unrar (образ откатили) — «Просмотр архивов RAR пока
+  недоступен — скачайте архив.», как до шага 45б; остальная почта работает.
+Имена: RAR5 — всегда UTF-8; RAR4 — флаг Unicode (как пишет WinRAR) или
+байты без флага — их разбираем тем же порядком, что имена ZIP
+(_legacy_name), только запасная кодировка не cp437, а cp1251.
+
 Модуль без импортов Odoo: его гоняют обычным python на собранных в тесте
-архивах (tests/test_step45_archive.py).
+архивах (tests/test_step45_archive.py, tests/test_step45b_rar.py).
 """
 import bz2
+import datetime
+import importlib.util
 import io
+import json
+import logging
 import lzma
+import os
 import re
+import shutil
+import signal
 import struct
+import subprocess
+import sys
+import tempfile
 import unicodedata
 import zipfile
 import zlib
+
+from . import rar_child
+
+_logger = logging.getLogger(__name__)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -91,6 +135,18 @@ BOOK_MAX_UNPACKED = 256 * 1024 * 1024
 # Способы сжатия: без сжатия, deflate, bzip2, lzma.
 STORED, DEFLATED, BZIP2, LZMA = 0, 8, 12, 14
 SUPPORTED_METHODS = frozenset({STORED, DEFLATED, BZIP2, LZMA})
+
+# ПРАВКА ПМК (шаг 45б): RAR.
+# Срок отдельного процесса — и на оглавление, и на один файл. Обычный файл
+# unrar достаёт за доли секунды; «непрерывный» архив разжимается с начала
+# до нужного файла, и тяжёлый может не успеть — тогда отказ словами.
+RAR_TIMEOUT = 10
+# Заголовков всех видов (служебные, конец архива) — с запасом на файл.
+RAR_MAX_HEADERS = 3 * MAX_ENTRIES + 64
+# Где искать unrar и python для отдельного процесса.
+RAR_PATH = '/usr/local/bin:/usr/bin:/bin'
+# Способы сжатия RAR: 0x30 — без сжатия … 0x35 — наилучшее.
+RAR_METHODS = range(0x30, 0x36)
 
 FLAG_ENCRYPTED = 0x1
 FLAG_UTF8 = 0x800
@@ -172,6 +228,12 @@ def directory_info(blob):
 
 
 def _too_many(count):
+    if count is None:
+        # ПРАВКА ПМК (шаг 45б): у RAR разбор останавливается на 5001-м файле,
+        # точного числа нет — и выдумывать его не будем.
+        return ArchiveError(
+            "Файлов в архиве больше %d — такой длинный список здесь не "
+            "показываем. Скачайте архив и откройте его на компьютере." % MAX_ENTRIES, 413)
     return ArchiveError(
         "Файлов в архиве: %s — список длиннее %d здесь не показываем. Скачайте "
         "архив и откройте его на компьютере." % (count, MAX_ENTRIES), 413)
@@ -274,6 +336,17 @@ def member_name(info):
             return unicode_path[5:].decode('utf-8')
         except UnicodeDecodeError:
             pass
+    return _legacy_name(raw, 'cp437')
+
+
+def _legacy_name(raw, fallback):
+    """Имя без отметки кодировки — шаги 3–6 member_name().
+
+    Общий для ZIP и RAR4 (ПРАВКА ПМК, шаг 45б): латиница; ни одного байта
+    B0–DF — cp866; UTF-8; иначе fallback (у ZIP — cp437 по стандарту, у
+    RAR4 — cp1251: так пишут программы Windows, а не DOS). У cp1251 один
+    байт (0x98) не занят — он станет «�», а не ошибкой.
+    """
     if raw.isascii():
         return raw.decode('ascii')
     if not any(0xB0 <= byte <= 0xDF for byte in raw):
@@ -281,7 +354,7 @@ def member_name(info):
     try:
         return raw.decode('utf-8')
     except UnicodeDecodeError:
-        return raw.decode('cp437')
+        return raw.decode(fallback, 'replace')
 
 
 # Управляющие символы направления письма: с ними «счёт‮fdp.exe» на экране
@@ -360,7 +433,13 @@ def _sort_key(entry):
 
 def _date(info):
     """Дата из архива «дд.мм.гггг чч:мм». 01.01.1980 — «даты нет» у ZIP."""
-    year, month, day, hour, minute = info.date_time[:5]
+    return _date_text(info.date_time)
+
+
+def _date_text(date_time):
+    """(год, месяц, день, час, минута…) -> «дд.мм.гггг чч:мм» или ''.
+    Общая для ZIP и времени DOS у RAR4 (ПРАВКА ПМК, шаг 45б)."""
+    year, month, day, hour, minute = date_time[:5]
     if year <= 1980 and month <= 1 and day <= 1 and not hour and not minute:
         return ''
     if not (1 <= month <= 12 and 1 <= day <= 31 and 0 <= hour < 24 and 0 <= minute < 60):
@@ -379,19 +458,29 @@ def _refusal(info):
     """(коротко для строки списка, полностью для окна, код) или None."""
     if info.flag_bits & FLAG_ENCRYPTED:
         return ("закрыт паролем", ENCRYPTED, 422)
-    if info.compress_type not in SUPPORTED_METHODS:
+    return _limits(info.file_size, info.compress_size, info.compress_type in SUPPORTED_METHODS)
+
+
+def _limits(file_size, compress_size, method_ok, ratio=True):
+    """Способ сжатия, 50 МБ и коэффициент сжатия — общие для ZIP и RAR.
+
+    ratio=False — коэффициент не проверять (ПРАВКА ПМК, шаг 45б: файл
+    «непрерывного» архива RAR сжат вместе с предыдущими, и его собственный
+    сжатый размер ничего не говорит — см. _rar_refusal).
+    """
+    if not method_ok:
         return ("сжат неизвестным способом",
                 "Файл «%s» сжат способом, которого система не знает. Скачайте "
                 "архив и откройте его на компьютере.", 422)
-    if info.file_size > MEMBER_MAX_BYTES:
+    if file_size > MEMBER_MAX_BYTES:
         return ("больше %s" % _mb(MEMBER_MAX_BYTES),
                 "Файл «%%s» весит %s в распакованном виде — больше предела %s. "
-                "Скачайте архив целиком." % (_mb(info.file_size), _mb(MEMBER_MAX_BYTES)), 413)
-    if info.file_size > RATIO_FROM and info.file_size > MEMBER_MAX_RATIO * info.compress_size:
-        ratio = _times(info.file_size // max(info.compress_size, 1))
-        return ("сжат в %s — похоже на подделку" % ratio,
+                "Скачайте архив целиком." % (_mb(file_size), _mb(MEMBER_MAX_BYTES)), 413)
+    if ratio and file_size > RATIO_FROM and file_size > MEMBER_MAX_RATIO * compress_size:
+        times = _times(file_size // max(compress_size, 1))
+        return ("сжат в %s — похоже на подделку" % times,
                 "Файл «%%s» сжат в %s — так бывает у поддельных архивов-«бомб». "
-                "Открывать не будем; если файл нужен, скачайте архив." % ratio, 413)
+                "Открывать не будем; если файл нужен, скачайте архив." % times, 413)
     return None
 
 
@@ -399,14 +488,18 @@ def _refusal(info):
 # 4. СПИСОК
 # ═══════════════════════════════════════════════════════════════════════════
 def _entry(index, info, meta):
-    refusal = _refusal(info)
+    return _row(index, meta, info.file_size, _date(info), _refusal(info))
+
+
+def _row(index, meta, size, date, refusal):
+    """Строка списка — одна для ZIP и RAR (ПРАВКА ПМК, шаг 45б)."""
     return {
         'index': index,
         'path': meta['path'],
         'dir': meta['dir'],
         'name': meta['name'],
-        'size': info.file_size,
-        'date': _date(info),
+        'size': size,
+        'date': date,
         'reason': refusal[0] if refusal else '',
         'warn': meta['warn'],
     }
@@ -438,10 +531,18 @@ def list_zip(blob):
                 encrypted += 1
             total_size += info.file_size
             files.append(_entry(index, info, meta))
-    files.sort(key=_sort_key)
+    return _summary(files, hidden, encrypted, total_size)
 
+
+def _summary(files, hidden, encrypted, total_size, notes=()):
+    """Ответ списка: строки по порядку и оговорки — общий для ZIP и RAR.
+
+    notes — оговорки, которые идут первыми (у RAR — «повреждён или
+    обрезан»). ПРАВКА ПМК (шаг 45б).
+    """
+    files.sort(key=_sort_key)
     total = len(files)
-    notes = []
+    notes = list(notes)
     if total and encrypted == total:
         notes.append("Архив закрыт паролем: список файлов виден, открыть их здесь "
                      "нельзя. Скачайте архив и откройте архиватором — он спросит пароль.")
@@ -689,3 +790,398 @@ def read_part_head(blob, name, limit):
                 ValueError, LookupError, struct.error, MemoryError):
             return None
     return None
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 7. RAR (ПРАВКА ПМК, шаг 45б, 06.10.2026)
+# ═══════════════════════════════════════════════════════════════════════════
+# Как устроено — в шапке файла и в шапке tools/rar_child.py. Здесь: запуск
+# отдельного процесса, слова отказов, имена, даты, строки списка.
+RAR_UNAVAILABLE = "Просмотр архивов RAR пока недоступен — скачайте архив."
+VOLUMES = ("Это архив из нескольких частей («.part1.rar», «.part2.rar»…). "
+           "По одной части его не открыть — скачайте все части и откройте первую "
+           "архиватором на компьютере.")
+ENCRYPTED_ALL = ("Архив закрыт паролем целиком — даже список файлов не виден. "
+                 "Скачайте архив и откройте его архиватором — он спросит пароль.")
+PARTIAL = ("Архив повреждён или обрезан: показаны файлы, которые удалось прочитать. "
+           "Остальное, возможно, достанет архиватор на компьютере.")
+# Ссылка, чья цель неизвестна (RAR4 из Linux: цель лежит в данных записи).
+# Цель известна — LINK_TO, COPY_LOST и COPY_EMPTY в _rar_link.
+LINK = ("ссылка, а не файл",
+        "«%s» — ссылка на другой файл, а не сам файл. Скачайте архив и откройте "
+        "его архиватором на компьютере.", 422)
+LINK_TO = ("ссылка на «%s», а не файл",
+           "«%%s» — ссылка на «%s», а не сам файл. Если этот файл есть в списке, "
+           "откройте его там; иначе скачайте архив.")
+COPY_LOST = ("копия файла «%s», а его в архиве нет",
+             "«%%s» — копия файла «%s», а самого файла в архиве нет. Скачайте архив "
+             "и откройте его архиватором на компьютере.")
+COPY_EMPTY = ("копия «%s» — открыть нечего",
+              "«%%s» — копия «%s», а у той нет своего содержимого (это ссылка, папка "
+              "или такая же копия). Скачайте архив и откройте его архиватором на "
+              "компьютере.")
+# Сколько знаков цели ссылки показывать в строке списка.
+TARGET_CHARS = 60
+# Сжатый файл «непрерывного» архива unrar ищет по имени — это имя не должно
+# ловить другой файл (tools/rar_child.py, _clash).
+CLASH = {
+    'twin': ("имя повторяется — скачайте архив",
+             "Файл «%s» здесь не достать: архив сжат «непрерывно», распаковщик ищет "
+             "файл по имени, а с этим именем в архиве есть ещё файл. Скачайте архив "
+             "и откройте его на компьютере.", 422),
+    'mask': ("«*» или «?» в имени — скачайте архив",
+             "Файл «%s» здесь не достать: архив сжат «непрерывно», распаковщик ищет "
+             "файл по имени, а «*» и «?» в имени понимает как шаблон для других "
+             "файлов. Скачайте архив и откройте его на компьютере.", 422),
+}
+# Срок подставляется при отказе: тесты его уменьшают.
+LIST_SLOW = ("Архив читается дольше %d с — список файлов здесь не показать. "
+             "Скачайте архив и откройте его на компьютере.")
+TIMEOUT = ("Файл «%s» распаковывается дольше %d с — распаковка остановлена. "
+           "Скачайте архив и откройте его на компьютере.")
+TIMEOUT_SOLID = ("Файл «%s» распаковывается дольше %d с: архив сжат «непрерывно», и "
+                 "чтобы достать файл, сервер распаковывает всё, что лежит перед ним. "
+                 "Скачайте архив и откройте его на компьютере.")
+STOPPED = ("Файл «%s»: распаковка остановлена по пределу памяти или времени. "
+           "Скачайте архив и откройте его на компьютере.")
+
+# Код выхода отдельного процесса (tools/rar_child.py) -> (слова, код ответа).
+_READ_REFUSALS = {
+    rar_child.BROKEN: ("Файл «%s» в архиве повреждён и не читается.", 422),
+    rar_child.CRC: ("Файл «%s» в архиве повреждён: контрольная сумма не сходится.", 422),
+    rar_child.PASSWORD: (ENCRYPTED, 422),
+    rar_child.MEMORY: ("Файл «%s» не удалось распаковать: на сервере не хватило памяти. "
+                       "Скачайте архив целиком.", 413),
+    rar_child.OVERFLOW: ("Файл «%s» распаковывается больше заявленного размера — архив "
+                         "поддельный. Чтение остановлено.", 413),
+    rar_child.VOLUME: (VOLUMES, 422),
+    rar_child.NO_TOOL: (RAR_UNAVAILABLE, 422),
+    rar_child.NOT_FOUND: ("Файл «%s» не удалось достать из архива — скачайте архив.", 422),
+    rar_child.LIMIT: (STOPPED, 413),
+}
+
+
+def rar_available():
+    """Стоят ли rarfile и unrar. Нет любого — RAR не открывается вовсе, как
+    до шага 45б: без unrar сжатый файл не достать, а список без «Посмотреть»
+    только путал бы. rarfile здесь не загружается — только ищется."""
+    try:
+        found = importlib.util.find_spec('rarfile') is not None
+    except (ImportError, ValueError):
+        found = False
+    return found and shutil.which('unrar', path=RAR_PATH) is not None
+
+
+def _kill_group(proc):
+    """Убить отдельный процесс вместе с unrar: у них своя группа."""
+    try:
+        os.killpg(proc.pid, signal.SIGKILL)
+    except OSError:                       # группы уже нет
+        pass
+
+
+def _run(args, data=None, folder=None, slow=''):
+    """(код выхода, stdout, stderr) отдельного процесса или ArchiveError.
+
+    Окружение пустое, кроме нужного: PATH, локаль C.UTF-8 (en_US.UTF-8 из
+    образа в контейнере нет, и unrar без неё не находит русских имён),
+    HOME и TMPDIR — временная папка (или несуществующая, когда писать
+    нечего). Своя группа процессов — чтобы по сроку убить и unrar.
+    """
+    home = folder or '/nonexistent-pmk-mail-rar'
+    env = {'PATH': RAR_PATH, 'LANG': 'C.UTF-8', 'LC_ALL': 'C.UTF-8',
+           'HOME': home, 'TMPDIR': home}
+    cmd = [sys.executable or shutil.which('python3', path=RAR_PATH) or 'python3',
+           '-I', '-B', rar_child.__file__] + [str(arg) for arg in args]
+    try:
+        proc = subprocess.Popen(
+            cmd, stdin=subprocess.PIPE if data is not None else subprocess.DEVNULL,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=folder or '/', env=env,
+            start_new_session=True, close_fds=True)
+    except OSError:
+        _logger.exception("Mail Client: не запустился разбор архива RAR")
+        raise ArchiveError(RAR_UNAVAILABLE) from None
+    try:
+        out, err = proc.communicate(input=data, timeout=RAR_TIMEOUT)
+    except subprocess.TimeoutExpired:
+        _kill_group(proc)
+        proc.communicate()
+        raise ArchiveError(slow, 413) from None
+    except BaseException:
+        _kill_group(proc)
+        proc.wait()
+        raise
+    if proc.returncode < 0:
+        # Процесс убит пределом — его unrar мог остаться сиротой.
+        _kill_group(proc)
+    return proc.returncode, out, err
+
+
+def _log(what, code, err):
+    tail = (err or b'')[-600:].decode('utf-8', 'replace').strip()
+    known = code in _READ_REFUSALS or code in (rar_child.TOO_MANY, rar_child.HEADERS)
+    (_logger.info if known else _logger.warning)(
+        "Mail Client: архив RAR — %s, код %s: %s", what, code, tail)
+
+
+def _list_refusal(code):
+    if code == rar_child.TOO_MANY:
+        return _too_many(None)
+    if code == rar_child.HEADERS:
+        return ArchiveError(
+            "Оглавление архива весит больше %s — такой длинный список здесь не "
+            "показываем. Скачайте архив." % _mb(MAX_DIRECTORY_BYTES), 413)
+    if code == rar_child.VOLUME:
+        return ArchiveError(VOLUMES)
+    if code == rar_child.NO_TOOL:
+        return ArchiveError(RAR_UNAVAILABLE)
+    if code == rar_child.MEMORY:
+        return ArchiveError("Архив не удалось разобрать: на сервере не хватило памяти. "
+                            "Скачайте архив и откройте его на компьютере.", 413)
+    if code < 0:
+        return ArchiveError("Архив не удалось разобрать: остановлено по пределу памяти или "
+                            "времени. Скачайте архив и откройте его на компьютере.", 413)
+    return ArchiveError(BROKEN)
+
+
+def _rar_list(blob):
+    """Оглавление от отдельного процесса.
+
+    {rar: 3|5, solid, needs_password, partial, items: [{name, raw, dir,
+    link, copy, orig, target, lost, clash, pw, solid, size, packed, method,
+    mtime, dt, off}]} — items по порядку RarFile.infolist(), с папками:
+    позиция в нём и есть номер файла. copy и orig — копия RAR5 и номер
+    записи с её байтами; target — цель ссылки или копии; lost — файла,
+    копией которого назвалась запись, в архиве нет; clash — см. CLASH.
+    """
+    if not rar_available():
+        raise ArchiveError(RAR_UNAVAILABLE)
+    code, out, err = _run(['list', MAX_ENTRIES, MAX_DIRECTORY_BYTES, RAR_MAX_HEADERS],
+                          data=bytes(blob), slow=LIST_SLOW % RAR_TIMEOUT)
+    if code != rar_child.OK:
+        _log('оглавление', code, err)
+        raise _list_refusal(code)
+    try:
+        listing = json.loads(out)
+    except ValueError:
+        listing = None
+    if (not isinstance(listing, dict) or not isinstance(listing.get('items'), list)
+            or not all(isinstance(item, dict) for item in listing['items'])):
+        _log('оглавление не разобрано', code, err)
+        raise ArchiveError(BROKEN)
+    if not listing['items']:
+        if listing.get('needs_password'):
+            raise ArchiveError(ENCRYPTED_ALL)
+        if listing.get('partial'):
+            raise ArchiveError(BROKEN)
+    return listing
+
+
+def _rar_name(item):
+    """Имя файла без кракозябр.
+
+    RAR5 и RAR4 с флагом Unicode — как разобрал rarfile. RAR4 без флага —
+    байты имени (raw) тем же порядком, что у ZIP, с запасной cp1251:
+    rarfile сначала пробует UTF-16 и превращает «Старое.pdf» в cp866 в
+    «ꖮ瀮晤». Одиночные суррогаты (порча UTF-16 в имени) — «�»: дальше имя
+    идёт в JSON и в заголовок ответа.
+    """
+    raw = item.get('raw') or ''
+    if raw:
+        try:
+            name = _legacy_name(bytes.fromhex(raw), 'cp1251')
+        except ValueError:
+            name = ''
+    else:
+        name = item.get('name') or ''
+    return ''.join('\N{REPLACEMENT CHARACTER}' if 0xD800 <= ord(char) <= 0xDFFF else char
+                   for char in str(name))
+
+
+def _zone(name):
+    """Часовой пояс человека (tz из карточки), иначе UTC."""
+    if name:
+        try:
+            import zoneinfo
+            return zoneinfo.ZoneInfo(name)
+        except (ImportError, ValueError, KeyError, OSError):
+            pass
+    return datetime.timezone.utc
+
+
+def _rar_date(item, zone):
+    """RAR5 хранит время в UTC — показываем в поясе человека; RAR4 — время
+    DOS «как на компьютере архиватора», как у ZIP. Нет даты — пусто."""
+    try:
+        if item.get('mtime') is not None:
+            moment = datetime.datetime.fromtimestamp(float(item['mtime']), datetime.timezone.utc)
+            moment = moment.astimezone(zone)
+            return '%02d.%02d.%04d %02d:%02d' % (moment.day, moment.month, moment.year,
+                                                 moment.hour, moment.minute)
+        parts = item.get('dt')
+        if parts:
+            return _date_text(tuple(int(part) for part in parts[:5]))
+    except (TypeError, ValueError, OverflowError, OSError):
+        pass
+    return ''
+
+
+def _shown(text):
+    """Цель ссылки для строки списка: без управляющих знаков и знаков
+    направления письма, не длиннее TARGET_CHARS (длинную — с конца, там имя)."""
+    text = ''.join(ch for ch in str(text or '') if unicodedata.category(ch) != 'Cc')
+    text = text.translate(_BIDI).strip()
+    if len(text) > TARGET_CHARS:
+        text = '…' + text[-(TARGET_CHARS - 1):]
+    return text
+
+
+def _rar_link(item):
+    """Отказ ссылки — с целью словами, если она известна. В полном тексте
+    «%» цели удваивается: в него потом подставляется имя файла."""
+    target = _shown(item.get('target'))
+    if not target:
+        return LINK
+    if not item.get('copy'):
+        short, full = LINK_TO
+    elif item.get('lost'):
+        short, full = COPY_LOST
+    else:
+        short, full = COPY_EMPTY
+    return (short % target, full % target.replace('%', '%%'), 422)
+
+
+def _rar_source(items, index):
+    """(номер, строка) записи, чьи байты читаются: у копии RAR5 — запись
+    оригинала (orig от отдельного процесса), у остальных — сама строка."""
+    item = items[index]
+    orig = item.get('orig')
+    if (item.get('copy') and isinstance(orig, int) and not isinstance(orig, bool)
+            and 0 <= orig < len(items) and orig != index and isinstance(items[orig], dict)):
+        return orig, items[orig]
+    return index, item
+
+
+def _rar_refusal(items, index):
+    """(коротко, полностью, код) или None — как _refusal у ZIP.
+
+    Символьная ссылка и копия, чьего файла в архиве нет, — отказ с целью
+    словами. Копия и жёсткая ссылка RAR5 с оригиналом — обычный файл:
+    пароль, размер, способ и коэффициент сжатия — оригинала (у копии своих
+    байтов нет, и её «сжатый размер» — ноль). Коэффициент у файла
+    «непрерывного» архива не проверяется: он сжат вместе с предыдущими, и
+    второй похожий чертёж занимает байты, а не мегабайты, — это не «бомба».
+    Разжатие такого архива ограничено сроком RAR_TIMEOUT, а выдача —
+    заявленным размером. Повторяющееся имя у файла, который unrar ищет по
+    имени, — CLASH.
+    """
+    item = items[index]
+    if item.get('pw'):
+        return ("закрыт паролем", ENCRYPTED, 422)
+    if item.get('link'):
+        return _rar_link(item)
+    _number, source = _rar_source(items, index)
+    if source.get('pw'):
+        return ("закрыт паролем", ENCRYPTED, 422)
+    return (_limits(int(source.get('size') or 0), int(source.get('packed') or 0),
+                    source.get('method') in RAR_METHODS, ratio=not source.get('solid'))
+            or CLASH.get(source.get('clash') or ''))
+
+
+def list_rar(blob, tz=None):
+    """Список файлов архива RAR — того же вида, что list_zip().
+
+    index строки — позиция записи в RarFile.infolist() (с папками); tz —
+    пояс человека для дат RAR5. Повреждённый или обрезанный архив, из
+    которого что-то прочиталось, — список и первой оговоркой PARTIAL.
+    Размер копии RAR5 — размер оригинала: его байты и откроются.
+    """
+    listing = _rar_list(blob)
+    items = listing['items']
+    zone = _zone(tz)
+    files, hidden, encrypted, total_size = [], 0, 0, 0
+    for index, item in enumerate(items):
+        if item.get('dir'):
+            continue
+        meta = clean_path(_rar_name(item))
+        if _is_junk(meta):
+            hidden += 1
+            continue
+        _number, source = _rar_source(items, index)
+        if item.get('pw') or source.get('pw'):
+            encrypted += 1
+        size = int(source.get('size') or 0)
+        total_size += size
+        files.append(_row(index, meta, size, _rar_date(item, zone), _rar_refusal(items, index)))
+    if listing.get('partial') and not files and not hidden:
+        # Прочиталась одна папка — «в архиве нет ни одного файла» было бы
+        # неправдой: архив повреждён.
+        raise ArchiveError(BROKEN)
+    notes = [PARTIAL] if listing.get('partial') else []
+    return _summary(files, hidden, encrypted, total_size, notes)
+
+
+def read_rar_member(blob, index, tz=None, force_tool=False):
+    """(байты файла, строка списка) — один файл архива RAR, с пределом.
+
+    У копии RAR5 читается запись оригинала, а строка — сама копия (её имя и
+    дата). force_tool — только для тестов: и файл без сжатия читать через
+    unrar.
+    """
+    listing = _rar_list(blob)
+    items = listing['items']
+    if not isinstance(index, int) or isinstance(index, bool) or not 0 <= index < len(items):
+        raise ArchiveError("В архиве нет такого файла. Откройте архив заново.", 404)
+    item = items[index]
+    meta = clean_path(_rar_name(item))
+    if item.get('dir'):
+        raise ArchiveError("Это папка архива, а не файл.", 404)
+    refusal = _rar_refusal(items, index)
+    if refusal:
+        raise ArchiveError(refusal[1] % meta['name'], refusal[2])
+    number, source = _rar_source(items, index)
+    size = int(source.get('size') or 0)
+    payload = _rar_extract(blob, number, source, meta['name'], bool(listing.get('solid')),
+                           force_tool)
+    if len(payload) != size:
+        raise ArchiveError("Файл «%s» в архиве повреждён и не читается." % meta['name'])
+    return payload, _row(index, meta, size, _rar_date(item, _zone(tz)), None)
+
+
+def _rar_extract(blob, index, item, name, solid, force_tool=False):
+    """Байты одного файла от отдельного процесса.
+
+    Архив — копией во временной папке: unrar читает его только по имени
+    файла. mkdtemp создаёт папку с правами 0700, файл — 0600 и только новый
+    (O_EXCL, O_NOFOLLOW); папка удаляется в finally при любом исходе, в том
+    числе по сроку. Распакованное на диск не пишется.
+    """
+    cap = min(int(item.get('size') or 0), MEMBER_MAX_BYTES)
+    slow = (TIMEOUT_SOLID if solid else TIMEOUT) % (name, RAR_TIMEOUT)
+    folder = None
+    try:
+        folder = tempfile.mkdtemp(prefix='pmk-mail-rar-')
+        path = os.path.join(folder, 'archive.rar')
+        flags = (os.O_WRONLY | os.O_CREAT | os.O_EXCL
+                 | getattr(os, 'O_NOFOLLOW', 0) | getattr(os, 'O_CLOEXEC', 0))
+        with os.fdopen(os.open(path, flags, 0o600), 'wb') as stream:
+            stream.write(blob)
+        args = ['read', path, index, int(item.get('off') or 0), cap,
+                MAX_ENTRIES, MAX_DIRECTORY_BYTES, RAR_MAX_HEADERS]
+        if force_tool:
+            args.append('--force-tool')
+        code, out, err = _run(args, folder=folder, slow=slow)
+    except OSError:
+        _logger.exception("Mail Client: временная копия архива RAR не записалась")
+        raise ArchiveError("Файл «%s» не удалось распаковать: на сервере не записалась "
+                           "временная копия архива. Скачайте архив." % name, 413) from None
+    finally:
+        if folder:
+            shutil.rmtree(folder, ignore_errors=True)
+    if code == rar_child.OK:
+        if len(out) > cap:
+            raise ArchiveError(_READ_REFUSALS[rar_child.OVERFLOW][0] % name, 413)
+        return out
+    _log('файл', code, err)
+    text, status = _READ_REFUSALS.get(code, (STOPPED, 413))
+    raise ArchiveError(text % name if '%s' in text else text, status)
