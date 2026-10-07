@@ -30,7 +30,11 @@ BRANCH="${BRANCH:-feature/experiment-carbon}"
 # INSTALL="pmk_drawing" (вместе с обычным -u почты и лазера).
 # pmk_telegram добавлен 07.10.2026 — бот в Телеграме: сделка из сообщения или
 # скриншота. Первый раз: INSTALL="pmk_telegram"; токен и вебхук — README модуля.
-OURS="pmk_calc pmk_theme pmk_pdf pmk_cut pmk_mail_ui pmk_partner pmk_purchase pmk_dadata pmk_laser pmk_bridge pmk_deal pmk_deal_sms pmk_flow pmk_drawing pmk_telegram"
+# pmk_org добавлен 08.10.2026 (разбор UX, шаг 58) — справочник «Наши
+# организации» и налоговый режим по датам. Первый раз: INSTALL="pmk_org" —
+# хук установки заводит налоги режимов и первую организацию (ИП Чулков) и
+# проставляет её в сделки и расчёты; бэкап базы — до.
+OURS="pmk_calc pmk_theme pmk_pdf pmk_cut pmk_mail_ui pmk_partner pmk_purchase pmk_dadata pmk_laser pmk_bridge pmk_deal pmk_deal_sms pmk_flow pmk_drawing pmk_telegram pmk_org"
 # Вендорские — только раскладываются. -u им не нужен: мы правим в них код и
 # переводы, а не данные, а лишнее обновление перезапускает их data-файлы.
 #

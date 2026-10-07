@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+  <!--
+    Заказ клиента — по-заводски «Счёт покупателю» (просьба Антона
+    08.10.2026: пункт «Продажи → Счета покупателям» и заголовок окна —
+    pmk_theme; стадии и печать внутри карточки — отдельной задачей). «Наша организация» — первой строкой группы «Детали заказа», над
+    «Сроком действия»: от неё зависят налог строк и реквизиты в печати.
+    После подтверждения и в отменённом — только для чтения, как дата заказа.
+  -->
+  <record id="view_order_form_org" model="ir.ui.view">
+    <field name="name">sale.order.form.pmk.org</field>
+    <field name="model">sale.order</field>
+    <field name="inherit_id" ref="sale.view_order_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//group[@name='order_details']/field[@name='validity_date']" position="before">
+        <field name="pmk_org_id" readonly="state in ['cancel', 'sale']"
+               options="{'no_create': True, 'no_open': True}"/>
+      </xpath>
+    </field>
+  </record>
+
+</odoo>

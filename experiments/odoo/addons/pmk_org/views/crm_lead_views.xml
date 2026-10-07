@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+  <!--
+    Сделка: «Наша организация» — в левой колонке, под «Менеджером»
+    (разбор UX, шаг 58): Менеджер → Наша организация → Откуда пришёл →
+    Ответить клиенту до. Группа сделки — та, где «Ответить клиенту до»
+    (date_deadline): она видна только у сделки (invisible="type == 'lead'"),
+    поэтому у лида поля нет — организацию лид получает по умолчанию и
+    отдаёт сделке при переводе.
+  -->
+  <record id="view_crm_lead_form_org" model="ir.ui.view">
+    <field name="name">crm.lead.form.pmk.org</field>
+    <field name="model">crm.lead</field>
+    <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="/form/sheet/group/group[label[@for='date_deadline']]/field[@name='user_id']" position="after">
+        <field name="pmk_org_id" options="{'no_create': True, 'no_open': True}"/>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- Колонка в списке сделок — скрытая (⚙), группировка — в поиске. -->
+  <record id="view_crm_lead_list_org" model="ir.ui.view">
+    <field name="name">crm.lead.list.pmk.org</field>
+    <field name="model">crm.lead</field>
+    <field name="inherit_id" ref="crm.crm_case_tree_view_oppor"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='user_id']" position="after">
+        <field name="pmk_org_id" optional="hide"/>
+      </xpath>
+    </field>
+  </record>
+
+</odoo>

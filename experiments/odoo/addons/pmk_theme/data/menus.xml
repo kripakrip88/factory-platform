@@ -58,9 +58,14 @@
 
     <!-- ─── Продажи ──────────────────────────────────────────────────────
          Шаг 38: Воронка сделок · Почта (15, pmk_mail_ui) · Расчёты и КП ·
-         Клиенты · Лиды. Штатные КП и заказы клиентов (0 записей) — с
+         Клиенты · Лиды. Штатные КП и счета покупателям (0 записей) — с
          «Деньгами»: до переезда счетов из МоегоСклада КП завода — наше, из
-         расчёта. -->
+         расчёта.
+         Шаг 58 (просьба Антона 08.10.2026): штатный заказ клиента
+         (sale.order, sale.action_orders) по-заводски — «Счета покупателям»,
+         как в МоёмСкладе; окно называется так же (ACTION_TITLES). Прежний
+         пункт «Деньги → Счета покупателям» (бухгалтерские счета,
+         account.move) стал «Реализациями»: одно слово — одно понятие. -->
     <menuitem id="menu_pmk_sales_pipeline" name="Воронка сделок"
               parent="menu_pmk_sales" action="crm.crm_lead_action_pipeline" sequence="10"/>
     <!-- То же действие, что «Калькуляторы → Расчёт металлопроката» (там пункт
@@ -74,7 +79,7 @@
     <menuitem id="menu_pmk_sales_quotations" name="Коммерческие предложения"
               parent="menu_pmk_sales" action="sale.action_quotations_with_onboarding" sequence="70"
               groups="pmk_theme.group_pmk_money"/>
-    <menuitem id="menu_pmk_sales_orders" name="Заказы клиентов"
+    <menuitem id="menu_pmk_sales_orders" name="Счета покупателям"
               parent="menu_pmk_sales" action="sale.action_orders" sequence="80"
               groups="pmk_theme.group_pmk_money"/>
 
@@ -137,7 +142,7 @@
               parent="menu_pmk_stock" action="stock.product_template_action_product" sequence="50"/>
 
     <!-- ─── Деньги ───────────────────────────────────────────────────── -->
-    <menuitem id="menu_pmk_money_out" name="Счета покупателям"
+    <menuitem id="menu_pmk_money_out" name="Реализации"
               parent="menu_pmk_money" action="account.action_move_out_invoice" sequence="10"/>
     <menuitem id="menu_pmk_money_in" name="Счета от поставщиков"
               parent="menu_pmk_money" action="account.action_move_in_invoice" sequence="20"/>

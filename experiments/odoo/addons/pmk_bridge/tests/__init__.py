@@ -12,3 +12,5 @@ from . import test_step28_supplier_sign
 from . import test_step30_print_colors
 # Шаг 53: «Product created» в ленте товара — по-русски.
 from . import test_step53_product_created
+# Шаг 58: реквизиты продавца и строка налога в КП (без базы — голым питоном).
+from . import test_step58_seller

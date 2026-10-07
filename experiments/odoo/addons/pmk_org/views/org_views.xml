@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+  <!--
+    Справочник «Наши организации» (разбор UX, шаг 58, 08.10.2026).
+
+    Форма без вкладок: реквизиты, банк и подписи, ниже — налоговый режим
+    строками «действует с — режим». Залитой чёрной кнопки нет: у справочника
+    нет «следующего шага процесса», единственное действие — контурное
+    «Заполнить по ИНН» рядом с ИНН, как в карточке контрагента.
+  -->
+  <record id="view_pmk_org_list" model="ir.ui.view">
+    <field name="name">pmk.org.list</field>
+    <field name="model">pmk.org</field>
+    <field name="arch" type="xml">
+      <list string="Наши организации">
+        <field name="sequence" widget="handle"/>
+        <field name="name"/>
+        <field name="org_type"/>
+        <field name="inn"/>
+        <field name="regime_today"/>
+        <field name="is_default" widget="boolean"/>
+        <field name="active" column_invisible="1"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="view_pmk_org_search" model="ir.ui.view">
+    <field name="name">pmk.org.search</field>
+    <field name="model">pmk.org</field>
+    <field name="arch" type="xml">
+      <search string="Наши организации">
+        <field name="name"/>
+        <field name="inn"/>
+        <filter name="archived" string="В архиве" domain="[('active', '=', False)]"/>
+      </search>
+    </field>
+  </record>
+
+  <record id="view_pmk_org_form" model="ir.ui.view">
+    <field name="name">pmk.org.form</field>
+    <field name="model">pmk.org</field>
+    <field name="arch" type="xml">
+      <form string="Наша организация" class="pmk-form pmk-org-form">
+        <sheet>
+          <widget name="web_ribbon" title="В архиве" bg_color="text-bg-secondary"
+                  invisible="active"/>
+          <field name="logo" widget="image" class="oe_avatar"
+                 options="{'preview_image': 'logo'}"/>
+          <div class="oe_title">
+            <label for="name"/>
+            <h1><field name="name" placeholder="ИП Иванов Иван Иванович или ООО «Ромашка»"/></h1>
+          </div>
+          <group name="pmk_org_main">
+            <group name="pmk_org_requisites" string="Реквизиты">
+              <field name="org_type" widget="radio" options="{'horizontal': true}"/>
+              <!-- Флажок, от которого зависит организация во всех новых
+                   сделках, — наверху, под типом, а не среди подписей. -->
+              <field name="is_default"/>
+              <label for="inn"/>
+              <!-- Строка ИНН — тем же приёмом, что в карточке контрагента
+                   (pmk_dadata): o_row + pmk-inn-row, кнопка вплотную. -->
+              <div class="o_row pmk-inn-row">
+                <field name="inn" nolabel="1" placeholder="10 или 12 цифр"/>
+                <button name="action_fill_by_inn" type="object"
+                        string="Заполнить по ИНН" class="btn-secondary"
+                        groups="base.group_system"/>
+              </div>
+              <field name="kpp" invisible="org_type == 'ip'"/>
+              <!-- Подпись номера — словом по типу: ОГРН у ООО, ОГРНИП у ИП.
+                   Поле дважды, у каждого своя подпись (приём sale с «Датой
+                   предложения / заказа»); метка привязана к id своего поля. -->
+              <field name="ogrn" id="ogrn_ooo" string="ОГРН"
+                     invisible="org_type == 'ip'" placeholder="13 цифр"/>
+              <field name="ogrn" id="ogrn_ip" string="ОГРНИП"
+                     invisible="org_type != 'ip'" placeholder="15 цифр"/>
+              <field name="legal_address" placeholder="Одной строкой, как в выписке"/>
+              <field name="city"/>
+              <field name="street"/>
+              <field name="phone" widget="phone"/>
+              <field name="email" widget="email"/>
+              <!-- Служебная ссылка — последней строкой. На новой записи
+                   скрыта: обязательное видимое поле клиент проверяет сам
+                   («Неверные поля») и запрос не отправляет, а карточку
+                   контрагента заводит create() модели. После сохранения —
+                   только для чтения. -->
+              <field name="partner_id" invisible="not id" readonly="1"/>
+            </group>
+            <group name="pmk_org_sign" string="Банк и подписи">
+              <!-- На новой записи — только для чтения: счёт принадлежит
+                   карточке контрагента, а её ещё нет (заведётся при
+                   сохранении). -->
+              <field name="bank_id" readonly="not id"
+                     context="{'default_partner_id': partner_id}"
+                     options="{'no_quick_create': True}"/>
+              <field name="signer_name" placeholder="Фамилия Имя Отчество"/>
+              <field name="signer_position" placeholder="Директор"/>
+              <field name="accountant_name"/>
+              <field name="active" invisible="1"/>
+            </group>
+          </group>
+          <!--
+            Налоговый режим — строками. Документ берёт строку с последней
+            датой начала не позже своей даты. «Сейчас» — словом (действует /
+            прошёл / будет), жирным — действующая: цвет не единственный
+            признак. Колонка «Налог продаж» (какой налог режим ставит в
+            строки счёта) — служебная, только администратору.
+          -->
+          <separator string="Налоговый режим"/>
+          <field name="regime_ids" nolabel="1">
+            <list editable="bottom"
+                  decoration-bf="state == 'current'" decoration-muted="state == 'past'">
+              <field name="date_from"/>
+              <field name="regime"/>
+              <field name="tax_id" groups="base.group_system"/>
+              <field name="state"/>
+            </list>
+          </field>
+          <div class="text-muted small mt-2">
+            Сменился режим с нового года — добавьте строку с датой начала, старую
+            не меняйте: КП и счета покупателям с датой раньше неё считаются по
+            прежнему режиму.
+          </div>
+        </sheet>
+        <chatter/>
+      </form>
+    </field>
+  </record>
+
+  <record id="action_pmk_org" model="ir.actions.act_window">
+    <field name="name">Наши организации</field>
+    <field name="res_model">pmk.org</field>
+    <field name="view_mode">list,form</field>
+    <field name="search_view_id" ref="view_pmk_org_search"/>
+    <field name="help" type="html">
+      <p class="o_view_nocontent_smiling_face">Заведите свою организацию</p>
+      <p>От её имени пойдут КП (реквизиты, банк, подпись) и счета
+        покупателям; налог — по её режиму на дату документа.</p>
+    </field>
+  </record>
+
+</odoo>

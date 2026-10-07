@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+  <!--
+    «Настройки → Наши организации» — рядом с «Пользователями и компаниями»
+    (sequence 1, как у них; ниже по номеру записи). Правят только
+    администраторы: пункт и права на запись — base.group_system. Выбирать
+    организацию в сделке, расчёте и счёте покупателю могут все — у
+    сотрудников право на чтение справочника (security/ir.model.access.csv).
+    Убрать пункт обратимо: active = False у menu_pmk_org.
+  -->
+  <menuitem id="menu_pmk_org"
+            name="Наши организации"
+            parent="base.menu_administration"
+            action="action_pmk_org"
+            sequence="1"
+            groups="base.group_system"/>
+
+</odoo>

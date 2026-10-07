@@ -14,6 +14,14 @@
     Организация выбирается в расчёте (решение владельца: «чтоб если заведём
     потом ещё компанию, можно было менять, от кого выставляем»). Печать
     обязана слушаться этого выбора, иначе поле окажется декорацией.
+
+    С шага 58 (08.10.2026) шаблон не читает компанию сам: продавца отдаёт
+    doc.pmk_print_seller(), строку налога — doc.pmk_print_tax(сумма)
+    (models/print_seller.py). Справочник «Наши организации» (pmk_org)
+    подменяет оба метода: реквизиты, банк и подпись — выбранной в расчёте
+    организации, налог — по её налоговому режиму на дату КП. Зашитых
+    «НДС 22%» и «ОГРНИП» больше нет. Остальной бланк не менялся — новое КП
+    по образцу счёта будет отдельным шагом (62).
   -->
   <template id="report_metal_spec_quotation_document">
     <t t-call="web.basic_layout">
@@ -23,23 +31,26 @@
         дефект виден только на печати — поймано глазами на первом же КП.
       -->
       <t t-set="doc" t-value="doc.with_context(lang=doc.partner_id.lang or 'ru_RU')"/>
-      <t t-set="company" t-value="doc.company_id"/>
-      <t t-set="vat_rate" t-value="22"/>
+      <t t-set="seller" t-value="doc.pmk_print_seller()"/>
       <div class="page pmk-quote">
 
         <div class="pmk-quote__head">
           <div class="pmk-quote__seller">
-            <div class="pmk-quote__seller-name"><span t-field="company.name"/></div>
-            <div t-if="company.street or company.city">
-              <span t-esc="', '.join(filter(None, [company.city, company.street]))"/>
+            <div class="pmk-quote__seller-name"><span t-esc="seller['name']"/></div>
+            <div t-if="seller['address']">
+              <span t-esc="seller['address']"/>
             </div>
-            <div>
-              <span t-if="company.phone">тел. <span t-field="company.phone"/></span>
-              <span t-if="company.email"> · <span t-field="company.email"/></span>
+            <div t-if="seller['phone'] or seller['email']">
+              <span t-if="seller['phone']">тел. <span t-esc="seller['phone']"/></span>
+              <span t-if="seller['email']"><span t-if="seller['phone']"> · </span><span
+                    t-esc="seller['email']"/></span>
             </div>
-            <div t-if="company.vat">ИНН <span t-field="company.vat"/><span
-                 t-if="company.company_registry">, ОГРНИП <span
-                 t-field="company.company_registry"/></span></div>
+            <!-- «ОГРН» у организации, «ОГРНИП» у предпринимателя — по типу
+                 организации (шаг 58), а не одной зашитой подписью. -->
+            <div t-if="seller['inn']">ИНН <span t-esc="seller['inn']"/><span
+                 t-if="seller['kpp']">, КПП <span t-esc="seller['kpp']"/></span><span
+                 t-if="seller['reg_number']">, <span t-esc="seller['reg_label']"/> <span
+                 t-esc="seller['reg_number']"/></span></div>
           </div>
         </div>
 
@@ -163,15 +174,18 @@
 <span t-esc="doc.pmk_money(doc.price_customer_total)"/>
             </td>
           </tr>
+          <!--
+            НДС показан отдельной строкой, но НЕ прибавляется: цена уже с
+            налогом, все суммы в системе хранятся как в бумаге поставщика —
+            с НДС. Ставка — из налогового режима организации на дату КП (шаг
+            58): «в том числе НДС 22%: …», на упрощёнке без НДС — «Без НДС
+            (УСН)» без суммы.
+          -->
+          <t t-set="tax_row" t-value="doc.pmk_print_tax(doc.price_customer_total)"/>
           <tr>
-            <!--
-              НДС показан отдельной строкой, но НЕ прибавляется: цена уже с
-              налогом. Завод на ОСН, ставка 22% (реквизиты от 27.09.2026), и
-              все суммы в системе хранятся как в бумаге поставщика — с НДС.
-            -->
-            <td class="pmk-quote__label">в том числе НДС <span t-esc="vat_rate"/>%:</td>
+            <td class="pmk-quote__label"><span t-esc="tax_row[0]"/></td>
             <td class="pmk-quote__num">
-<span t-esc="doc.pmk_money(doc.price_customer_total * vat_rate / (100 + vat_rate))"/>
+<span t-if="tax_row[1] is not None" t-esc="doc.pmk_money(tax_row[1])"/>
             </td>
           </tr>
         </table>
@@ -188,16 +202,24 @@
         </div>
 
         <div class="pmk-quote__foot">
-          <div t-if="company.partner_id.bank_ids">
-            <t t-set="bank" t-value="company.partner_id.bank_ids[0]"/>
-            Реквизиты для оплаты: р/с <span t-field="bank.acc_number"/>,
-            <span t-field="bank.bank_id.name"/>,
-            БИК <span t-field="bank.bank_id.bic"/><span t-if="bank.bank_id.corr_acc">,
-            к/с <span t-field="bank.bank_id.corr_acc"/></span>
+          <t t-set="bank" t-value="seller['bank']"/>
+          <div t-if="bank">
+            Реквизиты для оплаты: р/с <span t-esc="bank['acc']"/>,
+            <span t-esc="bank['bank']"/>,
+            БИК <span t-esc="bank['bic']"/><span t-if="bank['corr']">,
+            к/с <span t-esc="bank['corr']"/></span>
           </div>
+          <!-- Подпись: «Должность ____ Фамилия И. О.» подписанта организации;
+               подписанта нет — название организации и черта, как раньше. -->
           <div class="pmk-quote__sign">
-            <span t-field="company.name"/>
+            <span t-esc="seller['sign_position']"/>
             <span class="pmk-quote__sign-line"/>
+            <span t-if="seller['sign_name']" t-esc="seller['sign_name']"/>
+          </div>
+          <div class="pmk-quote__sign" t-if="seller['accountant_name']">
+            Главный бухгалтер
+            <span class="pmk-quote__sign-line"/>
+            <span t-esc="seller['accountant_name']"/>
           </div>
         </div>
       </div>

@@ -355,9 +355,14 @@ class TestKpSend(MailCommon):
         spec = self._spec()
         html = self._print_html(spec).replace("\xa0", " ")
         self.assertIn("Итого к оплате:", html)
-        self.assertIn("в том числе НДС", html)
+        # Шаг 58: строка налога — не зашитая «НДС 22%», а по налогу продаж
+        # компании (или по режиму «Нашей организации», если стоит pmk_org).
+        # В чистой базе без плана счетов налога нет — тогда «Без НДС».
+        tax_label = spec.pmk_print_tax(spec.price_customer_total)[0]
+        self.assertTrue(tax_label.startswith(("в том числе НДС", "Без НДС")), tax_label)
+        self.assertIn(tax_label, html)
         self.assertNotIn("Итого:", html, "«Итого» и «Итого к оплате» — было одно число дважды.")
-        self.assertLess(html.index("Итого к оплате:"), html.index("в том числе НДС"),
+        self.assertLess(html.index("Итого к оплате:"), html.index(tax_label),
                         "«В том числе» — под суммой, к которой относится.")
         self.assertIn("Менеджер: %s, тел. %s" % (self.user_admin.name, self.partner_admin.phone), html)
         self.assertIn("Каркас", html)

@@ -86,7 +86,13 @@ def visible_texts(arch):
     return out
 
 
+# «Счета покупателям» / «Счёт покупателю» — название заказа клиента по
+# прямой просьбе Антона (шаг 58, 08.10.2026); в остальных местах «клиент».
+ALLOWED_RU = re.compile(r"сч[её]т\w*\s+покупател\w*", re.I)
+
+
 def old_words(text, spec=False):
+    text = ALLOWED_RU.sub("", text)
     found = OLD_RU.findall(text) + OLD_EN.findall(text)
     if spec:
         found += SPEC.findall(text)

@@ -7,3 +7,5 @@ from . import kp_send
 from . import mail_compose_message
 # Разбор UX, шаг 28: признак «поставщик» для карточки контрагента.
 from . import partner_supplier
+# Шаг 58: кто выставляет КП — реквизиты и строка налога для печати.
+from . import print_seller

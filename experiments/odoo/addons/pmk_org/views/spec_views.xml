@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+  <!--
+    Расчёт: «Наша организация» вместо «Организации» (company_id) — разбор UX,
+    шаг 58. Вторая половина строки «Цены на дату | Наша организация» под
+    «Предметом КП»: сетка шапки (forms_nexus, «Шаг 27») уже раскладывает
+    блоки pmk-field по две в строку.
+
+    Блок company_id (pmk_f_company, pmk_bridge) не удалён, а погашен
+    (invisible): на него опирается этот xpath, и его же покажут обратно, если
+    когда-нибудь компаний Odoo станет несколько. Поле осталось в модели
+    служебным — валюта и правила доступа. Список отключённого:
+    docs/disabled-features.md, раздел «шаг 58».
+
+    Опора — имена блоков pmk_f_* (pmk_bridge/views/metal_spec_cost_views.xml):
+    pmk_bridge обновляется тем же -u, что и этот модуль (deploy.sh, OURS).
+  -->
+  <record id="view_metal_spec_form_org" model="ir.ui.view">
+    <field name="name">pmk.metal.spec.form.org</field>
+    <field name="model">pmk.metal.spec</field>
+    <field name="inherit_id" ref="pmk_bridge.view_metal_spec_form_cost"/>
+    <field name="arch" type="xml">
+      <xpath expr="//div[@name='pmk_f_company']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//div[@name='pmk_f_company']" position="after">
+        <div class="pmk-field" name="pmk_f_org">
+          <label for="pmk_org_id"/>
+          <field name="pmk_org_id" nolabel="1"
+                 options="{'no_create': True, 'no_open': True}"/>
+        </div>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- Колонка «Наша организация» в списке расчётов — скрытая (⚙): пока
+       организация одна, она одинакова у всех строк. -->
+  <record id="view_metal_spec_list_org" model="ir.ui.view">
+    <field name="name">pmk.metal.spec.list.org</field>
+    <field name="model">pmk.metal.spec</field>
+    <field name="inherit_id" ref="pmk_calc.view_metal_spec_list"/>
+    <field name="arch" type="xml">
+      <xpath expr="//list" position="inside">
+        <field name="pmk_org_id" optional="hide"/>
+      </xpath>
+    </field>
+  </record>
+
+</odoo>

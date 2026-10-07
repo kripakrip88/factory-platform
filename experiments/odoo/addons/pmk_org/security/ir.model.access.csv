@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_pmk_org_user,pmk.org.user,model_pmk_org,base.group_user,1,0,0,0
+access_pmk_org_system,pmk.org.system,model_pmk_org,base.group_system,1,1,1,1
+access_pmk_org_regime_user,pmk.org.regime.user,model_pmk_org_regime,base.group_user,1,0,0,0
+access_pmk_org_regime_system,pmk.org.regime.system,model_pmk_org_regime,base.group_system,1,1,1,1

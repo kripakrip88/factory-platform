@@ -37,6 +37,9 @@
           display: inline-block; width: 150pt; border-bottom: 0.5pt solid #1a1a1a;
           margin-left: 12pt;
         }
+        /* Шаг 58: «Должность ____ Фамилия И. О.» — имя за чертой с отступом. */
+        .pmk-quote__sign-line + span { margin-left: 6pt; }
+        .pmk-quote__sign + .pmk-quote__sign { margin-top: 14pt; }
       </style>
     </xpath>
   </template>
