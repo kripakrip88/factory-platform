@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Планировщик «Заказы в работе» (шаг З-2): штатный проект, строка = заказ.
+    Этапы — статусы Excel-планировщика Антона: Очередь / Разработка чертежей /
+    Ждём металл / В работе / Пауза / Готово к отгрузке, плюс «Отгружено»
+    (свёрнут: отгруженное не мешает в канбане).
+
+    noupdate: названия этапов и проекта Антон может менять сам, обновление
+    модуля их не перезапишет. Смысл этапа (pmk_order_stage) — для цвета
+    плашки, «просрочена» и будущей автоматики, переименование его не меняет.
+    Этапы «Доработки системы» сюда не привязаны.
+
+    ⚠️ Удаление модуля сотрёт проект вместе со строками (xml-id модуля).
+  -->
+  <data noupdate="1">
+    <record id="project_orders" model="project.project">
+      <field name="name">Заказы в работе</field>
+      <field name="label_tasks">Заказы</field>
+      <field name="privacy_visibility">employees</field>
+      <field name="sequence">5</field>
+      <field name="pmk_is_orders" eval="True"/>
+      <field name="description">Строка — заказ. Появляется сама, когда сделку переводят в «Выиграно» (или подтверждают счёт покупателю).</field>
+    </record>
+
+    <record id="orders_stage_queue" model="project.task.type">
+      <field name="name">Очередь</field>
+      <field name="sequence">10</field>
+      <field name="pmk_order_stage">queue</field>
+      <field name="project_ids" eval="[Command.link(ref('project_orders'))]"/>
+    </record>
+    <record id="orders_stage_drawings" model="project.task.type">
+      <field name="name">Разработка чертежей</field>
+      <field name="sequence">20</field>
+      <field name="pmk_order_stage">drawings</field>
+      <field name="project_ids" eval="[Command.link(ref('project_orders'))]"/>
+    </record>
+    <record id="orders_stage_metal" model="project.task.type">
+      <field name="name">Ждём металл</field>
+      <field name="sequence">30</field>
+      <field name="pmk_order_stage">metal</field>
+      <field name="project_ids" eval="[Command.link(ref('project_orders'))]"/>
+    </record>
+    <record id="orders_stage_work" model="project.task.type">
+      <field name="name">В работе</field>
+      <field name="sequence">40</field>
+      <field name="pmk_order_stage">work</field>
+      <field name="project_ids" eval="[Command.link(ref('project_orders'))]"/>
+    </record>
+    <record id="orders_stage_pause" model="project.task.type">
+      <field name="name">Пауза</field>
+      <field name="sequence">50</field>
+      <field name="pmk_order_stage">pause</field>
+      <field name="project_ids" eval="[Command.link(ref('project_orders'))]"/>
+    </record>
+    <record id="orders_stage_ready" model="project.task.type">
+      <field name="name">Готово к отгрузке</field>
+      <field name="sequence">60</field>
+      <field name="pmk_order_stage">ready</field>
+      <field name="project_ids" eval="[Command.link(ref('project_orders'))]"/>
+    </record>
+    <record id="orders_stage_shipped" model="project.task.type">
+      <field name="name">Отгружено</field>
+      <field name="sequence">70</field>
+      <field name="fold" eval="True"/>
+      <field name="pmk_order_stage">shipped</field>
+      <field name="project_ids" eval="[Command.link(ref('project_orders'))]"/>
+    </record>
+  </data>
+</odoo>

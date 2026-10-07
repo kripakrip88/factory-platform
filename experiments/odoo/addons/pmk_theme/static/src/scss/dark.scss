@@ -1319,3 +1319,23 @@ $pmk-dark-alerts: (
     }
   }
 }
+
+// ═══ Счета покупателям и планировщик (З-2) — тёмная пара (08.10.2026) ═══════
+// Светлые правила — forms_nexus.scss, раздел того же имени. Плашки этапов и
+// карточки канбана берут готовые тёмные пары (раздел 4 и «Плашки статусов»);
+// здесь — то, чему светлое правило задаёт свой цвет.
+@media screen {
+
+  // З-2.2 «просрочена» — светлый текст красной тёмной пары.
+  body.o_nexus_dark .o_pmk_orders_kanban .o_pmk_overdue {
+    color: var(--pmk-tone-red-ink);
+  }
+
+  // З-2.3 Плашка прежней редакции: тёмно-жёлтый фон и рамка тёмной пары,
+  // светлый текст.
+  body.o_nexus_dark .o_form_view .o_pmk_revision_banner {
+    border-color: var(--pmk-tone-yellow-bd);
+    background: var(--pmk-tone-yellow-bg);
+    color: var(--pmk-tone-yellow-ink);
+  }
+}

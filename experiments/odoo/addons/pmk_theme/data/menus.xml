@@ -65,7 +65,13 @@
          (sale.order, sale.action_orders) по-заводски — «Счета покупателям»,
          как в МоёмСкладе; окно называется так же (ACTION_TITLES). Прежний
          пункт «Деньги → Счета покупателям» (бухгалтерские счета,
-         account.move) стал «Реализациями»: одно слово — одно понятие. -->
+         account.move) стал «Реализациями»: одно слово — одно понятие.
+         Шаг З-2 (08.10.2026): счёт покупателю выставляется сам из расчёта
+         при «КП отправлено» — пункт «Счета покупателям» виден менеджерам
+         (группа «Деньги» снята: «-» в groups снимает уже записанную), стоит
+         после «Расчётов и КП» (sequence 35). «Коммерческие предложения» —
+         тот же документ другим фильтром, дубль: остаются под «Деньгами».
+         «Заказы в работе» (sequence 12) добавляет pmk_orders. -->
     <menuitem id="menu_pmk_sales_pipeline" name="Воронка сделок"
               parent="menu_pmk_sales" action="crm.crm_lead_action_pipeline" sequence="10"/>
     <!-- То же действие, что «Калькуляторы → Расчёт металлопроката» (там пункт
@@ -80,8 +86,8 @@
               parent="menu_pmk_sales" action="sale.action_quotations_with_onboarding" sequence="70"
               groups="pmk_theme.group_pmk_money"/>
     <menuitem id="menu_pmk_sales_orders" name="Счета покупателям"
-              parent="menu_pmk_sales" action="sale.action_orders" sequence="80"
-              groups="pmk_theme.group_pmk_money"/>
+              parent="menu_pmk_sales" action="sale.action_orders" sequence="35"
+              groups="-pmk_theme.group_pmk_money"/>
 
     <!-- ─── Производство ─────────────────────────────────────────────── -->
     <menuitem id="menu_pmk_prod_orders" name="Производственные заказы"

@@ -13,6 +13,7 @@
      страна налога, счета и «Включён в цену»), каждый в своей группе
      налогов. Налог с тем же названием уже есть (переустановка после
      удаления модуля) — он и помечается, копия не заводится.
+     Затем (шаг З-2) налоги режимов — «включён в цену»: ensure_price_included.
   2. Первая организация — из текущей компании (ИП Чулков): её карточка
      контрагента, ОГРНИП, банковский счёт, режим «НДС 22%» с 01.01.2026,
      флажок «по умолчанию».
@@ -25,9 +26,14 @@
 три налога — в архив руками, если не нужны. Повторная установка их найдёт
 по названию и снова пометит.
 
-«Цена с налогом» (решение ждёт Антона): не здесь. Включать осознанно
-отдельным шагом и сразу у компании (account_price_include) и у налогов —
-иначе у товара с ценой 1000 итог станет 1000 вместо 1220.
+«Цена с налогом» (шаг З-2, 08.10.2026): у налогов РЕЖИМОВ — да, у компании
+и у налога 7 — нет (ensure_price_included ниже). Цена клиенту расчёта
+окончательная, с налогом, и счёт покупателю из расчёта должен дать ту же
+сумму, что КП. Налог 7 «НДС 22% (продажа)» стоит у всех 753 товаров и
+считается сверху: смени у него «Включён в цену» — у товара с ценой 1000 итог
+станет 1000 вместо 1220. Поэтому режиму «НДС 22%» заводится свой налог
+«НДС 22% (в цене)», а пометка режима с налога 7 снимается; неиспользуемые
+налоги режимов (8–10 на боевой) включаются в цену на месте.
 """
 
 import datetime
@@ -53,6 +59,7 @@ def post_init_hook(env):
         return
     company = env.ref("base.main_company", raise_if_not_found=False) or env.company
     ensure_taxes(env, company)
+    ensure_price_included(env, company)
     org = create_first_org(env, company)
     backfill_documents(env, org)
 
@@ -94,8 +101,10 @@ def ensure_taxes(env, company):
         # названием упала бы на «Tax names must be unique!» (account.tax
         # _constrains_name: активные налоги той же компании, типа и страны) —
         # находим и снова помечаем.
+        # Оба названия: с шага З-2 налог режима мог быть переименован в
+        # «… (в цене)» (ensure_price_included).
         found = Tax.with_context(active_test=True).search([
-            ("name", "=", name), ("type_tax_use", "=", "sale"),
+            ("name", "in", [name, rg.INCLUDED_NAMES[regime]]), ("type_tax_use", "=", "sale"),
             ("company_id", "child_of", company.root_id.id),
             ("country_id", "=", country.id), ("pmk_regime", "=", False)], limit=1)
         if found:
@@ -125,6 +134,82 @@ def ensure_taxes(env, company):
             tax = Tax.create(vals)
         taxes[regime] = tax
     return taxes
+
+
+def ensure_price_included(env, company):
+    """Налоги режимов — «включён в цену» (шаг З-2). Возвращает {режим: налог}.
+
+    Идемпотентно. По каждому режиму берётся помеченный налог продаж компании:
+      1. уже включён в цену (tax.price_include) — ничего не делаем;
+      2. где-то используется (у товара, по умолчанию у компании, в строках
+         заказов или проводок) — смысл такого налога не меняем: находим
+         непомеченный налог «… (в цене)» той же страны или заводим копию с
+         «Включён в цену», переносим на неё пометку режима, с исходного
+         пометку снимаем. На боевой так получается «НДС 22% (в цене)», а
+         налог 7 «НДС 22% (продажа)» у 753 товаров остаётся как был;
+      3. не используется (на боевой 8–10, заведённые шагом 58) — включаем в
+         цену прямо в нём и переименовываем в «… (в цене)».
+    Печать КП не меняется: строку налога она считает от ставки
+    (pmk.org._pmk_tax_line).
+
+    Откат: SQL вернуть пометку на налог 7 (UPDATE account_tax SET pmk_regime
+    = 'vat22' WHERE id = 7) и выключить «НДС 22% (в цене)» —
+    docs/disabled-features.md, шаг З-2.
+    """
+    Tax = env["account.tax"].sudo().with_context(active_test=False)
+    result = {}
+    for regime, _label in rg.REGIMES:
+        tax = Tax.search([
+            ("pmk_regime", "=", regime), ("type_tax_use", "=", "sale"),
+            ("company_id", "=", company.id)], limit=1)
+        if not tax:
+            continue
+        if tax.price_include:
+            result[regime] = tax
+            continue
+        name = rg.INCLUDED_NAMES[regime]
+        if not _tax_in_use(env, tax):
+            tax.write({"price_include_override": "tax_included", "name": name})
+            _logger.info("pmk_org: налог %s (id %s) — включён в цену", name, tax.id)
+            result[regime] = tax
+            continue
+        twin = Tax.with_context(active_test=True).search([
+            ("name", "=", name), ("type_tax_use", "=", "sale"),
+            ("company_id", "=", company.id), ("country_id", "=", tax.country_id.id),
+            ("pmk_regime", "=", False)], limit=1)
+        if twin and not twin.price_include:
+            twin.price_include_override = "tax_included"
+        if not twin:
+            _n, label, _group = rg.TAXES[regime]
+            twin = tax.copy({
+                "name": name,
+                "price_include_override": "tax_included",
+                "description": label,
+                "invoice_label": label,
+                "tax_group_id": _ensure_group(env, company, tax.country_id, regime).id,
+                "active": True,
+            })
+            _logger.info("pmk_org: заведён налог %s (id %s) — копия %s с «Включён в цену»",
+                         name, twin.id, tax.id)
+        tax.pmk_regime = False
+        twin.pmk_regime = regime
+        result[regime] = twin
+    return result
+
+
+def _tax_in_use(env, tax):
+    """Налог уже стоит где-то, где смена «Включён в цену» поменяла бы суммы."""
+    if env["res.company"].sudo().search_count([("account_sale_tax_id", "=", tax.id)], limit=1):
+        return True
+    checks = [("product.template", "taxes_id"), ("sale.order.line", "tax_ids"),
+              ("account.move.line", "tax_ids")]
+    for model, fname in checks:
+        if model not in env or fname not in env[model]._fields:
+            continue
+        if env[model].sudo().with_context(active_test=False).search_count(
+                [(fname, "in", tax.ids)], limit=1):
+            return True
+    return False
 
 
 def _find_vat22(Tax, company):

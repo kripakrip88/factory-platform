@@ -224,6 +224,55 @@ class TestStep39Words(Step39Common):
             self.assertEqual(self._label("res.users", "private_email"), "Личная эл. почта")
             self.assertEqual(self._label("res.users", "private_state_id"), "Регион (домашний адрес)")
 
+    def test_sale_order_words(self):
+        """Шаг З-2: заказ клиента — «Счёт покупателю». Состояния словами завода
+        (DATA_WORDS поверх штатного), строка кода type_name, имя модели,
+        единица «шт»."""
+        if not self._installed("sale"):
+            self.skipTest("sale")
+        for xmlid, fname, old, _new in DATA_WORDS:
+            if xmlid.startswith("sale.") or xmlid.startswith("uom."):
+                record = self.env.ref(xmlid, raise_if_not_found=False)
+                if record:
+                    self._set_ru(record, fname, old)
+        self.Module._pmk_apply_words()
+        self.env.registry.clear_cache("stable")
+        for model in ("sale.order", "sale.report"):
+            with self.subTest(model=model):
+                state = self._selection(model, "state")
+                self.assertEqual(
+                    (state["draft"], state["sent"], state["sale"], state["cancel"]),
+                    ("Черновик", "Выставлен, ждём оплату", "В работе (оплачен)", "Отменён"))
+        self.assertEqual(self._ru(self.env["ir.model"]._get("sale.order"), "name"), "Счёт покупателю")
+        self.assertEqual(self._label("sale.order", "order_line"), "Изделия")
+        python = CodeTranslations._get_code_translations(
+            "sale", LANG, lambda row: row.get("value") and PYTHON_TRANSLATION_COMMENT in row["comments"])
+        self.assertIn("Quotation", python, "Строка кода type_name есть у ядра.")
+        fresh = CodeTranslations()
+        fresh._load_python_translations("sale", LANG)
+        merged = fresh.python_translations[("sale", LANG)]
+        self.assertEqual(merged["Quotation"], "Счёт покупателю")
+        self.assertEqual(merged["Sales Order"], "Счёт покупателю")
+        unit = self.env.ref("uom.product_uom_unit")
+        self.assertEqual(self._ru(unit, "name"), "шт")
+        # Доводка З-2: дата, печать, поиск, вопрос отмены — одним словом.
+        self.assertEqual(self._label("sale.order", "date_order"), "Дата счёта")
+        form = self._ru(self.env.ref("sale.view_order_form"), "arch_db")
+        self.assertNotIn("Дата заказа", form)
+        self.assertIn("отменить этот счёт", form)
+        report = self._ru(self.env.ref("sale.report_saleorder_document"), "arch_db")
+        for old in ("Предложение цен", "Заказ #", "Дата заказа", "Дата предложения"):
+            with self.subTest(report=old):
+                self.assertNotIn(old, report)
+        self.assertIn("Счёт покупателю №", report)
+        search = self._ru(self.env.ref("sale.view_sales_order_filter"), "arch_db")
+        self.assertIn("Мои счета", search)
+        self.assertIn("Поиск счёта", search)
+        printing = self.env.ref("sale.action_report_saleorder").with_context(lang=LANG)
+        self.assertEqual(printing.print_report_name, "'Счёт покупателю - %s' % (object.name)")
+        self.assertIn("Quotation - ", self.env.ref("sale.action_report_saleorder").with_context(
+            lang="en_US").print_report_name, "Английский — как у ядра.")
+
     def test_purchase_and_product_labels(self):
         if not self._installed("purchase"):
             self.skipTest("purchase")
@@ -360,9 +409,12 @@ class TestStep39Words(Step39Common):
         untouched = [key for key in core if merged[key] == core[key]]
         self.assertGreater(len(untouched), len(core) // 2, "Остальное — перевод ядра.")
         self.assertEqual(merged["%s's opportunity"], "Сделка %s")
-        fresh._load_python_translations("sale", LANG)
-        self.assertEqual(dict(fresh.python_translations[("sale", LANG)]),
-                         CodeTranslations._get_code_translations("sale", LANG, filter_py))
+        # Модуль без файла слов — как у ядра. До шага З-2 здесь был sale; с
+        # З-2 у sale есть файл слов (i18n_words/sale.po) — берём account.
+        self.assertNotIn("account", words_modules())
+        fresh._load_python_translations("account", LANG)
+        self.assertEqual(dict(fresh.python_translations[("account", LANG)]),
+                         CodeTranslations._get_code_translations("account", LANG, filter_py))
         fresh._load_python_translations("crm", "fr_FR")
         self.assertNotEqual(fresh.python_translations[("crm", "fr_FR")].get("%s's opportunity"), "Сделка %s")
 
@@ -470,6 +522,17 @@ class TestStep39Words(Step39Common):
         reminder = self.env.ref("purchase.action_purchase_send_reminder", raise_if_not_found=False)
         if reminder:
             self.assertNotIn(reminder.id, po)
+        # Шаг З-2: «Печать» счёта покупателю — один пункт «Счёт покупателю».
+        order = names("sale.order")
+        main = self.env.ref("sale.action_report_saleorder", raise_if_not_found=False)
+        if main and main.id in order:
+            self.assertEqual(order[main.id], "Счёт покупателю")
+        raw = self.env.ref("sale_pdf_quote_builder.action_report_saleorder_raw", raise_if_not_found=False)
+        if raw:
+            self.assertNotIn(raw.id, order, "Второй пункт того же бланка — в «Убранном».")
+        ru_form = self.env.ref("l10n_ru_doc.action_report_saleorder_new", raise_if_not_found=False)
+        if ru_form and ru_form.id in order:
+            self.assertEqual(order[ru_form.id], "Счёт по форме 1С")
 
 
 # Экраны шага: (модель, xml-id вида, тип вида, проверять «спецификацию»).

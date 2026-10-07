@@ -82,6 +82,11 @@ HIDDEN_BINDINGS = {
     "product.action_product_price_list_report": REMOVED,
     "stock.action_product_template_replenishment": REMOVED,
     "stock.action_product_replenishment": REMOVED,
+    # Счёт покупателю (шаг З-2): второй пункт «Печати» того же бланка —
+    # «Коммерческое предложение/заказ» (sale_pdf_quote_builder, бланк без
+    # вкладышей конструктора КП; вкладышей у завода нет). Одно понятие — один
+    # пункт «Счёт покупателю».
+    "sale_pdf_quote_builder.action_report_saleorder_raw": REMOVED,
     "product.action_product_template_print_labels": STOCK,
     "product.action_product_print_labels": STOCK,
 }

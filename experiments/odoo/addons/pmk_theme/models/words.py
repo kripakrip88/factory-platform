@@ -124,6 +124,25 @@ DATA_WORDS = [
     # из списка значений поля type) и в техническом списке видов действия.
     ("mail.selection__ir_ui_view__type__activity", "name", "Активность", "Задачи"),
     ("mail.selection__ir_actions_act_window_view__view_mode__activity", "name", "Активность", "Задачи"),
+    # ─── Шаг З-2 (08.10.2026): заказ клиента — «Счёт покупателю» ────────
+    # Состояния счёта словами завода. Здесь, а не в файле слов: у «Quotation»
+    # и «Sales Order» один msgid со строкой кода (type_name) и именем модели —
+    # им нужно «Счёт покупателю» (i18n_words/sale.po), состоянию — другое.
+    # Те же четыре у отчёта продаж (sale.report) — одно понятие.
+    ("sale.selection__sale_order__state__draft", "name", "Коммерческое предложение", "Черновик"),
+    ("sale.selection__sale_order__state__sent", "name", "Коммерческое предложение отправлено",
+     "Выставлен, ждём оплату"),
+    ("sale.selection__sale_order__state__sale", "name", "Заказ на продажу", "В работе (оплачен)"),
+    ("sale.selection__sale_order__state__cancel", "name", "Отменен", "Отменён"),
+    ("sale.selection__sale_report__state__draft", "name", "Коммерческое предложение", "Черновик"),
+    ("sale.selection__sale_report__state__sent", "name", "Коммерческое предложение отправлено",
+     "Выставлен, ждём оплату"),
+    ("sale.selection__sale_report__state__sale", "name", "Заказ на продажу", "В работе (оплачен)"),
+    ("sale.selection__sale_report__state__cancel", "name", "Отменен", "Отменён"),
+    # Единица штучного: строки счёта покупателю и 82 штучных товара — «шт»,
+    # как в КП и на заводе (было «Единицы»). Печать КП и доборок единицу не
+    # берёт (pmk_bridge: «шт» в шаблоне; pmk_calc: свои единицы).
+    ("uom.product_uom_unit", "name", "Единицы", "шт"),
 ]
 
 # Язык в «Моих предпочтениях»: «Russian / русский язык» → «Русский».

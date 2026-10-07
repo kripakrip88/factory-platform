@@ -10,8 +10,9 @@
     обычного менеджера и у администратора; «Расчёты и КП» открывает расчёты
     (то же действие, что «Калькуляторы → Расчёт металлопроката», и тот пункт
     на месте);
-  • «Коммерческие предложения» и «Счета покупателям» (до шага 58 — «Заказы клиентов») — только с «Деньги
-    (показать)»;
+  • «Коммерческие предложения» — только с «Деньги (показать)»; «Счета
+    покупателям» (до шага 58 — «Заказы клиентов») с шага З-2 — у всех
+    менеджеров, после «Расчётов и КП»;
   • разделы «Ещё» (Производство, Склад, Деньги, Отчёты) скрыты без групп и
     видны с группой; «Сотрудники» — на месте; документы спрятанных разделов
     по-прежнему открываются (действия целы);
@@ -39,7 +40,9 @@ MONEY = "pmk_theme.group_pmk_money"
 REMOVED = "pmk_theme.group_pmk_removed"
 SWITCHES = (PRODUCTION, STOCK, MONEY, REMOVED)
 
-SALES = ["Воронка сделок", "Почта", "Расчёты и КП", "Клиенты", "Лиды"]
+# Шаг З-2 (08.10.2026): «Счета покупателям» — менеджерам, после «Расчётов и
+# КП» (счёт выставляется сам из расчёта при «КП отправлено»).
+SALES = ["Воронка сделок", "Почта", "Расчёты и КП", "Счета покупателям", "Клиенты", "Лиды"]
 MORE = ("pmk_theme.menu_pmk_production", "pmk_theme.menu_pmk_stock",
         "pmk_theme.menu_pmk_money", "pmk_theme.menu_pmk_reports")
 
@@ -69,6 +72,9 @@ class TestMenusStep38(TransactionCase):
         cls.sales = list(SALES)
         if not cls.env.ref("pmk_mail_ui.menu_mail_sale", raise_if_not_found=False):
             cls.sales.remove("Почта")
+        # Шаг З-2: «Заказы в работе» (pmk_orders) — сразу за «Воронкой».
+        if cls.env.ref("pmk_orders.menu_orders_sales", raise_if_not_found=False):
+            cls.sales.insert(1, "Заказы в работе")
 
     # ─── помощники ──────────────────────────────────────────────────────
     def _installed(self, module):
@@ -115,13 +121,16 @@ class TestMenusStep38(TransactionCase):
         self.assertEqual(menus[calc.id]["actionID"], spec_action.id)
 
     def test_standard_quotations_and_orders_with_money(self):
-        # «Счета покупателям» — штатный заказ клиента (шаг 58).
-        names = ("Коммерческие предложения", "Счета покупателям")
-        for name in names:
-            self.assertNotIn(name, self._items(self.admin, "pmk_theme.menu_pmk_sales"))
+        # «Счета покупателям» — штатный заказ клиента (шаг 58); с шага З-2 —
+        # без «Денег» (test_sales_items). «Коммерческие предложения» — тот же
+        # документ другим фильтром — по-прежнему только с «Деньгами».
+        name = "Коммерческие предложения"
+        self.assertNotIn(name, self._items(self.admin, "pmk_theme.menu_pmk_sales"))
+        self.assertFalse(self.env.ref("pmk_theme.menu_pmk_sales_orders").group_ids,
+                         "Шаг З-2: «Счета покупателям» — без группы «Деньги».")
         self._join(self.admin, MONEY)
         self.assertEqual(self._items(self.admin, "pmk_theme.menu_pmk_sales"),
-                         self.sales + list(names))
+                         self.sales + [name])
 
     # ─── «Ещё» ──────────────────────────────────────────────────────────
     def test_more_sections_hidden_without_switch(self):

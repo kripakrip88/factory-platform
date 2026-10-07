@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+  <!--
+    «Счёт покупателю» — штатная форма заказа клиента по-заводски (шаг З-2).
+
+    • Кнопки-счётчики «Расчёт» (из какого расчёта выставлен) и «Заказ»
+      (строка «Заказов в работе»): наши шаги. «Заказ» виден всегда, ноль
+      серым (stat_buttons.js темы); «Расчёт» — когда счёт из расчёта.
+    • Номер «СЧ-00001» целиком, рядом «ред. 2», если редакция не первая.
+    • Прежняя редакция (снимок) — плашкой над листом: «только для чтения»,
+      ссылка на действующую; её кнопки шапки (подтвердить, отменить, в
+      черновик, разблокировать) спрятаны, правку не пустит сервер.
+    • Вкладка «Редакции» — список прежних, только для чтения (номер с
+      «ред.», дата, сумма, состояние).
+    • Шапка: одна залитая кнопка — следующий шаг. У выставленного счёта
+      это «Подтвердить» → «Оплата пришла — в работу» (= «Выиграно» на
+      сделке). У черновика (счёт заведён руками «Новое» или возвращён из
+      отменённых «Вернуть в черновик») — «Выставить» (= «Выставлен, ждём
+      оплату», письма нет), а вторая штатная «Подтвердить» подписана так же,
+      как основная: «Оплата пришла — в работу», белая. Спрятаны обратимо: «Отправить» и «Предпросмотр» (группа
+      «Убранное»: клиенту ушёл бы штатный PDF Odoo вместо КП — КП уходит из
+      расчёта), «Создать счёт» ×2 (группа «Деньги»: реализации ведёт
+      бухгалтерия снаружи). Список — docs/disabled-features.md, шаг З-2.
+    • Кнопки и состояние — в строку пути от 1200 px (метка o_pmk_header_up,
+      механизм шага 48, pmk_theme/static/src/js/form_head.js).
+    Ширину и фон листа не трогаем (шаги 49 и 52). active в XML — грабли
+    Odoo 19: выключенный вид не проверяется при загрузке.
+  -->
+  <record id="view_order_form_pmk_orders" model="ir.ui.view">
+    <field name="name">sale.order.form.pmk.orders</field>
+    <field name="model">sale.order</field>
+    <field name="inherit_id" ref="sale.view_order_form"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="/form" position="attributes">
+        <attribute name="class" add="o_pmk_header_up" separator=" "/>
+      </xpath>
+
+      <!-- Шапка: одна залитая — «Оплата пришла — в работу» -->
+      <xpath expr="//header/button[@id='action_confirm']" position="attributes">
+        <attribute name="string">Оплата пришла — в работу</attribute>
+        <attribute name="title">Пришла предоплата или гарантийное письмо: счёт в работу, сделка — «Выиграно», строка в «Заказах в работе»</attribute>
+        <attribute name="invisible">state != 'sent' or pmk_is_revision</attribute>
+      </xpath>
+      <xpath expr="//header/button[@name='action_confirm'][not(@id)]" position="attributes">
+        <attribute name="string">Оплата пришла — в работу</attribute>
+        <attribute name="title">Пришла предоплата или гарантийное письмо: счёт в работу, сделка — «Выиграно», строка в «Заказах в работе»</attribute>
+        <attribute name="invisible">state != 'draft' or pmk_is_revision</attribute>
+      </xpath>
+      <!-- Черновик: следующий шаг — «Выставить» (без письма: КП и счёт
+           менеджер отправляет сам). Штатная залитая «Отправить» черновика
+           спрятана группой «Убранное». -->
+      <xpath expr="//header/button[@id='action_confirm']" position="before">
+        <button name="action_quotation_sent" id="pmk_quotation_sent" type="object"
+                string="Выставить" class="btn-primary"
+                title="Счёт выставлен клиенту: «Выставлен, ждём оплату». Письмо не уходит — КП и счёт менеджер отправляет сам"
+                invisible="state != 'draft' or pmk_is_revision"/>
+      </xpath>
+      <xpath expr="//header/button[@id='quotation_send_primary']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//header/button[@id='quotation_send']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//header/button[@name='action_preview_sale_order']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
+      </xpath>
+      <xpath expr="//header/button[@id='create_invoice']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_money</attribute>
+      </xpath>
+      <xpath expr="//header/button[@id='create_invoice_percentage']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_money</attribute>
+      </xpath>
+      <xpath expr="//header/button[@name='action_cancel']" position="attributes">
+        <attribute name="invisible">state not in ['draft', 'sent', 'sale'] or not id or locked or pmk_is_revision</attribute>
+      </xpath>
+      <xpath expr="//header/button[@name='action_draft']" position="attributes">
+        <attribute name="invisible">state != 'cancel' or pmk_is_revision</attribute>
+      </xpath>
+      <xpath expr="//header/button[@name='action_unlock']" position="attributes">
+        <attribute name="invisible">not locked or pmk_is_revision</attribute>
+      </xpath>
+
+      <!-- Прежняя редакция — плашкой над листом -->
+      <xpath expr="//sheet" position="before">
+        <div class="o_pmk_revision_banner" role="status" invisible="not pmk_is_revision">
+          <strong>Прежняя редакция <field name="pmk_revision_label" class="d-inline" readonly="1"/></strong>
+          — только для чтения: так счёт уходил клиенту. Действующая:
+          <field name="pmk_revision_of_id" class="d-inline" readonly="1"/>
+        </div>
+      </xpath>
+
+      <xpath expr="//div[@name='button_box']" position="inside">
+        <button name="action_open_spec" type="object" class="oe_stat_button"
+                icon="fa-calculator" invisible="not pmk_spec_id">
+          <div class="o_field_widget o_stat_info">
+            <span class="o_stat_value"><field name="pmk_spec_id" readonly="1" options="{'no_open': True}"/></span>
+            <span class="o_stat_text">Расчёт</span>
+          </div>
+        </button>
+        <button name="action_open_planner_row" type="object" class="oe_stat_button"
+                icon="fa-industry" invisible="pmk_is_revision">
+          <field name="pmk_task_count" widget="statinfo" string="Заказ"/>
+        </button>
+      </xpath>
+
+      <xpath expr="//div[hasclass('oe_title')]/h1/field[@name='name']" position="after">
+        <field name="pmk_revision_label" class="ms-2 fw-normal" readonly="1"
+               invisible="not pmk_revision_label"/>
+        <field name="pmk_is_revision" invisible="1"/>
+      </xpath>
+
+      <!-- Прежняя редакция — только для чтения во всех вкладках. Поля, у
+           которых в ядре readonly нет (у остальных штатное «отменён или
+           заблокирован» снимок уже закрывает): условия, позиция налогов,
+           ссылка клиента (печатается), менеджер, команда, теги, источник,
+           кампания, способ оплаты, сделка, дата поставки. Сервер правку
+           содержания тоже не пустит (SNAPSHOT_LOCKED_FIELDS, sale_order.py).
+           Поля sale_stock (склад, инкотермс) и sale_project (проект) — вне
+           зависимостей модуля, видом не закрыты: инкотермс сервер держит,
+           склад и проект — внутренние. -->
+      <xpath expr="//group[@name='order_details']/field[@name='payment_term_id']" position="attributes">
+        <attribute name="readonly">pmk_is_revision</attribute>
+      </xpath>
+      <xpath expr="//group[@name='note_group']//field[@name='note']" position="attributes">
+        <attribute name="readonly">pmk_is_revision</attribute>
+      </xpath>
+      <xpath expr="//page[@name='other_information']//field[@name='user_id']" position="attributes">
+        <attribute name="readonly">pmk_is_revision</attribute>
+      </xpath>
+      <xpath expr="//page[@name='other_information']//field[@name='team_id']" position="attributes">
+        <attribute name="readonly">pmk_is_revision</attribute>
+      </xpath>
+      <xpath expr="//page[@name='other_information']//field[@name='client_order_ref']" position="attributes">
+        <attribute name="readonly">pmk_is_revision</attribute>
+      </xpath>
+      <xpath expr="//page[@name='other_information']//field[@name='tag_ids']" position="attributes">
+        <attribute name="readonly">pmk_is_revision</attribute>
+      </xpath>
+      <xpath expr="//page[@name='other_information']//field[@name='fiscal_position_id']" position="attributes">
+        <attribute name="readonly">pmk_is_revision</attribute>
+      </xpath>
+      <xpath expr="//page[@name='other_information']//field[@name='preferred_payment_method_line_id']" position="attributes">
+        <attribute name="readonly">pmk_is_revision</attribute>
+      </xpath>
+      <xpath expr="//page[@name='other_information']//field[@name='origin']" position="attributes">
+        <attribute name="readonly">pmk_is_revision</attribute>
+      </xpath>
+      <xpath expr="//page[@name='other_information']//field[@name='campaign_id']" position="attributes">
+        <attribute name="readonly">pmk_is_revision</attribute>
+      </xpath>
+      <xpath expr="//page[@name='other_information']//field[@name='medium_id']" position="attributes">
+        <attribute name="readonly">pmk_is_revision</attribute>
+      </xpath>
+      <xpath expr="//page[@name='other_information']//field[@name='source_id']" position="attributes">
+        <attribute name="readonly">pmk_is_revision</attribute>
+      </xpath>
+      <!-- Сделка (sale_crm, два узла по группам): у снимка её нет и не
+           будет — сервер не пустит. -->
+      <xpath expr="//page[@name='other_information']//field[@name='opportunity_id'][1]" position="attributes">
+        <attribute name="readonly">pmk_is_revision</attribute>
+      </xpath>
+      <xpath expr="//page[@name='other_information']//field[@name='opportunity_id'][2]" position="attributes">
+        <attribute name="readonly">pmk_is_revision</attribute>
+      </xpath>
+      <!-- Дата поставки: у ядра «отменён или заблокирован», но sale_stock
+           заменяет её узел без readonly. Условие ядра без «заблокирован»
+           (подтверждённый заблокированный счёт дату поставки менять может,
+           как в sale_stock) плюс снимок. -->
+      <xpath expr="//field[@name='commitment_date']" position="attributes">
+        <attribute name="readonly">state == 'cancel' or pmk_is_revision</attribute>
+      </xpath>
+
+      <xpath expr="/form/sheet/notebook" position="inside">
+        <page string="Редакции" name="pmk_revisions" invisible="not pmk_revision_ids">
+          <field name="pmk_revision_ids" readonly="1">
+            <list create="0" delete="0" edit="0" default_order="pmk_revision desc">
+              <field name="currency_id" column_invisible="1"/>
+              <field name="name" string="Номер"/>
+              <field name="pmk_revision_label" string="Редакция"/>
+              <field name="date_order" string="Дата"/>
+              <field name="pmk_spec_id" string="Расчёт"/>
+              <field name="amount_total" string="Сумма" widget="monetary"/>
+            </list>
+          </field>
+        </page>
+      </xpath>
+    </field>
+  </record>
+
+  <!--
+    Список счетов: «ред.» и номер сделки сразу за номером (номера не
+    обрезаются, СД- — 105 px, как в шаге 48), состояние — плашкой
+    («Выставлен, ждём оплату» / «В работе (оплачен)» / «Отменён»).
+    «Статус счёта» (выставлены ли реализации — бухгалтерия снаружи) — в ⚙,
+    «Создать счета» в шапке списка — группой «Деньги».
+  -->
+  <record id="view_order_list_pmk_orders" model="ir.ui.view">
+    <field name="name">sale.order.list.pmk.orders</field>
+    <field name="model">sale.order</field>
+    <field name="inherit_id" ref="sale.sale_order_tree"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="/list/header/button" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_money</attribute>
+      </xpath>
+      <xpath expr="//field[@name='name']" position="after">
+        <field name="pmk_revision_label" string="Ред." optional="show" width="70px"/>
+        <field name="pmk_deal_number" string="Сделка" optional="show" width="105px"/>
+      </xpath>
+      <xpath expr="//field[@name='state']" position="attributes">
+        <attribute name="optional">show</attribute>
+      </xpath>
+      <xpath expr="//field[@name='invoice_status']" position="attributes">
+        <attribute name="optional">hide</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <!--
+    Окно «Выставленные счета» (пункт с «Деньгами», поиск ядра
+    sale_order_view_search_inherit_quotation): штатные фильтры «Выставленные
+    счета» (черновик и выставлен) и «Счета покупателям» (в работе)
+    повторяли наши «Выставлены, ждём оплату» и «В работе (оплачены)» другими
+    словами — спрятаны (invisible, по умолчанию окна не стоят). Вернуть —
+    убрать этот вид. В окне «Счета покупателям» штатный «sales» и так
+    невидимый (ядро). Список — docs/disabled-features.md, шаг З-2.
+  -->
+  <record id="view_order_search_quotation_pmk_orders" model="ir.ui.view">
+    <field name="name">sale.order.search.quotation.pmk.orders</field>
+    <field name="model">sale.order</field>
+    <field name="inherit_id" ref="sale.sale_order_view_search_inherit_quotation"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//filter[@name='draft']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//filter[@name='sales']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <!--
+    Поиск: «Действующие» (без прежних редакций) — фильтр окна «Продажи →
+    Счета покупателям» по умолчанию (models/ir_actions.py). Состояния —
+    отдельной группой (между собой «или»).
+  -->
+  <record id="view_order_search_pmk_orders" model="ir.ui.view">
+    <field name="name">sale.order.search.pmk.orders</field>
+    <field name="model">sale.order</field>
+    <field name="inherit_id" ref="sale.view_sales_order_filter"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="/search/group" position="before">
+        <separator/>
+        <filter name="pmk_current" string="Действующие" domain="[('pmk_is_revision', '=', False)]"/>
+        <separator/>
+        <filter name="pmk_issued" string="Выставлены, ждём оплату" domain="[('state', 'in', ('draft', 'sent'))]"/>
+        <filter name="pmk_in_work" string="В работе (оплачены)" domain="[('state', '=', 'sale')]"/>
+        <filter name="pmk_cancelled" string="Отменены" domain="[('state', '=', 'cancel')]"/>
+        <separator/>
+        <filter name="pmk_revisions" string="Прежние редакции" domain="[('pmk_is_revision', '=', True)]"/>
+        <field name="pmk_spec_id"/>
+      </xpath>
+    </field>
+  </record>
+
+</odoo>

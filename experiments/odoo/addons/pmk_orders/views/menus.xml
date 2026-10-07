@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    «Заказы в работе» — в двух разделах (шаг З-2):
+      Продажи → сразу после «Воронки сделок» (sequence 12, до «Почты» 15):
+               менеджер видит, что ушло в работу по его сделкам;
+      Проекты → первым (sequence 5): планировщик цеха рядом с «Доработкой».
+    Видят продавцы и пользователи проектов. Окно одно — action_orders.
+  -->
+  <menuitem id="menu_orders_sales" name="Заказы в работе"
+            parent="pmk_theme.menu_pmk_sales" action="action_orders" sequence="12"
+            groups="sales_team.group_sale_salesman,project.group_project_user"/>
+  <menuitem id="menu_orders_tasks" name="Заказы в работе"
+            parent="pmk_theme.menu_pmk_tasks" action="action_orders" sequence="5"
+            groups="sales_team.group_sale_salesman,project.group_project_user"/>
+</odoo>

@@ -53,7 +53,9 @@ _STAGES = {
     'mail.client.message': (0, 'Письмо'),
     'crm.lead': (1, 'Сделка'),
     'pmk.metal.spec': (2, 'Расчёт'),
-    'sale.order': (3, 'Заказ'),
+    # Заказ клиента — по-заводски «Счёт покупателю» (шаги 58 и З-2,
+    # 08.10.2026): выставляется сам из расчёта при «КП отправлено».
+    'sale.order': (3, 'Счёт покупателю'),
     'pmk.cut.plan': (4, 'Раскрой'),
     'pmk.laser.job': (4, 'Лазер'),
     # Доборка — изготовление гнутых планок по сделке, работа цеха рядом с
@@ -447,6 +449,12 @@ class PmkFlowBuilder(models.AbstractModel):
             # Наше: заказ ← сделка (поле sale_crm) и заказ → задания лазеру.
             linked.append(self._optional_rel(record, 'opportunity_id', hidden))
             linked.append(self._referrers('pmk.laser.job', 'sale_order_id', record.id, hidden))
+            # Шаг З-2 (pmk_orders): счёт ← расчёт, счёт → строка «Заказов в
+            # работе». Полей нет без pmk_orders — _optional_rel/_referrers
+            # это переносят. Прежние редакции на схеме не показываем: у них
+            # нет сделки, а к расчёту ведёт только действующий счёт.
+            linked.append(self._optional_rel(record, 'pmk_spec_id', hidden))
+            linked.append(self._referrers('project.task', 'pmk_sale_order_id', record.id, hidden))
         elif model == 'project.project':
             if 'sale_order_id' in record._fields and record.sale_order_id:
                 linked.append(record.sale_order_id)
@@ -457,6 +465,9 @@ class PmkFlowBuilder(models.AbstractModel):
                 linked.append(record.sale_order_id)
             if 'project_id' in record._fields and record.project_id:
                 linked.append(record.project_id)
+            # Строка «Заказов в работе» (pmk_orders, шаг З-2): свой счёт и сделка.
+            linked.append(self._optional_rel(record, 'pmk_sale_order_id', hidden))
+            linked.append(self._optional_rel(record, 'pmk_deal_id', hidden))
         elif model == 'purchase.order':
             if 'invoice_ids' in record._fields:
                 linked.append(record.invoice_ids)
@@ -504,8 +515,17 @@ class PmkFlowBuilder(models.AbstractModel):
             # Заказы клиента из сделки (sale_crm). Поле opportunity_id у
             # заказа появляется только с sale_crm — отсюда проверка поля.
             linked.append(self._referrers('sale.order', 'opportunity_id', record.id, hidden))
+            # Строки «Заказов в работе» сделки (pmk_orders, шаг З-2) — и те,
+            # что появились без счёта.
+            linked.append(self._referrers('project.task', 'pmk_deal_id', record.id, hidden))
         elif model == 'pmk.metal.spec':
             linked.append(self._optional_rel(record, 'opportunity_id', hidden))
+            # Счёт покупателю из расчёта (pmk_orders, шаг З-2) — только
+            # действующий: прежние редакции хранят тот же расчёт.
+            if 'sale.order' in self.env and 'pmk_is_revision' in self.env['sale.order']._fields:
+                linked.append(self._search_linked(
+                    'sale.order', [('pmk_spec_id', '=', record.id), ('pmk_is_revision', '=', False)],
+                    hidden))
             # Раскрой сортамента ссылается на расчёт полем «Расчёт» (spec_id).
             linked.append(self._referrers('pmk.cut.plan', 'spec_id', record.id, hidden))
             # Задание лазеру ссылается на расчёт с 27.09.2026 (pmk_laser, spec_id).

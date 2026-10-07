@@ -111,8 +111,12 @@ class TestKpSentDeal(MailCommon):
         return composer
 
     def _notes(self, deal, spec):
+        """Заметки об отправке КП. Заметки счёта покупателю (pmk_orders,
+        шаг З-2: «Счёт покупателю … из расчёта СМ-…») — не про отправку,
+        их не считаем."""
         deal.invalidate_recordset(["message_ids"])
-        return deal.message_ids.filtered(lambda m: spec.name in (m.body or ""))
+        return deal.message_ids.filtered(
+            lambda m: spec.name in (m.body or "") and "Счёт" not in (m.body or ""))
 
     # ─── стадия вперёд ─────────────────────────────────────────────────
     def test_forward_from_request_and_calc(self):

@@ -251,8 +251,9 @@ class TestHiddenStep29(TransactionCase):
 
     # ─── Шестерёнка ─────────────────────────────────────────────────────
     def _gear(self, model):
+        """Пункты ⚙ — «Действия» и «Печать» (с шага З-2 спрятан и отчёт)."""
         bindings = self.env["ir.actions.actions"].with_user(self.admin).get_bindings(model)
-        return {action["id"] for action in bindings.get("action", ())}
+        return {action["id"] for kind in ("action", "report") for action in bindings.get(kind, ())}
 
     def _hidden_actions(self):
         """xml-id → (действие, модель шестерёнки); снятые модули пропускаем."""

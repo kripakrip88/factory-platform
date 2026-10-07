@@ -1,0 +1,142 @@
+# Слова завода поверх перевода модуля sale (разбор UX, шаг З-2, 08.10.2026).
+#
+# Каждая запись — копия записи из sale/i18n/ru.po ядра: тот же msgid,
+# ссылки «#:» — только те, где слово завода к месту, другой msgstr. Строки
+# кода («#. odoo-python») процесс Odoo доливает поверх перевода модуля при
+# запуске, строки базы (имя модели, подписи, термины видов) ложатся при
+# каждом -u pmk_theme. Механизм — pmk_theme/models/words.py, список
+# «было -> стало» — docs/disabled-features.md, шаги 39 и З-2.
+#
+# Шаг З-2: штатный заказ клиента (sale.order) для завода — «Счёт
+# покупателю» (КП и счёт — один документ, просьба Антона 08.10.2026), а не
+# «Коммерческое предложение» / «Заказ на продажу». Строка кода type_name
+# («Quotation» / «Sales Order») — заголовок письма, имя файла печати,
+# описание документа в ленте. Состояния счёта (Черновик / Выставлен, ждём
+# оплату / В работе (оплачен) / Отменён) — DATA_WORDS в words.py: у
+# «Quotation» и «Sales Order» один msgid со строкой кода, а слово нужно другое.
+#
+# Слово поменять — поправить msgstr здесь и выложить pmk_theme.
+# Слово вернуть штатное — удалить запись и выложить, затем загрузить перевод
+# с перезаписью (режим разработчика: Настройки -> Переводы -> Языки ->
+# Русский -> «Обновить», галочка «Перезаписать существующие термины»).
+# Имена действий и пунктов меню здесь не живут — это ACTION_TITLES
+# (pmk_theme/models/ir_actions_act_window.py).
+msgid ""
+msgstr ""
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. module: sale
+#. odoo-python
+#: code:addons/sale/models/sale_order.py:0
+msgid "Quotation"
+msgstr "Счёт покупателю"
+
+#. module: sale
+#. odoo-python
+#: code:addons/sale/models/sale_order.py:0
+#: model:ir.model,name:sale.model_sale_order
+#: model_terms:ir.ui.view,arch_db:sale.sale_order_view_activity
+#: model_terms:ir.ui.view,arch_db:sale.view_order_form
+msgid "Sales Order"
+msgstr "Счёт покупателю"
+
+#. module: sale
+#: model_terms:ir.ui.view,arch_db:sale.sale_order_tree
+#: model_terms:ir.ui.view,arch_db:sale.sale_order_view_search_inherit_quotation
+#: model_terms:ir.ui.view,arch_db:sale.sale_order_view_search_inherit_sale
+#: model_terms:ir.ui.view,arch_db:sale.view_order_tree
+msgid "Sales Orders"
+msgstr "Счета покупателям"
+
+#. module: sale
+#: model_terms:ir.ui.view,arch_db:sale.sale_order_view_search_inherit_quotation
+#: model_terms:ir.ui.view,arch_db:sale.view_quotation_tree
+msgid "Quotations"
+msgstr "Выставленные счета"
+
+#. module: sale
+#: model_terms:ir.ui.view,arch_db:sale.view_order_form
+msgid "Set to Quotation"
+msgstr "Вернуть в черновик"
+
+#. module: sale
+#: model:ir.model.fields,field_description:sale.field_sale_order__order_line
+#: model_terms:ir.ui.view,arch_db:sale.view_order_form
+msgid "Order Lines"
+msgstr "Изделия"
+
+#. module: sale
+#: model_terms:ir.ui.view,arch_db:sale.report_saleorder_document
+#: model_terms:ir.ui.view,arch_db:sale.view_order_form
+msgid "Quotation Date"
+msgstr "Дата счёта"
+
+# ─── Доводка шага З-2 (08.10.2026): дата, печать, поиск, отмена ─────────
+# «Дата заказа» у выставленного счёта в работе и у прежних редакций, в
+# поиске и группировке окна «Счета покупателям», в анализе продаж и в печати.
+# Портал клиента (portal_my_orders) — словами ядра, его ссылок здесь нет.
+#. module: sale
+#: model:ir.model.fields,field_description:sale.field_sale_order__date_order
+#: model:ir.model.fields,field_description:sale.field_sale_report__date
+#: model_terms:ir.ui.view,arch_db:sale.report_saleorder_document
+#: model_terms:ir.ui.view,arch_db:sale.sale_order_view_search_inherit_sale
+#: model_terms:ir.ui.view,arch_db:sale.view_order_form
+#: model_terms:ir.ui.view,arch_db:sale.view_order_product_search
+#: model_terms:ir.ui.view,arch_db:sale.view_sales_order_filter
+msgid "Order Date"
+msgstr "Дата счёта"
+
+#. module: sale
+#: model_terms:ir.ui.view,arch_db:sale.view_order_product_search
+msgid "Order Date: Last 365 Days"
+msgstr "Дата счёта: Последние 365 дней"
+
+# Печать «Счёт покупателю» (бланк ядра report_saleorder_document): заголовок
+# и у выставленного, и у счёта в работе — одним словом. Портал клиента
+# (portal_my_quotations) — словами ядра.
+#. module: sale
+#: model_terms:ir.ui.view,arch_db:sale.report_saleorder_document
+msgid "Quotation #"
+msgstr "Счёт покупателю №"
+
+#. module: sale
+#: model_terms:ir.ui.view,arch_db:sale.report_saleorder_document
+msgid "Order #"
+msgstr "Счёт покупателю №"
+
+# Имя файла печати: у ядра — выражение с «Quotation - » / «Order - »
+# литералами (перевода у строк внутри выражения нет, поле переводимое
+# целиком). Вернуть — удалить запись и обновить перевод с перезаписью.
+#. module: sale
+#: model:ir.actions.report,print_report_name:sale.action_report_saleorder
+msgid ""
+"(object.state in ('draft', 'sent') and 'Quotation - %s' % (object.name)) or "
+"'Order - %s' % (object.name)"
+msgstr "'Счёт покупателю - %s' % (object.name)"
+
+#. module: sale
+#: model_terms:ir.ui.view,arch_db:sale.view_order_form
+msgid ""
+"Are you sure you want to cancel this order? This may affect related "
+"documents or processes."
+msgstr ""
+"Вы уверены, что хотите отменить этот счёт? Это может повлиять на связанные "
+"документы или процессы."
+
+#. module: sale
+#: model_terms:ir.ui.view,arch_db:sale.view_sales_order_filter
+msgid "My Orders"
+msgstr "Мои счета"
+
+#. module: sale
+#: model_terms:ir.ui.view,arch_db:sale.sale_order_view_search_inherit_quotation
+msgid "My Quotations"
+msgstr "Мои счета"
+
+#. module: sale
+#: model_terms:ir.ui.view,arch_db:sale.view_sales_order_filter
+msgid "Search Sales Order"
+msgstr "Поиск счёта"

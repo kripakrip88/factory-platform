@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Планировщик «Заказы в работе» (шаг З-2) — свои виды задачи, только для
+    проекта «Заказы в работе». Все primary с priority 50: штатными видами
+    project.task они не становятся, «Доработка» и «Список дел» их не видят.
+    active в XML — грабли Odoo 19 (выключенный вид не проверяется).
+
+    Список — как Excel Антона (колонки в его порядке), открывается первым, с
+    фильтром «Не отгружено». Канбан — по этапам («Отгружено» свёрнут). Форма —
+    компактная, без вкладок, этап в строке пути (o_pmk_header_up, шаг 48).
+    Цвет этапа плашкой: Очередь и Отгружено — серые, Разработка чертежей и В
+    работе — синие, Ждём металл — жёлтая, Пауза — красная, Готово к отгрузке
+    — зелёная. Слово рядом всегда — это название этапа.
+  -->
+
+  <record id="view_task_order_list" model="ir.ui.view">
+    <field name="name">project.task.list.pmk.orders</field>
+    <field name="model">project.task</field>
+    <field name="priority">50</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <list string="Заказы в работе" default_order="stage_id, pmk_date_due, id"
+            decoration-muted="pmk_stage_code == 'shipped'" multi_edit="1" sample="1">
+        <field name="pmk_stage_code" column_invisible="1"/>
+        <field name="pmk_overdue" column_invisible="1"/>
+        <field name="pmk_currency_id" column_invisible="1"/>
+        <field name="partner_id" string="Компания" optional="show"/>
+        <field name="name" string="Описание заказа"/>
+        <field name="pmk_deal_number" string="Сделка" optional="show" width="105px"/>
+        <field name="pmk_date_start" string="Старт (план)" optional="show"/>
+        <field name="pmk_date_due" string="Сдача (план)" optional="show"
+               decoration-danger="pmk_overdue" decoration-bf="pmk_overdue"/>
+        <field name="stage_id" string="Статус" widget="badge" optional="show"
+               decoration-muted="pmk_stage_code in ('queue', 'shipped')"
+               decoration-info="pmk_stage_code in ('drawings', 'work')"
+               decoration-warning="pmk_stage_code == 'metal'"
+               decoration-danger="pmk_stage_code == 'pause'"
+               decoration-success="pmk_stage_code == 'ready'"/>
+        <field name="user_ids" string="Ответственный" widget="many2many_avatar_user" optional="show"/>
+        <field name="pmk_amount" string="Сумма заказа" sum="Итого" optional="show"
+               readonly="pmk_sale_order_id"/>
+        <field name="pmk_sale_order_id" string="Счёт покупателю" optional="show" width="150px"/>
+        <field name="pmk_org_id" optional="hide"/>
+        <field name="pmk_invoice" optional="show"/>
+        <field name="pmk_paid_date" optional="show"/>
+        <field name="pmk_paid_amount" sum="Оплачено" optional="show"/>
+        <field name="pmk_paid_pct" string="% оплаты" optional="show"
+               decoration-success="pmk_paid_pct &gt;= 100"
+               decoration-warning="pmk_paid_pct &gt; 0 and pmk_paid_pct &lt; 100"/>
+        <field name="pmk_ready_date" optional="hide"/>
+        <field name="pmk_ship_date" optional="hide"/>
+        <field name="pmk_note" optional="hide"/>
+        <field name="pmk_ordered" optional="hide"/>
+        <field name="pmk_paint" optional="hide"/>
+        <field name="pmk_passport" optional="hide"/>
+        <field name="pmk_metal" widget="badge" optional="show"
+               decoration-warning="pmk_metal == 'wait'"
+               decoration-success="pmk_metal == 'got'"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="view_task_order_quick_create" model="ir.ui.view">
+    <field name="name">project.task.quick.create.pmk.orders</field>
+    <field name="model">project.task</field>
+    <field name="priority">50</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <form>
+        <group>
+          <field name="name" string="Заказ" placeholder="Изделие, объект"/>
+          <field name="partner_id" string="Клиент" options="{'no_create_edit': True}"/>
+          <field name="project_id" invisible="1"/>
+        </group>
+      </form>
+    </field>
+  </record>
+
+  <record id="view_task_order_kanban" model="ir.ui.view">
+    <field name="name">project.task.kanban.pmk.orders</field>
+    <field name="model">project.task</field>
+    <field name="priority">50</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <kanban default_group_by="stage_id" class="o_kanban_small_column o_pmk_orders_kanban"
+              group_create="false" group_delete="false" on_create="quick_create"
+              quick_create_view="pmk_orders.view_task_order_quick_create" sample="1">
+        <field name="pmk_overdue"/>
+        <field name="pmk_stage_code"/>
+        <field name="pmk_currency_id"/>
+        <field name="pmk_date_due"/>
+        <field name="pmk_metal"/>
+        <templates>
+          <t t-name="card">
+            <field name="partner_id" class="small text-muted"/>
+            <field name="name" class="fw-bold"/>
+            <div t-if="record.pmk_date_due.raw_value" class="small"
+                 t-att-class="record.pmk_overdue.raw_value ? 'o_pmk_overdue' : ''">
+              Сдача: <field name="pmk_date_due"/><t t-if="record.pmk_overdue.raw_value"> · просрочена</t>
+            </div>
+            <div class="small">
+              <field name="pmk_amount" widget="monetary"/> · оплачено <field name="pmk_paid_pct"/> %
+            </div>
+            <div class="d-flex align-items-center mt-1">
+              <field name="pmk_metal" widget="badge" invisible="pmk_metal in (False, 'none')"
+                     decoration-warning="pmk_metal == 'wait'"
+                     decoration-success="pmk_metal == 'got'"/>
+              <div class="ms-auto d-flex align-items-center gap-2">
+                <field name="pmk_deal_number" class="small text-muted"/>
+                <field name="user_ids" widget="many2many_avatar_user" readonly="1"/>
+              </div>
+            </div>
+          </t>
+        </templates>
+      </kanban>
+    </field>
+  </record>
+
+  <!--
+    Форма строки — компактная, без вкладок (штатные описание, теги,
+    приоритет, срок, подзадачи, обложка здесь не показаны — у project.task
+    они есть, открываются штатной формой задачи; docs/disabled-features.md,
+    шаг З-2). Залитой кнопки нет: у строки пока нет следующего шага.
+  -->
+  <record id="view_task_order_form" model="ir.ui.view">
+    <field name="name">project.task.form.pmk.orders</field>
+    <field name="model">project.task</field>
+    <field name="priority">50</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <form string="Заказ в работе" class="o_pmk_header_up">
+        <header>
+          <field name="stage_id" widget="statusbar" options="{'clickable': '1', 'fold_field': 'fold'}"/>
+        </header>
+        <sheet>
+          <div class="oe_button_box" name="button_box"/>
+          <div class="oe_title">
+            <h1><field name="name" placeholder="Изделие, объект"/></h1>
+          </div>
+          <group name="pmk_order_main">
+            <group name="pmk_order_who">
+              <field name="partner_id" string="Клиент" options="{'no_create_edit': True}"/>
+              <field name="pmk_deal_id" options="{'no_create': True}"/>
+              <field name="pmk_sale_order_id" options="{'no_create': True}"/>
+              <field name="pmk_org_id" options="{'no_create': True, 'no_open': True}"/>
+              <field name="user_ids" string="Ответственный" widget="many2many_avatar_user"/>
+              <field name="pmk_date_start"/>
+              <field name="pmk_date_due" decoration-danger="pmk_overdue"/>
+            </group>
+            <group name="pmk_order_money">
+              <field name="pmk_amount" readonly="pmk_sale_order_id"/>
+              <field name="pmk_invoice"/>
+              <field name="pmk_paid_date"/>
+              <field name="pmk_paid_amount"/>
+              <field name="pmk_paid_pct" string="Оплачено, %"/>
+            </group>
+          </group>
+          <group name="pmk_order_shop">
+            <group name="pmk_order_shop_left">
+              <field name="pmk_metal"/>
+              <field name="pmk_ordered"/>
+              <field name="pmk_paint"/>
+              <field name="pmk_passport"/>
+            </group>
+            <group name="pmk_order_shop_right">
+              <field name="pmk_ready_date"/>
+              <field name="pmk_ship_date"/>
+            </group>
+          </group>
+          <group name="pmk_order_note">
+            <field name="pmk_note" placeholder="Доставка, размеры пластин, что уточнить"/>
+          </group>
+          <field name="project_id" invisible="1"/>
+          <field name="company_id" invisible="1"/>
+          <field name="pmk_currency_id" invisible="1"/>
+          <field name="pmk_is_order" invisible="1"/>
+          <field name="pmk_overdue" invisible="1"/>
+          <field name="pmk_stage_code" invisible="1"/>
+        </sheet>
+        <chatter/>
+      </form>
+    </field>
+  </record>
+
+  <record id="view_task_order_search" model="ir.ui.view">
+    <field name="name">project.task.search.pmk.orders</field>
+    <field name="model">project.task</field>
+    <field name="priority">50</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <search string="Заказы в работе">
+        <field name="name" string="Заказ"/>
+        <field name="partner_id" string="Клиент" operator="child_of"/>
+        <field name="pmk_deal_id"/>
+        <field name="pmk_sale_order_id"/>
+        <field name="user_ids" string="Ответственный"/>
+        <field name="pmk_invoice"/>
+        <filter name="not_shipped" string="Не отгружено"
+                domain="[('stage_id.pmk_order_stage', '!=', 'shipped')]"/>
+        <separator/>
+        <filter name="my" string="Мои" domain="[('user_ids', 'in', uid)]"/>
+        <separator/>
+        <filter name="overdue" string="Просрочена сдача" domain="[('pmk_overdue', '=', True)]"/>
+        <separator/>
+        <filter name="metal_wait" string="Ждём металл"
+                domain="['|', ('stage_id.pmk_order_stage', '=', 'metal'), ('pmk_metal', '=', 'wait')]"/>
+        <filter name="pause" string="Пауза" domain="[('stage_id.pmk_order_stage', '=', 'pause')]"/>
+        <separator/>
+        <filter name="not_paid" string="Оплачено не полностью" domain="[('pmk_paid_pct', '&lt;', 100)]"/>
+        <separator/>
+        <filter name="archived" string="В архиве" domain="[('active', '=', False)]"/>
+        <group>
+          <filter name="group_stage" string="Этап" context="{'group_by': 'stage_id'}"/>
+          <filter name="group_user" string="Ответственный" context="{'group_by': 'user_ids'}"/>
+          <filter name="group_partner" string="Клиент" context="{'group_by': 'partner_id'}"/>
+          <filter name="group_deal" string="Сделка" context="{'group_by': 'pmk_deal_id'}"/>
+          <filter name="group_due" string="Сдача по месяцам" context="{'group_by': 'pmk_date_due:month'}"/>
+        </group>
+      </search>
+    </field>
+  </record>
+
+  <record id="action_orders" model="ir.actions.act_window">
+    <field name="name">Заказы в работе</field>
+    <field name="res_model">project.task</field>
+    <field name="path">orders-in-work</field>
+    <field name="view_mode">list,kanban,form</field>
+    <field name="search_view_id" ref="view_task_order_search"/>
+    <field name="domain" eval="[('project_id', '=', ref('project_orders'))]"/>
+    <!-- project_kanban — чтобы ядро (_read_group_stage_ids) показало и пустые
+         этапы: без него колонка «Очередь» без строк пропала бы. -->
+    <field name="context" eval="{'default_project_id': ref('project_orders'), 'active_id': ref('project_orders'), 'project_kanban': True, 'search_default_not_shipped': 1, 'default_pmk_metal': 'none'}"/>
+    <field name="help" type="html">
+      <p class="o_view_nocontent_smiling_face">Заказов пока нет</p>
+      <p>Строка появляется сама, когда сделку переводят в «Выиграно» (или подтверждают счёт покупателю); вручную — кнопкой «Новое».</p>
+    </field>
+  </record>
+  <record id="action_orders_view_list" model="ir.actions.act_window.view">
+    <field name="sequence">1</field>
+    <field name="view_mode">list</field>
+    <field name="view_id" ref="view_task_order_list"/>
+    <field name="act_window_id" ref="action_orders"/>
+  </record>
+  <record id="action_orders_view_kanban" model="ir.actions.act_window.view">
+    <field name="sequence">2</field>
+    <field name="view_mode">kanban</field>
+    <field name="view_id" ref="view_task_order_kanban"/>
+    <field name="act_window_id" ref="action_orders"/>
+  </record>
+  <record id="action_orders_view_form" model="ir.actions.act_window.view">
+    <field name="sequence">3</field>
+    <field name="view_mode">form</field>
+    <field name="view_id" ref="view_task_order_form"/>
+    <field name="act_window_id" ref="action_orders"/>
+  </record>
+</odoo>

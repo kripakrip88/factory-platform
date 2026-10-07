@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Служебный товар строк счёта покупателю (шаг З-2, решение Антона 08.10.2026):
+    «Изготовление металлоконструкций». Строка счёта = изделие расчёта, её
+    описание — название изделия; состав, вес и металл — в расчёте.
+
+    • Тип «услуга»: подтверждение счёта не создаёт отгрузок и складских
+      движений (sale_stock), закупок (service_to_purchase пуст, sale_purchase)
+      и задач (service_tracking «нет», sale_project — по умолчанию).
+    • Без налога: налог строки ставит режим нашей организации на дату счёта
+      (pmk_org, «включён в цену»). Пустой список явно — иначе встал бы налог
+      продаж компании по умолчанию (налог 7, сверху цены).
+    • Не для закупок, цена 0: цена — из расчёта.
+
+    noupdate: правка карточки руками (название, категория) обновлением модуля
+    не затирается. ⚠️ Не менять тип и «Создать задачу» в карточке: при
+    «Выиграно» появятся отгрузки или задачи на каждую строку.
+  -->
+  <data noupdate="1">
+    <record id="product_mk_service" model="product.template">
+      <field name="name">Изготовление металлоконструкций</field>
+      <field name="type">service</field>
+      <field name="sale_ok" eval="True"/>
+      <field name="purchase_ok" eval="False"/>
+      <field name="list_price">0</field>
+      <field name="invoice_policy">order</field>
+      <field name="uom_id" ref="uom.product_uom_unit"/>
+      <field name="categ_id" ref="product.product_category_services"/>
+      <field name="taxes_id" eval="[Command.clear()]"/>
+      <field name="supplier_taxes_id" eval="[Command.clear()]"/>
+    </record>
+  </data>
+</odoo>

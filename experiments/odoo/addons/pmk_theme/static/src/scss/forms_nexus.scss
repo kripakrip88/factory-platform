@@ -2512,3 +2512,73 @@ $pmk-short-fields: phone, email, url, date, datetime, daterange, remaining_days,
 .o_form_view .o_notebook.horizontal > .o_notebook_content {
   white-space: normal;
 }
+
+// ═══ Счета покупателям и планировщик (З-2, разбор UX, 08.10.2026) ═══════════
+// Заголовок раздела — не «Шаг …»: тест шага 59 ищет следующий «// ═══ Шаг».
+// Модуль pmk_orders своих стилей не несёт — правила здесь, в живом файле
+// темы (ir.asset seq 41). Тёмная пара — dark.scss, раздел того же имени.
+// Ширину и фон листа не задаём: лист шага 49 и «плоско на бежевом» (шаг 52)
+// действуют сами.
+
+// З-2.1 Канбан «Заказов в работе»: шесть открытых колонок (седьмая —
+// «Отгружено» — свёрнута) помещаются на ноутбуке 1440 px без прокрутки:
+// 6 × (184 + 2 × 16 отступ группы) = 1296 px + свёрнутая «Отгружено» и
+// колонка «+ Этап» (~45 px каждая) ≈ 1390 px. Уже 992 px — как у ядра.
+//
+// Две грабли ядра (найдены проверкой, 08.10): класс из arch канбана
+// (class="o_kanban_small_column o_pmk_orders_kanban") ядро вешает на КОРЕНЬ
+// вида .o_kanban_view (computeViewClassName), а .o_kanban_renderer — его
+// потомок: селектор «предок → потомок», не один элемент. И при
+// o_kanban_small_column ширину группы считает правило ядра от
+// --KanbanRecord--small-width (kanban_controller.scss, .o_kanban_small_column
+// .o_kanban_renderer.o_kanban_grouped), а не от --KanbanRecord-width.
+// Переменную задаём на самом рендерере (ядро объявляет её там же —
+// унаследованное значение предка не сработало бы); наша специфичность
+// (0,2,0) выше ядровой (0,1,0). Тёмной пары не нужно: только ширина.
+@media (min-width: 992px) {
+  .o_pmk_orders_kanban .o_kanban_renderer {
+    --KanbanRecord--small-width: 184px;
+  }
+}
+
+// З-2.2 «Сдача … · просрочена» — красным тоном плашек (тёмный текст красной
+// плашки, контраст выше 7:1). Цвет повторён словом «просрочена»: сигнал, а не
+// запрет — строка ничего не блокирует.
+.o_pmk_orders_kanban .o_pmk_overdue {
+  color: map-get($pmk-badge-ink, red);
+  font-weight: 500;
+}
+
+// З-2.3 Плашка прежней редакции счёта над листом: бледно-жёлтая (тон «ждёт
+// внимания» плашек статусов), рамка, скругление r10 — как карточки шага 52;
+// текст обычным цветом. Без заливки ярким и без своего фона листа.
+.o_form_view .o_pmk_revision_banner {
+  margin: 0 0 8px;
+  padding: 10px 16px;
+  border: 1px solid var(--pmk-tone-yellow-bd);
+  border-radius: 10px;
+  background: var(--pmk-tone-yellow-bg);
+  color: inherit;
+
+  .o_field_widget {
+    display: inline;
+  }
+}
+
+// З-2.4 «ред. 2» в заголовке счёта — в одну строку с номером. Правило ядра
+// .o_form_editable .oe_title .o_field_char { width: 100% } растягивает
+// каждое поле заголовка на всю ширину, а форма заказа редактируемая всегда
+// (и у отменённого снимка) — «ред. 2» уезжало второй строкой. Номер счёта
+// (у ядра readonly — текст, не ввод) и метка — по ширине содержимого, номер
+// не обрезается; зазор — класс ms-2 в виде. Только когда метка есть
+// (невидимое поле не рисуется — :has не сработает, обычный заголовок не
+// трогаем). Цвет наследуется — тёмной пары не нужно.
+.o_form_view .oe_title h1:has(.o_field_widget[name="pmk_revision_label"]) {
+  .o_field_widget[name="name"],
+  .o_field_widget[name="pmk_revision_label"] {
+    display: inline-block;
+    width: auto;
+    max-width: none;
+    white-space: nowrap;
+  }
+}
