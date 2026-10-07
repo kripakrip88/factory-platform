@@ -85,10 +85,12 @@ class TestDealMoney(TransactionCase):
         self.assertEqual(self.lead.expected_revenue, 1000.0)
         spec.product_ids.price_customer_unit = 2500.0
         self.assertEqual(self.lead.expected_revenue, 2500.0)
-        # Запись смены дохода в историю сделки (mail.tracking.value) здесь не
-        # проверяем: доход меняет пересчёт от расчёта, а не правка сделки, и в
-        # тестовой транзакции значение истории не появлялось даже после
-        # precommit.run() (30.09.2026). На копии базы смотреть глазами.
+        # Историю сделки здесь не проверяем: сделка создана в setUpClass, в
+        # той же транзакции, а ядро глушит историю только что созданной
+        # записи до конца транзакции (_track_discard в mail.thread.create) —
+        # поэтому 30.09.2026 строки не было и после precommit.run(). Строку
+        # «Цена клиенту: было → стало» проверяет test_step54_revenue_history
+        # (сделка там создаётся и фиксируется до правки расчёта).
 
     def test_latest_spec_is_the_main_one(self):
         today = fields.Date.today()

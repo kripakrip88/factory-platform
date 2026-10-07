@@ -18,3 +18,5 @@ from . import test_step39_tracking
 from . import test_step39_filters
 # Разбор UX, шаг 48: номер сделки «СД-», карточка без «Новое».
 from . import test_step48_deal_head
+# Разбор UX, шаг 54: смена дохода от расчёта — строкой в истории сделки.
+from . import test_step54_revenue_history
