@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- «Telegram ID» в карточке пользователя (Настройки → Пользователи →
+         вкладка «Предпочтения»). Заполнить — и бот принимает от человека
+         сделки. ID бот сам показывает в ответ на /start. -->
+    <record id="pmk_telegram_view_users_form" model="ir.ui.view">
+        <field name="name">res.users.form.pmk_telegram</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='other_preferences']" position="inside">
+                <field name="pmk_telegram_id" groups="base.group_system"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
