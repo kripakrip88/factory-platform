@@ -121,8 +121,11 @@ class TestHiddenStep53(TransactionCase):
         form = self._arch("crm.lead", "crm.crm_lead_view_form", "form", self.admin)
         self.assertEqual(len(form.xpath("//field[@name='tag_ids'][not(ancestor::field)]")), 2)
         partner = self._arch("res.partner", "base.view_partner_form", "form", self.admin)
-        self.assertEqual(partner.xpath("//group[@name='purchase']/field[@name='buyer_id']")[0].get("string"),
-                         "Снабженец", "Подпись pmk_purchase вернётся вместе с узлом.")
+        # подпись «Снабженец» даёт pmk_purchase — без него проверять нечего
+        if "pmk.price.mailing" in self.env:
+            node = partner.xpath("//group[@name='purchase']/field[@name='buyer_id']")[0]
+            self.assertEqual(node.get("string"), "Снабженец",
+                             "Подпись pmk_purchase вернётся вместе с узлом.")
 
     def test_copy_keeps_coil_width(self):
         """Служебная колонка ширины рулона — на месте: из неё «Копировать»

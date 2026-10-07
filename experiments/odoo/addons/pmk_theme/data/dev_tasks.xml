@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Раздел «Задачи» (07.10.2026, просьба Антона): вести доработку системы
+    карточками — что за задача, что сделано, что проверить и отметка о
+    проверке («Принято», «Принято с замечаниями»…), — и записывать туда
+    новые задачи. Плюс штатный «Список дел» (личные дела) и все проекты.
+
+    Штатные корни «Проект» и «Список дел» остаются скрытыми (hide_menus.xml):
+    вместо двух лишних разделов — один наш «Задачи» со ссылками на них.
+
+    Проект и его этапы — noupdate: карточки и названия этапов Антон может
+    менять сам, обновление модуля их не перезапишет.
+  -->
+  <data noupdate="1">
+    <record id="project_dev" model="project.project">
+      <field name="name">Доработка системы</field>
+      <field name="description">Шаги разбора удобства и новые задачи. Карточка — одна задача:
+что нужно, что сделано, что проверить, итог проверки. Новую задачу —
+в колонку «Новые»; Claude берёт оттуда по очереди.</field>
+      <field name="privacy_visibility">employees</field>
+    </record>
+
+    <record id="dev_stage_new" model="project.task.type">
+      <field name="name">Новые</field>
+      <field name="sequence">10</field>
+      <field name="project_ids" eval="[Command.link(ref('project_dev'))]"/>
+    </record>
+    <record id="dev_stage_queue" model="project.task.type">
+      <field name="name">В очереди</field>
+      <field name="sequence">20</field>
+      <field name="project_ids" eval="[Command.link(ref('project_dev'))]"/>
+    </record>
+    <record id="dev_stage_work" model="project.task.type">
+      <field name="name">В работе</field>
+      <field name="sequence">30</field>
+      <field name="project_ids" eval="[Command.link(ref('project_dev'))]"/>
+    </record>
+    <record id="dev_stage_check" model="project.task.type">
+      <field name="name">Выложено — проверить</field>
+      <field name="sequence">40</field>
+      <field name="project_ids" eval="[Command.link(ref('project_dev'))]"/>
+    </record>
+    <record id="dev_stage_remarks" model="project.task.type">
+      <field name="name">Принято с замечаниями</field>
+      <field name="sequence">50</field>
+      <field name="project_ids" eval="[Command.link(ref('project_dev'))]"/>
+    </record>
+    <record id="dev_stage_done" model="project.task.type">
+      <field name="name">Принято</field>
+      <field name="sequence">60</field>
+      <field name="fold" eval="True"/>
+      <field name="project_ids" eval="[Command.link(ref('project_dev'))]"/>
+    </record>
+    <record id="dev_stage_later" model="project.task.type">
+      <field name="name">Отложено</field>
+      <field name="sequence">70</field>
+      <field name="fold" eval="True"/>
+      <field name="project_ids" eval="[Command.link(ref('project_dev'))]"/>
+    </record>
+  </data>
+
+  <data noupdate="0">
+    <record id="action_dev_tasks" model="ir.actions.act_window">
+      <field name="name">Доработка системы</field>
+      <field name="res_model">project.task</field>
+      <field name="view_mode">kanban,list,form</field>
+      <field name="domain" eval="[('project_id', '=', ref('project_dev'))]"/>
+      <field name="context" eval="{'default_project_id': ref('project_dev'), 'active_id': ref('project_dev')}"/>
+      <field name="help" type="html">
+        <p class="o_view_nocontent_smiling_face">Задач пока нет</p>
+        <p>Новую задачу — кнопкой «Новый» или плюсиком в колонке «Новые»: что нужно сделать и зачем.</p>
+      </field>
+    </record>
+
+    <menuitem id="menu_pmk_tasks" name="Задачи" sequence="75"/>
+    <menuitem id="menu_pmk_dev_tasks" name="Доработка системы"
+              parent="menu_pmk_tasks" action="action_dev_tasks" sequence="10"/>
+    <menuitem id="menu_pmk_todo" name="Список дел"
+              parent="menu_pmk_tasks" action="project_todo.project_task_action_todo" sequence="20"/>
+    <menuitem id="menu_pmk_projects" name="Проекты"
+              parent="menu_pmk_tasks" action="project.open_view_project_all" sequence="30"/>
+  </data>
+</odoo>

@@ -2501,3 +2501,14 @@ $pmk-short-fields: phone, email, url, date, datetime, daterange, remaining_days,
     }
   }
 }
+
+// ═══ Шаг 59: раздел «Задачи» — перенос текста во вкладках всех форм (07.10.2026) ═══
+// Ядро вешает white-space: nowrap на сам .o_notebook.horizontal (для ленты
+// ярлыков), а он наследуется всем содержимым вкладок. Раньше возвращали
+// перенос только в .pmk-form (начало файла) — а в описании задачи, «Заметках»
+// сделки и лида строки уходили за край листа (замер 07.10: <p> в 1346 px
+// с nowrap). Возвращаем перенос содержимому вкладок во всех формах; ярлыки
+// вкладок (.o_notebook_headers) остаются в одну строку.
+.o_form_view .o_notebook.horizontal > .o_notebook_content {
+  white-space: normal;
+}

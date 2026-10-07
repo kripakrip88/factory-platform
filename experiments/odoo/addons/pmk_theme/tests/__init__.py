@@ -52,3 +52,4 @@ from . import test_step49_width
 #        --stop-after-init --http-port 8099
 from . import test_step53_hidden
 from . import test_step53_words
+from . import test_step59_tasks
