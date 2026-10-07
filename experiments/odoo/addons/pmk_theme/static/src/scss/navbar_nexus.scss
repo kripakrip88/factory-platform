@@ -46,6 +46,7 @@ $pmk-accents-light: (
   "pmk_laser.menu_pmk_laser":      #b764cb,
   "pmk_calc.menu_pmk_calc":        #6f85ae,
   "base.menu_administration":      #7186a2,
+  "pmk_theme.menu_pmk_tasks":      #b07800,
 );
 
 $pmk-nx-ink:        #16171b;   // основной текст темы
@@ -208,6 +209,9 @@ $pmk-nx-where:      #768e00;
 .pmk_app[data-menu-xmlid="pmk_calc.menu_pmk_calc"]::before        { content: "\f1ec"; }
 // Лазерная резка — молния: раздел про станок, а не про документы.
 .pmk_app[data-menu-xmlid="pmk_laser.menu_pmk_laser"]::before      { content: "\f0e7"; }
+// Проекты (шаг 61, 08.10.2026) — список с галочками: доработка системы,
+// заказы, личные дела.
+.pmk_app[data-menu-xmlid="pmk_theme.menu_pmk_tasks"]::before      { content: "\f0ae"; }
 
 // ─── «Ещё»: остальные разделы ─────────────────────────────────────────────
 //
@@ -423,6 +427,7 @@ body.o_nexus_dark {
   .pmk_app[data-menu-xmlid="pmk_laser.menu_pmk_laser"]::before      { color: #c98bd8; }
   .pmk_app[data-menu-xmlid="pmk_calc.menu_pmk_calc"]::before        { color: #d8dee9; }
   .pmk_app[data-menu-xmlid="base.menu_administration"]::before      { color: #9aa9bd; }
+  .pmk_app[data-menu-xmlid="pmk_theme.menu_pmk_tasks"]::before      { color: #e8b84a; }
 
   .pmk_app--active {
     background-color: rgba(255, 255, 255, 0.10);

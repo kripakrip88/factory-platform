@@ -19,8 +19,9 @@ class TestStep59Tasks(TransactionCase):
     def test_menu_section(self):
         root = self.env.ref("pmk_theme.menu_pmk_tasks")
         self.assertFalse(root.parent_id)
+        self.assertEqual(root.name, "Проекты", "шаг 61: раздел называется «Проекты»")
         self.assertEqual(root.child_id.sorted("sequence").mapped("name"),
-                         ["Доработка системы", "Список дел", "Проекты"])
+                         ["Доработка системы", "Список дел", "Все проекты"])
         # штатные корни по-прежнему скрыты — дублей в шапке нет
         self.assertFalse(self.env.ref("project.menu_main_pm").active)
         self.assertFalse(self.env.ref("project_todo.menu_todo_todos").active)

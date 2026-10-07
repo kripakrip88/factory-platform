@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
   <!--
-    Раздел «Задачи» (07.10.2026, просьба Антона): вести доработку системы
+    Раздел «Проекты» (07.10.2026, просьба Антона; до 08.10 назывался «Задачи»): вести доработку системы
     карточками — что за задача, что сделано, что проверить и отметка о
     проверке («Принято», «Принято с замечаниями»…), — и записывать туда
     новые задачи. Плюс штатный «Список дел» (личные дела) и все проекты.
@@ -73,12 +73,12 @@
       </field>
     </record>
 
-    <menuitem id="menu_pmk_tasks" name="Задачи" sequence="75"/>
+    <menuitem id="menu_pmk_tasks" name="Проекты" sequence="75"/>
     <menuitem id="menu_pmk_dev_tasks" name="Доработка системы"
               parent="menu_pmk_tasks" action="action_dev_tasks" sequence="10"/>
     <menuitem id="menu_pmk_todo" name="Список дел"
               parent="menu_pmk_tasks" action="project_todo.project_task_action_todo" sequence="20"/>
-    <menuitem id="menu_pmk_projects" name="Проекты"
+    <menuitem id="menu_pmk_projects" name="Все проекты"
               parent="menu_pmk_tasks" action="project.open_view_project_all" sequence="30"/>
   </data>
 </odoo>
