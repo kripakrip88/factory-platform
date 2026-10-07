@@ -12,6 +12,8 @@
     берут его «Включён в цену»; переустановка после удаления не дублирует
     налоги-копии (находит по названию);
     у ИП — тип «ИП», ОГРНИП перенесён из «company_registry», подписант;
+  • шаг З-2: компания — «цены включают налог», налоги следуют ей (имена и
+    пометки прежние, копий нет); при проводках режим не меняется;
   • режим на дату: до и после смены, раньше первой строки — самый ранний;
     без режима — понятная ошибка; одна дата — одна строка; флажок «по
     умолчанию» — у одной организации;
@@ -101,10 +103,11 @@ class TestStep58Org(TransactionCase):
         # На чистой тестовой базе план счетов грузится ПОСЛЕ установки модуля
         # и налоги, заведённые хуком, не доживают до тестов; на боевой налоги
         # уже есть. ensure_taxes идемпотентен — вызываем явно. Следом —
-        # «включён в цену» у налогов режимов (шаг З-2), как на боевой после
-        # миграции 19.0.1.1.0.
+        # компания «цены включают налог» (шаг З-2), как на боевой после
+        # миграции 19.0.1.1.0 (при установке это уже сделал хук — повтор
+        # ничего не меняет).
         hooks.ensure_taxes(cls.env, cls.company)
-        hooks.ensure_price_included(cls.env, cls.company)
+        hooks.ensure_company_price_included(cls.env, cls.company)
         cls.taxes = {
             regime: cls.env["account.tax"].search([
                 ("pmk_regime", "=", regime), ("type_tax_use", "=", "sale"),
@@ -162,7 +165,8 @@ class TestStep58Org(TransactionCase):
                 self.assertEqual(tax.type_tax_use, "sale")
                 self.assertEqual(tax.price_include_override, vat22.price_include_override,
                                  "«Включён в цену» — как у «НДС 22%»: цены считаются одинаково.")
-                self.assertTrue(tax.price_include, "Шаг З-2: налог режима — в цене.")
+                self.assertTrue(tax.price_include,
+                                "Шаг З-2: компания «цены включают налог», налог следует ей.")
                 if regime != "vat22":
                     self.assertEqual(tax.tax_group_id.name, rg.TAXES[regime][2],
                                      "Новый налог — в своей группе.")
@@ -191,61 +195,58 @@ class TestStep58Org(TransactionCase):
                 self.assertEqual(taxes[regime].company_id, company)
                 self.assertEqual(taxes[regime].tax_group_id.name, rg.TAXES[regime][2])
 
-    def test_price_included_taxes(self):
-        """Шаг З-2: налоги режимов — «включён в цену». Занятый налог (у
-        товара, как налог 7 на боевой) не меняется: режиму заводится копия
-        «… (в цене)», пометка переезжает на неё. Свободный включается на
-        месте. Повтор ничего не меняет; снятая руками пометка находит копию
-        по имени, а не заводит третью."""
+    def test_company_price_included(self):
+        """Шаг З-2 (решение Антона 08.10.2026): цены ВСЕГДА с НДС — режим
+        компании, а не отдельные налоги. Налоги с пустым «Включён в цену»
+        (как 6, 7–10 на боевой) следуют компании: имена, группы, пометки и
+        число налогов прежние. Явное «Не включён» у налога режима
+        возвращается к настройке компании. Повтор ничего не меняет."""
         ru = self.env.ref("base.ru")
         company = self.env["res.company"].create({"name": "ООО «В цене» (шаг З-2)",
                                                   "country_id": ru.id})
+        self.assertEqual(company.account_price_include, "tax_excluded", "Посылка: как было на боевой.")
         group = self.env["account.tax.group"].create({
             "name": "Налог 15%", "company_id": company.id, "country_id": ru.id})
         vat22 = self.env["account.tax"].create({
             "name": "НДС 22% (продажа)", "amount": 22.0, "amount_type": "percent",
             "type_tax_use": "sale", "company_id": company.id, "country_id": ru.id,
             "tax_group_id": group.id})
-        self.env["product.template"].create({
-            "name": "Уголок (шаг З-2)", "company_id": company.id,
-            "taxes_id": [Command.set(vat22.ids)]})
+        buy = self.env["account.tax"].create({
+            "name": "НДС 22% (покупка)", "amount": 22.0, "amount_type": "percent",
+            "type_tax_use": "purchase", "company_id": company.id, "country_id": ru.id,
+            "tax_group_id": group.id})
+        company.account_purchase_tax_id = buy
         taxes = hooks.ensure_taxes(self.env, company)
-        free = taxes["usn0"]
-        result = hooks.ensure_price_included(self.env, company)
-
-        twin = result["vat22"]
-        self.assertNotEqual(twin, vat22, "Занятый налог не меняется — копия.")
-        self.assertEqual(twin.name, rg.INCLUDED_NAMES["vat22"])
-        self.assertEqual(twin.pmk_regime, "vat22")
-        self.assertTrue(twin.price_include)
-        self.assertAlmostEqual(twin.amount, 22.0)
-        self.assertEqual(twin.tax_group_id.name, rg.TAXES["vat22"][2])
-        self.assertEqual(twin.country_id, vat22.country_id)
-        self.assertFalse(vat22.pmk_regime, "С налога товаров пометка снята.")
-        self.assertFalse(vat22.price_include_override, "Его «Включён в цену» не тронут.")
-        self.assertEqual(vat22.tax_group_id, group)
-        self.assertEqual(vat22.name, "НДС 22% (продажа)")
-
-        self.assertEqual(result["usn0"], free, "Свободный налог — на месте.")
-        self.assertTrue(free.price_include)
-        self.assertEqual(free.name, rg.INCLUDED_NAMES["usn0"])
-        for regime in ("usn5", "usn7"):
-            with self.subTest(regime=regime):
-                self.assertTrue(result[regime].price_include)
-                self.assertEqual(result[regime].pmk_regime, regime)
-
+        self.assertFalse(vat22.price_include, "Посылка: налог сверху цены.")
+        taxes["usn5"].price_include_override = "tax_excluded"
+        names = {tax.id: tax.name for tax in taxes.values()}
         count = self.env["account.tax"].with_context(active_test=False).search_count([])
-        again = hooks.ensure_price_included(self.env, company)
-        self.assertEqual({r: t.id for r, t in again.items()}, {r: t.id for r, t in result.items()})
-        twin.pmk_regime = False
-        vat22.pmk_regime = "vat22"
-        again = hooks.ensure_price_included(self.env, company)
-        self.assertEqual(again["vat22"], twin, "Копия найдена по имени, третьей нет.")
-        self.assertFalse(vat22.pmk_regime)
-        self.assertEqual(self.env["account.tax"].with_context(active_test=False).search_count([]), count)
-        # Переустановка (ensure_taxes) находит налоги по новым именам.
-        taxes = hooks.ensure_taxes(self.env, company)
-        self.assertEqual(taxes["usn0"], free)
+
+        self.assertTrue(hooks.ensure_company_price_included(self.env, company))
+        self.assertEqual(company.account_price_include, "tax_included")
+        self.assertEqual(taxes["vat22"], vat22)
+        for regime, tax in taxes.items():
+            with self.subTest(regime=regime):
+                self.assertTrue(tax.price_include, "Налог режима следует компании — в цене.")
+                self.assertFalse(tax.price_include_override)
+                self.assertEqual(tax.pmk_regime, regime, "Пометка режима не переезжает.")
+                self.assertEqual(tax.name, names[tax.id], "Имя налога не меняется.")
+        self.assertEqual(vat22.tax_group_id, group)
+        self.assertTrue(buy.price_include, "Налог закупки — тоже в цене (прайс поставщика с НДС).")
+        self.assertFalse(buy.price_include_override)
+        self.assertEqual(self.env["account.tax"].with_context(active_test=False).search_count([]),
+                         count, "Копий «(в цене)» нет.")
+        self.assertTrue(hooks.ensure_company_price_included(self.env, company), "Повтор — то же.")
+        self.assertEqual(company.account_price_include, "tax_included")
+
+    def test_company_price_included_blocked_by_entries(self):
+        """Есть проводки — ядро не даёт сменить режим: ничего не меняем,
+        сохранение не падает (миграция не роняет обновление)."""
+        company = self.env["res.company"].create({"name": "ООО «С проводками» (шаг З-2)"})
+        self.patch(type(company), "_existing_accounting", lambda self: True)
+        with mute_logger("odoo.addons.pmk_org.hooks"):
+            self.assertFalse(hooks.ensure_company_price_included(self.env, company))
+        self.assertEqual(company.account_price_include, "tax_excluded")
 
     def test_reinstall_finds_taxes_by_name(self):
         """После удаления модуля колонка пометки уходит, налоги остаются:
@@ -439,10 +440,12 @@ class TestStep58Org(TransactionCase):
         self.assertAlmostEqual(usn.amount_tax, 0.0)
         usn.pmk_org_id = self.org_ip
         self.assertEqual(usn.order_line.tax_ids, self.taxes["vat22"], "Сменили организацию — сменился налог.")
-        # С шага З-2 налог режима «включён в цену»: итог = цене строки (1000,
-        # из них НДС 180,33), как в КП «в том числе НДС».
-        expected = 1000.0 if self.taxes["vat22"].price_include else 1220.0
-        self.assertAlmostEqual(usn.amount_total, expected)
+        # С шага З-2 цены включают налог (режим компании): итог = цене строки
+        # (1000, из них НДС 180,33), как в КП «в том числе НДС». Смена
+        # организации цену не трогает.
+        self.assertAlmostEqual(usn.order_line.price_unit, 1000.0)
+        self.assertAlmostEqual(usn.amount_total, 1000.0)
+        self.assertAlmostEqual(usn.amount_tax, 180.33)
 
     # ─── печать КП ──────────────────────────────────────────────────────
     def test_print_usn_ooo(self):

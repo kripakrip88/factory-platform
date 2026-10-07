@@ -6,3 +6,4 @@
 # Только синтетические данные: клиентов из Excel-планировщика здесь нет.
 from . import test_step_z2_invoice
 from . import test_step_z2_planner
+from . import test_step_z2_prices

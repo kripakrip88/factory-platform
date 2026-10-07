@@ -7,14 +7,15 @@
   • «КП отправлено» (перетаскивание — write стадии) создаёт РОВНО ОДИН счёт:
     клиент — компания контакта, наша организация, сделка, расчёт, состояние
     «Выставлен»; строки — изделия с ценой (товар-услуга, название, количество,
-    «шт», цена, связь с изделием), налог режима «в цене», итог = итогу КП,
+    «шт», цена, связь с изделием), налог режима (компания — «цены включают
+    налог»), итог = итогу КП,
     валюта компании; изделие без цены — в заметке сделки;
   • повторный переход и повторная отправка без изменений — тот же счёт,
     прежних редакций нет;
   • расчёт поменяли (количество, цена, удалили и добавили изделие) и снова
     отправили КП — тот же счёт «ред. 2», прежняя редакция — снимок со старыми
     ценами, отменён, заблокирован, без сделки, правка и удаление — ошибкой;
-  • организация на УСН — «Без НДС (в цене)», налог 0;
+  • организация на УСН — «Без НДС (продажа)», налог 0;
   • «Выиграно» — счёт в работе, складских, закупочных, производственных
     документов и задач нет, писем нет; одна строка планировщика в «Очереди»;
     повторы её не дублируют; «Оплата пришла — в работу» в счёте = «Выиграно»;
@@ -28,8 +29,9 @@
     «Проиграно» берут расчёт счёта: редакции нет, сумма — того, что ушло;
   • флаг pmk_revision_freeze без sudo снимок не открывает (контекст RPC
     задаёт браузер);
-  • права: менеджер без прав Проектов проводит свою сделку до строки и
-    правит её;
+  • права: менеджер без прав Проектов проводит свою сделку до строки,
+    правит и заводит строки планировщика, удалить не может, чужие задачи
+    на запись закрыты;
   • виды: кнопки «Расчёт» и «Заказ» на счёте, «Счёт» и «Заказ» на сделке,
     штатные кнопки sale_crm спрятаны, «Отправить» и «Создать счёт» — в
     группах-выключателях, залитая одна; окно «Счета покупателям» — с фильтром
@@ -65,9 +67,10 @@ class Z2Common(TransactionCase):
         env = cls.env
         cls.company = env.company
         # На чистой базе план счетов грузится после установки pmk_org —
-        # налоги режимов заводим явно, как на боевой после миграции 19.0.1.1.0.
-        org_hooks.ensure_taxes(env, cls.company)
-        cls.taxes = org_hooks.ensure_price_included(env, cls.company)
+        # налоги режимов заводим явно; компания — «цены включают налог», как
+        # на боевой после миграции 19.0.1.1.0 (повтор ничего не меняет).
+        cls.taxes = org_hooks.ensure_taxes(env, cls.company)
+        org_hooks.ensure_company_price_included(env, cls.company)
         cls.Org = env["pmk.org"]
         cls.org_vat = cls.Org.create({
             "name": "ИП Тестов (шаг З-2)",
@@ -172,7 +175,7 @@ class TestStepZ2Invoice(Z2Common):
         self.assertEqual(lines.mapped("name"), ["Секция ограждения ОГ-1", "Ферма Ф-1"],
                          "Изделие без цены в счёт не идёт — как в печати КП.")
         vat = self.taxes["vat22"]
-        self.assertTrue(vat.price_include, "Налог режима — в цене.")
+        self.assertTrue(vat.price_include, "Компания — «цены включают налог», налог режима следует ей.")
         for line, (qty, price) in zip(lines, ((12, 4500.0), (3, 333.33))):
             with self.subTest(line=line.name):
                 self.assertEqual(line.product_id, self.service)
@@ -335,8 +338,9 @@ class TestStepZ2Invoice(Z2Common):
                 "product_id": self.service.id, "name": "Лишнее", "product_uom_qty": 1,
                 "price_unit": 1.0})]})
         # Права менеджера на удаление — как у ядра (могут отказать раньше нас):
-        # главное — снимок цел.
-        with self.assertRaises((UserError, AccessError)):
+        # главное — снимок цел. AccessError — подкласс UserError: ловим оба
+        # (обёртка Odoo assertRaises принимает только один класс, не кортеж).
+        with self.assertRaises(UserError):
             forged.unlink()
         self.assertTrue(snapshot.exists())
         self.assertAlmostEqual(snapshot.amount_total, first_total, places=2)
@@ -367,7 +371,7 @@ class TestStepZ2Invoice(Z2Common):
         invoice = self._invoices(deal)
         self.assertEqual(invoice.pmk_org_id, self.org_usn)
         usn = self.taxes["usn0"]
-        self.assertEqual(usn.name, rg.INCLUDED_NAMES["usn0"])
+        self.assertEqual(usn.name, rg.TAXES["usn0"][0], "Имя налога не меняется.")
         self.assertEqual(invoice.order_line.tax_ids, usn)
         self.assertAlmostEqual(invoice.amount_tax, 0.0)
         self.assertAlmostEqual(invoice.amount_total, self._priced_total(spec), places=2)
@@ -409,7 +413,12 @@ class TestStepZ2Invoice(Z2Common):
         deal.write({"stage_id": self.stage_calc.id})
         deal.action_set_won()
         self.assertEqual(len(self._rows(deal)), 1)
+        # Из «Выиграно» проиграть нельзя (ядро crm: кнопка «Проиграно» только
+        # у сделки в работе, _check_won_validity) — сначала назад по воронке.
+        deal.write({"stage_id": self.stage_calc.id})
         deal.action_set_lost()
+        self.assertEqual(invoice.state, "cancel", "«Проиграно» — счёт отменён.")
+        self.assertEqual(len(self._rows(deal)), 1, "Строка осталась.")
         deal.action_restore()
         deal.action_set_won()
         self.assertEqual(len(self._rows(deal)), 1)
@@ -458,14 +467,25 @@ class TestStepZ2Invoice(Z2Common):
         self.assertEqual(invoice.state, "sent")
 
     def test_lost_after_won_keeps_row(self):
+        """Выиграли, потом сорвалось: сделку возвращают по воронке (из
+        «Выиграно» ядро проиграть не даёт) и проигрывают — счёт в работе
+        отменяется, строка планировщика остаётся."""
         deal = self._deal()
         self._spec(deal)
         deal.write({"stage_id": self.stage_kp.id})
         deal.action_set_won()
         row = self._rows(deal)
+        invoice = self._invoices(deal)
+        self.assertEqual(len(row), 1)
+        self.assertEqual(invoice.state, "sale")
+        deal.write({"stage_id": self.stage_kp.id})
+        self.assertEqual(invoice.state, "sale", "Назад по воронке — счёт в работе не трогаем.")
         deal.action_set_lost()
-        self.assertEqual(self._invoices(deal).state, "cancel")
+        self.assertEqual(deal.won_status, "lost")
+        self.assertEqual(invoice.state, "cancel")
         self.assertTrue(row.exists(), "Строка планировщика не удаляется.")
+        self.assertTrue(row.active)
+        self.assertEqual(row.pmk_sale_order_id, invoice)
 
     # ─── Ничего не блокируем ────────────────────────────────────────────
     def test_no_spec_no_invoice_stage_moves(self):
@@ -535,6 +555,7 @@ class TestStepZ2Invoice(Z2Common):
         deal.with_user(user).action_set_won()
         invoice = self._invoices(deal)
         self.assertEqual(invoice.state, "sale")
+        self.assertNotIn("не получилось", self._notes(deal), "«Выиграно» прошло без сбоя доступа.")
         action = self.env["ir.actions.act_window"]._for_xml_id("pmk_orders.action_orders")
         Task = self.env["project.task"].with_user(user)
         rows = Task.search(safe_eval(action["domain"]) if isinstance(action["domain"], str)
@@ -545,6 +566,16 @@ class TestStepZ2Invoice(Z2Common):
                    "stage_id": self.env.ref("pmk_orders.orders_stage_work").id})
         self.assertAlmostEqual(row.pmk_paid_pct, 50.0, places=0)
         self.assertEqual(deal.with_user(user).pmk_order_count, 1)
+        # Правило rule_orders_rows_sales: строку можно завести руками, а
+        # удалить — нет; чужие задачи (не планировщик) на запись закрыты.
+        manual = Task.create({"name": "Заказ руками (шаг З-2)", "project_id": self.project.id})
+        self.assertEqual(manual.project_id, self.project)
+        with self.assertRaises(AccessError):
+            row.unlink()
+        other = self.env["project.project"].create({"name": "Доработка (шаг З-2)"})
+        task = self.env["project.task"].create({"name": "Чужая задача", "project_id": other.id})
+        with self.assertRaises(AccessError):
+            task.with_user(user).write({"name": "правка"})
 
     # ─── Виды ───────────────────────────────────────────────────────────
     def _arch(self, model, view_type, user=None, view=None):
