@@ -1,12 +1,14 @@
 /** @odoo-module **/
 /**
- * Счётчик новых писем на пункте «Продажи → Почта» и во вкладке браузера
- * (разбор удобства, шаг 41, Г12, 05.10.2026).
+ * Счётчик новых писем на пунктах «Почта» и во вкладке браузера (разбор
+ * удобства, шаг 41, Г12, 05.10.2026; шаг 53 — число у каждого пункта).
  *
- * ЧТО СЧИТАЕМ. Непрочитанные во «Входящих» ящиков, доступных человеку, за
- * последние 30 дней (models/mail_client_step41.py, pmk_mail_unread_count):
- * старше окна отметки «прочитано» с mail.ru не обновляются, число врало бы.
- * Бейдж папки «Входящие» в самой почте — по-прежнему все непрочитанные.
+ * ЧТО СЧИТАЕМ. Непрочитанные во «Входящих» за последние 30 дней: старше окна
+ * отметки «прочитано» с mail.ru не обновляются, число врало бы. На пункте —
+ * ящик, который он открывает (Продажи — заявки, Закупки — закупки), во
+ * вкладке браузера — все ящики человека (models/mail_client_step53.py,
+ * pmk_mail_unread_counts). Бейдж папки «Входящие» в самой почте — по-прежнему
+ * все непрочитанные.
  *
  * ОТКУДА И КОГДА. Первое число приходит со страницей (session_info,
  * models/ir_http.py) — без запроса при загрузке. Ключа нет (у человека нет
@@ -43,11 +45,12 @@ import { session } from "@web/session";
 import { NavBar } from "@web/webclient/navbar/navbar";
 
 import {
-    MAIL_MENU_XMLID,
+    MAIL_MENUS,
     POLL_MS,
     REFRESH_DELAY_MS,
     counterText,
     counterTitle,
+    menuCounts,
     shouldRefresh,
 } from "./mail_counter_rules";
 
@@ -58,12 +61,14 @@ export const pmkMailCounterService = {
         const events = new EventBus();
         const enabled = Object.prototype.hasOwnProperty.call(session, "pmk_mail_unread");
         let count = 0;
+        let menus = menuCounts(null);
         let timer = null;
         let running = false;
         let again = false;
 
-        const apply = (value) => {
-            count = Math.max(0, Math.floor(Number(value) || 0));
+        const apply = (total, perMenu) => {
+            count = Math.max(0, Math.floor(Number(total) || 0));
+            menus = menuCounts(perMenu, count);
             title.setCounters({ pmk_mail: count });
             events.trigger("change", count);
         };
@@ -76,7 +81,9 @@ export const pmkMailCounterService = {
             }
             running = true;
             try {
-                apply(await orm.silent.call("mail.client.account", "pmk_mail_unread_count", []));
+                const result = await orm.silent.call(
+                    "mail.client.account", "pmk_mail_unread_counts", []);
+                apply(result?.total, result?.menus);
             } catch {
                 // Обрыв связи, выход из системы — число прежнее, следующий
                 // сигнал или опрос перечитает.
@@ -98,7 +105,7 @@ export const pmkMailCounterService = {
         };
 
         if (enabled) {
-            apply(session.pmk_mail_unread);
+            apply(session.pmk_mail_unread, session.pmk_mail_unread_menus);
             busService.subscribe("mail_client.sync", (payload) => {
                 if (shouldRefresh(payload)) {
                     schedule();
@@ -124,6 +131,10 @@ export const pmkMailCounterService = {
             get count() {
                 return count;
             },
+            /** {xmlid пункта «Почта»: число его ящика}. */
+            get menus() {
+                return menus;
+            },
             bus: events,
             refresh() {
                 schedule();
@@ -142,22 +153,24 @@ patch(NavBar.prototype, {
             return;
         }
         useEffect(() => {
-            this.pmkMarkMailCount(counter.count);
+            this.pmkMarkMailCounts(counter.menus);
         });
-        useBus(counter.bus, "change", () => this.pmkMarkMailCount(counter.count));
+        useBus(counter.bus, "change", () => this.pmkMarkMailCounts(counter.menus));
     },
 
-    /** Число на пункте «Почта» — атрибутом, рисует стиль (mail_step41.scss). */
-    pmkMarkMailCount(count) {
-        const text = counterText(count);
-        const title = counterTitle(count);
-        for (const el of document.querySelectorAll(`[data-menu-xmlid="${MAIL_MENU_XMLID}"]`)) {
-            if (text) {
-                el.dataset.pmkCount = text;
-                el.setAttribute("title", title);
-            } else if (el.dataset.pmkCount) {
-                delete el.dataset.pmkCount;
-                el.removeAttribute("title");
+    /** Числа на пунктах «Почта» — атрибутом, рисует стиль (mail_step41.scss). */
+    pmkMarkMailCounts(menus) {
+        for (const xmlid of MAIL_MENUS) {
+            const text = counterText(menus[xmlid]);
+            const title = counterTitle(menus[xmlid]);
+            for (const el of document.querySelectorAll(`[data-menu-xmlid="${xmlid}"]`)) {
+                if (text) {
+                    el.dataset.pmkCount = text;
+                    el.setAttribute("title", title);
+                } else if (el.dataset.pmkCount) {
+                    delete el.dataset.pmkCount;
+                    el.removeAttribute("title");
+                }
             }
         }
     },

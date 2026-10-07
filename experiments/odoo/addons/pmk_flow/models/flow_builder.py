@@ -273,15 +273,15 @@ class PmkFlowBuilder(models.AbstractModel):
 
     @api.model
     def _open_target(self, record):
-        """Какую запись открывать кликом по узлу.
+        """Какую запись открывать кликом по узлу, если у узла нет open_action.
 
-        ⚠️ У ПИСЬМА СВОЕЙ ФОРМЫ НЕТ: почтовый модуль (vendor/mail_client)
-        показывает письма только в своём окне, и открыть там конкретное
-        письмо снаружи нельзя. Автоформу Odoo, собранную из всех полей,
-        открывать НЕЛЬЗЯ: в ней оказалось бы body_html, которое модуль хранит
-        без очистки и чистит только на отдаче (см. pmk_mail_ui,
-        _pmk_create_lead). Поэтому клик по письму ведёт в лид — туда при
-        создании лида письмо переложено целиком, с вложениями.
+        ⚠️ У ПИСЬМА СВОЕЙ ФОРМЫ НЕТ. Автоформу Odoo, собранную из всех полей,
+        открывать НЕЛЬЗЯ: в ней оказалось бы body_html, которое почтовый
+        модуль хранит без очистки и чистит только на отдаче (см. pmk_mail_ui,
+        _pmk_create_lead). С шага 53 письмо открывается в самой почте
+        (_letter_action: окно почты чистит письмо на отдаче, как всегда), а
+        лид здесь — запасной путь, если почты нет: туда при создании лида
+        письмо переложено целиком, с вложениями.
         """
         if record._name == 'mail.client.message':
             # Лид, который человек не может открыть, — не цель для клика:
@@ -300,8 +300,14 @@ class PmkFlowBuilder(models.AbstractModel):
             # под группой). Лучше узел без подписи, чем схема, упавшая целиком.
             state, color, hint = '', 'grey', kind
         target = self._open_target(record)
+        open_action = False
         if record._name == 'mail.client.message':
             label = self._letter_label(record)
+            open_action = self._letter_action(record)
+            if open_action:
+                hint = '%s\nЩелчок — письмо в почте' % hint
+            elif target:
+                hint = '%s\nЩелчок откроет сделку: этого письма нет в вашей почте' % hint
         else:
             label = record.display_name or '—'
         return {
@@ -316,7 +322,40 @@ class PmkFlowBuilder(models.AbstractModel):
             'hint': hint,
             'open_model': target._name if target else False,
             'open_res_id': target.id if target else False,
+            # Действие клиента вместо формы записи (письмо — окно почты).
+            # Есть — клиент открывает его, open_model / open_res_id остаются
+            # запасным путём на случай старого клиента.
+            'open_action': open_action,
         }
+
+    @api.model
+    def _letter_action(self, record):
+        """Окно почты, открытое на этом письме (разбор UX, шаг 53).
+
+        Клик по «Письму» на «Связях» вёл в лид, а лид — та же запись, что
+        потом становится сделкой: человек жал «Письмо» и попадал в сделку.
+        Теперь — «Продажи → Почта» (действие pmk_mail_ui.action_mail_sale:
+        там и кнопка «Лид», и доступ к ней по правам) с номером письма в
+        params: почта сама выберет его папку и откроет письмо
+        (pmk_mail_ui/static/src/js/step53_open.js). Показ письма — штатное
+        окно почты, тело очищено на отдаче, как при обычном открытии.
+
+        Почта не может показать письмо — False: клик ведёт по-старому в
+        лид, подсказка узла говорит об этом. Так, если действия нет
+        (pmk_mail_ui без меню) и если папки письма нет в дереве почты
+        человека (pmk_mail_ui, _pmk_tree_folder_id): ящик чужой или папка не
+        подписана — письмо перенесли на mail.ru в папку, которой в Odoo нет.
+        Иначе почта молча открылась бы на «Входящих» без письма.
+        """
+        if not record._pmk_tree_folder_id():
+            return False
+        try:
+            action = self.env['ir.actions.actions']._for_xml_id('pmk_mail_ui.action_mail_sale')
+        except (ValueError, AccessError):
+            return False
+        action = dict(action)
+        action['params'] = dict(action.get('params') or {}, pmk_message_id=record.id)
+        return action
 
     # ------------------------------------------------------------------
     # Связи

@@ -171,7 +171,16 @@ class TestPartnerTradeStep28(TransactionCase):
         arch = self._form()
         self.assertEqual(self._one(arch, "//group[@name='sale']/field[@name='user_id']")
                          .get("string"), "Менеджер")
-        self.assertEqual(self._one(arch, "//group[@name='purchase']/field[@name='buyer_id']")
+        # «Снабженец» с шага 53 — до востребования (pmk_theme, группа
+        # «Убранное (показать)»): подпись проверяем с группой, без неё узла нет.
+        removed = self.env.ref("pmk_theme.group_pmk_removed", raise_if_not_found=False)
+        if removed and removed not in self.admin.all_group_ids:
+            self.assertFalse(arch.xpath("//group[@name='purchase']/field[@name='buyer_id']"))
+            self.admin.write({"group_ids": [Command.link(removed.id)]})
+            buyer_arch = self._form()
+        else:
+            buyer_arch = arch
+        self.assertEqual(self._one(buyer_arch, "//group[@name='purchase']/field[@name='buyer_id']")
                          .get("string"), "Снабженец")
         # Шаг 37 (проверка): «Адрес» и «Раз в, дн» — те же слова, что в
         # списке «Поставщиков прайсов» (было «Адрес для прайса», «Период,

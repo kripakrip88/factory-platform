@@ -140,7 +140,13 @@ class TestDealViews(TransactionCase):
         lead = arch.xpath("//group[@name='lead_partner']")[0]
         visible = [f.get("name") for f in lead.findall("field")
                    if not hidden(f) and f.get("name") != "partner_id"]
-        self.assertEqual(visible, ["partner_name", "user_id", "pmk_source", "priority", "tag_ids"])
+        expected = ["partner_name", "user_id", "pmk_source", "priority", "tag_ids"]
+        # Шаг 53: теги — до востребования (pmk_theme, группа «Убранное
+        # (показать)»): сервер вырезает узел у того, кого в группе нет.
+        removed = self.env.ref("pmk_theme.group_pmk_removed", raise_if_not_found=False)
+        if removed and removed not in self.env.user.all_group_ids:
+            expected.remove("tag_ids")
+        self.assertEqual(visible, expected)
         self.assertEqual(lead.find("field[@name='partner_name']").get("string"), "Компания")
         self.assertTrue(lead.find("field[@name='partner_name']").get("help"))
         user = lead.find("field[@name='user_id']")

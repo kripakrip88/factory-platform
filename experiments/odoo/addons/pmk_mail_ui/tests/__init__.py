@@ -24,3 +24,7 @@ from . import test_thread_seen
 # Почта, остальное (шаг 41): имена вложений, лид у строки, «С лидом», звезда
 # переписки, счётчик новых, ассеты.
 from . import test_step41_mail
+# Мелочи после приёмки (шаг 53): «Закупки → Почта» со своим ящиком, папка
+# письма для «Связей», адрес info@ → лиды выключен.
+# Правила выбора ящика без базы: node addons/pmk_mail_ui/static/tests/step53_open_rules.test.mjs
+from . import test_step53_open

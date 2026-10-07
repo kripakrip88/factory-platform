@@ -86,9 +86,16 @@ class TestDealListColumnsStep25(TransactionCase):
         arch = self._arch("crm.crm_case_tree_view_oppor")
         self.assertEqual(self._one(arch, "email_from").get("optional"), "hide",
                          "Эл. почта — в меню колонок, не убрана.")
-        for name in ("city", "state_id", "country_id", "team_id", "probability",
-                     "campaign_id", "medium_id", "source_id", "tag_ids",
-                     "activity_ids", "activity_user_id", "my_activity_date_deadline"):
+        names = ["city", "state_id", "country_id", "team_id", "probability",
+                 "campaign_id", "medium_id", "source_id", "tag_ids",
+                 "activity_ids", "activity_user_id", "my_activity_date_deadline"]
+        # Шаг 53: колонку тегов pmk_theme прячет группой «Убранное
+        # (показать)» — узла нет у того, кого в группе нет.
+        removed = self.env.ref("pmk_theme.group_pmk_removed", raise_if_not_found=False)
+        if removed and removed not in self.env.user.all_group_ids:
+            names.remove("tag_ids")
+            self.assertFalse(arch.xpath("/list/field[@name='tag_ids']"))
+        for name in names:
             with self.subTest(field=name):
                 self.assertTrue(invisible_column(self._one(arch, name)),
                                 "Убрана из меню колонок, узел на месте.")

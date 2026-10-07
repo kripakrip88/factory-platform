@@ -10,3 +10,5 @@ from . import test_step25_prices
 from . import test_spec_copy
 from . import test_step28_supplier_sign
 from . import test_step30_print_colors
+# Шаг 53: «Product created» в ленте товара — по-русски.
+from . import test_step53_product_created

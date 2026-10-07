@@ -103,6 +103,48 @@ HIDDEN_NODES = {
         ("//div[@name='date_planned_div']//button[.//field[@name='on_time_rate']]", STOCK),
         ("//field[@name='order_line']//button[@name='action_product_forecast_report']", STOCK),
     ),
+    # ─── Шаг 53 (приёмка 07.10.2026): спрятать до востребования ─────────
+    # Данные не трогаем, поля в моделях на месте; вернуть — группа
+    # «Убранное (показать)» или строку убрать отсюда. В печать и в КП эти
+    # поля не идут (grep по report/ и pmk_pdf, 07.10.2026).
+    #
+    # Теги сделки и лида: на стенде 0 тегов и 0 связей (SELECT 07.10.2026).
+    # Форма (у лида и у сделки — два узла: pmk_deal переносит узел лида
+    # в левую колонку, правило работает после всех наследников), список
+    # (там тег и так column_invisible — правило на случай, если колонку
+    # вернут), канбан воронки и поиск («Тег» в строке поиска).
+    # [not(ancestor::field)] — только поля самой сделки, не вложенных таблиц.
+    ("crm.lead", "form"): (
+        ("//field[@name='tag_ids'][not(ancestor::field)]", REMOVED),
+    ),
+    ("crm.lead", "list"): (
+        ("//field[@name='tag_ids'][not(ancestor::field)]", REMOVED),
+    ),
+    ("crm.lead", "kanban"): (
+        ("//field[@name='tag_ids'][not(ancestor::field)]", REMOVED),
+    ),
+    ("crm.lead", "search"): (
+        ("//field[@name='tag_ids']", REMOVED),
+    ),
+    # «Снабженец» в карточке контрагента (purchase, buyer_id): заполнен у 0
+    # из 88 контрагентов. Подпись «Снабженец» — pmk_purchase, она остаётся
+    # на узле и вернётся вместе с ним.
+    ("res.partner", "form"): (
+        ("//field[@name='buyer_id'][not(ancestor::field)]", REMOVED),
+    ),
+    # Поля рулона в доборке: заполнены у 1 позиции из 16 (ДОБ-00001: 1250 мм,
+    # 4 полосы, отход 170) — значения хранятся и пересчитываются как раньше.
+    # Окно позиции: ширина рулона, полос, отход; список позиций: полос и
+    # отход (в ⚙ колонок). ⚠️ Служебную колонку coil_width в списке позиций
+    # (column_invisible) НЕ трогать: из неё «Копировать» берёт значение
+    # (pmk_calc/static/src/js/dobor_copy_line.js, COPY_FIELDS).
+    ("pmk.dobor.order", "form"): (
+        ("//field[@name='line_ids']/form//field[@name='coil_width']", REMOVED),
+        ("//field[@name='line_ids']/form//field[@name='strips']", REMOVED),
+        ("//field[@name='line_ids']/form//field[@name='strip_waste']", REMOVED),
+        ("//field[@name='line_ids']/list/field[@name='strips']", REMOVED),
+        ("//field[@name='line_ids']/list/field[@name='strip_waste']", REMOVED),
+    ),
 }
 
 # 'group_by': 'lead_properties' (и 'properties.<ключ>') в контексте фильтра.

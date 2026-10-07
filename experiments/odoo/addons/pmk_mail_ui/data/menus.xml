@@ -49,18 +49,27 @@
     приложению определять нельзя — оно протухает при заходе по прямой ссылке
     и при возврате по хлебным крошкам.
 
-    С шага 38 почта одна — в Продажах, пункт Закупок только с «Убранным»
-    (ниже): снабженец тоже читает почту здесь. Кнопку «Лид» видит только
+    С шага 38 почта была одна — в Продажах (снабженец читал почту здесь);
+    с шага 53 у Закупок снова свой пункт (ниже). Кнопку «Лид» видит только
     тот, кто может завести лид (право на создание лида, доводка шага 38 —
     static/src/js/reading_pane_lead.js; сервер проверяет то же). У
     менеджера с правами на продажи кнопка есть и на письме поставщика:
     случайное нажатие заведёт лид, но громко — уведомление «Лид создан» и
     карточка лида поверх почты. Сегодня пользователь один (admin).
+
+    Ящик, который открывается первым (разбор UX, шаг 53, 07.10.2026):
+    pmk_mailbox — адрес ящика (без учёта регистра). Из Продаж — заявки
+    (pmkpark@mail.ru), из Закупок — закупки (zakaz@pmkpark.ru). Без этого
+    почта открывала первый ящик по порядку — заявки — и из Закупок тоже.
+    Ящика с таким адресом у человека нет (сменили адрес, чужой ящик) —
+    открывается первый, как раньше (static/src/js/step53_open_rules.js).
+    pmk_message_id (его ставит вкладка «Связи», pmk_flow) — открыть это
+    письмо: тогда первой встаёт его папка.
   -->
   <record id="action_mail_sale" model="ir.actions.client">
     <field name="name">Почта</field>
     <field name="tag">mail_client.inbox</field>
-    <field name="params" eval="{'pmk_crm': True}"/>
+    <field name="params" eval="{'pmk_crm': True, 'pmk_mailbox': 'pmkpark@mail.ru'}"/>
   </record>
 
   <record id="menu_mail_sale" model="ir.ui.menu">
@@ -71,18 +80,27 @@
   </record>
 
   <!--
-    Почта одна — в Продажах (разбор UX, шаг 38, 05.10.2026). Пункт в
-    Закупках не удалён: группа «Убранное (показать)». Ящик тот же, без
-    кнопки «Лид». Вернуть всем — Command.clear() и выложить. Снять группу в
-    режиме разработчика — не путь: следующий деплой (-u pmk_mail_ui) снова
-    поставит её через Command.set.
+    «Закупки → Почта» снова у всех, кто видит Закупки (разбор UX, шаг 53,
+    07.10.2026: «нету почты»). Шаг 38 прятал пункт группой «Убранное
+    (показать)» — почта была одна, в Продажах, и открывала тот же первый
+    ящик (заявки). Теперь у Закупок своё действие: открывается ящик закупок
+    zakaz@pmkpark.ru, кнопки «Лид» нет (pmk_crm не передаётся — лид
+    снабженцу не нужен). Command.clear() снимает и группу, поставленную
+    шагом 38 на живой базе. Спрятать снова —
+    Command.set([ref('pmk_theme.group_pmk_removed')]) и выложить.
   -->
+  <record id="action_mail_purchase" model="ir.actions.client">
+    <field name="name">Почта</field>
+    <field name="tag">mail_client.inbox</field>
+    <field name="params" eval="{'pmk_mailbox': 'zakaz@pmkpark.ru'}"/>
+  </record>
+
   <record id="menu_mail_purchase" model="ir.ui.menu">
     <field name="name">Почта</field>
     <field name="parent_id" ref="pmk_theme.menu_pmk_purchase"/>
-    <field name="action" ref="mail_client.mail_client_inbox_action"/>
+    <field name="action" ref="pmk_mail_ui.action_mail_purchase"/>
     <field name="sequence">15</field>
-    <field name="group_ids" eval="[Command.set([ref('pmk_theme.group_pmk_removed')])]"/>
+    <field name="group_ids" eval="[Command.clear()]"/>
   </record>
 
 </odoo>

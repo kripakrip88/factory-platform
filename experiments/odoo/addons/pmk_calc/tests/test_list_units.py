@@ -165,6 +165,11 @@ class TestListUnitsStep24(TransactionCase):
     def test_dobor_lines_mm_whole(self):
         arch = self._arch("pmk.dobor.order", "form")
         for name in ("plank_length", "developed_width", "strip_waste"):
+            path = "//field[@name='line_ids']/list/field[@name='%s']" % name
+            # «Отход рулона» с шага 53 — до востребования (pmk_theme, группа
+            # «Убранное (показать)»): без группы узла нет, проверять нечего.
+            if name == "strip_waste" and not arch.xpath(path):
+                continue
             with self.subTest(field=name):
-                node = self._one(arch, "//field[@name='line_ids']/list/field[@name='%s']" % name)
+                node = self._one(arch, path)
                 self.assertTrue(options(node).get("hide_trailing_zeros"))

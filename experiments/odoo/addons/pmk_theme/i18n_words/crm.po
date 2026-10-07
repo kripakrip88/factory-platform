@@ -398,3 +398,142 @@ msgstr ""
 #: model:ir.model,name:crm.model_crm_lead
 msgid "Lead"
 msgstr "Сделка или лид"
+
+# ─── Шаг 53 разбора UX (07.10.2026): «возможность» → «сделка» там, где
+# шаг 39 её не достал: форма стадии, подсказки стадии и команды продаж,
+# отчёт по задачам, Настройки CRM, предупреждение о стадии выигрыша и
+# подсказки обучающего тура воронки. Не здесь: тексты пустых окон
+# (act_window help — их закрывает EMPTY_HELP), «Советы» сводки (digest
+# выключен), тело демо-шаблона письма (уходит вовне), подсказка
+# date_deadline (свою ставит pmk_deal), utm-кампании (разделов нет).
+
+#. module: crm
+#: model_terms:ir.ui.view,arch_db:crm.crm_stage_form
+msgid "Give your team the requirements to move an opportunity to this stage."
+msgstr "Укажите требования для перехода сделки на эту стадию."
+
+#. module: crm
+#: model:ir.model.fields,help:crm.field_crm_stage__rotting_threshold_days
+msgid ""
+"Highlight opportunities that haven't been updated for this many "
+"days.         Set to 0 to disable. Changing this parameter will not affect "
+"the rotting status/date of resources last updated before this change."
+msgstr ""
+"Выделять сделки, которые не обновлялись столько дней. 0 — не выделять. "
+"Смена числа не меняет отметку «зависла» у сделок, обновлённых до смены."
+
+#. module: crm
+#: model:ir.model.fields,help:crm.field_crm_activity_report__lead_type
+msgid "Type is used to separate Leads and Opportunities"
+msgstr "Тип отделяет лиды от сделок"
+
+#. module: crm
+#: model_terms:ir.ui.view,arch_db:crm.crm_activity_report_view_search
+msgid "Show only opportunity"
+msgstr "Показать только сделки"
+
+#. module: crm
+#. odoo-python
+#: code:addons/crm/models/crm_stage.py:0
+msgid ""
+"Changing the value of 'Is Won Stage' may induce a large number of "
+"operations, as the probabilities of opportunities in this stage will be "
+"recomputed on saving."
+msgstr ""
+"Смена поля «Стадия выигрыша» может занять время: при сохранении "
+"пересчитается вероятность всех сделок на этой стадии."
+
+#. module: crm
+#: model:ir.model.fields,help:crm.field_crm_team__use_leads
+msgid ""
+"Check this box to filter and qualify incoming requests as leads before "
+"converting them into opportunities and assigning them to a salesperson."
+msgstr ""
+"Входящие заявки сначала заводятся лидами: их разбирают и уже потом "
+"переводят в сделки и назначают менеджеру."
+
+#. module: crm
+#: model:ir.model.fields,help:crm.field_crm_team__use_opportunities
+msgid "Check this box to manage a presales process with opportunities."
+msgstr "Вести продажи сделками в воронке."
+
+#. module: crm
+#: model:ir.model.fields,field_description:crm.field_crm_team__lead_all_assigned_month_count
+msgid "# Leads/Opps assigned this month"
+msgstr "Лидов и сделок назначено в этом месяце"
+
+#. module: crm
+#: model:ir.model.fields,help:crm.field_crm_team__lead_all_assigned_month_count
+msgid "Number of leads and opportunities assigned this last month."
+msgstr "Сколько лидов и сделок назначено за последний месяц."
+
+#. module: crm
+#: model_terms:ir.ui.view,arch_db:crm.res_config_settings_view_form
+msgid "Add a qualification step before the creation of an opportunity"
+msgstr "Разбирать заявку лидом до того, как завести сделку"
+
+#. module: crm
+#: model_terms:ir.ui.view,arch_db:crm.res_config_settings_view_form
+msgid ""
+"Use leads if you need a qualification step before creating an opportunity or "
+"a customer. It can be a business card you received, a contact form filled in "
+"your website, or a file of unqualified prospects you import, etc. Once "
+"qualified, the lead can be converted into a business opportunity and/or a "
+"new customer in your address book."
+msgstr ""
+"Лид — заявка до разбора: визитка, письмо, форма с сайта, загруженный "
+"список. После разбора лид переводят в сделку и, если нужно, заводят "
+"нового клиента."
+
+#. module: crm
+#: model_terms:ir.ui.view,arch_db:crm.res_config_settings_view_form
+msgid "Define recurring plans and revenues on Opportunities"
+msgstr "Регулярные планы и доход по сделкам"
+
+#. module: crm
+#: model:ir.model.fields,field_description:crm.field_res_config_settings__lead_mining_in_pipeline
+msgid "Create a lead mining request directly from the opportunity pipeline."
+msgstr "Запрос на подбор лидов прямо из воронки сделок."
+
+#. module: crm
+#: model:ir.model.fields,field_description:crm.field_res_config_settings__module_website_crm_iap_reveal
+msgid "Create Leads/Opportunities from your website's traffic"
+msgstr "Лиды и сделки из посещений сайта"
+
+#. module: crm
+#. odoo-javascript
+#: code:addons/crm/static/src/js/tours/crm.js:0
+msgid "<b>Create your first opportunity.</b>"
+msgstr "<b>Заведите первую сделку.</b>"
+
+#. module: crm
+#. odoo-javascript
+#: code:addons/crm/static/src/js/tours/crm.js:0
+msgid ""
+"<b>Drag &amp; drop opportunities</b> between columns as you progress in your "
+"sales cycle."
+msgstr "<b>Перетаскивайте сделки</b> между колонками по мере продвижения продажи."
+
+#. module: crm
+#. odoo-javascript
+#: code:addons/crm/static/src/js/tours/crm.js:0
+msgid "Drag your opportunity to <b>Won</b> when you get the deal. Congrats!"
+msgstr "Перетащите сделку в <b>Выиграно</b>, когда договоритесь. Поздравляем!"
+
+#. module: crm
+#. odoo-javascript
+#: code:addons/crm/static/src/js/tours/crm.js:0
+msgid "Let’s have a look at an Opportunity."
+msgstr "Посмотрим на сделку."
+
+#. module: crm
+#. odoo-javascript
+#: code:addons/crm/static/src/js/tours/crm.js:0
+msgid "Now, <b>add your Opportunity</b> to your Pipeline."
+msgstr "Теперь <b>добавьте сделку</b> в воронку."
+
+#. module: crm
+#. odoo-javascript
+#: code:addons/crm/static/src/js/tours/crm.js:0
+msgid "You can make your opportunity advance through your pipeline from here."
+msgstr "Отсюда сделку двигают по воронке."

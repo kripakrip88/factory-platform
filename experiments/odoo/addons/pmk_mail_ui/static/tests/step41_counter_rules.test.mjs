@@ -8,6 +8,7 @@ import assert from "node:assert/strict";
 
 const rules = await import(new URL("../src/js/mail_counter_rules.js", import.meta.url).href);
 const { counterText, counterTitle, shouldRefresh, MAIL_MENU_XMLID, COUNTER_DAYS } = rules;
+const { MAIL_MENUS, PURCHASE_MAIL_MENU_XMLID, menuCounts } = rules;
 
 let n = 0;
 function t(name, fn) {
@@ -40,6 +41,31 @@ t("сигнал синхронизации: перечитать, только �
 
 t("пункт меню — «Продажи → Почта»", () => {
     assert.equal(MAIL_MENU_XMLID, "pmk_mail_ui.menu_mail_sale");
+});
+
+t("шаг 53: у каждого пункта «Почта» — число своего ящика", () => {
+    assert.equal(PURCHASE_MAIL_MENU_XMLID, "pmk_mail_ui.menu_mail_purchase");
+    assert.deepEqual(MAIL_MENUS, [MAIL_MENU_XMLID, PURCHASE_MAIL_MENU_XMLID]);
+    assert.deepEqual(
+        menuCounts({ "pmk_mail_ui.menu_mail_sale": 1, "pmk_mail_ui.menu_mail_purchase": "2" }, 3),
+        { "pmk_mail_ui.menu_mail_sale": 1, "pmk_mail_ui.menu_mail_purchase": 2 }
+    );
+    assert.deepEqual(
+        menuCounts({ "pmk_mail_ui.menu_mail_sale": -1, chuzhoi: 9 }, 0),
+        { "pmk_mail_ui.menu_mail_sale": 0, "pmk_mail_ui.menu_mail_purchase": 0 },
+        "мусор — ноль, чужие ключи не берутся"
+    );
+});
+
+t("старый сервер без разбивки: число — на Продажах, у Закупок пусто", () => {
+    assert.deepEqual(menuCounts(undefined, 5), {
+        "pmk_mail_ui.menu_mail_sale": 5,
+        "pmk_mail_ui.menu_mail_purchase": 0,
+    });
+    assert.deepEqual(menuCounts(null), {
+        "pmk_mail_ui.menu_mail_sale": 0,
+        "pmk_mail_ui.menu_mail_purchase": 0,
+    });
 });
 
 console.log(`\n${n} проверок прошло`);

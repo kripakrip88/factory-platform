@@ -4,7 +4,7 @@
 Гонять ТОЛЬКО на одноразовой базе (см. __init__.py).
 
 Что ловим:
-  • порядок у закупщика и у администратора: Поставщики · Цены поставщиков ·
+  • порядок у закупщика и у администратора: Поставщики · Почта · Цены поставщиков ·
     Номенклатура · Рассылка прайсов · Заказы поставщикам · Группы поставки;
     раздел открывается «Поставщиками»;
   • «Поставщики» — список и поиск реестра прайсов, окно так и называется;
@@ -21,7 +21,7 @@
     подтверждённых — «Подтверждённые заказы», только с «Убранным»; те же
     строки в общем списке — фильтр «Заказы на покупку»; доводка: у
     подтверждённого заказа там видно «Ожидаемое прибытие», «Дата
-    подтверждения» — в ⚙; почта — только в Продажах;
+    подтверждения» — в ⚙; почта — с шага 53 и в Закупках (вторым пунктом);
   • «Номенклатура» достижима без «Склада»;
   • подсказки пустых экранов ведут в существующие пункты.
 """
@@ -68,10 +68,18 @@ class TestPurchaseMenuStep38(TransactionCase):
         self.assertEqual(len(found), 1, name)
         return found[0]
 
+    def _expected_items(self):
+        """ITEMS и «Почта» вторым пунктом: с шага 53 она снова у всех
+        (pmk_mail_ui, если стоит)."""
+        items = list(ITEMS)
+        if self.env.ref("pmk_mail_ui.menu_mail_purchase", raise_if_not_found=False):
+            items.insert(1, "Почта")
+        return items
+
     def test_items_and_order(self):
         for user in (self.buyer, self.admin):
             with self.subTest(user=user.login):
-                self.assertEqual(self._items(user), ITEMS)
+                self.assertEqual(self._items(user), self._expected_items())
 
     def test_section_opens_suppliers(self):
         for user in (self.buyer, self.admin):

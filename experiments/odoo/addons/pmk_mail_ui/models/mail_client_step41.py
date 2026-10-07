@@ -35,8 +35,9 @@ Content-ID, на которую ссылается текст) вложение�
 отметки «прочитано» общие с mail.ru (models/mail_client_flags.py). Старше
 окна отметка с mail.ru не обновляется, и число врало бы: на 05.10 во
 «Входящих» pmkpark@ 313 непрочитанных, из них 212 старше 30 дней. Число —
-на пункте «Продажи → Почта» и во вкладке браузера (static/src/js/
-mail_counter.js); первое значение приходит со страницей (ir_http.py).
+во вкладке браузера (static/src/js/mail_counter.js); на пунктах «Почта» с
+шага 53 — число ящика, который пункт открывает (mail_client_step53.py,
+pmk_mail_unread_counts). Первое значение приходит со страницей (ir_http.py).
 """
 import re
 from datetime import datetime, timedelta

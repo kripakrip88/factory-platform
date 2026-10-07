@@ -136,7 +136,8 @@ export function layoutFlow(graph, anchorId) {
         const anchor = n.id === anchorId;
         // Открытый документ не кликается: переход на самого себя только
         // добавил бы лишнюю крошку в навигацию.
-        const clickable = !anchor && Boolean(n.open_model && n.open_res_id);
+        // Письмо (шаг 53) открывается действием — окном почты, а не формой.
+        const clickable = !anchor && Boolean(n.open_action || (n.open_model && n.open_res_id));
         const cls = ["o_pmk_flow_node", `o_pmk_flow_node--${color}`];
         if (anchor) {
             cls.push("o_pmk_flow_node--anchor");
@@ -296,6 +297,11 @@ export class PmkFlowMap extends Component {
     openNode(node) {
         if (!node.clickable) {
             return;
+        }
+        // Окно почты на этом письме (pmk_flow/models/flow_builder.py,
+        // _letter_action; разбор UX, шаг 53).
+        if (node.open_action) {
+            return this.action.doAction(node.open_action);
         }
         this.action.doAction({
             type: "ir.actions.act_window",

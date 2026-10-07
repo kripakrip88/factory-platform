@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 """Почта в меню — разбор UX, шаг 38. Гонять ТОЛЬКО на одноразовой базе.
 
-  • почта одна — в Продажах; пункт в Закупках не удалён, виден только с
-    «Убранным»;
+  • почта в Продажах и (с шага 53 снова) в Закупках — у всех;
   • «Почтовые ящики» в Настройках — только администратору
     («Администрирование: Настройки»), не «Почтовому клиенту: Администратор»;
   • доводка: «Лид» — только тому, кто может завести лид. Снабженец без прав
@@ -38,15 +37,15 @@ class TestMailMenusStep38(TransactionCase):
     def _menus(self, user):
         return self.env["ir.ui.menu"].with_user(user).load_web_menus(False)
 
-    def test_mail_only_in_sales(self):
+    def test_mail_in_sales_and_purchases(self):
+        """С шага 53 «Закупки → Почта» снова у всех, кто видит Закупки
+        (шаг 38 прятал его «Убранным»), — со своим ящиком (test_step53_open)."""
         menus = self._menus(self.buyer)
         self.assertIn(self.sale_mail.id, menus)
-        self.assertNotIn(self.purchase_mail.id, menus)
-        self.assertNotIn(self.purchase_mail.id, self._menus(self.admin))
-        self.assertEqual(self.purchase_mail.group_ids, self.env.ref(REMOVED))
+        self.assertIn(self.purchase_mail.id, menus)
+        self.assertIn(self.purchase_mail.id, self._menus(self.admin))
+        self.assertFalse(self.purchase_mail.group_ids, "Почта в Закупках — всем.")
         self.assertFalse(self.sale_mail.group_ids, "Почта в Продажах — всем.")
-        self.admin.write({"group_ids": [Command.link(self.env.ref(REMOVED).id)]})
-        self.assertIn(self.purchase_mail.id, self._menus(self.admin), "Не удалён — спрятан.")
 
     def test_mailbox_settings_admin_only(self):
         self.assertEqual(self.settings_mail.group_ids, self.env.ref("base.group_system"))

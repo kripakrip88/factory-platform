@@ -13,7 +13,7 @@
     # (разбор UX, шаг 30): migrations/19.0.0.4.0/post-migrate.py. Здесь, а не
     # в pmk_theme: печать и письмо КП живут в этом модуле, а версию pmk_theme
     # параллельно поднимает шаг 29.
-    "version": "19.0.0.4.0",
+    "version": "19.0.0.5.0",
     "summary": "Артикулы (default_code) для переноса сортамента pmk_calc в товары",
     "category": "Inventory/Inventory",
     "author": "ПМК Парк",

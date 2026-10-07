@@ -8,3 +8,6 @@ from . import mail_client_flags
 # фильтр «С лидом», звезда переписки, счётчик новых.
 from . import mail_client_step41
 from . import ir_http
+# Мелочи после приёмки 22–34 (шаг 53): папка письма для «Связей», адрес
+# info@ → лиды выключен.
+from . import mail_client_step53

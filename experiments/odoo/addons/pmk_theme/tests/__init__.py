@@ -44,3 +44,11 @@ from . import test_step48_header
 #        --test-tags /pmk_theme:TestStep49Width,/pmk_theme:TestHeaderStep48,/pmk_theme:TestDarkPairsStep40,/pmk_theme \
 #        --stop-after-init --http-port 8099
 from . import test_step49_width
+# Мелочи после приёмки 22–34 (шаг 53): теги сделки, «Снабженец», поля рулона
+# в доборке — до востребования; «Возможность» → «Сделка» (слова sale_crm,
+# форма стадии, Настройки CRM, тур). С pmk_calc (доборка) и pmk_purchase:
+#   odoo -d pmk53_test -i pmk_theme,pmk_purchase,pmk_deal,pmk_calc --test-enable \
+#        --test-tags /pmk_theme:TestHiddenStep53,/pmk_theme:TestStep53Words,/pmk_theme:TestStep39Words \
+#        --stop-after-init --http-port 8099
+from . import test_step53_hidden
+from . import test_step53_words
