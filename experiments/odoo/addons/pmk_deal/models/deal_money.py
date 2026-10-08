@@ -97,7 +97,14 @@ def main_spec(specs):
 
     Сортируем явно, а не верим порядку набора: только что привязанный
     расчёт кэш дописывает в конец, а не по _order.
+
+    Кандидаты — _pmk_main_spec_candidates (deal_link.py): с шага З-4
+    (pmk_tech) технический расчёт инженера висит на той же сделке, но
+    главным не становится — иначе он подменил бы «Цену клиенту», карточки
+    денег сделки и расчёт, из которого выставляется счёт.
     """
+    if specs:
+        specs = specs._pmk_main_spec_candidates()
     return specs.sorted(
         key=lambda spec: (spec.date or date.min, spec._origin.id or 0),
         reverse=True,

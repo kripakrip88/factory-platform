@@ -177,16 +177,21 @@ class TestSpecFormStep32(TransactionCase):
     def test_one_filled_button_and_it_prints(self):
         arch = self._form()
         header = arch.find("header")
-        buttons = [n for n in header if n.tag == "button"]
+        # Шаг З-4 (pmk_tech, если стоит): у технического расчёта своя залитая
+        # «Заявка на металл», а КП спрятаны. Здесь — расчёт КП: кнопки только
+        # технического (invisible «pmk_kind != 'tech'») не в счёт.
+        buttons = [n for n in header if n.tag == "button"
+                   and n.get("invisible") != "pmk_kind != 'tech'"]
         self.assertEqual(buttons[0].get("name"), "action_print_quotation",
                          "Первой: на узком экране ядро оставляет одну первую кнопку.")
         self.assertEqual(buttons[0].get("string"), "КП (PDF)")
-        self.assertEqual([b.get("name") for b in header.iter("button") if filled(b)],
+        self.assertEqual([b.get("name") for b in buttons if filled(b)],
                          ["action_print_quotation"], "Залитая на экране одна.")
         signal = header.find("span[@class='pmk-signal']")
         self.assertIsNotNone(signal)
         self.assertIsNotNone(signal.find("field[@name='kp_skip_text']"))
-        self.assertEqual(signal.get("invisible"), "not kp_skip_text")
+        self.assertIn(signal.get("invisible"),
+                      ("not kp_skip_text", "not kp_skip_text or pmk_kind == 'tech'"))
         # Шаг 33: «Отправить КП» — сразу за печатью, контурная.
         self.assertEqual(buttons[1].get("name"), "action_send_quotation")
         self.assertEqual(buttons[1].get("string"), "Отправить КП")

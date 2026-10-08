@@ -70,7 +70,8 @@ class ProjectTask(models.Model):
     pmk_passport = fields.Boolean("Паспорт")
     pmk_metal = fields.Selection(
         METAL, "Металл", tracking=True,
-        help="Пока руками; потом — от заявки на металл и «Материал пришёл».")
+        help="«Ждём» ставит «Заявка на металл» из технического расчёта (шаг З-4, "
+             "pmk_tech); «Получен» — пока руками, потом «Материал пришёл».")
     pmk_overdue = fields.Boolean(
         "Просрочена сдача", compute="_compute_pmk_overdue", search="_search_pmk_overdue",
         help="Сдача (план) прошла, а заказ не отгружен. Сигнал, ничего не запрещает.")

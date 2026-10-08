@@ -46,7 +46,13 @@ BRANCH="${BRANCH:-feature/experiment-carbon}"
 # администратора. Своя таблица pmk_list_prefs, данных других модулей не
 # трогает; стили — в живых файлах pmk_theme (раздел «Шаг 55»). Первый раз:
 # INSTALL="pmk_list_prefs" (вместе с обычным -u pmk_theme).
-OURS="pmk_calc pmk_theme pmk_pdf pmk_cut pmk_mail_ui pmk_partner pmk_purchase pmk_dadata pmk_laser pmk_bridge pmk_deal pmk_deal_sms pmk_flow pmk_drawing pmk_telegram pmk_org pmk_orders pmk_list_prefs"
+# pmk_tech добавлен 08.10.2026 (разбор UX, шаг З-4) — «Технический расчёт»
+# инженера к счёту покупателю и «Заявка на металл» в черновики закупок,
+# меню «Закупки → Заявки на металл». Отдельно от pmk_orders: он зависит от
+# purchase, и удаление «Закупок» не должно сносить планировщик. Тем же
+# прогоном -u pmk_deal (главный расчёт сделки — без технических) и
+# pmk_flow («Связи»). Первый раз: INSTALL="pmk_tech"; бэкап базы — до.
+OURS="pmk_calc pmk_theme pmk_pdf pmk_cut pmk_mail_ui pmk_partner pmk_purchase pmk_dadata pmk_laser pmk_bridge pmk_deal pmk_deal_sms pmk_flow pmk_drawing pmk_telegram pmk_org pmk_orders pmk_list_prefs pmk_tech"
 # Вендорские — только раскладываются. -u им не нужен: мы правим в них код и
 # переводы, а не данные, а лишнее обновление перезапускает их data-файлы.
 #

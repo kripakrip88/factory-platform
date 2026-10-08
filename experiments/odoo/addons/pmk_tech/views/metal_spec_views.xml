@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Технический расчёт — ТОТ ЖЕ штатный экран расчёта (шаг З-4): инженер
+    правит состав и материалы, раскладывает листы как обычно. Отличия только
+    у технического (pmk_kind == 'tech'):
+
+    • под заголовком строкой: «Технический расчёт к СЧ-… · по КП СМ-…»
+      (ссылки на счёт и на расчёт, по которому ушли КП и счёт);
+    • шапка: одна залитая кнопка — «Заявка на металл» (только «Закупкам»).
+      «КП (PDF)», «Отправить КП» и сигнал «В КП не попадут» спрятаны
+      обратимо (invisible): КП уходит из расчёта менеджера. «Перечитать
+      цены» — как была, контурная;
+    • кнопка-счётчик «Заявки на металл»;
+    • карточка «Металл в заявку, т: по КП → сейчас» — ВМЕСТО карточки моста
+      «Металл к закупке» (та — чистый вес деталей, заявка — целые листы:
+      два разных «к закупке» на одном экране, и пятая карточка ломала
+      сетку итогов 2×2). Тонны крупно, рубли строкой ниже; есть позиции
+      без цены — жёлтая рамка и слова «без цены N поз.» (как у моста);
+    • плашки (pmk-price-alert темы, тёмная пара есть; слово повторяет цвет):
+      что в заявке идёт по весу и что в неё не идёт; счёт изменился после
+      копии (новая редакция или другой расчёт — сверьте состав); «состав
+      изменился после заявки» — с контурной «Заявка на металл», только
+      «Закупкам» (кнопка у них же); расхождение с заявкой (отправленной или
+      черновиком, где количество правил закупщик). Ничего не блокирует.
+    У расчёта КП — кнопка-счётчик «Технический», если с него снята копия.
+
+    Наследуем вид моста (pmk_bridge.view_metal_spec_form_cost): его кнопки
+    КП прячем xpath'ом — он должен примениться раньше. active в XML —
+    грабли Odoo 19 (выключенный вид не проверяется при загрузке).
+  -->
+  <record id="view_metal_spec_form_tech" model="ir.ui.view">
+    <field name="name">pmk.metal.spec.form.tech</field>
+    <field name="model">pmk.metal.spec</field>
+    <field name="inherit_id" ref="pmk_bridge.view_metal_spec_form_cost"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//header/button[@name='action_print_quotation']" position="before">
+        <button name="action_pmk_metal_request" type="object" string="Заявка на металл"
+                class="oe_highlight" groups="purchase.group_purchase_user"
+                invisible="pmk_kind != 'tech'"
+                title="Собрать металл технического расчёта в черновики заказов поставщикам — по назначенному поставщику каждой позиции. Повторно — черновики обновятся"/>
+      </xpath>
+      <xpath expr="//header/button[@name='action_print_quotation']" position="attributes">
+        <attribute name="invisible">pmk_kind == 'tech'</attribute>
+      </xpath>
+      <xpath expr="//header/button[@name='action_send_quotation']" position="attributes">
+        <attribute name="invisible">pmk_kind == 'tech'</attribute>
+      </xpath>
+      <xpath expr="//header/span[hasclass('pmk-signal')]" position="attributes">
+        <attribute name="invisible">not kp_skip_text or pmk_kind == 'tech'</attribute>
+      </xpath>
+
+      <!-- Кнопки-счётчики: своего ряда у расчёта не было — заводим первым
+           узлом листа (плашки моста встают перед заголовком, ряд — над ними). -->
+      <xpath expr="//sheet/*[1]" position="before">
+        <div class="oe_button_box" name="button_box">
+          <button name="action_pmk_metal_requests" type="object" class="oe_stat_button"
+                  icon="fa-truck" groups="purchase.group_purchase_user"
+                  invisible="pmk_kind != 'tech'">
+            <field name="pmk_metal_request_count" widget="statinfo" string="Заявки на металл"/>
+          </button>
+          <button name="action_pmk_open_tech" type="object" class="oe_stat_button"
+                  icon="fa-wrench" invisible="pmk_kind == 'tech' or not pmk_tech_count">
+            <field name="pmk_tech_count" widget="statinfo" string="Технический"/>
+          </button>
+        </div>
+      </xpath>
+
+      <xpath expr="//div[hasclass('oe_title')]" position="after">
+        <div class="text-muted mb-2" name="pmk_tech_ref" invisible="pmk_kind != 'tech'">
+          Технический расчёт<span invisible="not pmk_tech_order_id"> к
+            <field name="pmk_tech_order_id" class="d-inline" readonly="1"/></span>
+          <span invisible="not pmk_tech_source_id"> · по КП
+            <field name="pmk_tech_source_id" class="d-inline" readonly="1"/></span>
+          <field name="pmk_kind" invisible="1"/>
+        </div>
+      </xpath>
+
+      <xpath expr="//div[hasclass('pmk-doc-head')]" position="before">
+        <div class="alert pmk-price-alert mb-3" role="status" name="pmk_request_warn"
+             invisible="not pmk_request_warn_text">
+          <i class="fa fa-exclamation-triangle me-1" title="Внимание" aria-hidden="true"/>
+          <field name="pmk_request_warn_text" nolabel="1"/>.
+        </div>
+        <div class="alert pmk-price-alert mb-3" role="status" name="pmk_tech_outdated"
+             invisible="not pmk_tech_outdated_text">
+          <i class="fa fa-exclamation-triangle me-1" title="Внимание" aria-hidden="true"/>
+          <field name="pmk_tech_outdated_text" nolabel="1"/>.
+        </div>
+        <!-- Только «Закупкам»: призыв нажать кнопку, которой у менеджера нет,
+             был бы пустым. Правки закупщика в черновиках повтор не трогает. -->
+        <div class="alert pmk-price-alert mb-3 d-flex flex-wrap align-items-center gap-2"
+             role="status" name="pmk_request_stale" invisible="not pmk_request_stale"
+             groups="purchase.group_purchase_user">
+          <i class="fa fa-refresh" title="Изменилось" aria-hidden="true"/>
+          <span>Состав изменился после заявки на металл — нажмите «Заявка на металл»,
+            черновики обновятся (правки закупщика останутся).</span>
+          <button name="action_pmk_metal_request" type="object" string="Заявка на металл"
+                  class="btn btn-secondary btn-sm ms-auto"/>
+        </div>
+        <div class="alert pmk-price-alert mb-3" role="status" name="pmk_request_diff"
+             invisible="not pmk_request_diff_text">
+          <i class="fa fa-exclamation-triangle me-1" title="Расхождение" aria-hidden="true"/>
+          <strong class="me-1">Расходится с заявкой:</strong>
+          <field name="pmk_request_diff_text" nolabel="1"/>.
+        </div>
+        <field name="pmk_request_stale" invisible="1"/>
+      </xpath>
+
+      <!--
+        Сравнение — НА МЕСТЕ карточки моста «Металл к закупке» (у технического
+        она спрятана, у расчёта КП — как была): карточек остаётся четыре,
+        сетка 2×2. Карточки моста различаются только условием показа —
+        по нему и находим (имён у них нет).
+      -->
+      <xpath expr="//div[hasclass('pmk-kpi')]/div[@invisible='price_incomplete']" position="attributes">
+        <attribute name="invisible">price_incomplete or pmk_kind == 'tech'</attribute>
+      </xpath>
+      <xpath expr="//div[hasclass('pmk-kpi')]/div[@invisible='not price_incomplete']" position="attributes">
+        <attribute name="invisible">not price_incomplete or pmk_kind == 'tech'</attribute>
+      </xpath>
+      <xpath expr="//div[hasclass('pmk-kpi')]/div[@invisible=&quot;not price_incomplete or pmk_kind == 'tech'&quot;]" position="after">
+        <div class="pmk-kpi__card" name="pmk_kp_compare"
+             invisible="pmk_kind != 'tech' or pmk_kp_compare_unpriced"
+             title="Сколько металла уходит в заявку на металл: по расчёту КП и по техническому сейчас — одной мерой (листы целыми листами раскладки, прокат с использованием)">
+          <div class="pmk-kpi__label">Металл в заявку, т</div>
+          <div class="pmk-kpi__value">
+            <field name="pmk_kp_compare_weight" nolabel="1"/>
+          </div>
+          <div class="pmk-kpi__sub">по КП → сейчас: <field name="pmk_kp_compare_cost" nolabel="1"/></div>
+        </div>
+        <div class="pmk-kpi__card pmk-kpi__card--warn" name="pmk_kp_compare_warn"
+             invisible="pmk_kind != 'tech' or not pmk_kp_compare_unpriced"
+             title="Сколько металла уходит в заявку на металл: по расчёту КП и по техническому сейчас. Позиции без цены — нулём (в городе нет)">
+          <div class="pmk-kpi__label">Металл в заявку, т</div>
+          <div class="pmk-kpi__value">
+            <field name="pmk_kp_compare_weight" nolabel="1"/>
+          </div>
+          <div class="pmk-kpi__sub">по КП → сейчас: <field name="pmk_kp_compare_cost" nolabel="1"/></div>
+        </div>
+        <field name="pmk_kp_compare_unpriced" invisible="1"/>
+      </xpath>
+    </field>
+  </record>
+
+  <!--
+    Список расчётов: колонка «Вид» — только у технического («Технический»
+    голубой плашкой, у расчёта КП ячейка пустая: колонка молчит, когда всё
+    обычно). Номер расчёта не обрезается (105 px — pmk_calc).
+  -->
+  <record id="view_metal_spec_list_tech" model="ir.ui.view">
+    <field name="name">pmk.metal.spec.list.tech</field>
+    <field name="model">pmk.metal.spec</field>
+    <field name="inherit_id" ref="pmk_calc.view_metal_spec_list"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='name']" position="after">
+        <field name="pmk_kind" string="Вид" widget="badge" optional="show" width="110px"
+               decoration-info="pmk_kind == 'tech'" invisible="pmk_kind != 'tech'"/>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="view_metal_spec_search_tech" model="ir.ui.view">
+    <field name="name">pmk.metal.spec.search.tech</field>
+    <field name="model">pmk.metal.spec</field>
+    <field name="inherit_id" ref="pmk_calc.view_metal_spec_search"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//filter[@name='no_partner']" position="after">
+        <separator/>
+        <filter name="pmk_kind_kp" string="Для КП" domain="[('pmk_kind', '=', 'kp')]"/>
+        <filter name="pmk_kind_tech" string="Технические" domain="[('pmk_kind', '=', 'tech')]"/>
+      </xpath>
+      <xpath expr="//filter[@name='by_date']" position="after">
+        <filter name="by_kind" string="Вид" context="{'group_by': 'pmk_kind'}"/>
+      </xpath>
+    </field>
+  </record>
+</odoo>

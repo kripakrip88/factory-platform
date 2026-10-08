@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Счёт покупателю (шаг З-4): «Технический расчёт» и «Заявки на металл».
+
+    • Шапка: «Технический расчёт» — пока его нет (у прежней редакции и
+      отменённого счёта кнопки нет). У счёта в работе («Оплата пришла»)
+      своей залитой кнопки уже нет — эта следующий шаг, залитая, ПЕРВОЙ в
+      шапке. У черновика и выставленного залитая «Выставить» / «Оплата
+      пришла — в работу», эта — контурная и ПОСЛЕ неё (за кнопкой «Оплата
+      пришла»): на узком экране ядро оставляет в строке одну первую видимую
+      кнопку, и это должен быть следующий шаг процесса, а не наша. Две
+      кнопки с разными условиями — одно действие. Технический, снятый с
+      выставленного счёта, сам скажет плашкой, если счёт потом выставят
+      заново (новая редакция или другой расчёт).
+    • Кнопки-счётчики: «Технический» (номер расчёта) — когда он есть,
+      «Заявки на металл» — когда есть технический, только «Закупкам».
+    Наследуем вид pmk_orders (его xpath и метка шага 48 — раньше). active в
+    XML — грабли Odoo 19.
+  -->
+  <record id="view_order_form_pmk_tech" model="ir.ui.view">
+    <field name="name">sale.order.form.pmk.tech</field>
+    <field name="model">sale.order</field>
+    <field name="inherit_id" ref="pmk_orders.view_order_form_pmk_orders"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//header/*[1]" position="before">
+        <button name="action_pmk_tech_spec" type="object" string="Технический расчёт"
+                class="btn-primary"
+                invisible="pmk_tech_spec_id or pmk_is_revision or state != 'sale'"
+                title="Копия расчёта, по которому выставлен счёт: инженер правит состав и материалы, раскладывает листы. Расчёт КП не меняется"/>
+      </xpath>
+      <xpath expr="//header/button[@id='action_confirm']" position="after">
+        <button name="action_pmk_tech_spec" type="object" string="Технический расчёт"
+                class="btn-secondary"
+                invisible="pmk_tech_spec_id or pmk_is_revision or state not in ('draft', 'sent')"
+                title="Копия расчёта, по которому выставлен счёт: инженер правит состав и материалы, раскладывает листы. Расчёт КП не меняется"/>
+      </xpath>
+      <xpath expr="//div[@name='button_box']" position="inside">
+        <button name="action_pmk_tech_spec" type="object" class="oe_stat_button"
+                icon="fa-wrench" invisible="not pmk_tech_spec_id or pmk_is_revision">
+          <div class="o_field_widget o_stat_info">
+            <span class="o_stat_value"><field name="pmk_tech_spec_id" readonly="1" options="{'no_open': True}"/></span>
+            <span class="o_stat_text">Технический расчёт</span>
+          </div>
+        </button>
+        <button name="action_pmk_metal_requests" type="object" class="oe_stat_button"
+                icon="fa-truck" groups="purchase.group_purchase_user"
+                invisible="not pmk_tech_spec_id or pmk_is_revision">
+          <field name="pmk_metal_request_count" widget="statinfo" string="Заявки на металл"/>
+        </button>
+      </xpath>
+    </field>
+  </record>
+</odoo>

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Строка «Заказов в работе» (шаг З-4): следующий шаг инженера — залитой
+    кнопкой, одной по условию:
+      • «Технический расчёт» — у строки есть счёт, технического ещё нет;
+      • «Заявка на металл» — технический есть, заявок ещё нет (только
+        «Закупкам»).
+    Дальше залитой нет: заявка отправлена — ждём металл (карточка 5,
+    «Материал пришёл»). Кнопки-счётчики «Технический расчёт» и «Заявки на
+    металл». Строка без счёта (импорт из Excel) — без кнопок.
+    Этап и кнопки — в строке пути от 1200 px (o_pmk_header_up, шаг 48, на
+    форме pmk_orders). active в XML — грабли Odoo 19.
+  -->
+  <record id="view_task_order_form_pmk_tech" model="ir.ui.view">
+    <field name="name">project.task.form.pmk.orders.tech</field>
+    <field name="model">project.task</field>
+    <field name="inherit_id" ref="pmk_orders.view_task_order_form"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//header/field[@name='stage_id']" position="before">
+        <button name="action_pmk_tech_spec" type="object" string="Технический расчёт"
+                class="oe_highlight" invisible="not pmk_sale_order_id or pmk_tech_spec_id"
+                title="Копия расчёта, по которому выставлен счёт: инженер правит состав и материалы, раскладывает листы. Расчёт КП не меняется"/>
+        <button name="action_pmk_metal_request" type="object" string="Заявка на металл"
+                class="oe_highlight" groups="purchase.group_purchase_user"
+                invisible="not pmk_tech_spec_id or pmk_metal_request_count"
+                title="Металл технического расчёта — в черновики заказов поставщикам; строка уйдёт в «Ждём металл»"/>
+      </xpath>
+      <xpath expr="//div[@name='button_box']" position="inside">
+        <button name="action_pmk_tech_spec" type="object" class="oe_stat_button"
+                icon="fa-wrench" invisible="not pmk_tech_spec_id">
+          <div class="o_field_widget o_stat_info">
+            <span class="o_stat_value"><field name="pmk_tech_spec_id" readonly="1" options="{'no_open': True}"/></span>
+            <span class="o_stat_text">Технический расчёт</span>
+          </div>
+        </button>
+        <button name="action_pmk_metal_requests" type="object" class="oe_stat_button"
+                icon="fa-truck" groups="purchase.group_purchase_user"
+                invisible="not pmk_tech_spec_id">
+          <field name="pmk_metal_request_count" widget="statinfo" string="Заявки на металл"/>
+        </button>
+      </xpath>
+    </field>
+  </record>
+</odoo>

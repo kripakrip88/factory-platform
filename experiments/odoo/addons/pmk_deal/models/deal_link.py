@@ -115,6 +115,12 @@ class MetalSpecDeal(models.Model):
         domain="[('type', '=', 'opportunity')]",
         help="К какой сделке относится расчёт. Клиент подставляется из неё.")
 
+    def _pmk_main_spec_candidates(self):
+        """Из каких расчётов сделки выбирается главный (main_spec,
+        deal_money.py). Здесь — из всех; pmk_tech (шаг З-4) убирает
+        технические расчёты инженера: они копия для закупки, а не КП."""
+        return self
+
     @api.onchange("opportunity_id")
     def _onchange_opportunity_id(self):
         """Клиент, контактное лицо и предмет КП — из сделки, если их ещё нет.

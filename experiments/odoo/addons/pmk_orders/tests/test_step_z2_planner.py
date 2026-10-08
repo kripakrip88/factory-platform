@@ -145,8 +145,12 @@ class TestStepZ2Planner(Z2Common):
         form = self._arch("pmk_orders.view_task_order_form", "form")
         self.assertIn("o_pmk_header_up", form.get("class"))
         self.assertIsNone(form.find(".//notebook"), "Без вкладок.")
-        self.assertFalse(form.xpath("//button[contains(@class, 'oe_highlight') or contains(@class, 'btn-primary')]"),
-                         "Залитой кнопки нет: следующего шага у строки пока нет.")
+        # Шаг З-4 (pmk_tech, если стоит): следующий шаг строки — «Технический
+        # расчёт» / «Заявка на металл», залитые по одной на состояние.
+        filled = {b.get("name") for b in form.xpath(
+            "//button[contains(@class, 'oe_highlight') or contains(@class, 'btn-primary')]")}
+        self.assertLessEqual(filled, {"action_pmk_tech_spec", "action_pmk_metal_request"},
+                             "Своих залитых у строки нет — только шаг З-4.")
         self.assertEqual(form.xpath("//header/field[@name='stage_id']")[0].get("widget"), "statusbar")
         search = self._arch("pmk_orders.view_task_order_search", "search")
         self.assertLessEqual({"not_shipped", "my", "overdue", "metal_wait", "pause", "not_paid"},

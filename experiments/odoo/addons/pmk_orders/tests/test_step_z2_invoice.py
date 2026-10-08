@@ -620,7 +620,10 @@ class TestStepZ2Invoice(Z2Common):
         filled = [b for b in header.iter("button")
                   if {"btn-primary", "oe_highlight"} & set((b.get("class") or "").split())]
         rest = [b.get("name") for b in filled if b is not confirm]
-        self.assertLessEqual(set(rest), {"payment_action_capture", "action_quotation_sent"},
+        # «Технический расчёт» (шаг З-4, pmk_tech) залит только у счёта в
+        # работе — там «Оплата пришла» уже нажата.
+        self.assertLessEqual(set(rest), {"payment_action_capture", "action_quotation_sent",
+                                         "action_pmk_tech_spec"},
                              "Залитая — одна на состояние: «Выставить» у черновика, «Оплата "
                              "пришла — в работу» у выставленного (захват платежа — только при "
                              "оплате с сайта).")

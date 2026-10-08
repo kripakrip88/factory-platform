@@ -71,6 +71,16 @@ _STAGES = {
     'account.move': (7, 'Счёт'),
 }
 
+# Шаг З-4 (pmk_tech, 08.10.2026): технический расчёт инженера — копия
+# расчёта КП у той же сделки, работа после счёта, до закупки; заказ
+# поставщику из него — «Заявка на металл». Дробный ранг ставит колонку между
+# счётом (3) и работами цеха (4): клиент сортирует ранги числом и пустые
+# сжимает. Подпись — своя, иначе технический расчёт и расчёт КП были бы на
+# схеме одним словом «Расчёт». Поля pmk_kind / pmk_tech_spec_id есть только
+# с pmk_tech — без него ветки молчат (_field).
+_TECH_STAGE = (3.5, 'Технический расчёт')
+_METAL_REQUEST_KIND = 'Заявка на металл'
+
 # Документы, от которых можно открыть схему. Письмо среди них не для кнопки —
 # у письма нет своей формы, — а чтобы обход не спотыкался, если его передадут.
 _SUPPORTED_MODELS = tuple(_STAGES)
@@ -180,6 +190,16 @@ class PmkFlowBuilder(models.AbstractModel):
         надо закрыть человеку.
         """
         model = record._name
+        if model == 'purchase.order' and _field(record, 'pmk_tech_spec_id'):
+            # «Заявка на металл» (pmk_tech, шаг З-4): состояние словами списка
+            # «Заявки на металл» («Черновик заявки», «Отправлена поставщику»…),
+            # а не штатными «Запрос КП» / «Запрос КП отправлен» — одно
+            # понятие, одно слово. Подпись считает сам pmk_tech
+            # (pmk_request_state_label), цвет — штатный по состоянию.
+            label = _field(record, 'pmk_request_state_label')
+            if label:
+                return label, _STATE_COLOR.get(record.state, 'grey')
+
         if model == 'pmk.metal.spec':
             # Порядок проверок — по тяжести. Цена клиенту при неполной
             # закупке всё равно красная: себестоимость занижена, и КП по ней
@@ -292,8 +312,22 @@ class PmkFlowBuilder(models.AbstractModel):
         return record
 
     @api.model
-    def _node_for(self, record) -> dict:
+    def _stage_of(self, record):
+        """(ранг колонки, подпись) документа: словарь _STAGES и два
+        уточнения шага З-4 — технический расчёт и «Заявка на металл»."""
         rank, kind = _STAGES.get(record._name, (99, record._description or record._name))
+        if record._name == 'pmk.metal.spec' and _field(record, 'pmk_kind') == 'tech':
+            rank, kind = _TECH_STAGE
+        elif record._name == 'purchase.order' and _field(record, 'pmk_tech_spec_id'):
+            kind = _METAL_REQUEST_KIND
+        return rank, kind
+
+    @api.model
+    def _node_for(self, record) -> dict:
+        try:
+            rank, kind = self._stage_of(record)
+        except AccessError:
+            rank, kind = _STAGES.get(record._name, (99, record._description or record._name))
         try:
             state, color = self._pmk_state(record) or self._std_state(record)
             hint = self._hint(record, kind, state)
@@ -455,6 +489,8 @@ class PmkFlowBuilder(models.AbstractModel):
             # нет сделки, а к расчёту ведёт только действующий счёт.
             linked.append(self._optional_rel(record, 'pmk_spec_id', hidden))
             linked.append(self._referrers('project.task', 'pmk_sale_order_id', record.id, hidden))
+            # Шаг З-4 (pmk_tech): технический расчёт инженера к этому счёту.
+            linked.append(self._referrers('pmk.metal.spec', 'pmk_tech_order_id', record.id, hidden))
         elif model == 'project.project':
             if 'sale_order_id' in record._fields and record.sale_order_id:
                 linked.append(record.sale_order_id)
@@ -475,6 +511,10 @@ class PmkFlowBuilder(models.AbstractModel):
                 linked.append(record.picking_ids)
             if hasattr(record, '_get_sale_orders'):
                 linked.append(record._get_sale_orders())
+            # «Заявка на металл» (pmk_tech, шаг З-4) знает свой технический
+            # расчёт; счёт и сделка — через него, строка планировщика — своя.
+            linked.append(self._optional_rel(record, 'pmk_tech_spec_id', hidden))
+            linked.append(self._optional_rel(record, 'pmk_task_id', hidden))
         elif model == 'mrp.production':
             if 'sale_line_id' in record._fields:
                 linked.append(record.sale_line_id.order_id)
@@ -530,6 +570,12 @@ class PmkFlowBuilder(models.AbstractModel):
             linked.append(self._referrers('pmk.cut.plan', 'spec_id', record.id, hidden))
             # Задание лазеру ссылается на расчёт с 27.09.2026 (pmk_laser, spec_id).
             linked.append(self._referrers('pmk.laser.job', 'spec_id', record.id, hidden))
+            # Шаг З-4 (pmk_tech): технический расчёт — к своему счёту (не через
+            # pmk_spec_id: счёт выставлен из расчёта КП) и к своим «Заявкам на
+            # металл». Расчёт КП и технический связаны через сделку и счёт —
+            # отдельной стрелки между ними не рисуем.
+            linked.append(self._optional_rel(record, 'pmk_tech_order_id', hidden))
+            linked.append(self._referrers('purchase.order', 'pmk_tech_spec_id', record.id, hidden))
         elif model == 'pmk.cut.plan':
             linked.append(self._optional_rel(record, 'spec_id', hidden))
         elif model == 'pmk.dobor.order':

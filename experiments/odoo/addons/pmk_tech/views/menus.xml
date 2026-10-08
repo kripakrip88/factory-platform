@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    «Закупки → Заявки на металл» (шаг З-4) — для закупщика: заказы
+    поставщикам, собранные инженером из технических расчётов. Перед
+    «Заказами поставщикам» (40, pmk_theme): сначала то, что пришло от цеха,
+    потом все закупки. Видят «Закупки: пользователь».
+  -->
+  <menuitem id="menu_metal_requests" name="Заявки на металл"
+            parent="pmk_theme.menu_pmk_purchase" action="action_metal_requests" sequence="35"
+            groups="purchase.group_purchase_user"/>
+</odoo>

@@ -74,6 +74,10 @@ class TestPurchaseMenuStep38(TransactionCase):
         items = list(ITEMS)
         if self.env.ref("pmk_mail_ui.menu_mail_purchase", raise_if_not_found=False):
             items.insert(1, "Почта")
+        # Шаг З-4 (pmk_tech, если стоит): «Заявки на металл» — перед
+        # «Заказами поставщикам».
+        if self.env.ref("pmk_tech.menu_metal_requests", raise_if_not_found=False):
+            items.insert(items.index("Заказы поставщикам"), "Заявки на металл")
         return items
 
     def test_items_and_order(self):

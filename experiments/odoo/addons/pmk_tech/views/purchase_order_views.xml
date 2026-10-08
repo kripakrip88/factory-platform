@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    «Заявка на металл» — штатная форма заказа поставщику (шаг З-4).
+
+    • Над номером: «Заявка на металл» вместо «Запрос КП» (подпись
+      pmk_purchase у черновика и отправленного) — только у заявок из
+      технического расчёта; у прочих закупок — как было. Подтверждённая —
+      штатное «Заказ на покупку».
+    • Под «Номером у поставщика»: сделка, счёт покупателю, технический
+      расчёт, заказ в работе — только чтение (ставит «Заявка на металл»).
+    • «Отправить заявку поставщику» вместо «Отправить запрос КП» — у заявок
+      (штатная кнопка спрятана по условию, на её месте такая же с нашим
+      словом: то же действие, тот же контекст; письмо — только из окна
+      письма по «Отправить», как и раньше).
+    • «Поставщик не выбран» — плашкой над заголовком: позиций нет в прайсах
+      (в городе нет), выберите поставщика — цены строк перечитаются по его
+      прайсу. Ничего не блокирует. Кнопки «Отправить заявку поставщику» у
+      такого черновика нет: следующий шаг — выбрать поставщика (письмо ушло
+      бы адресату без почты, а «Отправлена» закрыла бы позиции от повторной
+      заявки). Выбрали — кнопка появляется сразу, до сохранения.
+    priority 100 — после вида pmk_purchase (подпись «Запрос КП») и шага 29.
+    active в XML — грабли Odoo 19.
+  -->
+  <record id="purchase_order_form_pmk_tech" model="ir.ui.view">
+    <field name="name">purchase.order.form.pmk.tech</field>
+    <field name="model">purchase.order</field>
+    <field name="inherit_id" ref="purchase.purchase_order_form"/>
+    <field name="priority">100</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//div[hasclass('oe_title')]/span[hasclass('o_form_label')][@invisible=&quot;state not in ('draft', 'sent')&quot;]" position="attributes">
+        <attribute name="invisible">state not in ('draft', 'sent') or pmk_tech_spec_id</attribute>
+      </xpath>
+      <xpath expr="//div[hasclass('oe_title')]/span[hasclass('o_form_label')][1]" position="before">
+        <span class="o_form_label" invisible="state not in ('draft', 'sent') or not pmk_tech_spec_id">Заявка на металл </span>
+      </xpath>
+      <xpath expr="//header/button[@name='action_rfq_send'][@invisible=&quot;state != 'draft'&quot;]" position="attributes">
+        <attribute name="invisible">state != 'draft' or pmk_tech_spec_id</attribute>
+      </xpath>
+      <xpath expr="//header/button[@name='action_rfq_send'][@invisible=&quot;state != 'draft' or pmk_tech_spec_id&quot;]" position="after">
+        <button name="action_rfq_send" type="object" string="Отправить заявку поставщику"
+                class="oe_highlight" context="{'send_rfq': True}"
+                invisible="state != 'draft' or not pmk_tech_spec_id or pmk_no_supplier"
+                title="Откроется окно письма поставщику с заявкой — уйдёт только по «Отправить» в нём"/>
+      </xpath>
+      <xpath expr="//header/button[@name='action_rfq_send'][@invisible=&quot;state != 'sent'&quot;]" position="attributes">
+        <attribute name="invisible">state != 'sent' or pmk_tech_spec_id</attribute>
+      </xpath>
+      <xpath expr="//header/button[@name='action_rfq_send'][@invisible=&quot;state != 'sent' or pmk_tech_spec_id&quot;]" position="after">
+        <button name="action_rfq_send" type="object" string="Отправить заявку поставщику"
+                context="{'send_rfq': True}"
+                invisible="state != 'sent' or not pmk_tech_spec_id or pmk_no_supplier"
+                title="Ещё раз — окно письма поставщику с заявкой"/>
+      </xpath>
+      <xpath expr="//div[hasclass('oe_title')]" position="before">
+        <div class="alert pmk-price-alert mb-3" role="status" name="pmk_no_supplier"
+             invisible="not pmk_no_supplier or state == 'cancel'">
+          <i class="fa fa-exclamation-triangle me-1" title="Внимание" aria-hidden="true"/>
+          <strong class="me-1">Поставщик не выбран:</strong>
+          этих позиций нет в прайсах (в городе нет) — выберите поставщика в поле
+          «Поставщик», цены строк перечитаются по его прайсу.
+          <field name="pmk_no_supplier" invisible="1"/>
+        </div>
+      </xpath>
+      <xpath expr="//field[@name='partner_ref']" position="after">
+        <field name="pmk_deal_id" readonly="1" invisible="not pmk_deal_id"/>
+        <field name="pmk_sale_order_id" readonly="1" invisible="not pmk_sale_order_id"/>
+        <field name="pmk_tech_spec_id" string="Технический расчёт" readonly="1"
+               invisible="not pmk_tech_spec_id"/>
+        <field name="pmk_task_id" readonly="1" invisible="not pmk_task_id"/>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- «Заказы поставщикам»: отбор «Заявки на металл» рядом со штатными. -->
+  <record id="purchase_order_filter_pmk_tech" model="ir.ui.view">
+    <field name="name">purchase.order.search.rfq.pmk.tech</field>
+    <field name="model">purchase.order</field>
+    <field name="inherit_id" ref="purchase.view_purchase_order_filter"/>
+    <field name="priority">100</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//filter[@name='my_purchases']" position="before">
+        <filter name="pmk_metal_requests" string="Заявки на металл"
+                domain="[('pmk_tech_spec_id', '!=', False)]"/>
+        <separator/>
+      </xpath>
+    </field>
+  </record>
+
+  <!--
+    Список «Закупки → Заявки на металл» — для закупщика: заявка, поставщик,
+    сделка и клиент, счёт покупателю, технический расчёт, сумма, ожидаемое
+    прибытие, состояние своими словами (цвет повторён словом: черновик —
+    серым, отправлена — голубым, на согласовании — жёлтым, подтверждена —
+    зелёным, отменена — бледным). Номера не обрезаются (105 / 150 px, как в
+    шагах 48 и З-2). Свой вид (primary): штатные списки закупок не тронуты.
+  -->
+  <record id="view_metal_request_list" model="ir.ui.view">
+    <field name="name">purchase.order.list.pmk.metal.request</field>
+    <field name="model">purchase.order</field>
+    <field name="priority">60</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <list string="Заявки на металл" create="0" default_order="id desc" sample="1"
+            decoration-muted="state == 'cancel'">
+        <field name="state" column_invisible="1"/>
+        <field name="currency_id" column_invisible="1"/>
+        <field name="name" string="Заявка" width="105px"/>
+        <field name="partner_id" string="Поставщик" decoration-warning="pmk_no_supplier"/>
+        <field name="pmk_no_supplier" column_invisible="1"/>
+        <field name="pmk_deal_number" string="Сделка" optional="show" width="105px"/>
+        <field name="pmk_client_id" optional="show"/>
+        <field name="pmk_sale_order_id" optional="show" width="150px"/>
+        <field name="pmk_tech_spec_id" string="Технический расчёт" optional="show" width="120px"/>
+        <field name="amount_total" string="Сумма" sum="Итого" widget="monetary" optional="show"/>
+        <field name="date_planned" string="Ожидаемое прибытие" widget="date" optional="show"/>
+        <field name="pmk_request_state_label" string="Состояние" widget="badge" optional="show"
+               decoration-muted="state == 'draft'"
+               decoration-info="state == 'sent'"
+               decoration-warning="state == 'to approve'"
+               decoration-success="state in ('purchase', 'done')"/>
+        <field name="user_id" optional="hide" widget="many2one_avatar_user"/>
+        <field name="origin" optional="hide"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="view_metal_request_search" model="ir.ui.view">
+    <field name="name">purchase.order.search.pmk.metal.request</field>
+    <field name="model">purchase.order</field>
+    <field name="priority">60</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <search string="Заявки на металл">
+        <field name="name" string="Заявка"/>
+        <field name="partner_id" string="Поставщик" operator="child_of"/>
+        <field name="pmk_client_id"/>
+        <field name="pmk_deal_id"/>
+        <field name="pmk_sale_order_id"/>
+        <field name="pmk_tech_spec_id"/>
+        <field name="product_id" string="Позиция"/>
+        <filter name="pmk_open" string="Не отменены" domain="[('state', '!=', 'cancel')]"/>
+        <separator/>
+        <filter name="pmk_draft" string="Черновики" domain="[('state', '=', 'draft')]"/>
+        <filter name="pmk_sent" string="Отправлены" domain="[('state', '=', 'sent')]"/>
+        <filter name="pmk_to_approve" string="На согласовании" domain="[('state', '=', 'to approve')]"/>
+        <filter name="pmk_confirmed" string="Подтверждены" domain="[('state', 'in', ('purchase', 'done'))]"/>
+        <separator/>
+        <filter name="pmk_no_supplier" string="Поставщик не выбран" domain="[('pmk_no_supplier', '=', True)]"/>
+        <group>
+          <filter name="group_deal" string="Сделка" context="{'group_by': 'pmk_deal_id'}"/>
+          <filter name="group_partner" string="Поставщик" context="{'group_by': 'partner_id'}"/>
+          <filter name="group_client" string="Клиент" context="{'group_by': 'pmk_client_id'}"/>
+        </group>
+      </search>
+    </field>
+  </record>
+
+  <record id="action_metal_requests" model="ir.actions.act_window">
+    <field name="name">Заявки на металл</field>
+    <field name="res_model">purchase.order</field>
+    <field name="path">metal-requests</field>
+    <field name="view_mode">list,form</field>
+    <field name="domain">[('pmk_tech_spec_id', '!=', False)]</field>
+    <field name="context">{'create': False, 'search_default_pmk_open': 1}</field>
+    <field name="search_view_id" ref="view_metal_request_search"/>
+    <field name="help" type="html">
+      <p class="o_view_nocontent_smiling_face">Заявок на металл пока нет</p>
+      <p>Заявку собирает инженер кнопкой «Заявка на металл» в техническом расчёте:
+        по черновику заказа на каждого поставщика, позиции без цены — на «Поставщик не выбран».</p>
+    </field>
+  </record>
+  <record id="action_metal_requests_view_list" model="ir.actions.act_window.view">
+    <field name="sequence">1</field>
+    <field name="view_mode">list</field>
+    <field name="view_id" ref="view_metal_request_list"/>
+    <field name="act_window_id" ref="action_metal_requests"/>
+  </record>
+  <record id="action_metal_requests_view_form" model="ir.actions.act_window.view">
+    <field name="sequence">2</field>
+    <field name="view_mode">form</field>
+    <field name="view_id" ref="purchase.purchase_order_form"/>
+    <field name="act_window_id" ref="action_metal_requests"/>
+  </record>
+</odoo>
