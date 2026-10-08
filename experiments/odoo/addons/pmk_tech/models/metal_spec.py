@@ -406,7 +406,8 @@ class MetalSpecTech(models.Model):
                 name = row["name"] if row else (line.product_id.display_name or line.name)
                 mode = row["mode"] if row else key.split(":", 1)[0]
                 engineer = self._pmk_qty_text(mode, row["qty"]) if row else _("нет")
-                state = REQUEST_STATE_LABELS.get(order.state, order.state).lower()
+                state = (order.pmk_request_state_label
+                         or REQUEST_STATE_LABELS.get(order.state, order.state)).lower()
                 if order.state == "draft":
                     state = _("%s, количество правил снабженец", state)
                 diffs.append(_(

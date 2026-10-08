@@ -74,6 +74,7 @@ from odoo.addons.pmk_calc.models.sheeting import SHEET_USE_COUNTED
 from odoo.addons.pmk_calc.models.spec_layout import _plural
 
 from .metal_spec import EPS, _num
+from .purchase_order import SKIP_REFRESH
 
 MODE_ORDER = {"linear": 0, "sheet": 1, "fastener": 2, "paint": 3}
 DEFAULT_SIZE = "1500x6000"
@@ -267,7 +268,11 @@ class MetalSpecRequest(models.Model):
 
     def _pmk_sync_requests(self, rows):
         self.ensure_one()
-        PO = self.env["purchase.order"].with_context(self._pmk_request_context())
+        # Без пересчёта «Металла» строки планировщика на каждой записи
+        # заказа (шаг З-5, metal_arrival.py): он — один раз, в конце
+        # (_pmk_planner_wait_metal).
+        PO = self.env["purchase.order"].with_context(
+            self._pmk_request_context(), **{SKIP_REFRESH: True})
         placeholder = PO._pmk_no_supplier_partner()
         orders = self.pmk_metal_request_ids.with_env(PO.env).filtered(
             lambda order: order.state != "cancel")
@@ -424,19 +429,36 @@ class MetalSpecRequest(models.Model):
 
     # ─── Планировщик ────────────────────────────────────────────────────
     def _pmk_planner_wait_metal(self, res):
-        """Строка счёта: «Металл» — «Ждём», «Очередь» / «Разработка
-        чертежей» → «Ждём металл». Получен и ничего нового не заказали —
-        «Получен» остаётся. Нет строки или проекта — ничего не делаем."""
+        """Строка счёта: «Металл» — по заявкам (шаг З-5: ни одна не пришла —
+        «Ждём», часть — «Получен частично», все — «Получен»; новый черновик
+        с позициями — ещё не пришёл), «Очередь» / «Разработка чертежей» →
+        «Ждём металл». Нет строки или проекта — ничего не делаем."""
         self.ensure_one()
-        if not self.pmk_tech_order_id or not res["orders"]:
+        if not self.pmk_tech_order_id:
             return self.env["project.task"]
         tasks = self._pmk_request_planner_rows().filtered(
             lambda row: row.active and row.project_id.pmk_is_orders)
+        if not res["orders"]:
+            # Металла в расчёте не осталось: черновики опустели и отменены в
+            # синхронизации (пересчёт там подавлен — SKIP_REFRESH), а
+            # подтверждённые заявки ключами не совпали и в res не попали.
+            # «Металл» строки — по оставшимся заявкам (могли прийти все);
+            # этап не трогаем — заказывать нечего.
+            tasks._pmk_metal_refresh()
+            return self.env["project.task"]
         ordered_new = bool(res["created"] or res["added"])
         for task in tasks:
             vals = {}
-            if task.pmk_metal != "wait" and (task.pmk_metal != "got" or ordered_new):
-                vals["pmk_metal"] = "wait"
+            state, day = task._pmk_metal_state_from_requests()
+            if state is None:
+                # Считаемых заявок нет (все пустые) — как до шага З-5.
+                if task.pmk_metal != "wait" and (task.pmk_metal != "got" or ordered_new):
+                    vals["pmk_metal"] = "wait"
+            else:
+                if task.pmk_metal != state:
+                    vals["pmk_metal"] = state
+                if (task.pmk_metal_date or False) != (day or False):
+                    vals["pmk_metal_date"] = day
             # Этап без кода («Разобрать: прошлые месяцы» — импорт, строка
             # может быть уже в работе или отгружена) не трогаем: только
             # «Металл: Ждём».

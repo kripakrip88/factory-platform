@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    «Материал пришёл» (шаг З-5, карточка 5 «Заказ от заявки до цеха»).
+    Склад не ведём: кнопка ставит дату прихода, «Поступление» не проводит.
+    Подробно — models/metal_arrival.py. active в XML — грабли Odoo 19.
+  -->
+
+  <!--
+    Заказ поставщику (любой, не только заявка на металл: «Поступления» —
+    ловушка для всех закупок, карточка 6).
+      • «Материал пришёл» — залитая у подтверждённого заказа, первой в
+        шапке; контурная — у отправленного (сначала подтвердит заказ) и на
+        согласовании, сразу за штатными залитыми «Подтвердить заказ» /
+        «Утвердить». У черновика и отменённого её нет.
+      • «Снять «Материал пришёл»» — контурная, когда дата стоит.
+      • Штатная «Получить» (purchase_stock: открывает «Поступление», где
+        «Подтвердить» проводит приход) — без заливки: залитая на экране одна.
+        Спрятать её и «Поступления» — карточка 6.
+      • «Материал пришёл» (дата) — под «Ожидаемым прибытием», когда стоит;
+        править можно (кроме отменённого). Вернули в черновик — дата
+        снимается сама (models/metal_arrival.py, write).
+  -->
+  <record id="purchase_order_form_pmk_arrival" model="ir.ui.view">
+    <field name="name">purchase.order.form.pmk.arrival</field>
+    <field name="model">purchase.order</field>
+    <field name="inherit_id" ref="purchase.purchase_order_form"/>
+    <field name="priority">101</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//header/field[@name='lock_confirmed_po']" position="after">
+        <button name="action_pmk_material_arrived" type="object" string="Материал пришёл"
+                class="oe_highlight" invisible="state != 'purchase' or pmk_metal_date"
+                title="Металл на заводе: дата прихода — в заказе и в «Заказах в работе». На склад ничего не проводится"/>
+      </xpath>
+      <xpath expr="//header/button[@name='button_approve']" position="after">
+        <button name="action_pmk_material_arrived" type="object" string="Материал пришёл"
+                invisible="state not in ('sent', 'to approve') or pmk_metal_date"
+                title="Заказ подтвердится и получит дату прихода — в заказе и в «Заказах в работе». На склад ничего не проводится"/>
+      </xpath>
+      <xpath expr="//header/field[@name='state']" position="before">
+        <button name="action_pmk_material_undo" type="object" string="Снять «Материал пришёл»"
+                invisible="not pmk_metal_date or state == 'cancel'"
+                title="Дата прихода поставлена по ошибке — снять. Заказ остаётся подтверждённым"/>
+      </xpath>
+      <xpath expr="//header/button[@name='action_view_picking']" position="attributes">
+        <attribute name="class"></attribute>
+      </xpath>
+      <xpath expr="//div[@name='date_planned_div']" position="after">
+        <label for="pmk_metal_date" invisible="not pmk_metal_date"/>
+        <div name="pmk_metal_date_div" class="o_row" invisible="not pmk_metal_date">
+          <field name="pmk_metal_date" readonly="state == 'cancel'"/>
+        </div>
+      </xpath>
+    </field>
+  </record>
+
+  <!--
+    Список «Заявки на металл»: кнопка «Материал пришёл» для выбранных (в
+    шапке списка, только в этом окне — не в ⚙ всех закупок; отправленные
+    поставщику она сначала подтверждает — сказано в подсказке и в
+    уведомлении), колонка «Материал пришёл», состояние «Материал пришёл» —
+    зелёным, как «Заказ подтверждён»: различие — словом (жирный метке не
+    передаётся: тема задаёт плашке свой font-weight).
+  -->
+  <record id="view_metal_request_list_arrival" model="ir.ui.view">
+    <field name="name">purchase.order.list.pmk.metal.request.arrival</field>
+    <field name="model">purchase.order</field>
+    <field name="inherit_id" ref="pmk_tech.view_metal_request_list"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='state']" position="before">
+        <header>
+          <button name="action_pmk_material_arrived" type="object" string="Материал пришёл"
+                  title="Отметить приход у выбранных: дата — сегодня. Отправленные поставщику сначала будут подтверждены. Черновики и отменённые пропускаются. На склад ничего не проводится"/>
+        </header>
+      </xpath>
+      <xpath expr="//field[@name='date_planned']" position="after">
+        <field name="pmk_metal_date" string="Материал пришёл" optional="show"/>
+      </xpath>
+      <xpath expr="//field[@name='pmk_request_state_label']" position="attributes">
+        <attribute name="decoration-warning">state == 'to approve' and not pmk_metal_date</attribute>
+        <attribute name="decoration-success">state in ('purchase', 'done') or (pmk_metal_date and state in ('sent', 'to approve', 'purchase'))</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="view_metal_request_search_arrival" model="ir.ui.view">
+    <field name="name">purchase.order.search.pmk.metal.request.arrival</field>
+    <field name="model">purchase.order</field>
+    <field name="inherit_id" ref="pmk_tech.view_metal_request_search"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//filter[@name='pmk_confirmed']" position="after">
+        <separator/>
+        <filter name="pmk_metal_wait" string="Ждём металл"
+                domain="[('state', 'in', ('sent', 'to approve', 'purchase')), ('pmk_metal_date', '=', False)]"/>
+        <filter name="pmk_metal_arrived" string="Материал пришёл"
+                domain="[('pmk_metal_date', '!=', False), ('state', 'in', ('sent', 'to approve', 'purchase'))]"/>
+      </xpath>
+    </field>
+  </record>
+
+  <!--
+    Планировщик «Заказы в работе»: «Металл» — «Получен частично» синим
+    (слово рядом), колонка и поле «Металл получен» (дата), в канбане —
+    «Металл получен <дата>» отдельной строкой под меткой, а ряд метки с
+    номером сделки и исполнителем переносится (flex-wrap): в карточку
+    184 px «Получен частично» + номер не помещаются, номер не обрезаем.
+    Фильтр «Ждём металл» — кто ещё ждёт: «Ждём» / «Получен частично» и
+    строки этапа «Ждём металл» без «Получен»; новый «Металл получен».
+    Этап сам не двигается (решает планировщик).
+  -->
+  <record id="view_task_order_list_pmk_arrival" model="ir.ui.view">
+    <field name="name">project.task.list.pmk.orders.arrival</field>
+    <field name="model">project.task</field>
+    <field name="inherit_id" ref="pmk_orders.view_task_order_list"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='pmk_metal']" position="attributes">
+        <attribute name="decoration-info">pmk_metal == 'part'</attribute>
+      </xpath>
+      <xpath expr="//field[@name='pmk_metal']" position="after">
+        <field name="pmk_metal_date" optional="show"/>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="view_task_order_kanban_pmk_arrival" model="ir.ui.view">
+    <field name="name">project.task.kanban.pmk.orders.arrival</field>
+    <field name="model">project.task</field>
+    <field name="inherit_id" ref="pmk_orders.view_task_order_kanban"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//t[@t-name='card']//field[@name='pmk_metal']" position="attributes">
+        <attribute name="decoration-info">pmk_metal == 'part'</attribute>
+      </xpath>
+      <xpath expr="//t[@t-name='card']//div[field[@name='pmk_metal']]" position="attributes">
+        <attribute name="class" add="flex-wrap row-gap-1" separator=" "/>
+      </xpath>
+      <xpath expr="//t[@t-name='card']//div[field[@name='pmk_metal']]" position="after">
+        <div class="small text-muted" t-if="record.pmk_metal_date.raw_value">Металл получен <field name="pmk_metal_date"/></div>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="view_task_order_form_pmk_arrival" model="ir.ui.view">
+    <field name="name">project.task.form.pmk.orders.arrival</field>
+    <field name="model">project.task</field>
+    <field name="inherit_id" ref="pmk_orders.view_task_order_form"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='pmk_metal']" position="after">
+        <field name="pmk_metal_date"/>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="view_task_order_search_pmk_arrival" model="ir.ui.view">
+    <field name="name">project.task.search.pmk.orders.arrival</field>
+    <field name="model">project.task</field>
+    <field name="inherit_id" ref="pmk_orders.view_task_order_search"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//filter[@name='metal_wait']" position="attributes">
+        <attribute name="domain">['|', ('pmk_metal', 'in', ('wait', 'part')), '&amp;', ('stage_id.pmk_order_stage', '=', 'metal'), ('pmk_metal', '!=', 'got')]</attribute>
+      </xpath>
+      <xpath expr="//filter[@name='metal_wait']" position="after">
+        <filter name="metal_got" string="Металл получен" domain="[('pmk_metal', '=', 'got')]"/>
+      </xpath>
+    </field>
+  </record>
+</odoo>

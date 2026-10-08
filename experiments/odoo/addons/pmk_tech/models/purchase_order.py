@@ -46,6 +46,16 @@ REQUEST_STATE_LABELS = {
     "done": "Заказ подтверждён",
     "cancel": "Отменена",
 }
+# Слово кнопки «Материал пришёл» (шаг З-5): заявка — не только металл, но и
+# крепёж, краска. В планировщике то же понятие — «Металл: Получен».
+METAL_ARRIVED_LABEL = "Материал пришёл"
+# Состояния, в которых заказ уже заказан и отметка прихода считается: у
+# черновика и отменённого её нет (черновик ещё не заказан).
+ARRIVAL_STATES = ("sent", "to approve", "purchase")
+
+# Контекст «не пересчитывать „Металл“ строки планировщика на этой записи
+# заказа» (шаг З-5, metal_arrival.py): пересчёт делает тот, кто его ставит.
+SKIP_REFRESH = "pmk_skip_metal_refresh"
 
 
 class PurchaseOrderTech(models.Model):
@@ -90,9 +100,14 @@ class PurchaseOrderTech(models.Model):
         for order in self:
             order.pmk_no_supplier = bool(placeholder) and order.partner_id == placeholder
 
-    @api.depends("state")
+    @api.depends("state", "pmk_metal_date")
     def _compute_pmk_request_state_label(self):
+        # «Материал пришёл» — отметка снабженца (шаг З-5, metal_arrival.py);
+        # только у заказанного (черновик, отменённый — их слово).
         for order in self:
+            if order.pmk_metal_date and order.state in ARRIVAL_STATES:
+                order.pmk_request_state_label = METAL_ARRIVED_LABEL
+                continue
             order.pmk_request_state_label = REQUEST_STATE_LABELS.get(order.state, order.state or "")
 
     @api.model

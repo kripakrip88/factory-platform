@@ -62,8 +62,9 @@ def _filled(node):
     return bool({"btn-primary", "oe_highlight"} & set((node.get("class") or "").split()))
 
 
-@tagged("post_install", "-at_install")
-class TestStepZ4(Z2Common):
+class Z4Common(Z2Common):
+    """Данные и помощники шага З-4 — их же берёт шаг З-5 (test_step_z5.py).
+    Своих тестов нет: класс без test_-методов не гоняется."""
 
     @classmethod
     def setUpClass(cls):
@@ -168,6 +169,10 @@ class TestStepZ4(Z2Common):
             "pmk_kp_compare_weight", "pmk_kp_compare_cost", "pmk_kp_compare_unpriced",
             "pmk_tech_outdated_text"])
         return tech
+
+
+@tagged("post_install", "-at_install")
+class TestStepZ4(Z4Common):
 
     # ─── Технический расчёт ─────────────────────────────────────────────
     def test_tech_is_a_copy_of_kp_spec(self):

@@ -127,7 +127,10 @@ class TestStepZ2Planner(Z2Common):
         columns = [f.get("name") for f in listing.iter("field")
                    if f.get("column_invisible") not in ("1", "True")
                    and f.get("invisible") not in ("1", "True")]
-        self.assertEqual(columns, EXCEL_COLUMNS, "Колонки — в порядке Excel.")
+        # Шаг З-5 (pmk_tech, если стоит): «Металл получен» — сразу за «Металлом».
+        extra = (["pmk_metal_date"] if "pmk_metal_date" in self.env["project.task"]._fields
+                 else [])
+        self.assertEqual(columns, EXCEL_COLUMNS + extra, "Колонки — в порядке Excel.")
         hidden = {f.get("name") for f in listing.iter("field") if f.get("optional") == "hide"}
         self.assertEqual(hidden, {"pmk_org_id", "pmk_ready_date", "pmk_ship_date", "pmk_note",
                                   "pmk_ordered", "pmk_paint", "pmk_passport"},

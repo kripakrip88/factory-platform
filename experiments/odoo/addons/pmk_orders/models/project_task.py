@@ -27,7 +27,9 @@ from odoo import Command, _, api, fields, models
 from odoo.tools.misc import clean_context
 
 ORDERED = [("yes", "Да"), ("no", "Нет")]
-METAL = [("none", "—"), ("wait", "Ждём"), ("got", "Получен")]
+# «Получен частично» — шаг З-5 (pmk_tech, «Материал пришёл»): пришла часть
+# заявок на металл заказа. Новое значение в varchar — миграции не нужно.
+METAL = [("none", "—"), ("wait", "Ждём"), ("part", "Получен частично"), ("got", "Получен")]
 
 
 class ProjectTask(models.Model):
@@ -71,7 +73,9 @@ class ProjectTask(models.Model):
     pmk_metal = fields.Selection(
         METAL, "Металл", tracking=True,
         help="«Ждём» ставит «Заявка на металл» из технического расчёта (шаг З-4, "
-             "pmk_tech); «Получен» — пока руками, потом «Материал пришёл».")
+             "pmk_tech); «Получен» / «Получен частично» — кнопка «Материал пришёл» "
+             "в заказе поставщику (шаг З-5): пришли все заявки на металл заказа или "
+             "часть. Строке без заявок — руками.")
     pmk_overdue = fields.Boolean(
         "Просрочена сдача", compute="_compute_pmk_overdue", search="_search_pmk_overdue",
         help="Сдача (план) прошла, а заказ не отгружен. Сигнал, ничего не запрещает.")
