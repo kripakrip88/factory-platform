@@ -16,3 +16,5 @@ from . import test_step53_product_created
 from . import test_step58_seller
 # Исправление 08.10.2026: новый расчёт с листом не сохранялся (зеркала деталей).
 from . import test_hotfix_new_spec_save
+# Шаг 56: «Цена за шт» в строке «Состава», КП при устаревшей раскладке.
+from . import test_step56_inline_price

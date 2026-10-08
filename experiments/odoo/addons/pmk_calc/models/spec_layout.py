@@ -16,6 +16,9 @@
 Поэтому сумма листов по строкам всегда не меньше того, что выйдет у технолога.
 """
 
+import hashlib
+from collections import Counter
+
 from markupsafe import Markup, escape
 
 from odoo import Command, api, fields, models
@@ -55,6 +58,41 @@ LAYOUT_RESET = {
     "layout_scheme": False,
     "layout_utilization_pct": 0.0,
 }
+
+
+# ─── Сигнал «Раскладка устарела» (разбор UX, шаг 56) ──────────────────────
+#
+# Антон 07.10: «Сделаем сигнализацию внутри системы что нужна перераскладка?»
+# Гашение строк (выше) говорит про одну деталь и только на вкладке
+# «Раскладка». Расчёту нужен свой признак, видный сразу на форме: детали
+# добавили, поменяли размер или количество изделий после раскладки — число
+# листов уже не про этот заказ. Признак показывает, а не запрещает: КП
+# печатается и отправляется как раньше (сначала наблюдать, потом
+# контролировать).
+#
+# КАК. В момент «Разложить листы» расчёт запоминает отпечаток своих листовых
+# деталей — по ключу на деталь из того, от чего зависит её раскладка
+# (layout_fingerprint). Ключ детали, которого нет в отпечатке, — деталь новая
+# или изменилась после раскладки. Ключи считаются с повторами (мультимножество):
+# две одинаковые детали — два ключа, и деталь, ставшая «как соседняя»,
+# всё равно лишняя против отпечатка. Удалённая деталь сигнала не даёт: числа
+# оставшихся верны. Цена листа в ключ не входит — числа раскладки от цены не
+# зависят (см. MetalSpecLineLayout); сам лист (sheet_id: толщина, вид) — входит.
+#
+# Версия ключа меняется вместе с алгоритмом sheeting.py: после смены все
+# разложенные расчёты станут «устарела» — так и должно быть.
+LAYOUT_KEY_VERSION = 1
+# Отпечаток расчётов, разложенных до 30.09.2026: тогда правка деталей ещё не
+# гасила раскладку (доводка шага 32, коммит 2e189a8), и числа могли отстать
+# от деталей. Ставит миграция 19.0.1.0.6; «Разложить листы» его заменяет.
+LEGACY_FINGERPRINT = "до-исправления-30.09"
+
+
+def _layout_key(sheet_id, a_mm, b_mm, qty_total, sheet_size):
+    """Ключ одной листовой детали: 12 знаков sha1 от входов раскладки."""
+    raw = repr((LAYOUT_KEY_VERSION, sheet_id or 0, round(a_mm or 0.0, 1),
+                round(b_mm or 0.0, 1), int(qty_total or 0), sheet_size or "1500x6000"))
+    return hashlib.sha1(raw.encode("utf-8")).hexdigest()[:12]
 
 
 def _is_create(command):
@@ -146,6 +184,100 @@ class MetalSpecLayout(models.Model):
     def write(self, vals):
         return super().write(self._pmk_drop_mirror_creates(vals))
 
+    # Отпечаток листовых деталей на момент последней раскладки (шаг 56): ключи
+    # через пробел, см. _layout_key. Пусто — не раскладывали (или копия:
+    # раскладка в копию не переносится, R4). Служебное поле, на форме его нет.
+    layout_fingerprint = fields.Text(
+        "Отпечаток раскладки", copy=False, readonly=True,
+        help="Чем были листовые детали, когда последний раз раскладывали "
+             "листы. Отличаются сейчас — раскладка устарела.")
+    layout_stale = fields.Boolean(
+        "Раскладка устарела", compute="_compute_layout_stale",
+        help="Листовые детали изменились после «Разложить листы»: число листов "
+             "уже не про этот заказ. Ничего не блокирует — КП печатается.")
+    layout_stale_text = fields.Char(
+        "Почему раскладка устарела", compute="_compute_layout_stale")
+    # Для списка расчётов: слово, а не галочка (цвет повторён словом).
+    layout_stale_label = fields.Char(
+        "Раскладка", compute="_compute_layout_stale")
+
+    def _pmk_layout_lines(self):
+        """Листовые детали расчёта — через изделия, а не зеркало sheet_line_ids:
+        onchange не отдаёт в зеркало новых деталей (см. выше), а сигнал нужен
+        и до сохранения."""
+        self.ensure_one()
+        return self.product_ids.line_sheet_ids
+
+    def _pmk_layout_keys(self):
+        """Ключи листовых деталей расчёта сейчас — список с повторами: две
+        одинаковые детали дают два одинаковых ключа (сравнение — Counter).
+
+        Габарит берётся из зеркала «Раскладка», если деталь там есть: габарит
+        правят на вкладке, а на экране до сохранения зеркало и деталь в
+        изделии — разные записи формы."""
+        self.ensure_one()
+        sizes = {line._origin.id: line.layout_sheet_size
+                 for line in self.sheet_line_ids if line._origin.id}
+        keys = []
+        # Через изделие, а не line.product_id: на экране до сохранения
+        # количество изделия — то, что набрано в строке «Состава».
+        for product in self.product_ids:
+            for line in product.line_sheet_ids:
+                size = sizes.get(line._origin.id) or line.layout_sheet_size
+                keys.append(_layout_key(
+                    line.sheet_id._origin.id, line.a_mm, line.b_mm,
+                    (line.qty or 0) * (product.qty or 0), size))
+        return keys
+
+    @api.depends(
+        "layout_fingerprint",
+        "product_ids.qty",
+        "product_ids.line_sheet_ids.a_mm",
+        "product_ids.line_sheet_ids.b_mm",
+        "product_ids.line_sheet_ids.qty",
+        "product_ids.line_sheet_ids.sheet_id",
+        "product_ids.line_sheet_ids.layout_sheet_size",
+        "product_ids.line_sheet_ids.layout_state",
+        "sheet_line_ids.layout_sheet_size",
+        "sheet_line_ids.layout_state",
+    )
+    def _compute_layout_stale(self):
+        """Устарела: после раскладки появилась деталь, которой нет в
+        отпечатке, или деталь погашена (layout_state «Не считалась» — так её
+        гасят правка размера, количества, листа, габарита и количества
+        изделий; spec_layout выше). Без отпечатка — не раскладывали, сигнала
+        нет. Без листовых деталей — тоже нет."""
+        for spec in self:
+            stale, text, label = False, False, False
+            saved = spec.layout_fingerprint
+            lines = spec._pmk_layout_lines() if saved else spec.env["pmk.metal.spec.line"]
+            if saved and lines:
+                if saved == LEGACY_FINGERPRINT:
+                    # Детали могли и не меняться — «могла устареть», а не
+                    # «устарела»: и в плашке, и на вкладке, и в списке.
+                    stale, label = True, "могла устареть"
+                    text = ("Раскладка посчитана до исправления 30.09 и могла "
+                            "устареть — нажмите «Разложить листы (черновик)»")
+                else:
+                    states = lines.mapped("layout_state") + spec.sheet_line_ids.mapped("layout_state")
+                    # Мультимножества: новая деталь, совпавшая ключом с
+                    # другой деталью отпечатка, — всё равно лишняя.
+                    stale = ("none" in states
+                             or bool(Counter(spec._pmk_layout_keys()) - Counter(saved.split())))
+                    if stale:
+                        label = "устарела"
+                        text = ("Раскладка устарела: листовые детали изменились "
+                                "после раскладки — нажмите «Разложить листы "
+                                "(черновик)»")
+            spec.layout_stale = stale
+            spec.layout_stale_text = text
+            spec.layout_stale_label = label
+
+    def _pmk_store_layout_fingerprint(self):
+        """Запомнить, из чего разложены листы (после «Разложить листы»)."""
+        for spec in self:
+            spec.layout_fingerprint = " ".join(sorted(spec._pmk_layout_keys())) or False
+
     # ШИРИНЫ РЕЗА НА ФОРМЕ НЕТ. Она была, и владелец убрал её как лишнюю —
     # справедливо: рез лазера 0,2 мм тонет в допуске на ряд (5 мм), и на число
     # листов почти не влияет. Значение берётся константой из sheeting.py.
@@ -173,6 +305,9 @@ class MetalSpecLayout(models.Model):
             lines = spec.mapped("product_ids.line_sheet_ids")
             for line in lines:
                 line._apply_draft_layout()
+            # Шаг 56: отпечаток — после раскладки строк, плашка «Раскладка
+            # устарела» гаснет.
+            spec._pmk_store_layout_fingerprint()
             spec._log_draft_layout(lines)
         return True
 

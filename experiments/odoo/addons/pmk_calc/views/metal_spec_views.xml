@@ -66,6 +66,27 @@
             приложение, вью оно перечитывает, а стили нет), как поля
             разъезжались. Теперь без стилей это просто обычная форма Odoo.
           -->
+          <!--
+            Сигнал «Раскладка устарела» (разбор UX, шаг 56; Антон 07.10:
+            «Сделаем сигнализацию внутри системы что нужна перераскладка?»).
+            Листовые детали изменились после «Разложить листы» — число листов
+            уже не про этот заказ. Бледно-жёлтая плашка, как «Нет цены»
+            моста (класс pmk-price-alert темы, тёмная пара есть); слово
+            повторяет цвет. Ничего не блокирует: КП печатается и
+            отправляется как прежде. Кнопка — та же, что на вкладке
+            «Раскладка», контурная: залитая на экране одна — «КП (PDF)».
+            Правила — spec_layout.py, «Сигнал „Раскладка устарела“».
+            Плашка «Нет цены» моста встаёт следом (его xpath — перед
+            pmk-doc-head).
+          -->
+          <div class="alert pmk-price-alert mb-3 d-flex flex-wrap align-items-center gap-2"
+               role="status" name="pmk_layout_stale" invisible="not layout_stale">
+            <i class="fa fa-exclamation-triangle" title="Внимание" aria-hidden="true"/>
+            <field name="layout_stale_text" nolabel="1"/>
+            <button name="action_draft_layout" type="object"
+                    string="Разложить листы (черновик)" class="btn btn-secondary btn-sm ms-auto"/>
+          </div>
+          <field name="layout_stale" invisible="1"/>
           <div class="pmk-doc-head">
             <!--
               Порядок шапки (приёмка 01.10.2026, R2/R3): Сделка (во всю
@@ -451,9 +472,17 @@
                         string="Разложить листы (черновик)" class="btn btn-secondary"
                         invisible="not sheet_line_ids"
                         title="Сколько заготовок влезает в лист и сколько листов купить. Результат — в таблице ниже и в истории документа"/>
-                <span class="text-muted" invisible="not sheet_line_ids">
+                <!-- Шаг 56: раскладка устарела — вместо серой подсказки
+                     жёлтая строка словом (та же, что плашка над шапкой). -->
+                <span class="text-muted" invisible="not sheet_line_ids or layout_stale">
                   Сколько листов купить под заказ. Верхняя оценка: технолог
                   уложит плотнее и объединит детали на одном листе.
+                </span>
+                <!-- Текст — то же поле, что в плашке над шапкой: у старых
+                     расчётов (до 30.09) — «могла устареть», а не «устарела». -->
+                <span class="alert pmk-price-alert py-1 px-2 mb-0" role="status"
+                      invisible="not layout_stale">
+                  <field name="layout_stale_text" nolabel="1"/>
                 </span>
                 <span class="text-muted" invisible="sheet_line_ids">
                   Листовых деталей нет — раскладывать нечего. Лист
@@ -523,6 +552,14 @@
              встают деньги: колонка «т» видна всегда, скрытие там снято. -->
         <field name="total_weight" string="Вес, кг" digits="[12,0]" sum="Итого, кг" optional="hide"/>
         <field name="total_weight_t" string="Вес, т" digits="[12,3]" sum="Итого, т"/>
+        <!-- Шаг 56: «Раскладка — устарела» («могла устареть» у старых
+             расчётов, до 30.09) бледно-жёлтым словом; в меню
+             колонок (⚙), по умолчанию скрыта. Пусто — раскладка актуальна
+             или её не было. layout_stale — для цвета: простое поле,
+             column_invisible его не режет. -->
+        <field name="layout_stale_label" string="Раскладка" optional="hide"
+               widget="badge" decoration-warning="layout_stale"/>
+        <field name="layout_stale" column_invisible="1"/>
       </list>
     </field>
   </record>

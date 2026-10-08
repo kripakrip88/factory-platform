@@ -14,3 +14,5 @@ from . import test_step30_tracking
 from . import test_step35_dobor
 # Слово «расчёт» вместо «спецификации» (шаг 39): имена, подписи, история.
 from . import test_step39_words
+# Шаг 56: правка в строке «Состава», поиск «уг 50 5», «Раскладка устарела».
+from . import test_step56_spec

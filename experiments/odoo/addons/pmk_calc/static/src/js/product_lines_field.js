@@ -14,6 +14,29 @@
  * было нечего. Разметка добавлена в metal_spec_views.xml — запрос больше не
  * нужен, и состав всегда показывает то же, что форма.
  *
+ * ПРАВКА В СТРОКЕ ИЗДЕЛИЯ (разбор UX, шаг 56; Антон 07.10: «Почему нельзя
+ * изменить цену за штуку в общем списке расчета металлопроката и
+ * количество?»). Причина была в виде, а не в модели: список изделий — <list>
+ * без editable, и ядро в таком списке рисует запись только для чтения
+ * (ListRenderer.isRecordReadonly: «in a x2many non editable list… displayed
+ * in readonly»), а щелчок по ячейке открывает окно изделия. Сделать весь
+ * список editable нельзя: «Добавить изделие» заводил бы пустую строку на
+ * месте вместо окна, щелчок по названию перестал бы открывать окно, Enter в
+ * последней строке заводил бы новое изделие.
+ *
+ * Поэтому правка в строке — только у колонок pmkInlineFieldNames():
+ * «Количество, шт» здесь, «Цена за шт» добавляет мост (pmk_bridge,
+ * product_lines_cost.js — поле его). Щелчок по ним открывает строку на
+ * правку, и поля ввода — только у них; остальные колонки строки — как были,
+ * только чтение. Щелчок по прочим колонкам (название, вес, металл) — окно
+ * изделия, как раньше. Запись строки та же, что в окне изделия (окно правит
+ * ту же запись набора), поэтому пересчёт тот же: вес изделия, «Сумма», итоги
+ * и карточки расчёта — onchange документа; в базе количество изделий гасит
+ * раскладку листа (spec_layout.py, MetalSpecProductLayout.write). Esc —
+ * отмена правки строки: цена и количество возвращаются к тем, что были до
+ * щелчка (pmkCancelInline; ядро у существующей записи x2many Esc ничего не
+ * откатывает).
+ *
  * ПОЧЕМУ ПРАВКА БЕЗ СОХРАНЕНИЯ НА СЕРВЕР. Строки создаются и меняются в
  * наборе документа (addNewRecord / update / delete), то есть живут в памяти
  * до сохранения спецификации. Создавать их сразу в базе нельзя: нажатие
@@ -143,6 +166,254 @@ export class ProductLinesRenderer extends ListRenderer {
         // шаг 32). Обычный Set, НЕ реактивный: пишется во время отрисовки,
         // а запись в useState оттуда вызвала бы повторную отрисовку.
         this.pmkAutoOpen = new Set();
+        // Строка изделия открыта на правку В СТРОКЕ (шаг 56), а не окном.
+        // Обычное свойство, не реактивное: читается при отрисовке
+        // (isInlineEditable), меняется через pmkSetInline — та сама
+        // перерисовывает список, если запись уже «на правке» (например,
+        // осталась такой после окна изделия) и сама отрисовку не вызовет.
+        this.pmkInline = false;
+        // «Как было» у цены и количества до правки строки — для Esc (шаг
+        // 56): id записи → {поле: значение}. Ядро Esc у существующей записи
+        // x2many ничего не откатывает (StaticList.leaveEditMode: discard
+        // отбрасывает только новые записи), поэтому отмена — своя.
+        this.pmkInlineBefore = new Map();
+    }
+
+    // ─── Правка цены и количества в строке изделия (шаг 56) ────────────────
+
+    /**
+     * Колонки, которые правятся в строке. Мост дописывает «Цену за шт»
+     * (pmk_bridge, product_lines_cost.js): поле его, без моста калькулятор
+     * работает как раньше. Вернуть прежнее поведение — вернуть [].
+     */
+    pmkInlineFieldNames() {
+        return ["qty"];
+    }
+
+    pmkSetInline(value) {
+        if (this.pmkInline !== value) {
+            this.pmkInline = value;
+            if (!value) {
+                this.pmkInlineBefore.clear();
+            }
+            this.render();
+        }
+    }
+
+    /**
+     * Запомнить цену и количество строк, которые сейчас НЕ на правке: это
+     * «как было» для Esc. Строка на правке не перезаписывается — её «как
+     * было» снято до входа в правку. Зовётся перед каждым действием, которое
+     * может открыть строку на правку: щелчок, Enter, Tab/Shift+Tab, Enter
+     * на правке (переход на соседнюю строку).
+     */
+    pmkRememberBefore() {
+        for (const record of this.props.list.records) {
+            if (record.isInEdition) {
+                continue;
+            }
+            const values = {};
+            for (const name of this.pmkInlineFieldNames()) {
+                if (name in record.data) {
+                    values[name] = record.data[name];
+                }
+            }
+            this.pmkInlineBefore.set(record.id, values);
+        }
+    }
+
+    /**
+     * Esc в строке на правке: вернуть цену и количество, какими они были до
+     * правки строки, и закрыть правку. Сначала выходим из правки — ядро при
+     * выходе забирает набранное из поля ввода (_askChanges); верни мы
+     * значение раньше, поле записало бы набранное поверх. Пересчёт «Суммы» и
+     * итогов — тот же onchange, что и при правке.
+     */
+    async pmkCancelInline(record) {
+        const list = this.props.list;
+        const before = this.pmkInlineBefore.get(record.id);
+        if (list.editedRecord) {
+            await list.leaveEditMode();
+        }
+        if (before) {
+            const changes = {};
+            for (const [name, value] of Object.entries(before)) {
+                // Неверный ввод (не число) в запись не попал, но держит
+                // строку на правке — значение пишем заново, ядро снимет
+                // отметку об ошибке.
+                if (record.data[name] !== value || record.isFieldInvalid(name)) {
+                    changes[name] = value;
+                }
+            }
+            if (Object.keys(changes).length) {
+                await record.update(changes);
+            }
+        }
+        if (list.editedRecord) {
+            await list.leaveEditMode();
+        }
+        this.pmkSetInline(false);
+        // Как ядро после Esc: курсор — на «Добавить изделие».
+        const addButton = this.tableRef.el?.querySelector(".o_field_x2many_list_row_add a");
+        if (addButton) {
+            this.focus(addButton);
+        }
+    }
+
+    pmkIsInline(column) {
+        return !!(
+            column &&
+            column.type === "field" &&
+            !this.props.readonly &&
+            this.pmkInlineFieldNames().includes(column.name)
+        );
+    }
+
+    /**
+     * Список изделий по-прежнему «не редактируемый»: правится только
+     * строка, открытая щелчком по цене или количеству. Строка за окном
+     * изделия остаётся только для чтения — признак гасится до открытия окна.
+     */
+    isInlineEditable(_record) {
+        return this.pmkInline;
+    }
+
+    /** В строке на правке поля ввода — только у цены и количества. */
+    isCellReadonly(column, record) {
+        if (this.pmkInline && record.isInEdition && !this.pmkIsInline(column)) {
+            return true;
+        }
+        return super.isCellReadonly(column, record);
+    }
+
+    /** Намёк стилям: эти ячейки правятся щелчком (scss/spec_form.scss). */
+    getCellClass(column, record) {
+        const classNames = super.getCellClass(column, record);
+        return this.pmkIsInline(column) ? `${classNames} pmk-inline-cell` : classNames;
+    }
+
+    getCellTitle(column, record) {
+        if (this.pmkIsInline(column) && !record.isInEdition) {
+            return "Щёлкните, чтобы изменить";
+        }
+        return super.getCellTitle(column, record);
+    }
+
+    /** Закрыть редакторы деталей под всеми изделиями (одна правка за раз). */
+    async pmkCloseLineEditors() {
+        if (!this.pmk.editing) {
+            return;
+        }
+        for (const product of this.props.list.records) {
+            for (const section of SECTIONS) {
+                const lines = product.data[section.field];
+                if (lines && lines.editedRecord) {
+                    await lines.leaveEditMode();
+                }
+            }
+        }
+        this.pmk.editing = null;
+    }
+
+    /**
+     * Выйти из правки строки изделия. false — не вышли: в строке ошибка
+     * (ядро подсветит поле), действие не продолжаем.
+     */
+    async pmkLeaveProductEdit() {
+        const list = this.props.list;
+        if (list.editedRecord) {
+            const left = await list.leaveEditMode();
+            if (!left) {
+                return false;
+            }
+        }
+        this.pmkSetInline(false);
+        return true;
+    }
+
+    /**
+     * Щелчок по ячейке изделия: цена и количество — правка в строке,
+     * остальное — окно изделия, как раньше.
+     */
+    async onCellClicked(record, column, ev, newWindow) {
+        if (ev.target.special_click) {
+            return;
+        }
+        if (this.pmkIsInline(column)) {
+            await this.pmkCloseLineEditors();
+            this.pmkRememberBefore();
+            this.pmkSetInline(true);
+            // Ядро само откроет строку на правку (enterEditMode) и поставит
+            // курсор в эту ячейку; строка уже на правке — только курсор.
+            return super.onCellClicked(record, column, ev, newWindow);
+        }
+        if (!(await this.pmkLeaveProductEdit())) {
+            return;
+        }
+        if (!this.props.archInfo.noOpen) {
+            this.props.openRecord(record, { newWindow });
+        }
+    }
+
+    /** Enter на ячейке без правки: у цены и количества — правка в строке. */
+    onCellKeydownReadOnlyMode(hotkey, cell, group, record) {
+        if (hotkey === "enter" && record && cell) {
+            const column = this.columns.find((c) => c.name === cell.getAttribute("name"));
+            this.pmkRememberBefore();
+            this.pmkSetInline(this.pmkIsInline(column));
+        }
+        return super.onCellKeydownReadOnlyMode(hotkey, cell, group, record);
+    }
+
+    /**
+     * Enter в последней строке — закончить правку. Ядро здесь заводит новую
+     * запись (add), а у этого списка это окно «нового изделия».
+     */
+    editNextRecord(record, group) {
+        const list = this.props.list;
+        if (this.pmkInline && list.records.indexOf(record) === list.records.length - 1) {
+            list.leaveEditMode({ validate: true });
+            return;
+        }
+        return super.editNextRecord(record, group);
+    }
+
+    /**
+     * Tab за последней ячейкой последней строки — то же: без нового изделия.
+     * Esc — отмена правки строки: цена и количество — как до правки.
+     */
+    onCellKeydownEditMode(hotkey, cell, group, record) {
+        const list = this.props.list;
+        if (this.pmkInline && record && hotkey === "escape") {
+            this.pmkCancelInline(record);
+            return true;
+        }
+        if (this.pmkInline) {
+            // Tab, Enter переводят правку на соседнюю строку — её «как было»
+            // снимаем до перехода.
+            this.pmkRememberBefore();
+        }
+        if (
+            this.pmkInline &&
+            record &&
+            hotkey === "tab" &&
+            list.records.indexOf(record) === list.records.length - 1
+        ) {
+            if (this.applyCellKeydownEditModeStayOnRow(hotkey, cell, group, record)) {
+                return true;
+            }
+            list.leaveEditMode();
+            return true;
+        }
+        return super.onCellKeydownEditMode(hotkey, cell, group, record);
+    }
+
+    /** «Добавить изделие» — окно, как раньше; правку строки сперва закрываем. */
+    async add(params) {
+        if (!(await this.pmkLeaveProductEdit())) {
+            return;
+        }
+        return super.add(params);
     }
 
     /**
@@ -307,6 +578,10 @@ export class ProductLinesRenderer extends ListRenderer {
      * добавленная при этом исчезает сама — как в обычных списках Odoo.
      */
     async editLine(record, section, line) {
+        // Строка изделия на правке (шаг 56) — сперва закрываем: правка одна.
+        if (!(await this.pmkLeaveProductEdit())) {
+            return;
+        }
         await record.data[section.field].enterEditMode(line);
         this.pmk.editing = line.id;
     }
@@ -330,6 +605,9 @@ export class ProductLinesRenderer extends ListRenderer {
      */
     async addLine(record, section) {
         const list = record.data[section.field];
+        if (!(await this.pmkLeaveProductEdit())) {
+            return;
+        }
         if (this.pmk.editing) {
             for (const other of SECTIONS) {
                 await record.data[other.field].leaveEditMode();

@@ -424,5 +424,107 @@ class TestRankSheets(_Case):
                 self.assertEqual(size_search.rank_sheets(SHEETS, SHEET_NAMES[rid])[:1], [rid])
 
 
+class TestNumbersBySpace(_Case):
+    """Шаг 56 (Антон 07.10): «уголок 50х50х5 можно было найти запросом
+    „уг 50 5“». Числа через пробел — один размер; число запроса — целым
+    числом позиции («5» не находит «50»). Правила — size_search.py,
+    «ЧИСЛА ЧЕРЕЗ ПРОБЕЛ»."""
+
+    ANGLE = "Уголок равнополочный 50x50x5"
+
+    def test_owner_example(self):
+        self.assertEqual(profiles("уг 50 5", n=5), [self.ANGLE],
+                         "Ровно 50x50x5 — не 50x50x3 первым, как было.")
+        self.assertNotIn("Уголок равнополочный 50x50x4", profiles("уг 50 5", n=50))
+        self.assertEqual(profiles("уг 50 50 5", n=5), [self.ANGLE])
+        self.assertEqual(profiles("уг 50 4"), ["Уголок равнополочный 50x50x4"])
+        self.assertEqual(profiles("уг 50 50", n=3),
+                         ["Уголок равнополочный 50x50x3", "Уголок равнополочный 50x50x4",
+                          self.ANGLE], "Начало размера по числам — все 50x50.")
+
+    def test_other_kinds(self):
+        cases = {
+            "тр 40 20 2": "Труба профильная прямоугольная 40x20x2",
+            "тр 57 3,5": "Труба круглая 57x3.5",
+            "вгп 50 3": "Труба ВГП Ду50x3",
+            "уг 63 40 5": "Уголок неравнополочный 63x40x5",
+            "швел 10": "Швеллер 10П",
+            "шв 10": "Швеллер 10П",
+            "арм 12": "Арматура d12",
+            "уг 50 5 ст3": self.ANGLE,
+            "уг 50 5 гост 8509-93": self.ANGLE,
+        }
+        for text, want in cases.items():
+            with self.subTest(text=text):
+                self.assertEqual(profiles(text), [want])
+        self.assertEqual(profiles("шв 10", n=2), ["Швеллер 10П", "Швеллер 10У"])
+        self.assertEqual(profiles("тр 57 3,5", n=2),
+                         ["Труба круглая 57x3.5", "Труба круглая 57x3.5 бесш"],
+                         "Электросварная первой, бесшовная — за ней.")
+
+    def test_case_yo_and_size_signs(self):
+        for text in ("УГ 50Х50Х5", "уг 50*5", "Уголок 50×50×5", "уголок 50х5",
+                     "уголок 50x5", "Уг 50 5", "уголки 50 5", "уг50 5"):
+            with self.subTest(text=text):
+                self.assertEqual(profiles(text), [self.ANGLE])
+        self.assertEqual(profiles("Лист рифлёный 4"), profiles("лист рифленый 4"))
+
+    def test_number_is_whole(self):
+        """Число — целым: «57 3» не отдаёт 57x3.5, а «лист 4» — 40 и 4,5 мм."""
+        self.assertEqual(profiles("тр 57 3"), ["Труба круглая 57x3"])
+        self.assertNotIn("Труба круглая 57x3.5", profiles("тр 57 3", n=20))
+        four = sheets("лист 4", 20)
+        self.assertTrue(four)
+        self.assertTrue(all(" 4 мм" in name for name in four), four)
+
+    def test_fallback_while_typing(self):
+        """Строгий проход пуст — прежний: на полпути ответ не пустой (поле
+        Odoo запоминает пустой ответ, lastEmptySearch)."""
+        self.assertEqual(profiles("тр 40 20 1"), ["Труба профильная прямоугольная 40x20x1.5"])
+        for full in ("уг 50 50 5", "уг 50 5", "тр 40 20 1,5", "тр 40 20 2", "уг 63 40 5",
+                     "тр 57 3,5", "вгп 50 3", "шв 10", "арм 12", "уг 50 5 ст3"):
+            empty = [full[:i] for i in range(1, len(full) + 1)
+                     if not size_search.rank_profiles(PROFILES, full[:i])]
+            with self.subTest(text=full):
+                self.assertEqual(empty, [])
+        for full in ("лист 4", "лист 1,5", "оц 0,5"):
+            empty = [full[:i] for i in range(1, len(full) + 1)
+                     if not size_search.rank_sheets(SHEETS, full[:i])]
+            with self.subTest(text=full):
+                self.assertEqual(empty, [])
+
+    def test_numbers_in_other_order(self):
+        """«уг 5 50» — сначала толщина, потом полка: склеенное «5x50» не
+        находит ничего, тогда числа по отдельности, как до шага 56 (находка
+        проверки 08.10: ответ был пустым, поле запоминало пустоту)."""
+        for text in ("уг 5 50", "уг 5 50 50"):
+            with self.subTest(text=text):
+                found = profiles(text, n=50)
+                self.assertIn(self.ANGLE, found)
+                self.assertEqual(found[:1], [self.ANGLE], "Целым числом — 50x50x5 первым.")
+        self.assertEqual(profiles("тр 2 20 40"), ["Труба профильная прямоугольная 40x20x2"])
+        self.assertEqual(size_search.reverse_numbers(["уг", "5x50x"]), ["уг", "50x5"])
+        self.assertEqual(size_search.reverse_numbers(["уг", "ст3"]), ["уг", "ст3"])
+        # На полпути пусто только «тр 2 20 4» — так было и до шага 56: числа
+        # по отдельности приходятся на одно слово «40x20x2».
+        for full in ("уг 5 50", "уг 5 50 50"):
+            empty = [full[:i] for i in range(1, len(full) + 1)
+                     if not size_search.rank_profiles(PROFILES, full[:i])]
+            with self.subTest(text=full):
+                self.assertEqual(empty, [])
+
+    def test_sheet_numbers_not_joined(self):
+        """У листа толщина и размер просечки — разные слова."""
+        self.assertEqual(sheets("пвл 5 506"), ["Лист просечно-вытяжной 5 мм 506"])
+
+    def test_join_numbers(self):
+        join = size_search.join_numbers
+        self.assertEqual(join(["уг", "50", "5"]), ["уг", "50x5"])
+        self.assertEqual(join(["тр", "40", "20", "2"]), ["тр", "40x20x2"])
+        self.assertEqual(join(["уг", "50x", "5"]), ["уг", "50x5"])
+        self.assertEqual(join(["тр", "57x3.5", "бесш"]), ["тр", "57x3.5", "бесш"])
+        self.assertEqual(join(["50", "уг", "5"]), ["50", "уг", "5"])
+
+
 if __name__ == "__main__":
     unittest.main()

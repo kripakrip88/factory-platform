@@ -220,3 +220,25 @@
 .pmk-edit__field.pmk-edit__field--xwide {
   flex: 0 1 320px;
 }
+
+// ─── Шаг 56: цена и количество правятся в строке изделия (08.10.2026) ──────
+//
+// Ячейки «Цена за шт» и «Количество, шт» таблицы «Состав» правятся щелчком
+// (js/product_lines_field.js, класс pmk-inline-cell). Намёк — курсор ввода и
+// тонкая рамка при наведении, без заливки и без лайма: лайм — только «где я».
+// Цвет — токен темы: в тёмной (dark.scss задаёт --pmk-border-strong под
+// body.o_nexus_dark) рамка своя, второй аргумент var() — светлая. Строка на
+// правке (o_selected_row) — штатная: поле ввода видно и так. Ячейку с полем
+// ввода ядро красит белым и в тёмной теме — пара для неё в pmk_theme
+// dark.scss, раздел «5. Списки» (общая для всех редактируемых списков).
+// cursor с !important: ядро (ListRenderer.getCellClass) даёт ячейкам строки
+// класс-утилиту cursor-pointer, а утилиты Odoo — с !important
+// ($enable-important-utilities). Без него оставалась рука, как у названия.
+.pmk-rows .o_data_row:not(.o_selected_row) > td.pmk-inline-cell {
+  cursor: text !important;
+
+  &:hover {
+    box-shadow: inset 0 0 0 1px var(--pmk-border-strong, #d6d0c2);
+    border-radius: 6px;
+  }
+}

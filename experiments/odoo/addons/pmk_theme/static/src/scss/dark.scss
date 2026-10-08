@@ -338,6 +338,26 @@ $pmk-dark-alerts: (
     color: var(--pmk-ink-faint);
   }
 
+  // Ячейка с полем ввода в строке на правке. Ядро (list_renderer.scss)
+  // красит её $o-view-background-color, а переменная скомпилирована в белый:
+  // в тёмной теме посреди строки вставала белая ячейка вокруг тёмного поля
+  // ввода (theme_nexus красит .o_input тёмным). Касается всех редактируемых
+  // списков: «Цена за шт» и «Количество, шт» в «Составе» расчёта (разбор UX,
+  // шаг 56), габарит на вкладке «Раскладка», строки КП и прочие. Фон — как у
+  // поля ввода, ячейка и поле сливаются, как белое с белым в светлой теме.
+  // То же для ячейки под курсором клавиатуры (o_keyboard_navigation): ядро
+  // даёт ей светло-серый $o-form-lightsecondary. Вес 0,5,2 — выше ядра 0,4,1.
+  // Порядок как в ядре: строка на правке — после, она перебивает.
+  body.o_nexus_dark .o_list_renderer .o_list_table .o_keyboard_navigation td:focus-within,
+  body.o_nexus_dark .o_list_renderer .o_list_table .o_keyboard_navigation th:focus-within {
+    background-color: var(--pmk-surface-2);
+  }
+
+  body.o_nexus_dark .o_list_renderer .o_list_table .o_selected_row > td:focus-within,
+  body.o_nexus_dark .o_list_renderer .o_list_table .o_selected_row > th:focus-within {
+    background-color: var(--pmk-surface);
+  }
+
   // Выбранные строки: вместо голубого ядра — тёмный лайм.
   body.o_nexus_dark .o_list_renderer .table-info {
     --table-bg: #3d451e;

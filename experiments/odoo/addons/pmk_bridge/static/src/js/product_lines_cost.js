@@ -42,6 +42,17 @@ const COST_SIGNALS = {
 };
 
 patch(ProductLinesRenderer.prototype, {
+    /**
+     * «Цена за шт» правится прямо в строке изделия, как количество (разбор
+     * UX, шаг 56; Антон 07.10: «Почему нельзя изменить цену за штуку в общем
+     * списке…»). Поле — обычное ручное (price_customer_unit, без наценки и
+     * без вычисления), «Сумма» и итоги расчёта пересчитываются onchange, как
+     * из окна изделия. Механизм — pmk_calc, product_lines_field.js.
+     */
+    pmkInlineFieldNames() {
+        return [...super.pmkInlineFieldNames(), "price_customer_unit"];
+    },
+
     /** Сигнал вместо суммы: {label, tone, title} или null, если сумма есть. */
     costSignal(line) {
         return COST_SIGNALS[line.data.price_state] || null;

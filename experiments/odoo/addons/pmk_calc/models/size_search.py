@@ -52,6 +52,24 @@
 марка стали — не слова, см. выше). Запрос из одних ГОСТа и марки — как
 пустой: все позиции, вид строки первым.
 
+ЧИСЛА ЧЕРЕЗ ПРОБЕЛ (разбор UX, шаг 56; Антон 07.10: «уголок 50х50х5 можно
+было найти запросом „уг 50 5“»). Размер проката набирают и без знака «х»:
+  • числа подряд — один размер: «уг 50 5» = «уг 50х5», «уг 50 50 5» =
+    «уг 50х50х5», «тр 40 20 2» = «тр 40х20х2», «тр 57 3,5» = «тр 57х3,5»,
+    «вгп 50 3» = «вгп 50х3», «уг 63 40 5» = «уг 63х40х5» (join_numbers;
+    только у проката: у листа толщина и размер — разные слова, «пвл 5 506»);
+  • число запроса — ЦЕЛОЕ число позиции: «5» не находит «50», «4» — «4.5»,
+    «57х3» — «57х3.5». Поэтому «уг 50 5» даёт ровно уголок 50x50x5, а не
+    50x50x3 первым, как было («5» совпадало с началом «50»); «лист 4» — только
+    4 мм, без 40 и 45. Начало размера по числам — можно: «уг 50 50» находит
+    все 50x50 (строгий проход, strict в _level);
+  • строгий проход ничего не нашёл — прежний, где число может быть началом
+    числа: на полпути «тр 40 20 1» (дальше «1,5») отвечает 40x20x1.5, а не
+    пустотой — пустой ответ поле ввода запомнило бы (см. ниже);
+  • склеенный размер не нашёлся вовсе — он же задом наперёд, потом числа
+    по отдельности, как до шага 56: «уг 5 50», «уг 5 50 50», «тр 2 20 40» —
+    толщина первой — находят 50x50x5 и 40x20x2 первыми.
+
 СОКРАЩЕНИЯ — по справочнику модуля (data/: 12 видов, 665 позиций проката;
 4 вида, 57 позиций листа). Почти все работают сами — это начала слов
 названий; синонимы (TYPE_ALIASES и соседи) — только то, чего в названиях
@@ -80,11 +98,23 @@
   лист, гл, г/к (г.к., гк), риф,
   ромб, пвл, просеч, оц, оцинк  лист — в поле «Лист» (свой справочник)
 
+  Примеры шага 56: «уг 50 5», «уг 50 50 5» — Уголок 50x50x5; «тр 40 20 2» —
+  Труба профильная 40x20x2; «швел 10», «шв 10» — Швеллер 10П (10У за ним);
+  «лист 4» — листы 4 мм; «арм 12» — Арматура d12.
+
+  ДОПОЛНИТЬ СЛОВАРЬ: синоним вида, которого нет в его названии, — строкой в
+  TYPE_ALIASES (ключ — название вида в справочнике), у листа — в
+  SHEET_TYPE_ALIASES, у слова типоразмера — в SIZE_WORD_ALIASES; пара букв
+  через точку («г.к.») — в _PAIRS. Начала слов названий («уг», «швел», «арм»)
+  дописывать не нужно — они работают сами. Пример — в
+  tests/test_size_search.py рядом с похожим.
+
 ПОРЯДОК ПОДСКАЗКИ (что первым):
   1. вид строки — вид предыдущей строки проката (контекст pmk_prefer_type_id):
      набрали «20» после двутавров — первыми двутавры 20-й серии;
   2. точность худшего слова: 0 — слово целиком, 1 — начало слова,
-     2 — начало внутри числа («5» у «50x50x5»);
+     2 — начало внутри числа («5» у «50x50x5»; только когда строгий проход
+     ничего не нашёл — шаг 56, «Числа через пробел»);
   3. сколько слов типоразмера осталось без пары: «тр 57х3,5» — сначала
      электросварная «57x3.5», потом «57x3.5 бесш»;
   4. сумма точностей всех слов;
@@ -312,15 +342,25 @@ def natural_key(text):
 
 # ─── Сравнение слова запроса со словами позиции ──────────────────────────────
 
-def _level(tok, word):
+# Что идёт за числом позиции, если оно продолжается: цифра или дробная часть.
+_NUM_TAIL = re.compile(r"^(?:\d|\.\d)")
+
+
+def _level(tok, word, strict=False):
     """0 — слово целиком; 1 — начало слова на границе; 2 — начало внутри
-    числа («5» у «50x50x5»); None — не подходит."""
+    числа («5» у «50x50x5»); None — не подходит.
+
+    strict — число запроса только ЦЕЛЫМ числом позиции (шаг 56): «5» не
+    находит «50x50x5», «4» — «4.5», «57x3» — «57x3.5»; «50x50» у «50x50x5» —
+    находит (граница числа — знак «x»)."""
     if word == tok:
         return 0
     if not word.startswith(tok):
         return None
     if tok[-1].isdigit() and word[len(tok)].isdigit():
-        return 2
+        return None if strict else 2
+    if strict and tok[-1].isdigit() and _NUM_TAIL.match(word[len(tok):]):
+        return None
     return 1
 
 
@@ -334,7 +374,7 @@ def _forms(tok):
                 yield tok[:-cut], 1
 
 
-def _match_token(tok, tw, sw):
+def _match_token(tok, tw, sw, strict=False):
     """(точность, номер слова типоразмера или None) — лучшая пара слова
     запроса среди слов вида tw и слов типоразмера sw; (None, None) — пары нет.
     При равной точности слово засчитывается виду."""
@@ -342,12 +382,12 @@ def _match_token(tok, tw, sw):
         best = where = None
         if not any(ch.isdigit() for ch in form):
             for word in tw:
-                lv = _level(form, word)
+                lv = _level(form, word, strict)
                 if lv is not None and (best is None or lv < best):
                     best = lv
         for i, variants in enumerate(sw):
             for word in variants:
-                lv = _level(form, word)
+                lv = _level(form, word, strict)
                 if lv is not None and (best is None or lv < best):
                     best, where = lv, i
         if best is not None:
@@ -355,7 +395,7 @@ def _match_token(tok, tw, sw):
     return None, None
 
 
-def match(tokens, tw, sw):
+def match(tokens, tw, sw, strict=False):
     """Оценка одной позиции: None — не подходит; иначе кортеж для сортировки
     (точность худшего слова, слов типоразмера без пары, сумма точностей)."""
     if not tokens:
@@ -363,7 +403,7 @@ def match(tokens, tw, sw):
     levels = []
     used = set()
     for tok in tokens:
-        level, where = _match_token(tok, tw, sw)
+        level, where = _match_token(tok, tw, sw, strict)
         if level is None:
             return None
         if where is not None:
@@ -401,11 +441,59 @@ def rank_profiles(entries, text, prefer_type_id=None):
         query_tokens(text, vocabulary))
 
 
+# Слово-размер: числа через «x», можно со знаком в конце («50x», «40x20x2»).
+_NUM_GROUP = re.compile(r"^\d+(?:\.\d+)?(?:x\d+(?:\.\d+)?)*x?$")
+
+
+def join_numbers(tokens):
+    """Числа подряд — один размер (шаг 56): ["уг", "50", "5"] → ["уг",
+    "50x5"]; ["тр", "40", "20", "2"] → ["тр", "40x20x2"]; «50x» и «5» —
+    «50x5». Слова без цифр (вид, «бесш») числа не склеивают."""
+    out = []
+    for tok in tokens:
+        if out and _NUM_GROUP.match(tok) and _NUM_GROUP.match(out[-1]):
+            out[-1] = out[-1] + ("" if out[-1].endswith("x") else "x") + tok
+        else:
+            out.append(tok)
+    return out
+
+
+def reverse_numbers(tokens):
+    """Склеенный размер задом наперёд: «5x50» → «50x5», «2x20x40» →
+    «40x20x2». Для запроса, где толщину набрали первой («уг 5 50»)."""
+    out = []
+    for tok in tokens:
+        if "x" in tok and _NUM_GROUP.match(tok):
+            tok = "x".join(reversed(tok.rstrip("x").split("x")))
+        out.append(tok)
+    return out
+
+
 def _rank_profiles(entries, tokens, prefer_type_id):
+    """Строгий проход (число — целым числом позиции), пусто — прежний.
+    Числа через пробел — один размер (join_numbers). Склеенный размер не
+    нашёлся ни так, ни так — он же задом наперёд (reverse_numbers: «уг 5 50»,
+    толщину набрали первой, — 50x50x5), потом числа по отдельности, как до
+    шага 56. Пустой ответ поле ввода запомнило бы (lastEmptySearch)."""
+    joined = join_numbers(tokens)
+    passes = [(joined, True), (joined, False)]
+    if joined != list(tokens):
+        backwards = reverse_numbers(joined)
+        if backwards != joined:
+            passes += [(backwards, True), (backwards, False)]
+        passes += [(list(tokens), True), (list(tokens), False)]
+    for toks, strict in passes:
+        found = _rank_profiles_pass(entries, toks, prefer_type_id, strict)
+        if found:
+            return found
+    return []
+
+
+def _rank_profiles_pass(entries, tokens, prefer_type_id, strict):
     scored = []
     for pos, (rid, tid, tname, seq, size) in enumerate(entries):
         if tokens:
-            score = match(tokens, type_words(tname), size_words(size))
+            score = match(tokens, type_words(tname), size_words(size), strict)
             if score is None:
                 continue
         else:
@@ -439,12 +527,19 @@ def rank_sheets(entries, text):
 
 
 def _rank_sheets(entries, tokens):
+    """Строгий проход («лист 4» — только 4 мм), пусто — прежний («лист 1»
+    на полпути к «1,5»). Числа у листа не склеиваются: толщина и размер
+    просечки — разные слова («пвл 5 506»)."""
     if not tokens:
         return [rid for rid, _stype, _thick, _size in entries]
+    return _rank_sheets_pass(entries, tokens, True) or _rank_sheets_pass(entries, tokens, False)
+
+
+def _rank_sheets_pass(entries, tokens, strict):
     scored = []
     for pos, (rid, stype, thick, size) in enumerate(entries):
         sw = (("%g" % (thick or 0),),) + tuple((w,) for w in normalize(size).split())
-        score = match(tokens, sheet_words(stype), sw)
+        score = match(tokens, sheet_words(stype), sw, strict)
         if score is not None:
             scored.append((score + (natural_key(size or ""), pos), rid))
     scored.sort(key=lambda item: item[0])
