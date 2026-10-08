@@ -1339,3 +1339,44 @@ $pmk-dark-alerts: (
     color: var(--pmk-tone-yellow-ink);
   }
 }
+
+// ═══ Шаг 55: колонки у каждого — тёмная пара (08.10.2026) ═══════════════════
+// Светлые правила — forms_nexus.scss, раздел «Шаг 55». Здесь — то, чему
+// светлое правило задаёт свой цвет: строка окна «Колонки» под перетаскиванием
+// (белый фон), серые слова, рамка плашки ширины, черта места вставки.
+@media screen {
+
+  body.o_nexus_dark .o_pmk_cols_dialog {
+    .o_pmk_cols_hint,
+    .o_pmk_cols_source,
+    .o_pmk_cols_row_off .o_pmk_cols_label,
+    .o_pmk_cols_handle,
+    .o_pmk_cols_lock,
+    .o_pmk_cols_common_label {
+      color: var(--pmk-ink-3);
+    }
+
+    .o_pmk_cols_list,
+    .o_pmk_cols_row {
+      border-color: var(--pmk-border);
+    }
+
+    .o_pmk_cols_row_dragged {
+      background: var(--pmk-surface-2);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+    }
+
+    .o_pmk_cols_width {
+      border-color: var(--pmk-border-strong);
+      color: var(--pmk-ink-2);
+    }
+
+    .o_pmk_cols_move .btn {
+      color: var(--pmk-ink-2);
+    }
+  }
+
+  body.o_nexus_dark .o_pmk_col_drop {
+    background: var(--pmk-ink);
+  }
+}

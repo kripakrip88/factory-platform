@@ -41,7 +41,12 @@ BRANCH="${BRANCH:-feature/experiment-carbon}"
 # pmk_orders (тянут sms: удаление «SMS» снесло бы планировщик). Тот же прогон
 # -u pmk_org выполнит миграцию 19.0.1.1.0 (налоги режимов «в цене») —
 # до первого счёта; бэкап базы — до.
-OURS="pmk_calc pmk_theme pmk_pdf pmk_cut pmk_mail_ui pmk_partner pmk_purchase pmk_dadata pmk_laser pmk_bridge pmk_deal pmk_deal_sms pmk_flow pmk_drawing pmk_telegram pmk_org pmk_orders"
+# pmk_list_prefs добавлен 08.10.2026 (разбор UX, шаг 55) — колонки списков у
+# каждого: ширины, порядок и видимость на сервере, «Сделать так у всех» у
+# администратора. Своя таблица pmk_list_prefs, данных других модулей не
+# трогает; стили — в живых файлах pmk_theme (раздел «Шаг 55»). Первый раз:
+# INSTALL="pmk_list_prefs" (вместе с обычным -u pmk_theme).
+OURS="pmk_calc pmk_theme pmk_pdf pmk_cut pmk_mail_ui pmk_partner pmk_purchase pmk_dadata pmk_laser pmk_bridge pmk_deal pmk_deal_sms pmk_flow pmk_drawing pmk_telegram pmk_org pmk_orders pmk_list_prefs"
 # Вендорские — только раскладываются. -u им не нужен: мы правим в них код и
 # переводы, а не данные, а лишнее обновление перезапускает их data-файлы.
 #

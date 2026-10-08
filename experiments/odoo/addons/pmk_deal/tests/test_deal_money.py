@@ -192,6 +192,14 @@ class TestDealMoney(TransactionCase):
         self.assertEqual(action["views"], [(False, "list"), (False, "form")])
         self.assertEqual(action["domain"], [("opportunity_id", "=", self.lead.id)])
         self.assertFalse(action.get("res_id"))
+        # Шаг 55: то же действие, что в меню «Расчёты и КП», — настройка
+        # колонок списка (ключ с id действия) одна на оба входа.
+        menu_action = self.env.ref("pmk_calc.action_metal_spec")
+        self.assertEqual(action["id"], menu_action.id)
+        self.assertEqual(action["res_model"], "pmk.metal.spec")
+        self.assertEqual(action["name"], "Расчёты по сделке")
+        self.assertEqual(action["display_name"], "Расчёты по сделке")
+        self.assertEqual(action["context"]["default_opportunity_id"], self.lead.id)
 
     def test_button_does_not_move_the_stage(self):
         stage = self.lead.stage_id

@@ -2582,3 +2582,143 @@ $pmk-short-fields: phone, email, url, date, datetime, daterange, remaining_days,
     white-space: nowrap;
   }
 }
+
+// ═══ Шаг 55: колонки у каждого (разбор UX, 08.10.2026) ══════════════════════
+// Модуль pmk_list_prefs своих стилей не несёт — правила здесь, в живом файле
+// темы (ir.asset seq 41). Тёмная пара — dark.scss, раздел «Шаг 55». Сняли
+// модуль — классов на экране нет, правила ничего не трогают.
+// Сам список не перекрашиваем: ширина колонки — атрибут width ядра, порядок
+// и скрытие — состав колонок; шапка с переносом (шаг 24) и лист шага 49
+// остаются как были.
+@media screen {
+
+  // 55.1 Окно «Колонки» (⚙ → «Настроить колонки…»). Строка: ⋮⋮ · галочка ·
+  // название · серое слово замка («всегда видна», «обязательная») ·
+  // плашка ширины с крестиком · ↑ ↓. Залитая кнопка окна одна — «Готово»
+  // (btn-primary); «Сделать так у всех» — контурная (btn-secondary).
+  .o_pmk_cols_dialog {
+    .o_pmk_cols_hint,
+    .o_pmk_cols_source {
+      margin: 0 0 8px;
+      color: #6b6f76;
+      font-size: 0.875rem;
+    }
+
+    .o_pmk_cols_list {
+      max-height: 60vh;
+      overflow-y: auto;
+      border-top: 1px solid #ebe8e0;
+    }
+
+    .o_pmk_cols_row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 38px;
+      padding: 2px 4px;
+      border-bottom: 1px solid #ebe8e0;
+    }
+
+    .o_pmk_cols_row_off .o_pmk_cols_label {
+      color: #6b6f76;
+    }
+
+    // Строка «в руке» висит над остальными — непрозрачная. Остальные строки
+    // без своего фона: окно (белое сейчас, бежевое после шага 52) — их фон.
+    .o_pmk_cols_row_dragged {
+      border-radius: 10px;
+      background: #ffffff;
+      box-shadow: 0 6px 18px rgba(22, 25, 28, 0.16);
+    }
+
+    .o_pmk_cols_handle {
+      padding: 4px 2px;
+      color: #6b6f76;
+      cursor: grab;
+    }
+
+    // Название может быть длинным — переносится, галочка не уезжает.
+    .o_pmk_cols_check {
+      flex: 1 1 auto;
+      min-width: 0;
+      margin: 0;
+    }
+
+    .o_pmk_cols_label {
+      overflow-wrap: anywhere;
+    }
+
+    .o_pmk_cols_lock {
+      color: #6b6f76;
+      font-size: 0.8125rem;
+      white-space: nowrap;
+    }
+
+    .o_pmk_cols_width {
+      display: inline-flex;
+      align-items: center;
+      padding: 0 0 0 8px;
+      border: 1px solid #dad5c8;
+      border-radius: 10px;
+      color: #4b4f58;
+      font-size: 0.8125rem;
+      white-space: nowrap;
+    }
+
+    .o_pmk_cols_width_clear {
+      padding: 0 8px;
+      color: inherit;
+      line-height: 1.5;
+      text-decoration: none;
+    }
+
+    .o_pmk_cols_move {
+      display: inline-flex;
+
+      .btn {
+        padding: 2px 6px;
+        color: #4b4f58;
+      }
+
+      .btn:disabled {
+        opacity: 0.3;
+      }
+    }
+
+    // Блок «Для всех:» — у правого края подвала (только администратору).
+    .modal-footer .o_pmk_cols_common {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 4px;
+      margin-left: auto;
+    }
+
+    .o_pmk_cols_common_label {
+      color: #6b6f76;
+      font-size: 0.875rem;
+    }
+  }
+
+  // 55.2 Перетаскивание заголовка колонки мышью: тянется бледной, место
+  // вставки — тёмная черта на всю видимую высоту таблицы. Не лаймом: это не
+  // «где я», а временная отметка.
+  body.o_pmk_col_dragging,
+  body.o_pmk_col_dragging * {
+    cursor: grabbing !important;
+    user-select: none !important;
+  }
+
+  .o_list_table > thead > tr > th.o_pmk_col_dragged {
+    opacity: 0.45;
+  }
+
+  .o_pmk_col_drop {
+    position: fixed;
+    z-index: 1060;
+    width: 2px;
+    border-radius: 1px;
+    background: #16191c;
+    pointer-events: none;
+  }
+}

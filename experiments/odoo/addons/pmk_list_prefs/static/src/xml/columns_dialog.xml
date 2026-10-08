@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+  <!-- Окно «Колонки» (разбор UX, шаг 55). Логика — js/columns_dialog.js,
+       стили — pmk_theme: forms_nexus.scss и dark.scss, раздел «Шаг 55». -->
+  <t t-name="pmk_list_prefs.ColumnsDialog">
+    <Dialog title="props.title or 'Колонки'" size="'md'" contentClass="'o_pmk_cols_dialog'">
+      <p class="o_pmk_cols_hint">
+        <t t-if="props.isSmall">Порядок — стрелками ↑ ↓ справа.</t>
+        <t t-else="">Перетащите строку за ⋮⋮ или нажмите ↑ ↓, чтобы поменять порядок.</t>
+        Ширину меняйте в таблице — потяните край заголовка колонки.
+      </p>
+      <p class="o_pmk_cols_source">
+        Сейчас: <span class="fw-bold" t-esc="sourceWords[props.source]"/> ·
+        показано <t t-esc="visibleCount"/> из <t t-esc="state.rows.length"/>
+      </p>
+      <ul class="o_pmk_cols_list list-unstyled mb-0" t-ref="list">
+        <t t-foreach="state.rows" t-as="row" t-key="row.key">
+          <li class="o_pmk_cols_row" t-att-data-key="row.key"
+              t-att-class="{ o_pmk_cols_row_off: !row.visible }">
+            <span t-if="!props.isSmall" class="o_pmk_cols_handle oi oi-draggable"
+                  title="Перетащите, чтобы поменять порядок"/>
+            <CheckBox className="'o_pmk_cols_check'" value="row.visible"
+                      disabled="!!row.lock or isLast(row)"
+                      onChange="() => this.toggle(row)">
+              <span class="o_pmk_cols_label" t-esc="row.label"/>
+            </CheckBox>
+            <span t-if="row.lock" class="o_pmk_cols_lock" t-esc="lockWords[row.lock]"/>
+            <span t-elif="isLast(row)" class="o_pmk_cols_lock"
+                  t-att-title="props.lastColumnWarning">последняя видимая</span>
+            <span t-if="row.width" class="o_pmk_cols_width">
+              ширина <t t-esc="row.width"/> px
+              <button type="button" class="btn btn-link o_pmk_cols_width_clear"
+                      title="Снять ширину — колонка подстроится сама"
+                      aria-label="Снять ширину" t-on-click="() => this.clearWidth(row)">×</button>
+            </span>
+            <span class="o_pmk_cols_move">
+              <button type="button" class="btn btn-link" title="Выше" aria-label="Выше"
+                      t-att-disabled="row_first" t-on-click="() => this.move(row_index, -1)">
+                <i class="fa fa-arrow-up"/>
+              </button>
+              <button type="button" class="btn btn-link" title="Ниже" aria-label="Ниже"
+                      t-att-disabled="row_last" t-on-click="() => this.move(row_index, 1)">
+                <i class="fa fa-arrow-down"/>
+              </button>
+            </span>
+          </li>
+        </t>
+      </ul>
+      <t t-set-slot="footer">
+        <button type="button" class="btn btn-primary o_pmk_cols_done" t-on-click="onDone">Готово</button>
+        <button type="button" class="btn btn-secondary o_pmk_cols_cancel" t-on-click="() => this.props.close()">Отмена</button>
+        <button t-if="props.resetLabel" type="button" class="btn btn-link o_pmk_cols_reset"
+                t-on-click="onResetOwn" t-esc="props.resetLabel"/>
+        <div t-if="props.isAdmin" class="o_pmk_cols_common">
+          <span class="o_pmk_cols_common_label">Для всех:</span>
+          <button type="button" class="btn btn-secondary o_pmk_cols_save_common"
+                  title="Так увидят все, у кого нет своей настройки этого списка"
+                  t-on-click="onSaveCommon">Сделать так у всех</button>
+          <button t-if="props.hasCommon" type="button" class="btn btn-link o_pmk_cols_reset_common"
+                  title="У тех, кто без своей настройки, список станет штатным"
+                  t-on-click="onResetCommon">Убрать общую</button>
+        </div>
+      </t>
+    </Dialog>
+  </t>
+
+</templates>

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Колонки у каждого (шаг 55): кто какие настройки видит и пишет.
+
+  Правила групп складываются через ИЛИ:
+    • внутренний пользователь — свои записи: читать, писать, заводить, удалять;
+    • внутренний пользователь — общие (user_id пусто): только читать;
+    • администратор (base.group_system) — все записи.
+  Итог: обычный пользователь читает свои и общие, пишет только свои; чужие
+  своих настроек не видит. Завести общую или переписать чужую — AccessError
+  (а понятный текст ошибки даёт models/list_prefs.py, _pmk_check_owner).
+-->
+<odoo>
+  <record id="rule_pmk_list_prefs_own" model="ir.rule">
+    <field name="name">Колонки списков: свои настройки</field>
+    <field name="model_id" ref="model_pmk_list_prefs"/>
+    <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    <field name="domain_force">[('user_id', '=', user.id)]</field>
+    <field name="perm_read" eval="True"/>
+    <field name="perm_write" eval="True"/>
+    <field name="perm_create" eval="True"/>
+    <field name="perm_unlink" eval="True"/>
+  </record>
+
+  <record id="rule_pmk_list_prefs_common_read" model="ir.rule">
+    <field name="name">Колонки списков: общие — читать</field>
+    <field name="model_id" ref="model_pmk_list_prefs"/>
+    <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    <field name="domain_force">[('user_id', '=', False)]</field>
+    <field name="perm_read" eval="True"/>
+    <field name="perm_write" eval="False"/>
+    <field name="perm_create" eval="False"/>
+    <field name="perm_unlink" eval="False"/>
+  </record>
+
+  <record id="rule_pmk_list_prefs_admin" model="ir.rule">
+    <field name="name">Колонки списков: администратор — все</field>
+    <field name="model_id" ref="model_pmk_list_prefs"/>
+    <field name="groups" eval="[(4, ref('base.group_system'))]"/>
+    <field name="domain_force">[(1, '=', 1)]</field>
+    <field name="perm_read" eval="True"/>
+    <field name="perm_write" eval="True"/>
+    <field name="perm_create" eval="True"/>
+    <field name="perm_unlink" eval="True"/>
+  </record>
+</odoo>

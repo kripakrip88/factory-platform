@@ -55,11 +55,24 @@ class CrmLeadDeal(models.Model):
         elif len(specs) == 1:
             action.update(name=specs.name, res_id=specs.id, views=[(False, "form")])
         else:
-            action.update(
+            # Список — штатным действием «Расчёты и КП» (с его id), как
+            # кнопка клиента (partner_specs.py): у действия-словаря без id
+            # настройка колонок (pmk_list_prefs, ключ list|модель|вид|действие)
+            # была бы своя, не та, что в меню, и общая администратора сюда
+            # не доходила бы. Заголовок — и в display_name: клиент берёт его
+            # раньше name (action_service.js).
+            title = _("Расчёты по сделке")
+            listed = self.env["ir.actions.act_window"]._for_xml_id("pmk_calc.action_metal_spec")
+            listed.update(
+                name=title,
+                display_name=title,
+                target="current",
+                context=action["context"],
                 view_mode="list,form",
                 views=[(False, "list"), (False, "form")],
                 domain=[("opportunity_id", "=", self.id)],
             )
+            return listed
         return action
 
     def _pmk_spec_defaults(self):
