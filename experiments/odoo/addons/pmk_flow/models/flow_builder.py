@@ -589,6 +589,13 @@ class PmkFlowBuilder(models.AbstractModel):
             record, depth = frontier.popleft()
             if depth >= max_depth:
                 continue
+            # Проект — общий котёл: у «Заказов в работе» под две сотни строк.
+            # Пришли к нему от своей строки (счёт → строка → проект) — узел
+            # проекта показываем, но его задачи не раскрываем, иначе схема
+            # счёта тащила все заказы цеха (задача 247, 08.10). Задачи
+            # проекта видны, только когда схему открыли с самого проекта.
+            if record._name == 'project.project' and depth > 0:
+                continue
             try:
                 neighbours, hidden = self._neighbors(record)
             except AccessError:
