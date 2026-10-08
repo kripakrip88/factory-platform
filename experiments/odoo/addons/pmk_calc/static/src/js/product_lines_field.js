@@ -44,6 +44,7 @@
  */
 
 import { registry } from "@web/core/registry";
+import { localization } from "@web/core/l10n/localization";
 import { useState } from "@odoo/owl";
 import { ListRenderer } from "@web/views/list/list_renderer";
 import { Field } from "@web/views/fields/field";
@@ -232,6 +233,24 @@ export class ProductLinesRenderer extends ListRenderer {
     async pmkCancelInline(record) {
         const list = this.props.list;
         const before = this.pmkInlineBefore.get(record.id);
+        // Набранное — назад в само поле ввода, ДО выхода из правки. Иначе
+        // ядро при выходе запишет набранное и пошлёт пересчёт расчёта на
+        // сервер, а ответ, пришедший после нашего возврата значения, вернёт
+        // набранное обратно (гонка, ловилась на копии через раз). Равное
+        // значение ядро не пишет — пересчёта нет вовсе.
+        const row = this.tableRef.el?.querySelector("tr.o_selected_row");
+        if (before && row) {
+            for (const [name, value] of Object.entries(before)) {
+                const input = row.querySelector(`td[name="${name}"] input`);
+                if (input) {
+                    input.value =
+                        value === false || value === null || value === undefined
+                            ? ""
+                            : String(value).replace(".", localization.decimalPoint);
+                    input.dispatchEvent(new Event("input", { bubbles: true }));
+                }
+            }
+        }
         if (list.editedRecord) {
             await list.leaveEditMode();
         }
