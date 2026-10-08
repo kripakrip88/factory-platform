@@ -779,3 +779,17 @@ class TestStepZ2Invoice(Z2Common):
             hooks.post_init_hook(self.env)
             self.assertEqual(seq.prefix, hooks.PREFIX)
             self.assertEqual(seq.padding, 5)
+
+
+@tagged("post_install", "-at_install")
+class TestStep64Searchpanel(TransactionCase):
+    """Шаг 64: в «Заказах в работе» слева панель «Статус» — только этапы планировщика."""
+
+    def test_searchpanel_stages_of_orders_only(self):
+        view = self.env.ref("pmk_orders.view_task_order_search")
+        self.assertIn("<searchpanel", view.arch)
+        res = self.env["project.task"].search_panel_select_multi_range(
+            "stage_id", search_domain=[], expand=True, comodel_domain=[("project_ids.pmk_is_orders", "=", True)])
+        names = {v["display_name"] for v in res["values"]}
+        self.assertIn("Очередь", names)
+        self.assertFalse(names & {"Новые", "В очереди"}, "этапы других проектов не попадают")

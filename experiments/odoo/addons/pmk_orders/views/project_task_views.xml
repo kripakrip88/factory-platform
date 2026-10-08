@@ -210,6 +210,13 @@
         <filter name="not_paid" string="Оплачено не полностью" domain="[('pmk_paid_pct', '&lt;', 100)]"/>
         <separator/>
         <filter name="archived" string="В архиве" domain="[('active', '=', False)]"/>
+        <!-- Шаг 64 (08.10.2026): «фильтрация по статусам непонятная» —
+             панель слева: этапы с числами, щелчок — только этот этап,
+             можно отметить несколько; ниже — ответственный. -->
+        <searchpanel>
+          <field name="stage_id" string="Статус" select="multi" icon="fa-flag" enable_counters="1" expand="1" domain="[('project_ids.pmk_is_orders', '=', True)]"/>
+          <field name="user_ids" string="Ответственный" select="multi" icon="fa-user" enable_counters="1"/>
+        </searchpanel>
         <group>
           <filter name="group_stage" string="Этап" context="{'group_by': 'stage_id'}"/>
           <filter name="group_user" string="Ответственный" context="{'group_by': 'user_ids'}"/>
