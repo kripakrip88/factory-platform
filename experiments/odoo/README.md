@@ -1,6 +1,6 @@
 # Odoo 19 Community + RuOdoo — стенд оценки
 
-**http://155.212.143.179:8084** · логин `admin`, пароль в `/opt/experiments/odoo/.admin-password`
+**https://erppark.ru** (порт 8084 — только для nginx, снаружи закрыт с 08.10.2026) · логин `admin`, пароль в `/opt/experiments/odoo/.admin-password`
 
 Настроено: русский интерфейс, компания «ПМК Парк», валюта RUB, часовой пояс
 Asia/Vladivostok, тема `theme_liquid_glass` (Cybrosys, LGPL-3).
