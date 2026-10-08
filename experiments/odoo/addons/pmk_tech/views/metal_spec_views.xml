@@ -68,10 +68,10 @@
       </xpath>
 
       <xpath expr="//div[hasclass('oe_title')]" position="after">
-        <div class="text-muted mb-2" name="pmk_tech_ref" invisible="pmk_kind != 'tech'">
-          Технический расчёт<span invisible="not pmk_tech_order_id"> к
+        <div class="text-muted mb-2 d-flex flex-wrap align-items-baseline column-gap-1" name="pmk_tech_ref" invisible="pmk_kind != 'tech'">
+          Технический расчёт<span class="d-inline-flex align-items-baseline column-gap-1" invisible="not pmk_tech_order_id"> к
             <field name="pmk_tech_order_id" class="d-inline" readonly="1"/></span>
-          <span invisible="not pmk_tech_source_id"> · по КП
+          <span class="d-inline-flex align-items-baseline column-gap-1" invisible="not pmk_tech_source_id"> · по КП
             <field name="pmk_tech_source_id" class="d-inline" readonly="1"/></span>
           <field name="pmk_kind" invisible="1"/>
         </div>
