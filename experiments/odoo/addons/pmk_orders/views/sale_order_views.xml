@@ -134,10 +134,19 @@
                 string="Отправить КП" class="btn-secondary"
                 title="Окно письма расчёта. Отправить можно и без согласования — на счёте останется пометка. У отправленного: изменённый расчёт уйдёт новой редакцией"
                 invisible="not pmk_spec_id or pmk_is_revision or not (state == 'sent' or (state == 'draft' and pmk_approval != 'approved'))"/>
+        <!-- Осмотр 09.10 (1366 px): шапка не помещалась, кнопки налезали на
+             счётчики. «Изменить в расчёте» повторяет счётчик «Расчёт» (та же
+             подсказка — на нём); спрятана под «Убранное». -->
         <button name="action_open_spec" id="pmk_edit_in_spec" type="object"
+                groups="pmk_theme.group_pmk_removed"
                 string="Изменить в расчёте" class="btn-secondary"
                 title="Изделия меняются в расчёте: черновик обновится сам; у отправленного — поправьте расчёт и нажмите «Отправить КП», появится новая редакция"
                 invisible="not pmk_spec_id or pmk_is_revision or state not in ('draft', 'sent')"/>
+      </xpath>
+      <!-- «Печать» в шапке — штатный бланк Odoo, не наш (наш — шаг 62); ⚙ «Печать»
+           с «Счётом по форме 1С» остаётся. Под «Убранное» — шапка помещается на 1366. -->
+      <xpath expr="//header/button[@name='sale.action_report_saleorder']" position="attributes">
+        <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
       </xpath>
       <xpath expr="//header/button[@id='quotation_send_primary']" position="attributes">
         <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
@@ -200,6 +209,7 @@
 
       <xpath expr="//div[@name='button_box']" position="inside">
         <button name="action_open_spec" type="object" class="oe_stat_button"
+                title="Изделия меняются в расчёте: черновик обновится сам; у отправленного — поправьте расчёт и нажмите «Отправить КП», появится новая редакция"
                 icon="fa-calculator" invisible="not pmk_spec_id">
           <div class="o_field_widget o_stat_info">
             <span class="o_stat_value"><field name="pmk_spec_id" readonly="1" options="{'no_open': True}"/></span>
