@@ -77,7 +77,10 @@ services:
       - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
       - N8N_SECURE_COOKIE=true
     ports:
-      - "${N8N_PORT:-5678}:5678"
+      # Только с самого сервера (08.10.2026): снаружи n8n — через
+      # https://n8n.erppark.ru (nginx ходит по сети docker, n8n:5678).
+      # Docker публикует порты мимо ufw — без 127.0.0.1 порт был открыт в интернет.
+      - "127.0.0.1:${N8N_PORT:-5678}:5678"
     depends_on:
       postgres:
         condition: service_healthy
