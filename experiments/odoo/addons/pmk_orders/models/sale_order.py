@@ -300,9 +300,9 @@ class SaleOrder(models.Model):
         labels = dict(LEAD_FROM)
         for order in self:
             if order.pmk_lead_days > 0:
-                order.pmk_lead_text = "%s раб. %s %s" % (
+                order.pmk_lead_text = ("%s раб. %s %s" % (
                     order.pmk_lead_days, _plural_days(order.pmk_lead_days),
-                    labels.get(order.pmk_lead_from) or "").strip()
+                    labels.get(order.pmk_lead_from) or "")).strip()
             else:
                 order.pmk_lead_text = False
 

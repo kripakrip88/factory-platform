@@ -420,7 +420,7 @@ class TestStepZ9Invoice(Z2Common):
     def test_tax_text(self):
         deal, spec, invoice = self._draft(spec=None)
         self.assertTrue(invoice.pmk_tax_text.startswith("в том числе НДС 22%:"), invoice.pmk_tax_text)
-        self.assertIn("₽", invoice.pmk_tax_text)
+        self.assertIn(invoice.currency_id.symbol, invoice.pmk_tax_text)
         usn_deal = self._deal(org=self.org_usn)
         usn_spec = self._spec(usn_deal, org=self.org_usn)
         _d, _s, usn_invoice = self._draft(usn_deal, usn_spec)
@@ -478,7 +478,12 @@ class TestStepZ9Invoice(Z2Common):
         )
         for expr in hidden:
             with self.subTest(hidden=expr):
-                self.assertFalse(lean.xpath(expr), "Спрятано у менеджера.")
+                # Ядро досоздаёт спрятанное поле невидимым, если на него
+                # ссылаются модификаторы соседей (price_unit → qty_invoiced).
+                shown = [n for n in lean.xpath(expr)
+                         if n.get("column_invisible") not in ("True", "1")
+                         and n.get("invisible") not in ("True", "1")]
+                self.assertFalse(shown, "Спрятано у менеджера.")
                 self.assertTrue(full.xpath(expr), "«Убранное» возвращает.")
         for arch in (lean, full):
             control = arch.xpath("//field[@name='order_line']/list/control/create[@name='pmk_add_service']")
@@ -715,6 +720,8 @@ class TestStepZ9Invoice(Z2Common):
         for name in ("product_uom_id", "discount"):
             nodes = arch.xpath("//field[@name='order_line']/form//field[@name='%s']" % name)
             for node in nodes:
+                if node.get("invisible") in ("True", "1"):
+                    continue    # досозданный ядром невидимый узел (нет группы uom)
                 with self.subTest(form_readonly=name):
                     self.assertIn("pmk_from_spec", node.get("readonly"))
         card = arch.xpath("//field[@name='order_line']/kanban//field[@name='name']"

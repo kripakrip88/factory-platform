@@ -553,8 +553,10 @@ class TestStep58Org(TransactionCase):
         if "validity_date" in names:
             self.assertEqual(names[names.index("validity_date") - 1], "pmk_org_id",
                              "Над «Сроком действия».")
-        self.assertEqual(details.find("field[@name='pmk_org_id']").get("readonly"),
-                         "state in ['cancel', 'sale']")
+        # С шага З-9 (pmk_orders) организация счёта из расчёта меняется в
+        # расчёте: поле закрыто ещё и при pmk_spec_id / у прежней редакции.
+        readonly = details.find("field[@name='pmk_org_id']").get("readonly")
+        self.assertIn("state in ['cancel', 'sale']", readonly)
 
     def test_org_form(self):
         arch = self._arch("pmk.org")
