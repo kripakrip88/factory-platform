@@ -35,7 +35,7 @@ pmk_bridge: цены перечитаны из прайсов). Раскладк
 Плашки: что в заявку идёт по весу (листы без раскладки), что в неё не идёт
 (нет карточки товара, услуга), что изменилось после заявки, что расходится с
 заявкой (отправленной, подтверждённой или черновиком, где количество правил
-закупщик) и что счёт изменился после копии (новая редакция или выставлен из
+снабженец) и что счёт изменился после копии (новая редакция или выставлен из
 другого расчёта: сверить состав). Ничего не блокирует.
 
 «ДУБЛИРОВАТЬ» ТЕХНИЧЕСКИЙ — тоже технический (copy_data): иначе копия
@@ -134,7 +134,7 @@ class MetalSpecTech(models.Model):
     pmk_request_diff_text = fields.Char(
         "Расхождение с заявкой", compute="_compute_pmk_request_signals",
         help="Отправленную поставщику или подтверждённую заявку и количество, "
-             "которое закупщик поправил в черновике, повторная «Заявка на "
+             "которое снабженец поправил в черновике, повторная «Заявка на "
              "металл» не трогает — расхождение видно здесь.")
 
     _pmk_one_tech_per_order = models.UniqueIndex(
@@ -378,10 +378,10 @@ class MetalSpecTech(models.Model):
 
         «Изменился» — у инженера не то, что он заявил в прошлый раз
         (pmk_request_qty строки черновика), а не «не то, что в строке»:
-        количество строки мог поправить закупщик, и плашка «нажмите «Заявка
+        количество строки мог поправить снабженец, и плашка «нажмите «Заявка
         на металл»» звала бы перезаписать его правку. Расхождение — с
         отправленной / подтверждённой заявкой и с количеством, которое
-        закупщик поправил в черновике (повтор его не трогает)."""
+        снабженец поправил в черновике (повтор его не трогает)."""
         self.ensure_one()
         orders = self.sudo().pmk_metal_request_ids.filtered(lambda order: order.state != "cancel")
         if not orders:
@@ -400,7 +400,7 @@ class MetalSpecTech(models.Model):
                     if abs(requested - (row["qty"] if row else 0.0)) > EPS:
                         stale = True
                     if abs(line.product_qty - requested) <= EPS:
-                        continue        # количество закупщик не правил
+                        continue        # количество снабженец не правил
                 if row and abs(line.product_qty - row["qty"]) <= EPS:
                     continue
                 name = row["name"] if row else (line.product_id.display_name or line.name)
@@ -408,7 +408,7 @@ class MetalSpecTech(models.Model):
                 engineer = self._pmk_qty_text(mode, row["qty"]) if row else _("нет")
                 state = REQUEST_STATE_LABELS.get(order.state, order.state).lower()
                 if order.state == "draft":
-                    state = _("%s, количество правил закупщик", state)
+                    state = _("%s, количество правил снабженец", state)
                 diffs.append(_(
                     "В заявке %(order)s (%(state)s): %(name)s — %(ordered)s, у инженера %(now)s",
                     order=order.name, state=state,

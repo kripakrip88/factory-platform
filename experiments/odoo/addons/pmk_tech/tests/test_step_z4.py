@@ -29,9 +29,9 @@
     черновик «Поставщик не выбран» отменяется;
   • планировщик: «Очередь» → «Ждём металл», «Металл» — «Ждём»; строка «В
     работе» этап не меняет; без строки — ничего не падает;
-  • доводка: правки закупщика в черновике (количество, цена, описание)
+  • доводка: правки снабженца в черновике (количество, цена, описание)
     повтор не затирает и плашку «состав изменился» они не включают;
-    расхождение — плашкой; строку, которую правил закупщик, не удаляет;
+    расхождение — плашкой; строку, которую правил снабженец, не удаляет;
     служебной пометки «по весу» в описании строки нет (его видит
     поставщик); лист не 1500×6000 — цена ручная; строка планировщика —
     только своего счёта, этап без кода не трогаем; технический знает, что
@@ -259,7 +259,7 @@ class TestStepZ4(Z2Common):
         self.assertEqual((len(po), len(empty)), (1, 1))
         for order_po in orders:
             with self.subTest(order=order_po.partner_id.name):
-                self.assertEqual(order_po.state, "draft", "Черновик — отправляет закупщик.")
+                self.assertEqual(order_po.state, "draft", "Черновик — отправляет снабженец.")
                 self.assertEqual(order_po.pmk_tech_spec_id, tech)
                 self.assertEqual(order_po.pmk_sale_order_id, order)
                 self.assertEqual(order_po.pmk_deal_id, deal)
@@ -341,7 +341,7 @@ class TestStepZ4(Z2Common):
         self.assertFalse(tech.pmk_request_stale, "После повтора черновики совпадают.")
 
     def test_buyer_edits_survive_repeat(self):
-        """Закупщик округлил уголок до хлыста, вписал договорную цену болта и
+        """Снабженец округлил уголок до хлыста, вписал договорную цену болта и
         своё описание листа — повтор это не затирает, плашка «состав
         изменился» от его правки не загорается, расхождение — словами."""
         _deal, _spec, order, _row = self._flow()
@@ -357,33 +357,33 @@ class TestStepZ4(Z2Common):
         plate.with_user(self.engineer).name = "Лист 2 мм х/к, 1500×6000 — 1 лист"
 
         self._signals(tech)
-        self.assertFalse(tech.pmk_request_stale, "Правка закупщика — не «состав изменился».")
+        self.assertFalse(tech.pmk_request_stale, "Правка снабженца — не «состав изменился».")
         self.assertIn("12 м, у инженера 6 м", tech.pmk_request_diff_text or "")
-        self.assertIn("количество правил закупщик", tech.pmk_request_diff_text or "")
+        self.assertIn("количество правил снабженец", tech.pmk_request_diff_text or "")
 
         tech.product_ids.write({"qty": 5})
         self._signals(tech)
         self.assertTrue(tech.pmk_request_stale, "Инженер поменял состав — плашка.")
         self._request(tech)
-        self.assertAlmostEqual(angle.product_qty, 12.0, msg="Количество закупщика цело.")
+        self.assertAlmostEqual(angle.product_qty, 12.0, msg="Количество снабженца цело.")
         self.assertAlmostEqual(angle.pmk_request_qty, 15.0, msg="Заявлено инженером — новое.")
         self.assertEqual(bolt.product_qty, 40.0, "Не правленое количество — обновлено.")
-        self.assertAlmostEqual(bolt.price_unit, 45.0, msg="Цена закупщика цела.")
-        self.assertEqual(plate.name, "Лист 2 мм х/к, 1500×6000 — 1 лист", "Описание закупщика цело.")
+        self.assertAlmostEqual(bolt.price_unit, 45.0, msg="Цена снабженца цела.")
+        self.assertEqual(plate.name, "Лист 2 мм х/к, 1500×6000 — 1 лист", "Описание снабженца цело.")
         self.assertEqual(plate.product_qty, 2.0, "Количество листа — по инженеру.")
         self._signals(tech)
         self.assertFalse(tech.pmk_request_stale, "После повтора плашки нет.")
         self.assertIn("12 м, у инженера 15 м", tech.pmk_request_diff_text or "")
         tech.invalidate_recordset(["message_ids"])
-        self.assertIn("Правки закупщика", " ".join(str(m.body) for m in tech.message_ids))
+        self.assertIn("Правки снабженца", " ".join(str(m.body) for m in tech.message_ids))
 
-        # Позицию убрали у инженера, а строку правил закупщик — не удаляем.
+        # Позицию убрали у инженера, а строку правил снабженец — не удаляем.
         stand = tech.product_ids.line_ids.filtered(lambda l: l.detail_name == "Стойка")
         stand.unlink()
         self._signals(tech)
         self.assertTrue(tech.pmk_request_stale)
         self._request(tech)
-        self.assertTrue(angle.exists(), "Строку закупщика молча не удаляем.")
+        self.assertTrue(angle.exists(), "Строку снабженца молча не удаляем.")
         self._signals(tech)
         self.assertFalse(tech.pmk_request_stale)
         self.assertIn("у инженера нет", tech.pmk_request_diff_text or "")

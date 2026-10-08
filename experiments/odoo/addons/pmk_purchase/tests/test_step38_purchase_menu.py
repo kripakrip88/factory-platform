@@ -250,6 +250,8 @@ class TestPurchaseMenuStep38(TransactionCase):
                     "Группы поставки"]
         if not self.env.ref("pmk_mail_ui.menu_mail_purchase", raise_if_not_found=False):
             expected.remove("Почта")
+        if self.env.ref("pmk_tech.menu_metal_requests", raise_if_not_found=False):
+            expected.insert(expected.index("Заказы поставщикам"), "Заявки на металл")
         self.assertEqual(self._items(self.admin), expected)
         self.assertEqual(self._item(self.admin, "Все поставщики")["actionID"],
                          self.env.ref("account.res_partner_action_supplier").id)
