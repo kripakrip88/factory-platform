@@ -296,7 +296,7 @@ class TestStepZ5(Z4Common):
         po.button_confirm()
         self._arrive(po)
         self.assertEqual(row.pmk_metal, "part")
-        tech.product_ids.write({"qty": 0})
+        tech.product_ids.line_ids.unlink()   # количество изделия 0 запрещено — убираем детали
         self._request(tech)
         self.assertEqual(empty.state, "cancel", "Посылка: черновик опустел и отменён.")
         self.assertEqual(row.pmk_metal, "got", "Действующая заявка одна — пришла.")
