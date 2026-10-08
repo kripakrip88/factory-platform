@@ -245,6 +245,24 @@ class MetalSpecLine(models.Model):
     product_id = fields.Many2one("pmk.metal.spec.product", "Изделие", required=True, ondelete="cascade")
     spec_id = fields.Many2one(related="product_id.spec_id", store=True, string="Расчёт")
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        """Деталь без изделия — ошибка кода, а не данных пользователя.
+
+        Раньше такая запись доходила до базы и падала на NOT NULL с
+        сообщением про «поле 'Изделие'», которое пользователю ничего не
+        говорит (07.10.2026: новый расчёт не сохранялся, причина — зеркало
+        sheet_line_ids, см. spec_layout.py). Теперь путь, который пытается
+        создать деталь мимо изделия, называет себя сразу.
+        """
+        for vals in vals_list:
+            if not vals.get("product_id"):
+                raise ValidationError(
+                    "Деталь «%s» создаётся без изделия. Детали добавляются "
+                    "только в составе изделия; сообщите разработчику, с какого "
+                    "экрана это случилось." % (vals.get("detail_name") or "без названия"))
+        return super().create(vals_list)
+
     def _compute_display_name(self):
         """Человеческое имя детали — для истории документа и ссылок.
 

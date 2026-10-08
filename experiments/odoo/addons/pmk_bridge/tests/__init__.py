@@ -14,3 +14,5 @@ from . import test_step30_print_colors
 from . import test_step53_product_created
 # Шаг 58: реквизиты продавца и строка налога в КП (без базы — голым питоном).
 from . import test_step58_seller
+# Исправление 08.10.2026: новый расчёт с листом не сохранялся (зеркала деталей).
+from . import test_hotfix_new_spec_save

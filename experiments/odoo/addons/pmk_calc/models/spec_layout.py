@@ -18,7 +18,7 @@
 
 from markupsafe import Markup, escape
 
-from odoo import api, fields, models
+from odoo import Command, api, fields, models
 
 from .sheeting import (
     DEFAULT_KERF_MM, SHEET_USE_COUNTED, plan_sheets, sheet_use_label)
@@ -57,6 +57,12 @@ LAYOUT_RESET = {
 }
 
 
+def _is_create(command):
+    """Команда x2many «создать запись»: (0, virtual_id, vals)."""
+    return (isinstance(command, (list, tuple)) and len(command) == 3
+            and command[0] == Command.CREATE)
+
+
 def _mm_text(value):
     """Миллиметры без лишнего: 100.0 → «100», 120.5 → «120,5»."""
     text = "%.1f" % float(value or 0.0)
@@ -76,6 +82,69 @@ class MetalSpecLayout(models.Model):
         domain=[("calc_mode", "=", "sheet")],
         help="Детали из листа по всему расчёту. Габарит листа меняется прямо "
              "здесь: у разных деталей он разный.")
+
+    # ─── Списки-зеркала деталей (исправление 08.10.2026) ──────────────────
+    #
+    # sheet_line_ids (и price_line_ids моста) — ВТОРОЙ ВЗГЛЯД на те же детали,
+    # что лежат в изделиях. Деталь рождается только в изделии: без изделия её
+    # не бывает (product_id обязателен).
+    #
+    # ⚠️ ПОЧЕМУ НОВЫЙ РАСЧЁТ НЕ СОХРАНЯЛСЯ. Новая листовая деталь в изделии
+    # нового расчёта. Onchange расчёта считает себестоимость (мост) — читает
+    # у детали spec_id, и ORM вписывает несохранённую деталь в зеркала
+    # расчёта: в ответ уходит sheet_line_ids = [Command.create(...)] с
+    # product_id = False (у нового изделия ещё нет номера). Браузер не знает,
+    # что это та же деталь, что в изделии, и заводит у себя вторую запись.
+    # Вкладка «Раскладка» редактируемая (габарит), поэтому при «Сохранить»
+    # web_save присылает её создание: {layout_sheet_size: '1500x6000'} без
+    # изделия — INSERT падает на NOT NULL product_id («Отсутствует
+    # обязательное значение для поля 'Изделие'»). Каждый следующий onchange
+    # добавлял ещё одну такую копию. Дефект с 25.09 (653c5f7, вкладка
+    # «Раскладка»), всплыл 07.10 на первом новом расчёте с листом из окна.
+    #
+    # Лечение в два слоя:
+    # 1) onchange не отдаёт в редактируемое зеркало новых деталей — они
+    #    появятся на вкладке после сохранения (так и написано на вкладке);
+    # 2) создание и запись расчёта отбрасывают «создать деталь» через
+    #    зеркало без изделия — на случай открытой до исправления вкладки
+    #    браузера или любого другого клиента.
+    # Сама деталь без изделия не создаётся никаким путём — понятная ошибка
+    # в MetalSpecLine.create (metal_spec.py).
+    _pmk_line_mirrors = ("sheet_line_ids",)
+
+    def onchange(self, values, field_names, fields_spec):
+        result = super().onchange(values, field_names, fields_spec)
+        value = result.get("value") or {}
+        commands = value.get("sheet_line_ids")
+        if isinstance(commands, list):
+            kept = [cmd for cmd in commands if not _is_create(cmd)]
+            if kept:
+                value["sheet_line_ids"] = kept
+            else:
+                value.pop("sheet_line_ids")
+        return result
+
+    @api.model
+    def _pmk_drop_mirror_creates(self, vals):
+        """Копия vals без «создать деталь без изделия» в зеркалах."""
+        clean = None
+        for name in self._pmk_line_mirrors:
+            commands = vals.get(name)
+            if not isinstance(commands, list):
+                continue
+            kept = [cmd for cmd in commands
+                    if not (_is_create(cmd) and not (cmd[2] or {}).get("product_id"))]
+            if len(kept) != len(commands):
+                clean = clean if clean is not None else dict(vals)
+                clean[name] = kept
+        return vals if clean is None else clean
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        return super().create([self._pmk_drop_mirror_creates(vals) for vals in vals_list])
+
+    def write(self, vals):
+        return super().write(self._pmk_drop_mirror_creates(vals))
 
     # ШИРИНЫ РЕЗА НА ФОРМЕ НЕТ. Она была, и владелец убрал её как лишнюю —
     # справедливо: рез лазера 0,2 мм тонет в допуске на ряд (5 мм), и на число
