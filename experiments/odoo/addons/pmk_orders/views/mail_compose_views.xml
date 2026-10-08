@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Окно «Отправить КП»: что станет со счётом (разбор UX, шаг З-9).
+
+    В строку сигналов окна КП (pmk_bridge) — ещё две вещи:
+      • жёлтая плашка (pmk-signal) — счёт не согласован или уже отправлен и
+        будет новая редакция: видно, но не запрещено;
+      • вторая жёлтая — в счёте есть услуги или условия, а КП (печать
+        расчёта) их не содержит до шаблона шага 62: клиент увидит сумму
+        меньше счёта — пусть менеджер впишет их в письмо;
+      • серая справка — счёта нет и он заведётся при отправке, черновик
+        станет «Отправлен», счёт в работе не изменится.
+    Только в окне КП (флаг контекста pmk_kp_send), в остальных окнах письма
+    поля пусты и не видны. Залитая кнопка окна по-прежнему одна — «Отправить».
+  -->
+  <record id="view_mail_compose_kp_invoice" model="ir.ui.view">
+    <field name="name">mail.compose.message.form.pmk.kp.invoice</field>
+    <field name="model">mail.compose.message</field>
+    <field name="inherit_id" ref="pmk_bridge.view_mail_compose_kp"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//span[.//field[@name='pmk_kp_to_hint']]" position="after">
+        <span class="pmk-signal" invisible="not pmk_kp_invoice_hint"
+              title="Согласование — наблюдение: отправка не блокируется">
+          <field name="pmk_kp_invoice_hint" nolabel="1"/>
+        </span>
+        <span class="pmk-signal" invisible="not pmk_kp_invoice_extra"
+              title="КП — печать расчёта: услуг и условий счёта в нём нет до шаблона шага 62">
+          <field name="pmk_kp_invoice_extra" nolabel="1"/>
+        </span>
+        <span class="text-muted" invisible="not pmk_kp_invoice_text">
+          <field name="pmk_kp_invoice_text" nolabel="1"/>
+        </span>
+      </xpath>
+    </field>
+  </record>
+</odoo>

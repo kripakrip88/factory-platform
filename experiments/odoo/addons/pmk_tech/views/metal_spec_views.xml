@@ -178,4 +178,23 @@
       </xpath>
     </field>
   </record>
+
+  <!--
+    Шаг З-9: кнопку «Счёт» (pmk_orders) у технического расчёта тоже прячем —
+    счёт собирается из расчёта КП, а не из копии инженера (сервер держит то же:
+    models/metal_spec.py, action_pmk_invoice). Наследник вида pmk_orders, а не
+    моста: свой вид pmk_orders заводится позже нашего и применился бы после
+    xpath'а на его кнопку. active в XML — грабли Odoo 19.
+  -->
+  <record id="view_metal_spec_form_tech_invoice" model="ir.ui.view">
+    <field name="name">pmk.metal.spec.form.tech.invoice</field>
+    <field name="model">pmk.metal.spec</field>
+    <field name="inherit_id" ref="pmk_orders.view_metal_spec_form_invoice"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//header/button[@name='action_pmk_invoice']" position="attributes">
+        <attribute name="invisible">not opportunity_id or pmk_kind == 'tech'</attribute>
+      </xpath>
+    </field>
+  </record>
 </odoo>

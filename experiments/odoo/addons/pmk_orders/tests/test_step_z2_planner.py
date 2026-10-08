@@ -84,7 +84,7 @@ class TestStepZ2Planner(Z2Common):
     def test_amount_follows_invoice_manual_kept(self):
         deal = self._deal()
         spec = self._spec(deal)
-        deal.write({"stage_id": self.stage_kp.id})
+        spec._pmk_kp_move_stage(deal)  # «Отправить КП» (шаг З-9: перенос руками счёт не заводит)
         invoice = self._invoices(deal)
         row = self._row(pmk_sale_order_id=invoice.id)
         self.assertAlmostEqual(row.pmk_amount, invoice.amount_total)

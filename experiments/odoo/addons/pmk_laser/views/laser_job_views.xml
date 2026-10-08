@@ -199,7 +199,9 @@
                    расчёту, и по этой ссылке задание видно на схеме связей. -->
               <field name="spec_id" string="Расчёт" options="{'no_create': True}"/>
               <field name="partner_id"/>
-              <field name="sale_order_id"/>
+              <!-- Без «Создать…»: счёт покупателю рождается кнопкой «Счёт» в
+                   расчёте (pmk_orders, шаг З-9), не из задания на резку. -->
+              <field name="sale_order_id" options="{'no_create': True}"/>
               <field name="note" placeholder="Примечание…"/>
             </group>
             <group string="Станок и лист" name="pmk_job_cut">

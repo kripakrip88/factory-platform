@@ -40,7 +40,9 @@
         <field name="user_ids" string="Ответственный" widget="many2many_avatar_user" optional="show"/>
         <field name="pmk_amount" string="Сумма заказа" sum="Итого" optional="show"
                readonly="pmk_sale_order_id"/>
-        <field name="pmk_sale_order_id" string="Счёт покупателю" optional="show" width="150px"/>
+        <!-- Без «Создать…» (шаг З-9): счёт рождается кнопкой «Счёт» в расчёте. -->
+        <field name="pmk_sale_order_id" string="Счёт покупателю" optional="show" width="150px"
+               options="{'no_create': True}"/>
         <field name="pmk_org_id" optional="hide"/>
         <field name="pmk_invoice" optional="show"/>
         <field name="pmk_paid_date" optional="show"/>

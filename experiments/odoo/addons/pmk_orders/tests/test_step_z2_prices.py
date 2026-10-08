@@ -109,7 +109,7 @@ class TestStepZ2Prices(Z2Common):
             with self.subTest(org=org.name):
                 deal = self._deal(org=org)
                 spec = self._spec(deal, org=org, products=[("Кронштейн", 1, 150.0)])
-                deal.write({"stage_id": self.stage_kp.id})
+                spec._pmk_kp_move_stage(deal)  # «Отправить КП» (шаг З-9: перенос руками счёт не заводит)
                 invoice = self._invoices(deal)
                 self.assertEqual(len(invoice), 1)
                 self.assertAlmostEqual(invoice.order_line.price_unit, 150.0)

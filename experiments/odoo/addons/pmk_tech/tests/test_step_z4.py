@@ -136,7 +136,11 @@ class Z4Common(Z2Common):
             ],
         })])
         spec.action_draft_layout()
-        deal.write({"stage_id": self.stage_kp.id})
+        # Шаг З-9: счёт сам по переносу сделки не заводится — «Отправить КП»
+        # (после отправки письма мост зовёт _pmk_kp_move_stage) заводит его из
+        # расчёта и отмечает «Отправлен».
+        spec._pmk_kp_move_stage(deal)
+        self.assertEqual(deal.stage_id, self.stage_kp)
         order = self._invoices(deal)
         self.assertEqual(len(order), 1, "Посылка: счёт выставлен.")
         row = self.env["project.task"]

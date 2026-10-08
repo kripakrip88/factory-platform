@@ -2722,3 +2722,67 @@ $pmk-short-fields: phone, email, url, date, datetime, daterange, remaining_days,
     pointer-events: none;
   }
 }
+
+// ═══ Счёт покупателю по-нашему (З-9, разбор UX, 09.10.2026) ═════════════════
+// Заголовок раздела — не «Шаг …»: тесты шагов 48, 49, 59 ищут следующий
+// «// ═══ Шаг». Виды — pmk_orders (views/sale_order_views.xml), своих стилей
+// модуль не несёт. Тёмная пара — dark.scss, раздел того же имени. Ширину и
+// фон листа не задаём (шаги 49 и 52).
+
+// З-9.1 Плашки над листом счёта («расчёт изменился после отправки»,
+// «Отправлен без согласования», «Без цены клиенту…»): цвет — у
+// .pmk-price-alert (бледно-жёлтая, тёмная пара есть), здесь — отступы, как у
+// плашки прежней редакции (З-2.3).
+.o_form_view .o_pmk_invoice_alert {
+  margin: 0 0 8px;
+  padding: 10px 16px;
+
+  .o_field_widget {
+    display: inline;
+  }
+}
+
+// З-9.2 Итог под строками справа: «Итого» крупно, строка налога как в КП
+// («в том числе НДС 22%: …» / «Без НДС (УСН)») — мельче и серым. Цифры
+// табличные, по правому краю — как штатный блок итогов, который он заменил.
+.o_form_view .o_pmk_invoice_total {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  width: 100%;
+  font-variant-numeric: tabular-nums;
+
+  .o_pmk_invoice_total_sum {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    font-size: 1.125rem;
+    font-weight: 600;
+
+    .o_field_widget {
+      font-size: inherit;
+      font-weight: inherit;
+    }
+  }
+
+  .o_pmk_invoice_total_tax {
+    color: #6b6f76;
+    font-size: 0.875rem;
+    text-align: right;
+  }
+}
+
+// З-9.3 Условия: «Срок изготовления» — число и подпись в одну строку, поле
+// числа по содержимому (три цифры), а не во всю ячейку.
+// Класс формы (o_pmk_invoice_form, из arch) ядро вешает на корень вида —
+// селектор «предок → потомок».
+.o_pmk_invoice_form div[name="pmk_lead"] {
+  flex-wrap: wrap;
+  column-gap: 6px;
+
+  .o_pmk_lead_days {
+    width: 4.5rem;
+    max-width: 4.5rem;
+  }
+}

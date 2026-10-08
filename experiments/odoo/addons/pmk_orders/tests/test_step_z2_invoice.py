@@ -3,8 +3,14 @@
 
 Гонять ТОЛЬКО на одноразовой базе (см. __init__.py). Синтетические данные.
 
+С шага З-9 (09.10.2026) счёт сам по «КП отправлено» не заводится: «КП
+отправлено» здесь — путь «Отправить КП» (мост после письма зовёт
+_pmk_kp_move_stage, помощник _send_kp), перенос сделки руками — write стадии.
+Новая жизнь счёта (черновик кнопкой «Счёт», согласование, условия, услуги) —
+test_step_z9_invoice.py.
+
 Что ловим:
-  • «КП отправлено» (перетаскивание — write стадии) создаёт РОВНО ОДИН счёт:
+  • «Отправить КП» создаёт РОВНО ОДИН счёт «Отправлен»:
     клиент — компания контакта, наша организация, сделка, расчёт, состояние
     «Выставлен»; строки — изделия с ценой (товар-услуга, название, количество,
     «шт», цена, связь с изделием), налог режима (компания — «цены включают
@@ -20,13 +26,16 @@
     документов и задач нет, писем нет; одна строка планировщика в «Очереди»;
     повторы её не дублируют; «Оплата пришла — в работу» в счёте = «Выиграно»;
   • «Проиграно» — счёт отменён, строка цела; восстановили и снова «КП
-    отправлено» — тот же счёт снова «Выставлен»;
-  • нет расчёта, цен, клиента — счёта нет, стадия сменилась, заметка;
+    отправлено» (перенос руками) — тот же счёт снова «Отправлен»;
+  • нет цен, клиента — счёта нет, стадия сменилась, заметка; перенос руками
+    без счёта — счёта нет, заметка;
     «Выиграно» без счёта — строка без счёта; счёт в работе расчётом не
     переписывается;
   • счёт выставлен из одного расчёта, главным стал другой (вариант, копия)
     — перетаскивание назад-вперёд, «Выиграно» и восстановление после
     «Проиграно» берут расчёт счёта: редакции нет, сумма — того, что ушло;
+    поменяли расчёт отправленного — перенос руками редакцию НЕ даёт (заметка
+    «ред. N — по «Отправить КП»»), её даёт «Отправить КП»;
   • флаг pmk_revision_freeze без sudo снимок не открывает (контекст RPC
     задаёт браузер);
   • права: менеджер без прав Проектов проводит свою сделку до строки,
@@ -34,8 +43,8 @@
     на запись закрыты;
   • виды: кнопки «Расчёт» и «Заказ» на счёте, «Счёт» и «Заказ» на сделке,
     штатные кнопки sale_crm спрятаны, «Отправить» и «Создать счёт» — в
-    группах-выключателях, залитая одна; окно «Счета покупателям» — с фильтром
-    «Действующие»; нумератор «СЧ-».
+    группах-выключателях, залитая одна на любое состояние; окно «Счета
+    покупателям» — с фильтром «Действующие»; нумератор «СЧ-».
 
 Глазами (счёт во всех состояниях, снимок с плашкой, сделка, светлая и
 тёмная тема) — основной агент на копии.
@@ -129,6 +138,14 @@ class Z2Common(TransactionCase):
     def _invoices(self, deal):
         return self.env["sale.order"].search([("opportunity_id", "=", deal.id)])
 
+    def _send_kp(self, deal, spec=None, user=None):
+        """«Отправить КП»: после письма людям клиента мост зовёт
+        _pmk_kp_move_stage (pmk_deal kp_sent.py) — сделка в «КП отправлено»,
+        счёт этого расчёта «Отправлен» (шаг З-9)."""
+        user = user or self.manager
+        spec = spec or deal.pmk_spec_id
+        return spec.with_user(user)._pmk_kp_move_stage(deal.with_user(user))
+
     def _snapshots(self, order):
         return self.env["sale.order"].search([("pmk_revision_of_id", "=", order.id)])
 
@@ -147,12 +164,12 @@ class Z2Common(TransactionCase):
 @tagged("post_install", "-at_install")
 class TestStepZ2Invoice(Z2Common):
 
-    # ─── «КП отправлено» → ровно один счёт ──────────────────────────────
+    # ─── «Отправить КП» → ровно один счёт ───────────────────────────────
     def test_kp_sent_issues_one_invoice(self):
         deal = self._deal()
         spec = self._spec(deal)
         self.assertEqual(deal.pmk_spec_id, spec, "Посылка: главный расчёт сделки.")
-        deal.with_user(self.manager).write({"stage_id": self.stage_kp.id})
+        self._send_kp(deal)
         invoice = self._invoices(deal)
         self.assertEqual(len(invoice), 1, "Ровно один счёт.")
         self.assertEqual(deal.stage_id, self.stage_kp)
@@ -160,7 +177,9 @@ class TestStepZ2Invoice(Z2Common):
         self.assertEqual(invoice.opportunity_id, deal)
         self.assertEqual(invoice.pmk_org_id, self.org_vat)
         self.assertEqual(invoice.pmk_spec_id, spec)
-        self.assertEqual(invoice.state, "sent", "«Выставлен, ждём оплату».")
+        self.assertEqual(invoice.state, "sent", "«Отправлен».")
+        self.assertEqual(invoice.pmk_status, "sent")
+        self.assertTrue(invoice.pmk_sent_date)
         self.assertFalse(invoice.pmk_is_revision)
         self.assertEqual(invoice.pmk_revision, 1)
         self.assertFalse(invoice.pmk_revision_label)
@@ -199,7 +218,7 @@ class TestStepZ2Invoice(Z2Common):
     def test_repeat_does_not_duplicate(self):
         deal = self._deal()
         spec = self._spec(deal)
-        deal.write({"stage_id": self.stage_kp.id})
+        self._send_kp(deal)
         invoice = self._invoices(deal)
         deal.write({"stage_id": self.stage_calc.id})
         deal.write({"stage_id": self.stage_kp.id})
@@ -254,22 +273,33 @@ class TestStepZ2Invoice(Z2Common):
         self.assertAlmostEqual(row.pmk_amount, 2000.0, places=2)
 
     def test_drag_follows_changes_of_invoice_spec(self):
-        """Поменяли сам расчёт счёта — перетаскивание даёт редакцию из него;
-        расчёт счёта отвязали от сделки — берём главный."""
+        """Шаг З-9: поменяли сам расчёт отправленного счёта — перенос руками
+        редакции НЕ даёт (только заметка), её даёт «Отправить КП» из него.
+        Расчёт счёта отвязали от сделки, проиграли, восстановили и перенесли —
+        отменённый счёт снова «Отправлен» уже из главного расчёта (редакция)."""
         deal = self._deal()
         first = self._spec(deal, products=[("Вариант А", 2, 1000.0)])
         first._pmk_kp_move_stage(deal)
         invoice = self._invoices(deal)
         second = self._spec(deal, products=[("Вариант Б", 5, 9000.0)])
         first.product_ids.write({"price_customer_unit": 1100.0})
+        self.assertAlmostEqual(invoice.amount_total, 2000.0, places=2,
+                               msg="Отправленный счёт за расчётом не идёт.")
+        self.assertIn("ред. 2", invoice.pmk_spec_changed_text or "")
         deal.write({"stage_id": self.stage_calc.id})
         deal.write({"stage_id": self.stage_kp.id})
+        self.assertEqual(invoice.pmk_revision, 1, "Перенос руками редакцию не даёт.")
+        self.assertIn("по «Отправить КП»", self._notes(deal))
+        first._pmk_kp_move_stage(deal)
         self.assertEqual(invoice.pmk_revision, 2)
         self.assertEqual(invoice.pmk_spec_id, first)
         self.assertAlmostEqual(invoice.amount_total, 2200.0, places=2)
         first.opportunity_id = False
+        deal.action_set_lost()
+        deal.action_restore()
         deal.write({"stage_id": self.stage_calc.id})
         deal.write({"stage_id": self.stage_kp.id})
+        self.assertEqual(invoice.state, "sent")
         self.assertEqual(invoice.pmk_revision, 3)
         self.assertEqual(invoice.pmk_spec_id, second, "Расчёт ушёл из сделки — главный.")
 
@@ -277,7 +307,7 @@ class TestStepZ2Invoice(Z2Common):
     def test_changed_spec_gives_revision(self):
         deal = self._deal()
         spec = self._spec(deal)
-        deal.write({"stage_id": self.stage_kp.id})
+        self._send_kp(deal)
         invoice = self._invoices(deal)
         name, first_total = invoice.name, invoice.amount_total
         section, truss, _probe = spec.product_ids.sorted("sequence")
@@ -351,11 +381,12 @@ class TestStepZ2Invoice(Z2Common):
     def test_revision_keeps_manual_lines(self):
         deal = self._deal()
         self._spec(deal, products=[("Каркас", 1, 10000.0)])
-        deal.write({"stage_id": self.stage_kp.id})
+        self._send_kp(deal)
         invoice = self._invoices(deal)
         invoice.action_draft()
+        extra = self.env.ref("pmk_orders.product_extra_service").product_variant_id
         invoice.write({"order_line": [Command.create({
-            "product_id": self.service.id, "name": "Доставка", "product_uom_qty": 1,
+            "product_id": extra.id, "name": "Доставка", "product_uom_qty": 1,
             "price_unit": 1500.0})]})
         invoice.action_quotation_sent()
         deal.pmk_spec_id.product_ids.write({"price_customer_unit": 12000.0})
@@ -367,7 +398,7 @@ class TestStepZ2Invoice(Z2Common):
     def test_usn_org_no_vat(self):
         deal = self._deal(org=self.org_usn)
         spec = self._spec(deal, org=self.org_usn)
-        deal.write({"stage_id": self.stage_kp.id})
+        self._send_kp(deal)
         invoice = self._invoices(deal)
         self.assertEqual(invoice.pmk_org_id, self.org_usn)
         usn = self.taxes["usn0"]
@@ -380,7 +411,7 @@ class TestStepZ2Invoice(Z2Common):
     def test_won_confirms_and_creates_one_row(self):
         deal = self._deal()
         self._spec(deal)
-        deal.write({"stage_id": self.stage_kp.id})
+        self._send_kp(deal)
         invoice = self._invoices(deal)
         mails = self.env["mail.mail"].sudo().search_count([])
         deal.with_user(self.manager).action_set_won()
@@ -432,7 +463,7 @@ class TestStepZ2Invoice(Z2Common):
     def test_confirm_button_wins_deal(self):
         deal = self._deal()
         self._spec(deal)
-        deal.write({"stage_id": self.stage_kp.id})
+        self._send_kp(deal)
         invoice = self._invoices(deal)
         invoice.with_user(self.manager).action_confirm()
         self.assertTrue(deal.stage_id.is_won, "«Оплата пришла — в работу» = «Выиграно».")
@@ -456,7 +487,7 @@ class TestStepZ2Invoice(Z2Common):
     def test_lost_cancels_invoice(self):
         deal = self._deal()
         self._spec(deal)
-        deal.write({"stage_id": self.stage_kp.id})
+        self._send_kp(deal)
         invoice = self._invoices(deal)
         deal.action_set_lost()
         self.assertEqual(invoice.state, "cancel")
@@ -472,7 +503,7 @@ class TestStepZ2Invoice(Z2Common):
         отменяется, строка планировщика остаётся."""
         deal = self._deal()
         self._spec(deal)
-        deal.write({"stage_id": self.stage_kp.id})
+        self._send_kp(deal)
         deal.action_set_won()
         row = self._rows(deal)
         invoice = self._invoices(deal)
@@ -493,7 +524,8 @@ class TestStepZ2Invoice(Z2Common):
         deal.write({"stage_id": self.stage_kp.id})
         self.assertEqual(deal.stage_id, self.stage_kp, "Стадия сменилась — ничего не блокирует.")
         self.assertFalse(self._invoices(deal))
-        self.assertIn("нет расчёта", self._notes(deal))
+        self.assertIn("сам он не заводится", self._notes(deal),
+                      "Шаг З-9: перенос руками счёт не заводит — заметка.")
         deal.action_set_won()
         row = self._rows(deal)
         self.assertEqual(len(row), 1, "«Выиграно» без счёта — строка всё равно есть.")
@@ -503,14 +535,15 @@ class TestStepZ2Invoice(Z2Common):
     def test_no_prices_no_invoice(self):
         deal = self._deal()
         self._spec(deal, products=[("Без цены", 1, 0.0)])
-        deal.write({"stage_id": self.stage_kp.id})
+        self._send_kp(deal)
+        self.assertEqual(deal.stage_id, self.stage_kp)
         self.assertFalse(self._invoices(deal))
         self.assertIn("нет цены клиенту", self._notes(deal))
 
     def test_no_client_no_invoice(self):
         deal = self._deal(partner_id=False)
         self._spec(deal, partner_id=False)
-        deal.write({"stage_id": self.stage_kp.id})
+        self._send_kp(deal)
         self.assertEqual(deal.stage_id, self.stage_kp)
         self.assertFalse(self._invoices(deal))
         self.assertIn("не указан клиент", self._notes(deal))
@@ -518,7 +551,7 @@ class TestStepZ2Invoice(Z2Common):
     def test_invoice_in_work_not_rewritten(self):
         deal = self._deal()
         spec = self._spec(deal)
-        deal.write({"stage_id": self.stage_kp.id})
+        self._send_kp(deal)
         deal.action_set_won()
         invoice = self._invoices(deal)
         total = invoice.amount_total
@@ -540,7 +573,7 @@ class TestStepZ2Invoice(Z2Common):
 
         self.patch(Order, "_pmk_create_from_spec", boom)
         with mute_logger("odoo.addons.pmk_orders.models.crm_lead"):
-            deal.write({"stage_id": self.stage_kp.id})
+            self._send_kp(deal)
         self.assertEqual(deal.stage_id, self.stage_kp)
         self.assertFalse(self._invoices(deal))
         self.assertIn("не получилось", self._notes(deal))
@@ -551,7 +584,7 @@ class TestStepZ2Invoice(Z2Common):
         self.assertFalse(user.has_group("project.group_project_user"), "Посылка: без Проектов.")
         deal = self._deal(user=user)
         self._spec(deal, user=user)
-        deal.with_user(user).write({"stage_id": self.stage_kp.id})
+        self._send_kp(deal, user=user)
         deal.with_user(user).action_set_won()
         invoice = self._invoices(deal)
         self.assertEqual(invoice.state, "sale")
@@ -592,8 +625,8 @@ class TestStepZ2Invoice(Z2Common):
         self.assertTrue(self.env.ref("pmk_orders.view_order_search_quotation_pmk_orders").active)
 
     def test_draft_issue_button(self):
-        """Черновик (заведён руками) → «Выставить» = «Выставлен, ждём оплату»,
-        без письма."""
+        """Черновик → «Отметить отправленным» (с шага З-9 — в «Убранном»):
+        «Отправлен», без письма, дата отправки стоит."""
         order = self.env["sale.order"].with_user(self.manager).create({
             "partner_id": self.client.id,
             "order_line": [Command.create({"product_id": self.service.id, "name": "Каркас",
@@ -602,9 +635,12 @@ class TestStepZ2Invoice(Z2Common):
         mails = self.env["mail.mail"].search_count([])
         order.with_user(self.manager).action_quotation_sent()
         self.assertEqual(order.state, "sent")
+        self.assertTrue(order.pmk_sent_date)
         self.assertEqual(self.env["mail.mail"].search_count([]), mails, "Писем нет.")
 
     def test_invoice_form(self):
+        """Шапка и снимок. Залитая одна на каждое состояние — проверка
+        перебором состояний в test_step_z9_invoice.py (шаг З-9)."""
         arch = self._arch("sale.order", "form", view="sale.view_order_form")
         self.assertIn("o_pmk_header_up", arch.get("class"))
         box = arch.xpath("//div[@name='button_box']")[0]
@@ -617,21 +653,8 @@ class TestStepZ2Invoice(Z2Common):
         confirm = header.xpath("./button[@id='action_confirm']")[0]
         self.assertEqual(confirm.get("string"), "Оплата пришла — в работу")
         self.assertIn("pmk_is_revision", confirm.get("invisible"))
-        filled = [b for b in header.iter("button")
-                  if {"btn-primary", "oe_highlight"} & set((b.get("class") or "").split())]
-        rest = [b.get("name") for b in filled if b is not confirm]
-        # «Технический расчёт» (шаг З-4, pmk_tech) залит только у счёта в
-        # работе — там «Оплата пришла» уже нажата.
-        self.assertLessEqual(set(rest), {"payment_action_capture", "action_quotation_sent",
-                                         "action_pmk_tech_spec"},
-                             "Залитая — одна на состояние: «Выставить» у черновика, «Оплата "
-                             "пришла — в работу» у выставленного (захват платежа — только при "
-                             "оплате с сайта).")
-        issue = header.xpath("./button[@name='action_quotation_sent']")
-        self.assertEqual(len(issue), 1)
-        self.assertEqual(issue[0].get("string"), "Выставить")
-        self.assertIn("state != 'draft'", issue[0].get("invisible"))
-        self.assertIn("pmk_is_revision", issue[0].get("invisible"))
+        # Шаг З-9: «Выставить» (З-2) — в «Убранном»: у менеджера узла нет.
+        self.assertFalse(header.xpath("./button[@name='action_quotation_sent']"))
         draft_confirm = header.xpath("./button[@name='action_confirm'][not(@id)]")
         for button in draft_confirm:
             with self.subTest(button="action_confirm (черновик)"):
@@ -658,10 +681,17 @@ class TestStepZ2Invoice(Z2Common):
         banner = arch.xpath("//div[contains(concat(' ', @class, ' '), ' o_pmk_revision_banner ')]")
         self.assertEqual(banner[0].get("invisible"), "not pmk_is_revision")
         self.assertIsNotNone(arch.find(".//h1/field[@name='pmk_revision_label']"))
-        # Прежняя редакция — только для чтения во всех вкладках.
+        # Прежняя редакция — только для чтения во всех вкладках. «Другая
+        # информация» с шага З-9 — в «Убранном»: смотрим у того, кому её вернули.
+        keeper = new_test_user(
+            self.env, login="pmkz2_removed", name="Убранное показать (шаг З-2)",
+            groups="base.group_user,sales_team.group_sale_salesman_all_leads,"
+                   "pmk_theme.group_pmk_removed")
+        full = self._arch("sale.order", "form", user=keeper, view="sale.view_order_form")
         for name in ("note", "payment_term_id", "fiscal_position_id", "client_order_ref",
-                     "user_id", "team_id", "tag_ids", "origin"):
-            nodes = arch.xpath("//sheet//field[@name='%s']" % name)
+                     "user_id", "team_id", "tag_ids", "origin", "pmk_payment_note",
+                     "pmk_lead_days", "pmk_delivery"):
+            nodes = full.xpath("//sheet//field[@name='%s']" % name)
             with self.subTest(readonly=name):
                 self.assertTrue(nodes)
                 self.assertTrue(any("pmk_is_revision" in (n.get("readonly") or "") for n in nodes))
@@ -715,8 +745,8 @@ class TestStepZ2Invoice(Z2Common):
         self._spec(deal)
         action = deal.action_open_invoice()
         self.assertFalse(action.get("res_id"), "Счёта нет — список с подсказкой.")
-        self.assertIn("КП отправлено", str(action["help"]))
-        deal.write({"stage_id": self.stage_kp.id})
+        self.assertIn("«Счёт» в расчёте", str(action["help"]))
+        self._send_kp(deal)
         invoice = self._invoices(deal)
         action = deal.action_open_invoice()
         self.assertEqual(action["res_id"], invoice.id)
@@ -748,7 +778,7 @@ class TestStepZ2Invoice(Z2Common):
         self.assertEqual(_STAGES["sale.order"][1], "Счёт покупателю")
         deal = self._deal()
         spec = self._spec(deal)
-        deal.write({"stage_id": self.stage_kp.id})
+        self._send_kp(deal)
         invoice = self._invoices(deal)
         spec.product_ids.filtered("price_customer_unit")[:1].price_customer_unit = 4700.0
         spec._pmk_kp_move_stage(deal)

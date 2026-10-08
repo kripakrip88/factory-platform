@@ -46,6 +46,7 @@ pmk_bridge: цены перечитаны из прайсов). Раскладк
 from markupsafe import Markup
 
 from odoo import _, api, fields, models
+from odoo.exceptions import UserError
 from odoo.tools.misc import clean_context
 
 from odoo.addons.pmk_calc.models.spec_layout import LAYOUT_RESULTS
@@ -176,6 +177,15 @@ class MetalSpecTech(models.Model):
         if any(spec.pmk_kind == "tech" for spec in self):
             return False
         return super()._pmk_kp_move_stage(deal)
+
+    def action_pmk_invoice(self):
+        """Шаг З-9: счёт — из расчёта КП, не из копии инженера (кнопка у
+        технического спрятана; это — на случай вызова в обход вида)."""
+        if any(spec.pmk_kind == "tech" for spec in self):
+            raise UserError(_(
+                "Это технический расчёт — копия для инженера. Счёт покупателю собирается "
+                "из расчёта КП %s.", self[:1].pmk_tech_source_id.name or ""))
+        return super().action_pmk_invoice()
 
     # ─── Заведение ──────────────────────────────────────────────────────
     @api.model

@@ -88,6 +88,16 @@ HIDDEN_BINDINGS = {
     # вкладышей конструктора КП; вкладышей у завода нет). Одно понятие — один
     # пункт «Счёт покупателю».
     "sale_pdf_quote_builder.action_report_saleorder_raw": REMOVED,
+    # Счёт покупателю (шаг З-9): «Отправить электронное письмо» — штатное
+    # письмо клиенту со штатным PDF Odoo (action_quotation_send), то есть
+    # убранная из шапки «Отправить», мимо окна «Отправить КП»; «Отметить
+    # коммерческое предложение как отправленное» — убранная «Отметить
+    # отправленным» старым словом (отправленным счёт делают «Отправить КП» и
+    # перенос сделки руками); «Создать заказ» (sale_project) — проект из
+    # счёта, у завода строка «Заказов в работе» заводится сама при «Выиграно».
+    "sale.model_sale_order_send_mail": REMOVED,
+    "sale.model_sale_order_action_quotation_sent": REMOVED,
+    "sale_project.model_sale_order_action_create_project": REMOVED,
     "product.action_product_template_print_labels": STOCK,
     "product.action_product_print_labels": STOCK,
 }

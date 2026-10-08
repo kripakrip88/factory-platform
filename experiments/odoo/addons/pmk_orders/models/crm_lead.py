@@ -1,37 +1,40 @@
 # -*- coding: utf-8 -*-
-"""Сделка ↔ счёт покупателю ↔ строка планировщика (разбор UX, шаг З-2).
+"""Сделка ↔ счёт покупателю ↔ строка планировщика (шаги З-2 и З-9).
 
-Решения Антона 08.10.2026 (карточка 2 «Заказ от заявки до цеха»):
+РЕШЕНИЯ АНТОНА 09.10.2026 (шаг З-9, меняют схему З-2): «сначала отправили, а
+потом перетащили сделку. Автоотправки не нужны, перенос либо руками, либо
+после нажатия на кнопку «Отправить КП»». Счёт сам больше НЕ заводится:
+черновик — кнопкой «Счёт» в расчёте (metal_spec.py).
 
-  «КП отправлено» (кнопка «Отправить КП» или перетаскивание в воронке) —
-      из расчёта сделки выставляется «Счёт покупателю» в состоянии
-      «Выставлен, ждём оплату». Расчёт — тот, КП которого ушло клиенту
-      (путь «Отправить КП», kp_sent.py). Перетаскивание и «Выиграно» расчёта
-      не знают: счёт уже есть — его же расчёт (тот, по которому счёт
-      выставлен, если расчёт всё ещё этой сделки), счёта нет — главный
-      расчёт сделки (pmk_spec_id). Иначе новый черновик-вариант, ставший
-      главным, тихо переписал бы счёт тем, что клиенту не уходило. Выставить
-      счёт по другому расчёту — «Отправить КП» из него. Счёт уже есть и расчёт с тех пор поменялся (состав,
-      количество, цены, клиент, организация) — новая редакция того же счёта
-      (sale_order.py). Не поменялся — тот же счёт, отменённый снова
-      «Выставлен».
+  «Отправить КП» в расчёте (письмо ушло людям клиента, pmk_deal kp_sent.py)
+      — счёт этого расчёта становится «Отправлен»: черновик (переключённый на
+      отправленный расчёт, если был из другого); нет черновика — заводится из
+      расчёта и сразу «Отправлен» (КП реально ушло). Счёт уже отправлен и
+      расчёт с тех пор поменялся — новая РЕДАКЦИЯ того же счёта (снимок
+      прежней). Сделка переходит в «КП отправлено», как и раньше (pmk_deal).
+  Сделку перенесли в «КП отправлено» руками — КП ушло вне системы: черновик
+      помечается «Отправлен» с заметкой; счёта нет — только заметка в ленте
+      сделки (счёт НЕ заводится); отправленный — не меняется (расчёт
+      изменился — заметка «ред. N — по «Отправить КП»»).
   «Выиграно» = пришла предоплата или гарантийное письмо — счёт
       подтверждается (складских документов нет: товар-услуга) и появляется
-      РОВНО ОДНА строка «Заказов в работе» в «Очереди». Счёта ещё нет —
-      сначала выставляем; не вышло — строка всё равно появляется.
+      РОВНО ОДНА строка «Заказов в работе» в «Очереди». Счёта нет — строка
+      без счёта и заметка (счёт не заводится).
   «Проиграно» — действующий счёт отменяется. Строка планировщика, если была,
       остаётся.
 
-СИГНАЛ, А НЕ ЗАПРЕТ. Нет расчёта, цены или клиента — счёта нет, стадия
-меняется как обычно, в ленте сделки — заметка, почему. Изделия без цены в
-счёт не идут (как и в печать КП) и перечислены в заметке. Сбой нашего кода
-не роняет сохранение сделки: откат до точки сохранения, заметка в ленте,
-ошибка в журнал.
+СИГНАЛ, А НЕ ЗАПРЕТ. Нет расчёта, цены или клиента — стадия меняется как
+обычно, в ленте сделки — заметка, почему. Изделия без цены в счёт не идут
+(как и в печать КП) и перечислены в заметке. Сбой нашего кода не роняет
+сохранение сделки: откат до точки сохранения, заметка в ленте, ошибка в
+журнал. Писем клиенту здесь нет ни одного: письмо уходит только по
+«Отправить» в окне «Отправить КП».
 
 ГДЕ ЛОВИМ. write() сделки после штатного: сюда приходят кнопки «Выиграно» и
 «Проиграно» (action_set_won / action_set_lost), перетаскивание в канбане,
-правка в списке и переход по отправке КП (pmk_deal, _pmk_kp_move_stage).
-Контекст pmk_orders_skip — свои записи без второго круга.
+правка в списке. Переход по отправке КП (pmk_deal, _pmk_kp_move_stage) идёт
+с контекстом pmk_orders_skip, счёт там — явно (kp_sent.py). Создание сделки
+сразу в «КП отправлено» (бот, импорт) счёт не трогает.
 """
 import logging
 
@@ -41,7 +44,7 @@ from odoo import Command, _, api, fields, models
 
 from odoo.addons.pmk_deal.models.kp_sent import KP_SENT_STAGE
 
-from .sale_order import SKIP
+from .sale_order import ACT_APPROVE, ACT_REWORK, SKIP, money_text, ru_env
 
 _logger = logging.getLogger(__name__)
 
@@ -113,8 +116,8 @@ class CrmLead(models.Model):
         else:
             action["help"] = Markup("<p>%s</p><p>%s</p>") % (
                 _("Счёта покупателю по сделке пока нет."),
-                _("Он появится сам, когда сделку переведут в «КП отправлено»: изделия из "
-                  "расчёта, цены клиенту."))
+                _("Черновик заводится кнопкой «Счёт» в расчёте: изделия из расчёта, цены "
+                  "клиенту. Отправленным он станет по «Отправить КП»."))
         return action
 
     def action_open_orders(self):
@@ -140,7 +143,7 @@ class CrmLead(models.Model):
     def create(self, vals_list):
         leads = super().create(vals_list)
         if not self.env.context.get(SKIP):
-            leads._pmk_orders_react(stage=True, lost=False)
+            leads._pmk_orders_react(stage=True, lost=False, created=True)
         return leads
 
     def write(self, vals):
@@ -153,7 +156,7 @@ class CrmLead(models.Model):
             self._pmk_orders_react(stage=stage, lost=lost)
         return res
 
-    def _pmk_orders_react(self, stage, lost):
+    def _pmk_orders_react(self, stage, lost, created=False):
         kp_stage = self.env.ref(KP_SENT_STAGE, raise_if_not_found=False)
         for lead in self:
             if lead.type != "opportunity":
@@ -163,8 +166,9 @@ class CrmLead(models.Model):
             elif stage and lead.active:
                 if lead.stage_id.is_won:
                     lead._pmk_orders_safely("_pmk_order_won")
-                elif kp_stage and lead.stage_id == kp_stage and lead.won_status == "pending":
-                    lead._pmk_orders_safely("_pmk_issue_invoice")
+                elif (not created and kp_stage and lead.stage_id == kp_stage
+                        and lead.won_status == "pending"):
+                    lead._pmk_orders_safely("_pmk_invoice_sent_by_hand")
 
     def _pmk_orders_safely(self, method, *args):
         """Сбой счёта или планировщика не роняет сохранение сделки."""
@@ -185,40 +189,54 @@ class CrmLead(models.Model):
         body = text if isinstance(text, Markup) else escape(text)
         self.sudo()._message_log(body=body)
 
-    # ─── «КП отправлено» → счёт ─────────────────────────────────────────
-    def _pmk_issue_invoice(self, spec=None):
-        """Выставить (или обновить редакцией) счёт покупателю из расчёта.
+    # ─── «Отправить КП» → счёт этого расчёта «Отправлен» ────────────────
+    def _pmk_invoice_kp_sent(self, spec):
+        """КП расчёта ``spec`` ушло клиенту (pmk_deal, kp_sent.py): счёт этого
+        расчёта — «Отправлен». Вернёт действующий счёт или пустой набор.
 
-        Вернёт действующий счёт или пустой набор. Ничего не запрещает: чего
-        не хватило — пишет в ленту сделки.
+        Ничего не запрещает: чего не хватило — пишет в ленту сделки. Все
+        заметки начинаются со «Счёт» — тесты отправки КП (pmk_deal) их так
+        отличают от заметки «КП … отправлено».
         """
         self.ensure_one()
         lead = self.with_context(**{SKIP: True})
         Order = self.env["sale.order"].sudo()
-        spec = (spec or lead._pmk_invoice_source_spec()).sudo()
-        if not spec:
-            lead._pmk_orders_note(_("Счёт покупателю не выставлен: у сделки нет расчёта."))
-            return Order
+        spec = spec.sudo()
         priced = Order._pmk_priced_products(spec)
         if not priced:
             lead._pmk_orders_note(_(
-                "Счёт покупателю не выставлен: в расчёте %s нет цены клиенту ни у одного "
-                "изделия.", spec.name))
-            return Order
-        partner = (lead.partner_id or spec.partner_id).commercial_partner_id
+                "Счёт покупателю не отмечен отправленным: в расчёте %s нет цены клиенту ни "
+                "у одного изделия.", spec.name))
+            return Order.browse()
+        partner = Order._pmk_invoice_partner(lead, spec)
         if not partner:
             lead._pmk_orders_note(_(
-                "Счёт покупателю не выставлен: не указан клиент — ни в сделке, ни в "
-                "расчёте %s.", spec.name))
-            return Order
+                "Счёт покупателю не отмечен отправленным: не указан клиент — ни в сделке, "
+                "ни в расчёте %s.", spec.name))
+            return Order.browse()
         org = spec.pmk_org_id or lead.pmk_org_id
         wanted = Order._pmk_spec_signature(spec, partner, org)
         invoice = lead._pmk_current_invoice()
         skipped = spec.product_ids - priced
         if not invoice:
             invoice = Order._pmk_create_from_spec(lead, spec, partner, org)
-            text = _("Счёт покупателю %(invoice)s выставлен из расчёта %(spec)s: изделий "
-                     "%(count)s, сумма %(total)s (в т. ч. налог %(tax)s). Ждём оплату.")
+            invoice._pmk_mark_sent(_("КП %s отправлено — счёт заведён из расчёта и отмечен "
+                                     "«Отправлен».", spec.name))
+            text = _("Счёт покупателю %(invoice)s: КП %(spec)s отправлено — счёт заведён из "
+                     "расчёта и отмечен «Отправлен» (черновика не было, согласования не было): "
+                     "изделий %(count)s, сумма %(total)s (%(tax)s). Ждём оплату.")
+        elif invoice.state == "draft":
+            old = invoice.pmk_spec_id
+            invoice._pmk_sync_from_spec(spec)
+            approved = invoice.pmk_approval == "approved"
+            invoice._pmk_mark_sent(_("Отправлен вместе с КП %s.", spec.name))
+            text = _("Счёт покупателю %(invoice)s отправлен вместе с КП %(spec)s: сумма "
+                     "%(total)s (%(tax)s). Ждём оплату.")
+            if old and old != spec:
+                text += " " + _("Черновик был из расчёта %s — переключён на отправленный.",
+                                old.name)
+            if not approved:
+                text += " " + _("Счёт не согласован.")
         elif invoice.state == "sale":
             if invoice._pmk_signature() != wanted:
                 lead._pmk_orders_note(_(
@@ -226,37 +244,106 @@ class CrmLead(models.Model):
                     "изменился, счёт не меняли.",
                     invoice=invoice.display_name, spec=spec.name))
             return invoice
-        elif invoice._pmk_signature() == wanted:
+        elif invoice._pmk_signature() == wanted and invoice.pmk_spec_id == spec:
             if invoice.state == "sent":
                 return invoice
             invoice._pmk_mark_sent()
-            text = _("Счёт покупателю %(invoice)s снова выставлен (расчёт %(spec)s не "
+            text = _("Счёт покупателю %(invoice)s снова «Отправлен» (расчёт %(spec)s не "
                      "менялся): сумма %(total)s. Ждём оплату.")
         else:
             invoice._pmk_new_revision(spec, partner, org)
             text = _("Счёт покупателю %(invoice)s: расчёт %(spec)s изменился — новая "
-                     "редакция, прежняя сохранена только для чтения. Сумма %(total)s "
-                     "(в т. ч. налог %(tax)s). Ждём оплату.")
-        params = {
-            "invoice": invoice.display_name,
-            "spec": spec.name,
-            "count": len(priced),
-            "total": self._pmk_money(invoice.amount_total, invoice.currency_id),
-            "tax": self._pmk_money(invoice.amount_tax, invoice.currency_id),
-        }
-        text = text % params
+                     "редакция отправлена, прежняя сохранена только для чтения. Сумма "
+                     "%(total)s (%(tax)s). Ждём оплату.")
+        text = text % lead._pmk_invoice_params(invoice, spec, priced)
         if skipped:
             text += " " + _("Без цены клиенту, в счёт не попали: %s.",
                             ", ".join(skipped.mapped("name")))
         lead._pmk_orders_note(text)
         return invoice
 
-    def _pmk_invoice_source_spec(self):
-        """Расчёт для счёта, когда его не назвали (перетаскивание, «Выиграно»).
+    def _pmk_invoice_params(self, invoice, spec, priced):
+        tax_label, tax_amount = invoice._pmk_tax_line()
+        tax = tax_label if tax_amount is None else "%s %s" % (
+            tax_label, self._pmk_money(tax_amount, invoice.currency_id))
+        return {
+            "invoice": invoice.display_name,
+            "spec": spec.name,
+            "count": len(priced),
+            "total": self._pmk_money(invoice.amount_total, invoice.currency_id),
+            "tax": tax,
+        }
 
-        Счёт уже выставлен — из того же расчёта, по которому выставлен (он ещё
-        этой сделки): редакция появится, только если поменялся ОН. Счёта нет
-        или его расчёт удалён / ушёл к другой сделке — главный расчёт сделки.
+    # ─── Сделку перенесли в «КП отправлено» руками ──────────────────────
+    def _pmk_invoice_sent_by_hand(self):
+        """КП ушло вне системы (почтой с телефона, мессенджером): черновик —
+        «Отправлен», счёта нет — заметка (счёт НЕ заводится)."""
+        self.ensure_one()
+        lead = self.with_context(**{SKIP: True})
+        invoice = lead._pmk_current_invoice()
+        if not invoice:
+            lead._pmk_orders_note(_(
+                "Сделку перенесли в «КП отправлено», а счёта покупателю у неё нет — сам он "
+                "не заводится. Черновик — кнопкой «Счёт» в расчёте; отправленным он станет "
+                "по «Отправить КП» или при таком же переносе."))
+            return invoice
+        if invoice.state == "draft":
+            approved = invoice.pmk_approval == "approved"
+            invoice._pmk_mark_sent(_(
+                "Отмечен «Отправлен»: сделку перенесли в «КП отправлено» руками (КП ушло "
+                "вне системы)."))
+            text = _("Счёт покупателю %s отмечен «Отправлен»: сделку перенесли в «КП "
+                     "отправлено» руками.", invoice.display_name)
+            if not approved:
+                text += " " + _("Счёт не согласован.")
+            lead._pmk_orders_note(text)
+            return invoice
+        spec = lead._pmk_invoice_source_spec().sudo()
+        Order = self.env["sale.order"].sudo()
+        partner = Order._pmk_invoice_partner(lead, spec) if spec else invoice.partner_id
+        org = (spec.pmk_org_id or lead.pmk_org_id) if spec else invoice.pmk_org_id
+        changed = bool(spec) and invoice._pmk_signature() != Order._pmk_spec_signature(
+            spec, partner, org)
+        if invoice.state == "sent":
+            if changed:
+                lead._pmk_orders_note(_(
+                    "Счёт покупателю %(invoice)s уже отправлен; расчёт %(spec)s с тех пор "
+                    "изменился — ред. %(next)s появится по «Отправить КП» в расчёте.",
+                    invoice=invoice.display_name, spec=spec.name,
+                    next=(invoice.pmk_revision or 1) + 1))
+            return invoice
+        if invoice.state == "sale":
+            if changed:
+                lead._pmk_orders_note(_(
+                    "Счёт %(invoice)s уже в работе (оплачен) — расчёт %(spec)s с тех пор "
+                    "изменился, счёт не меняли.", invoice=invoice.display_name,
+                    spec=spec.name))
+            return invoice
+        # Отменённый (сделку восстановили после «Проиграно» и снова перенесли).
+        return lead._pmk_invoice_reopen(invoice, spec, partner, org, changed)
+
+    def _pmk_invoice_reopen(self, invoice, spec, partner, org, changed):
+        """Отменённый счёт снова «Отправлен»: расчёт не менялся — тот же; менялся
+        и есть цены — новая редакция (прежняя хранится)."""
+        self.ensure_one()
+        if changed and spec and self.env["sale.order"]._pmk_priced_products(spec) and partner:
+            invoice._pmk_new_revision(spec, partner, org)
+            self._pmk_orders_note(_(
+                "Счёт покупателю %(invoice)s снова «Отправлен»: расчёт %(spec)s изменился — "
+                "новая редакция, прежняя сохранена только для чтения.",
+                invoice=invoice.display_name, spec=spec.name))
+        else:
+            invoice._pmk_mark_sent()
+            self._pmk_orders_note(_(
+                "Счёт покупателю %s снова «Отправлен».", invoice.display_name))
+        return invoice
+
+    def _pmk_invoice_source_spec(self):
+        """Расчёт счёта, когда его не назвали (перенос руками, «Выиграно»).
+
+        Счёт уже есть — тот, по которому он собран (он ещё этой сделки):
+        новый вариант расчёта, ставший главным, счёт сам не переписывает. Его
+        расчёт удалён или ушёл к другой сделке — главный расчёт сделки.
         """
         self.ensure_one()
         spec = self._pmk_current_invoice().pmk_spec_id.sudo()
@@ -267,22 +354,26 @@ class CrmLead(models.Model):
     @api.model
     def _pmk_money(self, amount, currency):
         """«9 500 000,00 ₽» — неразрывные пробелы, как в карточках сделки."""
-        lang = self.env["res.lang"]._lang_get(self.env.lang or "ru_RU") or self.env["res.lang"]._lang_get("ru_RU")
-        if lang:
-            text = lang.format("%.2f", amount, grouping=True)
-        else:
-            text = "%.2f" % amount
-        symbol = currency.symbol or ""
-        return ("%s %s" % (text, symbol)).strip().replace(" ", " ")
+        return money_text(self.env, amount, currency)
 
     # ─── «Выиграно» → подтверждение и строка планировщика ───────────────
     def _pmk_order_won(self):
         self.ensure_one()
         lead = self.with_context(**{SKIP: True})
         invoice = lead._pmk_current_invoice()
-        if not invoice or invoice.state == "cancel":
-            invoice = lead._pmk_issue_invoice() or invoice
         Task = self.env["project.task"]
+        if invoice and invoice.state == "cancel":
+            spec = lead._pmk_invoice_source_spec().sudo()
+            Order = self.env["sale.order"].sudo()
+            partner = Order._pmk_invoice_partner(lead, spec) if spec else invoice.partner_id
+            org = (spec.pmk_org_id or lead.pmk_org_id) if spec else invoice.pmk_org_id
+            changed = bool(spec) and invoice._pmk_signature() != Order._pmk_spec_signature(
+                spec, partner, org)
+            lead._pmk_invoice_reopen(invoice, spec, partner, org, changed)
+        if invoice and invoice.state == "draft":
+            lead._pmk_orders_note(_(
+                "Счёт покупателю %s в работу из черновика: отправленным он не отмечался.",
+                invoice.display_name))
         if invoice and invoice.state in ("draft", "sent"):
             # Без send_email: подтверждение письма клиенту не шлёт.
             invoice.sudo().with_context(**{SKIP: True}).action_confirm()
@@ -293,8 +384,8 @@ class CrmLead(models.Model):
         if not rows:
             Task._pmk_create_order_row(deal=lead)
             lead._pmk_orders_note(_(
-                "Заказ в работе появился без счёта покупателю: счёт выставить не вышло "
-                "(см. заметку выше). Сумму строки — руками."))
+                "Заказ в работе появился без счёта покупателю: счёта у сделки нет (черновик — "
+                "кнопкой «Счёт» в расчёте). Сумму строки — руками."))
         return True
 
     # ─── «Проиграно» → счёт отменён ─────────────────────────────────────
@@ -306,7 +397,8 @@ class CrmLead(models.Model):
         invoice = invoice.with_context(**{SKIP: True}, mail_auto_subscribe_no_notify=True)
         if invoice.locked:
             invoice.action_unlock()
-        invoice._action_cancel()
+        ru_env(invoice)._action_cancel()
+        invoice.activity_unlink([ACT_APPROVE, ACT_REWORK])
         self._pmk_orders_note(_(
             "Сделка проиграна — счёт покупателю %s отменён. Строка «Заказов в работе», "
             "если была, осталась.", invoice.display_name))

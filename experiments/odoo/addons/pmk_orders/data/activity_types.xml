@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Задачи согласования счёта (разбор UX, шаг З-9, 09.10.2026).
+
+    «Согласовать счёт» — руководителю по кнопке «На согласование»;
+    закрывается сама по «Согласовано», «Вернуть на доработку» или когда счёт
+    отправили без отметки. «Доработать счёт» — менеджеру по «Вернуть на
+    доработку», текст — комментарий руководителя. Обе — только у счёта
+    покупателю. Назначение задачи письма не шлёт (код ставит контекст
+    mail_activity_quick_update: у пользователей стенда почта пустая —
+    иначе «красный конверт»). noupdate: название и значок правятся руками.
+  -->
+  <data noupdate="1">
+    <record id="mail_activity_type_invoice_approve" model="mail.activity.type">
+      <field name="name">Согласовать счёт</field>
+      <field name="summary">Согласовать счёт</field>
+      <field name="res_model">sale.order</field>
+      <field name="icon">fa-check-square-o</field>
+      <field name="category">default</field>
+      <field name="delay_count">0</field>
+      <field name="sequence">40</field>
+    </record>
+    <record id="mail_activity_type_invoice_rework" model="mail.activity.type">
+      <field name="name">Доработать счёт</field>
+      <field name="summary">Доработать счёт</field>
+      <field name="res_model">sale.order</field>
+      <field name="icon">fa-pencil</field>
+      <field name="category">default</field>
+      <field name="delay_count">0</field>
+      <field name="sequence">41</field>
+    </record>
+  </data>
+</odoo>

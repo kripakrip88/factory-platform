@@ -7,13 +7,14 @@
 
 Что делает:
   1. Налоги режимов в компании Odoo: «НДС 22%» — уже заведённый (на боевой
-     базе id 7) получает ТОЛЬКО пометку режима: его группа («Налог 15%») и
-     «Включён в цену» (пусто = по настройке компании; с шага З-2 — в цене) не
-     меняются. «Без НДС», «НДС 5%», «НДС 7%» заводятся копией с него (та же
+     базе id 7) получает ТОЛЬКО пометку режима: «Включён в цену» (пусто = по
+     настройке компании; с шага З-2 — в цене) не меняется, группа («Налог
+     15%») — до шага З-9 (дальше — ensure_tax_groups). «Без НДС», «НДС 5%», «НДС 7%» заводятся копией с него (та же
      страна налога, счета и «Включён в цену»), каждый в своей группе
      налогов. Налог с тем же названием уже есть (переустановка после
      удаления модуля) — он и помечается, копия не заводится.
-     Затем (шаг З-2) компания — «цены включают налог»:
+     Затем (шаг З-9) налог «НДС 22%» — в группу «НДС 22%» вместо «Налог 15%»
+     (ensure_tax_groups), и (шаг З-2) компания — «цены включают налог»:
      ensure_company_price_included.
   2. Первая организация — из текущей компании (ИП Чулков): её карточка
      контрагента, ОГРНИП, банковский счёт, режим «НДС 22%» с 01.01.2026,
@@ -56,6 +57,7 @@ def post_init_hook(env):
         return
     company = env.ref("base.main_company", raise_if_not_found=False) or env.company
     ensure_taxes(env, company)
+    ensure_tax_groups(env, company)
     ensure_company_price_included(env, company)
     org = create_first_org(env, company)
     backfill_documents(env, org)
@@ -129,6 +131,69 @@ def ensure_taxes(env, company):
             tax = Tax.create(vals)
         taxes[regime] = tax
     return taxes
+
+
+def ensure_tax_groups(env, company):
+    """Группа налога режима — словом режима (шаг З-9, 09.10.2026).
+
+    Налог 7 «НДС 22% (продажа)» на боевой стоит в группе плана счетов
+    «Налог 15%» (её делят ещё 15-процентные налоги 1–2 и закупочный 6). Группа —
+    это подпись строки налога в итогах заказа и в штатной печати: в счёте
+    покупателю было «Налог 15%: 9 918,03» при ставке 22%. Группу НЕ
+    переименовываем (она чужая и общая) — налог режима переводим в свою
+    группу с именем режима («НДС 22%», «Без НДС», «НДС 5%», «НДС 7%»: та же
+    страна налога, заводится, если её нет — _ensure_group). Ставки, «Включён в
+    цену», счета налога и пометки режимов не меняются; проводок на боевой нет.
+    Счета группы (к уплате, к возмещению, авансовый — для закрытия периода по
+    налогу) переходят из прежней группы в новую, где они пусты.
+
+    Повторный вызов ничего не меняет (группа уже с именем режима). Вернуть:
+    Настройки → Учёт → Налоги → «НДС 22% (продажа)» → «Группа налогов» →
+    «Налог 15%». Возвращает {режим: (старая группа, новая группа)} — что
+    перевели.
+    """
+    Tax = env["account.tax"].sudo().with_context(active_test=False)
+    moved = {}
+    for regime, _label in rg.REGIMES:
+        tax = Tax.search([
+            ("pmk_regime", "=", regime), ("type_tax_use", "=", "sale"),
+            ("company_id", "=", company.id)], limit=1)
+        if not tax:
+            continue
+        name = rg.TAXES[regime][2]
+        group = tax.tax_group_id
+        names = {group.with_context(lang=lang).name for lang in ("en_US", "ru_RU")} if group else set()
+        if name in names:
+            continue
+        country = tax.country_id or company.account_fiscal_country_id or company.country_id
+        new_group = _ensure_group(env, company, country, regime)
+        _copy_group_accounts(group, new_group)
+        tax.tax_group_id = new_group
+        moved[regime] = (group, new_group)
+        _logger.info("pmk_org: налог «%s» — группа «%s» вместо «%s»",
+                     tax.name, new_group.name, group.name if group else "—")
+    return moved
+
+
+# Счета группы налогов: закрытие периода по налогу (сводная проводка) берёт
+# их у группы. На боевой у «Налог 15%» заданы «к уплате» и «к возмещению»,
+# у новых групп — пусто: при переводе налога переносим, чего у новой нет.
+TAX_GROUP_ACCOUNTS = ("tax_payable_account_id", "tax_receivable_account_id",
+                      "advance_tax_payment_account_id")
+
+
+def _copy_group_accounts(old_group, new_group):
+    """Счета прежней группы — в новую, если там пусто (своё не трогаем)."""
+    if not old_group or not new_group:
+        return
+    vals = {}
+    for name in TAX_GROUP_ACCOUNTS:
+        if name in new_group._fields and not new_group[name] and old_group[name]:
+            vals[name] = old_group[name].id
+    if vals:
+        new_group.write(vals)
+        _logger.info("pmk_org: группе «%s» — счета из «%s»: %s",
+                     new_group.name, old_group.name, ", ".join(sorted(vals)))
 
 
 def ensure_company_price_included(env, company):

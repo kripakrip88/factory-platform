@@ -1400,3 +1400,14 @@ $pmk-dark-alerts: (
     background: var(--pmk-ink);
   }
 }
+
+// ═══ Счёт покупателю по-нашему (З-9) — тёмная пара (09.10.2026) ═════════════
+// Светлые правила — forms_nexus.scss, раздел того же имени. Плашки берут
+// тёмную пару .pmk-price-alert (раздел «Неполный расчёт»); здесь — серая
+// строка налога под «Итого».
+@media screen {
+
+  body.o_nexus_dark .o_form_view .o_pmk_invoice_total .o_pmk_invoice_total_tax {
+    color: var(--pmk-ink-3);
+  }
+}

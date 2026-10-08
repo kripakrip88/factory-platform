@@ -30,5 +30,27 @@
       <field name="taxes_id" eval="[Command.clear()]"/>
       <field name="supplier_taxes_id" eval="[Command.clear()]"/>
     </record>
+
+    <!--
+      Шаг З-9 (решение Антона 08.10.2026): «в счёте бывают строки, которых нет
+      в расчёте» — доставка, монтаж, разгрузка. Кнопка «Добавить услугу» под
+      строками счёта ставит этот товар: описание, количество и цену пишут в
+      счёте. Тип, налоги, закупка — как у товара изделий (услуга: без склада,
+      отгрузок и задач; налог — режим организации). Цены закупки нет:
+      перепродажа (услуга подрядчика с наценкой) отложена — Антон советуется
+      с менеджером.
+    -->
+    <record id="product_extra_service" model="product.template">
+      <field name="name">Услуга</field>
+      <field name="type">service</field>
+      <field name="sale_ok" eval="True"/>
+      <field name="purchase_ok" eval="False"/>
+      <field name="list_price">0</field>
+      <field name="invoice_policy">order</field>
+      <field name="uom_id" ref="uom.product_uom_unit"/>
+      <field name="categ_id" ref="product.product_category_services"/>
+      <field name="taxes_id" eval="[Command.clear()]"/>
+      <field name="supplier_taxes_id" eval="[Command.clear()]"/>
+    </record>
   </data>
 </odoo>

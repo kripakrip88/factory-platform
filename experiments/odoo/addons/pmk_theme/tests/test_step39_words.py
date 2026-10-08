@@ -242,8 +242,15 @@ class TestStep39Words(Step39Common):
                 state = self._selection(model, "state")
                 self.assertEqual(
                     (state["draft"], state["sent"], state["sale"], state["cancel"]),
-                    ("Черновик", "Выставлен, ждём оплату", "В работе (оплачен)", "Отменён"))
+                    ("Черновик", "Отправлен", "В работе (оплачен)", "Отменён"))  # шаг З-9
         self.assertEqual(self._ru(self.env["ir.model"]._get("sale.order"), "name"), "Счёт покупателю")
+        # Шаг З-9: события ленты счёта — словами завода, без «Коммерческого
+        # предложения» и «Заказа на продажу».
+        for xmlid, fname, word in (("sale.mt_order_sent", "description", "Счёт отправлен"),
+                                   ("sale.mt_order_confirmed", "description", "Счёт в работе (оплачен)"),
+                                   ("sale.mt_order_confirmed", "name", "Счёт в работе")):
+            with self.subTest(subtype=xmlid, field=fname):
+                self.assertEqual(self._ru(self.env.ref(xmlid), fname), word)
         self.assertEqual(self._label("sale.order", "order_line"), "Изделия")
         python = CodeTranslations._get_code_translations(
             "sale", LANG, lambda row: row.get("value") and PYTHON_TRANSLATION_COMMENT in row["comments"])

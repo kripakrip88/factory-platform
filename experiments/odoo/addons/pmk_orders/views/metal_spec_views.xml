@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Расчёт: кнопка «Счёт» (разбор UX, шаг З-9, 09.10.2026).
+
+    Выбор Антона 09.10: черновик счёта покупателю — КНОПКОЙ в расчёте (не сам
+    и не стадией сделки). Контурная, сразу за «Отправить КП»: залитая на
+    экране расчёта одна — «КП (PDF)». Счёт один на сделку — повтор открывает
+    тот же (models/metal_spec.py). Видна только у расчёта со сделкой и
+    продавцам; у технического расчёта её прячет pmk_tech.
+
+    «Отправить КП» уже есть рядом (pmk_bridge): после настоящей отправки счёт
+    этого расчёта станет «Отправлен».
+
+    Наследуем вид моста (его кнопки КП — там же). active в XML — грабли
+    Odoo 19.
+  -->
+  <record id="view_metal_spec_form_invoice" model="ir.ui.view">
+    <field name="name">pmk.metal.spec.form.invoice</field>
+    <field name="model">pmk.metal.spec</field>
+    <field name="inherit_id" ref="pmk_bridge.view_metal_spec_form_cost"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//header/button[@name='action_send_quotation']" position="after">
+        <button name="action_pmk_invoice" type="object" string="Счёт"
+                class="btn-secondary" groups="sales_team.group_sale_salesman"
+                invisible="not opportunity_id"
+                title="Черновик счёта покупателю из этого расчёта: условия, согласование. Повторно — откроет тот же счёт сделки"/>
+      </xpath>
+    </field>
+  </record>
+</odoo>

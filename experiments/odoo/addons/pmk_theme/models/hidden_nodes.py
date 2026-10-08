@@ -214,6 +214,27 @@ STEP_Z6_NODES = {
     ),
 }
 
+# ─── Шаг З-9 (09.10.2026): «Счёт покупателю» по-нашему ─────────────────
+# Свои узлы счёта (шапка, строки, итог, «Другая информация») pmk_orders
+# прячет своим видом — sale и его соседи у него в зависимостях. Здесь — узлы
+# модулей, от которых ни тема, ни pmk_orders не зависят (грабли «xpath на узлы
+# зависимого модуля»):
+#   • l10n_ru_advance_payments (RuOdoo): кнопка «Авансовый счет» в шапке
+#     счёта в работе — авансовые счета-фактуры ведёт бухгалтерия снаружи
+#     (как «Создать счёт» ядра — «Деньги», шаг З-2). Кнопка-счётчик
+#     «Авансовые счета» видна только при числе больше нуля — не трогаем;
+#   • sale_pdf_quote_builder: вкладка «Конструктор КП» (вкладыши PDF к
+#     штатному бланку) — КП уходит из расчёта своим бланком; у ядра вкладка
+#     и так скрыта, пока нет вкладышей, правило — на случай, если их заведут.
+# В печать не идут. Вернуть строку — убрать её отсюда; всё — группа
+# «Убранное (показать)». Таблица — docs/disabled-features.md, шаг З-9.
+STEP_Z9_NODES = {
+    ("sale.order", "form"): (
+        ("//header/button[@name='button_advance']", BILLS),
+        ("//page[@name='pdf_quote_builder']", REMOVED),
+    ),
+}
+
 # 'group_by': 'lead_properties' (и 'properties.<ключ>') в контексте фильтра.
 GROUP_BY = re.compile(r"""['"]group_by['"]\s*:\s*['"]([\w.]+)""")
 
@@ -233,7 +254,8 @@ class Base(models.AbstractModel):
     @api.model
     def _pmk_hide_nodes(self, arch, view_type):
         key = (self._name, view_type)
-        for expr, group in HIDDEN_NODES.get(key, ()) + STEP_Z6_NODES.get(key, ()):
+        rules = HIDDEN_NODES.get(key, ()) + STEP_Z6_NODES.get(key, ()) + STEP_Z9_NODES.get(key, ())
+        for expr, group in rules:
             # Группа — одна или набор (ИЛИ, шаг З-6).
             groups = (group,) if isinstance(group, str) else tuple(group)
             # Группы ещё нет (pmk_theme ставится) — правило пропускаем: узел

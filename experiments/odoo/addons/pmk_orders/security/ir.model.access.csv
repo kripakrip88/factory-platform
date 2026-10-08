@@ -1,0 +1,2 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_pmk_orders_return_wizard_approver,pmk.orders.return.wizard approver,model_pmk_orders_return_wizard,pmk_orders.group_invoice_approver,1,1,1,1
