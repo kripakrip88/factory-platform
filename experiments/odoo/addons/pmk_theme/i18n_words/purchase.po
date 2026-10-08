@@ -140,7 +140,7 @@ msgstr "Описание для закупки"
 #. module: purchase
 #: model:ir.model.fields.selection,name:purchase.selection__purchase_order__state__draft
 msgid "RFQ"
-msgstr "Запрос КП"
+msgstr "Заявка"
 
 #. module: purchase
 #. odoo-javascript
@@ -148,42 +148,42 @@ msgstr "Запрос КП"
 #: model:ir.model.fields.selection,name:purchase.selection__purchase_order__state__sent
 #: model:ir.model.fields.selection,name:purchase.selection__purchase_report__state__sent
 msgid "RFQ Sent"
-msgstr "Запрос КП отправлен"
+msgstr "Заявка отправлена"
 
 #. module: purchase
 #: model_terms:ir.ui.view,arch_db:purchase.purchase_order_kpis_tree
 #: model_terms:ir.ui.view,arch_db:purchase.purchase_order_view_tree
 msgid "Are you sure you want to cancel the selected RFQs/Orders?"
-msgstr "Отменить выбранные запросы КП и заказы?"
+msgstr "Отменить выбранные заявки и заказы?"
 
 #. module: purchase
 #. odoo-python
 #: code:addons/purchase/models/purchase_order.py:0
 msgid "Merged RFQs"
-msgstr "Объединённые запросы КП"
+msgstr "Объединённые заявки"
 
 #. module: purchase
 #. odoo-python
 #: code:addons/purchase/models/purchase_order.py:0
 msgid "RFQ merged with %(oldest_rfq_name)s and %(cancelled_rfq)s"
-msgstr "Запрос КП объединён с %(oldest_rfq_name)s и %(cancelled_rfq)s"
+msgstr "Заявка объединена с %(oldest_rfq_name)s и %(cancelled_rfq)s"
 
 #. module: purchase
 #. odoo-python
 #: code:addons/purchase/models/purchase_order.py:0
 msgid "RFQ merged with %s"
-msgstr "Запрос КП объединён с %s"
+msgstr "Заявка объединена с %s"
 
 #. module: purchase
 #. odoo-python
 #: code:addons/purchase/models/purchase_order.py:0
 msgid "Please select at least two purchase orders with state RFQ and RFQ sent to merge."
-msgstr "Для объединения выберите хотя бы два заказа в статусе «Запрос КП» или «Запрос КП отправлен»."
+msgstr "Для объединения выберите хотя бы две заявки в статусе «Заявка» или «Заявка отправлена»."
 
 #. module: purchase
 #: model:ir.actions.report,print_report_name:purchase.report_purchase_quotation
 msgid "'Request for Quotation - %s' % (object.name)"
-msgstr "'Запрос КП - %s' % (object.name)"
+msgstr "'Заявка поставщику - %s' % (object.name)"
 
 #. module: purchase
 #: model:ir.actions.report,print_report_name:purchase.action_report_purchase_order
@@ -193,7 +193,7 @@ msgid ""
 "                'Purchase Order - %s' % (object.name))"
 msgstr ""
 "\n"
-"                (object.state in ('draft', 'sent') and 'Запрос КП - %s' % (object.name) or\n"
+"                (object.state in ('draft', 'sent') and 'Заявка поставщику - %s' % (object.name) or\n"
 "                'Заказ поставщику - %s' % (object.name))"
 
 #. module: purchase
@@ -308,6 +308,32 @@ msgid ""
 "('draft', 'sent')\">Purchase Order </span>"
 msgstr ""
 "<span class=\"o_form_label\" invisible=\"state not in ('draft', 'sent')\">"
-"Запрос КП </span>\n"
+"Заявка поставщику </span>\n"
 "                        <span class=\"o_form_label\" invisible=\"state in "
 "('draft', 'sent')\">Заказ поставщику </span>"
+
+# ─── Шаг З-6 (09.10.2026): слова заказа поставщику ─────────────────────
+# Кнопки формы — глаголом, как остальные («Подтвердить», «Отправить»);
+# «Заявка» — стадия до заказа (так и «Заявка на металл» pmk_tech).
+#. module: purchase
+#: model:ir.model.fields.selection,name:purchase.selection__purchase_report__state__draft
+msgid "Draft RFQ"
+msgstr "Заявка"
+
+#. module: purchase
+#: model_terms:ir.ui.view,arch_db:purchase.purchase_order_form
+msgid "Confirm Order"
+msgstr "Подтвердить заказ"
+
+#. module: purchase
+#: model_terms:ir.ui.view,arch_db:purchase.purchase_order_form
+msgid "Send PO"
+msgstr "Отправить заказ поставщику"
+
+# Отбор «Поздние поступления»: склад не ведём, «просрочен» — нет отметки
+# «Материал пришёл» после «Ожидаемого прибытия» (pmk_tech, metal_arrival.py).
+# Так же подписана карточка панели (pmk_purchase, purchase_dashboard.scss).
+#. module: purchase
+#: model_terms:ir.ui.view,arch_db:purchase.view_purchase_order_filter
+msgid "Late Receipts"
+msgstr "Поставка просрочена"

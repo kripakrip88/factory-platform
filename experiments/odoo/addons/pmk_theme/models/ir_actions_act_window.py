@@ -244,11 +244,13 @@ ACTION_TITLES = {
     "l10n_ru_doc.action_report_saleorder_new": "Счёт по форме 1С",
     "purchase.act_res_partner_2_purchase_order": "Закупки",
     # Пункты «Печать» и «Действия» заказа поставщику — только в шестерёнке
-    # (models/ir_actions.py): это отчёты и серверные действия.
+    # (models/ir_actions.py): это отчёты и серверные действия. С шага З-6
+    # (09.10.2026) RFQ — «Заявка» (было «Запрос КП»); сам бланк для
+    # поставщика — со словами ядра.
     "purchase.action_report_purchase_order": "Заказ поставщику",
-    "purchase.report_purchase_quotation": "Запрос КП",
-    "purchase.action_confirm_rfqs": "Подтвердить запросы КП",
-    "purchase.action_merger": "Объединить запросы КП",
+    "purchase.report_purchase_quotation": "Заявка поставщику",
+    "purchase.action_confirm_rfqs": "Подтвердить заказы",
+    "purchase.action_merger": "Объединить заявки",
 }
 
 

@@ -120,9 +120,12 @@ class TestPurchaseListsStep25(TransactionCase):
         self.assertFalse(arch.get("decoration-info"),
                          "Голубая строка «к выставлению счёта» снята: счета в МоёмСкладе.")
         self.assertEqual(self._one(arch, "name").get("string"), "Номер")
-        for name in ("activity_ids", "invoice_status"):
-            with self.subTest(field=name):
-                self.assertEqual(self._one(arch, name).get("optional"), "hide")
+        self.assertEqual(self._one(arch, "activity_ids").get("optional"), "hide")
+        # «Статус выставления счетов»: шаг 25 убрал его в ⚙, шаг З-6 — совсем
+        # (группы «Убранное» / «Деньги (показать)», pmk_theme hidden_nodes.py;
+        # ядро может досоздать поле невидимым — такое не считаем).
+        self.assertFalse([node for node in arch.xpath("/list/field[@name='invoice_status']")
+                          if (node.get("column_invisible") or "") not in HIDDEN])
         # «Приоритет» — с шага 29 группе «Убранное (показать)».
         self.assertFalse(arch.xpath("/list/field[@name='priority']"))
         bills = arch.xpath("//header/button[@name='action_create_invoice']")

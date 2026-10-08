@@ -29,7 +29,8 @@
   [filter_name="not_acknowledged"] .purchase-dashboard-card::after { content: "Не подтверждены поставщиком"; }
   [filter_name="late_receipt"] .purchase-dashboard-card::after { content: "Поставка просрочена"; }
   // Правая колонка: «Days to Order» (purchase) и «OTD» (purchase_stock).
-  [title="Сколько дней в среднем от запроса до заказа"] .purchase-dashboard-card::after { content: "Дней до заказа"; }
+  // ⚠️ Селектор — title из xml/purchase_dashboard.xml (шаг З-6: «от заявки»).
+  [title="Сколько дней в среднем от заявки до заказа"] .purchase-dashboard-card::after { content: "Дней до заказа"; }
   [title="OTD"] .purchase-dashboard-card::after { content: "Поставки в срок"; }
 }
 

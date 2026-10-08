@@ -280,7 +280,7 @@ class TestStep39Words(Step39Common):
         self.assertEqual(self._label("purchase.order", "partner_id"), "Поставщик")
         state = self._selection("purchase.order", "state")
         self.assertEqual((state["draft"], state["sent"], state["purchase"]),
-                         ("Запрос КП", "Запрос КП отправлен", "Заказ поставщику"))
+                         ("Заявка", "Заявка отправлена", "Заказ поставщику"))  # шаг З-6
         # «Закупки» — пара к «Продажам» рядом и как раздел в шапке.
         self.assertEqual(self._label("product.template", "purchase_ok"), "Закупки")
         self.assertEqual(self._label("product.template", "seller_ids"), "Поставщики")
@@ -629,7 +629,12 @@ class TestStep39Screens(Step39Common):
             "crm.crm_case_kanban_view_leads": ["Полоса фильтрует сделки по запланированным задачам."],
             # Группа поставщика на вкладке «Продажи и закупки» — пара к «Продажам».
             "base.view_partner_form": ['title="Эл. почта"', 'placeholder="Регион"', 'string="Закупки"'],
-            "purchase.view_purchase_order_filter": ['string="Снабженец"', 'string="Мои задачи"'],
+            "purchase.view_purchase_order_filter": ['string="Снабженец"', 'string="Мои задачи"',
+                                                     'string="Поставка просрочена"'],
+            # Шаг З-6: кнопки заказа поставщику глаголом, слово «Заявка».
+            "purchase.purchase_order_form": ['string="Подтвердить заказ"',
+                                             'string="Отправить заказ поставщику"',
+                                             "Заявка поставщику"],
             "pmk_calc.view_metal_spec_list": ['string="Расчёты"'],
             "hr.res_users_view_form_preferences": ['title="Рабочая эл. почта"', 'placeholder="Регион"'],
         }

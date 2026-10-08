@@ -67,6 +67,11 @@ _STAGES = {
     'project.project': (4, 'Проект'),
     'project.task': (4, 'Задача'),
     'purchase.order': (5, 'Закупка'),
+    # «Поступления» и отгрузки (stock.picking) — с шага З-6 (09.10.2026) на
+    # схеме только у тех, кому они возвращены: «Убранное (показать)» или
+    # «Склад (показать)» (_pmk_pickings_shown). Склад не ведём, а щелчок по
+    # узлу открывал «Поступление», где «Подтвердить» проводит приход. Строку
+    # не убираем: с формы «Поступления» (у кого склад) схема открывается.
     'stock.picking': (6, 'Склад'),
     'account.move': (7, 'Счёт'),
 }
@@ -80,6 +85,9 @@ _STAGES = {
 # с pmk_tech — без него ветки молчат (_field).
 _TECH_STAGE = (3.5, 'Технический расчёт')
 _METAL_REQUEST_KIND = 'Заявка на металл'
+
+# Кому схема показывает «Поступления» и отгрузки (шаг З-6, _pmk_pickings_shown).
+_PICKINGS_GROUPS = ('pmk_theme.group_pmk_removed', 'pmk_theme.group_pmk_stock')
 
 # Документы, от которых можно открыть схему. Письмо среди них не для кнопки —
 # у письма нет своей формы, — а чтобы обход не спотыкался, если его передадут.
@@ -192,8 +200,9 @@ class PmkFlowBuilder(models.AbstractModel):
         model = record._name
         if model == 'purchase.order' and _field(record, 'pmk_tech_spec_id'):
             # «Заявка на металл» (pmk_tech, шаг З-4): состояние словами списка
-            # «Заявки на металл» («Черновик заявки», «Отправлена поставщику»…),
-            # а не штатными «Запрос КП» / «Запрос КП отправлен» — одно
+            # «Заявки на металл» — с шага З-6 те же, что в строке состояния
+            # формы («Заявка», «Заявка отправлена», «Заказ поставщику»,
+            # «Отменён»), плюс «Материал пришёл» вместо состояния — одно
             # понятие, одно слово. Подпись считает сам pmk_tech
             # (pmk_request_state_label), цвет — штатный по состоянию.
             label = _field(record, 'pmk_request_state_label')
@@ -461,16 +470,41 @@ class PmkFlowBuilder(models.AbstractModel):
         return self._search_linked(model_name, [(fname, '=', record_id)], hidden)
 
     @api.model
+    def _pmk_pickings_shown(self):
+        """Показывать ли на схеме «Поступления» и отгрузки (шаг З-6).
+
+        Склад не ведём: узел «Склад» открывал «Поступление», а его
+        «Подтвердить» проводит приход — ловушка карточки 6. Видят их те же,
+        кому заказ поставщику показывает «Поступления»: группы-выключатели
+        темы «Убранное (показать)» и «Склад (показать)»
+        (pmk_theme/models/hidden_nodes.py, STEP_Z6_NODES). Штатная группа
+        склада тут не мерило — она есть у снабженца.
+
+        Это не «скрыто правами»: в копилку hidden не пишем, иначе схема
+        говорила бы «Часть связей скрыта» про то, что убрано до учёта.
+        Тема приходит к pmk_flow только через pmk_mail_ui, прямой
+        зависимости нет — группы ищем без ошибки; групп нет — как раньше,
+        показываем.
+        """
+        groups = [xmlid for xmlid in _PICKINGS_GROUPS
+                  if self.env.ref(xmlid, raise_if_not_found=False)]
+        if not groups:
+            return True
+        return any(self.env.user.has_group(xmlid) for xmlid in groups)
+
+    @api.model
     def _neighbors(self, record):
         """Соседи документа: (список видимых записей, есть ли скрытые правами)."""
         model = record._name
         linked = []
         # Копилка скрытых связей: что в ней — неважно, важно, что не пусто.
         hidden = []
+        # «Поступления» и отгрузки — только у кого они возвращены (шаг З-6).
+        pickings = self._pmk_pickings_shown()
         if model == 'sale.order':
             if 'invoice_ids' in record._fields:
                 linked.append(record.invoice_ids)
-            if 'picking_ids' in record._fields:
+            if pickings and 'picking_ids' in record._fields:
                 linked.append(record.picking_ids)
             if hasattr(record, '_get_purchase_orders'):
                 linked.append(record._get_purchase_orders())
@@ -507,7 +541,7 @@ class PmkFlowBuilder(models.AbstractModel):
         elif model == 'purchase.order':
             if 'invoice_ids' in record._fields:
                 linked.append(record.invoice_ids)
-            if 'picking_ids' in record._fields:
+            if pickings and 'picking_ids' in record._fields:
                 linked.append(record.picking_ids)
             if hasattr(record, '_get_sale_orders'):
                 linked.append(record._get_sale_orders())
@@ -518,9 +552,9 @@ class PmkFlowBuilder(models.AbstractModel):
         elif model == 'mrp.production':
             if 'sale_line_id' in record._fields:
                 linked.append(record.sale_line_id.order_id)
-            if 'move_finished_ids' in record._fields:
+            if pickings and 'move_finished_ids' in record._fields:
                 linked.append(record.move_finished_ids.move_dest_ids.picking_id)
-            if 'move_raw_ids' in record._fields:
+            if pickings and 'move_raw_ids' in record._fields:
                 linked.append(record.move_raw_ids.move_orig_ids.picking_id)
         elif model == 'stock.picking':
             if 'sale_id' in record._fields and record.sale_id:

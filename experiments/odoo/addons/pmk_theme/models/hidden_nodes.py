@@ -42,6 +42,29 @@ base.group_system, если своей группы у узла нет. Опре
 Вернуть: строку — убрать из HIDDEN_NODES и выложить pmk_theme; всё разом —
 удалить этот файл и его импорт в models/__init__.py. Таблица —
 docs/disabled-features.md, раздел «шаг 29».
+
+ШАГ З-6 (09.10.2026, карточка 6 «Заказ от заявки до цеха»): «ПОСТУПЛЕНИЯ»
+ДО УЧЁТА. Подтверждённый заказ поставщику сам заводит «Поступление»
+(purchase_stock), а кнопка «Подтвердить» в нём ПРОВОДИТ приход на склад —
+ловушка: два одинаковых слова для разных действий. Склад не ведём, поэтому
+из заказа поставщику убраны все дороги к «Поступлению» и складские итоги
+строк (STEP_Z6_NODES): кнопка-счётчик «Поступления» (грузовик) и штатная
+«Получить» (обе — action_view_picking), «Статус получения», колонки строк
+«Получено» и «Выставленный счёт», в окне строки — те же количества и
+вкладка «Счета и поступающие товары», «Статус выставления счетов» во
+«Другой информации».
+  • Скрываем не группой склада: у снабженца (Владимир) есть «Склад:
+    пользователь» — штатно он видел бы всё. Узел получает groups= наших
+    выключателей; у «Поступлений» их два (ИЛИ): «Убранное (показать)» и
+    «Склад (показать)» — когда начнут вести склад, хватит второй (она сама
+    даёт права склада); у счетов строки — «Убранное» и «Деньги (показать)».
+  • Ничего не удаляется и не отменяется: уже созданные «Поступления» лежат в
+    базе, подтверждение заказа по-прежнему заводит новое (не проводит).
+    «Материал пришёл» (pmk_tech, шаг З-5) с «Поступлением» не связан.
+  • Отдельным словарём, а не в HIDDEN_NODES: тесты шагов 29 и 53 перебирают
+    правила HIDDEN_NODES по ключу и ждут там только своё.
+Вернуть одну строку — убрать её из STEP_Z6_NODES; всё разом — добавить
+человека в группу. Таблица — docs/disabled-features.md, раздел «шаг З-6».
 """
 import re
 
@@ -49,7 +72,11 @@ from odoo import api, models
 
 REMOVED = "pmk_theme.group_pmk_removed"
 STOCK = "pmk_theme.group_pmk_stock"
+MONEY = "pmk_theme.group_pmk_money"
 ADMIN = "base.group_system"
+# Шаг З-6: группа правила может быть набором — узел видит любой из них.
+RECEIPTS = (REMOVED, STOCK)
+BILLS = (REMOVED, MONEY)
 
 # (модель, тип вида) → ((xpath, группа), ...). Xpath ищется в собранной
 # разметке ЛЮБОГО вида этого типа у модели; правило ставит группу на все
@@ -147,6 +174,46 @@ HIDDEN_NODES = {
     ),
 }
 
+# ─── Шаг З-6 (09.10.2026): «Поступления» до учёта ──────────────────────
+# Узлы дописывает purchase_stock (кроме qty_invoiced и вкладки строки —
+# purchase), pmk_theme от него не зависит — поэтому здесь, а не xpath в виде.
+# Поля простые (число, выбор), не вложенные наборы: ловушки column_invisible
+# с загрузкой вложенного набора здесь нет. На qty_invoiced ссылаются
+# readonly цены и скидки строки, на receipt_status и invoice_status —
+# соседние модификаторы: ядро досоздаст их невидимыми (_add_missing_fields).
+# В печать не идут (бланк заказа и запроса их не печатает, КП — документ
+# расчёта). [not(ancestor::field)] — поле заказа, не вложенной таблицы.
+STEP_Z6_NODES = {
+    ("purchase.order", "form"): (
+        # Кнопка-счётчик «Поступления» (грузовик, button_box) и штатная
+        # «Получить» в шапке — одно действие, оба узла.
+        ("//button[@name='action_view_picking']", RECEIPTS),
+        # «Статус получения» — «Другая информация».
+        ("//field[@name='receipt_status'][not(ancestor::field)]", RECEIPTS),
+        # Строки заказа: колонка «Получено» и в окне строки «Полученное
+        # количество».
+        ("//field[@name='order_line']/list/field[@name='qty_received']", RECEIPTS),
+        ("//field[@name='order_line']/form//field[@name='qty_received']", RECEIPTS),
+        # Колонка «Выставленный счёт» и «Выставленное количество» — счета
+        # поставщиков ведутся в МоёмСкладе (как «Загрузить счёт», шаг 29).
+        ("//field[@name='order_line']/list/field[@name='qty_invoiced']", BILLS),
+        ("//field[@name='order_line']/form//field[@name='qty_invoiced']", BILLS),
+        # Окно строки: вкладка «Счета и поступающие товары» (счета строки и
+        # движения склада) — целиком.
+        ("//field[@name='order_line']/form//page[@name='invoices_incoming_shiptments']", REMOVED),
+        # «Статус выставления счетов» — «Другая информация».
+        ("//field[@name='invoice_status'][not(ancestor::field)]", BILLS),
+    ),
+    # Списки закупок: «Статус получения» в ⚙ колонок «Подтверждённых
+    # заказов» (purchase_order_view_tree, у остальных его нет) и «Статус
+    # выставления счетов» в ⚙ обоих списков (с шага 25 там optional=hide) —
+    # то же, что спрятано в форме.
+    ("purchase.order", "list"): (
+        ("//field[@name='receipt_status'][not(ancestor::field)]", RECEIPTS),
+        ("//field[@name='invoice_status'][not(ancestor::field)]", BILLS),
+    ),
+}
+
 # 'group_by': 'lead_properties' (и 'properties.<ключ>') в контексте фильтра.
 GROUP_BY = re.compile(r"""['"]group_by['"]\s*:\s*['"]([\w.]+)""")
 
@@ -165,13 +232,16 @@ class Base(models.AbstractModel):
 
     @api.model
     def _pmk_hide_nodes(self, arch, view_type):
-        for expr, group in HIDDEN_NODES.get((self._name, view_type), ()):
+        key = (self._name, view_type)
+        for expr, group in HIDDEN_NODES.get(key, ()) + STEP_Z6_NODES.get(key, ()):
+            # Группа — одна или набор (ИЛИ, шаг З-6).
+            groups = (group,) if isinstance(group, str) else tuple(group)
             # Группы ещё нет (pmk_theme ставится) — правило пропускаем: узел
             # с несуществующей группой ядро не вырезало бы ни у кого.
-            if not self.env.ref(group, raise_if_not_found=False):
+            if not all(self.env.ref(xmlid, raise_if_not_found=False) for xmlid in groups):
                 continue
             for node in arch.xpath(expr):
-                node.set("groups", group)
+                node.set("groups", ",".join(groups))
 
     @api.model
     def _pmk_properties_admin_only(self, arch):

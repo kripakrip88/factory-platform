@@ -272,7 +272,7 @@ class TestStepZ4(Z4Common):
                 self.assertEqual(order_po.pmk_client_id, self.client)
                 self.assertIn(tech.name, order_po.origin)
                 self.assertIn(order.name, order_po.origin)
-                self.assertEqual(order_po.pmk_request_state_label, "Черновик заявки")
+                self.assertEqual(order_po.pmk_request_state_label, "Заявка")
 
         angle = self._line(po, "Уголок 100×8 (тест З-4)")
         self.assertAlmostEqual(angle.product_qty, 6.0, msg="1 м × 3 × 2 изделия.")
@@ -624,8 +624,11 @@ class TestStepZ4(Z4Common):
         labels = po_arch.xpath("//div[contains(@class, 'oe_title')]/span")
         texts = [(s.text or "").strip() for s in labels]
         self.assertIn("Заявка на металл", texts, "У заявки — своё слово, не «Запрос КП».")
-        send = po_arch.xpath("//header/button[@name='action_rfq_send']"
-                             "[@string='Отправить заявку поставщику']")
+        # С шага З-6 штатные кнопки всех закупок — тем же словом (pmk_purchase);
+        # у заявки они спрятаны условием, свои — «not pmk_tech_spec_id».
+        send = [b for b in po_arch.xpath("//header/button[@name='action_rfq_send']"
+                                         "[@string='Отправить заявку поставщику']")
+                if "not pmk_tech_spec_id" in (b.get("invisible") or "")]
         self.assertEqual(len(send), 2, "Черновик (залитая) и отправленная (контурная).")
         self.assertEqual([_filled(b) for b in send], [True, False])
         for button in send:
@@ -668,7 +671,7 @@ class TestStepZ4(Z4Common):
         self.assertIn(("sale.order", order.id), nodes)
         for po in self._requests(tech):
             self.assertEqual(nodes[("purchase.order", po.id)]["kind"], "Заявка на металл")
-            self.assertEqual(nodes[("purchase.order", po.id)]["state"], "Черновик заявки",
-                             "Состояние — словами списка, не «Запрос КП».")
+            self.assertEqual(nodes[("purchase.order", po.id)]["state"], "Заявка",
+                             "Состояние — словами списка (= строки состояния формы), не «Запрос КП».")
         kp = self.env["pmk.flow.builder"].get_flow_graph("sale.order", order.id)
         self.assertIn(("pmk.metal.spec", tech.id), {(n["model"], n["res_id"]) for n in kp["nodes"]})

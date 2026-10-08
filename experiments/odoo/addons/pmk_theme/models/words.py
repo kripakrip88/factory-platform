@@ -107,11 +107,18 @@ DATA_WORDS = [
     ("crm.mt_salesteam_lead_restored", "name", "Возможность восстановлена", "Сделка восстановлена"),
     ("crm.mt_salesteam_lead_stage", "name", "Стадия возможности изменена", "Стадия сделки изменена"),
     ("mail.mt_activities", "name", "Активности", "Задачи"),
-    # Запрос КП — одно слово для RFQ (pmk_purchase, миграция 19.0.1.0.1);
-    # у подтипов ленты закупки осталось «ЗП».
-    ("purchase.mt_rfq_sent", "name", "ЗП отправлен", "Запрос КП отправлен"),
+    # RFQ — с шага З-6 (09.10.2026) «Заявка» (было «Запрос КП», pmk_purchase,
+    # миграция 19.0.1.0.1); у подтипов ленты закупки осталось «ЗП». Вторая
+    # строка — поверх нашего прежнего слова, оно уже стоит в базе.
+    ("purchase.mt_rfq_sent", "name", "ЗП отправлен", "Заявка отправлена"),
+    ("purchase.mt_rfq_sent", "name", "Запрос КП отправлен", "Заявка отправлена"),
     ("purchase.mt_rfq_confirmed", "name", "ЗП подтвержден", "Заказ подтверждён"),
     ("purchase.mt_rfq_approved", "name", "ЗП одобрен", "Заказ одобрен"),
+    # Состояние «Отменён» закупки — с «ё», как у счёта покупателю ниже. Здесь,
+    # а не в файле слов: у «Cancelled» тот же msgid у строки кода портала
+    # (поставщику — слова ядра).
+    ("purchase.selection__purchase_order__state__cancel", "name", "Отменен", "Отменён"),
+    ("purchase.selection__purchase_report__state__cancel", "name", "Отменен", "Отменён"),
     # Тип задачи «Email» (перевода у ядра нет).
     ("mail.mail_activity_data_email", "name", "Email", "Письмо"),
     ("mail.mail_activity_data_email", "summary", "Email", "Письмо"),

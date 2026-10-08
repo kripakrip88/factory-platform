@@ -409,7 +409,9 @@ class MetalSpecTech(models.Model):
                 state = (order.pmk_request_state_label
                          or REQUEST_STATE_LABELS.get(order.state, order.state)).lower()
                 if order.state == "draft":
-                    state = _("%s, количество правил снабженец", state)
+                    # «В заявке P00002 (заявка, …)» — повтор: у черновика
+                    # говорим, что он ещё не отправлен.
+                    state = _("не отправлена, количество правил снабженец")
                 diffs.append(_(
                     "В заявке %(order)s (%(state)s): %(name)s — %(ordered)s, у инженера %(now)s",
                     order=order.name, state=state,

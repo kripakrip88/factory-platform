@@ -41,7 +41,7 @@
     <template id="stock_help_message" inherit_id="stock.help_message_template" priority="99">
         <xpath expr="." position="replace" mode="inner">
             <t t-if="picking_type_code == 'incoming'">
-                <p>Приёмка появится, когда запрос КП станет заказом поставщику — кнопка «Подтвердите заказ».</p>
+                <p>Приёмка появится, когда заявка поставщику станет заказом — кнопка «Подтвердить заказ».</p>
                 <p>Металл на складе в системе пока не учитывается.</p>
             </t>
             <t t-elif="picking_type_code == 'outgoing'">

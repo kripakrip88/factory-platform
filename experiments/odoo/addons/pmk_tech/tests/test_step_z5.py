@@ -29,8 +29,8 @@
     всё работает, строка планировщика обновляется;
   • заказ без сделки и строки — дата ставится, ничего не падает;
   • писем нет;
-  • виды: залитая «Материал пришёл» одна (подтверждённый), «Получить» без
-    заливки, кнопка в шапке списка «Заявки на металл», колонка и фильтры;
+  • виды: залитая «Материал пришёл» одна (подтверждённый), «Получить»
+    спрятана (шаг З-6), вернувшаяся группой — без заливки, кнопка в шапке списка «Заявки на металл», колонка и фильтры;
     в планировщике — «Металл получен» (дата), «Получен частично», фильтры
     «Ждём металл» (без «Получен») и «Металл получен», в канбане дата
     отдельной строкой, ряд метки переносится.
@@ -104,7 +104,7 @@ class TestStepZ5(Z4Common):
             {line.product_id.product_tmpl_id.name: line.price_unit for line in po.order_line},
             prices, "Подтверждение цены строк не пересчитало (₽/т × вес — из заявки).")
         self.assertAlmostEqual(self._line(po, "Лист 2 мм (тест З-4)").price_unit, 14130.0, places=2)
-        self.assertEqual(po.pmk_request_state_label, "Заказ подтверждён")
+        self.assertEqual(po.pmk_request_state_label, "Заказ поставщику")
 
         self.assertTrue(self._arrive(po))
         self.assertEqual(po.pmk_metal_date, self.today, "Дата прихода — сегодня.")
@@ -237,7 +237,7 @@ class TestStepZ5(Z4Common):
         po.with_user(self.buyer).action_pmk_material_undo()
         self.assertFalse(po.pmk_metal_date)
         self.assertEqual(po.state, "purchase", "Заказ остаётся подтверждённым.")
-        self.assertEqual(po.pmk_request_state_label, "Заказ подтверждён")
+        self.assertEqual(po.pmk_request_state_label, "Заказ поставщику")
         self.assertEqual(row.pmk_metal, "wait")
         self.assertFalse(row.pmk_metal_date)
         self.assertIn("снята", self._notes(po))
@@ -261,14 +261,14 @@ class TestStepZ5(Z4Common):
 
         po.with_user(self.buyer).button_cancel()
         self.assertEqual(po.state, "cancel")
-        self.assertEqual(po.pmk_request_state_label, "Отменена")
+        self.assertEqual(po.pmk_request_state_label, "Отменён")
         self.assertFalse(po.search_count([("id", "=", po.id)] + self._arrived_filter()),
                          "Отменённая — не в фильтре «Материал пришёл».")
 
         po.with_user(self.buyer).button_draft()
         self.assertEqual(po.state, "draft")
         self.assertFalse(po.pmk_metal_date, "Вернули в черновик — отметка снята.")
-        self.assertEqual(po.pmk_request_state_label, "Черновик заявки")
+        self.assertEqual(po.pmk_request_state_label, "Заявка")
         self.assertIn("вернули в черновик", self._notes(po))
         self.assertEqual(row.pmk_metal, "wait", "Черновик с позициями — ещё не заказан.")
         self.assertFalse(row.pmk_metal_date)
@@ -277,7 +277,7 @@ class TestStepZ5(Z4Common):
         po.with_user(self.buyer).button_confirm()
         self.assertFalse(po.pmk_metal_date, "Повторное подтверждение — без старой даты.")
         self.assertEqual(row.pmk_metal, "wait")
-        self.assertEqual(po.pmk_request_state_label, "Заказ подтверждён")
+        self.assertEqual(po.pmk_request_state_label, "Заказ поставщику")
 
     def _arrived_filter(self):
         search = etree.fromstring(self.env["purchase.order"].get_views(
@@ -336,7 +336,7 @@ class TestStepZ5(Z4Common):
             with self.subTest(view=xmlid):
                 self.assertTrue(self.env.ref(xmlid).active, "Вид не выключен при загрузке.")
 
-        # Администратором: «Получить» видна только «Складу».
+        # Администратором (у него штатный склад, «Убранного» нет).
         admin = self.env.ref("base.user_admin")
         po_arch = etree.fromstring(self.env["purchase.order"].with_user(admin).get_views(
             [(self.env.ref("purchase.purchase_order_form").id, "form")])["views"]["form"]["arch"])
@@ -357,10 +357,18 @@ class TestStepZ5(Z4Common):
         confirmed = [b.get("name") for b in header.iter("button") if _filled(b)
                      and "state != 'purchase'" in (b.get("invisible") or "")]
         self.assertEqual(confirmed, ["action_pmk_material_arrived"])
-        receive = po_arch.xpath("//header/button[@name='action_view_picking']")
-        self.assertTrue(receive, "Посылка: «Получить» в шапке есть.")
+        # Шаг З-6: «Получить» спрятана под «Убранное» / «Склад (показать)» —
+        # у admin без них её нет; вернулась — без заливки (З-5).
+        self.assertFalse(po_arch.xpath("//header/button[@name='action_view_picking']"),
+                         "«Получить» спрятана до учёта (шаг З-6).")
+        admin.write({"group_ids": [Command.link(self.env.ref("pmk_theme.group_pmk_removed").id)]})
+        back = etree.fromstring(self.env["purchase.order"].with_user(admin).get_views(
+            [(self.env.ref("purchase.purchase_order_form").id, "form")])["views"]["form"]["arch"])
+        receive = back.xpath("//header/button[@name='action_view_picking']")
+        self.assertTrue(receive, "Посылка: «Получить» возвращается группой.")
         for button in receive:
-            self.assertFalse(_filled(button), "«Получить» — без заливки (карточка 6 спрячет).")
+            self.assertFalse(_filled(button), "«Получить» — без заливки.")
+        admin.write({"group_ids": [Command.unlink(self.env.ref("pmk_theme.group_pmk_removed").id)]})
         self.assertTrue(po_arch.xpath("//label[@for='pmk_metal_date']"))
         self.assertTrue(po_arch.xpath("//field[@name='pmk_metal_date']"))
 

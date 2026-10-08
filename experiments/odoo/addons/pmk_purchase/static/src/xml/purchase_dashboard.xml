@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Панель над списком «Запросы КП» — подсказки по-русски нашими словами
-  (Антон, 29.09.2026: «штатные надписи Odoo переименовывай»). Подписи самих
+  Панель над списком «Запросы КП» (с шага 38 — «Заказы поставщикам») —
+  подсказки по-русски нашими словами (Антон, 29.09.2026: «штатные надписи
+  Odoo переименовывай»). С шага З-6 (09.10.2026) RFQ — «заявка».
+  ⚠️ title «Сколько дней в среднем от заявки до заказа» — селектор подписи
+  карточки в scss/purchase_dashboard.scss: менять в обоих местах. Подписи самих
   карточек — scss/purchase_dashboard.scss (там же объяснено, почему стилем).
 
   Xpath по атрибутам исходного шаблона: клиентские шаблоны хранятся
@@ -36,13 +39,13 @@
       <attribute name="t-out">purchaseData.pmk_days_to_order ? purchaseData.pmk_days_to_order['my'] : purchaseData['my']['days_to_order']</attribute>
     </xpath>
     <xpath expr="//div[@filter_name='draft_rfqs']" position="attributes">
-      <attribute name="title">Все новые запросы КП</attribute>
+      <attribute name="title">Все новые заявки</attribute>
     </xpath>
     <xpath expr="//div[@filter_name='waiting_rfqs']" position="attributes">
-      <attribute name="title">Все отправленные запросы КП, ждут ответа</attribute>
+      <attribute name="title">Все отправленные заявки, ждут ответа</attribute>
     </xpath>
     <xpath expr="//div[@filter_name='late']" position="attributes">
-      <attribute name="title">Запросы КП с прошедшим крайним сроком</attribute>
+      <attribute name="title">Заявки с прошедшим крайним сроком</attribute>
     </xpath>
     <xpath expr="//div[@filter_name='not_acknowledged']" position="attributes">
       <attribute name="title">Заказы, которые поставщик ещё не подтвердил</attribute>
@@ -52,13 +55,13 @@
       <attribute name="title">Заказы с просроченной поставкой</attribute>
     </xpath>
     <xpath expr="//div[@filter_name='draft_rfqs,my_purchases']" position="attributes">
-      <attribute name="title">Мои новые запросы КП</attribute>
+      <attribute name="title">Мои новые заявки</attribute>
     </xpath>
     <xpath expr="//div[@filter_name='waiting_rfqs,my_purchases']" position="attributes">
-      <attribute name="title">Мои отправленные запросы КП</attribute>
+      <attribute name="title">Мои отправленные заявки</attribute>
     </xpath>
     <xpath expr="//div[@filter_name='late,my_purchases']" position="attributes">
-      <attribute name="title">Мои просроченные запросы КП</attribute>
+      <attribute name="title">Мои просроченные заявки</attribute>
     </xpath>
     <xpath expr="//div[@filter_name='not_acknowledged,my_purchases']" position="attributes">
       <attribute name="title">Мои заказы, не подтверждённые поставщиком</attribute>
@@ -68,10 +71,10 @@
       <attribute name="title">Мои заказы с просроченной поставкой</attribute>
     </xpath>
     <xpath expr="//div[@title='All Days to Order']" position="attributes">
-      <attribute name="title">Сколько дней в среднем от запроса до заказа</attribute>
+      <attribute name="title">Сколько дней в среднем от заявки до заказа</attribute>
     </xpath>
     <xpath expr="//div[@title='My Days to Order']" position="attributes">
-      <attribute name="title">Мои: дней от запроса до заказа</attribute>
+      <attribute name="title">Мои: дней от заявки до заказа</attribute>
     </xpath>
     <!-- «Поставки в срок» прячет стиль по этому признаку (шаг 29). -->
     <xpath expr="//div[hasclass('o_purchase_dashboard')]" position="attributes">
