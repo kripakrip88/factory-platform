@@ -37,13 +37,15 @@
 (security/pending_rules.xml) не пропустит другую. Править и удалять —
 по-прежнему только администратор. Снять метку может только он. «Новый» в
 списках и формах справочников сотруднику не показан (create="0",
-администратору возвращают *_admin_create в views/pending_views.xml):
+администратору возвращает get_view примеси ниже):
 заводят из детали расчёта.
 
 В ВЫПАДАШКЕ позиции «на разнос» — в конце и не больше PENDING_SLOTS мест,
 настоящие позиции они не вытесняют (_pmk_merge_pending).
 """
 import re
+
+from lxml import etree
 
 from markupsafe import Markup
 
@@ -161,6 +163,22 @@ class MetalPendingMixin(models.AbstractModel):
             rec.pmk_pending_line_count = len(lines)
             rec.pmk_pending_spec_ids = specs
             rec.pmk_pending_spec_count = len(specs)
+
+    # ─── «Новый» в справочниках — только администратору ──────────────
+    @api.model
+    def get_view(self, view_id=None, view_type="form", **options):
+        """Списки и формы справочника: create="1" администратору, "0" прочим.
+
+        Право создавать у сотрудника есть (ради «на разнос» из детали), и без
+        этого «Новый» горел бы у всех. Наследование вида с group_ids Odoo 19
+        не принимает, а _get_view_cache общий для всех групп — поэтому здесь,
+        после кэша, на каждый запрос."""
+        res = super().get_view(view_id, view_type, **options)
+        if view_type in ("list", "form") and res.get("arch"):
+            arch = etree.fromstring(res["arch"])
+            arch.set("create", "1" if is_reference_admin(self.env) else "0")
+            res["arch"] = etree.tostring(arch, encoding="unicode")
+        return res
 
     # ─── Заведение ──────────────────────────────────────────────────────
     @api.model_create_multi

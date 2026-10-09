@@ -11,7 +11,7 @@
 по колонкам справочников (pmk_pending, active…), а они появляются при
 _auto_init самих справочников — модели инициализируются по порядку.
 """
-from odoo import _, fields, models, tools
+from odoo import api, _, fields, models, tools
 from odoo.exceptions import UserError
 
 from .metal_pending import NO_WEIGHT_LABEL, _plural
@@ -58,6 +58,15 @@ class MetalPending(models.Model):
     spec_count = fields.Integer("В расчётах", compute="_compute_usage")
     line_count = fields.Integer("Деталей", compute="_compute_usage")
     spec_names = fields.Char("Расчёты", compute="_compute_usage")
+
+    @api.model
+    def _search(self, domain, *args, **kwargs):
+        """Представление читает таблицы справочников напрямую: несброшенные
+        правки (архив после «Привязать», новая позиция) ORM сам не сбросит —
+        у представления нет полей-зависимостей. Сбрасываем всё: таблицы
+        маленькие, список открывает один администратор."""
+        self.env.flush_all()
+        return super()._search(domain, *args, **kwargs)
 
     def init(self):
         tools.drop_view_if_exists(self.env.cr, self._table)

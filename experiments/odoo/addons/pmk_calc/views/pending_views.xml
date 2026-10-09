@@ -137,6 +137,7 @@
           </div>
           <group>
             <group name="pmk_reference">
+              <field name="profile_type" invisible="1"/>
               <field name="type_id" options="{'no_create': True}"/>
               <field name="size_label"/>
               <field name="gost"/>
@@ -244,81 +245,12 @@
   </record>
 
   <!-- ═══ 2а. «Новый» в справочниках — только администратору ═══════════
-       Сотруднику право создавать дано ради позиции «на разнос» из детали;
-       списки и формы справочников стоят с create="0" (metal_views.xml и
-       формы выше), администратору «Новый» возвращают эти наследования
-       (group_ids — только у наследующих видов, правило Odoo). -->
-  <record id="view_metal_profile_list_admin_create" model="ir.ui.view">
-    <field name="name">pmk.metal.profile.list.admin.create</field>
-    <field name="model">pmk.metal.profile</field>
-    <field name="inherit_id" ref="pmk_calc.view_metal_profile_list"/>
-    <field name="group_ids" eval="[(4, ref('base.group_system'))]"/>
-    <field name="arch" type="xml">
-      <xpath expr="/list" position="attributes">
-        <attribute name="create">1</attribute>
-      </xpath>
-    </field>
-  </record>
-
-  <record id="view_metal_sheet_list_admin_create" model="ir.ui.view">
-    <field name="name">pmk.metal.sheet.list.admin.create</field>
-    <field name="model">pmk.metal.sheet</field>
-    <field name="inherit_id" ref="pmk_calc.view_metal_sheet_list"/>
-    <field name="group_ids" eval="[(4, ref('base.group_system'))]"/>
-    <field name="arch" type="xml">
-      <xpath expr="/list" position="attributes">
-        <attribute name="create">1</attribute>
-      </xpath>
-    </field>
-  </record>
-
-  <record id="view_metal_fastener_list_admin_create" model="ir.ui.view">
-    <field name="name">pmk.metal.fastener.list.admin.create</field>
-    <field name="model">pmk.metal.fastener</field>
-    <field name="inherit_id" ref="pmk_calc.view_metal_fastener_list"/>
-    <field name="group_ids" eval="[(4, ref('base.group_system'))]"/>
-    <field name="arch" type="xml">
-      <xpath expr="/list" position="attributes">
-        <attribute name="create">1</attribute>
-      </xpath>
-    </field>
-  </record>
-
-  <record id="view_metal_profile_form_admin_create" model="ir.ui.view">
-    <field name="name">pmk.metal.profile.form.admin.create</field>
-    <field name="model">pmk.metal.profile</field>
-    <field name="inherit_id" ref="pmk_calc.view_metal_profile_form"/>
-    <field name="group_ids" eval="[(4, ref('base.group_system'))]"/>
-    <field name="arch" type="xml">
-      <xpath expr="/form" position="attributes">
-        <attribute name="create">1</attribute>
-      </xpath>
-    </field>
-  </record>
-
-  <record id="view_metal_sheet_form_admin_create" model="ir.ui.view">
-    <field name="name">pmk.metal.sheet.form.admin.create</field>
-    <field name="model">pmk.metal.sheet</field>
-    <field name="inherit_id" ref="pmk_calc.view_metal_sheet_form"/>
-    <field name="group_ids" eval="[(4, ref('base.group_system'))]"/>
-    <field name="arch" type="xml">
-      <xpath expr="/form" position="attributes">
-        <attribute name="create">1</attribute>
-      </xpath>
-    </field>
-  </record>
-
-  <record id="view_metal_fastener_form_admin_create" model="ir.ui.view">
-    <field name="name">pmk.metal.fastener.form.admin.create</field>
-    <field name="model">pmk.metal.fastener</field>
-    <field name="inherit_id" ref="pmk_calc.view_metal_fastener_form"/>
-    <field name="group_ids" eval="[(4, ref('base.group_system'))]"/>
-    <field name="arch" type="xml">
-      <xpath expr="/form" position="attributes">
-        <attribute name="create">1</attribute>
-      </xpath>
-    </field>
-  </record>
+       Сотруднику право создавать дано ради позиции «на разнос» из детали.
+       «Новый» в списках и формах справочников решает get_view примеси
+       (models/metal_pending.py): администратору create="1", остальным "0".
+       Наследование с group_ids Odoo 19 не принимает («Inherited view cannot
+       have 'groups'»), а кэш вида общий для всех групп — поэтому не в виде,
+       а после кэша, на каждый запрос. -->
 
   <!-- ═══ 3. Список «Новые позиции на разнос» ═════════════════════════ -->
   <record id="view_metal_pending_list" model="ir.ui.view">

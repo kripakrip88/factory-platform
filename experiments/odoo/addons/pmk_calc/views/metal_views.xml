@@ -11,7 +11,7 @@
     новую…»). Право создавать включило бы в этих списках «Новый» (у метизов —
     ещё и строку-добавление), поэтому у прокат / лист / метизы create="0", а
     администратору «Новый» возвращает наследование с группой
-    (views/pending_views.xml, *_admin_create). docs/disabled-features.md, З-10.
+    (get_view в models/metal_pending.py). docs/disabled-features.md, З-10.
   -->
 
   <record id="view_metal_profile_list" model="ir.ui.view">
