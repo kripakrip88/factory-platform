@@ -10,3 +10,5 @@ from . import test_step_z5
 from . import test_step_z6
 # Шаг З-10: позиция «на разнос» в «Заявке на металл».
 from . import test_step_z10
+# Шаг З-13: совместная раскладка в заявке, «Листов по факту».
+from . import test_step_z13

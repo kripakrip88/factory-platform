@@ -141,6 +141,21 @@
         </div>
         <field name="pmk_kp_compare_unpriced" invisible="1"/>
       </xpath>
+
+      <!--
+        Шаг З-13: «Листов по факту» — у листа раскладки технического расчёта.
+        Инженер вписывает число из CypCut; «Заявка на металл» берёт его
+        вместо черновика (пусто — черновик). У расчёта КП колонки нет: КП —
+        по черновику. Простое число — column_invisible его загрузку не режет
+        (грабли касаются вложенных наборов). Правится прямо в строке таблицы
+        «Листы по раскладке» (она editable, остальные колонки readonly). Ноль —
+        «не заполнено», серым (цвет повторяет смысл: черновик).
+      -->
+      <xpath expr="//field[@name='layout_group_ids']/list/field[@name='sheets']" position="after">
+        <field name="pmk_sheets_fact" string="Листов по факту"
+               column_invisible="parent.pmk_kind != 'tech'"
+               decoration-muted="not pmk_sheets_fact"/>
+      </xpath>
     </field>
   </record>
 

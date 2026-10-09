@@ -188,7 +188,9 @@ class TestSpecLayoutStep32(TransactionCase):
                    if c.get("optional") != "hide" and c.get("column_invisible") not in ("1", "True")]
         self.assertEqual(visible, [
             "detail_name", "sheet_id", "detail_size_label", "qty",
-            "layout_sheet_size", "layout_per_sheet", "layout_sheets", "layout_use_label"])
+            # Шаг З-13: «Вместе с» — с кем деталь легла на общие листы.
+            "layout_sheet_size", "layout_per_sheet", "layout_sheets", "layout_group_note",
+            "layout_use_label"])
         by_name = {c.get("name"): c for c in columns}
         for name in ("product_id", "layout_scheme", "layout_state"):
             with self.subTest(hidden=name):

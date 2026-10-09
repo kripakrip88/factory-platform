@@ -223,7 +223,10 @@
                       <field name="layout_sheet_size" optional="show"/>
                       <field name="layout_state" optional="hide"/>
                       <field name="layout_per_sheet" optional="hide"/>
-                      <field name="layout_sheets" optional="hide" sum="Листов"/>
+                      <!-- Доработка З-13: у детали, разложенной вместе с
+                           соседями, — доля общих листов; рядом «Вместе с». -->
+                      <field name="layout_sheets" optional="hide" sum="Листов" string="Листов (доля)"/>
+                      <field name="layout_group_note" optional="hide" string="Вместе с"/>
                       <field name="layout_scheme" optional="hide"/>
                       <field name="layout_utilization_pct" optional="hide"/>
                       <field name="sequence"/>
@@ -516,8 +519,9 @@
                 <!-- Шаг 56: раскладка устарела — вместо серой подсказки
                      жёлтая строка словом (та же, что плашка над шапкой). -->
                 <span class="text-muted" invisible="not sheet_line_ids or layout_stale">
-                  Сколько листов купить под заказ. Верхняя оценка: технолог
-                  уложит плотнее и объединит детали на одном листе.
+                  Сколько листов купить под заказ. Детали одного листа
+                  (толщина, вид, габарит) раскладываются вместе. Верхняя
+                  оценка: технолог уложит плотнее.
                 </span>
                 <!-- Текст — то же поле, что в плашке над шапкой: у старых
                      расчётов (до 30.09) — «могла устареть», а не «устарела». -->
@@ -531,6 +535,52 @@
                   после сохранения.
                 </span>
               </div>
+              <!--
+                Шаг З-13: «Листы по раскладке» — группа на каждую тройку «лист
+                × марка × габарит»: сколько листов купить, вместе или отдельно.
+                Не «к закупке»: так в шапке подписан металл по чистому весу
+                (карточка моста) — одно понятие, одно слово. Таблицу
+                заводит кнопка: ни «Добавить», ни корзины. editable — ради
+                «Листов по факту» технического расчёта (pmk_tech, колонка
+                только у него); здесь все колонки readonly. «Раздельно» и
+                «Как» — видно сразу, сколько дала совместная укладка;
+                «Схема», «Детали группы», «Марка стали» — в меню колонок.
+                «Как» — словом с учётом состояния (mode_label): погашенная
+                группа — «не считалась», серый цвет строки повторён словом.
+              -->
+              <div class="pmk-layout-caption" invisible="not layout_group_ids">Листы по раскладке</div>
+              <field name="layout_group_ids" readonly="0" invisible="not layout_group_ids"
+                     class="pmk-layout-groups">
+                <!-- Погашенная группа (деталь правили после раскладки) —
+                     серым: число листов уже не про заказ, рядом горит
+                     «Раскладка устарела». -->
+                <list editable="bottom" create="0" delete="0" decoration-muted="state == 'none'">
+                  <field name="sheet_id" readonly="1" string="Лист"/>
+                  <field name="grade_id" readonly="1" string="Марка стали" optional="hide"/>
+                  <field name="sheet_size" readonly="1" string="Габарит"/>
+                  <field name="line_count" readonly="1" string="Деталей"/>
+                  <field name="sheets" readonly="1" string="Листов" sum="Листов"/>
+                  <field name="sheets_separate" readonly="1" string="Раздельно" optional="show"/>
+                  <field name="mode_label" readonly="1" string="Как" optional="show"/>
+                  <field name="use_label" readonly="1" string="Использование"
+                         widget="badge" class="pmk-sheet-use"
+                         decoration-warning="use_level == 'low'"
+                         decoration-danger="use_level == 'bad'"/>
+                  <field name="use_level" column_invisible="1"/>
+                  <field name="scheme" readonly="1" string="Схема" optional="hide"/>
+                  <field name="parts_label" readonly="1" string="Детали группы" optional="hide"/>
+                  <field name="state" readonly="1" optional="hide"/>
+                </list>
+              </field>
+              <!-- Старые расчёты сами не пересчитываются: подсказка, чем
+                   кнопка поможет. -->
+              <div class="text-muted mb-2" invisible="layout_group_ids or not layout_legacy">
+                Посчитано по каждой детали отдельно. «Разложить листы
+                (черновик)» сложит детали одного листа вместе — листов может
+                стать меньше.
+              </div>
+              <field name="layout_legacy" invisible="1"/>
+              <div class="pmk-layout-caption" invisible="not layout_group_ids">Детали</div>
               <field name="sheet_line_ids" readonly="0">
                 <list editable="bottom" create="0" delete="0">
                   <field name="product_id" readonly="1" optional="hide"/>
@@ -544,7 +594,12 @@
                        project_sheet_size_trap). -->
                   <field name="layout_sheet_size" string="Габарит"/>
                   <field name="layout_per_sheet" readonly="1" string="В листе"/>
-                  <field name="layout_sheets" readonly="1" sum="Листов" string="Листов"/>
+                  <!-- Шаг З-13: «Листов (доля)» — у детали, легшей на общие
+                       листы, это доля листов группы: «В листе» × «Листов»
+                       тогда меньше количества, доля бывает и нулём. Сумма
+                       колонки — листы к покупке. «Вместе с» — с кем легла. -->
+                  <field name="layout_sheets" readonly="1" sum="Листов" string="Листов (доля)"/>
+                  <field name="layout_group_note" readonly="1" string="Вместе с" optional="show"/>
                   <field name="layout_scheme" readonly="1" string="Схема" optional="hide"/>
                   <field name="layout_use_label" readonly="1" string="Использование"
                          widget="badge" class="pmk-sheet-use"

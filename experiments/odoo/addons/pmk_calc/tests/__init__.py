@@ -18,3 +18,7 @@ from . import test_step39_words
 from . import test_step56_spec
 # Шаг З-10: позиция «на разнос» — заведение из детали, разнос, права.
 from . import test_step_z10_pending
+# Шаг З-13: совместная раскладка листа. Чистые функции — test_sheet_group
+# (голым питоном: python3 addons/pmk_calc/tests/test_sheet_group.py).
+from . import test_sheet_group
+from . import test_step_z13

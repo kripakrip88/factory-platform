@@ -259,6 +259,7 @@ class MetalSpecTech(models.Model):
         old_products, new_products = ordered(source.product_ids), ordered(self.product_ids)
         if len(old_products) != len(new_products):
             return
+        pairs = []
         for old_product, new_product in zip(old_products, new_products):
             old_lines = ordered(old_product.line_sheet_ids)
             new_lines = ordered(new_product.line_sheet_ids)
@@ -268,6 +269,9 @@ class MetalSpecTech(models.Model):
                 if old_line.layout_state == "none":
                     continue
                 new_line.write({name: old_line[name] for name in LAYOUT_RESULTS})
+                pairs.append((old_line, new_line))
+        # Шаг З-13: листы раскладки (группы «лист × габарит») — тоже.
+        self._pmk_copy_layout_groups(source, pairs)
         if source.layout_fingerprint:
             self.layout_fingerprint = source.layout_fingerprint
 

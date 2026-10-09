@@ -6,6 +6,8 @@ from . import metal_spec
 from . import dobor
 from . import dobor_report
 from . import spec_layout
+# Шаг З-13: «Лист раскладки» — группа деталей одного листа и габарита.
+from . import spec_sheet_group
 from . import res_partner
 from . import metal_pending_bind
 # Последним: представление базы по колонкам справочников (см. файл).

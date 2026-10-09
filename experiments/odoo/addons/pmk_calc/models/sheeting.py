@@ -21,6 +21,13 @@
 предложения это безопасная сторона: лучше заложить чуть больше, чем уйти в
 минус. Слово «черновая» в названии кнопки стоит намеренно.
 
+С шага З-13 (09.10.2026) детали ОДНОГО листа (толщина, вид, габарит) мы тоже
+кладём вместе — полосами через весь лист (раздел «Совместная раскладка» в
+конце файла). Повод — прогон Кытмановой: Z-полоса 560 мм оставляла обрезок
+380 мм на каждом из 67 листов, а в него встают три П-полосы по 120 мм;
+раздельно выходило 93 листа, вместе — 76. Вложения в вырезы и раскрой
+CypCut мы не повторяем: ответ остаётся верхней оценкой, только честнее.
+
 Файл без ORM и без обращений к базе — как cutting.py в модуле раскроя
 сортамента: те же функции проверяются тестами без стенда.
 """
@@ -247,3 +254,383 @@ def sheet_use_label(pct, state):
     if pct < SHEET_USE_LOW_PCT:
         return "%s · мало" % text, "low"
     return text, "ok"
+
+
+# ─── Совместная раскладка (шаг З-13, 09.10.2026) ──────────────────────────
+#
+# ЗАЧЕМ. Раскладка по каждой детали отдельно покупала лишнее там, где у одной
+# детали остаётся обрезок, а другая деталь того же листа в него встаёт.
+# Прогон Кытмановой (СМ-00037/38, лист 3 мм 1500×6000): Z 560×3000 — две по
+# ширине, обрезок 380 мм на каждом из 67 листов; П 120×3000 встаёт в него
+# по три. Раздельно 26 + 67 = 93 листа, вместе 76 (≈17 листов, ~3,6 т).
+#
+# КАК. Полосы (полки) через весь лист — гильотинный раскрой, который режется
+# на любом станке:
+#   1. каждая деталь ложится одним из двух поворотов; высота полки — меньшая
+#      сторона детали («low») или большая («high»);
+#   2. детали по убыванию высоты укладываются в первую полку, где хватает
+#      длины (сразу пачкой: сколько влезает), остаток — в новые полки;
+#   3. полки по убыванию высоты — в первый лист, где хватает ширины
+#      (first-fit decreasing).
+# Полосы идут вдоль длины листа («L») или поперёк («W»); из четырёх
+# вариантов берём тот, где листов меньше. Отдельно — вариант «полные листы
+# каждой детали отдельно, вместе только остатки».
+#
+# НИКОГДА НЕ ХУЖЕ ПРЕЖНЕГО. Совместную укладку берём, только если листов
+# СТРОГО меньше, чем сумма раздельных (plan_sheets по каждой детали). Одна
+# деталь в группе — тот же plan_sheets один в один.
+#
+# Рез и кромка — те же, что у раздельной: рез 0,2 мм между деталями в полке и
+# между полками, кромка 0 (решение владельца 23.09), допуск ряда 5 мм — то же
+# правило, что _fit_in_line: рез съедает металл заготовки (3000 + 0,2 + 3000
+# в листе 6000 — две заготовки, а не одна).
+#
+# Деталь, у которой своя раскладка не «Посчитана» (в размер листа, больше
+# листа, без габарита, без количества), в совместную укладку не идёт: лист в
+# размер — по листу на штуку, как раньше; остальные листов не дают. Иначе
+# одна деталь «больше листа» роняла бы всю группу.
+
+_EPS = 1e-9
+
+
+def _plural_ru(number, one, few, many):
+    """1 лист, 2 листа, 5 листов (копия spec_layout._plural: файл без ORM)."""
+    number = abs(int(number))
+    if number % 10 == 1 and number % 100 != 11:
+        return one
+    if 2 <= number % 10 <= 4 and not 12 <= number % 100 <= 14:
+        return few
+    return many
+
+
+def _mm_text(value):
+    text = "%.1f" % float(value or 0.0)
+    if text.endswith(".0"):
+        text = text[:-2]
+    return text.replace(".", ",")
+
+
+def part_label(part_a, part_b):
+    """Размер детали словами схемы: «560×3000», «120,5×210»."""
+    return "%s×%s" % (_mm_text(part_a), _mm_text(part_b))
+
+
+def _row_count(room_mm, size_mm, kerf_mm, tolerance_mm, first):
+    """Сколько заготовок size встанет в остаток ряда room.
+
+    first — ряд пуст: n заготовок и n−1 резов; иначе перед каждой новой
+    заготовкой ещё рез. Допуск ряда — как в _fit_in_line: ряд может выйти за
+    лист не больше чем на tolerance_mm.
+    """
+    if size_mm <= 0:
+        return 0
+    room = room_mm + tolerance_mm + (kerf_mm if first else 0.0)
+    return max(int(math.floor(room / (size_mm + kerf_mm) + _EPS)), 0)
+
+
+def _pack_shelves(stack_mm, run_mm, parts, rule, kerf_mm, tolerance_mm):
+    """Полки поперёк stack (высоты складываются по stack), детали вдоль run.
+
+    parts — [(key, a, b, qty)]. Возвращает список листов; лист — список
+    полок (высота, [(key, штук, высота детали, длина детали), ...]), или
+    None, если какая-то деталь не ложится ни одним поворотом.
+    """
+    items = []
+    for key, part_a, part_b, qty in parts:
+        if qty <= 0:
+            continue
+        options = [(h, l) for h, l in ((part_a, part_b), (part_b, part_a))
+                   if 0 < h <= stack_mm + tolerance_mm and 0 < l <= run_mm + tolerance_mm]
+        if not options:
+            return None
+        pick = min if rule == "low" else max
+        height, length = pick(options, key=lambda option: option[0])
+        items.append((height, length, key, int(qty)))
+    # Высокие — первыми: полку открывает самая высокая деталь, низкие
+    # добирают её длину.
+    items.sort(key=lambda item: (-item[0], -item[1]))
+
+    shelves = []        # [высота, занято по длине, [(key, штук, h, l)]]
+    for height, length, key, qty in items:
+        for shelf in shelves:
+            if not qty:
+                break
+            if shelf[0] + _EPS < height:
+                continue
+            fit = min(qty, _row_count(run_mm - shelf[1], length, kerf_mm,
+                                      tolerance_mm, first=False))
+            if fit <= 0:
+                continue
+            shelf[1] += fit * (length + kerf_mm)
+            shelf[2].append((key, fit, height, length))
+            qty -= fit
+        per_shelf = _row_count(run_mm, length, kerf_mm, tolerance_mm, first=True)
+        if qty and per_shelf <= 0:
+            return None
+        while qty:
+            fit = min(qty, per_shelf)
+            shelves.append([height, fit * length + (fit - 1) * kerf_mm,
+                            [(key, fit, height, length)]])
+            qty -= fit
+
+    # Полки — в листы: первый лист, где хватает ширины (полки уже по
+    # убыванию высоты). Между полками — рез. Указатель «первый лист, куда
+    # ещё может встать полка этой высоты» держим между полками одной высоты:
+    # иначе на тысячах полок перебор листов шёл бы с начала каждый раз.
+    shelves.sort(key=lambda shelf: -shelf[0])
+    sheets = []         # [занято по ширине, [полки]]
+    limit = stack_mm + tolerance_mm
+    start = {}
+    for height, _used, content in shelves:
+        index = start.get(height, 0)
+        while index < len(sheets) and sheets[index][0] + kerf_mm + height > limit + _EPS:
+            index += 1
+        start[height] = index
+        if index == len(sheets):
+            sheets.append([height, [(height, content)]])
+        else:
+            sheets[index][0] += kerf_mm + height
+            sheets[index][1].append((height, content))
+    return [sheet[1] for sheet in sheets]
+
+
+def pack_group(sheet_w, sheet_l, parts, kerf_mm=DEFAULT_KERF_MM,
+               edge_mm=DEFAULT_EDGE_MM, tolerance_mm=DEFAULT_TOLERANCE_MM):
+    """Совместная укладка деталей одного листа полосами.
+
+    parts — [(key, a, b, qty)]. Лучший из четырёх вариантов (полосы вдоль /
+    поперёк листа × высота полки по меньшей / большей стороне) или None,
+    если какая-то деталь не ложится ни одним поворотом.
+
+    Возвращает {"sheets": n, "axis": "L"|"W", "rule": "low"|"high",
+    "bins": [[(высота полки, [(key, штук, h, l), ...]), ...], ...]}.
+    Ось «L»: полка — полоса поперёк ширины листа, детали в ней лежат вдоль
+    длины; «W» — наоборот.
+    """
+    usable_w = sheet_w - 2 * edge_mm
+    usable_l = sheet_l - 2 * edge_mm
+    if usable_w <= 0 or usable_l <= 0:
+        return None
+    best = None
+    for axis in ("L", "W"):
+        stack, run = (usable_w, usable_l) if axis == "L" else (usable_l, usable_w)
+        for rule in ("low", "high"):
+            bins = _pack_shelves(stack, run, parts, rule, kerf_mm, tolerance_mm)
+            if bins is None:
+                continue
+            if best is None or len(bins) < best["sheets"]:
+                best = {"sheets": len(bins), "axis": axis, "rule": rule, "bins": bins}
+    return best
+
+
+def iter_placements(sheet_w, sheet_l, packed, kerf_mm=DEFAULT_KERF_MM,
+                    edge_mm=DEFAULT_EDGE_MM):
+    """Координаты деталей укладки pack_group — для проверки (тесты).
+
+    Выдаёт (лист №, key, x, y, w, l): x и w — поперёк листа (по ширине),
+    y и l — вдоль (по длине), миллиметры от угла листа.
+    """
+    axis = packed["axis"]
+    for number, shelves in enumerate(packed["bins"], 1):
+        offset = edge_mm
+        for height, content in shelves:
+            position = edge_mm
+            for key, count, part_h, part_l in content:
+                for _index in range(count):
+                    if axis == "L":
+                        yield number, key, offset, position, part_h, part_l
+                    else:
+                        yield number, key, position, offset, part_l, part_h
+                    position += part_l + kerf_mm
+            offset += height + kerf_mm
+
+
+def _bin_patterns(bins, order):
+    """Листы укладки → {вариант: листов}; вариант — ((key, штук), ...)."""
+    counts = {}
+    for shelves in bins:
+        content = {}
+        for _height, items in shelves:
+            for key, count, _h, _l in items:
+                content[key] = content.get(key, 0) + count
+        pattern = tuple((key, content[key]) for key in order if key in content)
+        counts[pattern] = counts.get(pattern, 0) + 1
+    return counts
+
+
+def _sorted_patterns(counts, order):
+    """Варианты по убыванию листов, при равенстве — по порядку деталей."""
+    rank = {key: index for index, key in enumerate(order)}
+    return sorted(counts.items(), key=lambda item: (
+        -item[1], [rank.get(key, 0) for key, _count in item[0]]))
+
+
+def _shares(total, weights):
+    """Разделить total целых листов по весам методом наибольшего остатка.
+
+    Сумма долей ровно total; доля может быть нулём.
+    """
+    keys = list(weights)
+    if not keys or total <= 0:
+        return {key: 0 for key in keys}
+    whole = sum(weights.values())
+    if whole <= 0:
+        quotas = {key: float(total) / len(keys) for key in keys}
+    else:
+        quotas = {key: total * weights[key] / whole for key in keys}
+    shares = {key: int(math.floor(quotas[key] + _EPS)) for key in keys}
+    rest = total - sum(shares.values())
+    rank = {key: index for index, key in enumerate(keys)}
+    order = sorted(keys, key=lambda key: (-(quotas[key] - shares[key]), rank[key]))
+    for key in order[:rest]:
+        shares[key] += 1
+    return shares
+
+
+def plan_group(sheet_w, sheet_l, parts, kerf_mm=DEFAULT_KERF_MM,
+               edge_mm=DEFAULT_EDGE_MM, tolerance_mm=DEFAULT_TOLERANCE_MM,
+               joint=True):
+    """Раскладка группы деталей одного листа и габарита: вместе или раздельно.
+
+    parts — [(key, a, b, qty)], qty — на весь заказ. Возвращает словарь:
+      sheets            — листов купить на группу;
+      sheets_separate   — сумма раздельных plan_sheets (как было до З-13);
+      mode              — "joint" (вместе) или "separate" (отдельно);
+      utilization_pct   — площадь посчитанных деталей / площадь листов;
+      lines             — {key: per_sheet, sheets (доля), scheme, state,
+                           utilization_pct, joint}; сумма долей = sheets
+                          группы; joint — деталь легла в совместную укладку
+                          (её «Листов» — доля общих листов);
+      patterns          — [(((key, штук), ...), листов), ...] по убыванию
+                          листов: что лежит на листе.
+
+    Доля детали в совместной укладке — листы, разделённые по площади
+    деталей (наибольший остаток): «Заявка на металл» складывает доли строк
+    листа и получает листы группы, без задвоения. «В листе» и «Схема» строки
+    остаются своими — «если резать эту деталь отдельно».
+
+    joint=False — только раздельно (как до З-13): так раскладываются детали
+    без выбранного листа — толщина неизвестна, класть их на общий лист
+    нельзя.
+    """
+    kwargs = {"kerf_mm": kerf_mm, "edge_mm": edge_mm, "tolerance_mm": tolerance_mm}
+    order = [part[0] for part in parts]
+    sizes = {key: (float(part_a or 0.0), float(part_b or 0.0), int(qty or 0))
+             for key, part_a, part_b, qty in parts}
+    plans = {key: plan_sheets(sheet_w, sheet_l, sizes[key][0], sizes[key][1],
+                              sizes[key][2], **kwargs)
+             for key in order}
+    sheet_area = (sheet_w / 1000.0) * (sheet_l / 1000.0)
+
+    def area(key, count=None):
+        part_a, part_b, qty = sizes[key]
+        return (part_a / 1000.0) * (part_b / 1000.0) * (qty if count is None else count)
+
+    counted_area = sum(area(key) for key in order
+                       if plans[key]["state"] in SHEET_USE_COUNTED)
+
+    def utilization(sheets):
+        if not sheets or not sheet_area:
+            return 0.0
+        return round(counted_area / (sheets * sheet_area) * 100.0, 1)
+
+    separate = sum(plans[key]["sheets"] for key in order)
+    separate_patterns = {}
+    for key in order:
+        if plans[key]["sheets"]:
+            pattern = ((key, plans[key]["per_sheet"]),)
+            separate_patterns[pattern] = separate_patterns.get(pattern, 0) + plans[key]["sheets"]
+    result = {
+        "sheets": separate,
+        "sheets_separate": separate,
+        "mode": "separate",
+        "utilization_pct": utilization(separate),
+        "lines": {key: dict(plans[key], joint=False) for key in order},
+        "patterns": _sorted_patterns(separate_patterns, order),
+    }
+
+    joint_keys = [key for key in order if plans[key]["state"] == "ok"]
+    if not joint or len(joint_keys) < 2:
+        return result
+    own_exact = {key: plans[key]["sheets"] for key in order
+                 if plans[key]["state"] == "exact"}
+
+    candidates = []     # (листов, свои полные листы, укладка, площади)
+    # 1. Все «посчитанные» детали — вместе.
+    packed = pack_group(sheet_w, sheet_l,
+                        [(key,) + sizes[key] for key in joint_keys], **kwargs)
+    if packed is not None:
+        candidates.append((packed["sheets"], {}, packed,
+                           {key: area(key) for key in joint_keys}))
+    # 2. Полные листы каждой детали — отдельно, вместе только остатки.
+    full, rest = {}, []
+    for key in joint_keys:
+        per_sheet = plans[key]["per_sheet"]
+        qty = sizes[key][2]
+        full[key] = qty // per_sheet if per_sheet else 0
+        left = qty - full[key] * per_sheet
+        if left > 0:
+            rest.append((key, sizes[key][0], sizes[key][1], left))
+    if len(rest) >= 2:
+        packed_rest = pack_group(sheet_w, sheet_l, rest, **kwargs)
+        if packed_rest is not None:
+            candidates.append((sum(full.values()) + packed_rest["sheets"], full, packed_rest,
+                               {key: area(key, left) for key, _a, _b, left in rest}))
+    best = None
+    for candidate in candidates:
+        if best is None or candidate[0] < best[0]:
+            best = candidate
+    if best is None:
+        return result
+    joint_sheets = best[0] + sum(own_exact.values())
+    if joint_sheets >= separate:
+        return result
+
+    _total, own, packed, weights = best
+    shares = _shares(packed["sheets"], weights)
+    patterns = _bin_patterns(packed["bins"], order)
+    for key, count in list(own.items()) + list(own_exact.items()):
+        if count:
+            pattern = ((key, plans[key]["per_sheet"]),)
+            patterns[pattern] = patterns.get(pattern, 0) + count
+
+    util = utilization(joint_sheets)
+    lines = {}
+    for key in order:
+        # «Вместе» — только детали, вошедшие в совместную укладку (weights):
+        # деталь варианта 2 без остатка режется на своих полных листах, и
+        # «в размер листа» — тоже на своих.
+        line = dict(plans[key], joint=key in weights)
+        if key in joint_keys:
+            line["sheets"] = own.get(key, 0) + shares.get(key, 0)
+            line["utilization_pct"] = util
+        lines[key] = line
+    result.update({
+        "sheets": joint_sheets,
+        "mode": "joint",
+        "utilization_pct": util,
+        "lines": lines,
+        "patterns": _sorted_patterns(patterns, order),
+        "axis": packed["axis"],
+        "rule": packed["rule"],
+    })
+    return result
+
+
+def group_scheme_text(patterns, labels, limit=3):
+    """Схема группы словами: «66 листов: 560×3000 — 4, 120×3000 — 6;
+    9 листов: 120×3000 — 24; ещё 1 вариант».
+
+    patterns — из plan_group, labels — {key: подпись детали}. Показываем
+    limit самых частых вариантов листа, остальные — числом.
+    """
+    parts = []
+    for pattern, sheets in patterns[:limit]:
+        content = ", ".join("%s — %s" % (labels.get(key, key), count)
+                            for key, count in pattern)
+        parts.append("%s %s: %s" % (
+            sheets, _plural_ru(sheets, "лист", "листа", "листов"), content))
+    more = len(patterns) - limit
+    if more > 0:
+        parts.append("ещё %s %s" % (more, _plural_ru(more, "вариант", "варианта", "вариантов")))
+    return "; ".join(parts)

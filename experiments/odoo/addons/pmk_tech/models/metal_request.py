@@ -12,7 +12,14 @@
     после, деталь больше листа) — по весу: её килограммы делятся на массу
     листа габарита и округляются вверх — и плашка «в заявке по весу». Масса
     листа — масса м² справочника × площадь габарита, не вес карточки (мина
-    1500×6000, шаг 57, здесь не трогаем);
+    1500×6000, шаг 57, здесь не трогаем). Шаг З-13: детали одного листа
+    разложены вместе — у строки её доля листов группы (может быть нулём:
+    деталь уже в листах соседей), сумма долей = листы группы. «Листов по
+    факту» инженера у группы (лист × марка × габарит) заменяет ЧЕРНОВИК
+    деталей этой группы — и только их. Деталь «больше листа», без габарита,
+    добавленная после числа инженера (в группе её нет) — по весу сверху, с
+    той же плашкой «по весу»: CypCut её не видел, и недобор должен быть
+    виден;
   • метизы — штуки; покрытие — килограммы; услуга («не материал»,
     цинкование на стороне) в заявку не идёт.
 
@@ -95,6 +102,8 @@ class MetalSpecRequest(models.Model):
         price, kg, cost, unlaid, size, label."""
         self.ensure_one()
         placeholder = self.env["purchase.order"]._pmk_no_supplier_partner(create=False)
+        # Шаг З-13: «Листов по факту» инженера — на лист и габарит.
+        facts = self._pmk_sheets_fact_map()
         acc = {}
         notes = {"unlaid": [], "no_card": [], "service": [], "pending": []}
         for product in self.product_ids:
@@ -143,7 +152,15 @@ class MetalSpecRequest(models.Model):
                     row["seller"] = line.price_source_id
                 if mode == "sheet":
                     net = (line.weight_total or 0.0) * count
-                    if line.layout_state in SHEET_USE_COUNTED and line.layout_sheets:
+                    group = self._pmk_fact_group(line, size, facts)
+                    if group:
+                        # Число инженера — на всю группу: доли черновика её
+                        # деталей не складываем, группу считаем один раз.
+                        row.setdefault("facts", {})[group.id] = facts[group.id]
+                    elif line.layout_state in SHEET_USE_COUNTED and (
+                            line.layout_sheets or line.layout_group_id):
+                        # Шаг З-13: доля детали в совместной раскладке может
+                        # быть нулём — она уже в листах соседей, не «по весу».
                         row["laid"] += line.layout_sheets
                     elif net:
                         row["unlaid_kg"] += net
@@ -174,7 +191,11 @@ class MetalSpecRequest(models.Model):
                 by_weight = 0
                 if row["unlaid_kg"] and sheet_kg:
                     by_weight = math.ceil(row["unlaid_kg"] / sheet_kg - 1e-6)
-                sheets = row["laid"] + by_weight
+                # Шаг З-13: число инженера — вместо черновика его групп;
+                # детали вне групп с числом (по весу, черновик других
+                # групп) — сверху, заметка «по весу» остаётся.
+                row["fact"] = sum((row.get("facts") or {}).values())
+                sheets = row["laid"] + by_weight + row["fact"]
                 price_kg = row["priced_cost"] / row["priced_qty"] if row["priced_qty"] else 0.0
                 row.update(qty=float(sheets), kg=sheets * sheet_kg, price=price_kg * sheet_kg)
                 if row["unlaid"]:
@@ -196,6 +217,26 @@ class MetalSpecRequest(models.Model):
             rows.append(row)
         rows.sort(key=lambda r: (MODE_ORDER.get(r["mode"], 9), r["name"] or ""))
         return rows, notes
+
+    @api.model
+    def _pmk_fact_group(self, line, size, facts):
+        """Группа с «Листов по факту», которая покрывает эту деталь, или None.
+
+        Покрывает, если деталь разложена в эту группу и с тех пор не ушла из
+        неё (лист, марка, габарит те же) и сама режется из листа: «Посчитана»,
+        «в размер листа» или «Не считалась» (погашена правкой после числа
+        инженера — плашка «Раскладка устарела» зовёт сверить с CypCut).
+        «Больше листа», «нет габарита», «нет количества» — CypCut их не
+        раскладывал: по весу, как без числа инженера."""
+        group = line.layout_group_id
+        if not group or group.id not in facts:
+            return None
+        if group._pmk_layout_key() != (line.sheet_id.id or False,
+                                       line.grade_id.id or False, size):
+            return None
+        if line.layout_state not in SHEET_USE_COUNTED + ("none",):
+            return None
+        return group
 
     @api.model
     def _pmk_size_label(self, size):
@@ -556,6 +597,13 @@ class MetalSpecRequest(models.Model):
                 _("Заявка на металл — черновики закупок по поставщикам:"),
                 Markup("").join(items))
         extra = []
+        fact = ["%s %s — %s" % (row["name"], self._pmk_size_label(row["size"]),
+                                self._pmk_qty_text("sheet", row["fact"]))
+                for row in rows if row["mode"] == "sheet" and row.get("fact")]
+        if fact:
+            # Шаг З-13: откуда в заявке не черновое число.
+            extra.append(_("Листы по факту инженера (CypCut), не черновая раскладка: %s.",
+                           ", ".join(fact)))
         unpriced = [row["name"] for row in rows if not row["priced"]]
         if unpriced:
             extra.append(_("Поставщик не выбран (нет цены в прайсах — в городе нет): %s.",
