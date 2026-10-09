@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Вид проката «Прочее» (разбор UX, шаг З-10): позиция «на разнос», вид
+    которой инженер не знает или его нет в справочнике видов. Последним в
+    подсказке (sequence 999 — size_search.py ставит виды по порядку).
+    «Принять в справочник» с этим видом не пустит: вид надо выбрать
+    настоящий (models/metal_pending.py, _pmk_accept_missing).
+    noupdate — переименование руками обновлением модуля не затрётся.
+  -->
+  <data noupdate="1">
+    <record id="profile_type_other" model="pmk.metal.profile.type">
+      <field name="name">Прочее</field>
+      <field name="gost">—</field>
+      <field name="sequence">999</field>
+    </record>
+  </data>
+</odoo>

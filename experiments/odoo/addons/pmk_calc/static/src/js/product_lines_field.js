@@ -59,6 +59,9 @@ import { X2ManyField, x2ManyField } from "@web/views/fields/x2many/x2many_field"
 // со справочником, ему нужна ширина; xwide — справочник с длинными именами
 // («Труба профильная прямоугольная 100x50x3»); остальные числовые и узкие.
 // placeholder — подсказка пустого поля.
+// pending — в выпадашке позиции есть строка «Нет в справочнике — завести
+// новую…» (разбор UX, шаг З-10; static/src/js/pending_create.js): окно
+// «Новая позиция на разнос», позиция сразу выбрана в детали.
 //
 // Типоразмер одним полем (разбор UX, шаг 34): поля «Вид проката» больше
 // нет — вид подставляется сам из типоразмера (metal_spec.py, type_id), а
@@ -76,6 +79,7 @@ const SECTIONS = [
             { name: "detail_name", label: "Деталь", wide: true },
             {
                 ref: true,
+                pending: true,
                 name: "profile_id",
                 label: "Типоразмер",
                 xwide: true,
@@ -95,6 +99,7 @@ const SECTIONS = [
             { name: "detail_name", label: "Деталь", wide: true },
             {
                 ref: true,
+                pending: true,
                 name: "sheet_id",
                 label: "Лист",
                 wide: true,
@@ -113,7 +118,7 @@ const SECTIONS = [
         accent: "#9aa9bd",
         inputs: [
             { name: "detail_name", label: "Деталь", wide: true },
-            { ref: true, name: "fastener_id", label: "Метиз", wide: true },
+            { ref: true, pending: true, name: "fastener_id", label: "Метиз", wide: true },
             { name: "qty", label: "Кол-во" },
         ],
     },
@@ -579,11 +584,21 @@ export class ProductLinesRenderer extends ListRenderer {
      * из вида до него не доходит (web, Field.fieldComponentProps).
      */
     refContext(line, input) {
+        const context = input.pending ? { pmk_pending_create: true } : {};
         if (input.name !== "profile_id") {
-            return {};
+            return context;
         }
         const type = line.data.type_id;
-        return { pmk_prefer_type_id: (type && type.id) || false };
+        return { ...context, pmk_prefer_type_id: (type && type.id) || false };
+    }
+
+    /**
+     * Пометка детали словом (шаг З-10): «на разнос» — позицию завели из
+     * расчёта, её проверит администратор; «нет веса» — вес детали 0. Поле
+     * pmk_item_note — в разметке состава (metal_spec_views.xml).
+     */
+    pendingNote(line) {
+        return line.data.pmk_item_note || "";
     }
 
     /**

@@ -24,8 +24,11 @@ from odoo import api, fields, models
 from odoo.exceptions import MissingError, ValidationError
 
 from . import deleted_names
+from .metal_pending import pending_note
 
 MM_IN_M = 1000.0
+# Поля позиции справочника в детали (шаг З-10: «где завели» позицию «на разнос»).
+PENDING_POSITION_FIELDS = ("profile_id", "sheet_id", "fastener_id", "calc_mode")
 
 
 class MetalSpec(models.Model):
@@ -116,6 +119,54 @@ class MetalSpec(models.Model):
         default.setdefault("date", fields.Date.context_today(self))
         return super().copy_data(default)
 
+    # ─── Позиции «на разнос» (шаг З-10, metal_pending.py) ─────────────────
+    # Плашка над шапкой: бледно-жёлтая, как «Нет цены» и «Раскладка
+    # устарела», словом. Ничего не держит: КП, счёт, заявка уходят как
+    # обычно. Не хранится — считается и до сохранения, по тем же наборам
+    # деталей, что вес изделия.
+    pmk_pending_count = fields.Integer(
+        "Позиций на разнос", compute="_compute_pmk_pending")
+    pmk_pending_text = fields.Char(
+        "Позиции на разнос", compute="_compute_pmk_pending")
+
+    @api.depends(
+        "product_ids.line_linear_ids.profile_id",
+        "product_ids.line_linear_ids.profile_id.pmk_pending",
+        "product_ids.line_linear_ids.profile_id.mass_per_meter",
+        "product_ids.line_sheet_ids.sheet_id",
+        "product_ids.line_sheet_ids.sheet_id.pmk_pending",
+        "product_ids.line_sheet_ids.sheet_id.mass_per_sqm",
+        "product_ids.line_fastener_ids.fastener_id",
+        "product_ids.line_fastener_ids.fastener_id.pmk_pending",
+        "product_ids.line_fastener_ids.fastener_id.weight_kg",
+    )
+    def _compute_pmk_pending(self):
+        for spec in self:
+            pending, no_weight = set(), set()
+            for product in spec.product_ids:
+                for line in (product.line_linear_ids | product.line_sheet_ids
+                             | product.line_fastener_ids):
+                    item = line._pmk_ref_position()
+                    if not item or not item.pmk_pending:
+                        continue
+                    key = (item._name, item._origin.id or item.id)
+                    pending.add(key)
+                    if not item._pmk_unit_mass():
+                        no_weight.add(key)
+            spec.pmk_pending_count = len(pending)
+            if not pending:
+                spec.pmk_pending_text = False
+                continue
+            text = "Позиции на разнос: %s — их проверит администратор" % len(pending)
+            if no_weight:
+                text += " · без веса: %s (вес таких деталей 0)" % len(no_weight)
+            spec.pmk_pending_text = text
+
+    def _pmk_pending_note_tail(self):
+        """Хвост заметки о разносе в ленте расчёта (технический расчёт
+        дописывает про «Заявку на металл», pmk_tech)."""
+        return ""
+
 
 class MetalSpecProduct(models.Model):
     """Изделие расчёта: название, количество и состав."""
@@ -172,6 +223,20 @@ class MetalSpecProduct(models.Model):
 
     weight_one = fields.Float("Вес изделия, кг", compute="_compute_weight", store=True, digits=(12, 3))
     weight_total = fields.Float("Вес всего, кг", compute="_compute_weight", store=True, digits=(12, 3))
+
+    # Шаг З-10: колонка «Разнос» в окне изделия видна, только когда в
+    # изделии есть позиция «на разнос» или без веса (пустая колонка — шум).
+    pmk_has_pending = fields.Boolean(
+        "Есть позиции на разнос", compute="_compute_pmk_has_pending")
+
+    @api.depends("line_linear_ids.pmk_item_note", "line_sheet_ids.pmk_item_note",
+                 "line_fastener_ids.pmk_item_note")
+    def _compute_pmk_has_pending(self):
+        for product in self:
+            product.pmk_has_pending = any(
+                line.pmk_item_note for line in (
+                    product.line_linear_ids | product.line_sheet_ids
+                    | product.line_fastener_ids))
 
     @api.depends("name")
     def _compute_display_name(self):
@@ -261,7 +326,45 @@ class MetalSpecLine(models.Model):
                     "Деталь «%s» создаётся без изделия. Детали добавляются "
                     "только в составе изделия; сообщите разработчику, с какого "
                     "экрана это случилось." % (vals.get("detail_name") or "без названия"))
-        return super().create(vals_list)
+        lines = super().create(vals_list)
+        lines._pmk_mark_pending_origin()
+        return lines
+
+    def write(self, vals):
+        result = super().write(vals)
+        if any(name in vals for name in PENDING_POSITION_FIELDS):
+            self._pmk_mark_pending_origin()
+        return result
+
+    # ─── Позиция «на разнос» (шаг З-10, metal_pending.py) ─────────────────
+    def _pmk_ref_position(self):
+        """Позиция справочника строки — прокат, лист или метиз (у покрытия
+        разноса нет)."""
+        self.ensure_one()
+        return {
+            "linear": self.profile_id,
+            "sheet": self.sheet_id,
+            "fastener": self.fastener_id,
+        }.get(self.calc_mode)
+
+    def _pmk_mark_pending_origin(self):
+        """«Где завели»: первый расчёт, в деталь которого встала позиция «на
+        разнос». sudo — поле позиции справочника пишет только код."""
+        for line in self:
+            item = line._pmk_ref_position()
+            if item and item.pmk_pending and not item.pmk_pending_spec_id and line.spec_id:
+                item.sudo().pmk_pending_spec_id = line.spec_id
+
+    @api.depends("calc_mode", "profile_id", "sheet_id", "fastener_id",
+                 "profile_id.pmk_pending", "profile_id.mass_per_meter",
+                 "sheet_id.pmk_pending", "sheet_id.mass_per_sqm",
+                 "fastener_id.pmk_pending", "fastener_id.weight_kg")
+    def _compute_pmk_item_note(self):
+        for line in self:
+            item = line._pmk_ref_position()
+            line.pmk_item_pending = bool(item and item.pmk_pending)
+            line.pmk_no_weight = bool(item) and not item._pmk_unit_mass()
+            line.pmk_item_note = pending_note(item)
 
     def _compute_display_name(self):
         """Человеческое имя детали — для истории документа и ссылок.
@@ -341,6 +444,20 @@ class MetalSpecLine(models.Model):
     grade_id = fields.Many2one("pmk.metal.grade", "Марка стали")
     fastener_id = fields.Many2one("pmk.metal.fastener", "Метиз")
     paint_id = fields.Many2one("pmk.paint.coating", "Покрытие")
+
+    # Шаг З-10: пометка детали словом — «на разнос» (позицию завели из
+    # расчёта, её проверит администратор) и «нет веса» (вес детали 0, как
+    # «нет цены»). Не хранится: считается от позиции, до сохранения тоже.
+    pmk_item_pending = fields.Boolean(
+        "Позиция на разнос", compute="_compute_pmk_item_note")
+    pmk_no_weight = fields.Boolean(
+        "Нет веса", compute="_compute_pmk_item_note",
+        help="У позиции не задана масса — вес детали 0. Расчёт не держит.")
+    pmk_item_note = fields.Char(
+        "Разнос", compute="_compute_pmk_item_note",
+        help="«на разнос» — позиции не было в справочнике, её завели из расчёта; "
+             "администратор привяжет её к справочнику. «нет веса» — масса "
+             "позиции не задана, вес детали 0.")
 
     # Площадь окраски считается из состава изделия по площади погонного метра
     # сортамента. Поле доступно и для ручного ввода: пока характеристика в

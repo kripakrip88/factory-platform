@@ -18,3 +18,5 @@ from . import test_step58_seller
 from . import test_hotfix_new_spec_save
 # Шаг 56: «Цена за шт» в строке «Состава», КП при устаревшей раскладке.
 from . import test_step56_inline_price
+# Шаг З-10: позиция «на разнос» — без карточки, «Принять» заводит карточку.
+from . import test_step_z10_card

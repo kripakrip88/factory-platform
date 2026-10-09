@@ -60,7 +60,17 @@
                           t-on-keydown.stop="(ev) => ['Enter',' '].includes(ev.key) &amp;&amp; this.editLine(record, section, line)">
                         <t t-set="info" t-value="describe(line)"/>
                         <td class="pmk-c-detail" t-att-title="detailOf(line)" t-esc="detailOf(line)"/>
-                        <td class="pmk-c-what" t-att-title="info[0]" t-esc="info[0]"/>
+                        <td class="pmk-c-what"
+                            t-att-title="pendingNote(line) ? info[0] + ' — ' + pendingNote(line) : info[0]">
+                          <!-- Шаг З-10: «на разнос» / «нет веса» жёлтой
+                               меткой со словом — ПЕРЕД названием: ячейка
+                               режет длинное название многоточием, и метка
+                               после него уходила бы за край первой. -->
+                          <span t-if="pendingNote(line)"
+                                class="pmk-pending-badge pmk-pending-badge--lead"
+                                t-esc="pendingNote(line)"/>
+                          <t t-esc="info[0]"/>
+                        </td>
                         <td class="pmk-c-size" t-esc="info[1]"/>
                         <td class="pmk-num pmk-c-qty" t-esc="qtyOf(line)"/>
                         <td class="pmk-num pmk-c-weight" t-esc="weightOf(line)"/>
@@ -83,15 +93,20 @@
                               <label class="pmk-edit__field"
                                      t-att-class="{ 'pmk-edit__field--wide': input.wide, 'pmk-edit__field--xwide': input.xwide }">
                                 <span class="pmk-edit__label" t-esc="input.label"/>
-                                <!-- Позиции справочника из подсказки не заводим:
-                                     опечатка не должна порождать новый сортамент.
-                                     Справочники правят отдельным разделом.
-                                     context — вид строки для подсказки
+                                <!-- По набранному тексту позицию не заводим
+                                     (canQuickCreate false): опечатка не должна
+                                     порождать сортамент молча. Позиции нет —
+                                     строка «Нет в справочнике — завести
+                                     новую…» (шаг З-10, input.pending): окно
+                                     «Новая позиция на разнос», ключ
+                                     pmk_pending_create в контексте —
+                                     static/src/js/pending_create.js.
+                                     context — ещё вид строки для подсказки
                                      типоразмера, placeholder — пример ввода
                                      (шаг 34): разметки у поля здесь нет, оба
                                      передаём сами (refContext). -->
                                 <Field t-if="input.ref" record="line" name="input.name"
-                                       canCreate="false" canCreateEdit="false"
+                                       canCreate="!!input.pending" canCreateEdit="!!input.pending"
                                        canQuickCreate="false"
                                        context="refContext(line, input)"
                                        placeholder="input.placeholder"/>

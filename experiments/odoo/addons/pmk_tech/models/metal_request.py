@@ -74,7 +74,7 @@ from odoo.addons.pmk_calc.models.sheeting import SHEET_USE_COUNTED
 from odoo.addons.pmk_calc.models.spec_layout import _plural
 
 from .metal_spec import EPS, _num
-from .purchase_order import SKIP_REFRESH
+from .purchase_order import SKIP_REFRESH, resolved_pending as _resolved_pending
 
 MODE_ORDER = {"linear": 0, "sheet": 1, "fastener": 2, "paint": 3}
 DEFAULT_SIZE = "1500x6000"
@@ -96,7 +96,7 @@ class MetalSpecRequest(models.Model):
         self.ensure_one()
         placeholder = self.env["purchase.order"]._pmk_no_supplier_partner(create=False)
         acc = {}
-        notes = {"unlaid": [], "no_card": [], "service": []}
+        notes = {"unlaid": [], "no_card": [], "service": [], "pending": []}
         for product in self.product_ids:
             count = product.qty or 0
             if count <= 0:
@@ -110,18 +110,30 @@ class MetalSpecRequest(models.Model):
                     _add_once(notes["service"], position.display_name)
                     continue
                 tmpl = position.product_tmpl_id
-                variant = line.price_source_id.product_id or tmpl.product_variant_id
-                if not tmpl or not variant:
+                # Шаг З-10: позиция «на разнос» (нет в справочнике, завели из
+                # расчёта) карточки товара не имеет — идёт строкой своего
+                # названия на служебный товар «Позиция на разнос» вида, в
+                # «Поставщик не выбран» (цены нет). Ключ — сама позиция:
+                # после «Привязать» / «Принять» повтор ставит настоящий товар.
+                pending = bool(getattr(position, "pmk_pending", False)) and not tmpl
+                if pending:
+                    variant = self.env["purchase.order"]._pmk_pending_product(mode, create=False)
+                    _add_once(notes["pending"], position.display_name)
+                else:
+                    variant = line.price_source_id.product_id or tmpl.product_variant_id
+                if not pending and (not tmpl or not variant):
                     _add_once(notes["no_card"], position.display_name)
                     continue
                 size = (line.layout_sheet_size or DEFAULT_SIZE) if mode == "sheet" else ""
-                key = "%s:%s%s" % (mode, tmpl.id, (":" + size) if size else "")
+                ident = ("pending:%s:%s" % (position._name, position.id) if pending
+                         else str(tmpl.id))
+                key = "%s:%s%s" % (mode, ident, (":" + size) if size else "")
                 row = acc.get(key)
                 if row is None:
                     row = acc[key] = {
                         "key": key, "mode": mode, "name": position.display_name,
                         "position": position, "product": variant, "size": size,
-                        "partner": None, "seller": None,
+                        "partner": None, "seller": None, "pending": pending,
                         "qty": 0.0, "kg": 0.0, "priced_qty": 0.0, "priced_cost": 0.0,
                         "laid": 0, "unlaid_kg": 0.0, "unlaid": 0,
                     }
@@ -277,9 +289,14 @@ class MetalSpecRequest(models.Model):
         orders = self.pmk_metal_request_ids.with_env(PO.env).filtered(
             lambda order: order.state != "cancel")
         locked, drafts = {}, {}
+        # Шаг З-10: строки «на разнос», ушедшие поставщику до разноса
+        # справочника (ключ уже настоящий, pending_rekey.py), — металл
+        # заказан, но не целиком той строкой: повтор дозаказывает только
+        # остаток (см. _pmk_ordered_pending).
+        ordered, ordered_orders = self._pmk_ordered_pending(orders)
         for order in orders.sorted("id"):
             for line in order.order_line:
-                if line.pmk_request_key:
+                if line.pmk_request_key and not _resolved_pending(line):
                     target = drafts if order.state == "draft" else locked
                     target.setdefault(line.pmk_request_key, line)
         res = {"created": PO.browse(), "updated": PO.browse(), "cancelled": PO.browse(),
@@ -293,6 +310,14 @@ class MetalSpecRequest(models.Model):
                 res["locked"].append(row)
                 res["orders"] |= locked[key].order_id
                 continue
+            if ordered.get(key, 0.0) > EPS:
+                res["orders"] |= ordered_orders[key]
+                rest = row["qty"] - ordered[key]
+                if rest <= EPS:
+                    # Всё, что нужно, уже ушло строкой «на разнос».
+                    res["locked"].append(row)
+                    continue
+                row = self._pmk_row_rest(row, rest)
             line = drafts.pop(key, None)
             edits = line._pmk_request_edits() if line else set()
             if (line and not edits and line.order_id.partner_id == placeholder
@@ -359,6 +384,36 @@ class MetalSpecRequest(models.Model):
         return res
 
     @api.model
+    def _pmk_ordered_pending(self, orders):
+        """Шаг З-10 → ({ключ: заказано}, {ключ: заказы}) по строкам «на
+        разнос», которые ушли поставщику до разноса справочника. Их ключ
+        переписан на настоящую позицию (pending_rekey.py), но строка — не
+        «единственная строка этой позиции»: настоящая позиция могла стоять в
+        расчёте и сама (в черновике или у поставщика). Поэтому такая строка не
+        «заперта», а вычитается из потребности: повтор дозаказывает остаток."""
+        ordered, by_orders = {}, {}
+        for order in orders:
+            if order.state in ("draft", "cancel"):
+                continue
+            for line in order.order_line:
+                if _resolved_pending(line):
+                    key = line.pmk_request_key
+                    ordered[key] = ordered.get(key, 0.0) + line.product_qty
+                    by_orders[key] = by_orders.get(key, order.browse()) | order
+        return ordered, by_orders
+
+    def _pmk_row_rest(self, row, rest):
+        """Позиция заявки на остаток rest (часть уже заказана строкой «на
+        разнос», _pmk_ordered_pending): количество, вес, сумма, описание."""
+        digits = 0 if row["mode"] in ("fastener", "sheet") else 2
+        rest = round(rest, digits)
+        share = rest / row["qty"] if row["qty"] else 0.0
+        row = dict(row, qty=rest, kg=(row.get("kg") or 0.0) * share)
+        row["cost"] = (row.get("price") or 0.0) * rest
+        row["label"] = self._pmk_row_label(row)
+        return row
+
+    @api.model
     def _pmk_update_request_line(self, line, row, edits):
         """Черновик: записать в строку то, что поменялось у инженера, кроме
         полей, которые правил снабженец (edits). → (записали ли что-то,
@@ -415,6 +470,9 @@ class MetalSpecRequest(models.Model):
     @api.model
     def _pmk_request_line_vals(self, row):
         product = row["product"]
+        if not product and row.get("pending"):
+            # Служебный товар «Позиция на разнос» удалён — заводим (шаг З-10).
+            product = self.env["purchase.order"]._pmk_pending_product(row["mode"])
         return {
             "product_id": product.id,
             "name": row["label"],
@@ -425,6 +483,7 @@ class MetalSpecRequest(models.Model):
             # 1500×6000 после создания помечается ручной ценой (sync).
             "price_unit": row["price"],
             "pmk_request_key": row["key"],
+            "pmk_pending": bool(row.get("pending")),
         }
 
     # ─── Планировщик ────────────────────────────────────────────────────

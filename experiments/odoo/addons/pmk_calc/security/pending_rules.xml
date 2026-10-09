@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Позиции «на разнос» (разбор UX, шаг З-10, 09.10.2026).
+
+    Сотрудник (менеджер, инженер) заводит позицию справочника прямо из
+    детали расчёта — право «создание» у base.group_user есть
+    (ir.model.access.csv), но только «на разнос»: create() ставит метку сам
+    (models/metal_pending.py), а правило ниже не пропустит запись без неё.
+    Читать — всё (правило чтения не задаёт), править и удалять — по-прежнему
+    только администратору (права модели). У администратора своё правило
+    «всё»: правила групп складываются через «или».
+
+    Вернуть «справочник только для чтения»: в ir.model.access.csv снять
+    perm_create у строк *_user трёх справочников (строка «Нет в
+    справочнике — завести новую…» исчезнет сама: ядро не покажет создание
+    без права) — docs/disabled-features.md, шаг З-10.
+  -->
+  <record id="rule_metal_profile_pending_user" model="ir.rule">
+    <field name="name">Прокат: сотрудник заводит только «на разнос»</field>
+    <field name="model_id" ref="model_pmk_metal_profile"/>
+    <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    <field name="domain_force">[('pmk_pending', '=', True)]</field>
+    <field name="perm_read" eval="False"/>
+    <field name="perm_write" eval="True"/>
+    <field name="perm_create" eval="True"/>
+    <field name="perm_unlink" eval="True"/>
+  </record>
+  <record id="rule_metal_profile_pending_admin" model="ir.rule">
+    <field name="name">Прокат: администратор — всё</field>
+    <field name="model_id" ref="model_pmk_metal_profile"/>
+    <field name="groups" eval="[(4, ref('base.group_system'))]"/>
+    <field name="domain_force">[(1, '=', 1)]</field>
+    <field name="perm_read" eval="False"/>
+    <field name="perm_write" eval="True"/>
+    <field name="perm_create" eval="True"/>
+    <field name="perm_unlink" eval="True"/>
+  </record>
+
+  <record id="rule_metal_sheet_pending_user" model="ir.rule">
+    <field name="name">Лист: сотрудник заводит только «на разнос»</field>
+    <field name="model_id" ref="model_pmk_metal_sheet"/>
+    <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    <field name="domain_force">[('pmk_pending', '=', True)]</field>
+    <field name="perm_read" eval="False"/>
+    <field name="perm_write" eval="True"/>
+    <field name="perm_create" eval="True"/>
+    <field name="perm_unlink" eval="True"/>
+  </record>
+  <record id="rule_metal_sheet_pending_admin" model="ir.rule">
+    <field name="name">Лист: администратор — всё</field>
+    <field name="model_id" ref="model_pmk_metal_sheet"/>
+    <field name="groups" eval="[(4, ref('base.group_system'))]"/>
+    <field name="domain_force">[(1, '=', 1)]</field>
+    <field name="perm_read" eval="False"/>
+    <field name="perm_write" eval="True"/>
+    <field name="perm_create" eval="True"/>
+    <field name="perm_unlink" eval="True"/>
+  </record>
+
+  <record id="rule_metal_fastener_pending_user" model="ir.rule">
+    <field name="name">Метизы: сотрудник заводит только «на разнос»</field>
+    <field name="model_id" ref="model_pmk_metal_fastener"/>
+    <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    <field name="domain_force">[('pmk_pending', '=', True)]</field>
+    <field name="perm_read" eval="False"/>
+    <field name="perm_write" eval="True"/>
+    <field name="perm_create" eval="True"/>
+    <field name="perm_unlink" eval="True"/>
+  </record>
+  <record id="rule_metal_fastener_pending_admin" model="ir.rule">
+    <field name="name">Метизы: администратор — всё</field>
+    <field name="model_id" ref="model_pmk_metal_fastener"/>
+    <field name="groups" eval="[(4, ref('base.group_system'))]"/>
+    <field name="domain_force">[(1, '=', 1)]</field>
+    <field name="perm_read" eval="False"/>
+    <field name="perm_write" eval="True"/>
+    <field name="perm_create" eval="True"/>
+    <field name="perm_unlink" eval="True"/>
+  </record>
+</odoo>

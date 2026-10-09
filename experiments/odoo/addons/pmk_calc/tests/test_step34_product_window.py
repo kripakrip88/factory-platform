@@ -291,7 +291,12 @@ class TestProductWindowStep34(TransactionCase):
         self.assertIsNone(profile.get("domain"), "Отбора по виду нет — только порядок.")
         self.assertIn("'pmk_prefer_type_id': type_id", profile.get("context") or "")
         self.assertTrue(profile.get("placeholder"))
-        self.assertTrue(ast.literal_eval(profile.get("options")).get("no_create"))
+        # Шаг З-10: позиции нет — «Нет в справочнике — завести новую…» (окно,
+        # позиция «на разнос»); по набранному тексту без окна — нельзя.
+        options = ast.literal_eval(profile.get("options"))
+        self.assertFalse(options.get("no_create"))
+        self.assertTrue(options.get("no_quick_create"))
+        self.assertIn("'pmk_pending_create': True", profile.get("context") or "")
 
     def test_composition_editor_one_size_field(self):
         """Редактор под строкой изделия: поля «Вид проката» нет, вид строки

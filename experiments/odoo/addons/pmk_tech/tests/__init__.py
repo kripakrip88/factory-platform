@@ -8,3 +8,5 @@ from . import test_step_z4
 from . import test_step_z5
 # Шаг З-6: «Поступления» до учёта, «Поставка просрочена», слова закупок.
 from . import test_step_z6
+# Шаг З-10: позиция «на разнос» в «Заявке на металл».
+from . import test_step_z10

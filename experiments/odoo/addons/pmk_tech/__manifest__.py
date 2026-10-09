@@ -53,6 +53,8 @@
         # (права pmk_calc, все сотрудники), заявка — штатный заказ поставщику
         # (права «Закупки: пользователь»; у Игоря и Владимира есть).
         "data/partner.xml",
+        # Шаг З-10: служебные товары «Позиция на разнос» для заявки на металл.
+        "data/pending_products.xml",
         "views/metal_spec_views.xml",
         "views/sale_order_views.xml",
         "views/project_task_views.xml",

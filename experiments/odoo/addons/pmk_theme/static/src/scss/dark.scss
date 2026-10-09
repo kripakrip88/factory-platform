@@ -1411,3 +1411,16 @@ $pmk-dark-alerts: (
     color: var(--pmk-ink-3);
   }
 }
+
+// ═══ На разнос (З-10) — тёмная пара (09.10.2026) ═══════════════════════════
+// Светлые правила — forms_nexus.scss, раздел того же имени. Метка «на разнос»
+// берёт переменные тонов словаря (раздел 0) — здесь явная пара на случай
+// правил, которые красят текст в списках и окнах.
+@media screen {
+
+  body.o_nexus_dark .pmk-pending-badge {
+    background: var(--pmk-tone-yellow-bg);
+    border-color: var(--pmk-tone-yellow-bd);
+    color: var(--pmk-tone-yellow-ink);
+  }
+}

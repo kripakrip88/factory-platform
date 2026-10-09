@@ -87,6 +87,21 @@
                     string="Разложить листы (черновик)" class="btn btn-secondary btn-sm ms-auto"/>
           </div>
           <field name="layout_stale" invisible="1"/>
+          <!--
+            Позиции «на разнос» (разбор UX, шаг З-10): в деталях есть позиции,
+            которых не было в справочнике, — их завели из расчёта строкой «Нет
+            в справочнике — завести новую…». Бледно-жёлтая плашка словом, как
+            «Нет цены» и «Раскладка устарела» (pmk-price-alert темы, тёмная
+            пара есть). Ничего не держит: КП, счёт, заявка уходят как обычно —
+            без цены позиция и так в «Нет цены», без веса деталь весит 0.
+            Разносит администратор (Справочники → Новые позиции на разнос).
+          -->
+          <div class="alert pmk-price-alert pmk-pending-alert mb-3 d-flex flex-wrap align-items-center gap-2"
+               role="status" name="pmk_pending_alert" invisible="not pmk_pending_count">
+            <i class="fa fa-exclamation-triangle" title="Внимание" aria-hidden="true"/>
+            <field name="pmk_pending_text" nolabel="1"/>
+          </div>
+          <field name="pmk_pending_count" invisible="1"/>
           <div class="pmk-doc-head">
             <!--
               Порядок шапки (приёмка 01.10.2026, R2/R3): Сделка (во всю
@@ -194,6 +209,7 @@
                       <field name="detail_name"/>
                       <field name="type_id"/>
                       <field name="profile_id"/>
+                      <field name="pmk_item_note"/>
                       <field name="length_mm"/>
                       <field name="qty"/>
                       <field name="weight_one" readonly="1"/>
@@ -214,6 +230,7 @@
                       <field name="calc_mode"/>
                       <field name="detail_name"/>
                       <field name="sheet_id"/>
+                      <field name="pmk_item_note"/>
                       <field name="a_mm"/>
                       <field name="b_mm"/>
                       <field name="qty"/>
@@ -227,6 +244,7 @@
                       <field name="calc_mode"/>
                       <field name="detail_name"/>
                       <field name="fastener_id"/>
+                      <field name="pmk_item_note"/>
                       <field name="qty"/>
                       <field name="weight_one" readonly="1"/>
                       <field name="weight_total" readonly="1"/>
@@ -341,6 +359,9 @@
                   <!-- Вид для новой строки проката: контекст списка «Прокат»
                        ниже (default_type_id) — двутавры вводят подряд. -->
                   <field name="next_type_id" invisible="1"/>
+                  <!-- Шаг З-10: колонка «Разнос» — только когда в изделии
+                       есть позиция «на разнос» или без веса. -->
+                  <field name="pmk_has_pending" invisible="1"/>
 
                   <!-- Вкладки — в порядке разделов состава под строкой
                        изделия (product_lines_field.js, SECTIONS): Прокат ·
@@ -358,9 +379,21 @@
                                models/size_search.py. Вид строки поднимает
                                свои типоразмеры наверх, но других не прячет:
                                отбора по виду нет. -->
-                          <field name="profile_id" options="{'no_create': True}"
-                                 context="{'pmk_prefer_type_id': type_id}"
+                          <!-- Шаг З-10: позиции нет в справочнике — строка
+                               «Нет в справочнике — завести новую…» в
+                               выпадашке (pmk_pending_create — ключ для
+                               static/src/js/pending_create.js): окно, а не
+                               заведение по набранному тексту
+                               (no_quick_create): опечатка не должна
+                               порождать позицию молча. -->
+                          <field name="profile_id" options="{'no_quick_create': True}"
+                                 context="{'pmk_prefer_type_id': type_id, 'pmk_pending_create': True}"
                                  placeholder="уг 50х5, двут 20ш, тр 57х3,5"/>
+                          <!-- «на разнос» / «нет веса» жёлтой меткой; колонка
+                               — только когда такие детали есть в изделии. -->
+                          <field name="pmk_item_note" string="Разнос" widget="badge"
+                                 decoration-warning="pmk_item_note" readonly="1"
+                                 column_invisible="not parent.pmk_has_pending"/>
                           <!-- Вид подставляется из типоразмера — колонка в
                                меню колонок (скрыта, не удалена): по ней
                                можно сменить вид руками. -->
@@ -385,8 +418,12 @@
                           <field name="detail_name"/>
                           <!-- Тот же поиск, что у типоразмера: «лист 4»,
                                «оц 0,5», «риф 4», «пвл 5» (шаг 34). -->
-                          <field name="sheet_id" options="{'no_create': True}"
+                          <field name="sheet_id" options="{'no_quick_create': True}"
+                                 context="{'pmk_pending_create': True}"
                                  placeholder="лист 4, оц 0,5, риф 5"/>
+                          <field name="pmk_item_note" string="Разнос" widget="badge"
+                                 decoration-warning="pmk_item_note" readonly="1"
+                                 column_invisible="not parent.pmk_has_pending"/>
                           <field name="a_mm" options="{'hide_trailing_zeros': True}"/>
                           <field name="b_mm" options="{'hide_trailing_zeros': True}"/>
                           <field name="qty"/>
@@ -403,7 +440,11 @@
                           <field name="sequence" widget="handle"/>
                           <field name="calc_mode" column_invisible="1"/>
                           <field name="detail_name"/>
-                          <field name="fastener_id" options="{'no_create': True}"/>
+                          <field name="fastener_id" options="{'no_quick_create': True}"
+                                 context="{'pmk_pending_create': True}"/>
+                          <field name="pmk_item_note" string="Разнос" widget="badge"
+                                 decoration-warning="pmk_item_note" readonly="1"
+                                 column_invisible="not parent.pmk_has_pending"/>
                           <field name="qty"/>
                           <!-- Вес ШТУКИ метиза — с граммами, исключение из
                                «вес с одним знаком» (шаг 24): болт и гайка весят

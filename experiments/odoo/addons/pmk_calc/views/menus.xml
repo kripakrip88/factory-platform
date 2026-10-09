@@ -20,6 +20,11 @@
   <menuitem id="menu_pmk_calc_reference" name="Справочники"
             parent="menu_pmk_calc" sequence="90"/>
 
+  <!-- Шаг З-10: позиции, заведённые из расчёта («на разнос»), — первым
+       пунктом справочников, только администратору: он разносит. -->
+  <menuitem id="menu_pmk_calc_pending" name="Новые позиции на разнос"
+            parent="menu_pmk_calc_reference" action="action_metal_pending" sequence="5"
+            groups="base.group_system"/>
   <menuitem id="menu_pmk_calc_profile" name="Линейный прокат"
             parent="menu_pmk_calc_reference" action="action_metal_profile" sequence="10"/>
   <menuitem id="menu_pmk_calc_sheet" name="Лист"

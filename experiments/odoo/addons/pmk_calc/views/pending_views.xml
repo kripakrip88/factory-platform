@@ -1,0 +1,415 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Позиции «на разнос» (разбор UX, шаг З-10, 09.10.2026).
+
+    1. Короткие окна «Новая позиция на разнос» — открываются из выпадашки
+       детали строкой «Нет в справочнике — завести новую…»
+       (static/src/js/pending_create.js кладёт form_view_ref). priority 200:
+       формой по умолчанию они не станут никогда.
+    2. Формы справочника с «Принять в справочник» — priority 100. Своих форм
+       у справочников не было (ядро строило форму само), поэтому эти станут
+       формой по умолчанию: ссылка «открыть» у позиции в детали ведёт сюда же.
+       У сотрудника справочник только для чтения — форма тоже.
+    3. Список «Справочники → Новые позиции на разнос» и окно «Привязать к
+       существующей» — только администратор (меню и права).
+
+    Залитая кнопка на экране одна: «Завести» в окне, «Принять в
+    справочник» в форме, «Привязать» в окне привязки. Цвет «на разнос» —
+    жёлтая метка со словом.
+  -->
+
+  <!-- ═══ 1. Окна «Новая позиция на разнос» ═══════════════════════════ -->
+  <record id="view_metal_profile_pending_form" model="ir.ui.view">
+    <field name="name">pmk.metal.profile.pending.form</field>
+    <field name="model">pmk.metal.profile</field>
+    <field name="priority">200</field>
+    <field name="arch" type="xml">
+      <form string="Новая позиция на разнос" class="pmk-pending-form">
+        <field name="pmk_pending" invisible="1"/>
+        <field name="display_name" invisible="1"/>
+        <p class="text-muted pmk-pending-form__note">
+          Позиции нет в справочнике — она встанет <span class="pmk-pending-badge">на разнос</span>
+          и сразу будет в детали. Администратор проверит её и привяжет к
+          справочнику. Цену подставит снабженец.
+        </p>
+        <group>
+          <field name="pmk_pending_name" string="Название как в чертеже" required="1"
+                 placeholder="Например: Уголок 75×6 09Г2С"/>
+          <field name="type_id" string="Вид проката" options="{'no_create': True, 'no_open': True}"
+                 help="Не знаете или вида нет в списке — «Прочее»."/>
+          <field name="mass_per_meter" string="Вес погонного метра, кг/м"/>
+        </group>
+        <p class="text-muted small mb-0">
+          Вес необязателен: без него деталь посчитается с весом 0 и пометкой «нет веса».
+        </p>
+        <footer>
+          <button string="Завести" special="save" class="btn-primary"/>
+          <button string="Отмена" special="cancel" class="btn-secondary"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+
+  <record id="view_metal_sheet_pending_form" model="ir.ui.view">
+    <field name="name">pmk.metal.sheet.pending.form</field>
+    <field name="model">pmk.metal.sheet</field>
+    <field name="priority">200</field>
+    <field name="arch" type="xml">
+      <form string="Новая позиция на разнос" class="pmk-pending-form">
+        <field name="pmk_pending" invisible="1"/>
+        <field name="display_name" invisible="1"/>
+        <p class="text-muted pmk-pending-form__note">
+          Позиции нет в справочнике — она встанет <span class="pmk-pending-badge">на разнос</span>
+          и сразу будет в детали. Администратор проверит её и привяжет к
+          справочнику. Цену подставит снабженец.
+        </p>
+        <group>
+          <field name="pmk_pending_name" string="Название как в чертеже" required="1"
+                 placeholder="Например: Лист ПВ 506 08пс"/>
+          <field name="thickness_mm" string="Толщина, мм" options="{'hide_trailing_zeros': True}"/>
+          <field name="mass_per_sqm" string="Масса м², кг"/>
+        </group>
+        <p class="text-muted small mb-0">
+          Масса м² подставится сама: толщина × 7,85. У рифлёного и просечного
+          листа она другая — поправьте.
+        </p>
+        <footer>
+          <button string="Завести" special="save" class="btn-primary"/>
+          <button string="Отмена" special="cancel" class="btn-secondary"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+
+  <record id="view_metal_fastener_pending_form" model="ir.ui.view">
+    <field name="name">pmk.metal.fastener.pending.form</field>
+    <field name="model">pmk.metal.fastener</field>
+    <field name="priority">200</field>
+    <field name="arch" type="xml">
+      <form string="Новая позиция на разнос" class="pmk-pending-form">
+        <field name="pmk_pending" invisible="1"/>
+        <field name="display_name" invisible="1"/>
+        <p class="text-muted pmk-pending-form__note">
+          Позиции нет в справочнике — она встанет <span class="pmk-pending-badge">на разнос</span>
+          и сразу будет в детали. Администратор проверит её и привяжет к
+          справочнику. Цену подставит снабженец.
+        </p>
+        <group>
+          <field name="pmk_pending_name" string="Название как в чертеже" required="1"
+                 placeholder="Например: Болт М20×80 8.8 ГОСТ 7798"/>
+          <field name="weight_kg" string="Вес штуки, кг"/>
+        </group>
+        <p class="text-muted small mb-0">
+          Вес необязателен: без него деталь посчитается с весом 0 и пометкой «нет веса».
+        </p>
+        <footer>
+          <button string="Завести" special="save" class="btn-primary"/>
+          <button string="Отмена" special="cancel" class="btn-secondary"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+
+  <!-- ═══ 2. Формы справочника с «Принять в справочник» ════════════════ -->
+  <record id="view_metal_profile_form" model="ir.ui.view">
+    <field name="name">pmk.metal.profile.form</field>
+    <field name="model">pmk.metal.profile</field>
+    <field name="priority">100</field>
+    <field name="arch" type="xml">
+      <form string="Линейный прокат" create="0">
+        <header>
+          <button name="action_pmk_accept" type="object" string="Принять в справочник"
+                  class="btn-primary" invisible="not pmk_pending" groups="base.group_system"
+                  title="Снять метку «на разнос»: позиция станет обычной позицией справочника"/>
+        </header>
+        <sheet>
+          <field name="pmk_pending" invisible="1"/>
+          <div class="alert pmk-price-alert mb-3" role="status" name="pmk_pending_alert"
+               invisible="not pmk_pending">
+            <span class="pmk-pending-badge me-1">на разнос</span>
+            Позицию завели из расчёта. Заполните вид, типоразмер, стандарт и
+            массу — и «Принять в справочник». Такая уже есть под другим
+            названием — «Привязать к существующей» в списке «Новые позиции на разнос».
+          </div>
+          <div class="oe_title">
+            <h1><field name="display_name" readonly="1"/></h1>
+          </div>
+          <group>
+            <group name="pmk_reference">
+              <field name="type_id" options="{'no_create': True}"/>
+              <field name="size_label"/>
+              <field name="gost"/>
+              <field name="mass_per_meter"/>
+              <field name="surface_per_meter"/>
+            </group>
+            <group name="pmk_pending_info" invisible="not pmk_pending and not pmk_pending_name">
+              <field name="pmk_pending_name" readonly="1"/>
+              <field name="create_uid" string="Кто завёл" readonly="1"/>
+              <field name="pmk_pending_spec_id" readonly="1"/>
+              <field name="pmk_pending_spec_ids" widget="many2many_tags" readonly="1"/>
+            </group>
+          </group>
+          <group string="Только у труб ВГП" name="pmk_vgp">
+            <field name="du"/>
+            <field name="outer_mm"/>
+            <field name="wall_mm"/>
+          </group>
+        </sheet>
+      </form>
+    </field>
+  </record>
+
+  <record id="view_metal_sheet_form" model="ir.ui.view">
+    <field name="name">pmk.metal.sheet.form</field>
+    <field name="model">pmk.metal.sheet</field>
+    <field name="priority">100</field>
+    <field name="arch" type="xml">
+      <form string="Лист" create="0">
+        <header>
+          <button name="action_pmk_accept" type="object" string="Принять в справочник"
+                  class="btn-primary" invisible="not pmk_pending" groups="base.group_system"
+                  title="Снять метку «на разнос»: позиция станет обычной позицией справочника"/>
+        </header>
+        <sheet>
+          <field name="pmk_pending" invisible="1"/>
+          <div class="alert pmk-price-alert mb-3" role="status" name="pmk_pending_alert"
+               invisible="not pmk_pending">
+            <span class="pmk-pending-badge me-1">на разнос</span>
+            Позицию завели из расчёта. Заполните вид листа («Гладкий»,
+            «Рифлёный»…), стандарт и массу — и «Принять в справочник». Такая уже
+            есть — «Привязать к существующей» в списке «Новые позиции на разнос».
+          </div>
+          <div class="oe_title">
+            <h1><field name="display_name" readonly="1"/></h1>
+          </div>
+          <group>
+            <group name="pmk_reference">
+              <field name="sheet_type"/>
+              <field name="thickness_mm" options="{'hide_trailing_zeros': True}"/>
+              <field name="size_label"/>
+              <field name="gost"/>
+              <field name="mass_per_sqm"/>
+            </group>
+            <group name="pmk_pending_info" invisible="not pmk_pending and not pmk_pending_name">
+              <field name="pmk_pending_name" readonly="1"/>
+              <field name="create_uid" string="Кто завёл" readonly="1"/>
+              <field name="pmk_pending_spec_id" readonly="1"/>
+              <field name="pmk_pending_spec_ids" widget="many2many_tags" readonly="1"/>
+            </group>
+          </group>
+        </sheet>
+      </form>
+    </field>
+  </record>
+
+  <record id="view_metal_fastener_form" model="ir.ui.view">
+    <field name="name">pmk.metal.fastener.form</field>
+    <field name="model">pmk.metal.fastener</field>
+    <field name="priority">100</field>
+    <field name="arch" type="xml">
+      <form string="Метиз" create="0">
+        <header>
+          <button name="action_pmk_accept" type="object" string="Принять в справочник"
+                  class="btn-primary" invisible="not pmk_pending" groups="base.group_system"
+                  title="Снять метку «на разнос»: позиция станет обычной позицией справочника"/>
+        </header>
+        <sheet>
+          <field name="pmk_pending" invisible="1"/>
+          <div class="alert pmk-price-alert mb-3" role="status" name="pmk_pending_alert"
+               invisible="not pmk_pending">
+            <span class="pmk-pending-badge me-1">на разнос</span>
+            Позицию завели из расчёта. Заполните вид, стандарт и массу штуки —
+            и «Принять в справочник». Такая уже есть — «Привязать к
+            существующей» в списке «Новые позиции на разнос».
+          </div>
+          <group>
+            <group name="pmk_reference">
+              <field name="name"/>
+              <field name="fastener_type"/>
+              <field name="size_label"/>
+              <field name="gost"/>
+              <field name="weight_kg"/>
+            </group>
+            <group name="pmk_pending_info" invisible="not pmk_pending and not pmk_pending_name">
+              <field name="pmk_pending_name" readonly="1"/>
+              <field name="create_uid" string="Кто завёл" readonly="1"/>
+              <field name="pmk_pending_spec_id" readonly="1"/>
+              <field name="pmk_pending_spec_ids" widget="many2many_tags" readonly="1"/>
+            </group>
+          </group>
+        </sheet>
+      </form>
+    </field>
+  </record>
+
+  <!-- ═══ 2а. «Новый» в справочниках — только администратору ═══════════
+       Сотруднику право создавать дано ради позиции «на разнос» из детали;
+       списки и формы справочников стоят с create="0" (metal_views.xml и
+       формы выше), администратору «Новый» возвращают эти наследования
+       (group_ids — только у наследующих видов, правило Odoo). -->
+  <record id="view_metal_profile_list_admin_create" model="ir.ui.view">
+    <field name="name">pmk.metal.profile.list.admin.create</field>
+    <field name="model">pmk.metal.profile</field>
+    <field name="inherit_id" ref="pmk_calc.view_metal_profile_list"/>
+    <field name="group_ids" eval="[(4, ref('base.group_system'))]"/>
+    <field name="arch" type="xml">
+      <xpath expr="/list" position="attributes">
+        <attribute name="create">1</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="view_metal_sheet_list_admin_create" model="ir.ui.view">
+    <field name="name">pmk.metal.sheet.list.admin.create</field>
+    <field name="model">pmk.metal.sheet</field>
+    <field name="inherit_id" ref="pmk_calc.view_metal_sheet_list"/>
+    <field name="group_ids" eval="[(4, ref('base.group_system'))]"/>
+    <field name="arch" type="xml">
+      <xpath expr="/list" position="attributes">
+        <attribute name="create">1</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="view_metal_fastener_list_admin_create" model="ir.ui.view">
+    <field name="name">pmk.metal.fastener.list.admin.create</field>
+    <field name="model">pmk.metal.fastener</field>
+    <field name="inherit_id" ref="pmk_calc.view_metal_fastener_list"/>
+    <field name="group_ids" eval="[(4, ref('base.group_system'))]"/>
+    <field name="arch" type="xml">
+      <xpath expr="/list" position="attributes">
+        <attribute name="create">1</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="view_metal_profile_form_admin_create" model="ir.ui.view">
+    <field name="name">pmk.metal.profile.form.admin.create</field>
+    <field name="model">pmk.metal.profile</field>
+    <field name="inherit_id" ref="pmk_calc.view_metal_profile_form"/>
+    <field name="group_ids" eval="[(4, ref('base.group_system'))]"/>
+    <field name="arch" type="xml">
+      <xpath expr="/form" position="attributes">
+        <attribute name="create">1</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="view_metal_sheet_form_admin_create" model="ir.ui.view">
+    <field name="name">pmk.metal.sheet.form.admin.create</field>
+    <field name="model">pmk.metal.sheet</field>
+    <field name="inherit_id" ref="pmk_calc.view_metal_sheet_form"/>
+    <field name="group_ids" eval="[(4, ref('base.group_system'))]"/>
+    <field name="arch" type="xml">
+      <xpath expr="/form" position="attributes">
+        <attribute name="create">1</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="view_metal_fastener_form_admin_create" model="ir.ui.view">
+    <field name="name">pmk.metal.fastener.form.admin.create</field>
+    <field name="model">pmk.metal.fastener</field>
+    <field name="inherit_id" ref="pmk_calc.view_metal_fastener_form"/>
+    <field name="group_ids" eval="[(4, ref('base.group_system'))]"/>
+    <field name="arch" type="xml">
+      <xpath expr="/form" position="attributes">
+        <attribute name="create">1</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- ═══ 3. Список «Новые позиции на разнос» ═════════════════════════ -->
+  <record id="view_metal_pending_list" model="ir.ui.view">
+    <field name="name">pmk.metal.pending.list</field>
+    <field name="model">pmk.metal.pending</field>
+    <field name="arch" type="xml">
+      <list string="Новые позиции на разнос" create="0" delete="0" edit="0"
+            action="action_pmk_accept" type="object">
+        <field name="kind" widget="badge"/>
+        <field name="name"/>
+        <field name="user_id" widget="many2one_avatar_user"/>
+        <field name="date" widget="date"/>
+        <field name="spec_id"/>
+        <field name="spec_count" string="В расчётах"/>
+        <field name="spec_names" optional="show"/>
+        <field name="no_weight" column_invisible="1"/>
+        <field name="weight_label" widget="badge" decoration-warning="no_weight"/>
+        <!-- Щелчок по строке открывает саму позицию справочника формой с
+             «Принять в справочник» (action у list) — как в любом списке.
+             Контурные: залитой на этом экране нет — следующий шаг выбирают
+             по строке. «В архив» — только у позиции, которая нигде не
+             стоит (завели и передумали). -->
+        <button name="action_pmk_bind" type="object" string="Привязать к существующей"
+                class="btn btn-sm btn-secondary"
+                title="Такая позиция уже есть в справочнике — во всех деталях всех расчётов встанет она, временная уйдёт в архив"/>
+        <button name="action_pmk_accept" type="object" string="Принять в справочник"
+                class="btn btn-sm btn-secondary"
+                title="Открыть позицию, дозаполнить вид, стандарт и массу и снять метку «на разнос»"/>
+        <button name="action_pmk_archive" type="object" string="В архив"
+                class="btn btn-sm btn-link" invisible="spec_count"
+                title="Позиция нигде не стоит — убрать из справочника в архив"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="view_metal_pending_search" model="ir.ui.view">
+    <field name="name">pmk.metal.pending.search</field>
+    <field name="model">pmk.metal.pending</field>
+    <field name="arch" type="xml">
+      <search>
+        <field name="name"/>
+        <field name="user_id"/>
+        <field name="spec_id"/>
+        <filter name="no_weight_f" string="Без веса" domain="[('unit_mass', '=', 0)]"/>
+        <group>
+          <filter name="by_kind" string="Вид" context="{'group_by': 'kind'}"/>
+          <filter name="by_user" string="Кто завёл" context="{'group_by': 'user_id'}"/>
+        </group>
+      </search>
+    </field>
+  </record>
+
+  <record id="action_metal_pending" model="ir.actions.act_window">
+    <field name="name">Новые позиции на разнос</field>
+    <field name="res_model">pmk.metal.pending</field>
+    <field name="view_mode">list</field>
+    <field name="help" type="html">
+      <p class="o_view_nocontent_smiling_face">Новых позиций на разнос нет</p>
+      <p>Их заводят менеджер и инженер в детали расчёта строкой «Нет в
+         справочнике — завести новую…». Здесь их привязывают к существующей
+         позиции или принимают в справочник.</p>
+    </field>
+  </record>
+
+  <!-- Окно «Привязать к существующей». -->
+  <record id="view_metal_pending_bind_form" model="ir.ui.view">
+    <field name="name">pmk.metal.pending.bind.form</field>
+    <field name="model">pmk.metal.pending.bind</field>
+    <field name="arch" type="xml">
+      <form string="Привязать к существующей">
+        <field name="kind" invisible="1"/>
+        <group>
+          <field name="source_name"/>
+          <field name="usage_text"/>
+          <field name="profile_id" invisible="kind != 'linear'" required="kind == 'linear'"
+                 options="{'no_create': True}" placeholder="уг 75х6, двут 20ш, тр 57х3,5"/>
+          <field name="sheet_id" invisible="kind != 'sheet'" required="kind == 'sheet'"
+                 options="{'no_create': True}" placeholder="лист 4, оц 0,5, риф 5"/>
+          <field name="fastener_id" invisible="kind != 'fastener'" required="kind == 'fastener'"
+                 options="{'no_create': True}"/>
+        </group>
+        <p class="text-muted mb-0">
+          Во всех деталях всех расчётов (и в раскроях, заданиях лазеру) позиция
+          заменится выбранной, вес и цены пересчитаются, в ленту расчётов —
+          заметка. Временная позиция уйдёт в архив.
+        </p>
+        <footer>
+          <button name="action_bind" type="object" string="Привязать" class="btn-primary"/>
+          <button string="Отмена" special="cancel" class="btn-secondary"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+</odoo>

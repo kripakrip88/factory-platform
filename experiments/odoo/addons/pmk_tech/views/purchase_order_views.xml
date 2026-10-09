@@ -62,6 +62,25 @@
           «Поставщик», цены строк перечитаются по его прайсу.
           <field name="pmk_no_supplier" invisible="1"/>
         </div>
+        <!-- Шаг З-10: позиции «на разнос» — их нет в справочнике (завели из
+             расчёта). Строка — служебный товар «Позиция на разнос», что
+             заказать — в описании. Ничего не держит; после разноса
+             справочника повтор «Заявки на металл» ставит настоящий товар. -->
+        <div class="alert pmk-price-alert mb-3" role="status" name="pmk_pending_lines"
+             invisible="not pmk_pending_line_count or state == 'cancel'">
+          <i class="fa fa-exclamation-triangle me-1" title="Внимание" aria-hidden="true"/>
+          <strong class="me-1">Позиции на разнос: <field name="pmk_pending_line_count" class="d-inline"/>.</strong>
+          Их нет в справочнике — что заказать, написано в описании строки. Когда
+          администратор разнесёт справочник, нажмите «Заявка на металл» в
+          техническом расчёте — строка встанет настоящим товаром.
+        </div>
+      </xpath>
+      <!-- Метка строки «на разнос» — колонка только у заявки с такими строками. -->
+      <xpath expr="//field[@name='order_line']/list/field[@name='product_id']" position="after">
+        <field name="pmk_pending" column_invisible="1"/>
+        <field name="pmk_pending_label" string="Разнос" widget="badge"
+               decoration-warning="pmk_pending" readonly="1"
+               column_invisible="not parent.pmk_pending_line_count"/>
       </xpath>
       <xpath expr="//field[@name='partner_ref']" position="after">
         <field name="pmk_deal_id" readonly="1" invisible="not pmk_deal_id"/>

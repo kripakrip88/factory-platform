@@ -9,3 +9,5 @@ from . import mail_compose_message
 from . import partner_supplier
 # Шаг 58: кто выставляет КП — реквизиты и строка налога для печати.
 from . import print_seller
+# Шаг З-10: карточка товара позиции, принятой в справочник из «на разнос».
+from . import pending_product

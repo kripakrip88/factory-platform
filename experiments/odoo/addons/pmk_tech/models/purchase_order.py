@@ -35,8 +35,35 @@ from odoo import api, fields, models
 
 NO_SUPPLIER = "pmk_tech.partner_no_supplier"
 
+# Служебные товары «Позиция на разнос» (шаг З-10): позиции, которой нет в
+# справочнике (завели из расчёта), карточки товара нет, а строке заказа
+# поставщику товар обязателен. Название из чертежа — в описании строки (его
+# видит поставщик), количество — в единице вида: метры, листы, штуки. После
+# разноса справочника повторная «Заявка на металл» ставит настоящий товар.
+# Своя карточка на позицию — нет: черновик инженера с опечаткой плодил бы
+# номенклатуру (карточку заводит «Принять в справочник», pmk_bridge).
+PENDING_PRODUCTS = {
+    "linear": ("product_pending_linear", "Позиция на разнос (прокат)",
+               "uom.product_uom_meter", "PND-PROKAT", "pmk_bridge.categ_rolled"),
+    "sheet": ("product_pending_sheet", "Позиция на разнос (лист)",
+              "uom.product_uom_unit", "PND-LIST", "pmk_bridge.categ_sheet"),
+    "fastener": ("product_pending_fastener", "Позиция на разнос (метиз)",
+                 "uom.product_uom_unit", "PND-METIZ", "pmk_bridge.categ_hw"),
+}
+PENDING_LABEL = "на разнос"
+
 # Допуск сравнения количеств и цен (метры и рубли — до сотых).
 EPS = 0.005
+
+
+def resolved_pending(line):
+    """Строка «на разнос» заявки, ушедшей поставщику, позицию которой уже
+    разнесли (шаг З-10): ключ переписан на настоящую позицию
+    (pending_rekey.py). Повтор «Заявки на металл» вычитает её количество из
+    потребности (metal_request.py, _pmk_ordered_pending)."""
+    key = line.pmk_request_key or ""
+    return (bool(line.pmk_pending) and bool(key) and ":pending:" not in key
+            and line.order_id.state not in ("draft", "cancel"))
 
 # Состояние заявки (список «Заявки на металл», «Связи», плашка расхождения в
 # техническом расчёте). Слова — как в строке состояния формы заказа
@@ -95,6 +122,15 @@ class PurchaseOrderTech(models.Model):
              "в черновике — цены строк перечитаются по его прайсу.")
     pmk_request_state_label = fields.Char(
         "Состояние заявки", compute="_compute_pmk_request_state_label")
+    # Шаг З-10: строки позиций «на разнос» — плашка над заголовком и колонка
+    # «Разнос» в строках (только когда такие строки есть).
+    pmk_pending_line_count = fields.Integer(
+        "Позиций на разнос", compute="_compute_pmk_pending_line_count")
+
+    @api.depends("order_line.pmk_pending")
+    def _compute_pmk_pending_line_count(self):
+        for order in self:
+            order.pmk_pending_line_count = len(order.order_line.filtered("pmk_pending"))
 
     @api.depends("pmk_sale_order_id.partner_id", "pmk_deal_id.partner_id")
     def _compute_pmk_client_id(self):
@@ -133,6 +169,39 @@ class PurchaseOrderTech(models.Model):
             "res_id": partner.id, "noupdate": True})
         return partner.with_env(self.env)
 
+    @api.model
+    def _pmk_pending_product(self, mode, create=True):
+        """Служебный товар «Позиция на разнос» вида mode (шаг З-10,
+        data/pending_products.xml). Удалили — заводим заново (как «Поставщик
+        не выбран»): заявка с такой позицией не должна падать. create=False —
+        только найти (сбор строк зовут и при чтении расчёта)."""
+        name, label, uom, code, categ = PENDING_PRODUCTS[mode]
+        product = self.env.ref("pmk_tech.%s" % name, raise_if_not_found=False)
+        if product or not create:
+            return (product or self.env["product.product"]).with_env(self.env)
+        vals = {
+            "name": label,
+            "type": "consu",
+            "is_storable": False,
+            "purchase_ok": True,
+            "sale_ok": False,
+            "uom_id": self.env.ref(uom).id,
+            "description_purchase": (
+                "Позиции нет в справочнике (завели из расчёта, «на разнос»). Что "
+                "заказать — в описании строки. Администратор разнесёт справочник, "
+                "повторная «Заявка на металл» поставит настоящий товар."),
+        }
+        category = self.env.ref(categ, raise_if_not_found=False)
+        if category:
+            vals["categ_id"] = category.id
+        tmpl = self.env["product.template"].sudo().create(vals)
+        variant = tmpl.product_variant_id
+        variant.default_code = code
+        self.env["ir.model.data"].sudo().create({
+            "module": "pmk_tech", "name": name, "model": "product.product",
+            "res_id": variant.id, "noupdate": True})
+        return variant.with_env(self.env)
+
 
 class PurchaseOrderLineTech(models.Model):
     _inherit = "purchase.order.line"
@@ -157,6 +226,19 @@ class PurchaseOrderLineTech(models.Model):
         "Описание заявки", copy=False, readonly=True,
         help="Описание, которое записала «Заявка на металл». Отличается — его "
              "правил снабженец: повтор его не меняет.")
+    # Шаг З-10: позиция «на разнос» — товар служебный «Позиция на разнос»,
+    # название из чертежа — в описании строки.
+    pmk_pending = fields.Boolean(
+        "На разнос", copy=False, readonly=True,
+        help="Позиции нет в справочнике — её завели из расчёта. Что заказать — "
+             "в описании строки; после разноса справочника повторная «Заявка на "
+             "металл» поставит настоящий товар.")
+    pmk_pending_label = fields.Char("Разнос", compute="_compute_pmk_pending_label")
+
+    @api.depends("pmk_pending")
+    def _compute_pmk_pending_label(self):
+        for line in self:
+            line.pmk_pending_label = PENDING_LABEL if line.pmk_pending else False
 
     def _pmk_request_requested_qty(self):
         """Что заявил инженер в последний раз. Строка до доводки (ничего не

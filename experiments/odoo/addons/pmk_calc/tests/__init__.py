@@ -16,3 +16,5 @@ from . import test_step35_dobor
 from . import test_step39_words
 # Шаг 56: правка в строке «Состава», поиск «уг 50 5», «Раскладка устарела».
 from . import test_step56_spec
+# Шаг З-10: позиция «на разнос» — заведение из детали, разнос, права.
+from . import test_step_z10_pending

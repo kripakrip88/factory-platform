@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Служебные товары «Позиция на разнос» (разбор UX, шаг З-10, 09.10.2026).
+
+    Позиция, которой нет в справочнике (её завели из расчёта, «на разнос»),
+    карточки товара не имеет, а строке заказа поставщику товар обязателен.
+    «Заявка на металл» ставит в строку такой товар своего вида — единица та
+    же, что у вида: прокат — метры, лист — листы, метизы — штуки, — а
+    название из чертежа пишет в описание строки (его видит поставщик).
+    Строка — в черновике «Поставщик не выбран» (цены нет), в строке метка
+    «на разнос». После разноса справочника (Калькуляторы → Справочники →
+    Новые позиции на разнос) повторная «Заявка на металл» ставит настоящий
+    товар, служебная строка уходит.
+
+    Без склада (is_storable = False): остатка «позиции на разнос» не бывает,
+    приход учитывается по настоящему товару. Не продаётся. noupdate —
+    правки руками обновлением модуля не затрутся; удалили — код заведёт
+    заново (models/purchase_order.py, _pmk_pending_product).
+  -->
+  <data noupdate="1">
+    <record id="product_pending_linear" model="product.product">
+      <field name="name">Позиция на разнос (прокат)</field>
+      <field name="type">consu</field>
+      <field name="is_storable" eval="False"/>
+      <field name="purchase_ok" eval="True"/>
+      <field name="sale_ok" eval="False"/>
+      <field name="uom_id" ref="uom.product_uom_meter"/>
+      <field name="categ_id" ref="pmk_bridge.categ_rolled"/>
+      <field name="default_code">PND-PROKAT</field>
+      <field name="description_purchase">Позиции нет в справочнике (завели из расчёта, «на разнос»). Что заказать — в описании строки. Администратор разнесёт справочник, повторная «Заявка на металл» поставит настоящий товар.</field>
+    </record>
+    <record id="product_pending_sheet" model="product.product">
+      <field name="name">Позиция на разнос (лист)</field>
+      <field name="type">consu</field>
+      <field name="is_storable" eval="False"/>
+      <field name="purchase_ok" eval="True"/>
+      <field name="sale_ok" eval="False"/>
+      <field name="uom_id" ref="uom.product_uom_unit"/>
+      <field name="categ_id" ref="pmk_bridge.categ_sheet"/>
+      <field name="default_code">PND-LIST</field>
+      <field name="description_purchase">Позиции нет в справочнике (завели из расчёта, «на разнос»). Что заказать — в описании строки. Администратор разнесёт справочник, повторная «Заявка на металл» поставит настоящий товар.</field>
+    </record>
+    <record id="product_pending_fastener" model="product.product">
+      <field name="name">Позиция на разнос (метиз)</field>
+      <field name="type">consu</field>
+      <field name="is_storable" eval="False"/>
+      <field name="purchase_ok" eval="True"/>
+      <field name="sale_ok" eval="False"/>
+      <field name="uom_id" ref="uom.product_uom_unit"/>
+      <field name="categ_id" ref="pmk_bridge.categ_hw"/>
+      <field name="default_code">PND-METIZ</field>
+      <field name="description_purchase">Позиции нет в справочнике (завели из расчёта, «на разнос»). Что заказать — в описании строки. Администратор разнесёт справочник, повторная «Заявка на металл» поставит настоящий товар.</field>
+    </record>
+  </data>
+</odoo>

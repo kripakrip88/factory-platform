@@ -1,7 +1,7 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_pmk_metal_profile_user,pmk.metal.profile.user,model_pmk_metal_profile,base.group_user,1,0,0,0
+access_pmk_metal_profile_user,pmk.metal.profile.user,model_pmk_metal_profile,base.group_user,1,0,1,0
 access_pmk_metal_profile_manager,pmk.metal.profile.manager,model_pmk_metal_profile,base.group_system,1,1,1,1
-access_pmk_metal_sheet_user,pmk.metal.sheet.user,model_pmk_metal_sheet,base.group_user,1,0,0,0
+access_pmk_metal_sheet_user,pmk.metal.sheet.user,model_pmk_metal_sheet,base.group_user,1,0,1,0
 access_pmk_metal_sheet_manager,pmk.metal.sheet.manager,model_pmk_metal_sheet,base.group_system,1,1,1,1
 access_pmk_metal_grade_user,pmk.metal.grade.user,model_pmk_metal_grade,base.group_user,1,0,0,0
 access_pmk_metal_grade_manager,pmk.metal.grade.manager,model_pmk_metal_grade,base.group_system,1,1,1,1
@@ -14,7 +14,9 @@ access_pmk_dobor_order_line_user,pmk_dobor_order_line.user,model_pmk_dobor_order
 access_pmk_metal_profile_type_user,pmk.metal.profile.type.user,model_pmk_metal_profile_type,base.group_user,1,0,0,0
 access_pmk_metal_profile_type_mgr,pmk.metal.profile.type.mgr,model_pmk_metal_profile_type,base.group_system,1,1,1,1
 access_pmk_metal_spec_product_user,pmk.metal.spec.product.user,model_pmk_metal_spec_product,base.group_user,1,1,1,1
-access_pmk_metal_fastener_user,pmk_metal_fastener.user,model_pmk_metal_fastener,base.group_user,1,0,0,0
+access_pmk_metal_fastener_user,pmk_metal_fastener.user,model_pmk_metal_fastener,base.group_user,1,0,1,0
 access_pmk_metal_fastener_mgr,pmk_metal_fastener.mgr,model_pmk_metal_fastener,base.group_system,1,1,1,1
 access_pmk_paint_coating_user,pmk_paint_coating.user,model_pmk_paint_coating,base.group_user,1,0,0,0
 access_pmk_paint_coating_mgr,pmk_paint_coating.mgr,model_pmk_paint_coating,base.group_system,1,1,1,1
+access_pmk_metal_pending_mgr,pmk.metal.pending.mgr,model_pmk_metal_pending,base.group_system,1,0,0,0
+access_pmk_metal_pending_bind_mgr,pmk.metal.pending.bind.mgr,model_pmk_metal_pending_bind,base.group_system,1,1,1,1

@@ -2786,3 +2786,49 @@ $pmk-short-fields: phone, email, url, date, datetime, daterange, remaining_days,
     max-width: 4.5rem;
   }
 }
+
+// ─── На разнос (З-10) ──────────────────────────────────────────────────────
+// Позиция, которой не было в справочнике (её завели из расчёта строкой «Нет в
+// справочнике — завести новую…»), — жёлтая метка со словом «на разнос» (и
+// «нет веса»): в выпадашке позиции, в строке состава под изделием, в окне
+// «Новая позиция на разнос» и в форме позиции. Бледные тона, как «нет в
+// прайсах» моста (pmk-cost-signal) и плашка «Нет цены»; в тёмной теме — те же
+// переменные тонов (dark.scss, словарь и раздел «На разнос (З-10)»).
+// Плашка «Позиции на разнос: N» расчёта и заявки — .pmk-price-alert (выше).
+.pmk-pending-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  border: 1px solid var(--pmk-tone-yellow-bd, #ead68e);
+  border-radius: 10px;
+  background: var(--pmk-tone-yellow-bg, #fbf3d5);
+  color: var(--pmk-tone-yellow-ink, #633806);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.5;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+// В начале текста (плашка формы позиции) отступ слева не нужен.
+.alert > .pmk-pending-badge:first-child {
+  margin-left: 0;
+}
+
+// Метка перед названием (строка состава, пункт выпадашки): длинное название
+// режется многоточием, метка в начале остаётся видна целиком.
+.pmk-pending-badge.pmk-pending-badge--lead {
+  margin-left: 0;
+  margin-right: 6px;
+}
+
+// Строка выпадашки «Нет в справочнике — завести новую…»: следующий шаг,
+// когда позиции нет, — текстом действия, не позицией справочника.
+.pmk-m2o-pending-create {
+  font-weight: 500;
+}
+
+// Окно «Новая позиция на разнос»: пояснение над полями.
+.pmk-pending-form .pmk-pending-form__note {
+  margin-bottom: 12px;
+}

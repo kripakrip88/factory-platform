@@ -5,3 +5,4 @@ from . import metal_request
 from . import sale_order
 from . import project_task
 from . import metal_arrival
+from . import pending_rekey

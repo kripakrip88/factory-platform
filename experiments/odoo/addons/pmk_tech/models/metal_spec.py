@@ -51,7 +51,7 @@ from odoo.tools.misc import clean_context
 
 from odoo.addons.pmk_calc.models.spec_layout import LAYOUT_RESULTS
 
-from .purchase_order import EPS, REQUEST_STATE_LABELS
+from .purchase_order import EPS, REQUEST_STATE_LABELS, resolved_pending as _resolved_pending
 
 KINDS = [("kp", "Для КП"), ("tech", "Технический")]
 
@@ -381,7 +381,21 @@ class MetalSpecTech(models.Model):
         if notes["service"]:
             parts.append(_("Услуга, не металл — в заявку не идёт: %s",
                            ", ".join(notes["service"])))
+        if notes.get("pending"):
+            # Шаг З-10: ничего не держит — строка идёт своим названием.
+            parts.append(_("Позиции на разнос — в заявке своим названием, товар "
+                           "«Позиция на разнос», поставщик не выбран: %s",
+                           ", ".join(notes["pending"])))
         return "; ".join(parts)
+
+    def _pmk_pending_note_tail(self):
+        """Хвост заметки о разносе справочника (pmk_calc, metal_pending.py):
+        у технического расчёта с заявками — нажать «Заявка на металл»."""
+        tail = super()._pmk_pending_note_tail()
+        if self.pmk_kind == "tech" and self.sudo().pmk_metal_request_ids:
+            tail = _("Заявка на металл собрана раньше — нажмите «Заявка на металл»: "
+                     "строка встанет настоящей позицией.")
+        return tail
 
     def _pmk_request_drift(self, rows):
         """(состав изменился после заявки?, текст расхождения с заявкой).
@@ -397,6 +411,11 @@ class MetalSpecTech(models.Model):
         if not orders:
             return False, ""
         current = {row["key"]: row for row in rows}
+        # Шаг З-10: строки «на разнос», ушедшие поставщику до разноса, —
+        # часть потребности настоящей позиции уже заказана ими
+        # (metal_request.py, _pmk_ordered_pending): с остальными строками
+        # сравниваем остаток.
+        ordered, _orders = self._pmk_ordered_pending(orders)
         in_requests = set()
         stale = False
         diffs = []
@@ -405,17 +424,26 @@ class MetalSpecTech(models.Model):
                 key = line.pmk_request_key
                 in_requests.add(key)
                 row = current.get(key)
+                total = row["qty"] if row else 0.0
+                if _resolved_pending(line):
+                    # Заказано «на разнос» не больше, чем нужно сейчас, —
+                    # расхождения нет; больше — говорим.
+                    if total + EPS >= ordered.get(key, 0.0):
+                        continue
+                    want = total
+                else:
+                    want = max(total - ordered.get(key, 0.0), 0.0)
                 if order.state == "draft":
                     requested = line._pmk_request_requested_qty()
-                    if abs(requested - (row["qty"] if row else 0.0)) > EPS:
+                    if abs(requested - want) > EPS:
                         stale = True
                     if abs(line.product_qty - requested) <= EPS:
                         continue        # количество снабженец не правил
-                if row and abs(line.product_qty - row["qty"]) <= EPS:
+                if row and not _resolved_pending(line) and abs(line.product_qty - want) <= EPS:
                     continue
                 name = row["name"] if row else (line.product_id.display_name or line.name)
                 mode = row["mode"] if row else key.split(":", 1)[0]
-                engineer = self._pmk_qty_text(mode, row["qty"]) if row else _("нет")
+                engineer = self._pmk_qty_text(mode, want) if row else _("нет")
                 state = (order.pmk_request_state_label
                          or REQUEST_STATE_LABELS.get(order.state, order.state)).lower()
                 if order.state == "draft":

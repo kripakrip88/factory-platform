@@ -33,8 +33,12 @@
     "depends": ["base", "web", "mail"],
     "data": [
         "security/ir.model.access.csv",
+        # Шаг З-10: сотрудник заводит позицию справочника только «на разнос».
+        "security/pending_rules.xml",
         "data/pmk.metal.grade.csv",
         "data/pmk.metal.profile.type.csv",
+        # Шаг З-10: вид проката «Прочее» для позиций «на разнос».
+        "data/pending_data.xml",
         "data/pmk.metal.profile.csv",
         "data/pmk.metal.sheet.csv",
         "data/pmk.metal.fastener.csv",
@@ -44,6 +48,9 @@
         "views/metal_views.xml",
         "views/metal_spec_views.xml",
         "views/dobor_views.xml",
+        # Шаг З-10: окна «Новая позиция на разнос», формы справочника с
+        # «Принять в справочник», список «Новые позиции на разнос».
+        "views/pending_views.xml",
         "report/dobor_report.xml",
         "views/menus.xml",
     ],
@@ -54,6 +61,9 @@
             "pmk_calc/static/src/js/dobor_dialog_fullscreen.js",
             "pmk_calc/static/src/js/svg_field.js",
             "pmk_calc/static/src/js/product_lines_field.js",
+            # Шаг З-10: «Нет в справочнике — завести новую…» в выпадашке
+            # позиции детали, метка «на разнос».
+            "pmk_calc/static/src/js/pending_create.js",
             "pmk_calc/static/src/xml/dobor_builder.xml",
             "pmk_calc/static/src/xml/svg_field.xml",
             "pmk_calc/static/src/xml/product_lines_field.xml",

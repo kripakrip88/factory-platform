@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Шаг З-10: в форме позиции справочника (pmk_calc, views/pending_views.xml)
+    — карточка товара и цена моста («Цена, ₽/т», «Поставщик», «Прайс от»:
+    они были в форме, которую до шага строило ядро). У позиции «на разнос»
+    карточки нет (поставщик — «нет в прайсах»); «Принять в справочник»
+    заводит её сам (models/pending_product.py).
+    active в XML — грабли Odoo 19 (xpath на узел зависимого модуля).
+  -->
+  <record id="view_metal_profile_form_card" model="ir.ui.view">
+    <field name="name">pmk.metal.profile.form.card</field>
+    <field name="model">pmk.metal.profile</field>
+    <field name="inherit_id" ref="pmk_calc.view_metal_profile_form"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//group[@name='pmk_reference']" position="inside">
+        <field name="product_tmpl_id" readonly="1" invisible="not product_tmpl_id"/>
+        <!-- Цена, чья и с какой даты — как в форме ядра до шага и в списке
+             справочника (metal_reference_price_views.xml, шаг 25). -->
+        <field name="pmk_price_ton" invisible="not pmk_price_ton"/>
+        <field name="pmk_price_supplier_label"/>
+        <field name="pmk_price_date" invisible="not pmk_price_date"/>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="view_metal_sheet_form_card" model="ir.ui.view">
+    <field name="name">pmk.metal.sheet.form.card</field>
+    <field name="model">pmk.metal.sheet</field>
+    <field name="inherit_id" ref="pmk_calc.view_metal_sheet_form"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//group[@name='pmk_reference']" position="inside">
+        <field name="product_tmpl_id" readonly="1" invisible="not product_tmpl_id"/>
+        <!-- Цена, чья и с какой даты — как в форме ядра до шага и в списке
+             справочника (metal_reference_price_views.xml, шаг 25). -->
+        <field name="pmk_price_ton" invisible="not pmk_price_ton"/>
+        <field name="pmk_price_supplier_label"/>
+        <field name="pmk_price_date" invisible="not pmk_price_date"/>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="view_metal_fastener_form_card" model="ir.ui.view">
+    <field name="name">pmk.metal.fastener.form.card</field>
+    <field name="model">pmk.metal.fastener</field>
+    <field name="inherit_id" ref="pmk_calc.view_metal_fastener_form"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//group[@name='pmk_reference']" position="inside">
+        <field name="product_tmpl_id" readonly="1" invisible="not product_tmpl_id"/>
+        <!-- Цена, чья и с какой даты — как в форме ядра до шага и в списке
+             справочника (metal_reference_price_views.xml, шаг 25). -->
+        <field name="pmk_price_ton" invisible="not pmk_price_ton"/>
+        <field name="pmk_price_supplier_label"/>
+        <field name="pmk_price_date" invisible="not pmk_price_date"/>
+      </xpath>
+    </field>
+  </record>
+</odoo>

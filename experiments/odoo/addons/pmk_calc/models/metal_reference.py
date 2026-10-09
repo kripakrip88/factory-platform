@@ -88,9 +88,16 @@ class MetalProfile(models.Model):
 
     display_name = fields.Char(compute="_compute_display_name", store=True)
 
-    @api.depends("profile_type", "size_label")
+    # Позиция «на разнос» (шаг З-10, metal_pending.py) называется так, как
+    # её записали в чертеже («Уголок 75×6 09Г2С»): вида и типоразмера у неё
+    # ещё нет, «Прочее Уголок 75×6…» читалось бы хуже. После «Принять в
+    # справочник» — обычное имя «вид типоразмер».
+    @api.depends("profile_type", "size_label", "pmk_pending", "pmk_pending_name")
     def _compute_display_name(self):
         for rec in self:
+            if rec.pmk_pending and rec.pmk_pending_name:
+                rec.display_name = rec.pmk_pending_name
+                continue
             rec.display_name = f"{rec.profile_type} {rec.size_label}".strip()
 
     @api.model
@@ -120,11 +127,14 @@ class MetalProfile(models.Model):
             for rec in records
         ]
         ids = size_search.rank_profiles(entries, name or "", prefer)
+        # Шаг З-10: позиции «на разнос» — по словам названия из чертежа
+        # («уголок 75» находит «Уголок 75×6 09Г2С»), в конце подсказки.
+        pending = self._pmk_pending_matches(name, domain)
         if not ids:
-            return super().name_search(name, domain, operator, limit)
-        if limit:
-            ids = ids[:limit]
-        return [(rec.id, rec.display_name) for rec in self.browse(ids).sudo()]
+            return self._pmk_merge_pending(
+                super().name_search(name, domain, operator, limit), pending, limit)
+        return self._pmk_merge_pending(
+            [(i, None) for i in ids], pending, limit)
 
 
 class MetalSheet(models.Model):
@@ -159,9 +169,13 @@ class MetalSheet(models.Model):
     )
     display_name = fields.Char(compute="_compute_display_name", store=True)
 
-    @api.depends("sheet_type", "thickness_mm", "size_label")
+    @api.depends("sheet_type", "thickness_mm", "size_label", "pmk_pending", "pmk_pending_name")
     def _compute_display_name(self):
         for rec in self:
+            # «На разнос» (шаг З-10) — название как в чертеже.
+            if rec.pmk_pending and rec.pmk_pending_name:
+                rec.display_name = rec.pmk_pending_name
+                continue
             size = f" {rec.size_label}" if rec.size_label else ""
             # Толщину показываем без хвоста нулей: «4 мм», а не «4.00 мм».
             thick = ("%g" % rec.thickness_mm)
@@ -182,11 +196,12 @@ class MetalSheet(models.Model):
             Domain(domain or Domain.TRUE), ["sheet_type", "thickness_mm", "size_label"])
         entries = [(rec.id, rec.sheet_type, rec.thickness_mm, rec.size_label) for rec in records]
         ids = size_search.rank_sheets(entries, name)
+        pending = self._pmk_pending_matches(name, domain)
         if not ids:
-            return super().name_search(name, domain, operator, limit)
-        if limit:
-            ids = ids[:limit]
-        return [(rec.id, rec.display_name) for rec in self.browse(ids).sudo()]
+            return self._pmk_merge_pending(
+                super().name_search(name, domain, operator, limit), pending, limit)
+        return self._pmk_merge_pending(
+            [(i, None) for i in ids], pending, limit)
 
 
 class MetalGrade(models.Model):
