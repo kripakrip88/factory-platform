@@ -198,7 +198,7 @@ class TestStepZ13Layout(TransactionCase):
         spec.action_draft_layout()
         group = strip_z.layout_group_id
         self.assertEqual((group.mode, group.sheets, group.grade_id), ("joint", 76, st3))
-        self.assertFalse(groups.filtered(lambda g: g.grade_id == g09).exists())
+        self.assertFalse(groups.exists().filtered(lambda g: g.grade_id == g09))
 
     def test_no_sheet_details_only_separate(self):
         """Детали без выбранного листа — толщина неизвестна: одна группа
