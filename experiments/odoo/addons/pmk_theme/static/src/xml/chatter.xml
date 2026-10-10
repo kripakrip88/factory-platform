@@ -12,6 +12,10 @@
     Кнопку вставляем ПЕРЕД «Отправить сообщение», а не перед блоком t-else:
     в шаблоне ядра идут парные t-if/t-else, и вставка между ними роняет Owl
     с «t-elif and t-else must be preceded by a t-if» — уже проходили на шапке.
+
+    Состояние — pmkCollapsedNow, а не pmk.collapsed (шаг 49Б, 10.10.2026):
+    сбоку от листа на широком экране история всегда развёрнута, кнопку там
+    прячет forms_nexus.scss (раздел «Шаг 49Б»).
   -->
   <t t-name="pmk_theme.ChatterCollapsible"
      t-inherit="mail.Chatter"
@@ -19,13 +23,13 @@
 
     <xpath expr="//div[hasclass('o-mail-Chatter')]" position="attributes">
       <attribute name="t-att-data-pmk-model">props.threadModel</attribute>
-      <attribute name="t-att-data-pmk-collapsed">pmk.collapsed ? '1' : '0'</attribute>
+      <attribute name="t-att-data-pmk-collapsed">pmkCollapsedNow ? '1' : '0'</attribute>
     </xpath>
 
     <xpath expr="//button[hasclass('o-mail-Chatter-sendMessage')]" position="before">
       <button class="pmk-chatter-toggle btn btn-link text-action d-flex align-items-center"
-              t-att-aria-expanded="pmk.collapsed ? 'false' : 'true'"
-              t-att-title="pmk.collapsed ? 'Показать историю' : 'Свернуть историю'"
+              t-att-aria-expanded="pmkCollapsedNow ? 'false' : 'true'"
+              t-att-title="pmkCollapsedNow ? 'Показать историю' : 'Свернуть историю'"
               t-on-click="pmkToggle">
         <!-- Стрелка одна, поворот делает CSS по состоянию: так разметка
              остаётся статичной и не зависит от перерисовки. -->

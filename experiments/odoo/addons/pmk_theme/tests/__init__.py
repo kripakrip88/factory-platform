@@ -44,6 +44,14 @@ from . import test_step48_header
 #        --test-tags /pmk_theme:TestStep49Width,/pmk_theme:TestHeaderStep48,/pmk_theme:TestDarkPairsStep40,/pmk_theme \
 #        --stop-after-init --http-port 8099
 from . import test_step49_width
+# Лента справа от листа от 2200 px (шаг 49Б): раздел в конце живого
+# forms_nexus.scss, порог един с js/chatter_aside_rules.js, шаг 49 до порога
+# без изменений. Вместе с шагами 49, 48, 40 и 30 (лента, кнопка «История»):
+#   odoo -d pmk49b_test -i pmk_theme,pmk_deal,theme_nexus --test-enable \
+#        --test-tags /pmk_theme:TestStep49bAside,/pmk_theme:TestStep49Width,/pmk_theme:TestHeaderStep48,/pmk_theme:TestDarkPairsStep40,/pmk_theme:TestHighlightsStep30 \
+#        --stop-after-init --http-port 8099
+# Правила без Odoo — node static/tests/chatter_aside_step49b.test.mjs.
+from . import test_step49b_aside
 # Мелочи после приёмки 22–34 (шаг 53): теги сделки, «Снабженец», поля рулона
 # в доборке — до востребования; «Возможность» → «Сделка» (слова sale_crm,
 # форма стадии, Настройки CRM, тур). С pmk_calc (доборка) и pmk_purchase:
