@@ -287,7 +287,10 @@ class TestHeaderStep48(TransactionCase):
     def test_header_up_marker(self):
         for model, xmlid in (("crm.lead", "crm.crm_lead_view_form"),
                              ("pmk.metal.spec", "pmk_calc.view_metal_spec_form"),
-                             ("pmk.dobor.order", "pmk_calc.view_dobor_order_form")):
+                             ("pmk.dobor.order", "pmk_calc.view_dobor_order_form"),
+                             # 11.10.2026: вентзонты и заказ поставщику — тоже наверх.
+                             ("pmk.vent.hood.order", "pmk_calc.view_vent_hood_order_form"),
+                             ("purchase.order", "purchase.purchase_order_form")):
             with self.subTest(model=model):
                 views = self.env[model].get_views([(self.env.ref(xmlid).id, "form")])
                 arch = etree.fromstring(views["views"]["form"]["arch"])
@@ -295,14 +298,11 @@ class TestHeaderStep48(TransactionCase):
                 self.assertIsNotNone(arch.find("header"), "<header> в разметке на месте.")
         for xmlid in ("pmk_theme.view_crm_lead_form_header_up",
                       "pmk_theme.view_metal_spec_form_header_up",
-                      "pmk_theme.view_dobor_order_form_header_up"):
+                      "pmk_theme.view_dobor_order_form_header_up",
+                      "pmk_theme.view_vent_hood_order_form_header_up",
+                      "pmk_theme.view_purchase_order_form_header_up"):
             with self.subTest(view=xmlid):
                 self.assertTrue(self.env.ref(xmlid).active)
-        purchase = self.env.ref("purchase.purchase_order_form", raise_if_not_found=False)
-        if purchase:
-            views = self.env["purchase.order"].get_views([(purchase.id, "form")])
-            arch = etree.fromstring(views["views"]["form"]["arch"])
-            self.assertNotIn("o_pmk_header_up", _classes(arch), "Закупки — как были.")
 
     def test_lost_not_in_form_gear(self):
         lost = self.env.ref("crm.crm_lead_lost_action")

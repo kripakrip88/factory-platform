@@ -10,8 +10,11 @@
     (лид из почты) — шапка в листе, как раньше (почему не от 992 —
     js/form_head_rules.js, HEADER_UP_MIN_SIZE).
 
-    Документы: сделка и лид (одна форма), расчёт, доборка. Закупки и
-    остальные штатные документы не трогаем: кнопок в шапке там больше.
+    Документы: сделка и лид (одна форма), расчёт, доборка; 11.10.2026 —
+    заказ вентзонтов и заказ поставщику / заявка на металл (Антон: «как
+    будто два разных дизайнера делали… кнопки и статус документа перенесём
+    наверх, как в расчёте»). Лазер и раскрой — меткой в своих формах
+    (pmk_laser, pmk_cut: pmk_theme от них не зависит).
 
     XML форм и узел <header> не меняются — только класс у <form>: xpath
     наследников (pmk_bridge, pmk_deal, pmk_laser) и тесты, которые ищут
@@ -49,6 +52,30 @@
     <field name="name">pmk.dobor.order.form.pmk.header.up</field>
     <field name="model">pmk.dobor.order</field>
     <field name="inherit_id" ref="pmk_calc.view_dobor_order_form"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="/form" position="attributes">
+        <attribute name="class" add="o_pmk_header_up" separator=" "/>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="view_vent_hood_order_form_header_up" model="ir.ui.view">
+    <field name="name">pmk.vent.hood.order.form.pmk.header.up</field>
+    <field name="model">pmk.vent.hood.order</field>
+    <field name="inherit_id" ref="pmk_calc.view_vent_hood_order_form"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="/form" position="attributes">
+        <attribute name="class" add="o_pmk_header_up" separator=" "/>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="view_purchase_order_form_header_up" model="ir.ui.view">
+    <field name="name">purchase.order.form.pmk.header.up</field>
+    <field name="model">purchase.order</field>
+    <field name="inherit_id" ref="purchase.purchase_order_form"/>
     <field name="active" eval="True"/>
     <field name="arch" type="xml">
       <xpath expr="/form" position="attributes">

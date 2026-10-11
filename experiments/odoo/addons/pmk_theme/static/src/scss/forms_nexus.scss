@@ -3156,3 +3156,32 @@ $pmk-card-line: unquote("var(--pmk-border, #e3e4e8)") !default;
     padding-inline: 0;
   }
 }
+
+// ═══ Лента документа в рамке (разбор UX, 11.10.2026) ═══════════════════════
+//
+// Антон после шага 52: «тут может тоже поаккуратнее сделаем?» — «История»
+// под документом была серой полосой во всю ширину без рамки (фон ядра
+// #f8f9fa у контейнера и у верхней полосы). Теперь — такая же карточка, как
+// шапка и таблица документа: белая, тонкая рамка, скругление 10. Верхняя
+// полоса ленты залипает при прокрутке — ей тот же фон, иначе под ней
+// просвечивали бы сообщения. Боковая лента (o-aside, широкий экран, шаг 49Б)
+// уже карточка (chatter.scss) — не трогаем. Тёмная пара: фон даёт dark.scss
+// («11. Лента документа», var(--pmk-surface)), рамка — var(--pmk-border).
+@media screen and (min-width: 768px) {
+  .o_action_manager .o_form_view .o_form_renderer > .o-mail-Form-chatter:not(.o-aside) {
+    background: var(--pmk-surface, #fff) !important;
+    border: 1px solid var(--pmk-border, #e3e4e8) !important;
+    border-radius: 10px;
+  }
+
+  // Левую черту блока истории (тема Nexus, border-left #eae6dc) внутри
+  // карточки не нужно: рамка уже есть, черта читалась полосой у края.
+  .o_action_manager .o_form_view .o_form_renderer > .o-mail-Form-chatter:not(.o-aside) .o-mail-Chatter {
+    border-left: 0 !important;
+  }
+
+  .o_action_manager .o_form_view .o_form_renderer > .o-mail-Form-chatter:not(.o-aside) .o-mail-Chatter-top {
+    background-color: var(--pmk-surface, #fff) !important;
+    border-radius: 10px 10px 0 0;
+  }
+}

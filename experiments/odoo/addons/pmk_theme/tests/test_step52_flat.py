@@ -145,7 +145,12 @@ class TestStep52Flat(TransactionCase):
             with self.subTest(path=path):
                 start = source.index(STEP_MARK)
                 self.assertEqual(source.count(STEP_MARK), 1)
-                self.assertEqual(source.find("// ═══", start + 1), -1, "Раздел — последним в файле.")
+                # Ниже шага 52 — только более поздние разделы (11.10: «Лента
+                # документа в рамке»), старые правила его не перебивают.
+                later = source.find("// ═══", start + 1)
+                if later != -1:
+                    self.assertIn("Лента документа в рамке", source[later:later + 80],
+                                  "Ниже шага 52 — только разделы новее него.")
         forms = _read(FORMS_SCSS)
         self.assertLess(forms.index("// ═══ Шаг 49Б"), forms.index(STEP_MARK))
         self.assertNotIn("Шаг 52", _read(OLD_FORMS_SCSS), "forms.scss выключен — правка туда не доедет.")
