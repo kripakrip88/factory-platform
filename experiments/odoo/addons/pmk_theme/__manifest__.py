@@ -11,7 +11,7 @@
 и работает как «все приложения». Так ничего не становится недостижимым,
 когда модулей больше, чем влезает по ширине.
     """,
-    "version": "19.0.2.13.0",
+    "version": "19.0.2.14.0",
     "category": "Theme/Backend",
     "author": "ПМК Парк",
     "license": "LGPL-3",
@@ -159,6 +159,19 @@
             "pmk_theme/static/src/xml/statusbar_compact.xml",
             "pmk_theme/static/src/xml/navbar.xml",
             "pmk_theme/static/src/xml/chatter.xml",
+            # «История» кнопкой в строке пути, лента из формы убрана
+            # (разбор UX, шаг 65, 11.10.2026): значки «История» и «Файлы»,
+            # окно истории, вкладка «Файлы», «Задача» в «⚙ Действия».
+            # ⚠️ ПОСЛЕ chatter.xml (копия ленты собирается с его
+            # расширением) и после form_head.js / form_head.xml (значок
+            # встаёт в слот этапа шага 48 — после этапа). Правила — чистые
+            # функции (их гоняет node), раньше патчей; doc_files.js и
+            # doc_history.js — раньше doc_tools.js, который их импортирует.
+            "pmk_theme/static/src/js/doc_tools_rules.js",
+            "pmk_theme/static/src/js/doc_files.js",
+            "pmk_theme/static/src/js/doc_history.js",
+            "pmk_theme/static/src/js/doc_tools.js",
+            "pmk_theme/static/src/xml/doc_tools.xml",
             # Пустые экраны без «помощников» (разбор UX, шаг 26, 01.10.2026):
             # видео в КП и BillGuide у счетов поставщиков. Текст подсказки и
             # отключение демо-строк — models/, стиль — forms_nexus.scss,

@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  «История» кнопкой в строке пути, лента из формы убрана — разбор UX, шаг 65
+  (11.10.2026). Логика — js/doc_tools.js, js/doc_history.js, js/doc_files.js;
+  правила — js/doc_tools_rules.js; стили — forms_nexus.scss и dark.scss,
+  раздел «Шаг 65».
+
+  ⚠️ ФАЙЛ — ПОСЛЕ xml/chatter.xml И xml/form_head.xml (манифест):
+    • primary-копия ленты (pmk_theme.HistoryChatter) собирается с
+      расширениями mail.Chatter, зарегистрированными раньше неё;
+    • значок встаёт в слот этапа шага 48 (form_head.xml) — после этапа.
+  Узлы ядра, на которые опираются xpath, сверяет tests/test_step65_history.py:
+  путь не нашёлся — Owl покажет белый экран вместо формы.
+-->
+<templates xml:space="preserve">
+
+  <!-- ═══ Значки в строке пути ═══════════════════════════════════════════ -->
+  <!--
+    «История» — всегда; скрепка «Файлы» — только у форм без вкладки «Файлы».
+    Просрочка — красным знаком И словом «просрочено» на кнопке (цвет
+    повторён словом); на телефоне слово прячут стили, остаётся подсказка.
+    Погашенный значок — aria-disabled, а не disabled: у .btn:disabled
+    pointer-events: none, и подсказка «появится после сохранения» не
+    показалась бы.
+  -->
+  <t t-name="pmk_theme.DocTools">
+    <div class="o_pmk_doc_tools d-flex align-items-center gap-1 d-print-none">
+      <button type="button" class="btn btn-secondary o_pmk_doc_tools__btn o_pmk_history_btn"
+              t-att-class="{ 'o_pmk_doc_tools__btn--off': isNew, 'o_pmk_doc_tools__btn--count': counts.activities }"
+              t-att-aria-disabled="isNew ? 'true' : 'false'"
+              t-att-data-tooltip="historyTip"
+              t-att-aria-label="historyTip"
+              t-on-click="() => this.openHistory()">
+        <i class="fa fa-history" aria-hidden="true"/>
+        <span t-if="counts.activities" class="o_pmk_doc_tools__count" t-esc="countLabel(counts.activities)"/>
+        <span t-if="counts.overdue" class="o_pmk_doc_tools__overdue">
+          <i class="fa fa-exclamation-triangle" aria-hidden="true"/>
+          <span class="o_pmk_doc_tools__overdue-word">просрочено</span>
+        </span>
+      </button>
+      <button t-if="!props.filesTab" type="button" class="btn btn-secondary o_pmk_doc_tools__btn o_pmk_files_btn"
+              t-att-class="{ 'o_pmk_doc_tools__btn--off': isNew, 'o_pmk_doc_tools__btn--count': counts.files }"
+              t-att-aria-disabled="isNew ? 'true' : 'false'"
+              t-att-data-tooltip="filesTip"
+              t-att-aria-label="filesTip"
+              t-on-click="() => this.openFiles()">
+        <i class="fa fa-paperclip" aria-hidden="true"/>
+        <span t-if="counts.files" class="o_pmk_doc_tools__count" t-esc="countLabel(counts.files)"/>
+      </button>
+    </div>
+  </t>
+
+  <!--
+    Слот правой зоны строки пути. У web.FormView он уже есть (этап шага 48,
+    form_head.xml) — значки встают внутрь, ПОСЛЕ этапа; перед стрелками их
+    ставит order в стилях. Геттеры — на FormController.prototype: работают и
+    у наследников со своими static components.
+  -->
+  <t t-inherit="web.FormView" t-inherit-mode="extension">
+    <xpath expr="//t[@t-set-slot='control-panel-navigation-additional']" position="inside">
+      <t t-if="pmkDocToolsOn" t-component="pmkDocToolsCls" t-props="pmkDocToolsProps"/>
+    </xpath>
+  </t>
+
+  <!--
+    Primary-копии web.FormView, собранные ДО нашего бандла («Список дел»,
+    задачи и доска «Доработка системы», проекты): правка web.FormView до них
+    не доходит, слота этапа у них нет — заводим его.
+  -->
+  <t t-inherit="resource.FormViewWithHtmlExpander" t-inherit-mode="extension">
+    <xpath expr="//t[@t-set-slot='control-panel-status-indicator']" position="after">
+      <t t-set-slot="control-panel-navigation-additional">
+        <t t-if="pmkDocToolsOn" t-component="pmkDocToolsCls" t-props="pmkDocToolsProps"/>
+      </t>
+    </xpath>
+  </t>
+
+  <t t-inherit="project.ProjectTaskFormView" t-inherit-mode="extension">
+    <xpath expr="//t[@t-set-slot='control-panel-status-indicator']" position="after">
+      <t t-set-slot="control-panel-navigation-additional">
+        <t t-if="pmkDocToolsOn" t-component="pmkDocToolsCls" t-props="pmkDocToolsProps"/>
+      </t>
+    </xpath>
+  </t>
+
+  <t t-inherit="project.ProjectFormView" t-inherit-mode="extension">
+    <xpath expr="//t[@t-set-slot='control-panel-status-indicator']" position="after">
+      <t t-set-slot="control-panel-navigation-additional">
+        <t t-if="pmkDocToolsOn" t-component="pmkDocToolsCls" t-props="pmkDocToolsProps"/>
+      </t>
+    </xpath>
+  </t>
+
+  <!-- ═══ Окно «История» ════════════════════════════════════════════════ -->
+  <!--
+    Лента без верхней полосы: ни «Отправить сообщение», ни «Внутренней
+    заметки», ни «Задачи», ни поиска, скрепки, подписчиков и кнопки
+    сворачивания. Блоки задач и запланированных писем, письма, заметки и
+    изменения полей — штатные.
+  -->
+  <t t-name="pmk_theme.HistoryChatter" t-inherit="mail.Chatter" t-inherit-mode="primary">
+    <xpath expr="//div[hasclass('o-mail-Chatter-topbar')]" position="replace"/>
+  </t>
+
+  <t t-name="pmk_theme.HistoryDialog">
+    <Dialog size="'fullscreen'" title="props.title" contentClass="'pmk-history-dialog'">
+      <div class="pmk-history-dialog__col">
+        <PmkHistoryChatter t-props="props.chatterProps"/>
+      </div>
+      <t t-set-slot="footer">
+        <button type="button" class="btn btn-secondary o_pmk_history_close" t-on-click="() => this.props.close()">Закрыть</button>
+      </t>
+    </Dialog>
+  </t>
+
+  <!-- ═══ Файлы ═════════════════════════════════════════════════════════ -->
+  <t t-name="pmk_theme.Files">
+    <div class="o_pmk_files" t-ref="root">
+      <p t-if="!props.resId" class="o_pmk_files__empty text-muted mb-0">Файлы можно добавить после сохранения документа</p>
+      <t t-else="">
+        <div t-if="canUpload" class="o_pmk_files__bar d-flex flex-wrap align-items-center gap-2">
+          <FileUploader multiUpload="true" fileUploadClass="'o_pmk_files__input'" onUploaded.bind="onUploaded">
+            <t t-set-slot="toggler">
+              <button type="button" class="btn btn-secondary o_pmk_files__add">
+                <i class="fa fa-plus me-1" aria-hidden="true"/>Добавить файл
+              </button>
+            </t>
+          </FileUploader>
+          <span class="o_pmk_files__hint text-muted">или перетащите файлы сюда</span>
+        </div>
+        <p t-if="loading" class="o_pmk_files__empty text-muted mb-0">Загружаю список файлов…</p>
+        <p t-elif="!attachments.length" class="o_pmk_files__empty text-muted mb-0">Файлов пока нет</p>
+        <div t-else="" class="o_pmk_files__list">
+          <AttachmentList attachments="attachments" unlinkAttachment.bind="unlink"/>
+        </div>
+      </t>
+    </div>
+  </t>
+
+  <t t-name="pmk_theme.FilesWidget">
+    <PmkFiles resModel="props.record.resModel" resId="props.record.resId || false" reloadRecord="reloadRecord"/>
+  </t>
+
+  <t t-name="pmk_theme.FilesDialog">
+    <Dialog size="'lg'" title="title" contentClass="'pmk-files-dialog'">
+      <PmkFiles resModel="props.resModel" resId="props.resId" reloadRecord="props.reloadRecord"/>
+      <t t-set-slot="footer">
+        <button type="button" class="btn btn-secondary" t-on-click="() => this.props.close()">Закрыть</button>
+      </t>
+    </Dialog>
+  </t>
+
+  <t t-name="pmk_theme.FilesCount">
+    <span t-if="label" class="o_pmk_tab_count" t-att-title="'Файлов: ' + count" t-esc="label"/>
+  </t>
+
+  <!--
+    Число в ярлыке вкладки «Файлы» — после названия. Копия ярлыков у счетов
+    (account.AccountMoveFormNotebook) собрана до нас — тот же узел отдельно.
+    Запись — из слота вкладки (pmkFilesRecord, doc_files.js): у окна строки
+    env.model нет.
+  -->
+  <t t-inherit="web.Notebook" t-inherit-mode="extension">
+    <xpath expr="//t[@t-esc='navItem[1].title']" position="after">
+      <t t-if="navItem[1].name === 'pmk_files' and pmkFilesCountCls" t-component="pmkFilesCountCls"
+         resModel="pmkFilesRecord(navItem)?.resModel" resId="pmkFilesRecord(navItem)?.resId || false"/>
+    </xpath>
+  </t>
+
+  <t t-inherit="account.AccountMoveFormNotebook" t-inherit-mode="extension">
+    <xpath expr="//t[@t-esc='navItem[1].title']" position="after">
+      <t t-if="navItem[1].name === 'pmk_files' and pmkFilesCountCls" t-component="pmkFilesCountCls"
+         resModel="pmkFilesRecord(navItem)?.resModel" resId="pmkFilesRecord(navItem)?.resId || false"/>
+    </xpath>
+  </t>
+
+  <!-- ═══ «Задача» в «⚙ Действия» ═══════════════════════════════════════ -->
+  <t t-name="pmk_theme.ScheduleTaskItem">
+    <DropdownItem class="'o_menu_item o_pmk_schedule_task'" onSelected.bind="onSelected">
+      <i class="fa fa-fw fa-clock-o me-1" aria-hidden="true"/>Задача
+    </DropdownItem>
+  </t>
+
+</templates>

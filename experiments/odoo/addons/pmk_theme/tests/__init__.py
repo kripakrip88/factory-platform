@@ -70,3 +70,13 @@ from . import test_step59_tasks
 #        --test-tags /pmk_theme:TestStep52Flat,/pmk_theme:TestStep49bAside,/pmk_theme:TestStep49Width,/pmk_theme:TestHeaderStep48,/pmk_theme:TestDarkPairsStep40,/pmk_theme:TestStep39Words,/pmk_deal,/pmk_org,/pmk_laser,/pmk_tech \
 #        --stop-after-init --http-port 8099
 from . import test_step52_flat
+# «История» кнопкой в строке пути, лента из формы убрана (шаг 65): вкладка
+# «Файлы» основным документам с вкладками, выключатель «Убранное (показать)»,
+# расширения шаблонов (строка пути, копия ленты, ярлык вкладки), раздел в
+# конце живых forms_nexus.scss и dark.scss. Вместе с соседями (52 — порядок
+# разделов, pmk_flow — «Связи» последней из своих вкладок):
+#   odoo -d pmk65_test -i pmk_theme,pmk_deal,pmk_calc,pmk_flow,pmk_orders,pmk_tech,pmk_cut,pmk_laser,theme_nexus --test-enable \
+#        --test-tags /pmk_theme:TestStep65History,/pmk_theme:TestStep65Session,/pmk_theme:TestStep52Flat,/pmk_theme:TestStep49bAside,/pmk_theme:TestStep49Width,/pmk_theme:TestHeaderStep48,/pmk_theme:TestDarkPairsStep40,/pmk_theme:TestStep39Words,/pmk_flow \
+#        --stop-after-init --http-port 8099
+# Правила без Odoo — node static/tests/doc_tools_step65.test.mjs.
+from . import test_step65_history

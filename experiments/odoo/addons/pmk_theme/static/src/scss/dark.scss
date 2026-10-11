@@ -1452,3 +1452,24 @@ $pmk-dark-alerts: (
     border-color: var(--pmk-border) !important;
   }
 }
+
+// ═══ Шаг 65: история кнопкой в строке пути — тёмная пара (11.10.2026) ═══════
+// Светлые правила — forms_nexus.scss, раздел «Шаг 65». Кнопки значков —
+// штатные .btn-secondary (их тёмная пара — раздел 4). Здесь: плашка числа во
+// вкладке «Файлы», знак просрочки, тело окна «История» (переменные словаря,
+// раздел 0).
+@media screen {
+
+  body.o_nexus_dark .o_notebook .nav-link .o_pmk_tab_count {
+    background: var(--pmk-surface-2);
+    color: var(--pmk-ink-3);
+  }
+
+  body.o_nexus_dark .o_pmk_doc_tools .o_pmk_doc_tools__overdue {
+    color: var(--pmk-tone-red-ink);
+  }
+
+  body.o_nexus_dark .pmk-history-dialog .modal-body {
+    background: var(--pmk-surface);
+  }
+}

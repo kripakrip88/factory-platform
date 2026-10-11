@@ -33,7 +33,9 @@ class TestLaserTabStep36(TransactionCase):
         view = self.env.ref("pmk_laser.view_laser_job_form")
         arch = etree.fromstring(
             self.env["pmk.laser.job"].get_views([(view.id, "form")])["views"]["form"]["arch"])
-        pages = arch.xpath("/form/sheet/notebook/page")
+        # «Файлы» (pmk_theme, шаг 65) сервер ставит всем формам с лентой
+        # самой последней — после «Связей»; «Связи» — последняя из своих.
+        pages = [p for p in arch.xpath("/form/sheet/notebook/page") if p.get("name") != "pmk_files"]
         self.assertEqual(pages[-1].get("name"), "pmk_flow", "«Связи» — последней вкладкой.")
         self.assertEqual(pages[-1].get("string"), "Связи")
         self.assertTrue(pages[-1].xpath("widget[@name='pmk_flow_map']"))

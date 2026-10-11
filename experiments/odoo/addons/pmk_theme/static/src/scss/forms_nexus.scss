@@ -3190,3 +3190,174 @@ $pmk-card-line: unquote("var(--pmk-border, #e3e4e8)") !default;
     border-radius: 10px 10px 0 0;
   }
 }
+
+// ═══ Шаг 65: история кнопкой в строке пути (разбор UX, 11.10.2026) ═════════
+//
+// Антон 11.10: «блок история уведём в отдельную кнопку в шапке документа —
+// иконка между статусом и стрелками переключения между документами; история
+// открывается в окне, как рисование доборки». Логика — js/doc_tools.js,
+// js/doc_history.js, js/doc_files.js; разметка — xml/doc_tools.xml; тёмная
+// пара — dark.scss, раздел «Шаг 65».
+//
+// Ленты под формой (и справа на широком экране) у форм основного окна
+// больше нет — у корня формы класс o_pmk_chatter_out. Человеку в группе
+// «Убранное (показать)» лента возвращается под форму: класса нет, и ВСЕ
+// прежние правила ленты снова работают. Поэтому их не удаляем, а оставляем
+// «спящими» (живут только для выключателя):
+//   • «Раскладка: чат под формой», шаги 30.1 / 30.3 (кнопки ленты, кнопка
+//     «История ▾», свёрнутая полоса), 49.2 (лента по краям карточки), 49Б
+//     (лента справа от 2200 px), «Лента документа в рамке»;
+//   • hidden.scss — лента без «Отправить сообщение» и подписчиков по моделям;
+//   • js/chatter_inline.js (сворачивание, раскладка 49Б), xml/chatter.xml.
+//
+// 65.1 Лист без ленты — в один поток. На XXL (от 1534 px) ядро ставит лист
+// и ленту в ряд (o_xxl_form_view, у подложки листа своя прокрутка). Лента
+// раньше уходила вниз правилом «чат под формой» (колонка, высота auto); без
+// ленты то правило не срабатывает, и лист остался бы в ряду один со своей
+// полосой прокрутки посреди экрана. Здесь — та же колонка по нашему классу.
+// Формы с превью вложения (счёт — COMBO ядра) не трогаем: там лист делит
+// строку с превью. Лист по-прежнему до 1800 px и прижат влево (шаг 49);
+// справа на экранах шире 1800 — пусто, как до шага 49Б.
+// 65.2 Значки «История» и «Файлы» — в правой зоне строки пути, перед
+// стрелками листалки (order, как у этапа шага 48 — он раньше в разметке,
+// значки встают после него). Размер — как у стрелок (48.5): 28 px.
+// Погашенный (несохранённый документ) — бледный, без отклика. Просрочка
+// задач — красный ⚠ и слово «просрочено» (от 768 px).
+// 65.3 Число файлов в ярлыке вкладки «Файлы» — серая плашка: только число,
+// цвет смысла не несёт.
+// 65.4 Окно «История»: колонка не шире 1200 px по центру, без верхней полосы
+// ленты (её убирает шаблон); пустая липкая шапка ленты не рисуется.
+// 65.5 Файлы — во вкладке и в окне скрепки.
+//
+// Без min()/max() — libsass Odoo роняет всю сборку. Яркого лайма нет.
+
+// ─── 65.1 Лист без ленты — в один поток ────────────────────────────────────
+@media screen {
+  .o_form_view.o_pmk_chatter_out .o_form_renderer:not(:has(> .o_attachment_preview)) {
+    flex-direction: column !important;
+    height: auto !important;
+    min-height: 100%;
+
+    > .o_form_sheet_bg {
+      width: 100% !important;
+      flex: 0 0 auto !important;
+    }
+  }
+}
+
+// ─── 65.2 Значки в строке пути ─────────────────────────────────────────────
+.o_control_panel .o_control_panel_navigation > .o_pmk_doc_tools {
+  order: -1;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.o_pmk_doc_tools .btn.o_pmk_doc_tools__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 !important;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.o_pmk_doc_tools .btn.o_pmk_doc_tools__btn--count {
+  padding: 0 7px !important;
+}
+
+.o_pmk_doc_tools .btn.o_pmk_doc_tools__btn[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.o_pmk_doc_tools .o_pmk_doc_tools__count {
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+// Просрочка: красный знак И слово «просрочено» (цвет повторён словом). На
+// телефоне (до 768 px) слово прячется — строка пути там узкая, остаётся знак
+// и подсказка «… просрочено: N».
+.o_pmk_doc_tools .o_pmk_doc_tools__overdue {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  color: #b3392f;
+}
+
+.o_pmk_doc_tools .o_pmk_doc_tools__overdue-word {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+@media (max-width: 767.98px) {
+  .o_pmk_doc_tools .o_pmk_doc_tools__overdue-word {
+    display: none;
+  }
+}
+
+// «Список дел» (project_todo) ставит в строку пути свою кнопку «показать
+// ленту» (todo_toggle_chatter). Ленты в форме больше нет — кнопка ничего бы
+// не делала; история — тем же значком «История». У выключателя кнопка
+// возвращается вместе с лентой (класса o_pmk_chatter_out нет).
+.o_form_view.o_pmk_chatter_out .o_control_panel .todo_toggle_chatter {
+  display: none !important;
+}
+
+// ─── 65.3 Число во вкладке «Файлы» ─────────────────────────────────────────
+.o_notebook .nav-link .o_pmk_tab_count {
+  display: inline-block;
+  min-width: 18px;
+  margin-inline-start: 6px;
+  padding: 0 6px;
+  border-radius: 9px;
+  background: #eceae4;
+  color: #4b4f58;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+  text-align: center;
+  vertical-align: 1px;
+}
+
+// ─── 65.4 Окно «История» ───────────────────────────────────────────────────
+.pmk-history-dialog .modal-body {
+  background: var(--pmk-surface, #fff);
+}
+
+.pmk-history-dialog .pmk-history-dialog__col {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.pmk-history-dialog .o-mail-Chatter {
+  height: auto !important;
+  border-left: 0 !important;
+  background-color: transparent !important;
+}
+
+.pmk-history-dialog .o-mail-Chatter-top:not(:has(> *)) {
+  display: none;
+}
+
+// ─── 65.5 Файлы ────────────────────────────────────────────────────────────
+.o_pmk_files {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 96px;
+  padding: 4px 0;
+}
+
+.o_pmk_files .o_pmk_files__hint {
+  font-size: 12px;
+}
+
+.o_pmk_files .o_pmk_files__empty {
+  padding: 8px 0;
+}
