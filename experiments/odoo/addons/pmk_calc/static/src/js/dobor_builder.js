@@ -501,7 +501,6 @@ export class DoborBuilder extends Component {
                     const rot = this.foldRot(s);
                     shift = { x: shift.x + uin.y * rot * FOLD_GAP, y: shift.y - uin.x * rot * FOLD_GAP };
                     const aOff = { x: v[s].x + shift.x, y: v[s].y + shift.y };
-                    const uin = unitv(v[s - 1], v[s]);
                     const cross = (aOff.x - a.x) * uin.y - (aOff.y - a.y) * uin.x;
                     const sweep = cross > 0 ? 0 : 1;
                     const b = { x: v[s + 1].x + shift.x, y: v[s + 1].y + shift.y };
