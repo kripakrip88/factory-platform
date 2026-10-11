@@ -93,6 +93,7 @@
         <field name="pmk_currency_id"/>
         <field name="pmk_date_due"/>
         <field name="pmk_metal"/>
+        <field name="pmk_guarantee"/>
         <templates>
           <t t-name="card">
             <field name="partner_id" class="small text-muted"/>
@@ -102,7 +103,7 @@
               Сдача: <field name="pmk_date_due"/><t t-if="record.pmk_overdue.raw_value"> · просрочена</t>
             </div>
             <div class="small">
-              <field name="pmk_amount" widget="monetary"/> · оплачено <field name="pmk_paid_pct"/> %
+              <field name="pmk_amount" widget="monetary"/> · оплачено <field name="pmk_paid_pct"/> %<t t-if="record.pmk_guarantee.raw_value"> · гарантийное письмо</t>
             </div>
             <div class="d-flex align-items-center mt-1">
               <field name="pmk_metal" widget="badge" invisible="pmk_metal in (False, 'none')"
@@ -149,6 +150,8 @@
               <field name="user_ids" string="Ответственный" widget="many2many_avatar_user"/>
               <field name="pmk_date_start"/>
               <field name="pmk_date_due" decoration-danger="pmk_overdue"/>
+              <!-- Шаг З-15: откуда сдача — «Срок изготовления» счёта словами (та же подпись, что в счёте). -->
+              <field name="pmk_lead_text" invisible="not pmk_lead_text"/>
             </group>
             <group name="pmk_order_money">
               <field name="pmk_amount" readonly="pmk_sale_order_id"/>
@@ -156,6 +159,8 @@
               <field name="pmk_paid_date"/>
               <field name="pmk_paid_amount"/>
               <field name="pmk_paid_pct" string="Оплачено, %"/>
+              <!-- Шаг З-15: работу начали по гарантийному письму вместо оплаты. -->
+              <field name="pmk_guarantee"/>
             </group>
           </group>
           <group name="pmk_order_shop">

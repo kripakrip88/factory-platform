@@ -541,6 +541,8 @@ class SaleOrder(models.Model):
                 missing = found.filtered(lambda row: not row.pmk_sale_order_id)
                 if missing:
                     missing.write({"pmk_sale_order_id": order.id})
+                # Шаг З-15: сдача пуста и руками не правилась — от срока счёта.
+                found.filtered(lambda row: row.pmk_sale_order_id == order)._pmk_fill_plan_dates()
                 rows |= found
                 continue
             rows |= Task._pmk_create_order_row(deal=order.opportunity_id, order=order)

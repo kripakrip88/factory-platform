@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    «Выиграно» → окно «Оплата / гарантия» (шаг З-15). Залитая одна —
+    «Готово» (следующий шаг: сделка выиграна, строка «Заказов в работе» с
+    оплатой и сроком). «Пропустить» — выиграть без оплаты, как
+    раньше; «Отмена» и крестик — сделка остаётся в работе. Подсказки —
+    text-muted (тёмная пара — dark.scss, .modal-content / .text-muted); своих
+    стилей нет.
+  -->
+  <record id="view_pmk_orders_won_wizard_form" model="ir.ui.view">
+    <field name="name">pmk.orders.won.wizard.form</field>
+    <field name="model">pmk.orders.won.wizard</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <form string="Оплата / гарантия">
+        <field name="lead_id" invisible="1"/>
+        <field name="currency_id" invisible="1"/>
+        <field name="base_amount" invisible="1"/>
+        <p class="text-muted">Сделка станет «Выиграно», в строку «Заказов в работе» запишем сумму и дату оплаты и посчитаем срок. Сумма ещё не известна — «Пропустить», внесёте в строке потом.</p>
+        <group name="pmk_won_money">
+          <field name="amount"/>
+          <!-- «% от счёта» и сумма счёта — строкой под суммой. -->
+          <field name="pct_hint" nolabel="1" colspan="2" class="text-muted" readonly="1"/>
+          <field name="date"/>
+          <field name="guarantee"/>
+        </group>
+        <div class="text-muted" invisible="not due_hint">
+          <field name="due_hint" nolabel="1" readonly="1"/>
+        </div>
+        <footer>
+          <button name="action_done" type="object" string="Готово" class="btn-primary" data-hotkey="q"/>
+          <button name="action_skip" type="object" string="Пропустить" class="btn-secondary" data-hotkey="k"
+                  title="Сделка станет «Выиграно» без оплаты — как при перетаскивании в воронке"/>
+          <button special="cancel" string="Отмена" class="btn-link"
+                  title="Закрыть окно: сделка останется в работе"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+</odoo>

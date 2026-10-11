@@ -44,6 +44,7 @@ from odoo import Command, _, api, fields, models
 
 from odoo.addons.pmk_deal.models.kp_sent import KP_SENT_STAGE
 
+from .project_task import NO_REPLAN
 from .sale_order import ACT_APPROVE, ACT_REWORK, SKIP, money_text, ru_env
 
 _logger = logging.getLogger(__name__)
@@ -130,6 +131,95 @@ class CrmLead(models.Model):
         if not rows:
             action["context"] = Task._pmk_row_defaults(deal=self, order=self._pmk_current_invoice())
         return action
+
+    def action_pmk_won(self):
+        """Кнопка «Выиграно» на форме сделки (шаг З-15): короткое окно «Оплата /
+        гарантия» — сумма и дата оплаты, гарантийное письмо. Окно необязательное
+        («Пропустить»), ничего не запрещает; крестик — сделка остаётся в
+        работе. Сделка не в работе (уже выиграна, проиграна, в архиве, лид) —
+        как штатная кнопка, без окна. Перетаскивание в воронке, строка стадий,
+        «Оплата пришла — в работу» и ссылка из письма идут мимо окна — по
+        штатному пути (write стадии)."""
+        self.ensure_one()
+        if self.type != "opportunity" or not self.active or self.won_status != "pending":
+            return self.action_set_won_rainbowman()
+        view = self.env.ref("pmk_orders.view_pmk_orders_won_wizard_form", raise_if_not_found=False)
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Оплата / гарантия"),
+            "res_model": "pmk.orders.won.wizard",
+            "view_mode": "form",
+            "views": [(view.id if view else False, "form")],
+            "target": "new",
+            "context": {"default_lead_id": self.id},
+        }
+
+    def _pmk_won_payment(self, amount, day, guarantee):
+        """Окно «Оплата / гарантия» → строка «Заказов в работе» и заметки.
+
+        Пишем в ОДНУ строку (_pmk_won_row): у сделки их может быть больше
+        (объединение сделок, архивная) — чужая оплата и удвоенная сумма
+        «Оплачено» в списке ни к чему. Сумма и дата — в «Сумму оплаты» и
+        «Дату оплаты» строки; дата впервые — сдача от неё. Гарантийное
+        письмо — галочка строки, старт и сдача — от дня письма. В ленту
+        строки — всегда итоговая заметка «откуда сдача» (даже если даты не
+        поменялись), в ленту сделки и счёта — что внесли. Писем нет. Пишем
+        от sudo: продавцу без «Проектов» строка всё равно своя (правило
+        записей), автор в ленте — он сам.
+        """
+        self.ensure_one()
+        invoice = self._pmk_current_invoice()
+        row = self._pmk_won_row(invoice)
+        currency = (invoice.currency_id or self.company_id.currency_id
+                    or self.env.company.currency_id)
+        parts = []
+        if guarantee:
+            parts.append(_("гарантийное письмо от %s (вместо оплаты)", day.strftime("%d.%m.%Y")))
+        if amount > 0:
+            money = self._pmk_money(amount, currency)
+            base = invoice.amount_total if invoice else self.expected_revenue
+            if base:
+                money = _("%(money)s (%(pct)s %% от %(of)s)", money=money,
+                          pct=round(amount / base * 100.0),
+                          of=_("счёта") if invoice else _("суммы сделки"))
+            parts.append(_("оплата %(money)s от %(day)s", money=money,
+                           day=day.strftime("%d.%m.%Y")))
+        if not parts:
+            return row
+        vals = {}
+        if amount > 0:
+            vals.update(pmk_paid_amount=amount, pmk_paid_date=day)
+        if guarantee:
+            vals["pmk_guarantee"] = True
+        if row:
+            first_paid = amount > 0 and not row.pmk_paid_date
+            row.with_context(**{NO_REPLAN: True}).write(vals)
+            if guarantee:
+                row._pmk_replan_from_guarantee(day, always_note=True)
+            elif first_paid:
+                row._pmk_replan_from_payment(always_note=True)
+        text = _("Выиграно: %s.", "; ".join(parts))
+        if not row:
+            text += " " + _("Строки «Заказов в работе» нет — внесите в неё руками, когда появится.")
+        elif self.env["project.task"].sudo().with_context(active_test=False).search_count(
+                [("pmk_deal_id", "=", self.id)]) > 1:
+            text += " " + _("Записано в строку «%s» (у сделки их несколько).", row.name)
+        self._pmk_orders_note(text)
+        if invoice:
+            invoice._pmk_note(text)
+        return row
+
+    def _pmk_won_row(self, invoice):
+        """Строка для оплаты из окна: действующая со счётом сделки → любая
+        действующая → со счётом в архиве → первая."""
+        self.ensure_one()
+        rows = self.env["project.task"].sudo().with_context(active_test=False).search(
+            [("pmk_deal_id", "=", self.id)], order="id")
+        if invoice:
+            rows = rows.sorted(lambda row: (not row.active, row.pmk_sale_order_id != invoice, row.id))
+        else:
+            rows = rows.sorted(lambda row: (not row.active, row.id))
+        return rows[:1]
 
     def _merge_get_fields_specific(self):
         """Объединение сделок: строки планировщика — к итоговой, как доборки."""

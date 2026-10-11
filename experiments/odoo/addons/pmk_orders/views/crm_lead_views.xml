@@ -53,4 +53,32 @@
     </field>
   </record>
 
+  <!--
+    Шаг З-15: «Выиграно» на форме сделки — с коротким окном «Оплата /
+    гарантия» (сумма и дата оплаты, гарантийное письмо; «Пропустить» — без них).
+    Наша кнопка встаёт на место штатной: та же надпись, та же клавиша w, то
+    же условие видимости, контурная (sale_crm сняла заливку и со штатной).
+    Штатная action_set_won_rainbowman спрятана, а не удалена: на её узел
+    смотрят xpath sale_crm и тесты pmk_deal (порядок кнопок, шаг 48); метод
+    не переопределён — ссылка «Выиграно» из письма (/lead/case_mark_won)
+    работает как раньше, без окна. Вернуть — выключить этот вид.
+    docs/disabled-features.md, шаг З-15. active — грабли Odoo 19.
+  -->
+  <record id="view_crm_lead_form_won_dialog" model="ir.ui.view">
+    <field name="name">crm.lead.form.pmk.orders.won.dialog</field>
+    <field name="model">crm.lead</field>
+    <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//header/button[@name='action_set_won_rainbowman']" position="before">
+        <button name="action_pmk_won" type="object" string="Выиграно" data-hotkey="w"
+                title="Пришла предоплата или гарантийное письмо"
+                invisible="won_status == 'won' or type == 'lead' or not active"/>
+      </xpath>
+      <xpath expr="//header/button[@name='action_set_won_rainbowman']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+    </field>
+  </record>
+
 </odoo>
