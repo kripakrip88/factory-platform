@@ -58,6 +58,60 @@ def _flange(segs, i):
 	return 180 - abs(_bend(segs, i))
 
 
+def _is_fold(segs, s):
+	"""Подгиб 180°: полки почти сложены (порог тот же, что в построителе)."""
+	return 1 <= s < len(segs) and abs(_bend(segs, s)) > 170
+
+
+def _fold_rot(segs, s):
+	"""Куда ложится слой подгиба 180° в вершине s: +1 — влево от входящей полки
+	(против часовой), -1 — вправо. Двойник dobor_builder.js foldRot().
+
+	Знак самого угла здесь не опора: полки подгиба рисуют мышью почти по одной
+	линии, и 179° против 181° — шум руки. А ровно 180° (после прилипания углов)
+	стороны не несёт вовсе. Поэтому сторона выводится из соседей (задача 258,
+	ДОБ-18, 12.10.2026):
+	  • подгиб сразу за подгибом — тот же поворот, слой возвращается: двойной
+	    кант H-профиля (верхний лист и два подгиба под ним к стенкам);
+	  • иначе — от стенки наружу: против поворота в предыдущей вершине;
+	  • опоры нет (подгиб первым гибом) — как нарисовано.
+	Не так — галочка foldFlip у полки (щелчок по значку подгиба на холсте).
+	"""
+	if s >= 2 and _is_fold(segs, s - 1):
+		rot = _fold_rot(segs, s - 1)
+	elif s >= 2 and abs(_bend(segs, s - 1)) >= 1:
+		rot = -1 if _bend(segs, s - 1) > 0 else 1
+	else:
+		rot = 1 if _bend(segs, s) >= 0 else -1
+	return -rot if segs[s].get("foldFlip") else rot
+
+
+def _place_label(spots, text, placed, char_w, line_h, optional=False):
+	"""Первое место из spots, где подпись не ложится на уже поставленные.
+
+	Подпись — прямоугольник: ширина по числу знаков (char_w на знак), высота
+	строки line_h. placed пополняется выбранным прямоугольником (x, y, ширина).
+	Свободного места нет: прямой угол (optional=True) не подписывается — на
+	эскизе гибки неподписанный угол читается как 90°, а каша из двух «90°»
+	у стенок в 5 мм (ДОБ-18) не читается вовсе; прочее — где меньше наложений.
+	Возвращает (x, y) или None, если подпись опущена.
+	"""
+	w = char_w * len(text) + 4
+
+	def hits(x, y):
+		return sum(1 for px, py, pw in placed if abs(x - px) * 2 < w + pw and abs(y - py) < line_h)
+
+	free = [xy for xy in spots if not hits(*xy)]
+	if free:
+		x, y = free[0]
+	elif optional:
+		return None
+	else:
+		x, y = min(spots, key=lambda xy: hits(*xy))
+	placed.append((x, y, w))
+	return x, y
+
+
 def _n(x):
 	return f"{x:.1f}"
 
@@ -175,7 +229,7 @@ def sketch_svg(snapshot):
 	# Все построения (контур, краска, подписи) — по СМЕЩЁННОМУ контуру (drawn), чтобы
 	# при загибах подписи не «заплывали» и пунктир не вставал криво.
 	GAP = 8
-	isfold = lambda s: 1 <= s < len(segs) and abs(_bend(segs, s)) > 170
+	isfold = lambda s: _is_fold(segs, s)
 	shift = {"x": 0.0, "y": 0.0}
 
 	def sh(i):
@@ -188,9 +242,11 @@ def sketch_svg(snapshot):
 	for s in range(len(segs)):
 		a = sh(s)  # вход в вершину s
 		if isfold(s):
-			dr = unit(d[s], d[s + 1]); n = {"x": -dr["y"], "y": dr["x"]}
-			side = (-1 if _bend(segs, s) > 0 else 1) * (-1 if segs[s].get("foldFlip") else 1)
-			shift = {"x": shift["x"] + n["x"] * side * GAP, "y": shift["y"] + n["y"] * side * GAP}
+			# Слой — влево/вправо от входящей полки (ось Y вниз: «влево» = (u.y, -u.x)).
+			# До задачи 258 знак был перевёрнут: при повороте против часовой слой
+			# уходил внутрь профиля и перечёркивал стенку.
+			uin = unit(d[s - 1], d[s]); rot = _fold_rot(segs, s)
+			shift = {"x": shift["x"] + uin["y"] * rot * GAP, "y": shift["y"] - uin["x"] * rot * GAP}
 			aoff = sh(s)  # выход из вершины s (после сдвига)
 			uin = unit(d[s - 1], d[s])
 			cross = (aoff["x"] - a["x"]) * uin["y"] - (aoff["y"] - a["y"]) * uin["x"]
@@ -235,14 +291,23 @@ def sketch_svg(snapshot):
 	if hem_right and len(segs) >= 1:
 		hem(vout[len(segs)], unit(vout[len(segs)], vout[len(segs) - 1]), hem_r_dir)
 
+	# Места уже поставленных подписей: угол, который лёг бы на чужую подпись
+	# (две вершины в 5 мм у H-профиля, ДОБ-18), уходит на другую сторону.
+	placed = []
+
 	# подписи длин полок — по смещённому контуру
 	for i in range(len(segs)):
 		a, b = seglab[i]
 		mx, my = (a["x"] + b["x"]) / 2, (a["y"] + b["y"]) / 2
 		nx, ny = -(b["y"] - a["y"]), (b["x"] - a["x"])
 		nl = math.hypot(nx, ny) or 1
-		tx, ty = mx + nx / nl * 22, my + ny / nl * 22 + 5
-		parts.append(f'<text x="{_n(tx)}" y="{_n(ty)}" text-anchor="middle" font-size="18" font-weight="700" fill="#111">{int(round(segs[i]["len"]))}</text>')
+		ux, uy = nx / nl, ny / nl
+		# По нормали к полке, затем с другой стороны, затем дальше: у мелкого
+		# профиля (стенки 9 мм) подписи соседних полок иначе ложатся друг на друга.
+		label = str(int(round(segs[i]["len"])))
+		spots = [(mx + ux * r, my + uy * r + 5) for r in (22, -22, 40, -40)]
+		tx, ty = _place_label(spots, label, placed, 10, 20)
+		parts.append(f'<text x="{_n(tx)}" y="{_n(ty)}" text-anchor="middle" font-size="18" font-weight="700" fill="#111">{label}</text>')
 
 	# углы между полками (наружу по биссектрисе); на загибе 180° угол не подписываем
 	for i in range(1, len(segs)):
@@ -262,8 +327,15 @@ def sketch_svg(snapshot):
 			ox, oy = -t2y, t2x
 		else:
 			ox, oy = -bx / bl, -by / bl
-		lx, ly = p["x"] + ox * 22, p["y"] + oy * 22 + 5
-		parts.append(f'<text x="{_n(lx)}" y="{_n(ly)}" text-anchor="middle" font-size="16" font-weight="700" fill="#111">{int(round(_flange(segs, i)))}°</text>')
+		label = f"{int(round(_flange(segs, i)))}°"
+		# Наружу по биссектрисе; занято — внутрь угла, вдоль полок, дальше наружу.
+		spots = [(p["x"] + dx * r, p["y"] + dy * r + 5) for dx, dy, r in (
+			(ox, oy, 22), (-ox, -oy, 22), (-t1x, -t1y, 22), (-t2x, -t2y, 22), (ox, oy, 40))]
+		spot = _place_label(spots, label, placed, 9, 18, optional=label == "90°")
+		if spot is None:
+			continue
+		lx, ly = spot
+		parts.append(f'<text x="{_n(lx)}" y="{_n(ly)}" text-anchor="middle" font-size="16" font-weight="700" fill="#111">{label}</text>')
 
 	# Замок — «рукопожатие» на белой плашке снизу по центру: тот же знак и то же
 	# место, что на живом холсте (dobor_builder.js, блок замка в redraw(); на

@@ -30,6 +30,12 @@ const GRAB = 14;        // радиус захвата вершины, px
 // models/dobor_report.py (sketch_svg): экран и печать вписывают одинаково.
 const MIN_BOX = 40;
 const FOLD_GAP = 8;     // зазор подгиба 180°, имитирует толщину металла
+// Прилипание углов при рисовании, градусы (задача 258, 12.10.2026). Угол между
+// соседними полками в пределах SNAP_DEG от кратного 45° становится ровно им,
+// почти сложенные полки (больше 170°, как в isFold) — ровно подгибом 180°.
+// Мышью ровно не нарисуешь: в ДОБ-18 вышли 91°, 89°, 179° — полки шли с
+// перекосом, а подписи «91°» у соседних стенок налезали друг на друга.
+const SNAP_DEG = 5;
 // Порог свободного вращения: пока курсор ближе ROT_FREE_R к центру ручки,
 // это ещё клик, а не «кручу». Радиус, а не пройденный путь, потому что он
 // закрывает сразу две беды:
@@ -264,6 +270,51 @@ export class DoborBuilder extends Component {
         return s >= 1 && s < this.geom.segs.length && Math.abs(this.bendAngle(s)) > 170;
     }
 
+    /**
+     * Куда ложится слой подгиба 180° в вершине s: +1 — влево от входящей полки
+     * (против часовой), -1 — вправо. Двойник dobor_report._fold_rot.
+     *
+     * Знак самого угла не опора: полки подгиба рисуют почти по одной линии, и
+     * 179° против 181° — шум руки, а ровно 180° стороны не несёт. Поэтому:
+     * подгиб сразу за подгибом — тот же поворот (слой возвращается: двойной
+     * кант H-профиля, ДОБ-18); иначе — от стенки наружу, против поворота в
+     * предыдущей вершине; опоры нет — как нарисовано. Не так — foldFlip
+     * (щелчок по значку подгиба).
+     */
+    foldRot(s) {
+        let rot;
+        if (s >= 2 && this.isFold(s - 1)) {
+            rot = this.foldRot(s - 1);
+        } else if (s >= 2 && Math.abs(this.bendAngle(s - 1)) >= 1) {
+            rot = this.bendAngle(s - 1) > 0 ? -1 : 1;
+        } else {
+            rot = this.bendAngle(s) >= 0 ? 1 : -1;
+        }
+        return this.geom.segs[s].foldFlip ? -rot : rot;
+    }
+
+    /** Прилипание угла поворота (dir новой полки минус dir соседней). */
+    snapBend(b) {
+        while (b > 180) b -= 360;
+        while (b < -180) b += 360;
+        if (Math.abs(b) > 170) {
+            return 180;
+        }
+        const near = Math.round(b / 45) * 45;
+        return Math.abs(b - near) <= SNAP_DEG ? near : Math.round(b);
+    }
+
+    /** Направление полки после прилипания: к соседней полке или, без неё, к осям. */
+    snapDir(raw, neighbourDir, neighbourIsNext) {
+        if (neighbourDir === undefined) {
+            const near = Math.round(raw / 45) * 45;
+            return Math.abs(raw - near) <= SNAP_DEG ? near : Math.round(raw);
+        }
+        return neighbourIsNext
+            ? neighbourDir - this.snapBend(neighbourDir - raw)
+            : neighbourDir + this.snapBend(raw - neighbourDir);
+    }
+
     computeFit() {
         const v = this.verts();
         if (!v.length) {
@@ -443,10 +494,12 @@ export class DoborBuilder extends Component {
             for (let s = 0; s < segs.length; s++) {
                 if (this.isFold(s)) {
                     const a = { x: v[s].x + shift.x, y: v[s].y + shift.y };
-                    const dir = unitv(v[s], v[s + 1]);
-                    const n = { x: -dir.y, y: dir.x };
-                    const side = (this.bendAngle(s) > 0 ? -1 : 1) * (segs[s].foldFlip ? -1 : 1);
-                    shift = { x: shift.x + n.x * side * FOLD_GAP, y: shift.y + n.y * side * FOLD_GAP };
+                    // Слой — влево/вправо от входящей полки (ось Y вниз: «влево» =
+                    // (u.y, -u.x)). До задачи 258 знак был перевёрнут: при повороте
+                    // против часовой слой уходил внутрь профиля через стенку.
+                    const uin = unitv(v[s - 1], v[s]);
+                    const rot = this.foldRot(s);
+                    shift = { x: shift.x + uin.y * rot * FOLD_GAP, y: shift.y - uin.x * rot * FOLD_GAP };
                     const aOff = { x: v[s].x + shift.x, y: v[s].y + shift.y };
                     const uin = unitv(v[s - 1], v[s]);
                     const cross = (aOff.x - a.x) * uin.y - (aOff.y - a.y) * uin.x;
@@ -462,6 +515,27 @@ export class DoborBuilder extends Component {
                 d, fill: "none", stroke: INK, "stroke-width": "3.2",
                 "stroke-linejoin": "round", "stroke-linecap": "round",
             }));
+
+            // Значок у каждого подгиба 180°: щелчок кладёт слой на другую
+            // сторону (foldFlip). Сторону построитель выводит сам (foldRot), но
+            // бывает и иначе — S-образный кант вместо возврата слоя.
+            for (let s = 1; s < segs.length; s++) {
+                if (!this.isFold(s)) { continue; }
+                const uin = unitv(v[s - 1], v[s]);
+                const cx = v[s].x + uin.x * 20, cy = v[s].y + uin.y * 20;
+                const g = this.mk("g", { class: "pmk-dobor-fold", "data-idx": s, cursor: "pointer" });
+                const title = this.mk("title", {});
+                title.textContent = "Подгиб на другую сторону";
+                g.appendChild(title);
+                g.appendChild(this.mk("circle", { cx, cy, r: 9, fill: "#2a3140", stroke: "#8ab4f8", "stroke-width": "1.2" }));
+                const t = this.mk("text", {
+                    x: cx, y: cy + 4, "text-anchor": "middle", "font-size": "11",
+                    "font-weight": "700", fill: "#8ab4f8",
+                });
+                t.textContent = "⇅";
+                g.appendChild(t);
+                svg.appendChild(g);
+            }
 
             // Завальцовка — полукруг на краю полки.
             const drawHem = (edge, u, flip) => {
@@ -518,19 +592,39 @@ export class DoborBuilder extends Component {
             }
         }
 
+        // Места поставленных подписей: у мелкого профиля (стенки 9 мм, ДОБ-18)
+        // подписи соседних полок и углов ложатся друг на друга — следующая
+        // ищет свободное место (правило то же, что dobor_report._place_label).
+        const placed = [];
+        const place = (spots, text, charW, lineH, optional) => {
+            const w = charW * text.length + 4;
+            const hits = ([x, y]) => placed.filter(
+                ([px, py, pw]) => Math.abs(x - px) * 2 < w + pw && Math.abs(y - py) < lineH).length;
+            let spot = spots.find((xy) => !hits(xy));
+            if (!spot) {
+                if (optional) { return null; }
+                spot = spots.reduce((best, xy) => (hits(xy) < hits(best) ? xy : best));
+            }
+            placed.push([spot[0], spot[1], w]);
+            return spot;
+        };
+
         // Подписи длин — по ним же и правят размер.
         for (let i = 0; i < segs.length; i++) {
             const a = v[i], b = v[i + 1];
             const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
             let nx = -(b.y - a.y), ny = b.x - a.x;
             const nl = Math.hypot(nx, ny) || 1;
-            nx = (nx / nl) * 16; ny = (ny / nl) * 16;
+            nx /= nl; ny /= nl;
+            const label = String(Math.round(segs[i].len));
+            // По нормали, с другой стороны полки, дальше.
+            const [lx, ly] = place([16, -16, 30, -30].map((r) => [mx + nx * r, my + ny * r + 4]), label, 8, 16, false);
             const t = this.mk("text", {
-                x: mx + nx, y: my + ny + 4, "text-anchor": "middle",
+                x: lx, y: ly, "text-anchor": "middle",
                 "font-size": "13", "font-weight": "700", fill: "#8ab4f8",
                 class: "pmk-dobor-len", "data-idx": i,
             });
-            t.textContent = String(Math.round(segs[i].len));
+            t.textContent = label;
             svg.appendChild(t);
         }
 
@@ -564,15 +658,24 @@ export class DoborBuilder extends Component {
                 ox = -bx / bl; oy = -by / bl;
             }
 
+            // Наружу по биссектрисе; занято — внутрь угла, вдоль полок, дальше.
+            // Прямой угол без места не подписываем: неподписанный угол на эскизе
+            // гибки читается как 90°, а две «90°» внахлёст не читаются вовсе.
+            const label = Math.round(this.flangeAngle(i)) + "°";
+            const spot = place([[ox, oy, 20], [-ox, -oy, 20], [-t1x, -t1y, 20], [-t2x, -t2y, 20], [ox, oy, 34]]
+                .map(([dx, dy, r]) => [p.x + dx * r, p.y + dy * r + 3.5]), label, 7, 14, label === "90°");
+            if (!spot) {
+                continue;
+            }
             svg.appendChild(this.mk("circle", {
                 cx: p.x, cy: p.y, r: 11, fill: "#f0a04b", opacity: 0.14,
             }));
             const t = this.mk("text", {
-                x: p.x + ox * 20, y: p.y + oy * 20 + 3.5, "text-anchor": "middle",
+                x: spot[0], y: spot[1], "text-anchor": "middle",
                 "font-size": "11", "font-weight": "700", fill: "#f0a04b",
                 class: "pmk-dobor-bend", "data-idx": i,
             });
-            t.textContent = Math.round(this.flangeAngle(i)) + "°";
+            t.textContent = label;
             svg.appendChild(t);
         }
 
@@ -611,6 +714,14 @@ export class DoborBuilder extends Component {
         const bendLabel = ev.target.closest?.(".pmk-dobor-bend");
         if (bendLabel) {
             this.openEdit("bend", +bendLabel.dataset.idx, ev);
+            return;
+        }
+        const foldMark = ev.target.closest?.(".pmk-dobor-fold");
+        if (foldMark) {
+            const seg = this.geom.segs[+foldMark.dataset.idx];
+            seg.foldFlip = !seg.foldFlip;
+            this.redraw();
+            this.saveToField();
             return;
         }
 
@@ -659,14 +770,14 @@ export class DoborBuilder extends Component {
                 const v = this.verts();
                 const dx = v[1].x - w.x, dy = -(v[1].y - w.y);
                 segs[0].len = Math.max(1, Math.round(Math.hypot(dx, dy)));
-                segs[0].dir = Math.round((Math.atan2(dy, dx) * 180) / Math.PI);
+                segs[0].dir = this.snapDir((Math.atan2(dy, dx) * 180) / Math.PI, segs[1]?.dir, true);
             }
         } else {
             const v = this.verts();
             const prev = v[i - 1];
             const dx = w.x - prev.x, dy = -(w.y - prev.y);
             segs[i - 1].len = Math.max(1, Math.round(Math.hypot(dx, dy)));
-            segs[i - 1].dir = Math.round((Math.atan2(dy, dx) * 180) / Math.PI);
+            segs[i - 1].dir = this.snapDir((Math.atan2(dy, dx) * 180) / Math.PI, segs[i - 2]?.dir, false);
         }
         this.redraw();
     }
@@ -700,14 +811,15 @@ export class DoborBuilder extends Component {
             const dx = p.x - last.x, dy = -(p.y - last.y);
             const len = Math.round(Math.hypot(dx, dy));
             if (len < 5) { return; }
-            segs.push({ len, dir: Math.round((Math.atan2(dy, dx) * 180) / Math.PI) });
+            const prev = segs[segs.length - 1];
+            segs.push({ len, dir: this.snapDir((Math.atan2(dy, dx) * 180) / Math.PI, prev?.dir, false) });
         } else {
             const first = v[0];
             const dx = first.x - p.x, dy = -(first.y - p.y);
             const len = Math.round(Math.hypot(dx, dy));
             if (len < 5) { return; }
             this.geom.start = { x: p.x, y: p.y };
-            segs.unshift({ len, dir: Math.round((Math.atan2(dy, dx) * 180) / Math.PI) });
+            segs.unshift({ len, dir: this.snapDir((Math.atan2(dy, dx) * 180) / Math.PI, segs[0]?.dir, true) });
         }
         this.redraw();
         this.saveToField();
