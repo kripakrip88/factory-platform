@@ -75,8 +75,12 @@ class ResPartnerDuplicates(models.Model):
         return groups
 
     @api.model
-    def action_pmk_duplicates(self):
-        """Кнопка «Возможные дубли»: пересобрать свои строки и открыть их."""
+    def action_pmk_duplicates(self, *_args):
+        """Кнопка «Возможные дубли»: пересобрать свои строки и открыть их.
+
+        *_args: кнопка в шапке списка (type="object") передаёт отмеченные
+        строки списка — они здесь не нужны, но без *_args вызов падал
+        «takes 1 positional argument but 2 were given» (найдено на копии 11.10)."""
         Duplicate = self.env["pmk.partner.duplicate"]
         Duplicate.search([("create_uid", "=", self.env.uid)]).unlink()
         values = []

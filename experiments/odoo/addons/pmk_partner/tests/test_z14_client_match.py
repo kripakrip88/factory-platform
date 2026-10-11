@@ -281,6 +281,23 @@ class TestZ14ClientMatch(TransactionCase):
         self.env["res.partner"].action_pmk_duplicates()
         return self.env["pmk.partner.duplicate"].search([("create_uid", "=", self.env.uid)])
 
+    def test_duplicates_button_call(self):
+        """Кнопка в шапке списка клиентов зовёт метод так, как веб-клиент:
+        call_kw с отмеченными строками первым аргументом (найдено на копии 11.10:
+        «takes 1 positional argument but 2 were given»)."""
+        from odoo.service.model import call_kw
+        action = call_kw(self.env["res.partner"], "action_pmk_duplicates", [[]], {})
+        self.assertEqual(action["res_model"], "pmk.partner.duplicate")
+
+    def test_duplicates_default_grouping(self):
+        """По умолчанию — группировка «Похожие», а не поиск «1» по полю того же
+        имени (найдено на копии 11.10: окно открывалось пустым)."""
+        action = self.env["res.partner"].action_pmk_duplicates()
+        ctx = action["context"] if isinstance(action["context"], dict) else eval(action["context"])  # noqa: S307
+        self.assertIn("search_default_by_group", ctx)
+        view = self.env.ref("pmk_partner.view_partner_duplicate_search")
+        self.assertIn('filter name="by_group"', view.arch_db)
+
     def test_duplicates_screen(self):
         action = self.env["res.partner"].action_pmk_duplicates()
         self.assertEqual(action["res_model"], "pmk.partner.duplicate")

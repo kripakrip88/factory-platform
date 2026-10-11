@@ -55,7 +55,7 @@
         <field name="reason"/>
         <field name="group_label"/>
         <group>
-          <filter name="group_label" string="Похожие" context="{'group_by': 'group_label'}"/>
+          <filter name="by_group" string="Похожие" context="{'group_by': 'group_label'}"/>
         </group>
       </search>
     </field>
@@ -68,7 +68,7 @@
     <field name="view_id" ref="view_partner_duplicate_list"/>
     <field name="search_view_id" ref="view_partner_duplicate_search"/>
     <field name="domain">[('create_uid', '=', uid)]</field>
-    <field name="context">{'search_default_group_label': 1}</field>
+    <field name="context">{'search_default_by_group': 1}</field>
     <field name="help" type="html">
       <p class="o_view_nocontent_smiling_face">Похожих карточек не нашлось</p>
       <p>Список собирается кнопкой «Возможные дубли» в «Продажи → Клиенты»:
