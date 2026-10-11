@@ -9,6 +9,7 @@ from . import test_step34_product_window
 from . import test_list_units
 from . import test_dobor_fit
 from . import test_dobor_copy
+from . import test_dobor_folds_t258
 from . import test_step27_forms
 from . import test_step30_tracking
 from . import test_step35_dobor
