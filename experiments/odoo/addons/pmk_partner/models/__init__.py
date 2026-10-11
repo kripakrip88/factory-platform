@@ -4,3 +4,10 @@ from . import res_partner
 from . import partner_card
 # Разбор UX, шаг 29: «Клиенты» — список и форма, без канбана.
 from . import ir_actions_act_window
+# Клиент из письма: не плодить дубли (шаг З-14): поиск клиента по ИНН и
+# домену, «Возможные дубли», мастер «В сделку», целевая карточка мастера
+# объединения.
+from . import partner_match
+from . import partner_duplicate
+from . import partner_merge
+from . import crm_lead

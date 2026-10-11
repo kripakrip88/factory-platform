@@ -42,7 +42,7 @@ from odoo.tools import email_normalize
 
 from odoo.addons.mail_client.tools.imap_client import ImapError
 
-from ..tools import lead_text, quote_fold, remote_paths
+from ..tools import lead_text, quote_fold, remote_paths, signature
 
 _logger = logging.getLogger(__name__)
 
@@ -774,6 +774,12 @@ class MailClientMessage(models.Model):
 
         return {
             "created": created,
+            # Шаг З-14: клиент, найденный по домену или ИНН, — для подписи
+            # уведомления «Лид создан · клиент: …». Точное совпадение адреса
+            # (клиент самого письма) — не новость, его не пишем.
+            "client": (lead.partner_id.display_name
+                       if created and lead.partner_id and lead.partner_id != self.partner_id
+                       else False),
             "action": {
                 "type": "ir.actions.act_window",
                 "name": _("Лид"),
@@ -857,19 +863,34 @@ class MailClientMessage(models.Model):
         # чистый адрес, имя из «Имя <адрес>» — в «Имя контакта» (разбор UX,
         # шаг 27; правила — tools/lead_text.py). Адреса нет вовсе — как было.
         sender, address = lead_text.split_sender(self.email_from)
+        own_addresses = self._pmk_own_addresses()
+        # Клиент (шаг З-14): точный адрес почтового модуля — главнее; не
+        # нашёл — ИНН из текста письма и домен адреса (общий поиск
+        # pmk_partner). Из нескольких не выбираем — заметка со списком.
+        lines = signature.own_lines(self.body_html or "", self.subject)
+        partner = self.partner_id
+        match = None if partner else self._pmk_client_from_letter(address, lines, own_addresses)
+        if match and len(match["partners"]) == 1:
+            partner = match["partners"]
+        phone = self._pmk_letter_phone(address, lines, own_addresses, partner)
         values = {
             "name": lead_text.clean_subject(self.subject) or _("Без темы"),
             "email_from": address or self.email_from,
-            "partner_id": self.partner_id.id or False,
+            "partner_id": partner.id or False,
             "user_id": assignee.id if assignee else False,
         }
+        # Телефон из подписи (шаг З-14) — лиду, а не карточке организации:
+        # её общий номер правило pmk_partner (crm.lead._get_partner_phone_update)
+        # не затирает.
+        if phone:
+            values["phone"] = phone
         # «Имя контакта» — только если письмо не привязано к человеку: найден
         # контакт-человек — имя из карточки ставит ядро (_compute_contact_name
         # по partner_id), у компании оно пустое, и тогда берём имя из письма.
         # Наш ящик имени не даёт: пересланное коллегой письмо не делает его
         # контактом клиента.
-        if not self.partner_id or self.partner_id.is_company:
-            person = lead_text.contact_name(sender, address, self._pmk_own_addresses())
+        if not partner or partner.is_company:
+            person = lead_text.contact_name(sender, address, own_addresses)
             if person:
                 values["contact_name"] = person
         # «Откуда пришёл = Почта» (разбор UX, шаг 31, 30.09.2026): через месяц
@@ -918,6 +939,10 @@ class MailClientMessage(models.Model):
             partner_ids=[],
         )
 
+        note = self._pmk_client_note(match, phone)
+        if note:
+            lead.message_post(body=note, message_type="comment", subtype_xmlid="mail.mt_note")
+
         if failed:
             items = Markup("").join(Markup("<li>%s</li>") % name for name, _err in failed)
             lead.message_post(
@@ -926,6 +951,74 @@ class MailClientMessage(models.Model):
                 subtype_xmlid="mail.mt_note",
             )
         return lead
+
+    # ------------------------------------------------------------------
+    # клиент и телефон из письма (шаг З-14, 10.10.2026)
+    # ------------------------------------------------------------------
+    def _pmk_client_from_letter(self, address, lines, own_addresses):
+        """Общий поиск клиента pmk_partner (res.partner._pmk_find_company): ИНН
+        из своей части письма, домен адреса. Модуля нет — None, как раньше.
+        Домены ящиков завода не связывают: письмо с zakaz@pmkpark.ru — наше."""
+        finder = getattr(self.env["res.partner"], "_pmk_find_company", None)
+        if not finder:
+            return None
+        own_hosts = {item.rsplit("@", 1)[-1] for item in own_addresses if "@" in item}
+        return finder(email=address, text=signature.letter_text(lines),
+                      exclude_domains=own_hosts)
+
+    @api.model
+    def _pmk_own_phones(self):
+        """Телефоны завода: организации, «Наши организации», пользователи."""
+        Partner = self.env["res.partner"].sudo().with_context(active_test=False)
+        own_ids = getattr(Partner, "_pmk_own_partner_ids", None)
+        if own_ids:
+            partners = Partner.browse(own_ids())
+        else:
+            partners = self.env["res.company"].sudo().search([]).partner_id
+        return [phone for phone in partners.mapped("phone") if phone]
+
+    def _pmk_letter_phone(self, address, lines, own_addresses, partner):
+        """Телефон из подписи — или пусто.
+
+        Не берём: письмо с нашего ящика (пересылка коллеги — подпись наша);
+        клиент — человек со своим телефоном (его карточка точнее подписи);
+        клиент — организация, а правила pmk_partner, которое бережёт её
+        общий номер от телефона лида, нет (без него ядро записало бы
+        мобильный из подписи в карточку организации)."""
+        if not address or address.strip().lower() in own_addresses:
+            return ""
+        if partner and not partner.is_company and partner.phone:
+            return ""
+        if partner and partner.is_company and not hasattr(
+                self.env["crm.lead"], "_pmk_keep_own_value"):
+            return ""
+        return signature.signature_phone(lines, self._pmk_own_phones())
+
+    def _pmk_client_note(self, match, phone):
+        """Заметка в ленту лида: откуда клиент и телефон. Пусто — без заметки."""
+        paragraphs = []
+        partners = match["partners"] if match else None
+        if partners:
+            how = (_("по ИНН %s", match["key"]) if match["how"] == "inn"
+                   else _("по домену %s", match["key"]))
+            links = Markup(", ").join(
+                Markup('<a href="#" data-oe-model="res.partner" data-oe-id="%s">%s</a>')
+                % (item.id, item.display_name) for item in partners)
+            if len(partners) == 1:
+                text = Markup(_("Клиент найден %s: %s.")) % (how, links)
+                if match.get("archived"):
+                    text += Markup(" ") + _(
+                        "Карточка в архиве — верните её из архива, если это клиент.")
+            else:
+                text = Markup(_(
+                    "%s подходят несколько клиентов: %s. Клиента не ставили — "
+                    "выберите в поле «Клиент».")) % (how[:1].upper() + how[1:], links)
+            paragraphs.append(text)
+        if phone:
+            paragraphs.append(_("Телефон из подписи: %s.", phone))
+        if not paragraphs:
+            return False
+        return Markup("").join(Markup("<p>%s</p>") % item for item in paragraphs)
 
     def _pmk_letter_attachments(self):
         """Пары (имя, байты) по каждой части письма; у картинки из текста

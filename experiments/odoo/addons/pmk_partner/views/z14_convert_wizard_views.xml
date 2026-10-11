@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Мастер «Преобразовать в сделку»: откуда взялся клиент (шаг З-14,
+    10.10.2026). Под выбором «Связать с существующим клиентом» — строка
+    «Клиент найден по домену truboproduct.ru: …» или «По домену … подходят
+    несколько клиентов: А, Б — выберите клиента». Клиент в архиве (лид из
+    письма ставит его сам) — «… в архиве — верните карточку из архива,
+    иначе письма с КП клиенту не уйдут». Пустая — строки нет.
+    Почему по умолчанию «связать», а не «создать» — models/crm_lead.py.
+
+    Узел — из модуля crm (он в depends); active в XML, чтобы вид не
+    остался выключенным незаметно (грабли xpath на чужой модуль, 22.09).
+    Цвет — штатный text-muted: в тёмной теме он свой, правил темы не нужно.
+  -->
+  <record id="view_lead2opportunity_client_hint" model="ir.ui.view">
+    <field name="name">crm.lead2opportunity.partner.form.pmk.client.hint</field>
+    <field name="model">crm.lead2opportunity.partner</field>
+    <field name="inherit_id" ref="crm.view_crm_lead2opportunity_partner"/>
+    <field name="active">True</field>
+    <field name="arch" type="xml">
+      <xpath expr="//div[@name='action']" position="after">
+        <div class="o_pmk_client_hint text-muted mt-2"
+             invisible="name != 'convert' or not pmk_client_hint">
+          <field name="pmk_client_hint" nolabel="1" readonly="1"/>
+        </div>
+      </xpath>
+    </field>
+  </record>
+</odoo>

@@ -134,7 +134,9 @@ patch(MailClientInbox.prototype, {
         );
         this.notification.add(
             result.created
-                ? _t("Лид создан")
+                ? result.client
+                    ? _t("Лид создан · клиент: %s", result.client)
+                    : _t("Лид создан")
                 : result.from_thread
                   ? _t("У этой переписки лид уже есть — открыт он")
                   : _t("Из этого письма лид уже есть"),

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    «Возможные дубли» контрагентов (шаг З-14, 10.10.2026).
+
+    Открывается кнопкой «Возможные дубли» в списке «Продажи → Клиенты»
+    (views/res_partner_list_views.xml). Группы похожих карточек; объединяет
+    человек — отметить две или три строки и «Объединить…»: штатный мастер
+    Odoo. Ничего не объединяется само. Почему так — models/partner_duplicate.py.
+
+    Одна залитая кнопка экрана — «Объединить…», и видна она только тому, у
+    кого есть право на мастер (base.group_partner_manager) и только когда
+    отмечены строки. Архивная карточка — серым и словом «Да» в колонке
+    «В архиве» (цвет повторён словом).
+
+    Группы «Похожие: …» открыты сразу (expand="1": в Odoo 19 без него
+    сгруппированный список свёрнут). Щелчок по строке открывает карточку
+    контрагента (action на <list>): формы у строки экрана нет, и без этого
+    щелчок не делал бы ничего.
+  -->
+  <record id="view_partner_duplicate_list" model="ir.ui.view">
+    <field name="name">pmk.partner.duplicate.list</field>
+    <field name="model">pmk.partner.duplicate</field>
+    <field name="arch" type="xml">
+      <list string="Возможные дубли" create="0" edit="0" delete="0" expand="1"
+            action="action_pmk_open_partner" type="object"
+            decoration-muted="partner_archived">
+        <header>
+          <button name="action_pmk_merge" type="object" string="Объединить…"
+                  class="btn-primary" groups="base.group_partner_manager"
+                  title="Открыть штатный мастер «Объединить контакты» с отмеченными карточками (две или три)"/>
+        </header>
+        <field name="group_no" column_invisible="1"/>
+        <field name="partner_id" string="Название" options="{'no_open': True}"/>
+        <field name="reason"/>
+        <field name="vat" optional="show"/>
+        <field name="city" optional="show"/>
+        <field name="email" optional="show"/>
+        <field name="website" optional="hide"/>
+        <field name="pmk_deal_count" optional="show"/>
+        <field name="partner_create_date" widget="date" optional="show"/>
+        <field name="partner_archived" optional="show"/>
+        <button name="action_pmk_open_partner" type="object" icon="fa-external-link"
+                title="Открыть карточку" aria-label="Открыть карточку"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="view_partner_duplicate_search" model="ir.ui.view">
+    <field name="name">pmk.partner.duplicate.search</field>
+    <field name="model">pmk.partner.duplicate</field>
+    <field name="arch" type="xml">
+      <search string="Возможные дубли">
+        <field name="partner_id" string="Название"/>
+        <field name="reason"/>
+        <field name="group_label"/>
+        <group>
+          <filter name="group_label" string="Похожие" context="{'group_by': 'group_label'}"/>
+        </group>
+      </search>
+    </field>
+  </record>
+
+  <record id="action_partner_duplicates" model="ir.actions.act_window">
+    <field name="name">Возможные дубли</field>
+    <field name="res_model">pmk.partner.duplicate</field>
+    <field name="view_mode">list</field>
+    <field name="view_id" ref="view_partner_duplicate_list"/>
+    <field name="search_view_id" ref="view_partner_duplicate_search"/>
+    <field name="domain">[('create_uid', '=', uid)]</field>
+    <field name="context">{'search_default_group_label': 1}</field>
+    <field name="help" type="html">
+      <p class="o_view_nocontent_smiling_face">Похожих карточек не нашлось</p>
+      <p>Список собирается кнопкой «Возможные дубли» в «Продажи → Клиенты»:
+         одинаковый ИНН, одно название без ООО/ИП и кавычек, один домен почты.</p>
+    </field>
+  </record>
+</odoo>

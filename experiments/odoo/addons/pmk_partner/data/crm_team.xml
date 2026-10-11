@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Команда продаж по-русски и в исходном имени (шаг З-14, 10.10.2026):
+    мастер «Преобразовать в сделку» показывал «Sales». Меняется только
+    нетронутое «Sales» записи ядра sales_team.team_sales_department
+    (models/crm_lead.py, CrmTeam._pmk_russian_sales_team). Вызов — при
+    каждой установке и обновлении модуля; повторный ничего не меняет.
+    Вернуть — переименовать команду в «Продажи → Настройки → Команды
+    продаж» с английским интерфейсом (docs/disabled-features.md, «З-14»).
+  -->
+  <function model="crm.team" name="_pmk_russian_sales_team"/>
+</odoo>

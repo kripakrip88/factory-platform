@@ -28,3 +28,8 @@ from . import test_step41_mail
 # письма для «Связей», адрес info@ → лиды выключен.
 # Правила выбора ящика без базы: node addons/pmk_mail_ui/static/tests/step53_open_rules.test.mjs
 from . import test_step53_open
+# Клиент из письма (шаг З-14): клиент по домену и ИНН, телефон из подписи.
+# Поиск клиента — pmk_partner: ставить вместе (-i pmk_mail_ui,pmk_partner).
+# Подпись без базы: python3 addons/pmk_mail_ui/tests/test_signature_rules.py
+from . import test_signature_rules
+from . import test_z14_lead_client
