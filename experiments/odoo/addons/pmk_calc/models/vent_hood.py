@@ -27,6 +27,8 @@ import os
 import tempfile
 import zipfile
 
+import xlsxwriter
+from xlsxwriter.utility import xl_rowcol_to_cell
 from markupsafe import Markup, escape
 
 from odoo import api, fields, models
@@ -87,18 +89,141 @@ class VentHoodOrder(models.Model):
                 vals["name"] = self.env["ir.sequence"].next_by_code("pmk.vent.hood") or "Черновик"
         return super().create(vals_list)
 
-    def action_download_all(self):
-        """ZIP: на каждый размер — DXF для лазера и чертёж PNG."""
+    def _vh_good_lines(self):
         self.ensure_one()
         lines = self.line_ids.filtered(lambda l: l.spec_json)
         if not lines:
             raise UserError("В заказе нет ни одного размера, по которому можно построить развёртку.")
+        return lines
+
+    def action_download_all(self):
+        """ZIP: на каждый размер — DXF для лазера и чертёж PNG; сборочная ведомость."""
+        lines = self._vh_good_lines()
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
             for line in lines:
                 zf.writestr(line._vh_dxf_name(), line._vh_dxf())
                 zf.writestr(line._vh_png_name(), line._vh_png())
+            zf.writestr(self._vh_assembly_name(), self._vh_assembly_xlsx())
         return self._vh_download(buf.getvalue(), "%s.zip" % self.name, "application/zip")
+
+    def action_download_assembly(self):
+        """Сборочная ведомость (Excel): зонты, их детали, лапки и клёпки, итог."""
+        self._vh_good_lines()
+        return self._vh_download(
+            self._vh_assembly_xlsx(), self._vh_assembly_name(),
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+    def _vh_assembly_name(self):
+        return "%s_сборка.xlsx" % self.name
+
+    # Колонки ведомости. Ячейки зонта (№…Зонтов, лапки, клёпки) объединены на
+    # высоту его деталей; «всего» — формулой от «на зонт» × «Зонтов, шт»,
+    # чтобы правка количества в самом файле пересчитывала итог.
+    ASSEMBLY_COLS = [
+        ("№", 4), ("Зонт", 15), ("Цвет", 20), ("Металл, мм", 10), ("Зонтов, шт", 9),
+        ("Деталь", 18), ("Заготовка, мм", 16), ("Деталей на зонт", 10), ("Деталей всего", 10),
+        ("Лапок на зонт", 9), ("Лапок всего", 9), ("Клёпок на зонт", 9), ("Клёпок всего", 9),
+    ]
+
+    def _vh_assembly_xlsx(self):
+        self.ensure_one()
+        lines = self._vh_good_lines()
+        buf = io.BytesIO()
+        book = xlsxwriter.Workbook(buf, {"in_memory": True})
+        ws = book.add_worksheet("Сборка")
+        border = {"border": 1, "valign": "vcenter"}
+        f_title = book.add_format({"bold": True, "font_size": 14})
+        f_info = book.add_format({})
+        f_head = book.add_format(dict(border, bold=True, text_wrap=True, align="center",
+                                      bg_color="#EDEDED"))
+        f_text = book.add_format(dict(border))
+        f_hood = book.add_format(dict(border, bold=True))
+        f_int = book.add_format(dict(border, align="center"))
+        f_mm = book.add_format(dict(border, num_format="0.00", align="center"))
+        f_total_lbl = book.add_format(dict(border, bold=True, bg_color="#EDEDED"))
+        f_total = book.add_format(dict(border, bold=True, align="center", bg_color="#EDEDED"))
+        f_warn = book.add_format({"italic": True, "font_color": "#9C5700"})
+
+        for col, (_title, width) in enumerate(self.ASSEMBLY_COLS):
+            ws.set_column(col, col, width)
+        ws.write(0, 0, "Сборочная ведомость вентзонтов — заказ %s" % self.name, f_title)
+        info = [("Клиент", self.partner_id.display_name or "—"),
+                ("Изделие / объект", self.customer or "—"),
+                ("Дата", self.order_date.strftime("%d.%m.%Y") if self.order_date else "—")]
+        for i, (label, value) in enumerate(info, start=1):
+            ws.write(i, 0, "%s: %s" % (label, value), f_info)
+        row = len(info) + 2
+        ws.set_row(row, 32)
+        for col, (title, _width) in enumerate(self.ASSEMBLY_COLS):
+            ws.write(row, col, title, f_head)
+        ws.freeze_panes(row + 1, 0)
+        row += 1
+        first = row
+
+        def cell(r, c):
+            return xl_rowcol_to_cell(r, c)
+
+        def merged(r0, r1, c, value, fmt, formula=None):
+            if formula:
+                if r1 > r0:
+                    ws.merge_range(r0, c, r1, c, "", fmt)
+                ws.write_formula(r0, c, formula, fmt, value)
+            elif r1 > r0:
+                ws.merge_range(r0, c, r1, c, value, fmt)
+            else:
+                ws.write(r0, c, value, fmt)
+
+        totals = {"qty": 0, "lapki": 0, "klepki": 0}
+        for n, line in enumerate(lines, start=1):
+            spec = line._vh_spec()
+            parts = spec["parts"]
+            top, bottom = row, row + len(parts) - 1
+            qty = line.qty or 0
+            merged(top, bottom, 0, n, f_int)
+            merged(top, bottom, 1, spec["hood"], f_hood)
+            merged(top, bottom, 2, line.coating_id.name or "", f_text)
+            merged(top, bottom, 3, line.thickness or 0.0, f_mm)
+            merged(top, bottom, 4, qty, f_int)
+            q = cell(top, 4)
+            for i, part in enumerate(parts):
+                r = top + i
+                ws.write(r, 5, part["name"], f_text)
+                ws.write(r, 6, "%s × %s" % (str(_num(part["size_mm"][0])), str(_num(part["size_mm"][1]))),
+                         f_text)
+                ws.write(r, 7, part["qty"], f_int)
+                ws.write_formula(r, 8, "=%s*%s" % (cell(r, 7), q), f_int, part["qty"] * qty)
+            merged(top, bottom, 9, spec["lapki"], f_int)
+            merged(top, bottom, 10, spec["lapki"] * qty, f_int,
+                   "=%s*%s" % (cell(top, 9), q))
+            merged(top, bottom, 11, spec["klepki"], f_int)
+            merged(top, bottom, 12, spec["klepki"] * qty, f_int,
+                   "=%s*%s" % (cell(top, 11), q))
+            totals["qty"] += qty
+            totals["lapki"] += spec["lapki"] * qty
+            totals["klepki"] += spec["klepki"] * qty
+            row = bottom + 1
+        last = row - 1
+
+        ws.merge_range(row, 0, row, 3, "ИТОГО", f_total_lbl)
+        ws.write_formula(row, 4, "=SUM(%s:%s)" % (cell(first, 4), cell(last, 4)), f_total, totals["qty"])
+        for col in (5, 6, 7, 8, 9, 11):
+            ws.write_blank(row, col, None, f_total)
+        ws.write_formula(row, 10, "=SUM(%s:%s)" % (cell(first, 10), cell(last, 10)), f_total,
+                         totals["lapki"])
+        ws.write_formula(row, 12, "=SUM(%s:%s)" % (cell(first, 12), cell(last, 12)), f_total,
+                         totals["klepki"])
+        row += 1
+        skipped = self.line_ids - lines
+        for line in skipped:
+            row += 1
+            ws.write(row, 0, "Не вошёл: %s — %s" % (line.display_name, line.spec_error or "размер не задан"),
+                     f_warn)
+        ws.set_landscape()
+        ws.fit_to_pages(1, 0)
+        ws.repeat_rows(len(info) + 2)
+        book.close()
+        return buf.getvalue()
 
     def _vh_download(self, data, fname, mimetype):
         """Файл во вложения записи (прежний с тем же именем — заменить) и скачать."""

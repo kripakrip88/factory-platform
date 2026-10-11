@@ -151,7 +151,8 @@ class TestVentHood(TransactionCase):
         names = sorted(zipfile.ZipFile(io.BytesIO(att.raw)).namelist())
         self.assertEqual(names, sorted([
             "vsh_750x4000_t0.65_оц.dxf", "vsh_750x4000_t0.65_оц_чертёж.png",
-            "vsh_600x2400_t0.65_RAL8017.dxf", "vsh_600x2400_t0.65_RAL8017_чертёж.png"]),
+            "vsh_600x2400_t0.65_RAL8017.dxf", "vsh_600x2400_t0.65_RAL8017_чертёж.png",
+            "%s_сборка.xlsx" % order.name]),
             "Размер с ошибкой в архив не попадает.")
         with self.assertRaises(UserError):
             self._order({"width": 1200, "length": 900}).action_download_all()
@@ -163,6 +164,50 @@ class TestVentHood(TransactionCase):
         self.assertEqual((action["res_id"], action["target"]), (good.id, "new"))
         self.assertEqual(good.display_name, "вш 750х4000")
         self.assertEqual(bad.display_name, "Размер 1200×900")
+
+    def test_assembly_xlsx(self):
+        import openpyxl
+        order = self._order({"width": 750, "length": 4000, "qty": 2, "coating_id": self.ral.id},
+                            {"width": 1000, "length": 1000, "qty": 3},
+                            {"width": 1200, "length": 900})
+        order.partner_id = self.env["res.partner"].create({"name": "Тест Сборка"})
+        order.action_download_assembly()
+        att = self.env["ir.attachment"].search([("res_model", "=", order._name),
+                                                ("res_id", "=", order.id)])
+        self.assertEqual(att.name, "%s_сборка.xlsx" % order.name)
+        wb = openpyxl.load_workbook(io.BytesIO(att.raw), data_only=True)
+        ws = wb["Сборка"]
+        rows = [[c.value for c in r] for r in ws.iter_rows()]
+        flat = [v for r in rows for v in r if v is not None]
+        self.assertIn("Клиент: Тест Сборка", flat)
+        head = next(r for r in rows if r[0] == "№")
+        self.assertEqual(head[5:13], ["Деталь", "Заготовка, мм", "Деталей на зонт", "Деталей всего",
+                                      "Лапок на зонт", "Лапок всего", "Клёпок на зонт", "Клёпок всего"])
+        good = order.line_ids.filtered("spec_json").sorted(lambda l: (l.sequence, l.id))
+        hoods = [r for r in rows if r[1] and str(r[1]).startswith("вш ")]
+        self.assertEqual([r[1] for r in hoods], [l.hood_label for l in good])
+        for r, line in zip(hoods, good):
+            self.assertEqual((r[4], r[9], r[10], r[11], r[12]),
+                             (line.qty, line.lapki, line.lapki * line.qty,
+                              line.klepki, line.klepki * line.qty))
+        parts = [r for r in rows if r[5] in ("Крышка торцевая", "Панель торцевая",
+                                             "Панель средняя", "Тело зонта")]
+        self.assertEqual(len(parts), sum(len(l._vh_spec()["parts"]) for l in good))
+        self.assertIn("449,6 × 1058,5", [r[6] for r in parts])
+        total = next(r for r in rows if r[0] == "ИТОГО")
+        self.assertEqual(total[4], 5)
+        self.assertEqual(total[10], sum(l.lapki * l.qty for l in good))
+        self.assertEqual(total[12], sum(l.klepki * l.qty for l in good))
+        self.assertTrue(any(str(v).startswith("Не вошёл: Размер 1200×900") for v in flat))
+        merged = [str(m) for m in ws.merged_cells.ranges]
+        top = rows.index(hoods[0]) + 1
+        self.assertIn("B%d:B%d" % (top, top + 2), merged, "Зонт — одна ячейка на высоту деталей.")
+        order.action_download_all()
+        zip_att = self.env["ir.attachment"].search([("res_model", "=", order._name),
+                                                    ("res_id", "=", order.id),
+                                                    ("name", "=like", "%.zip")])
+        self.assertIn("%s_сборка.xlsx" % order.name,
+                      zipfile.ZipFile(io.BytesIO(zip_att.raw)).namelist())
 
     def test_change_size_recomputes(self):
         line = self._order({"width": 750, "length": 4000}).line_ids

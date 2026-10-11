@@ -16,6 +16,8 @@
         <header>
           <button name="action_download_all" type="object" string="Скачать всё (DXF + чертежи)"
                   class="btn-primary" icon="fa-download" invisible="not total_positions"/>
+          <button name="action_download_assembly" type="object" string="Сборочная ведомость (Excel)"
+                  icon="fa-file-excel-o" invisible="not total_positions"/>
           <field name="state" widget="statusbar" options="{'clickable': 1}"
                  statusbar_visible="draft,confirmed,done"/>
         </header>
