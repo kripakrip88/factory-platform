@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-"""Вентзонты: развёртки для лазера (DXF) и спецификация на зонт.
+"""Вентзонты: заказ из нескольких размеров, развёртки для лазера (DXF),
+чертёж заготовок (PNG) и спецификация на каждый размер.
 
 Вся геометрия и все числа — в tools/vent_hood.py. Это генератор Антона,
 перенесённый КАК ЕСТЬ, файл в файл (11.10.2026): правила сняты с 25 шаблонов
@@ -7,16 +8,24 @@
 только передаёт генератору размер шахты, толщину и цвет и показывает ответ.
 Сверка переноса — тест test_vent_hood.py (51 эталон, tests/vent_hood_golden).
 Правила меняются только в генераторе и только через его --regen и сверку с
-шаблонами (README генератора, раздел 6).
+шаблонами (README генератора, раздел 6). Чертёж — tools/vent_hood_drawing.py,
+тоже как есть (единственная правка — запасной шрифт для сервера).
 
 Толщина и цвет — из тех же справочников, что у доборки (решение Антона
 11.10.2026: «справочник для доборки и вентзонтов один и тот же»): металл —
-оцинкованный лист справочника «Лист», цвет — «Цвета доборки (RAL)». Толщина
-и цвет геометрию не меняют (DXF байт в байт тот же), меняют материал, массу
-и предупреждения.
+оцинкованный лист справочника «Лист», цвет — «Цвета доборки (RAL)».
+Стандарт — лист 0,65 мм («толщина в стандарте 0,65 мм всегда»), цвет
+выбирают всегда сами («цвет на выбор обязательно») — умолчания нет.
+Толщина и цвет геометрию не меняют (DXF байт в байт тот же), меняют
+материал, массу и предупреждения.
 """
 
+import base64
+import io
 import json
+import os
+import tempfile
+import zipfile
 
 from markupsafe import Markup, escape
 
@@ -25,10 +34,18 @@ from odoo.exceptions import UserError
 
 from odoo.addons.pmk_calc.tools import vent_hood as V
 
+STANDARD_THICKNESS = 0.65
 
-class VentHood(models.Model):
-    _name = "pmk.vent.hood"
-    _description = "Вентзонт"
+
+def _num(value, digits=1):
+    """Число по-русски: запятая, без хвостовых нулей до digits знаков."""
+    text = ("%.*f" % (digits, value)).rstrip("0").rstrip(".")
+    return escape(text.replace(".", ","))
+
+
+class VentHoodOrder(models.Model):
+    _name = "pmk.vent.hood.order"
+    _description = "Заказ вентзонтов"
     _inherit = ["mail.thread"]
     _order = "order_date desc, id desc"
 
@@ -40,26 +57,93 @@ class VentHood(models.Model):
     state = fields.Selection(
         [("draft", "Черновик"), ("confirmed", "В работе"), ("done", "Изготовлен")],
         "Статус", default="draft", tracking=True)
+    line_ids = fields.One2many("pmk.vent.hood", "order_id", "Размеры", copy=True)
+
+    total_positions = fields.Integer("Размеров", compute="_compute_totals", store=True)
+    total_qty = fields.Integer("Зонтов, шт", compute="_compute_totals", store=True)
+    total_sheet_1250_m = fields.Float("Лист 1250, пог. м", compute="_compute_totals",
+                                      store=True, digits=(12, 2))
+    total_mass_net_kg = fields.Float("Вес деталей, кг", compute="_compute_totals",
+                                     store=True, digits=(12, 1))
+    has_errors = fields.Boolean("Есть ошибки размеров", compute="_compute_totals", store=True)
+
+    @api.depends("line_ids.qty", "line_ids.total_sheet_1250_m",
+                 "line_ids.total_mass_net_kg", "line_ids.spec_error")
+    def _compute_totals(self):
+        for order in self:
+            lines = order.line_ids
+            order.total_positions = len(lines)
+            order.total_qty = sum(lines.mapped("qty"))
+            order.total_sheet_1250_m = sum(lines.mapped("total_sheet_1250_m"))
+            order.total_mass_net_kg = sum(lines.mapped("total_mass_net_kg"))
+            order.has_errors = any(lines.mapped("spec_error"))
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get("name", "Черновик") == "Черновик":
+                # Код нумератора — с первой версии (там документ был один
+                # на размер): запись noupdate, на бою уже создана.
+                vals["name"] = self.env["ir.sequence"].next_by_code("pmk.vent.hood") or "Черновик"
+        return super().create(vals_list)
+
+    def action_download_all(self):
+        """ZIP: на каждый размер — DXF для лазера и чертёж PNG."""
+        self.ensure_one()
+        lines = self.line_ids.filtered(lambda l: l.spec_json)
+        if not lines:
+            raise UserError("В заказе нет ни одного размера, по которому можно построить развёртку.")
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+            for line in lines:
+                zf.writestr(line._vh_dxf_name(), line._vh_dxf())
+                zf.writestr(line._vh_png_name(), line._vh_png())
+        return self._vh_download(buf.getvalue(), "%s.zip" % self.name, "application/zip")
+
+    def _vh_download(self, data, fname, mimetype):
+        """Файл во вложения записи (прежний с тем же именем — заменить) и скачать."""
+        self.ensure_one()
+        Attachment = self.env["ir.attachment"]
+        Attachment.search([("res_model", "=", self._name), ("res_id", "=", self.id),
+                           ("name", "=", fname)]).unlink()
+        att = Attachment.create({"name": fname, "raw": data, "mimetype": mimetype,
+                                 "res_model": self._name, "res_id": self.id})
+        return {"type": "ir.actions.act_url", "target": "self",
+                "url": "/web/content/%s?download=true" % att.id}
+
+
+class VentHood(models.Model):
+    """Строка заказа: один размер шахты × количество."""
+
+    _name = "pmk.vent.hood"
+    _description = "Вентзонт (размер в заказе)"
+    _order = "order_id, sequence, id"
+
+    order_id = fields.Many2one("pmk.vent.hood.order", "Заказ", required=True,
+                               ondelete="cascade", index=True)
+    sequence = fields.Integer("№", default=10)
 
     width = fields.Integer(
-        "Ширина шахты, мм", tracking=True,
+        "Ширина шахты, мм",
         help="Короткая сторона шахты: в обозначении «вш Ш×Д» Ш ≤ Д, конёк идёт "
              "вдоль длинной стороны.")
-    length = fields.Integer("Длина шахты, мм", tracking=True)
-    qty = fields.Integer("Количество, шт", default=1, tracking=True)
+    length = fields.Integer("Длина шахты, мм")
+    qty = fields.Integer("Количество, шт", default=1)
 
     # Тот же справочник и тот же отбор, что у доборки (pmk.dobor.order.line):
     # только оцинковка. Толщина приходит из металла.
     sheet_id = fields.Many2one(
-        "pmk.metal.sheet", "Металл", tracking=True,
+        "pmk.metal.sheet", "Металл",
         domain=[("sheet_type", "=", "Оцинкованный")],
-        help="Оцинкованный лист из справочника «Лист» — тот же список, что у доборки.")
+        default=lambda self: self._default_sheet(),
+        help="Оцинкованный лист из справочника «Лист» — тот же список, что у доборки. "
+             "Стандарт — 0,65 мм.")
     thickness = fields.Float("Толщина, мм", related="sheet_id.thickness_mm", store=True,
                              digits=(6, 2))
     coating_id = fields.Many2one(
-        "pmk.dobor.coating", "Цвет", tracking=True,
-        default=lambda self: self._default_coating(),
-        help="Цинк или RAL — справочник «Цвета доборки (RAL)», общий с доборкой.")
+        "pmk.dobor.coating", "Цвет", required=True,
+        help="Цинк или RAL — справочник «Цвета доборки (RAL)», общий с доборкой. "
+             "Выбирается всегда: умолчания нет.")
 
     # Ответ генератора. Хранится: список и итоги считаются без генератора.
     spec_json = fields.Text("Спецификация (JSON)", compute="_compute_spec", store=True)
@@ -86,19 +170,14 @@ class VentHood(models.Model):
     subtitle = fields.Char("Зонт и материал", compute="_compute_subtitle")
     spec_html = fields.Html("Детали", compute="_compute_spec_html", sanitize=False)
     warnings_text = fields.Text("Предупреждения", compute="_compute_spec_html")
+    # Чертёж — в окне размера, строится при открытии (≈0,3 с); не хранится:
+    # он целиком следует из размера, толщины и цвета.
+    drawing_png = fields.Binary("Чертёж заготовок", compute="_compute_drawing")
 
-    def _default_coating(self):
-        zinc = self.env.ref("pmk_calc.coating_zinc", raise_if_not_found=False)
-        if zinc:
-            return zinc.id
-        return self.env["pmk.dobor.coating"].search([("name", "=ilike", "Цинк")], limit=1).id
-
-    @api.model_create_multi
-    def create(self, vals_list):
-        for vals in vals_list:
-            if vals.get("name", "Черновик") == "Черновик":
-                vals["name"] = self.env["ir.sequence"].next_by_code("pmk.vent.hood") or "Черновик"
-        return super().create(vals_list)
+    def _default_sheet(self):
+        return self.env["pmk.metal.sheet"].search(
+            [("sheet_type", "=", "Оцинкованный"), ("thickness_mm", "=", STANDARD_THICKNESS)],
+            limit=1).id
 
     # ── генератор ────────────────────────────────────────────────────────
 
@@ -119,6 +198,37 @@ class VentHood(models.Model):
     def _vh_spec(self):
         self.ensure_one()
         return json.loads(self.spec_json) if self.spec_json else {}
+
+    def _vh_checked_geometry(self):
+        self.ensure_one()
+        if not self.width or not self.length:
+            raise UserError("Укажите ширину и длину шахты.")
+        try:
+            return self._vh_geometry()
+        except ValueError as e:
+            raise UserError("Размер %s×%s не подходит: %s" % (self.width, self.length, e)) from None
+
+    def _vh_dxf_name(self):
+        return V.out_name(self.width, self.length, self._vh_thickness(), self._vh_color())
+
+    def _vh_png_name(self):
+        return self._vh_dxf_name()[:-4] + "_чертёж.png"
+
+    def _vh_dxf(self):
+        return V.to_dxf(self._vh_checked_geometry()).encode("utf-8")
+
+    def _vh_png(self):
+        """Чертёж заготовок генератора (vent_hood_drawing.main пишет в файл)."""
+        self._vh_checked_geometry()
+        from odoo.addons.pmk_calc.tools import vent_hood_drawing as D
+        fd, path = tempfile.mkstemp(suffix=".png")
+        os.close(fd)
+        try:
+            D.main(self.width, self.length, path, self._vh_thickness(), self._vh_color())
+            with open(path, "rb") as fh:
+                return fh.read()
+        finally:
+            os.unlink(path)
 
     @api.depends("width", "length", "qty", "thickness", "coating_id.ral_code")
     def _compute_spec(self):
@@ -183,32 +293,32 @@ class VentHood(models.Model):
             ) % (head, rows)
             rec.warnings_text = "\n".join(s["rule_flags"] + s["material"]["warnings"]) or False
 
+    @api.depends("spec_json")
+    def _compute_drawing(self):
+        for rec in self:
+            # Binary вне вложений хранит base64 — так его ждёт виджет картинки.
+            rec.drawing_png = base64.b64encode(rec._vh_png()) if rec.spec_json else False
+
+    @api.depends("hood_label", "width", "length")
+    def _compute_display_name(self):
+        for rec in self:
+            rec.display_name = rec.hood_label or "Размер %s×%s" % (rec.width or "?", rec.length or "?")
+
     # ── действия ─────────────────────────────────────────────────────────
 
-    def action_download_dxf(self):
-        """DXF развёрток для лазера — файлом во вложениях и сразу скачать."""
+    def action_open_line(self):
+        """Окно размера поверх заказа: детали, предупреждения, чертёж."""
         self.ensure_one()
-        if not self.width or not self.length:
-            raise UserError("Укажите ширину и длину шахты.")
-        try:
-            g = self._vh_geometry()
-        except ValueError as e:
-            raise UserError("Размер не подходит: %s" % e) from None
-        fname = V.out_name(self.width, self.length, self._vh_thickness(), self._vh_color())
-        data = V.to_dxf(g).encode("utf-8")
-        Attachment = self.env["ir.attachment"]
-        old = Attachment.search([("res_model", "=", self._name), ("res_id", "=", self.id),
-                                 ("name", "=", fname)])
-        old.unlink()
-        att = Attachment.create({
-            "name": fname, "raw": data, "mimetype": "application/dxf",
-            "res_model": self._name, "res_id": self.id,
-        })
-        return {"type": "ir.actions.act_url", "target": "self",
-                "url": "/web/content/%s?download=true" % att.id}
+        return {"type": "ir.actions.act_window", "res_model": self._name, "res_id": self.id,
+                "views": [(self.env.ref("pmk_calc.view_vent_hood_form").id, "form")],
+                "target": "new", "name": self.display_name}
 
+    def action_download_dxf(self):
+        """DXF развёрток для лазера — во вложения заказа и сразу скачать."""
+        self.ensure_one()
+        return self.order_id._vh_download(self._vh_dxf(), self._vh_dxf_name(), "application/dxf")
 
-def _num(value, digits=1):
-    """Число по-русски: запятая, без хвостовых нулей до digits знаков."""
-    text = ("%.*f" % (digits, value)).rstrip("0").rstrip(".")
-    return escape(text.replace(".", ","))
+    def action_download_png(self):
+        """Чертёж заготовок с размерами и спецификацией (PNG)."""
+        self.ensure_one()
+        return self.order_id._vh_download(self._vh_png(), self._vh_png_name(), "image/png")

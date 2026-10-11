@@ -1,34 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
   <!--
-    Вентзонт (11.10.2026): размер шахты, металл и цвет → спецификация и DXF
-    развёрток для лазера. Вся геометрия — в tools/vent_hood.py (генератор
-    Антона, перенесён как есть). Шапка тем же приёмом, что у доборки: поля
-    слева, плашки итогов справа (pmk-doc-head / pmk-kpi, pmk_theme).
+    Заказ вентзонтов (11.10.2026): несколько размеров шахты в одном заказе.
+    Каждая строка — размер × количество, металл (стандарт 0,65) и цвет
+    (выбирать обязательно) → спецификация, DXF для лазера, чертёж PNG.
+    Вся геометрия — в tools/vent_hood.py (генератор Антона, перенесён как
+    есть). Шапка тем же приёмом, что у доборки: поля слева, плашки итогов
+    справа (pmk-doc-head / pmk-kpi, pmk_theme).
   -->
-  <record id="view_vent_hood_form" model="ir.ui.view">
-    <field name="name">pmk.vent.hood.form</field>
-    <field name="model">pmk.vent.hood</field>
+  <record id="view_vent_hood_order_form" model="ir.ui.view">
+    <field name="name">pmk.vent.hood.order.form</field>
+    <field name="model">pmk.vent.hood.order</field>
     <field name="arch" type="xml">
-      <form string="Вентзонт" class="pmk-doc-form">
+      <form string="Заказ вентзонтов" class="pmk-doc-form">
         <header>
-          <button name="action_download_dxf" type="object" string="Скачать DXF"
-                  class="btn-primary" icon="fa-download"
-                  invisible="not spec_json"/>
+          <button name="action_download_all" type="object" string="Скачать всё (DXF + чертежи)"
+                  class="btn-primary" icon="fa-download" invisible="not total_positions"/>
           <field name="state" widget="statusbar" options="{'clickable': 1}"
                  statusbar_visible="draft,confirmed,done"/>
         </header>
         <sheet>
-          <field name="spec_json" invisible="1"/>
-          <div class="oe_title">
-            <h1><field name="name" readonly="1"/></h1>
-            <field name="subtitle" class="text-muted" invisible="not subtitle"/>
-          </div>
-          <div class="alert alert-danger" role="alert" invisible="not spec_error">
-            <field name="spec_error"/>
-          </div>
-          <div class="alert alert-warning" role="status" invisible="not warnings_text">
-            <field name="warnings_text"/>
+          <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
+          <div class="alert alert-danger" role="alert" invisible="not has_errors">
+            В заказе есть размер, по которому развёртку не построить — он выделен красным.
+            Его нет в «Скачать всё».
           </div>
           <div class="pmk-doc-head">
             <div class="pmk-doc-head__fields">
@@ -44,60 +39,103 @@
                 <label for="customer"/>
                 <field name="customer" nolabel="1" placeholder="На какой объект"/>
               </div>
-              <div class="pmk-field" name="pmk_f_width">
-                <label for="width"/>
-                <field name="width" nolabel="1" required="1"/>
-              </div>
-              <div class="pmk-field" name="pmk_f_length">
-                <label for="length"/>
-                <field name="length" nolabel="1" required="1"/>
-              </div>
-              <div class="pmk-field" name="pmk_f_sheet">
-                <label for="sheet_id"/>
-                <field name="sheet_id" nolabel="1" required="1"
-                       options="{'no_create': True, 'no_open': True}"/>
-              </div>
-              <div class="pmk-field" name="pmk_f_coating">
-                <label for="coating_id"/>
-                <field name="coating_id" nolabel="1" required="1"
-                       options="{'no_create': True, 'no_open': True}"/>
-              </div>
-              <div class="pmk-field" name="pmk_f_qty">
-                <label for="qty"/>
-                <field name="qty" nolabel="1"/>
-              </div>
             </div>
-
             <div class="pmk-kpi">
               <div class="pmk-kpi__card">
-                <div class="pmk-kpi__label">Лист 1250 всего, пог. м</div>
+                <div class="pmk-kpi__label">Лист 1250, пог. м</div>
                 <div class="pmk-kpi__value"><field name="total_sheet_1250_m"/></div>
               </div>
               <div class="pmk-kpi__card">
-                <div class="pmk-kpi__label">Вес деталей всего, кг</div>
+                <div class="pmk-kpi__label">Вес деталей, кг</div>
                 <div class="pmk-kpi__value"><field name="total_mass_net_kg"/></div>
               </div>
               <div class="pmk-kpi__note">
-                <span>Лапок:</span><field name="lapki"/>
+                <span>Размеров:</span><field name="total_positions"/>
                 <span class="pmk-kpi__dot">·</span>
-                <span>Клёпок:</span><field name="klepki"/>
-                <span class="pmk-kpi__dot">·</span>
-                <span>на один зонт</span>
+                <span>Зонтов, шт:</span><field name="total_qty"/>
               </div>
             </div>
           </div>
+          <!--
+            Размеры правятся прямо в строке: у зонта пять полей, окно ради
+            них лишнее. Окно размера (кнопка-стрелка в строке) — детали,
+            предупреждения и чертёж.
+          -->
+          <field name="line_ids" class="pmk-rows">
+            <!-- Ширины заданы: без них свободное место уходит самой длинной
+                 колонке, а цвет и металл обрезались до «RAL 8017 …» и «Лист
+                 оцинкованный …» — без толщины. Лапки и клёпки — в меню
+                 колонок и в окне размера. -->
+            <list editable="bottom" decoration-danger="spec_error">
+              <field name="sequence" widget="handle"/>
+              <field name="width" width="90px"/>
+              <field name="length" width="90px"/>
+              <field name="coating_id" width="150px" placeholder="Выберите цвет"
+                     options="{'no_create': True, 'no_open': True}"/>
+              <field name="sheet_id" width="190px" options="{'no_create': True, 'no_open': True}"/>
+              <field name="qty" width="80px" sum="Зонтов"/>
+              <field name="hood_label" string="Зонт" width="125px" readonly="1"/>
+              <field name="lapki" readonly="1" optional="hide"/>
+              <field name="klepki" readonly="1" optional="hide"/>
+              <field name="total_sheet_1250_m" readonly="1" sum="Лист 1250"/>
+              <field name="total_mass_net_kg" readonly="1" sum="Вес"/>
+              <field name="spec_error" column_invisible="1"/>
+              <field name="spec_json" column_invisible="1"/>
+              <button name="action_open_line" type="object" icon="fa-search-plus"
+                      title="Детали и чертёж" string="Детали" invisible="not id"/>
+              <button name="action_download_dxf" type="object" icon="fa-download"
+                      title="Скачать DXF" string="DXF" invisible="not spec_json"/>
+              <!-- Чертёж — в окне «Детали» (вкладка «Чертёж», «Скачать чертёж»)
+                   и в «Скачать всё»: третья кнопка в строке не помещалась. -->
+            </list>
+          </field>
+        </sheet>
+        <chatter/>
+      </form>
+    </field>
+  </record>
 
-          <notebook>
+  <!-- Окно размера: детали, предупреждения генератора, чертёж. -->
+  <record id="view_vent_hood_form" model="ir.ui.view">
+    <field name="name">pmk.vent.hood.form</field>
+    <field name="model">pmk.vent.hood</field>
+    <field name="arch" type="xml">
+      <form string="Вентзонт">
+        <header>
+          <button name="action_download_dxf" type="object" string="Скачать DXF"
+                  class="btn-primary" icon="fa-download" invisible="not spec_json"/>
+          <button name="action_download_png" type="object" string="Скачать чертёж"
+                  icon="fa-image" invisible="not spec_json"/>
+        </header>
+        <sheet>
+          <field name="spec_json" invisible="1"/>
+          <field name="subtitle" class="text-muted" invisible="not subtitle"/>
+          <div class="alert alert-danger" role="alert" invisible="not spec_error">
+            <field name="spec_error"/>
+          </div>
+          <div class="alert alert-warning" role="status" invisible="not warnings_text">
+            <field name="warnings_text"/>
+          </div>
+          <group>
+            <group>
+              <field name="width" required="1"/>
+              <field name="length" required="1"/>
+              <field name="qty"/>
+            </group>
+            <group>
+              <field name="coating_id" options="{'no_create': True, 'no_open': True}"/>
+              <field name="sheet_id" required="1" options="{'no_create': True, 'no_open': True}"/>
+            </group>
+          </group>
+          <notebook invisible="not spec_json">
             <page string="Детали" name="parts">
-              <field name="spec_html" nolabel="1" readonly="1"
-                     invisible="not spec_json"/>
-              <p class="text-muted" invisible="spec_json or spec_error">
-                Впишите ширину и длину шахты — генератор покажет детали, лапки и клёпки.
-              </p>
-              <group invisible="not spec_json">
+              <field name="spec_html" nolabel="1" readonly="1"/>
+              <group>
                 <group string="На один зонт">
                   <field name="panels"/>
                   <field name="layout"/>
+                  <field name="lapki"/>
+                  <field name="klepki"/>
                   <field name="metal_net_m2"/>
                   <field name="sheet_1250_m"/>
                   <field name="mass_net_kg"/>
@@ -113,29 +151,31 @@
                 </group>
               </group>
             </page>
+            <page string="Чертёж" name="drawing">
+              <field name="drawing_png" widget="image" nolabel="1" readonly="1"
+                     class="o_pmk_vh_drawing"/>
+            </page>
           </notebook>
         </sheet>
-        <chatter/>
       </form>
     </field>
   </record>
 
-  <record id="view_vent_hood_list" model="ir.ui.view">
-    <field name="name">pmk.vent.hood.list</field>
-    <field name="model">pmk.vent.hood</field>
+  <record id="view_vent_hood_order_list" model="ir.ui.view">
+    <field name="name">pmk.vent.hood.order.list</field>
+    <field name="model">pmk.vent.hood.order</field>
     <field name="arch" type="xml">
-      <list string="Вентзонты" decoration-danger="spec_error">
+      <list string="Вентзонты" decoration-muted="total_positions == 0"
+            decoration-danger="has_errors">
         <field name="name" width="105px"/>
         <field name="order_date"/>
         <field name="partner_id" optional="show" width="160px"/>
         <field name="customer" optional="show"/>
-        <field name="hood_label" string="Размер" width="120px"/>
-        <field name="thickness" optional="show"/>
-        <field name="coating_id" optional="show"/>
-        <field name="qty"/>
+        <field name="total_positions"/>
+        <field name="total_qty"/>
         <field name="total_sheet_1250_m" sum="Лист 1250, пог. м" optional="show"/>
         <field name="total_mass_net_kg" sum="Итого, кг"/>
-        <field name="spec_error" column_invisible="1"/>
+        <field name="has_errors" column_invisible="1"/>
         <field name="state" widget="badge" width="110px"
                decoration-muted="state == 'draft'"
                decoration-info="state == 'confirmed'"
@@ -144,15 +184,16 @@
     </field>
   </record>
 
-  <record id="view_vent_hood_search" model="ir.ui.view">
-    <field name="name">pmk.vent.hood.search</field>
-    <field name="model">pmk.vent.hood</field>
+  <record id="view_vent_hood_order_search" model="ir.ui.view">
+    <field name="name">pmk.vent.hood.order.search</field>
+    <field name="model">pmk.vent.hood.order</field>
     <field name="arch" type="xml">
       <search>
         <field name="name" string="Номер"/>
         <field name="partner_id" string="Клиент"/>
         <field name="customer" string="Изделие / объект"/>
-        <field name="hood_label" string="Размер"/>
+        <field name="line_ids" string="Размер"
+               filter_domain="[('line_ids.hood_label', 'ilike', self)]"/>
         <filter name="draft" string="Черновики" domain="[('state', '=', 'draft')]"/>
         <filter name="confirmed" string="В работе" domain="[('state', '=', 'confirmed')]"/>
         <filter name="done" string="Изготовлены" domain="[('state', '=', 'done')]"/>
@@ -169,12 +210,12 @@
 
   <record id="action_vent_hood" model="ir.actions.act_window">
     <field name="name">Вентзонты</field>
-    <field name="res_model">pmk.vent.hood</field>
+    <field name="res_model">pmk.vent.hood.order</field>
     <field name="view_mode">list,form</field>
     <field name="context">{'search_default_open': 1}</field>
     <field name="help" type="html">
-      <p>По выбранным фильтрам вентзонтов нет.</p>
-      <p>Изготовленные — снимите фильтр «Не изготовлены». Новый зонт — кнопка «Новое».</p>
+      <p>По выбранным фильтрам заказов вентзонтов нет.</p>
+      <p>Изготовленные — снимите фильтр «Не изготовлены». Новый заказ — кнопка «Новое».</p>
     </field>
   </record>
 </odoo>
