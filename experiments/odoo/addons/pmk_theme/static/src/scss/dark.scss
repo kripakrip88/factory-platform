@@ -938,6 +938,14 @@ $pmk-dark-alerts: (
     color: var(--pmk-ink) !important;
   }
 
+  // Т262 (12.10.2026): невыбранные пункты левой панели фильтров («Компания»,
+  // «Отдел» у Сотрудников) брали белый фон из светлого словаря Bootstrap при
+  // светлом тексте — не читались. Выбранный красит правило выше (!important).
+  body.o_nexus_dark .o_search_panel .list-group-item {
+    background-color: transparent;
+    color: var(--pmk-ink);
+  }
+
   // 40.4а Календарь. Корень рендерера белый (0,1,0), страница FullCalendar —
   // белая переменная (0,2,0), прошедшие события — белая вуаль.
   body.o_nexus_dark .o_calendar_renderer {
@@ -1507,15 +1515,3 @@ $pmk-dark-alerts: (
   }
 }
 
-// ═══ Т262: боковая панель фильтров — тёмная пара (12.10.2026) ═══
-// Пункты list-group левой панели («Компания», «Отдел» у Сотрудников и т.п.)
-// брали белый фон из светлого словаря Bootstrap, а текст — светлый: пункты
-// не читались. Выбранный пункт красит правило 40.4 (.list-group-item-action
-// .active, !important) — его не трогаем.
-@media screen {
-
-  body.o_nexus_dark .o_search_panel .list-group-item {
-    background-color: transparent;
-    color: var(--pmk-ink);
-  }
-}
