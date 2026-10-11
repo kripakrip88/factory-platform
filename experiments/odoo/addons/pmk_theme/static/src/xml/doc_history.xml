@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Окно «История» как «История изменений» МоегоСклада — разбор UX, шаг 66
+  (11.10.2026). Логика — js/doc_history.js (PmkHistoryMessage,
+  PmkHistoryThread), правила — js/history_rules.js, стили — forms_nexus.scss
+  и dark.scss, раздел «Шаг 66».
+
+  Свой шаблон события, НЕ расширение mail.Message: ни одного xpath в шаблон
+  ядра. Только для чтения: нет значков действий (реакция, звёздочка, ссылка,
+  ответ, «ещё»), правки сообщения, реакций, ответа-цитаты.
+
+  ⚠️ Ссылки, на которых держится логика ядра Message (setup): root —
+  подсветка сообщения по ссылке из «Входящих» (registerMessageRef,
+  props.className = o-highlighted), body — ссылки в тексте
+  (prepareMessageBody), shadowBody — письмо в тени (свои стили письма не
+  ломают окно). Компоненты — только из Message.components (AttachmentList).
+-->
+<templates xml:space="preserve">
+
+  <t t-name="pmk_theme.HistoryMessage">
+    <div class="o-mail-Message pmk-hist-event position-relative"
+         t-att-class="pmkRootClass"
+         t-att-data-persistent="message.persistent"
+         role="group"
+         t-att-aria-label="pmkHead"
+         t-on-click="onClick"
+         t-ref="root"
+         t-if="message.exists()">
+      <div class="pmk-hist-head">
+        <img class="pmk-hist-avatar" t-att-src="authorAvatarUrl" alt=""/>
+        <span class="pmk-hist-head__line">
+          <strong class="pmk-hist-head__author" t-att-title="message.authorName" t-esc="pmkAuthor"/>, <span class="pmk-hist-head__action" t-esc="pmkAction"/> <span class="pmk-hist-head__stamp" t-esc="pmkStamp"/>
+        </span>
+        <t t-call="mail.Message.notification"/>
+      </div>
+      <div class="pmk-hist-body">
+        <p t-if="pmkSubtype" class="pmk-hist-subtype" t-esc="pmkSubtype"/>
+        <t t-set="pmkTableRows" t-value="pmkRows"/>
+        <table t-if="pmkTableRows.length" class="pmk-hist-table">
+          <thead>
+            <tr>
+              <th t-foreach="pmkHeadCells" t-as="cell" t-key="cell_index" scope="col" t-esc="cell"/>
+            </tr>
+          </thead>
+          <tbody>
+            <tr t-foreach="pmkTableRows" t-as="row" t-key="row.key">
+              <td class="pmk-hist-cell pmk-hist-cell--field" t-esc="row.field"/>
+              <td class="pmk-hist-cell pmk-hist-cell--old" t-att-class="{ 'pmk-hist-cell--none': row.old === '—' }" t-esc="row.old"/>
+              <td class="pmk-hist-cell pmk-hist-cell--new" t-att-class="{ 'pmk-hist-cell--none': row.new === '—' }" t-esc="row.new"/>
+            </tr>
+          </tbody>
+        </table>
+        <p t-if="pmkShowSubject" class="pmk-hist-subject">Тема: <t t-esc="message.subject"/></p>
+        <div t-if="pmkIsEmail" class="pmk-hist-text pmk-hist-mail overflow-x-auto" t-ref="shadowBody"/>
+        <div t-elif="pmkShowBody" class="o-mail-Message-body pmk-hist-text text-break" t-ref="body" t-out="message.richBody"/>
+        <div t-if="message.extra_body_attachment_ids.length" class="pmk-hist-files">
+          <AttachmentList attachments="message.extra_body_attachment_ids" unlinkAttachment.bind="onClickAttachmentUnlink"/>
+        </div>
+      </div>
+    </div>
+  </t>
+
+</templates>

@@ -450,7 +450,13 @@ class TestStep65History(TransactionCase):
             with self.subTest(path=path):
                 start = source.index(STEP_MARK)
                 self.assertEqual(source.count(STEP_MARK), 1)
-                self.assertEqual(source.find("// ═══", start + 1), -1, "Раздел — последним в файле.")
+                # Ниже шага 65 — только более поздние разделы (шаг 66: окно
+                # «История» как в МоёмСкладе), старые правила его не перебивают.
+                later = source.find("// ═══", start + 1)
+                while later != -1:
+                    head = source[later:later + 80]
+                    self.assertIn("Шаг 66", head, "Ниже шага 65 — только разделы новее него: %s" % head)
+                    later = source.find("// ═══", later + 1)
                 self.assertLess(source.index("// ═══ Шаг 52"), start)
         forms = _read(FORMS_SCSS)
         self.assertLess(forms.index("// ═══ Лента документа в рамке"), forms.index(STEP_MARK))

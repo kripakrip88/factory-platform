@@ -3361,3 +3361,153 @@ $pmk-card-line: unquote("var(--pmk-border, #e3e4e8)") !default;
 .o_pmk_files .o_pmk_files__empty {
   padding: 8px 0;
 }
+
+// ═══ Шаг 66: окно «История» — структура как в МоёмСкладе (разбор UX, 11.10.2026) ═══
+//
+// Антон 11.10 прислал «Историю изменений» МоегоСклада: «гораздо чётче
+// выглядит структура изменений». Каждое событие — строка «Карнеев А.,
+// изменено 08.10.2026 22:48», под ней таблица «Поле | Было | Стало» с
+// тонкими линиями; позиции (изделия, строки доборки) — по одной на строку;
+// события разделены тонкой линией. Разметка — xml/doc_history.xml (свой
+// шаблон события, не mail.Message), логика — js/doc_history.js, правила —
+// js/history_rules.js; тёмная пара — dark.scss, раздел «Шаг 66».
+//
+// Только окно «История» (.pmk-history-dialog): Discuss, почта, чат и лента
+// под формой у выключателя «Убранное (показать)» не меняются.
+//
+// 66.1 Событие: без скругления (у темы Nexus оно у .o-mail-Message), снизу
+// тонкая линия, у последнего — нет.
+// 66.2 Заголовок: аватар 20 px кружком, автор полужирным, время цифрами
+// одной ширины.
+// 66.3 Тело — под текстом заголовка (отступ = аватар + зазор); на телефоне
+// без отступа.
+// 66.4 Таблица «Поле | Было | Стало»: тонкие линии, шапка серым, колонка
+// «Поле» — 28 % (на телефоне 24 %), длинное переносится по пробелам
+// (break-word: слово рвётся, только если целиком не влезает; сумму
+// «9 500 000,00 руб» не рвёт — пробел перед «руб» history_rules.cellText
+// делает обычным). Пустое «—» — бледным.
+// 66.5 Текст заметок и писем — как есть, без боковых отступов ядра.
+//
+// Без min()/max() — libsass Odoo роняет всю сборку. Лайма нет.
+
+// ─── 66.1 Событие ──────────────────────────────────────────────────────────
+.pmk-history-dialog .o-mail-Message.pmk-hist-event {
+  padding: 10px 4px 12px;
+  border-radius: 0;
+  border-bottom: 1px solid var(--pmk-border, #e3e4e8);
+}
+
+.pmk-history-dialog .o-mail-Message.pmk-hist-event:last-child {
+  border-bottom: 0;
+}
+
+// ─── 66.2 Заголовок ────────────────────────────────────────────────────────
+.pmk-history-dialog .pmk-hist-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 20px;
+  color: #4b4f58;
+}
+
+.pmk-history-dialog .pmk-hist-avatar {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.pmk-history-dialog .pmk-hist-head__author {
+  font-weight: 600;
+  color: #16191c;
+}
+
+.pmk-history-dialog .pmk-hist-head__stamp {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+// ─── 66.3 Тело ─────────────────────────────────────────────────────────────
+.pmk-history-dialog .pmk-hist-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+  padding-left: 28px;
+}
+
+.pmk-history-dialog .pmk-hist-body:empty {
+  display: none;
+}
+
+.pmk-history-dialog .pmk-hist-subtype,
+.pmk-history-dialog .pmk-hist-subject {
+  margin: 0;
+  font-size: 13px;
+  color: #4b4f58;
+}
+
+// ─── 66.4 Таблица «Поле | Было | Стало» ────────────────────────────────────
+.pmk-history-dialog .pmk-hist-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.pmk-history-dialog .pmk-hist-table th,
+.pmk-history-dialog .pmk-hist-table td {
+  padding: 4px 8px;
+  border: 1px solid var(--pmk-border, #e3e4e8);
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: break-word;
+}
+
+.pmk-history-dialog .pmk-hist-table th {
+  font-weight: 600;
+  color: #4b4f58;
+  background: #f6f7f9;
+}
+
+.pmk-history-dialog .pmk-hist-table th:first-child {
+  width: 28%;
+}
+
+.pmk-history-dialog .pmk-hist-table td {
+  color: #16191c;
+}
+
+.pmk-history-dialog .pmk-hist-table td.pmk-hist-cell--none {
+  color: #9a9ea6;
+}
+
+// ─── 66.5 Текст заметок и писем ────────────────────────────────────────────
+.pmk-history-dialog .pmk-hist-text.o-mail-Message-body {
+  padding: 0;
+  font-size: 14px;
+}
+
+.pmk-history-dialog .pmk-hist-text > p:last-child {
+  margin-bottom: 0;
+}
+
+@media (max-width: 767.98px) {
+  .pmk-history-dialog .pmk-hist-body {
+    padding-left: 0;
+  }
+
+  .pmk-history-dialog .pmk-hist-table th,
+  .pmk-history-dialog .pmk-hist-table td {
+    padding: 3px 6px;
+  }
+
+  // Шире «Было» и «Стало»: «9 500 000,00 руб» на 375 px — в одну строку.
+  .pmk-history-dialog .pmk-hist-table th:first-child {
+    width: 24%;
+  }
+}

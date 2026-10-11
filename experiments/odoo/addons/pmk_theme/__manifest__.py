@@ -11,7 +11,7 @@
 и работает как «все приложения». Так ничего не становится недостижимым,
 когда модулей больше, чем влезает по ширине.
     """,
-    "version": "19.0.2.14.0",
+    "version": "19.0.2.15.0",
     "category": "Theme/Backend",
     "author": "ПМК Парк",
     "license": "LGPL-3",
@@ -168,10 +168,17 @@
             # функции (их гоняет node), раньше патчей; doc_files.js и
             # doc_history.js — раньше doc_tools.js, который их импортирует.
             "pmk_theme/static/src/js/doc_tools_rules.js",
+            # Окно «История» как у МоегоСклада (разбор UX, шаг 66,
+            # 11.10.2026): событие — заголовок «Карнеев А., изменено
+            # 08.10.2026 22:48» и таблица «Поле | Было | Стало». Правила —
+            # чистые функции (их гоняет node), раньше doc_history.js;
+            # шаблон события — свой, не расширение mail.Message.
+            "pmk_theme/static/src/js/history_rules.js",
             "pmk_theme/static/src/js/doc_files.js",
             "pmk_theme/static/src/js/doc_history.js",
             "pmk_theme/static/src/js/doc_tools.js",
             "pmk_theme/static/src/xml/doc_tools.xml",
+            "pmk_theme/static/src/xml/doc_history.xml",
             # Пустые экраны без «помощников» (разбор UX, шаг 26, 01.10.2026):
             # видео в КП и BillGuide у счетов поставщиков. Текст подсказки и
             # отключение демо-строк — models/, стиль — forms_nexus.scss,

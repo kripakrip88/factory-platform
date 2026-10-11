@@ -1473,3 +1473,36 @@ $pmk-dark-alerts: (
     background: var(--pmk-surface);
   }
 }
+
+// ═══ Шаг 66: окно «История» как в МоёмСкладе — тёмная пара (11.10.2026) ═══
+// Светлые правила — forms_nexus.scss, раздел «Шаг 66». Линии событий и
+// таблицы — var(--pmk-border): в тёмном словаре (раздел 0) он свой и
+// подхватывается сам. Здесь — цвета текста и шапки таблицы.
+@media screen {
+
+  body.o_nexus_dark .pmk-history-dialog .pmk-hist-head {
+    color: var(--pmk-ink-3);
+  }
+
+  body.o_nexus_dark .pmk-history-dialog .pmk-hist-head__author {
+    color: var(--pmk-ink);
+  }
+
+  body.o_nexus_dark .pmk-history-dialog .pmk-hist-subtype,
+  body.o_nexus_dark .pmk-history-dialog .pmk-hist-subject {
+    color: var(--pmk-ink-3);
+  }
+
+  body.o_nexus_dark .pmk-history-dialog .pmk-hist-table th {
+    background: var(--pmk-surface-2);
+    color: var(--pmk-ink-3);
+  }
+
+  body.o_nexus_dark .pmk-history-dialog .pmk-hist-table td {
+    color: var(--pmk-ink);
+  }
+
+  body.o_nexus_dark .pmk-history-dialog .pmk-hist-table td.pmk-hist-cell--none {
+    color: var(--pmk-ink-faint);
+  }
+}

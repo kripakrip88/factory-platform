@@ -80,3 +80,13 @@ from . import test_step52_flat
 #        --stop-after-init --http-port 8099
 # Правила без Odoo — node static/tests/doc_tools_step65.test.mjs.
 from . import test_step65_history
+# Окно «История» как в МоёмСкладе (шаг 66): событие — заголовок «Карнеев А.,
+# изменено 08.10.2026 22:48» и таблица «Поле | Было | Стало»; свой шаблон
+# события (не расширение mail.Message), договор с ядром mail и Owl, разметка
+# tracking_manager, раздел в конце живых forms_nexus.scss и dark.scss.
+# С tracking_manager (разбор изменений строк) и соседями шага 65:
+#   odoo -d pmk66_test -i pmk_theme,pmk_deal,pmk_calc,pmk_flow,tracking_manager,theme_nexus --test-enable \
+#        --test-tags /pmk_theme:TestStep66HistoryView,/pmk_theme:TestStep65History,/pmk_theme:TestStep52Flat,/pmk_theme:TestHeaderStep48,/pmk_theme:TestDarkPairsStep40,/pmk_theme:TestStep39Words \
+#        --stop-after-init --http-port 8099
+# Правила без Odoo — node static/tests/history_step66.test.mjs.
+from . import test_step66_history_view
