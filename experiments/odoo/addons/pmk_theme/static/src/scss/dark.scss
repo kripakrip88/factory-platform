@@ -1506,3 +1506,16 @@ $pmk-dark-alerts: (
     color: var(--pmk-ink-faint);
   }
 }
+
+// ═══ Т262: боковая панель фильтров — тёмная пара (12.10.2026) ═══
+// Пункты list-group левой панели («Компания», «Отдел» у Сотрудников и т.п.)
+// брали белый фон из светлого словаря Bootstrap, а текст — светлый: пункты
+// не читались. Выбранный пункт красит правило 40.4 (.list-group-item-action
+// .active, !important) — его не трогаем.
+@media screen {
+
+  body.o_nexus_dark .o_search_panel .list-group-item {
+    background-color: transparent;
+    color: var(--pmk-ink);
+  }
+}

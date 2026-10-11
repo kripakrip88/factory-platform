@@ -79,3 +79,9 @@ class TestT262Employees(TransactionCase):
         with file_open("pmk_theme/static/src/scss/hidden.scss") as fh:
             src = fh.read()
         self.assertIn(".o_kanban_renderer .o_kanban_record.o_kanban_ghost", src)
+
+    def test_dark_search_panel_readable(self):
+        from odoo.tools.misc import file_open
+        with file_open("pmk_theme/static/src/scss/dark.scss") as fh:
+            src = fh.read()
+        self.assertIn("body.o_nexus_dark .o_search_panel .list-group-item", src)
