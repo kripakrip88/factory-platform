@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+  <!--
+    Состав зонта под его строкой — тот же приём и те же классы pmk-prow, что
+    у состава расчёта (product_lines_field.xml): первичное наследование
+    строк списка, своя строка после каждой записи.
+  -->
+  <t t-name="pmk_calc.VentHoodRows" t-inherit="web.ListRenderer.Rows" t-inherit-mode="primary">
+    <xpath expr="//t[@t-call='{{ constructor.recordRowTemplate }}']" position="after">
+      <tr class="pmk-prow pmk-vh-row">
+        <td t-att-colspan="vhColspan">
+          <t t-if="record.data.spec_json">
+            <button type="button" class="pmk-prow__toggle" t-att-aria-expanded="isOpen(record)"
+                    t-on-click.stop.prevent="() => this.toggle(record)">
+              <i class="fa fa-fw" t-att-class="isOpen(record) ? 'fa-angle-down' : 'fa-angle-right'"/>
+              Состав: <t t-esc="vhLabel(record)"/>
+            </button>
+          </t>
+          <span t-elif="record.data.spec_error" class="pmk-vh-row__error">
+            <i class="fa fa-exclamation-circle"/> Размер не подходит: <t t-esc="record.data.spec_error"/>
+          </span>
+          <span t-else="" class="pmk-vh-row__hint">Состав появится, когда введёте ширину и длину шахты.</span>
+
+          <div t-if="record.data.spec_json and isOpen(record)" class="pmk-prow__wrap">
+            <div class="pmk-prow__section">
+              <div class="pmk-prow__head">
+                <span class="pmk-prow__title">Детали</span>
+                <span class="pmk-prow__sum" t-esc="record.data.material_name"/>
+              </div>
+              <table class="pmk-prow__table">
+                <!-- Шапка не в <thead>: Odoo раздаёт ширины колонок списка
+                     перебором «thead th» всей таблицы (см. состав расчёта). -->
+                <tbody>
+                  <tr class="pmk-prow__headrow">
+                    <th scope="col" class="pmk-vh-c-name">Деталь</th>
+                    <th scope="col" class="pmk-vh-c-size">Заготовка, мм</th>
+                    <th scope="col" class="pmk-num">На зонт</th>
+                    <th scope="col" class="pmk-num">Всего</th>
+                    <th scope="col" class="pmk-num">Площадь шт, м²</th>
+                  </tr>
+                  <tr t-foreach="vhParts(record)" t-as="part" t-key="part.key">
+                    <td t-esc="part.name"/>
+                    <td t-esc="part.size"/>
+                    <td class="pmk-num" t-esc="part.one"/>
+                    <td class="pmk-num" t-esc="part.all"/>
+                    <td class="pmk-num" t-esc="part.area"/>
+                  </tr>
+                  <tr class="pmk-vh-row__fix">
+                    <td>Лапки</td>
+                    <td class="pmk-vh-row__muted">пара отверстий Ø7</td>
+                    <td class="pmk-num" t-esc="record.data.lapki"/>
+                    <td class="pmk-num" t-esc="record.data.lapki * (record.data.qty || 0)"/>
+                    <td/>
+                  </tr>
+                  <tr class="pmk-vh-row__fix">
+                    <td>Клёпки</td>
+                    <td class="pmk-vh-row__muted">Ø4,5 на крышке, паз 9×4,5 на теле</td>
+                    <td class="pmk-num" t-esc="record.data.klepki"/>
+                    <td class="pmk-num" t-esc="record.data.klepki * (record.data.qty || 0)"/>
+                    <td/>
+                  </tr>
+                </tbody>
+              </table>
+              <div t-foreach="vhWarnings(record)" t-as="warn" t-key="warn_index" class="pmk-vh-row__warn">
+                <i class="fa fa-exclamation-triangle"/> <t t-esc="warn"/>
+              </div>
+              <div class="pmk-vh-row__actions">
+                <button type="button" class="btn btn-secondary btn-sm"
+                        t-on-click.stop.prevent="() => this.vhDrawing(record)">
+                  <i class="fa fa-image"/> Чертёж
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm"
+                        t-on-click.stop.prevent="() => this.vhDxf(record)">
+                  <i class="fa fa-download"/> DXF
+                </button>
+              </div>
+            </div>
+          </div>
+        </td>
+      </tr>
+    </xpath>
+  </t>
+
+  <t t-name="pmk_calc.VentHoodDrawingDialog">
+    <Dialog title="props.title" size="'xl'">
+      <div class="pmk-vh-drawing" t-att-class="{'pmk-vh-drawing--natural': state.natural}">
+        <img t-att-src="props.src" alt="Чертёж заготовок"
+             t-att-title="state.natural ? 'Щёлкните — по ширине окна' : 'Щёлкните — в натуральную величину'"
+             t-on-click="() => state.natural = !state.natural"/>
+      </div>
+      <t t-set-slot="footer">
+        <button class="btn btn-primary" t-on-click="props.close">Закрыть</button>
+        <button class="btn btn-secondary" t-on-click="props.onDownload">
+          <i class="fa fa-download"/> Скачать чертёж
+        </button>
+      </t>
+    </Dialog>
+  </t>
+</templates>

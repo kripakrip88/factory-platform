@@ -12,7 +12,7 @@ import tempfile
 import zipfile
 
 from odoo.exceptions import UserError
-from odoo.tests import TransactionCase, tagged
+from odoo.tests import HttpCase, TransactionCase, tagged
 
 from odoo.addons.pmk_calc.tools import vent_hood as V
 from odoo.addons.pmk_calc.tools import vent_hood_drawing as D
@@ -226,6 +226,13 @@ class TestVentHood(TransactionCase):
         draft._onchange_sides()
         self.assertEqual((draft.width, draft.length, draft.sides_swapped), (1100, 1300, True))
 
+    def test_order_form_expands_composition(self):
+        arch = self.env["pmk.vent.hood.order"].get_views([(False, "form")])["views"]["form"]["arch"]
+        self.assertIn('widget="pmk_vent_hood_lines"', arch)
+        for name in ("spec_json", "warnings_text", "material_name", "lapki", "klepki"):
+            self.assertIn('name="%s"' % name, arch, "Разворот берёт %s из строки." % name)
+        self.assertNotIn("action_open_line", arch, "Окно «Детали» заменено разворотом.")
+
     def test_change_size_recomputes(self):
         line = self._order({"width": 750, "length": 4000}).line_ids
         before = line.klepki
@@ -251,3 +258,19 @@ class TestVentHood(TransactionCase):
         order = Order.create({"line_ids": [(0, 0, {"width": 600, "length": 2400,
                                                    "coating_id": self.zinc.id})]})
         self.assertTrue(order.line_ids.spec_json)
+
+
+@tagged("post_install", "-at_install")
+class TestVentHoodDrawingUrl(HttpCase):
+
+    def test_drawing_served_as_image(self):
+        """Окно «Чертёж» берёт картинку по /web/image/pmk.vent.hood/<id>/drawing_png."""
+        sheet = self.env["pmk.metal.sheet"].search([("sheet_type", "=", "Оцинкованный")], limit=1)
+        order = self.env["pmk.vent.hood.order"].create({"line_ids": [(0, 0, {
+            "width": 750, "length": 4000, "sheet_id": sheet.id,
+            "coating_id": self.env.ref("pmk_calc.coating_zinc").id})]})
+        self.authenticate("admin", "admin")
+        res = self.url_open("/web/image/pmk.vent.hood/%s/drawing_png" % order.line_ids.id)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.headers.get("Content-Type"), "image/png")
+        self.assertTrue(res.content.startswith(PNG_MAGIC))

@@ -60,10 +60,11 @@
           </div>
           <!--
             Размеры правятся прямо в строке: у зонта пять полей, окно ради
-            них лишнее. Окно размера (кнопка-стрелка в строке) — детали,
-            предупреждения и чертёж.
+            них лишнее. Состав — под строкой, разворотом, как у изделия в
+            расчёте (виджет pmk_vent_hood_lines): детали, лапки, клёпки,
+            предупреждения, «Чертёж» (крупно, без скачивания) и DXF.
           -->
-          <field name="line_ids" class="pmk-rows">
+          <field name="line_ids" class="pmk-rows" widget="pmk_vent_hood_lines">
             <!-- Ширины заданы: без них свободное место уходит самой длинной
                  колонке, а цвет и металл обрезались до «RAL 8017 …» и «Лист
                  оцинкованный …» — без толщины. Лапки и клёпки — в меню
@@ -84,12 +85,8 @@
               <field name="spec_error" column_invisible="1"/>
               <field name="spec_json" column_invisible="1"/>
               <field name="sides_swapped" column_invisible="1"/>
-              <button name="action_open_line" type="object" icon="fa-search-plus"
-                      title="Детали и чертёж" string="Детали" invisible="not id"/>
-              <button name="action_download_dxf" type="object" icon="fa-download"
-                      title="Скачать DXF" string="DXF" invisible="not spec_json"/>
-              <!-- Чертёж — в окне «Детали» (вкладка «Чертёж», «Скачать чертёж»)
-                   и в «Скачать всё»: третья кнопка в строке не помещалась. -->
+              <field name="warnings_text" column_invisible="1"/>
+              <field name="material_name" column_invisible="1"/>
             </list>
           </field>
         </sheet>

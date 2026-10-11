@@ -80,6 +80,10 @@
             "pmk_calc/static/src/scss/spec_form.scss",
             "pmk_calc/static/src/js/dobor_copy_line.js",
             "pmk_calc/static/src/xml/dobor_copy_line.xml",
+            # 11.10.2026: состав вентзонта под строкой заказа, чертёж крупно.
+            "pmk_calc/static/src/js/vent_hood_lines.js",
+            "pmk_calc/static/src/xml/vent_hood_lines.xml",
+            "pmk_calc/static/src/scss/vent_hood.scss",
         ],
     },
     "post_init_hook": "post_init_hook",
