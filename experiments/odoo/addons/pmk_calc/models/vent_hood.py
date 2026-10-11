@@ -120,10 +120,15 @@ class VentHoodOrder(models.Model):
     # Колонки ведомости. Ячейки зонта (№…Зонтов, лапки, клёпки) объединены на
     # высоту его деталей; «всего» — формулой от «на зонт» × «Зонтов, шт»,
     # чтобы правка количества в самом файле пересчитывала итог.
+    # «Зонт, мм» — габарит самого зонта (длина × ширина шахты + свес 150 с
+    # каждой стороны): так зонт записан в номенклатуре склада («Зонт 4960мм x
+    # 1000мм (шахта: 4660мм x700мм)»), и по нему жестянщики сверяют
+    # собранный зонт (Антон 11.10.2026). Первым столбцом.
     ASSEMBLY_COLS = [
-        ("№", 4), ("Зонт", 15), ("Цвет", 20), ("Металл, мм", 10), ("Зонтов, шт", 9),
-        ("Деталь", 18), ("Заготовка, мм", 16), ("Деталей на зонт", 10), ("Деталей всего", 10),
-        ("Лапок на зонт", 9), ("Лапок всего", 9), ("Клёпок на зонт", 9), ("Клёпок всего", 9),
+        ("№", 4), ("Зонт, мм", 14), ("Шахта, мм", 14), ("Цвет", 20), ("Металл, мм", 10),
+        ("Зонтов, шт", 9), ("Деталь", 18), ("Заготовка, мм", 16), ("Деталей на зонт", 10),
+        ("Деталей всего", 10), ("Лапок на зонт", 9), ("Лапок всего", 9), ("Клёпок на зонт", 9),
+        ("Клёпок всего", 9),
     ]
 
     def _vh_assembly_xlsx(self):
@@ -174,45 +179,47 @@ class VentHoodOrder(models.Model):
             else:
                 ws.write(r0, c, value, fmt)
 
+        C = {title: i for i, (title, _w) in enumerate(self.ASSEMBLY_COLS)}
         totals = {"qty": 0, "lapki": 0, "klepki": 0}
         for n, line in enumerate(lines, start=1):
             spec = line._vh_spec()
             parts = spec["parts"]
             top, bottom = row, row + len(parts) - 1
             qty = line.qty or 0
-            merged(top, bottom, 0, n, f_int)
-            merged(top, bottom, 1, spec["hood"], f_hood)
-            merged(top, bottom, 2, line.coating_id.name or "", f_text)
-            merged(top, bottom, 3, line.thickness or 0.0, f_mm)
-            merged(top, bottom, 4, qty, f_int)
-            q = cell(top, 4)
+            merged(top, bottom, C["№"], n, f_int)
+            merged(top, bottom, C["Зонт, мм"], line.hood_size or "", f_hood)
+            merged(top, bottom, C["Шахта, мм"], line.shaft_size or "", f_text)
+            merged(top, bottom, C["Цвет"], line.coating_id.name or "", f_text)
+            merged(top, bottom, C["Металл, мм"], line.thickness or 0.0, f_mm)
+            merged(top, bottom, C["Зонтов, шт"], qty, f_int)
+            q = cell(top, C["Зонтов, шт"])
             for i, part in enumerate(parts):
                 r = top + i
-                ws.write(r, 5, part["name"], f_text)
-                ws.write(r, 6, "%s × %s" % (str(_num(part["size_mm"][0])), str(_num(part["size_mm"][1]))),
-                         f_text)
-                ws.write(r, 7, part["qty"], f_int)
-                ws.write_formula(r, 8, "=%s*%s" % (cell(r, 7), q), f_int, part["qty"] * qty)
-            merged(top, bottom, 9, spec["lapki"], f_int)
-            merged(top, bottom, 10, spec["lapki"] * qty, f_int,
-                   "=%s*%s" % (cell(top, 9), q))
-            merged(top, bottom, 11, spec["klepki"], f_int)
-            merged(top, bottom, 12, spec["klepki"] * qty, f_int,
-                   "=%s*%s" % (cell(top, 11), q))
+                ws.write(r, C["Деталь"], part["name"], f_text)
+                ws.write(r, C["Заготовка, мм"], "%s × %s" % (
+                    str(_num(part["size_mm"][0])), str(_num(part["size_mm"][1]))), f_text)
+                ws.write(r, C["Деталей на зонт"], part["qty"], f_int)
+                ws.write_formula(r, C["Деталей всего"], "=%s*%s" % (cell(r, C["Деталей на зонт"]), q),
+                                 f_int, part["qty"] * qty)
+            merged(top, bottom, C["Лапок на зонт"], spec["lapki"], f_int)
+            merged(top, bottom, C["Лапок всего"], spec["lapki"] * qty, f_int,
+                   "=%s*%s" % (cell(top, C["Лапок на зонт"]), q))
+            merged(top, bottom, C["Клёпок на зонт"], spec["klepki"], f_int)
+            merged(top, bottom, C["Клёпок всего"], spec["klepki"] * qty, f_int,
+                   "=%s*%s" % (cell(top, C["Клёпок на зонт"]), q))
             totals["qty"] += qty
             totals["lapki"] += spec["lapki"] * qty
             totals["klepki"] += spec["klepki"] * qty
             row = bottom + 1
         last = row - 1
 
-        ws.merge_range(row, 0, row, 3, "ИТОГО", f_total_lbl)
-        ws.write_formula(row, 4, "=SUM(%s:%s)" % (cell(first, 4), cell(last, 4)), f_total, totals["qty"])
-        for col in (5, 6, 7, 8, 9, 11):
-            ws.write_blank(row, col, None, f_total)
-        ws.write_formula(row, 10, "=SUM(%s:%s)" % (cell(first, 10), cell(last, 10)), f_total,
-                         totals["lapki"])
-        ws.write_formula(row, 12, "=SUM(%s:%s)" % (cell(first, 12), cell(last, 12)), f_total,
-                         totals["klepki"])
+        ws.merge_range(row, 0, row, C["Металл, мм"], "ИТОГО", f_total_lbl)
+        for title, key in (("Зонтов, шт", "qty"), ("Лапок всего", "lapki"), ("Клёпок всего", "klepki")):
+            ws.write_formula(row, C[title], "=SUM(%s:%s)" % (cell(first, C[title]), cell(last, C[title])),
+                             f_total, totals[key])
+        for title in ("Деталь", "Заготовка, мм", "Деталей на зонт", "Деталей всего",
+                      "Лапок на зонт", "Клёпок на зонт"):
+            ws.write_blank(row, C[title], None, f_total)
         row += 1
         skipped = self.line_ids - lines
         for line in skipped:
@@ -292,6 +299,11 @@ class VentHood(models.Model):
     total_sheet_1250_m = fields.Float("Лист 1250 всего, пог. м", compute="_compute_spec",
                                       store=True, digits=(12, 2))
 
+    # Габарит зонта и шахты «длина × ширина» — как в номенклатуре склада:
+    # «Зонт 4960мм x 1000мм (шахта: 4660мм x700мм)». Зонт = шахта + свес
+    # генератора (V.SVES, 150 мм) с каждой стороны.
+    hood_size = fields.Char("Зонт, мм", compute="_compute_sizes")
+    shaft_size = fields.Char("Шахта, мм", compute="_compute_sizes")
     subtitle = fields.Char("Зонт и материал", compute="_compute_subtitle")
     spec_html = fields.Html("Детали", compute="_compute_spec_html", sanitize=False)
     warnings_text = fields.Text("Предупреждения", compute="_compute_spec_html")
@@ -430,6 +442,16 @@ class VentHood(models.Model):
                 "total_mass_net_kg": s.get("mass_net_kg", 0.0) * qty,
                 "total_sheet_1250_m": s["sheet_1250_m"] * qty,
             })
+
+    @api.depends("width", "length", "spec_json")
+    def _compute_sizes(self):
+        for rec in self:
+            if rec.spec_json:
+                sves = 2 * int(round(V.SVES))
+                rec.hood_size = "%d × %d" % (rec.length + sves, rec.width + sves)
+                rec.shaft_size = "%d × %d" % (rec.length, rec.width)
+            else:
+                rec.hood_size = rec.shaft_size = False
 
     @api.depends("hood_label", "material_name")
     def _compute_subtitle(self):

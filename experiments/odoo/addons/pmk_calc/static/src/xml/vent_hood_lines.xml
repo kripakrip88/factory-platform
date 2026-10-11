@@ -8,20 +8,12 @@
   -->
   <t t-name="pmk_calc.VentHoodRows" t-inherit="web.ListRenderer.Rows" t-inherit-mode="primary">
     <xpath expr="//t[@t-call='{{ constructor.recordRowTemplate }}']" position="after">
-      <tr class="pmk-prow pmk-vh-row">
+      <tr t-if="(record.data.spec_json and isOpen(record)) or record.data.spec_error"
+          class="pmk-prow pmk-vh-row" t-att-class="{'pmk-vh-alt': vhAlt(record)}">
         <td t-att-colspan="vhColspan">
-          <t t-if="record.data.spec_json">
-            <button type="button" class="pmk-prow__toggle" t-att-aria-expanded="isOpen(record)"
-                    t-on-click.stop.prevent="() => this.toggle(record)">
-              <i class="fa fa-fw" t-att-class="isOpen(record) ? 'fa-angle-down' : 'fa-angle-right'"/>
-              Состав: <t t-esc="vhLabel(record)"/>
-            </button>
-          </t>
-          <span t-elif="record.data.spec_error" class="pmk-vh-row__error">
+          <span t-if="record.data.spec_error" class="pmk-vh-row__error">
             <i class="fa fa-exclamation-circle"/> Размер не подходит: <t t-esc="record.data.spec_error"/>
           </span>
-          <span t-else="" class="pmk-vh-row__hint">Состав появится, когда введёте ширину и длину шахты.</span>
-
           <div t-if="record.data.spec_json and isOpen(record)" class="pmk-prow__wrap">
             <div class="pmk-prow__section">
               <div class="pmk-prow__head">
@@ -79,6 +71,19 @@
           </div>
         </td>
       </tr>
+    </xpath>
+  </t>
+
+  <!-- Стрелка состава — в ячейке «Зонт» строки зонта. .stop: щелчок по
+       стрелке не открывает строку на правку. -->
+  <t t-name="pmk_calc.VentHoodRecordRow" t-inherit="web.ListRenderer.RecordRow" t-inherit-mode="primary">
+    <xpath expr="//td[hasclass('o_data_cell')][@t-att-name='column.name']/t[@t-if='!isInvisible']" position="before">
+      <button t-if="column.name === 'hood_label' and record.data.spec_json" type="button"
+              class="pmk-vh-chev" t-att-aria-expanded="isOpen(record)"
+              t-att-title="isOpen(record) ? 'Свернуть состав' : 'Состав: ' + vhLabel(record)"
+              t-on-click.stop.prevent="() => this.toggle(record)">
+        <i class="fa fa-fw" t-att-class="isOpen(record) ? 'fa-angle-down' : 'fa-angle-right'"/>
+      </button>
     </xpath>
   </t>
 

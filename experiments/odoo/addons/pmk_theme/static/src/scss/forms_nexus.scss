@@ -3176,8 +3176,13 @@ $pmk-card-line: unquote("var(--pmk-border, #e3e4e8)") !default;
 
   // Левую черту блока истории (тема Nexus, border-left #eae6dc) внутри
   // карточки не нужно: рамка уже есть, черта читалась полосой у края.
+  // Сам блок истории — прозрачный и тоже скруглён: белым прямоугольником
+  // он перекрывал скругление рамки (Антон 11.10: «скругления рамки истории
+  // не применились»).
   .o_action_manager .o_form_view .o_form_renderer > .o-mail-Form-chatter:not(.o-aside) .o-mail-Chatter {
     border-left: 0 !important;
+    border-radius: 10px;
+    background-color: transparent !important;
   }
 
   .o_action_manager .o_form_view .o_form_renderer > .o-mail-Form-chatter:not(.o-aside) .o-mail-Chatter-top {

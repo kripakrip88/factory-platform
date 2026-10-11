@@ -51,6 +51,11 @@ export class VentHoodDrawingDialog extends Component {
 
 export class VentHoodLinesRenderer extends ListRenderer {
     static rowsTemplate = "pmk_calc.VentHoodRows";
+    // Стрелка состава — в самой строке зонта, в ячейке «Зонт» (Антон 11.10:
+    // строка «Состав: N деталей на зонт» под каждым зонтом «занимает
+    // слишком много места»). Строка состава появляется, только когда
+    // раскрыта (или когда размер не подходит — с причиной).
+    static recordRowTemplate = "pmk_calc.VentHoodRecordRow";
 
     setup() {
         super.setup();
@@ -61,6 +66,20 @@ export class VentHoodLinesRenderer extends ListRenderer {
         this.orm = useService("orm");
         this.action = useService("action");
         this.dialog = useService("dialog");
+    }
+
+    /**
+     * Чередование зонтов (Антон 11.10: «на каждую позицию так же сделать
+     * выделение разных строк, как в составе»): каждый второй зонт — вместе
+     * со строкой своего состава — чуть темнее. Классом, а не nth-child:
+     * строки состава вклиниваются между строками зонтов.
+     */
+    getRowClass(record) {
+        return `${super.getRowClass(record)} ${this.vhAlt(record) ? "pmk-vh-alt" : ""}`;
+    }
+
+    vhAlt(record) {
+        return this.props.list.records.indexOf(record) % 2 === 1;
     }
 
     get vhColspan() {

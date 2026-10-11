@@ -181,27 +181,31 @@ class TestVentHood(TransactionCase):
         flat = [v for r in rows for v in r if v is not None]
         self.assertIn("Клиент: Тест Сборка", flat)
         head = next(r for r in rows if r[0] == "№")
-        self.assertEqual(head[5:13], ["Деталь", "Заготовка, мм", "Деталей на зонт", "Деталей всего",
+        self.assertEqual(head[1:3], ["Зонт, мм", "Шахта, мм"], "Габарит зонта — первым (номенклатура склада).")
+        self.assertEqual(head[6:14], ["Деталь", "Заготовка, мм", "Деталей на зонт", "Деталей всего",
                                       "Лапок на зонт", "Лапок всего", "Клёпок на зонт", "Клёпок всего"])
         good = order.line_ids.filtered("spec_json").sorted(lambda l: (l.sequence, l.id))
-        hoods = [r for r in rows if r[1] and str(r[1]).startswith("вш ")]
-        self.assertEqual([r[1] for r in hoods], [l.hood_label for l in good])
+        hoods = [r for r in rows if isinstance(r[0], int)]
+        self.assertEqual([r[1] for r in hoods], ["4300 × 1050", "1300 × 1300"], "Шахта + 150 с каждой стороны.")
+        self.assertEqual([r[2] for r in hoods], ["4000 × 750", "1000 × 1000"])
         for r, line in zip(hoods, good):
-            self.assertEqual((r[4], r[9], r[10], r[11], r[12]),
+            self.assertEqual((r[5], r[10], r[11], r[12], r[13]),
                              (line.qty, line.lapki, line.lapki * line.qty,
                               line.klepki, line.klepki * line.qty))
-        parts = [r for r in rows if r[5] in ("Крышка торцевая", "Панель торцевая",
+        parts = [r for r in rows if r[6] in ("Крышка торцевая", "Панель торцевая",
                                              "Панель средняя", "Тело зонта")]
         self.assertEqual(len(parts), sum(len(l._vh_spec()["parts"]) for l in good))
-        self.assertIn("449,6 × 1058,5", [r[6] for r in parts])
+        self.assertIn("449,6 × 1058,5", [r[7] for r in parts])
         total = next(r for r in rows if r[0] == "ИТОГО")
-        self.assertEqual(total[4], 5)
-        self.assertEqual(total[10], sum(l.lapki * l.qty for l in good))
-        self.assertEqual(total[12], sum(l.klepki * l.qty for l in good))
+        self.assertEqual(total[5], 5)
+        self.assertEqual(total[11], sum(l.lapki * l.qty for l in good))
+        self.assertEqual(total[13], sum(l.klepki * l.qty for l in good))
         self.assertTrue(any(str(v).startswith("Не вошёл: Размер -100×900") for v in flat))
         merged = [str(m) for m in ws.merged_cells.ranges]
         top = rows.index(hoods[0]) + 1
         self.assertIn("B%d:B%d" % (top, top + 2), merged, "Зонт — одна ячейка на высоту деталей.")
+        self.assertEqual(good[0].hood_size, "4300 × 1050")
+        self.assertEqual(good[0].shaft_size, "4000 × 750")
         order.action_download_all()
         zip_att = self.env["ir.attachment"].search([("res_model", "=", order._name),
                                                     ("res_id", "=", order.id),
