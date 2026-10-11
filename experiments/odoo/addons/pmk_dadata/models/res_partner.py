@@ -5,7 +5,7 @@ import logging
 
 import requests
 
-from odoo import _, fields, models
+from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
@@ -48,8 +48,8 @@ class ResPartner(models.Model):
     )
 
     # ------------------------------------------------------------------
-    def action_pmk_fill_by_inn(self):
-        """Заполнить реквизиты по ИНН."""
+    def _pmk_inn_checked(self):
+        """ИНН карточки или понятный отказ."""
         self.ensure_one()
         inn = (self.inn or "").strip()
         if not inn:
@@ -58,42 +58,61 @@ class ResPartner(models.Model):
             raise UserError(_(
                 "ИНН должен быть из 10 цифр у организации или 12 у "
                 "предпринимателя. Сейчас там «%s».", inn))
+        return inn
 
-        data = self._pmk_dadata_find(inn)
-
+    @api.model
+    def _pmk_dadata_values(self, data):
+        """Ответ справочника → значения полей карточки (пустое — False) и
+        код состояния (ACTIVE, LIQUIDATED…). Один разбор и для «Заполнить по
+        ИНН», и для «Сверить по ИНН» (шаг З-17)."""
         name = data.get("name") or {}
         address = data.get("address") or {}
         addr_data = address.get("data") or {}
         state = data.get("state") or {}
-
-        vals = {
+        street = False
+        if addr_data.get("street_with_type"):
+            house = addr_data.get("house_with_type") or ""
+            street = " ".join(x for x in (addr_data["street_with_type"], house) if x)
+        values = {
+            "name": name.get("short_with_opf") or name.get("full_with_opf") or False,
             "pmk_legal_name": name.get("full_with_opf") or False,
             "pmk_legal_address": address.get("value") or False,
             "pmk_dadata_status": self._pmk_status_label(state.get("status")),
+            "kpp": data.get("kpp") or False,
+            "ogrn": data.get("ogrn") or False,
+            "okpo": data.get("okpo") or False,
+            "fias_id": addr_data.get("fias_id") or False,
+            "zip": addr_data.get("postal_code") or False,
+            "city": addr_data.get("city") or addr_data.get("settlement") or False,
+            "street": street,
+        }
+        return values, state.get("status")
+
+    def action_pmk_fill_by_inn(self):
+        """Заполнить реквизиты по ИНН."""
+        self.ensure_one()
+        inn = self._pmk_inn_checked()
+        found, status = self._pmk_dadata_values(self._pmk_dadata_find(inn))
+
+        vals = {
+            "pmk_legal_name": found["pmk_legal_name"],
+            "pmk_legal_address": found["pmk_legal_address"],
+            "pmk_dadata_status": found["pmk_dadata_status"],
         }
         # Короткое имя подставляем только в пустое поле: у заведённых вручную
         # контрагентов название часто привычнее выписочного.
         if not self.name or self.name == inn:
-            vals["name"] = name.get("short_with_opf") or name.get("full_with_opf")
+            vals["name"] = found["name"]
 
-        for field, value in (
-            ("kpp", data.get("kpp")),
-            ("ogrn", data.get("ogrn")),
-            ("okpo", data.get("okpo")),
-            ("fias_id", addr_data.get("fias_id")),
-        ):
-            if value and field in self._fields:
-                vals[field] = value
+        for field in ("kpp", "ogrn", "okpo", "fias_id"):
+            if found[field] and field in self._fields:
+                vals[field] = found[field]
 
         # Разложенный адрес нужен Odoo для доставки и печатных форм —
         # заполняем, но не затираем уже введённое руками.
-        if not self.zip and addr_data.get("postal_code"):
-            vals["zip"] = addr_data["postal_code"]
-        if not self.city and (addr_data.get("city") or addr_data.get("settlement")):
-            vals["city"] = addr_data.get("city") or addr_data.get("settlement")
-        if not self.street and addr_data.get("street_with_type"):
-            house = addr_data.get("house_with_type") or ""
-            vals["street"] = " ".join(x for x in (addr_data["street_with_type"], house) if x)
+        for field in ("zip", "city", "street"):
+            if not self[field] and found[field]:
+                vals[field] = found[field]
         if not self.country_id:
             ru = self.env.ref("base.ru", raise_if_not_found=False)
             if ru:
@@ -101,7 +120,6 @@ class ResPartner(models.Model):
 
         self.write(vals)
 
-        status = state.get("status")
         if status and status != "ACTIVE":
             # Не ошибка: ликвидированного контрагента иногда заводят намеренно,
             # чтобы закрыть старые документы. Но сказать об этом надо громко.
@@ -112,6 +130,17 @@ class ResPartner(models.Model):
         return self._pmk_notify(
             "success", _("Реквизиты заполнены"),
             _("Данные получены из справочника по ИНН %s.", inn))
+
+    def action_pmk_check_by_inn(self):
+        """«Сверить по ИНН» (шаг З-17): показать, что поменяется, и ничего не
+        менять до «Применить» в окне сверки (models/dadata_check.py).
+
+        «Заполнить по ИНН» пишет сразу и перезаписывает выписочные поля —
+        поэтому у заполненной карточки вместо неё эта кнопка."""
+        self.ensure_one()
+        inn = self._pmk_inn_checked()
+        found, status = self._pmk_dadata_values(self._pmk_dadata_find(inn))
+        return self.env["pmk.dadata.check"]._pmk_open(self, inn, found, status)
 
     # ------------------------------------------------------------------
     def _pmk_dadata_find(self, inn):

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    «Сверить по ИНН» — окно сверки реквизитов с ЕГРЮЛ (шаг З-17, 11.10.2026).
+    Открывает кнопка «Сверить по ИНН» на вкладке «Реквизиты» заполненной
+    карточки (views/res_partner_views.xml). Строка на поле: Что · Сейчас ·
+    По ЕГРЮЛ · Заменить. Ничего не меняется до «Применить» — единственной
+    залитой кнопки окна. Плашка состояния — только когда организация не
+    действует: красная «Ликвидирована» / «Банкротство», жёлтая «В стадии …»
+    (цвет повторён словами). Почему так — models/dadata_check.py.
+  -->
+  <record id="view_pmk_dadata_check_form" model="ir.ui.view">
+    <field name="name">pmk.dadata.check.form</field>
+    <field name="model">pmk.dadata.check</field>
+    <field name="arch" type="xml">
+      <form string="Сверить по ИНН">
+        <field name="status_level" invisible="1"/>
+        <div class="alert alert-danger mb-2" role="alert"
+             invisible="status_level != 'danger'">
+          <field name="status_warn" nolabel="1"/>
+        </div>
+        <div class="alert alert-warning mb-2" role="alert"
+             invisible="status_level != 'warning'">
+          <field name="status_warn" nolabel="1"/>
+        </div>
+        <p class="text-muted mb-2">
+          Справочник по ИНН <field name="inn" class="oe_inline" nolabel="1"/>
+          отдал реквизиты, которые отличаются от карточки
+          «<field name="partner_id" class="oe_inline" nolabel="1" options="{'no_open': True}"/>».
+          Отметьте, что заменить, и нажмите «Применить» — до этого ничего не меняется.
+        </p>
+        <field name="line_ids" nolabel="1">
+          <list editable="bottom" create="0" delete="0">
+            <field name="sequence" column_invisible="1"/>
+            <field name="label"/>
+            <field name="current"/>
+            <field name="new"/>
+            <field name="apply" widget="boolean_toggle"/>
+          </list>
+        </field>
+        <footer>
+          <button name="action_apply" type="object" string="Применить"
+                  class="btn-primary" data-hotkey="q"/>
+          <button special="cancel" string="Отмена" class="btn-secondary" data-hotkey="x"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+</odoo>

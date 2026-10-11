@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Окно «Объединить контакты»: сравнить и не потерять (шаг З-17, 11.10.2026).
+
+    Штатный мастер ядра (base.base_partner_merge_automatic_wizard_form), его
+    открывают «Клиенты → Возможные дубли → Объединить…» и «Действия →
+    Объединить» в списке контрагентов. Было наполовину по-английски («Display
+    Name», «Tax ID», «Является компанией», «Страна», «(ID 9)»), без телефона,
+    города и числа сделок — сравнить карточки было не по чему.
+
+      • колонки по-русски: Название · ИНН · КПП · Телефон · Эл. почта · Город ·
+        Сделок · Счетов · В архиве (строка серая — цвет повторён словом «Да»);
+        «№», «Является компанией», «Страна» — под «вернуть убранное»
+        (pmk_theme.group_pmk_removed);
+      • разные ИНН — красная плашка со словами «Разные ИНН», кнопка
+        «Объединить контакты» спрятана, пока лишнюю карточку не убрали
+        крестиком (почему это исключение из «сигнал не запрещает» —
+        models/partner_merge.py);
+      • один ИНН и разные КПП — жёлтая плашка «Один ИНН, разные КПП…
+        возможно, головная и филиал» (сигнал, кнопку не прячет);
+      • подсказка «Останется: … — почему» и «Не потеряется: …»;
+      • карточек меньше двух — кнопки «Объединить контакты» нет;
+      • «Пропустить эти контакты» — только в пакетном режиме ядра (строки
+        поиска дублей): в ручном её смысл тот же, что у «Отмена». На экране
+        одна залитая кнопка.
+
+    active в XML: вид-наследник с xpath на узлы ядра (грабли Odoo 19 —
+    выключенный вид не валидируется, падение невидимо).
+  -->
+  <record id="view_partner_merge_wizard_z17" model="ir.ui.view">
+    <field name="name">base.partner.merge.automatic.wizard.form.pmk.z17</field>
+    <field name="model">base.partner.merge.automatic.wizard</field>
+    <field name="inherit_id" ref="base.base_partner_merge_automatic_wizard_form"/>
+    <field name="priority">99</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+
+      <!-- Метка формы — окну шире (static/src/scss/merge_wizard.scss):
+           девять колонок не помещаются в штатные 940 px. -->
+      <xpath expr="/form" position="attributes">
+        <attribute name="class" add="o_pmk_merge_z17" separator=" "/>
+      </xpath>
+
+      <xpath expr="(//separator)[2]" position="attributes">
+        <attribute name="string">Карточки, которые станут одной</attribute>
+      </xpath>
+
+      <xpath expr="//field[@name='partner_ids']/../p[hasclass('opacity-50')]" position="replace">
+        <p class="opacity-50">
+          Сделки, счета, расчёты, заказы поставщикам и письма переедут на
+          оставшуюся карточку, остальные карточки удалятся — отменить нельзя.
+          Лишнюю карточку уберите крестиком.
+        </p>
+      </xpath>
+
+      <xpath expr="//field[@name='dst_partner_id']/.." position="before">
+        <div class="alert alert-danger mb-2" role="alert" invisible="not pmk_inn_conflict">
+          <field name="pmk_inn_conflict" nolabel="1"/>
+        </div>
+        <!-- Сигнал, не запрет: один ИНН и разные КПП — возможно, головная и
+             филиал. Жёлтая, словами «Один ИНН, разные КПП». -->
+        <div class="alert alert-warning mb-2" role="status" invisible="not pmk_kpp_hint">
+          <field name="pmk_kpp_hint" nolabel="1"/>
+        </div>
+        <div class="alert alert-info mb-2" role="status"
+             invisible="not pmk_dst_hint or pmk_inn_conflict">
+          <div><field name="pmk_dst_hint" nolabel="1"/></div>
+          <div invisible="not pmk_carry_hint"><field name="pmk_carry_hint" nolabel="1"/></div>
+        </div>
+      </xpath>
+
+      <!-- Без «(ID 9)» у названия (partner_show_db_id): английское слово, а
+           номер в заметке после объединения и так есть. active_test=False:
+           правило часто оставляет архивную карточку с ИНН — её должно быть
+           можно выбрать обратно и из «Действия → Объединить» (там в контексте
+           действия active_test нет); домен ядра и так ограничен partner_ids. -->
+      <xpath expr="//field[@name='dst_partner_id']" position="attributes">
+        <attribute name="string">Останется карточка</attribute>
+        <attribute name="context">{'active_test': False}</attribute>
+        <attribute name="options">{'no_create': True}</attribute>
+      </xpath>
+
+      <xpath expr="//field[@name='partner_ids']/list" position="replace">
+        <list string="Карточки" decoration-muted="pmk_archived_label">
+          <field name="display_name" string="Название"/>
+          <field name="vat" string="ИНН" width="120px"/>
+          <field name="kpp" string="КПП" width="100px"/>
+          <field name="phone" string="Телефон" width="170px"/>
+          <field name="email" string="Эл. почта"/>
+          <field name="city" string="Город"/>
+          <field name="pmk_deal_count" string="Сделок"/>
+          <field name="sale_order_count" string="Счетов"/>
+          <field name="pmk_archived_label" string="В архиве"/>
+          <!-- Вернуть убранное (шаг З-17): колонки окна ядра. -->
+          <field name="id" string="№" groups="pmk_theme.group_pmk_removed"/>
+          <field name="is_company" groups="pmk_theme.group_pmk_removed"/>
+          <field name="country_id" groups="pmk_theme.group_pmk_removed"/>
+        </list>
+      </xpath>
+
+      <xpath expr="//footer/button[@name='action_merge']" position="attributes">
+        <attribute name="string">Объединить контакты</attribute>
+        <attribute name="invisible">state in ('option', 'finished') or pmk_inn_conflict or pmk_partner_count &lt; 2</attribute>
+      </xpath>
+      <xpath expr="//footer/button[@name='action_skip']" position="attributes">
+        <attribute name="invisible">state != 'selection' or not current_line_id</attribute>
+      </xpath>
+      <!-- current_line_id в разметке ядра нет, а условие кнопки его читает;
+           pmk_partner_count — карточек меньше двух: объединять нечего. -->
+      <xpath expr="//sheet" position="inside">
+        <field name="current_line_id" invisible="1"/>
+        <field name="pmk_partner_count" invisible="1"/>
+      </xpath>
+
+    </field>
+  </record>
+</odoo>

@@ -61,7 +61,9 @@ class TestRequisitesStep28(TransactionCase):
         row = self._one(arch, "//page[@name='pmk_requisites']//div[contains("
                               "concat(' ', normalize-space(@class), ' '), ' pmk-inn-row ')]")
         children = [(node.tag, node.get("name")) for node in row if isinstance(node.tag, str)]
-        self.assertEqual(children, [("field", "vat"), ("button", "action_pmk_fill_by_inn")])
+        # Шаг З-17: за «Заполнить» — «Сверить по ИНН»; видна одна из двух.
+        self.assertEqual(children, [("field", "vat"), ("button", "action_pmk_fill_by_inn"),
+                                    ("button", "action_pmk_check_by_inn")])
 
     def test_hints_about_the_plant(self):
         arch = self._form()

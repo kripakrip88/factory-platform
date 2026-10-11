@@ -1,6 +1,6 @@
 {
     "name": "ПМК — реквизиты по ИНН (DaData)",
-    "version": "19.0.1.0.1",
+    "version": "19.0.1.0.2",
     "summary": "Блок «Реквизиты» как в МойСклад и заполнение контрагента по ИНН",
     "description": """
 Реквизиты российского контрагента в Odoo разбросаны по вкладкам: ИНН и КПП в
@@ -22,7 +22,12 @@
     "category": "Productivity",
     "author": "ПМК Парк",
     "depends": ["pmk_partner", "l10n_ru_doc", "l10n_ru_contract"],
-    "data": ["views/res_partner_views.xml"],
+    "data": [
+        "security/ir.model.access.csv",
+        "views/res_partner_views.xml",
+        # «Сверить по ИНН» (шаг З-17, 11.10.2026): что поменяется — до «Применить».
+        "views/dadata_check_views.xml",
+    ],
     "license": "LGPL-3",
     "installable": True,
     "application": False,

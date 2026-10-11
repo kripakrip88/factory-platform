@@ -1,6 +1,6 @@
 {
     "name": "ПМК — карточка контрагента",
-    "version": "19.0.1.0.2",
+    "version": "19.0.1.0.3",
     "summary": "Убраны поля, которых нет в работе завода; поля в едином виде темы",
     "description": """
 Форма контрагента в Odoo собрана из двадцати наследованных представлений и
@@ -71,6 +71,10 @@
         # команда «Продажи».
         "views/z14_duplicates_views.xml",
         "views/z14_convert_wizard_views.xml",
+        # Объединение клиентов: сравнить и не потерять (шаг З-17, 11.10.2026) —
+        # окно штатного мастера по-русски, разные ИНН, какая карточка
+        # остаётся, перенос телефонов, почт и примечаний.
+        "views/z17_merge_wizard_views.xml",
         "data/crm_team.xml",
     ],
     # «Тип адреса» без лишних вариантов (шаг 29): правила — чистая функция
@@ -79,6 +83,7 @@
         "web.assets_backend": [
             "pmk_partner/static/src/js/radio_hide_rules.js",
             "pmk_partner/static/src/js/radio_hide_field.js",
+            "pmk_partner/static/src/scss/merge_wizard.scss",
         ],
     },
     "license": "LGPL-3",

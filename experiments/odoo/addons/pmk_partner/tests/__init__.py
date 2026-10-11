@@ -9,3 +9,7 @@ from . import test_step29_partner
 #   python3 addons/pmk_partner/tests/test_partner_keys_rules.py
 from . import test_partner_keys_rules
 from . import test_z14_client_match
+# Объединение клиентов: сравнить и не потерять (шаг З-17). Правила без базы:
+#   python3 addons/pmk_partner/tests/test_merge_rules.py
+from . import test_merge_rules
+from . import test_z17_merge

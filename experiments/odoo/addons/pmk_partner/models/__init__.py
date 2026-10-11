@@ -6,7 +6,8 @@ from . import partner_card
 from . import ir_actions_act_window
 # Клиент из письма: не плодить дубли (шаг З-14): поиск клиента по ИНН и
 # домену, «Возможные дубли», мастер «В сделку», целевая карточка мастера
-# объединения.
+# объединения. Шаг З-17: окно объединения по-русски, разные ИНН, перенос
+# телефонов, почт и примечаний (partner_merge).
 from . import partner_match
 from . import partner_duplicate
 from . import partner_merge
