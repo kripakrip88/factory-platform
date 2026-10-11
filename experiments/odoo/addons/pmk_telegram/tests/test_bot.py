@@ -147,7 +147,7 @@ class TestTelegramBot(TransactionCase):
         self._msg(text="Второе")
         self.assertIn("Второе", lead.description)
         self.assertIn("Добавлено", self.api.sent[-1][1])
-        self._click(f"done:{lead.id}")
+        self._click(f"done:lead:{lead.id}")
         self.assertEqual(self._session().state, "idle")
         self._msg(text="Третье")
         self.assertNotIn("Третье", lead.description)
@@ -166,7 +166,9 @@ class TestTelegramBot(TransactionCase):
 
     def test_content_without_menu_hints(self):
         self._msg(text="просто текст")
-        self.assertIn(bot_mod.BTN_NEW_DEAL, self.api.sent[-1][1])
+        self.assertIn("меню", self.api.sent[-1][1])
+        self.assertEqual(self.api.sent[-1][2]["keyboard"][0][0]["text"],
+                         bot_mod.BTN_NEW_DEAL)
         self.assertFalse(self.env["crm.lead"].search(
             [("user_id", "=", self.user.id)]))
 
@@ -175,3 +177,79 @@ class TestTelegramBot(TransactionCase):
         self._msg(text="Первое")
         self._click(f"stage:{self.stage.id}")
         self.assertIn("устарела", self.api.answers[-1])
+
+
+@tagged("post_install", "-at_install")
+class TestTelegramDevTask(TestTelegramBot):
+    """«📝 Задача в доработку» → задача на доске, колонка «Новые»."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.project = cls.env["project.project"].create({"name": "Доработка системы"})
+        cls.stage_new = cls.env["project.task.type"].create(
+            {"name": "Новые", "sequence": 1, "project_ids": [(4, cls.project.id)]})
+        cls.env["project.task.type"].create(
+            {"name": "В работе", "sequence": 2, "project_ids": [(4, cls.project.id)]})
+        cls.user.group_ids = [(4, cls.env.ref("project.group_project_user").id)]
+
+    def setUp(self):
+        super().setUp()
+        patcher = patch.object(type(self.env["pmk.telegram.bot"]), "_pmk_dev_project",
+                               lambda _self: self.project)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def _tasks(self):
+        return self.env["project.task"].search([("project_id", "=", self.project.id)])
+
+    def test_menu_has_task_button(self):
+        self._msg(text="/start")
+        labels = [row[0]["text"] for row in self.api.sent[-1][2]["keyboard"]]
+        self.assertEqual(labels, [bot_mod.BTN_NEW_DEAL, bot_mod.BTN_DEV_TASK])
+
+    def test_no_project_rights_no_button(self):
+        self.user.group_ids = [(3, self.env.ref("project.group_project_user").id),
+                               (3, self.env.ref("project.group_project_manager").id)]
+        self.assertFalse(self.user.has_group("project.group_project_user"))
+        self._msg(text="/start")
+        labels = [row[0]["text"] for row in self.api.sent[-1][2]["keyboard"]]
+        self.assertEqual(labels, [bot_mod.BTN_NEW_DEAL])
+        self._msg(text=bot_mod.BTN_DEV_TASK)
+        self.assertNotEqual(self._session().state, "await_task")
+
+    def test_text_creates_task_in_first_column(self):
+        self._msg(text=bot_mod.BTN_DEV_TASK)
+        self.assertEqual(self._session().state, "await_task")
+        self._msg(text="Кнопка «Печать» не видна\nв расчёте на узком экране")
+        task = self._tasks()
+        self.assertEqual(len(task), 1)
+        self.assertEqual(task.name, "Кнопка «Печать» не видна")
+        self.assertEqual(task.stage_id, self.stage_new)
+        self.assertIn("узком экране", task.description)
+        self.assertFalse(self.env["crm.lead"].search([("user_id", "=", self.user.id)]))
+        self.assertIn("Задача", self.api.sent[-1][1])
+        urls = [b.get("url") for b in self.api.sent[-1][2]["inline_keyboard"][0]]
+        self.assertIn(
+            f"https://erppark.ru/odoo/action-{bot_mod.DEV_ACTION_XMLID}/{task.id}", urls)
+
+    def test_screenshot_then_text_append_to_task(self):
+        self._msg(text=bot_mod.BTN_DEV_TASK)
+        self._msg(photo=[{"file_id": "shot", "file_size": 5}])
+        task = self._tasks()
+        self.assertTrue(task.name.startswith("Задача из Телеграма"))
+        self._msg(text="Вот тут съезжает")
+        self.assertIn("съезжает", task.description)
+        atts = self.env["ir.attachment"].search(
+            [("res_model", "=", "project.task"), ("res_id", "=", task.id)])
+        self.assertEqual(len(atts), 1)
+        self._click(f"done:task:{task.id}")
+        self.assertEqual(self._session().state, "idle")
+        self.assertEqual(len(self._tasks()), 1)
+
+    def test_old_done_button_still_works(self):
+        self._start_deal()
+        self._msg(text="Первое")
+        lead = self._session().lead_id
+        self._click(f"done:{lead.id}")
+        self.assertEqual(self._session().state, "idle")

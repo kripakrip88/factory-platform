@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
-"""Логика бота: меню → этап → «что нужно» → сделка.
+"""Логика бота: меню → этап → «что нужно» → сделка (или задача).
 
 Диалог:
     «➕ Создать сделку» → кнопки этапов → «Что нужно?» → текст или скриншот
     → сделка СД-… создана; всё, что придёт следом, дописывается в неё же,
     пока не нажата «Готово», не начата новая сделка или не прошло
     TIMEOUT_MINUTES тишины.
+    «📝 Задача в доработку» (12.10.2026) → «Опишите задачу» → задача в
+    проекте «Доработка системы», колонка «Новые»; дописывание — так же.
 
 Меню — список MENU: следующая функция бота (заявка на снабжение и т.п.) —
 ещё одна строка в нём и метод-обработчик, без переделки остального.
@@ -30,16 +32,25 @@ PARAM_SECRET = "pmk_telegram.webhook_secret"
 WEBHOOK_PATH = "/pmk_telegram/webhook"
 
 BTN_NEW_DEAL = "➕ Создать сделку"
+BTN_DEV_TASK = "📝 Задача в доработку"
 # (подпись кнопки, метод). Порядок — порядок кнопок в меню.
 MENU = [
     (BTN_NEW_DEAL, "_pmk_menu_new_deal"),
+    (BTN_DEV_TASK, "_pmk_menu_dev_task"),
 ]
+
+# Доска «Задачи → Доработка системы» живёт в pmk_theme. Жёсткой зависимости
+# нет: без проекта кнопка просто не показывается.
+DEV_PROJECT_XMLID = "pmk_theme.project_dev"
+DEV_ACTION_XMLID = "pmk_theme.action_dev_tasks"
 
 TIMEOUT_MINUTES = 30
 NAME_MAX = 60
 
 ASK_CONTENT = ("Что нужно? Напишите текстом или пришлите скриншот переписки "
                "(можно несколько).")
+ASK_TASK = ("Опишите задачу: текстом или скриншотом (можно несколько). "
+            "Первая строка станет названием.")
 
 
 def _esc(text):
@@ -112,12 +123,31 @@ class PmkTelegramBot(models.AbstractModel):
         if (session.state != "idle" and session.last_activity
                 and fields.Datetime.now() - session.last_activity
                 > timedelta(minutes=TIMEOUT_MINUTES)):
-            session.write({"state": "idle", "lead_id": False,
+            session.write({"state": "idle", "lead_id": False, "task_id": False,
                            "stage_id": False, "media_group_id": False})
         return session
 
-    def _pmk_menu_markup(self):
-        return {"keyboard": [[{"text": label}] for label, _m in MENU],
+    def _pmk_dev_project(self):
+        return self.env.ref(DEV_PROJECT_XMLID, raise_if_not_found=False)
+
+    def _pmk_menu(self, user):
+        """Пункты меню этого человека.
+
+        Кнопка задачи — только если доска есть и у человека есть доступ к
+        проектам: без прав Odoo всё равно не даст создать задачу, а кнопка,
+        которая всегда отвечает отказом, хуже, чем никакой.
+        """
+        allowed = []
+        for label, method in MENU:
+            if label == BTN_DEV_TASK and not (
+                    self._pmk_dev_project()
+                    and user.has_group("project.group_project_user")):
+                continue
+            allowed.append((label, method))
+        return allowed
+
+    def _pmk_menu_markup(self, user):
+        return {"keyboard": [[{"text": label}] for label, _m in self._pmk_menu(user)],
                 "resize_keyboard": True, "is_persistent": True}
 
     # ── сообщения ─────────────────────────────────────────────────────────
@@ -136,32 +166,37 @@ class PmkTelegramBot(models.AbstractModel):
         text = (message.get("text") or "").strip()
 
         if text.startswith("/start") or text.startswith("/menu"):
-            session.write({"state": "idle", "lead_id": False,
+            session.write({"state": "idle", "lead_id": False, "task_id": False,
                            "media_group_id": False})
             api_.send(chat_id, "Здравствуйте, %s! Выберите действие в меню "
-                      "внизу." % _esc(user.name), self._pmk_menu_markup())
+                      "внизу." % _esc(user.name), self._pmk_menu_markup(user))
             return
-        for label, method in MENU:
+        for label, method in self._pmk_menu(user):
             if text == label:
                 getattr(self, method)(api_, session)
                 session.last_activity = fields.Datetime.now()
                 return
 
-        if session.state in ("await_content", "collecting"):
+        if session.state in ("await_content", "await_task", "collecting"):
             self._pmk_take_content(api_, session, message)
             session.last_activity = fields.Datetime.now()
         elif session.state == "await_stage":
             api_.send(chat_id, "Сначала выберите этап кнопкой выше.")
         else:
-            api_.send(chat_id, "Чтобы записать обращение, нажмите «%s»."
-                      % BTN_NEW_DEAL, self._pmk_menu_markup())
+            api_.send(chat_id, "Выберите действие в меню внизу.",
+                      self._pmk_menu_markup(user))
 
     def _pmk_menu_new_deal(self, api_, session):
         stages = self.env["crm.stage"].sudo().search([], order="sequence, id")
-        session.write({"state": "await_stage", "lead_id": False,
+        session.write({"state": "await_stage", "lead_id": False, "task_id": False,
                        "stage_id": False, "media_group_id": False})
         api_.send(session.chat_id, "Этап сделки?", {"inline_keyboard": [
             [{"text": s.name, "callback_data": f"stage:{s.id}"}] for s in stages]})
+
+    def _pmk_menu_dev_task(self, api_, session):
+        session.write({"state": "await_task", "lead_id": False, "task_id": False,
+                       "stage_id": False, "media_group_id": False})
+        api_.send(session.chat_id, ASK_TASK)
 
     # ── кнопки под сообщениями ────────────────────────────────────────────
 
@@ -187,17 +222,21 @@ class PmkTelegramBot(models.AbstractModel):
                       "Этап: <b>%s</b>" % _esc(stage.name))
             api_.send(chat_id, ASK_CONTENT)
         elif data.startswith("done:"):
-            lead = self.env["crm.lead"].sudo().browse(int(data[5:])).exists()
-            if session.lead_id == lead:
-                session.write({"state": "idle", "lead_id": False,
+            # done:task:5 / done:lead:5; «done:5» — кнопки первой версии (сделка).
+            parts = data.split(":")
+            model = "project.task" if parts[1] == "task" else "crm.lead"
+            record = self.env[model].sudo().browse(int(parts[-1])).exists()
+            if record and self._pmk_target(session) == record:
+                session.write({"state": "idle", "lead_id": False, "task_id": False,
                                "media_group_id": False})
             api_.answer_callback(cq["id"], "Записано")
-            if lead:
+            if record:
                 api_.edit(chat_id, msg["message_id"],
-                          "✅ %s записана, этап «%s»." % (
-                              _esc(self._pmk_deal_label(lead)),
-                              _esc(lead.stage_id.name)),
-                          self._pmk_open_markup(lead, done=False))
+                          "✅ %s записана, %s «%s»." % (
+                              _esc(self._pmk_label(record)),
+                              "колонка" if model == "project.task" else "этап",
+                              _esc(record.stage_id.name)),
+                          self._pmk_open_markup(record, done=False))
         else:
             api_.answer_callback(cq["id"])
 
@@ -227,21 +266,34 @@ class PmkTelegramBot(models.AbstractModel):
             api_.send(chat_id,
                       "✅ <b>%s</b> создана, этап «%s».\nЗабыли что-то — "
                       "пришлите, добавлю в эту же сделку." % (
-                          _esc(self._pmk_deal_label(lead)),
+                          _esc(self._pmk_label(lead)),
                           _esc(lead.stage_id.name)),
                       self._pmk_open_markup(lead))
-        else:
-            lead = session.lead_id
-            if not lead.exists():
-                session.write({"state": "idle", "lead_id": False})
-                api_.send(chat_id, "Сделка не найдена — начните заново.",
-                          self._pmk_menu_markup())
+        elif session.state == "await_task":
+            task = self._pmk_create_dev_task(user, text, files)
+            if not task:
+                session.write({"state": "idle"})
+                api_.send(chat_id, "Доска «Доработка системы» не найдена.",
+                          self._pmk_menu_markup(session.user_id))
                 return
-            self._pmk_append(user, lead, text, files)
+            session.write({"state": "collecting", "task_id": task.id})
+            api_.send(chat_id,
+                      "✅ Задача <b>%s</b> создана, колонка «%s».\nЗабыли что-то — "
+                      "пришлите, добавлю в эту же задачу." % (
+                          _esc(task.name), _esc(task.stage_id.name)),
+                      self._pmk_open_markup(task))
+        else:
+            record = self._pmk_target(session)
+            if not record:
+                session.write({"state": "idle", "lead_id": False, "task_id": False})
+                api_.send(chat_id, "Запись не найдена — начните заново.",
+                          self._pmk_menu_markup(session.user_id))
+                return
+            self._pmk_append(user, record, text, files)
             if not same_album:
                 api_.send(chat_id, "➕ Добавлено в %s."
-                          % _esc(self._pmk_deal_label(lead)),
-                          self._pmk_open_markup(lead))
+                          % _esc(self._pmk_label(record)),
+                          self._pmk_open_markup(record))
 
     def _pmk_files(self, api_, message):
         """[(имя, байты)] из фото (самый крупный размер) или файла."""
@@ -257,13 +309,17 @@ class PmkTelegramBot(models.AbstractModel):
             return [(name, raw)] if raw else []
         return []
 
-    def _pmk_deal_name(self, user, text):
+    def _pmk_target(self, session):
+        """Сделка или задача, в которую сейчас дописываем."""
+        return (session.task_id or session.lead_id).exists()
+
+    def _pmk_deal_name(self, user, text, fallback="Запрос из Телеграма"):
         line = next((ln.strip() for ln in text.splitlines() if ln.strip()), "")
         if line:
             return line if len(line) <= NAME_MAX else line[:NAME_MAX - 1].rstrip() + "…"
         tz = pytz.timezone(user.tz or "Asia/Vladivostok")
         now = pytz.utc.localize(fields.Datetime.now()).astimezone(tz)
-        return "Запрос из Телеграма %s" % now.strftime("%d.%m %H:%M")
+        return "%s %s" % (fallback, now.strftime("%d.%m %H:%M"))
 
     def _pmk_create_deal(self, user, stage, text, files):
         lead = self.env["crm.lead"].with_user(user).create({
@@ -277,37 +333,57 @@ class PmkTelegramBot(models.AbstractModel):
         self._pmk_post(user, lead, text, files)
         return lead
 
-    def _pmk_append(self, user, lead, text, files):
-        if text:
-            lead = lead.with_user(user)
-            lead.description = (lead.description or "") + plaintext2html(text)
-        self._pmk_post(user, lead, text, files)
+    def _pmk_create_dev_task(self, user, text, files):
+        """Задача на доске «Доработка системы», первая колонка («Новые»)."""
+        project = self._pmk_dev_project()
+        if not project:
+            return None
+        stage = self.env["project.task.type"].sudo().search(
+            [("project_ids", "in", project.id)], order="sequence, id", limit=1)
+        task = self.env["project.task"].with_user(user).create({
+            "name": self._pmk_deal_name(user, text, "Задача из Телеграма"),
+            "project_id": project.id,
+            "stage_id": stage.id,
+            "description": plaintext2html(text) if text else False,
+        })
+        self._pmk_post(user, task, text, files)
+        return task
 
-    def _pmk_post(self, user, lead, text, files):
-        """Запись в ленту сделки: текст и скриншоты — видно с компьютера."""
+    def _pmk_append(self, user, record, text, files):
+        if text:
+            record = record.with_user(user)
+            record.description = (record.description or "") + plaintext2html(text)
+        self._pmk_post(user, record, text, files)
+
+    def _pmk_post(self, user, record, text, files):
+        """Запись в ленту: текст и скриншоты — видно с компьютера."""
         attachments = self.env["ir.attachment"].with_user(user).create([{
             "name": name,
             "datas": base64.b64encode(raw),
-            "res_model": "crm.lead",
-            "res_id": lead.id,
+            "res_model": record._name,
+            "res_id": record.id,
         } for name, raw in files])
         body = plaintext2html("Из Телеграма:\n" + text) if text else \
             plaintext2html("Из Телеграма")
-        lead.with_user(user).message_post(
+        record.with_user(user).message_post(
             body=body, attachment_ids=attachments.ids,
             message_type="comment", subtype_xmlid="mail.mt_note")
 
-    def _pmk_deal_label(self, lead):
-        return lead.pmk_number or lead.name
+    def _pmk_label(self, record):
+        if record._name == "crm.lead":
+            return record.pmk_number or record.name
+        return record.name
 
-    def _pmk_open_markup(self, lead, done=True):
+    def _pmk_open_markup(self, record, done=True):
+        kind = "task" if record._name == "project.task" else "lead"
         row = []
         if done:
-            row.append({"text": "Готово", "callback_data": f"done:{lead.id}"})
+            row.append({"text": "Готово", "callback_data": f"done:{kind}:{record.id}"})
         base = (self.env["ir.config_parameter"].sudo()
                 .get_param("web.base.url") or "").rstrip("/")
         # Телеграм принимает в кнопке только настоящий https-адрес.
         if base.startswith("https://"):
-            row.append({"text": "Открыть в Odoo",
-                        "url": f"{base}/odoo/crm/{lead.id}"})
+            path = (f"/odoo/action-{DEV_ACTION_XMLID}/{record.id}" if kind == "task"
+                    else f"/odoo/crm/{record.id}")
+            row.append({"text": "Открыть в Odoo", "url": base + path})
         return {"inline_keyboard": [row]} if row else None

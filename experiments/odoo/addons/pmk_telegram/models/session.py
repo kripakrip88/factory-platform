@@ -6,7 +6,8 @@ STATES = [
     ("idle", "Ничего не ждём"),
     ("await_stage", "Ждём этап"),
     ("await_content", "Ждём «что нужно»"),
-    ("collecting", "Дописываем в сделку"),
+    ("await_task", "Ждём описание задачи"),
+    ("collecting", "Дописываем в сделку или задачу"),
 ]
 
 
@@ -19,6 +20,8 @@ class PmkTelegramSession(models.Model):
     state = fields.Selection(STATES, default="idle", required=True)
     stage_id = fields.Many2one("crm.stage", ondelete="set null")
     lead_id = fields.Many2one("crm.lead", ondelete="set null")
+    # Задача на доске «Доработка системы» (12.10.2026).
+    task_id = fields.Many2one("project.task", ondelete="set null")
     # Альбом из нескольких скриншотов приходит отдельными сообщениями с общим
     # media_group_id — отвечаем на альбом один раз, а не на каждую картинку.
     media_group_id = fields.Char()

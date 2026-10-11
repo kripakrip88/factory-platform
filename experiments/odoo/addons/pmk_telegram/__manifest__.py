@@ -16,13 +16,15 @@
     # Токен бота и секрет адреса — в системных параметрах (pmk_telegram.*),
     # не в репозитории. Подключение: README.md.
     "name": "ПМК: бот в Телеграме",
-    "version": "19.0.1.0.0",
-    "summary": "Сделка из Телеграма: этап + текст или скриншот",
+    "version": "19.0.1.1.0",
+    "summary": "Сделка или задача в доработку из Телеграма: текст или скриншот",
     "category": "Sales/CRM",
     "author": "ПМК Парк",
     "license": "LGPL-3",
     # pmk_deal — источник «Откуда пришёл» и номер «СД-…» в ответе бота.
-    "depends": ["crm", "pmk_deal"],
+    # project — задачи на доске «Доработка системы» (сама доска — в pmk_theme,
+    # бот ищет её мягко, по xmlid).
+    "depends": ["crm", "project", "pmk_deal"],
     "external_dependencies": {"python": ["requests"]},
     "data": [
         "security/ir.model.access.csv",
