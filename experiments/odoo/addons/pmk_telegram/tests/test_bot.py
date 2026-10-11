@@ -233,6 +233,24 @@ class TestTelegramDevTask(TestTelegramBot):
         self.assertIn(
             f"https://erppark.ru/odoo/action-{bot_mod.DEV_ACTION_XMLID}/{task.id}", urls)
 
+    def test_task_from_public_webhook_transaction(self):
+        """Вебхук приходит публичным пользователем (auth="public").
+
+        Связь «Ответственные» → res.users Odoo проверяет от имени ПЕРВОГО
+        пользователя транзакции; на живом это публичный — и задача падала
+        с AccessError (12.10.2026), хотя в тестах (суперпользователь) — нет.
+        """
+        transaction = self.env.transaction
+        saved = transaction.default_env
+        transaction.default_env = self.env(user=self.env.ref("base.public_user"))
+        self.addCleanup(setattr, transaction, "default_env", saved)
+        self._msg(text=bot_mod.BTN_DEV_TASK)
+        self._msg(text="Задача с публичного вебхука")
+        task = self._tasks()
+        self.assertEqual(len(task), 1)
+        self.assertEqual(task.user_ids, self.user)
+        self.assertEqual(task.create_uid, self.user)
+
     def test_screenshot_then_text_append_to_task(self):
         self._msg(text=bot_mod.BTN_DEV_TASK)
         self._msg(photo=[{"file_id": "shot", "file_size": 5}])

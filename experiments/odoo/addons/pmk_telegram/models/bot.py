@@ -340,10 +340,18 @@ class PmkTelegramBot(models.AbstractModel):
             return None
         stage = self.env["project.task.type"].sudo().search(
             [("project_ids", "in", project.id)], order="sequence, id", limit=1)
-        task = self.env["project.task"].with_user(user).create({
+        # sudo — не ради обхода прав (их проверяет меню: кнопка только при
+        # доступе к проектам), а из-за ядра. «Ответственные» (user_ids) — связь
+        # с res.users, а у res.users _allow_sudo_commands = False: такую связь
+        # Odoo проверяет от имени ПЕРВОГО пользователя транзакции, а вебхук
+        # Телеграма приходит публичным пользователем → AccessError (12.10.2026).
+        # Проверка пропускается только у sudo-записи; uid остаётся человеком —
+        # автор, создатель и ответственный задачи он.
+        task = self.env["project.task"].with_user(user).sudo().create({
             "name": self._pmk_deal_name(user, text, "Задача из Телеграма"),
             "project_id": project.id,
             "stage_id": stage.id,
+            "user_ids": [(6, 0, [user.id])],
             "description": plaintext2html(text) if text else False,
         })
         self._pmk_post(user, task, text, files)
