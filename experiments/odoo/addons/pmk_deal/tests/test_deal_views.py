@@ -11,6 +11,10 @@ from lxml import etree
 
 from odoo.tests import TransactionCase, tagged
 
+# Верх листа: с шага 52 (pmk_theme, views/step52_doc_top.xml) поля шапки
+# лежат в рамке div[@name='pmk_doc_top'], без темы — прямо в листе.
+SHEET_TOP = "(/form/sheet | /form/sheet/div[@name='pmk_doc_top'])"
+
 
 def hidden(node):
     """Скрыт ли узел насовсем (invisible="1" — после сборки может стать True)."""
@@ -126,7 +130,7 @@ class TestDealViews(TransactionCase):
         self.assertEqual(len(arch.findall(".//field[@name='pmk_source']")), 2,
                          "«Откуда пришёл» — у лида и у сделки.")
         # Команда продаж: у лида — поле скрыто, у сделки — на скрытой вкладке.
-        lead_team = arch.xpath("/form/sheet/group/group/field[@name='team_id']")
+        lead_team = arch.xpath(SHEET_TOP + "/group/group/field[@name='team_id']")
         self.assertEqual(len(lead_team), 1)
         self.assertTrue(hidden(lead_team[0]))
         self.assertTrue(arch.xpath("//page[@name='lead']//field[@name='team_id']"))
@@ -158,7 +162,7 @@ class TestDealViews(TransactionCase):
         # Одна «Откуда пришёл» у лида, одна у сделки.
         self.assertEqual(len(arch.xpath("//group[@name='lead_partner']/field[@name='pmk_source']")), 1)
         # Группа «Менеджер / Команда продаж» лида — скрыта, в ней только команда.
-        team_group = arch.xpath("/form/sheet/group/group[field[@name='team_id']]")
+        team_group = arch.xpath(SHEET_TOP + "/group/group[field[@name='team_id']]")
         self.assertEqual(len(team_group), 1)
         self.assertTrue(hidden(team_group[0]))
         self.assertEqual([f.get("name") for f in team_group[0].findall("field")], ["team_id"])
@@ -170,7 +174,7 @@ class TestDealViews(TransactionCase):
         self.assertTrue({"contact_name", "email_from", "function", "phone"}
                         <= {f.get("name") for f in info.iter("field")})
         # Сделка: «Менеджер» и «Компания» — те же слова.
-        deal = arch.xpath("/form/sheet/group/group[label[@for='date_deadline']]")[0]
+        deal = arch.xpath(SHEET_TOP + "/group/group[label[@for='date_deadline']]")[0]
         self.assertEqual(deal.find("field[@name='user_id']").get("string"), "Менеджер")
         opp = arch.find(".//group[@name='opportunity_partner']")
         self.assertEqual(opp.find("field[@name='partner_name']").get("string"), "Компания")
@@ -178,7 +182,7 @@ class TestDealViews(TransactionCase):
         self.assertTrue(hidden(arch.xpath("//div[contains(concat(' ', @class, ' '), ' oe_title ')]/h2")[0]))
         # Подписи верхних групп — в одну строку (штатный o_label_nowrap):
         # «Ответить клиенту до» со знаком «?» шире колонки ядра в 150 px.
-        top = arch.xpath("/form/sheet/group")[0]
+        top = arch.xpath(SHEET_TOP + "/group")[0]
         self.assertIn("o_label_nowrap", (top.get("class") or "").split())
 
     def test_kanban_card(self):

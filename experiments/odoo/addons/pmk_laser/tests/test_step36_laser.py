@@ -684,23 +684,28 @@ class TestJobFormTop(LaserStep36Case):
 
     def test_rows_order(self):
         sheet = self._form().find("sheet")
-        top = sheet.findall("group")[0]
+        # Верх формы — в рамке шапки (разбор UX, шаг 52): заголовок, сигналы,
+        # первый ряд групп и «Металл»; вкладки — после рамки.
+        head = sheet.find("div[@name='pmk_doc_top']")
+        self.assertIsNotNone(head, "Верх задания — в рамке шапки (шаг 52).")
+        top = head.findall("group")[0]
         self.assertEqual([g.get("string") for g in top.findall("group")],
                          ["Задание", "Станок и лист"])
         # Только элементы: комментарии разметки — не ряды формы.
-        children = [c for c in sheet if isinstance(c.tag, str)]
+        children = [c for c in head if isinstance(c.tag, str)]
         names = [c.get("class") or c.tag for c in children]
         metal = [i for i, c in enumerate(children) if "pmk-job-metal" in (c.get("class") or "")]
         self.assertEqual(len(metal), 1, names)
         self.assertLess(children.index(top), metal[0], "«Металл» — вторым рядом.")
-        self.assertLess(metal[0], children.index(sheet.find("notebook")))
+        rows = [c for c in sheet if isinstance(c.tag, str)]
+        self.assertLess(rows.index(head), rows.index(sheet.find("notebook")))
         self.assertEqual(children[metal[0]].get("invisible"), "not sheet_ids",
                          "До разбора файла металла нет — нет и строки.")
 
     def test_five_rows_each(self):
         """По пять строк в группах первого ряда — кнопки листа на первом
         экране. «Заказ» виден, только когда заполнен (шаг 29)."""
-        top = self._form().find("sheet").findall("group")[0]
+        top = self._form().find("sheet/div[@name='pmk_doc_top']").findall("group")[0]
         for group in top.findall("group"):
             rows = [node for node in group
                     if node.tag in ("field", "label")

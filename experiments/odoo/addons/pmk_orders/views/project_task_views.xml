@@ -138,46 +138,55 @@
         </header>
         <sheet>
           <div class="oe_button_box" name="button_box"/>
-          <div class="oe_title">
-            <h1><field name="name" placeholder="Изделие, объект"/></h1>
+          <!--
+            Шапка документа — одной рамкой (разбор UX, шаг 52, 11.10.2026):
+            заголовок, плашки, поля и карточки итогов. Рамку рисует тема
+            (pmk_theme, forms_nexus.scss, «Шаг 52») по классу pmk-doc-top;
+            без темы обёртка ничего не меняет. Вкладки и таблицы — НЕ внутри:
+            у них своя рамка. ⚠️ name="pmk_doc_top" — опора для xpath и тестов.
+          -->
+          <div class="pmk-doc-top" name="pmk_doc_top">
+            <div class="oe_title">
+              <h1><field name="name" placeholder="Изделие, объект"/></h1>
+            </div>
+            <group name="pmk_order_main">
+              <group name="pmk_order_who">
+                <field name="partner_id" string="Клиент" options="{'no_create_edit': True}"/>
+                <field name="pmk_deal_id" options="{'no_create': True}"/>
+                <field name="pmk_sale_order_id" options="{'no_create': True}"/>
+                <field name="pmk_org_id" options="{'no_create': True, 'no_open': True}"/>
+                <field name="user_ids" string="Ответственный" widget="many2many_avatar_user"/>
+                <field name="pmk_date_start"/>
+                <field name="pmk_date_due" decoration-danger="pmk_overdue"/>
+                <!-- Шаг З-15: откуда сдача — «Срок изготовления» счёта словами (та же подпись, что в счёте). -->
+                <field name="pmk_lead_text" invisible="not pmk_lead_text"/>
+              </group>
+              <group name="pmk_order_money">
+                <field name="pmk_amount" readonly="pmk_sale_order_id"/>
+                <field name="pmk_invoice"/>
+                <field name="pmk_paid_date"/>
+                <field name="pmk_paid_amount"/>
+                <field name="pmk_paid_pct" string="Оплачено, %"/>
+                <!-- Шаг З-15: работу начали по гарантийному письму вместо оплаты. -->
+                <field name="pmk_guarantee"/>
+              </group>
+            </group>
+            <group name="pmk_order_shop">
+              <group name="pmk_order_shop_left">
+                <field name="pmk_metal"/>
+                <field name="pmk_ordered"/>
+                <field name="pmk_paint"/>
+                <field name="pmk_passport"/>
+              </group>
+              <group name="pmk_order_shop_right">
+                <field name="pmk_ready_date"/>
+                <field name="pmk_ship_date"/>
+              </group>
+            </group>
+            <group name="pmk_order_note">
+              <field name="pmk_note" placeholder="Доставка, размеры пластин, что уточнить"/>
+            </group>
           </div>
-          <group name="pmk_order_main">
-            <group name="pmk_order_who">
-              <field name="partner_id" string="Клиент" options="{'no_create_edit': True}"/>
-              <field name="pmk_deal_id" options="{'no_create': True}"/>
-              <field name="pmk_sale_order_id" options="{'no_create': True}"/>
-              <field name="pmk_org_id" options="{'no_create': True, 'no_open': True}"/>
-              <field name="user_ids" string="Ответственный" widget="many2many_avatar_user"/>
-              <field name="pmk_date_start"/>
-              <field name="pmk_date_due" decoration-danger="pmk_overdue"/>
-              <!-- Шаг З-15: откуда сдача — «Срок изготовления» счёта словами (та же подпись, что в счёте). -->
-              <field name="pmk_lead_text" invisible="not pmk_lead_text"/>
-            </group>
-            <group name="pmk_order_money">
-              <field name="pmk_amount" readonly="pmk_sale_order_id"/>
-              <field name="pmk_invoice"/>
-              <field name="pmk_paid_date"/>
-              <field name="pmk_paid_amount"/>
-              <field name="pmk_paid_pct" string="Оплачено, %"/>
-              <!-- Шаг З-15: работу начали по гарантийному письму вместо оплаты. -->
-              <field name="pmk_guarantee"/>
-            </group>
-          </group>
-          <group name="pmk_order_shop">
-            <group name="pmk_order_shop_left">
-              <field name="pmk_metal"/>
-              <field name="pmk_ordered"/>
-              <field name="pmk_paint"/>
-              <field name="pmk_passport"/>
-            </group>
-            <group name="pmk_order_shop_right">
-              <field name="pmk_ready_date"/>
-              <field name="pmk_ship_date"/>
-            </group>
-          </group>
-          <group name="pmk_order_note">
-            <field name="pmk_note" placeholder="Доставка, размеры пластин, что уточнить"/>
-          </group>
           <field name="project_id" invisible="1"/>
           <field name="company_id" invisible="1"/>
           <field name="pmk_currency_id" invisible="1"/>

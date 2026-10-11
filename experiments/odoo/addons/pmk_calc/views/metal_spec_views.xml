@@ -44,134 +44,143 @@
             «Новый расчёт от …»: номер СМ- выдаётся при сохранении.
             Узел oe_title остаётся: перед ним мост ставит плашки цен.
           -->
-          <div class="oe_title pmk-spec-title">
-            <h1>
-              <span class="pmk-spec-title__new" invisible="id">Новый расчёт</span>
-              <field name="name" readonly="1" invisible="not id"/>
-              <span class="pmk-spec-title__from">от</span>
-              <field name="date" widget="pmk_long_date" class="pmk-spec-title__date"/>
-            </h1>
-          </div>
           <!--
-            Шапка: ввод слева, итоги справа карточками. Итог документа — его
-            главное число, а раньше он был набран тем же кеглем, что
-            примечание. Сетка 2/1 вместо штатных 50/50: полям ввода нужна
-            ширина, числам нет. Оформление приёмом темы (.pmk-kpi), чтобы
-            доборка и будущие документы выглядели так же.
+            Шапка документа — одной рамкой (разбор UX, шаг 52, 11.10.2026):
+            заголовок, плашки, поля и карточки итогов. Рамку рисует тема
+            (pmk_theme, forms_nexus.scss, «Шаг 52») по классу pmk-doc-top;
+            без темы обёртка ничего не меняет. Вкладки и таблицы — НЕ внутри:
+            у них своя рамка. ⚠️ name="pmk_doc_top" — опора для xpath и тестов.
           -->
-          <!--
-            Раскладка ШТАТНОЙ структурой Odoo — вложенные группы дают две
-            колонки сами. Раньше она держалась на нашем CSS, и стоило
-            таблице стилей отстать от разметки (Odoo — одностраничное
-            приложение, вью оно перечитывает, а стили нет), как поля
-            разъезжались. Теперь без стилей это просто обычная форма Odoo.
-          -->
-          <!--
-            Сигнал «Раскладка устарела» (разбор UX, шаг 56; Антон 07.10:
-            «Сделаем сигнализацию внутри системы что нужна перераскладка?»).
-            Листовые детали изменились после «Разложить листы» — число листов
-            уже не про этот заказ. Бледно-жёлтая плашка, как «Нет цены»
-            моста (класс pmk-price-alert темы, тёмная пара есть); слово
-            повторяет цвет. Ничего не блокирует: КП печатается и
-            отправляется как прежде. Кнопка — та же, что на вкладке
-            «Раскладка», контурная: залитая на экране одна — «КП (PDF)».
-            Правила — spec_layout.py, «Сигнал „Раскладка устарела“».
-            Плашка «Нет цены» моста встаёт следом (его xpath — перед
-            pmk-doc-head).
-          -->
-          <div class="alert pmk-price-alert mb-3 d-flex flex-wrap align-items-center gap-2"
-               role="status" name="pmk_layout_stale" invisible="not layout_stale">
-            <i class="fa fa-exclamation-triangle" title="Внимание" aria-hidden="true"/>
-            <field name="layout_stale_text" nolabel="1"/>
-            <button name="action_draft_layout" type="object"
-                    string="Разложить листы (черновик)" class="btn btn-secondary btn-sm ms-auto"/>
-          </div>
-          <field name="layout_stale" invisible="1"/>
-          <!--
-            Позиции «на разнос» (разбор UX, шаг З-10): в деталях есть позиции,
-            которых не было в справочнике, — их завели из расчёта строкой «Нет
-            в справочнике — завести новую…». Бледно-жёлтая плашка словом, как
-            «Нет цены» и «Раскладка устарела» (pmk-price-alert темы, тёмная
-            пара есть). Ничего не держит: КП, счёт, заявка уходят как обычно —
-            без цены позиция и так в «Нет цены», без веса деталь весит 0.
-            Разносит администратор (Справочники → Новые позиции на разнос).
-          -->
-          <div class="alert pmk-price-alert pmk-pending-alert mb-3 d-flex flex-wrap align-items-center gap-2"
-               role="status" name="pmk_pending_alert" invisible="not pmk_pending_count">
-            <i class="fa fa-exclamation-triangle" title="Внимание" aria-hidden="true"/>
-            <field name="pmk_pending_text" nolabel="1"/>
-          </div>
-          <field name="pmk_pending_count" invisible="1"/>
-          <div class="pmk-doc-head">
-            <!--
-              Порядок шапки (приёмка 01.10.2026, R2/R3): Сделка (во всю
-              ширину) → Клиент | Контактное лицо → Предмет КП (во всю
-              ширину) → Цены на дату | Организация. Сделку ставит pmk_deal,
-              цены и организацию — pmk_bridge: они встают по ИМЕНАМ блоков
-              (name="pmk_f_…"), а не в конец контейнера. Иначе порядок решала
-              очерёдность загрузки модулей, и «Сделка» оказывалась последней.
-              Дата документа — в заголовке, после номера (R3); блока
-              pmk_f_date больше нет — pmk_bridge встаёт после pmk_f_note.
-              ⚠️ Имена блоков — опора для xpath других модулей. Не менять.
-            -->
-            <div class="pmk-doc-head__fields">
-              <!-- Клиент и контактное лицо — в одну строку, по половине
-                   (R2): в контакте теперь только имя человека, и обе строки
-                   помещаются. -->
-              <div class="pmk-field" name="pmk_f_partner">
-                <label for="partner_id"/>
-                <field name="partner_id" nolabel="1"/>
-              </div>
-              <!-- Контактное лицо — человек у клиента; клиент — компания
-                   (разбор UX, шаг 11). Печатается в КП (имя, должность,
-                   телефон — поля человека, не display_name).
-                   partner_display_name_hide_company — штатный ключ ядра
-                   (res.partner._get_complete_name; CRM ставит его так же на
-                   «Контакт» сделки): в поле «Цыганов Михаил Анатольевич», а
-                   не «ООО «Арестак-Строй», Цыганов…» (R2). Только для этого
-                   поля: ключ живёт в контексте поля, display_name в других
-                   местах прежний. -->
-              <div class="pmk-field" name="pmk_f_contact">
-                <label for="contact_id"/>
-                <field name="contact_id" nolabel="1"
-                       context="{'default_parent_id': partner_id, 'partner_display_name_hide_company': True}"/>
-              </div>
-              <!-- Подпись короче названия поля (разбор UX, шаг 27): подписи
-                   теперь слева и в одну строку, «Предмет КП (видит клиент)»
-                   раздула бы колонку подписей всей шапки. «Видит клиент» —
-                   в подсказке «?» (описание поля: печатается в КП строкой
-                   «Предмет»). Название поля в списке, поиске и выгрузке
-                   прежнее; печать КП берёт свою подпись «Предмет:». -->
-              <div class="pmk-field pmk-field--wide" name="pmk_f_note">
-                <label for="note" string="Предмет КП"/>
-                <field name="note" nolabel="1"
-                       placeholder="Например: металлоконструкции для ОФ «Солнечная», п. Горный"/>
-              </div>
-
+          <div class="pmk-doc-top" name="pmk_doc_top">
+            <div class="oe_title pmk-spec-title">
+              <h1>
+                <span class="pmk-spec-title__new" invisible="id">Новый расчёт</span>
+                <field name="name" readonly="1" invisible="not id"/>
+                <span class="pmk-spec-title__from">от</span>
+                <field name="date" widget="pmk_long_date" class="pmk-spec-title__date"/>
+              </h1>
             </div>
-
             <!--
-              Две равные плашки, под ними счётчики строкой: в группе полей
-              они добавляли лишние ряды и тянули шапку вниз.
+              Шапка: ввод слева, итоги справа карточками. Итог документа — его
+              главное число, а раньше он был набран тем же кеглем, что
+              примечание. Сетка 2/1 вместо штатных 50/50: полям ввода нужна
+              ширина, числам нет. Оформление приёмом темы (.pmk-kpi), чтобы
+              доборка и будущие документы выглядели так же.
             -->
-            <div class="pmk-kpi">
-              <!-- Вес — одной карточкой: тонны крупно, килограммы мелко
-                   под ними. Было две карточки с одним и тем же числом
-                   (Антон, 28.09.2026: «два окна общий вес кг и тн, как
-                   будто можно грамотно объединить»). -->
-              <div class="pmk-kpi__card">
-                <div class="pmk-kpi__label">Общий вес, т</div>
-                <div class="pmk-kpi__value">
-                  <field name="total_weight_t" digits="[12,3]"/>
+            <!--
+              Раскладка ШТАТНОЙ структурой Odoo — вложенные группы дают две
+              колонки сами. Раньше она держалась на нашем CSS, и стоило
+              таблице стилей отстать от разметки (Odoo — одностраничное
+              приложение, вью оно перечитывает, а стили нет), как поля
+              разъезжались. Теперь без стилей это просто обычная форма Odoo.
+            -->
+            <!--
+              Сигнал «Раскладка устарела» (разбор UX, шаг 56; Антон 07.10:
+              «Сделаем сигнализацию внутри системы что нужна перераскладка?»).
+              Листовые детали изменились после «Разложить листы» — число листов
+              уже не про этот заказ. Бледно-жёлтая плашка, как «Нет цены»
+              моста (класс pmk-price-alert темы, тёмная пара есть); слово
+              повторяет цвет. Ничего не блокирует: КП печатается и
+              отправляется как прежде. Кнопка — та же, что на вкладке
+              «Раскладка», контурная: залитая на экране одна — «КП (PDF)».
+              Правила — spec_layout.py, «Сигнал „Раскладка устарела“».
+              Плашка «Нет цены» моста встаёт следом (его xpath — перед
+              pmk-doc-head).
+            -->
+            <div class="alert pmk-price-alert mb-3 d-flex flex-wrap align-items-center gap-2"
+                 role="status" name="pmk_layout_stale" invisible="not layout_stale">
+              <i class="fa fa-exclamation-triangle" title="Внимание" aria-hidden="true"/>
+              <field name="layout_stale_text" nolabel="1"/>
+              <button name="action_draft_layout" type="object"
+                      string="Разложить листы (черновик)" class="btn btn-secondary btn-sm ms-auto"/>
+            </div>
+            <field name="layout_stale" invisible="1"/>
+            <!--
+              Позиции «на разнос» (разбор UX, шаг З-10): в деталях есть позиции,
+              которых не было в справочнике, — их завели из расчёта строкой «Нет
+              в справочнике — завести новую…». Бледно-жёлтая плашка словом, как
+              «Нет цены» и «Раскладка устарела» (pmk-price-alert темы, тёмная
+              пара есть). Ничего не держит: КП, счёт, заявка уходят как обычно —
+              без цены позиция и так в «Нет цены», без веса деталь весит 0.
+              Разносит администратор (Справочники → Новые позиции на разнос).
+            -->
+            <div class="alert pmk-price-alert pmk-pending-alert mb-3 d-flex flex-wrap align-items-center gap-2"
+                 role="status" name="pmk_pending_alert" invisible="not pmk_pending_count">
+              <i class="fa fa-exclamation-triangle" title="Внимание" aria-hidden="true"/>
+              <field name="pmk_pending_text" nolabel="1"/>
+            </div>
+            <field name="pmk_pending_count" invisible="1"/>
+            <div class="pmk-doc-head">
+              <!--
+                Порядок шапки (приёмка 01.10.2026, R2/R3): Сделка (во всю
+                ширину) → Клиент | Контактное лицо → Предмет КП (во всю
+                ширину) → Цены на дату | Организация. Сделку ставит pmk_deal,
+                цены и организацию — pmk_bridge: они встают по ИМЕНАМ блоков
+                (name="pmk_f_…"), а не в конец контейнера. Иначе порядок решала
+                очерёдность загрузки модулей, и «Сделка» оказывалась последней.
+                Дата документа — в заголовке, после номера (R3); блока
+                pmk_f_date больше нет — pmk_bridge встаёт после pmk_f_note.
+                ⚠️ Имена блоков — опора для xpath других модулей. Не менять.
+              -->
+              <div class="pmk-doc-head__fields">
+                <!-- Клиент и контактное лицо — в одну строку, по половине
+                     (R2): в контакте теперь только имя человека, и обе строки
+                     помещаются. -->
+                <div class="pmk-field" name="pmk_f_partner">
+                  <label for="partner_id"/>
+                  <field name="partner_id" nolabel="1"/>
                 </div>
-                <div class="pmk-kpi__sub">
-                  <field name="total_weight" digits="[12,1]"/> кг
+                <!-- Контактное лицо — человек у клиента; клиент — компания
+                     (разбор UX, шаг 11). Печатается в КП (имя, должность,
+                     телефон — поля человека, не display_name).
+                     partner_display_name_hide_company — штатный ключ ядра
+                     (res.partner._get_complete_name; CRM ставит его так же на
+                     «Контакт» сделки): в поле «Цыганов Михаил Анатольевич», а
+                     не «ООО «Арестак-Строй», Цыганов…» (R2). Только для этого
+                     поля: ключ живёт в контексте поля, display_name в других
+                     местах прежний. -->
+                <div class="pmk-field" name="pmk_f_contact">
+                  <label for="contact_id"/>
+                  <field name="contact_id" nolabel="1"
+                         context="{'default_parent_id': partner_id, 'partner_display_name_hide_company': True}"/>
                 </div>
+                <!-- Подпись короче названия поля (разбор UX, шаг 27): подписи
+                     теперь слева и в одну строку, «Предмет КП (видит клиент)»
+                     раздула бы колонку подписей всей шапки. «Видит клиент» —
+                     в подсказке «?» (описание поля: печатается в КП строкой
+                     «Предмет»). Название поля в списке, поиске и выгрузке
+                     прежнее; печать КП берёт свою подпись «Предмет:». -->
+                <div class="pmk-field pmk-field--wide" name="pmk_f_note">
+                  <label for="note" string="Предмет КП"/>
+                  <field name="note" nolabel="1"
+                         placeholder="Например: металлоконструкции для ОФ «Солнечная», п. Горный"/>
+                </div>
+
               </div>
-              <div class="pmk-kpi__note">
-                <span>Изделий:</span><field name="total_products"/>
-                <span class="pmk-kpi__dot">·</span>
-                <span>Деталей:</span><field name="total_details"/>
+
+              <!--
+                Две равные плашки, под ними счётчики строкой: в группе полей
+                они добавляли лишние ряды и тянули шапку вниз.
+              -->
+              <div class="pmk-kpi">
+                <!-- Вес — одной карточкой: тонны крупно, килограммы мелко
+                     под ними. Было две карточки с одним и тем же числом
+                     (Антон, 28.09.2026: «два окна общий вес кг и тн, как
+                     будто можно грамотно объединить»). -->
+                <div class="pmk-kpi__card">
+                  <div class="pmk-kpi__label">Общий вес, т</div>
+                  <div class="pmk-kpi__value">
+                    <field name="total_weight_t" digits="[12,3]"/>
+                  </div>
+                  <div class="pmk-kpi__sub">
+                    <field name="total_weight" digits="[12,1]"/> кг
+                  </div>
+                </div>
+                <div class="pmk-kpi__note">
+                  <span>Изделий:</span><field name="total_products"/>
+                  <span class="pmk-kpi__dot">·</span>
+                  <span>Деталей:</span><field name="total_details"/>
+                </div>
               </div>
             </div>
           </div>

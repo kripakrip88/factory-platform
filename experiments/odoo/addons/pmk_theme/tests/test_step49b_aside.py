@@ -94,7 +94,9 @@ class TestStep49bAside(TransactionCase):
         for earlier in ("// ═══ Шаг 48", "// ═══ Шаг 55", "// ═══ Счёт покупателю по-нашему"):
             with self.subTest(earlier=earlier):
                 self.assertLess(source.index(earlier), start, "Раздел — в конце файла.")
-        self.assertEqual(source.find("// ═══", start + 1), -1, "После раздела 49Б разделов нет.")
+        # После 49Б — только раздел шага 52 (плоско на бежевом, 11.10.2026).
+        nxt = source.find("// ═══", start + 1)
+        self.assertEqual(nxt, source.find("// ═══ Шаг 52"), "После раздела 49Б — только шаг 52.")
         self.assertNotIn("Шаг 49Б", _read(OLD_FORMS_SCSS), "forms.scss выключен — правка туда не доедет.")
 
     def test_section_source(self):

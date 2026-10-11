@@ -22,39 +22,48 @@
                  statusbar_visible="draft,confirmed,done"/>
         </header>
         <sheet>
-          <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
-          <div class="alert alert-danger" role="alert" invisible="not has_errors">
-            В заказе есть размер, по которому развёртку не построить — он выделен красным.
-            Его нет в «Скачать всё».
-          </div>
-          <div class="pmk-doc-head">
-            <div class="pmk-doc-head__fields">
-              <div class="pmk-field" name="pmk_f_partner">
-                <label for="partner_id"/>
-                <field name="partner_id" nolabel="1"/>
-              </div>
-              <div class="pmk-field" name="pmk_f_date">
-                <label for="order_date"/>
-                <field name="order_date" nolabel="1"/>
-              </div>
-              <div class="pmk-field pmk-field--wide" name="pmk_f_customer">
-                <label for="customer"/>
-                <field name="customer" nolabel="1" placeholder="На какой объект"/>
-              </div>
+          <!--
+            Шапка документа — одной рамкой (разбор UX, шаг 52, 11.10.2026):
+            заголовок, плашки, поля и карточки итогов. Рамку рисует тема
+            (pmk_theme, forms_nexus.scss, «Шаг 52») по классу pmk-doc-top;
+            без темы обёртка ничего не меняет. Вкладки и таблицы — НЕ внутри:
+            у них своя рамка. ⚠️ name="pmk_doc_top" — опора для xpath и тестов.
+          -->
+          <div class="pmk-doc-top" name="pmk_doc_top">
+            <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
+            <div class="alert alert-danger" role="alert" invisible="not has_errors">
+              В заказе есть размер, по которому развёртку не построить — он выделен красным.
+              Его нет в «Скачать всё».
             </div>
-            <div class="pmk-kpi">
-              <div class="pmk-kpi__card">
-                <div class="pmk-kpi__label">Лист 1250, пог. м</div>
-                <div class="pmk-kpi__value"><field name="total_sheet_1250_m"/></div>
+            <div class="pmk-doc-head">
+              <div class="pmk-doc-head__fields">
+                <div class="pmk-field" name="pmk_f_partner">
+                  <label for="partner_id"/>
+                  <field name="partner_id" nolabel="1"/>
+                </div>
+                <div class="pmk-field" name="pmk_f_date">
+                  <label for="order_date"/>
+                  <field name="order_date" nolabel="1"/>
+                </div>
+                <div class="pmk-field pmk-field--wide" name="pmk_f_customer">
+                  <label for="customer"/>
+                  <field name="customer" nolabel="1" placeholder="На какой объект"/>
+                </div>
               </div>
-              <div class="pmk-kpi__card">
-                <div class="pmk-kpi__label">Вес деталей, кг</div>
-                <div class="pmk-kpi__value"><field name="total_mass_net_kg"/></div>
-              </div>
-              <div class="pmk-kpi__note">
-                <span>Размеров:</span><field name="total_positions"/>
-                <span class="pmk-kpi__dot">·</span>
-                <span>Зонтов, шт:</span><field name="total_qty"/>
+              <div class="pmk-kpi">
+                <div class="pmk-kpi__card">
+                  <div class="pmk-kpi__label">Лист 1250, пог. м</div>
+                  <div class="pmk-kpi__value"><field name="total_sheet_1250_m"/></div>
+                </div>
+                <div class="pmk-kpi__card">
+                  <div class="pmk-kpi__label">Вес деталей, кг</div>
+                  <div class="pmk-kpi__value"><field name="total_mass_net_kg"/></div>
+                </div>
+                <div class="pmk-kpi__note">
+                  <span>Размеров:</span><field name="total_positions"/>
+                  <span class="pmk-kpi__dot">·</span>
+                  <span>Зонтов, шт:</span><field name="total_qty"/>
+                </div>
               </div>
             </div>
           </div>
@@ -68,20 +77,36 @@
             <!-- Ширины заданы: без них свободное место уходит самой длинной
                  колонке, а цвет и металл обрезались до «RAL 8017 …» и «Лист
                  оцинкованный …» — без толщины. Лапки и клёпки — в меню
-                 колонок и в окне размера. -->
+                 колонок и в окне размера.
+                 Подписи колонок — в одну строку (разбор UX, шаг 52,
+                 11.10.2026: «наименования столбцов перестанут переноситься»).
+                 Короткие слова, а не широкие колонки: таблица должна влезать
+                 в 1280 px (ноутбук 1920 при 150 %) без прокрутки вбок.
+                 Бюджет: 1280 − 32 (поля) − 2 (рамка) − 17 (полоса прокрутки
+                 Windows) = 1229; колонки 985 + ручка 20 + корзина 12 +
+                 поля ячеек 8 × 16 + 12 + 8 + 8 + 12 = 1185.
+                 «Ширина, мм» / «Длина, мм» — «шахты» есть в окне размера.
+                 Итоги строки (количество × на один зонт) — со словом «всего»:
+                 «Лист 1250, пог. м» и «Вес деталей, кг» — это расход на ОДИН
+                 зонт (окно размера) и итоги заказа (карточки в шапке); тем же
+                 словом в колонке строку приняли бы за один зонт и умножили бы
+                 на количество ещё раз. Ширина в виде — без полей ячейки (ядро
+                 добавляет их само), проверка — tests/test_step52_flat.py. -->
             <list editable="bottom" decoration-danger="spec_error">
               <field name="sequence" widget="handle"/>
-              <field name="width" width="90px"/>
-              <field name="length" width="90px"/>
+              <field name="width" string="Ширина, мм" width="95px"/>
+              <field name="length" string="Длина, мм" width="95px"/>
               <field name="coating_id" width="150px" placeholder="Выберите цвет"
                      options="{'no_create': True, 'no_open': True}"/>
               <field name="sheet_id" width="190px" options="{'no_create': True, 'no_open': True}"/>
-              <field name="qty" width="80px" sum="Зонтов"/>
+              <field name="qty" width="110px" sum="Зонтов"/>
               <field name="hood_label" string="Зонт" width="125px" readonly="1"/>
               <field name="lapki" readonly="1" optional="hide"/>
               <field name="klepki" readonly="1" optional="hide"/>
-              <field name="total_sheet_1250_m" readonly="1" sum="Лист 1250"/>
-              <field name="total_mass_net_kg" readonly="1" sum="Вес"/>
+              <field name="total_sheet_1250_m" string="Лист всего, пог. м" width="125px"
+                     readonly="1" sum="Лист 1250"/>
+              <field name="total_mass_net_kg" string="Вес всего, кг" width="95px"
+                     readonly="1" sum="Вес"/>
               <field name="spec_error" column_invisible="1"/>
               <field name="spec_json" column_invisible="1"/>
               <field name="sides_swapped" column_invisible="1"/>

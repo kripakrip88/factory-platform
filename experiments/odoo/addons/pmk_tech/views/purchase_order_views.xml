@@ -92,6 +92,31 @@
     </field>
   </record>
 
+  <!--
+    Плашки «Поставщик не выбран» и «Позиции на разнос» — в рамку шапки
+    (разбор UX, шаг 52, 11.10.2026). Рамку (div pmk_doc_top) ставит тема
+    видом с priority 990 — после вида выше (100), поэтому плашки остались бы
+    над рамкой, отдельно от номера. Наследник вида темы применяется сразу за
+    ним и переносит их внутрь, перед номером — как было до шага. Без темы
+    pmk_tech не ставится (pmk_orders зависит от pmk_theme).
+    ⚠️ ОТКАТ шага 52 — эту запись убирать В ТОЙ ЖЕ выкладке, что и файл
+    pmk_theme/views/step52_doc_top.xml из манифеста темы: иначе ссылка
+    inherit_id на исчезнувший вид темы роняет -u pmk_tech
+    («External ID not found»).
+  -->
+  <record id="purchase_order_form_pmk_tech_doc_top" model="ir.ui.view">
+    <field name="name">purchase.order.form.pmk.tech.doc.top</field>
+    <field name="model">purchase.order</field>
+    <field name="inherit_id" ref="pmk_theme.view_purchase_order_form_doc_top"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="/form/sheet/div[@name='pmk_doc_top']/div[hasclass('oe_title')]" position="before">
+        <xpath expr="/form/sheet/div[@name='pmk_no_supplier']" position="move"/>
+        <xpath expr="/form/sheet/div[@name='pmk_pending_lines']" position="move"/>
+      </xpath>
+    </field>
+  </record>
+
   <!-- «Заказы поставщикам»: отбор «Заявки на металл» рядом со штатными. -->
   <record id="purchase_order_filter_pmk_tech" model="ir.ui.view">
     <field name="name">purchase.order.search.rfq.pmk.tech</field>

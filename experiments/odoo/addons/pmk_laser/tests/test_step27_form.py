@@ -85,7 +85,8 @@ class TestLaserJobFormStep27(TransactionCase):
 
     def test_signals_one_row(self):
         arch = self._form()
-        sheet = arch.find("sheet")
+        # Верх формы — в рамке шапки (разбор UX, шаг 52).
+        sheet = arch.find("sheet/div[@name='pmk_doc_top']")
         self.assertFalse(sheet.xpath("./div[contains(concat(' ', @class, ' '), ' alert ')]"),
                          "Абзацы-плашки над группами заменены строкой сигналов.")
         rows = sheet.xpath("./div[@class='pmk-job-signals']")

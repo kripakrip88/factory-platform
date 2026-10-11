@@ -2947,3 +2947,212 @@ $pmk-aside-pair: $pmk-sheet-max + $pmk-aside-max + $pmk-sheet-inset;
     display: none !important;
   }
 }
+
+// ═══ Шаг 52: плоско на бежевом — шапка и состав документа в рамках (разбор UX, 11.10.2026) ═══
+//
+// Антон, заказ вентзонтов ВЗ-00002: «мне очень нравится, как ты состав
+// обернул в рамку тонкую с скруглениями» (.pmk-prow__wrap, pmk_calc
+// dobor_builder.scss) → «данные и кнопки документа обернуть в подобную
+// отдельную парящую рамку» и «состав документа: убрать белую подложку,
+// которая выходит за рамку, — состав можно будет подрастянуть, наименования
+// столбцов перестанут переноситься». Решения 06.10 по макету «плоско на
+// бежевом» (v3): шапка — всё, что выше вкладок, — в рамке r10, отступ 16 до
+// вкладок; содержимое вкладки — белой рамкой r10 в 12 от ярлыков; во
+// вкладке одна таблица — рамка самой таблицы, двойной нет; карточки итогов
+// белые; фон страницы бежевый (#F5F3EE, theme_nexus) остаётся.
+//
+// БЫЛО. Белый лист .o_form_sheet — карточка чужой темы (theme_nexus,
+// forms.scss: nx-card, r18, тень, padding 26/30 !important), таблица в нём —
+// ещё одна рамка r18 с полями 4 px (lists.scss). Лист выступал за рамку
+// таблицы на ~34 px с каждой стороны (плюс поля подложки 16). Строка кнопок
+// (.o_form_statusbar) — отдельной белой полосой над листом во всю подложку.
+//
+// СТАЛО — только у форм с обёрткой шапки <div class="pmk-doc-top"
+// name="pmk_doc_top"> (разметка вида, не скрипт): свои документы — в своих
+// видах (pmk_calc, pmk_cut, pmk_laser, pmk_orders), штатные (сделка,
+// счёт покупателю, заявка на металл, клиент, задача) —
+// views/step52_doc_top.xml. Остальные формы — белым листом, как раньше.
+//   52.1 лист прозрачный и без полей — под ним бежевый фон страницы;
+//   52.2 шапка — белая карточка в рамке состава (1 px, --pmk-border /
+//        #e3e4e8), r10, поля 16/20, отступ 16 до вкладок или таблицы;
+//   52.3 строка кнопок — верх той же карточки: край по карточке, черта
+//        снизу — разделитель внутри одной рамки. Прилипла при прокрутке —
+//        своя рамка со всех сторон (класс shadow-sm ядра). Между строкой и
+//        листом плашки (счёт: редакция, «КП изменился» — pmk_orders) —
+//        строка отдельной карточкой над ними. Строки в листе нет (шаг 48,
+//        от 1200 px она в строке пути) — карточка шапки со своей рамкой;
+//   52.4 вкладки — ярлыки на фоне, содержимое — карточкой; одна таблица во
+//        вкладке — без карточки, рамка таблицы; схема «Связи» (pmk_flow) —
+//        без своей рамки внутри карточки;
+//   52.5 таблицы документа — по краю карточек (поля 4 и -16 сверху сняты),
+//        рамка состава, r10, крайние ячейки — 12 px от рамки. Ширину листа
+//        (~68 px) получает таблица: ядро раздаёт свободное место колонкам
+//        поровну. Подписи колонок вентзонтов — в виде (pmk_calc, ширины);
+//        перенос подписей шага 24 не трогаем — длинные по-прежнему
+//        переносятся, а не режутся;
+//   52.6 карточки итогов — r10 (две меры: 6 — кнопки и поля, 10 — таблицы и
+//        карточки). Белые они уже (раздел «Шапка документа» выше).
+//
+// ГДЕ НЕ ДЕЙСТВУЕТ. Только @media screen от 768 px и только формы основного
+// окна (.o_action_manager): окна-диалоги (лид из почты, окно позиции)
+// рисуются вне него, телефон (<768) — штатной раскладкой ядра, печать — без
+// правок (КП — отчёт QWeb). Шаги 48 (строка пути), 49 (лист до 1800, лента
+// по краям карточки — поля подложки 16 не меняются), 49Б и 31 (кнопка
+// этапа) — не трогаем: правила висят на листе и его детях, не на подложке.
+//
+// ТЁМНАЯ ТЕМА. Цвета — переменные словаря dark.scss (--pmk-surface,
+// --pmk-border; в светлой их нет — работает запасное значение), поэтому
+// пара приходит сама; явные правила — dark.scss, «Шаг 52 — тёмная пара»
+// (вендорская тёмная тема красит лист, строку кнопок и таблицы с !important).
+//
+// ⚠️ БЕЗ min()/max()/calc() — libsass Odoo роняет весь бандл (11.10 на
+// копии). Переменные с !default: раздел компилируется и отдельно (тест).
+// ⚠️ :has() не вкладываем в :has() — браузер такое правило отбрасывает.
+//
+// ОТКАТ: удалить раздел (и тёмную пару) — обёртка без стилей ничего не
+// меняет; или убрать views/step52_doc_top.xml из манифеста — штатные формы
+// вернутся к листу. docs/disabled-features.md, раздел «шаг 52».
+
+$pmk-card-r: 10px !default;
+$pmk-card-pad-x: 20px !default;
+$pmk-card-gap: 16px !default;       // от карточки шапки до вкладок / таблицы
+$pmk-tabs-gap: 12px !default;       // от ярлыков вкладок до рамки содержимого
+$pmk-table-pad-x: 12px !default;    // крайние ячейки таблицы — от её рамки
+$pmk-card-bg: unquote("var(--pmk-surface, #fff)") !default;
+$pmk-card-line: unquote("var(--pmk-border, #e3e4e8)") !default;
+
+@media screen and (min-width: 768px) {
+
+  // ─── 52.1 Лист без белой подложки ───────────────────────────────────────
+  //
+  // Тема: .o_form_sheet { фон, рамка, r18, тень; padding: 26px 30px
+  // !important } (0,1,0), тёмная — body.o_nexus_dark .o_form_sheet { фон
+  // !important } (0,2,1). Здесь (0,5,0). Переменные ядра обнуляем: от них
+  // считаются отрицательные поля вкладок и таблицы (--Notebook-margin-x =
+  // -padding-x) — без этого ярлыки и таблица уехали бы за край на 24 px.
+  .o_action_manager .o_form_view .o_form_sheet_bg > .o_form_sheet:has(> .pmk-doc-top) {
+    --formView-sheet-padding-x: 0px;
+    --formView-sheet-padding-y: 0px;
+    padding: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  // ─── 52.2 Шапка документа — карточка ────────────────────────────────────
+  .o_action_manager .o_form_view .o_form_sheet > .pmk-doc-top {
+    margin: 0 0 $pmk-card-gap;
+    padding: 16px $pmk-card-pad-x 12px;
+    background: $pmk-card-bg;
+    border: 1px solid $pmk-card-line;
+    border-radius: $pmk-card-r;
+  }
+
+  // Форма без вкладок и таблиц («Заказ в работе») — под карточкой пусто.
+  .o_action_manager .o_form_view .o_form_sheet > .pmk-doc-top:last-child {
+    margin-bottom: 0;
+  }
+
+  // ─── 52.3 Строка кнопок — верх той же карточки ──────────────────────────
+  //
+  // Ядро: margin-inline на всю подложку (-16 px) и фон страницы; тема:
+  // белая с чертой снизу (!important), тёмная — угольная (!important).
+  // Здесь край по карточке шапки, тот же фон и рамка. Вес (0,6,0).
+  .o_action_manager .o_form_view .o_form_sheet_bg:has(> .o_form_sheet > .pmk-doc-top) > .o_form_statusbar {
+    margin-inline: 0;
+    margin-bottom: 8px;
+    padding-inline: $pmk-card-pad-x !important;
+    background: $pmk-card-bg !important;
+    border: 1px solid $pmk-card-line !important;
+    border-radius: $pmk-card-r;
+  }
+
+  // Строка вплотную к листу — шов: сверху скругление строки, снизу —
+  // карточки; черта снизу строки — разделитель внутри рамки. Вес тот же
+  // (0,6,0), правило ниже — выигрывает.
+  .o_action_manager .o_form_view .o_form_sheet_bg > .o_form_statusbar:has(+ .o_form_sheet > .pmk-doc-top) {
+    margin-bottom: 0;
+    border-radius: $pmk-card-r $pmk-card-r 0 0;
+  }
+
+  .o_action_manager .o_form_view .o_form_sheet_bg > .o_form_statusbar + .o_form_sheet > .pmk-doc-top {
+    border-top: 0;
+    border-radius: 0 0 $pmk-card-r $pmk-card-r;
+  }
+
+  // Прилипла при прокрутке (ядро: класс shadow-sm, isStatusbarStickyPinned) —
+  // плывёт над содержимым своей карточкой.
+  .o_action_manager .o_form_view .o_form_sheet_bg > .o_form_statusbar.shadow-sm:has(+ .o_form_sheet > .pmk-doc-top) {
+    border-radius: $pmk-card-r;
+  }
+
+  // ─── 52.4 Вкладки: ярлыки на фоне, содержимое — карточкой ───────────────
+  .o_action_manager .o_form_view .o_form_sheet:has(> .pmk-doc-top) > .o_notebook {
+    margin-top: 0;
+
+    // Ядро: .o_notebook .nav { фон листа } — на бежевом белая полоса.
+    > .o_notebook_headers .nav {
+      background-color: transparent;
+    }
+
+    // Ядро: > .tab-content { черта снизу }, > .tab-pane { поля 16 сверху и
+    // снизу } — у карточки свои поля.
+    > .o_notebook_content {
+      margin-top: $pmk-tabs-gap;
+      padding: 16px $pmk-card-pad-x;
+      background: $pmk-card-bg;
+      border: 1px solid $pmk-card-line;
+      border-radius: $pmk-card-r;
+
+      > .tab-pane {
+        padding: 0;
+      }
+    }
+
+    // Во вкладке одна таблица («Состав», строки счёта без итогов…) — рамкой
+    // служит сама таблица: карточки нет, двойной рамки нет. Только таблица
+    // (x2many_list): плитки (контакты клиента) — в карточке.
+    > .o_notebook_content:has(> .tab-pane > .o_field_widget:only-child > .o_field_x2many_list) {
+      padding: 0;
+      background: transparent;
+      border: 0;
+      border-radius: 0;
+    }
+
+    // Схема «Связи» (pmk_flow) — в карточке вкладки без своей рамки.
+    // Отдельная страница схемы (o_pmk_flow--page) — со своей.
+    .o_pmk_flow:not(.o_pmk_flow--page) .o_pmk_flow_scroll {
+      border: 0;
+      border-radius: 0;
+    }
+  }
+
+  // ─── 52.5 Таблицы документа — по краю карточек ──────────────────────────
+  //
+  // Тема: .o_list_renderer { рамка #eae6dc, r18, margin 4 px }, тёмная —
+  // рамка с !important (0,2,1). Ядро: первой таблице вкладки — margin-top
+  // -16 px и крайние ячейки от --Notebook-padding-x (0,9,0) — после 52.1 это
+  // 0, текст лёг бы на рамку. Поэтому !important.
+  .o_action_manager .o_form_view .o_form_sheet:has(> .pmk-doc-top) .o_field_x2many_list > .o_list_renderer {
+    --ListRenderer-table-padding-x: #{$pmk-table-pad-x} !important;
+    margin: 0 !important;
+    border: 1px solid $pmk-card-line !important;
+    border-radius: $pmk-card-r;
+  }
+
+  // ─── 52.6 Карточки итогов — скругление 10 ──────────────────────────────
+  .o_action_manager .o_form_view .o_form_sheet > .pmk-doc-top .pmk-kpi__card {
+    border-radius: $pmk-card-r;
+  }
+
+  // ─── 52.7 Заголовок раздела во всю ширину группы — по отступу карточки ──
+  // Группа полей — строка сетки с отрицательными полями (−16 px), и линия
+  // раздела во всю её ширину («Прайсы» у клиента) выходила за отступ
+  // карточки вкладки почти до рамки; раньше это прятал отступ белого листа.
+  .o_action_manager .o_form_view .o_form_sheet:has(> .pmk-doc-top) .o_notebook_content .o_group.row > .o_horizontal_separator {
+    width: calc(100% - 32px);
+    margin-inline: 16px;
+    padding-inline: 0;
+  }
+}

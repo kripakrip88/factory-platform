@@ -61,3 +61,12 @@ from . import test_step49b_aside
 from . import test_step53_hidden
 from . import test_step53_words
 from . import test_step59_tasks
+# Плоско на бежевом (шаг 52): шапка документа одной рамкой со строкой кнопок,
+# лист без белой подложки, вкладка карточкой, таблица своей рамкой; раздел в
+# конце живых forms_nexus.scss и dark.scss, обёртка шапки — разметкой вида
+# (views/step52_doc_top.xml и виды pmk_calc, pmk_cut, pmk_laser, pmk_orders,
+# pmk_tech). Вместе с соседями, чьи тесты смотрят на верх листа:
+#   odoo -d pmk52_test -i pmk_theme,pmk_deal,pmk_org,pmk_tech,pmk_cut,pmk_laser,theme_nexus --test-enable \
+#        --test-tags /pmk_theme:TestStep52Flat,/pmk_theme:TestStep49bAside,/pmk_theme:TestStep49Width,/pmk_theme:TestHeaderStep48,/pmk_theme:TestDarkPairsStep40,/pmk_theme:TestStep39Words,/pmk_deal,/pmk_org,/pmk_laser,/pmk_tech \
+#        --stop-after-init --http-port 8099
+from . import test_step52_flat

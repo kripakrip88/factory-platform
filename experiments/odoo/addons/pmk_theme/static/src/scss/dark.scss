@@ -1424,3 +1424,31 @@ $pmk-dark-alerts: (
     color: var(--pmk-tone-yellow-ink);
   }
 }
+
+// ═══ Шаг 52: плоско на бежевом — тёмная пара (11.10.2026) ════════════════════
+// Светлые правила — forms_nexus.scss, раздел «Шаг 52». Цвета там уже из
+// словаря (раздел 0): --pmk-surface (#1e2025) — карточки, --pmk-border
+// (#33363d) — рамки; фон страницы под прозрачным листом — угольный фон темы.
+// Здесь та же пара явно и сильнее вендорской тёмной темы: она красит
+// строку кнопок (body.o_nexus_dark .o_form_statusbar, угольный 2,
+// !important) и рамки таблиц (rgba белого 0,08, !important) с весом
+// (0,2,1); у правил ниже (0,7,1) и выше. Карточки итогов в тёмной —
+// --pmk-surface-2 на --pmk-surface (раздел «Карточки итогов»): плитка
+// светлее карточки шапки, как белая с рамкой на белом в светлой.
+@media screen and (min-width: 768px) {
+
+  body.o_nexus_dark .o_action_manager .o_form_view .o_form_sheet > .pmk-doc-top,
+  body.o_nexus_dark .o_action_manager .o_form_view .o_form_sheet:has(> .pmk-doc-top) > .o_notebook > .o_notebook_content:not(:has(> .tab-pane > .o_field_widget:only-child > .o_field_x2many_list)) {
+    background: var(--pmk-surface);
+    border-color: var(--pmk-border);
+  }
+
+  body.o_nexus_dark .o_action_manager .o_form_view .o_form_sheet_bg:has(> .o_form_sheet > .pmk-doc-top) > .o_form_statusbar {
+    background: var(--pmk-surface) !important;
+    border-color: var(--pmk-border) !important;
+  }
+
+  body.o_nexus_dark .o_action_manager .o_form_view .o_form_sheet:has(> .pmk-doc-top) .o_field_x2many_list > .o_list_renderer {
+    border-color: var(--pmk-border) !important;
+  }
+}

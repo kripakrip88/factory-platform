@@ -539,7 +539,9 @@ class TestStep58Org(TransactionCase):
 
     def test_deal_form_field_under_manager(self):
         arch = self._arch("crm.lead")
-        deal = arch.xpath("/form/sheet/group/group[label[@for='date_deadline']]")[0]
+        # Шаг 52 (pmk_theme): поля шапки — в рамке pmk_doc_top, без темы — в листе.
+        deal = arch.xpath("(/form/sheet | /form/sheet/div[@name='pmk_doc_top'])"
+                          "/group/group[label[@for='date_deadline']]")[0]
         names = [f.get("name") for f in deal.findall("field")]
         self.assertEqual(names[names.index("user_id") + 1], "pmk_org_id")
         lead_group = arch.xpath("//group[@name='lead_partner']")[0]

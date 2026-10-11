@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Шапка документа — одной рамкой (разбор UX, шаг 52 «плоско на бежевом»,
+    11.10.2026). Антон: «данные и кнопки документа обернуть в подобную
+    [составу] отдельную парящую рамку»; «состав документа: убрать белую
+    подложку, которая выходит за рамку».
+
+    Что делаем РАЗМЕТКОЙ (решение 06.10: не скриптом): всё, что у штатной
+    формы стоит в листе выше вкладок (заголовок, плашки, поля шапки),
+    переносим (position="move", не копия — xpath соседей и поля остаются
+    одни) в <div class="pmk-doc-top" name="pmk_doc_top">. Рамку, снятие
+    белого листа и рамки вкладок рисует forms_nexus.scss, раздел «Шаг 52»:
+    по этой обёртке (.o_form_sheet:has(> .pmk-doc-top)). Формы без обёртки
+    выглядят как раньше — белым листом.
+
+    Свои документы (расчёт, доборка, вентзонты, раскрой, задание лазеру,
+    «Заказ в работе») несут обёртку в своих видах (pmk_calc, pmk_cut,
+    pmk_laser, pmk_orders). Здесь — штатные: сделка и лид, счёт покупателю,
+    заявка на металл (заказ поставщику), клиент, задача.
+
+    Почему priority 990: наследники применяются по (priority, id), и наши
+    модули ставят узлы абсолютными путями (/form/sheet/group… — pmk_deal,
+    pmk_org; плашки pmk_tech — перед oe_title, priority 101). Перенос — после
+    всех них; плашки pmk_tech переносит её собственный наследник этого вида
+    (pmk_tech/views/purchase_order_views.xml). Вкладки (/form/sheet/notebook
+    — pmk_flow, pmk_orders) не переносим. Кнопки-счётчики (button_box — в
+    строку пути), ленты web_ribbon (стоят поверх листа) и невидимые поля
+    остаются в листе.
+
+    active в XML — грабли Odoo 19 (выключенный вид не проверяется).
+    ВЕРНУТЬ: в ОДНОЙ выкладке (обёртка без стилей ничего не меняет, а
+    стили без обёртки не срабатывают):
+      1) убрать этот файл из __manifest__.py pmk_theme;
+      2) убрать запись purchase_order_form_pmk_tech_doc_top из
+         pmk_tech/views/purchase_order_views.xml — она наследует
+         view_purchase_order_form_doc_top.
+    Только п. 1 ломает выкладку: при обновлении темы вид удаляется с
+    _force_unlink и каскадом сносит наследника pmk_tech
+    (base/models/ir_ui_view.py, unlink), а его запись в pmk_tech ссылается
+    на исчезнувший pmk_theme.view_purchase_order_form_doc_top — -u pmk_tech
+    падает «External ID not found». Список — docs/disabled-features.md,
+    раздел «шаг 52».
+  -->
+
+  <!-- Сделка и лид: заголовок, поля шапки, свойства. -->
+  <record id="view_crm_lead_form_doc_top" model="ir.ui.view">
+    <field name="name">crm.lead.form.pmk.doc.top</field>
+    <field name="model">crm.lead</field>
+    <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+    <field name="priority">990</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="/form/sheet/notebook" position="before">
+        <div class="pmk-doc-top" name="pmk_doc_top"/>
+      </xpath>
+      <xpath expr="/form/sheet/div[@name='pmk_doc_top']" position="inside">
+        <xpath expr="/form/sheet/div[hasclass('oe_title')]" position="move"/>
+        <xpath expr="/form/sheet/group[1]" position="move"/>
+        <xpath expr="/form/sheet/div[field[@name='lead_properties']]" position="move"/>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- Счёт покупателю: «Заблокировано», номер, поля шапки. Плашки до листа
+       (редакция, «КП изменился» — pmk_orders) стоят над листом и остаются
+       там: ядро кладёт их между строкой кнопок и листом. -->
+  <record id="view_sale_order_form_doc_top" model="ir.ui.view">
+    <field name="name">sale.order.form.pmk.doc.top</field>
+    <field name="model">sale.order</field>
+    <field name="inherit_id" ref="sale.view_order_form"/>
+    <field name="priority">990</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="/form/sheet/notebook" position="before">
+        <div class="pmk-doc-top" name="pmk_doc_top"/>
+      </xpath>
+      <xpath expr="/form/sheet/div[@name='pmk_doc_top']" position="inside">
+        <xpath expr="/form/sheet/div[hasclass('badge')]" position="move"/>
+        <xpath expr="/form/sheet/div[hasclass('oe_title')]" position="move"/>
+        <xpath expr="/form/sheet/group[@name='sale_header']" position="move"/>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- Заявка на металл и заказ поставщику: «Заблокировано», номер, поля
+       шапки. Плашки «Нет поставщика» / «Ждут разноса» (pmk_tech) переносит
+       наследник в pmk_tech. -->
+  <record id="view_purchase_order_form_doc_top" model="ir.ui.view">
+    <field name="name">purchase.order.form.pmk.doc.top</field>
+    <field name="model">purchase.order</field>
+    <field name="inherit_id" ref="purchase.purchase_order_form"/>
+    <field name="priority">990</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="/form/sheet/notebook" position="before">
+        <div class="pmk-doc-top" name="pmk_doc_top"/>
+      </xpath>
+      <xpath expr="/form/sheet/div[@name='pmk_doc_top']" position="inside">
+        <xpath expr="/form/sheet/div[hasclass('badge')]" position="move"/>
+        <xpath expr="/form/sheet/div[hasclass('oe_title')]" position="move"/>
+        <xpath expr="/form/sheet/group[1]" position="move"/>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- Клиент: фото, название, вид, адрес и связь (блок mb8 ядра; вкладки
+       карточки — pmk_partner). Строки кнопок у карточки нет. -->
+  <record id="view_partner_form_doc_top" model="ir.ui.view">
+    <field name="name">res.partner.form.pmk.doc.top</field>
+    <field name="model">res.partner</field>
+    <field name="inherit_id" ref="base.view_partner_form"/>
+    <field name="priority">990</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="/form/sheet/notebook" position="before">
+        <div class="pmk-doc-top" name="pmk_doc_top"/>
+      </xpath>
+      <xpath expr="/form/sheet/div[@name='pmk_doc_top']" position="inside">
+        <xpath expr="/form/sheet/div[hasclass('mb8')]" position="move"/>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- Задача (штатная форма; «Заказ в работе» — своя форма pmk_orders):
+       название с приоритетом и состоянием, поля, свойства. -->
+  <record id="view_task_form2_doc_top" model="ir.ui.view">
+    <field name="name">project.task.form.pmk.doc.top</field>
+    <field name="model">project.task</field>
+    <field name="inherit_id" ref="project.view_task_form2"/>
+    <field name="priority">990</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="/form/sheet/notebook" position="before">
+        <div class="pmk-doc-top" name="pmk_doc_top"/>
+      </xpath>
+      <xpath expr="/form/sheet/div[@name='pmk_doc_top']" position="inside">
+        <xpath expr="/form/sheet/div[hasclass('justify-content-between')]" position="move"/>
+        <xpath expr="/form/sheet/group[1]" position="move"/>
+        <xpath expr="/form/sheet/field[@name='task_properties']" position="move"/>
+      </xpath>
+    </field>
+  </record>
+</odoo>
