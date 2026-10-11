@@ -509,11 +509,34 @@
 // ячеек. Отсюда префикс .pmk-prow у правил таблицы — чтобы свои отступы
 // не проигрывали по весу.
 
+// Вариант «В» (Антон 11.10.2026: «мне не нравится бежевая заливка»):
+// строка состава без заливки — фон как у строк списка, а сам состав —
+// белой карточкой в тонкой рамке под строкой изделия (.pmk-prow__wrap).
+// Общий стиль для «Расчёта металлопроката» и заказа вентзонтов.
 .pmk-prow > td {
-  background: var(--pmk-surface-2, #f7f5f0);
+  background: transparent;
   color: var(--pmk-ink, #14141a);
   border-top: 0;
   padding: 0 !important;
+}
+
+// Подсветка строки под курсором (Bootstrap table-hover: заливка через
+// --bs-table-bg-state и внутреннюю тень) красила всю строку состава серым —
+// карточка с рамкой терялась. У строки состава подсветки нет: это не запись.
+.o_list_renderer .o_list_table > tbody > tr.pmk-prow:hover > td,
+.o_list_renderer .o_list_table > tbody > tr.pmk-prow > td {
+  --bs-table-bg-state: transparent;
+  --bs-table-accent-bg: transparent;
+  box-shadow: none !important;
+  background-color: transparent !important;
+}
+
+// Тема Nexus красит под курсором саму строку (vendor/theme_nexus lists.scss:
+// «.o_list_table tbody tr:hover { background: … !important }»). Строке
+// состава — без этого; строкам деталей внутри карточки подсветка остаётся:
+// в расчёте по ним щёлкают для правки.
+.o_list_renderer .o_list_table > tbody > tr.pmk-prow:hover {
+  background: transparent !important;
 }
 
 // Кнопка, а не элемент с обработчиком: так строка доступна с клавиатуры и
@@ -550,7 +573,11 @@
 // Свёрнутый состав не прячется стилями, а отсутствует в разметке: пока он не
 // нужен, его незачем ни строить, ни держать в дереве доступности.
 .pmk-prow__wrap {
-  padding: 2px 16px 12px 30px;
+  margin: 0 16px 10px 30px;
+  padding: 8px 14px 10px;
+  border: 1px solid var(--pmk-border, #e3e4e8);
+  border-radius: 8px;
+  background: transparent;
 }
 
 // ─── Раздел состава ───────────────────────────────────────────────────────
@@ -872,4 +899,16 @@
   &.active {
     border-color: var(--pmk-ink, #16171b) !important;
   }
+}
+
+// Чередование строк состава (Антон 11.10.2026: «заливку строк через одну
+// немного темнее… удобно смотреть строки глазами и сверять»). Первая строка
+// tbody — заголовок (pmk-prow__headrow), поэтому затемняем 3-ю, 5-ю… —
+// вторую, четвёртую строку деталей. Нейтральный серый, не бежевый.
+.pmk-prow .pmk-prow__table > tbody > tr:nth-child(2n+3):not(.pmk-prow__headrow) > td {
+  background: var(--pmk-row-alt, #f4f5f7);
+}
+
+body.o_nexus_dark {
+  --pmk-row-alt: rgba(255, 255, 255, 0.045);
 }
