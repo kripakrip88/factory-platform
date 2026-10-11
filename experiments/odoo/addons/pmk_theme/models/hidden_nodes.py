@@ -235,6 +235,38 @@ STEP_Z9_NODES = {
     ),
 }
 
+# ─── Задача 262 (12.10.2026): карточка сотрудника — только нужное ───────
+# Антон: «Карточку сотрудников вообще можно сильно чистить, нужные поля по
+# мере необходимости включим». Остаются фото, ФИО, почта, телефоны, отдел,
+# должность, руководитель и пользователь (его на вкладку «Работа» переносит
+# views/t262_employee_form.xml). Прячется: «План запуска» и лента версий в
+# шапке, кнопки-счётчики, метки, «Свойства», компания, дубль должности
+# (job_id — «Job Position»), «Местоположение», «Обычное место работы»,
+# «Заметка», оргструктура, вкладки «Резюме», «Сертификаты» (hr_skills — тема
+# от него не зависит, поэтому здесь, а не наследником вида), «Личный»,
+# «Оплаты», «Настройки». Вернуть строку — убрать её; всё — группа
+# «Убранное (показать)». Таблица — docs/disabled-features.md, задача 262.
+T262_NODES = {
+    ("hr.employee", "form"): (
+        ("//header/button[@type='action']", REMOVED),
+        ("//header/field[@name='version_id']", REMOVED),
+        ("//div[@name='button_box']/button", REMOVED),
+        ("//h5[field[@name='category_ids']]", REMOVED),
+        ("//field[@name='employee_properties'][not(ancestor::field)]", REMOVED),
+        ("//page[@name='work_information']//field[@name='company_id']", REMOVED),
+        ("//page[@name='work_information']//field[@name='job_id']", REMOVED),
+        ("//page[@name='work_information']//group[@string='Location']", REMOVED),
+        ("//page[@name='work_information']//group[@string='Usual Work Location']", REMOVED),
+        ("//page[@name='work_information']//group[@name='note']", REMOVED),
+        ("//div[@id='o_employee_org_chart']", REMOVED),
+        ("//page[@name='resume']", REMOVED),
+        ("//page[@name='certification']", REMOVED),
+        ("//page[@name='personal_information']", REMOVED),
+        ("//page[@name='payroll_information']", REMOVED),
+        ("//page[@name='hr_settings']", REMOVED),
+    ),
+}
+
 # 'group_by': 'lead_properties' (и 'properties.<ключ>') в контексте фильтра.
 GROUP_BY = re.compile(r"""['"]group_by['"]\s*:\s*['"]([\w.]+)""")
 
@@ -254,7 +286,8 @@ class Base(models.AbstractModel):
     @api.model
     def _pmk_hide_nodes(self, arch, view_type):
         key = (self._name, view_type)
-        rules = HIDDEN_NODES.get(key, ()) + STEP_Z6_NODES.get(key, ()) + STEP_Z9_NODES.get(key, ())
+        rules = (HIDDEN_NODES.get(key, ()) + STEP_Z6_NODES.get(key, ()) + STEP_Z9_NODES.get(key, ())
+                 + T262_NODES.get(key, ()))
         for expr, group in rules:
             # Группа — одна или набор (ИЛИ, шаг З-6).
             groups = (group,) if isinstance(group, str) else tuple(group)

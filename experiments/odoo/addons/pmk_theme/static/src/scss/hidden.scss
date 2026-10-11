@@ -60,3 +60,17 @@ $pmk-no-send-models: "pmk.metal.spec", "pmk.dobor.order", "pmk.cut.plan", "pmk.l
 .o_field_phone_sms {
   display: none !important;
 }
+
+// Пустые распорки канбана — везде, а не только в формах (задача 262,
+// 12.10.2026: в «Сотрудниках» под тремя карточками — два ряда пустых белых
+// плашек). o_kanban_ghost — невидимые распорки Odoo для ровного последнего
+// ряда; чужая тема (theme_nexus kanban.scss, dark_mode.scss) красит
+// .o_kanban_record фоном, рамкой и тенью, не исключив их. Правило в формах
+// (forms_nexus.scss, «Пустые распорки канбана») доставало только до
+// вкладок форм. Место распорки держат — высоту и ширину не трогаем.
+.o_kanban_renderer .o_kanban_record.o_kanban_ghost,
+body.o_nexus_dark .o_kanban_renderer .o_kanban_record.o_kanban_ghost {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Задача 262 (12.10.2026): карточка сотрудника — только нужное. Прячет
+    лишнее models/hidden_nodes.py (T262_NODES, группа «Убранное»); здесь —
+    что ДОБАВЛЯЕТСЯ: «Пользователь» на вкладку «Работа» (вкладка «Настройки»,
+    где он был, спрятана) и подпись «Должность» у job_title (дубль job_id
+    «Job Position» спрятан — в канбане сотрудников под именем как раз
+    job_title). hr — зависимость темы, xpath по его узлам безопасен.
+    active в XML: вид-наследник с xpath на узлы ядра.
+  -->
+  <record id="view_employee_form_t262" model="ir.ui.view">
+    <field name="name">hr.employee.form.pmk.t262</field>
+    <field name="model">hr.employee</field>
+    <field name="inherit_id" ref="hr.view_employee_form"/>
+    <field name="priority">990</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//page[@name='work_information']//field[@name='job_title']" position="attributes">
+        <attribute name="string">Должность</attribute>
+      </xpath>
+      <xpath expr="//page[@name='work_information']//field[@name='parent_id']" position="after">
+        <field name="user_id" string="Пользователь" widget="many2one_avatar_user"
+               placeholder="Нет пользователя"/>
+      </xpath>
+    </field>
+  </record>
+</odoo>

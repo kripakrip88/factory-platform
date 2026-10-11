@@ -91,3 +91,4 @@ from . import test_step65_history
 # Правила без Odoo — node static/tests/history_step66.test.mjs.
 from . import test_step66_history_view
 from . import test_tracking_lang
+from . import test_t262_employees
