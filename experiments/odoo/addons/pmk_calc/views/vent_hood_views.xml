@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Вентзонт (11.10.2026): размер шахты, металл и цвет → спецификация и DXF
+    развёрток для лазера. Вся геометрия — в tools/vent_hood.py (генератор
+    Антона, перенесён как есть). Шапка тем же приёмом, что у доборки: поля
+    слева, плашки итогов справа (pmk-doc-head / pmk-kpi, pmk_theme).
+  -->
+  <record id="view_vent_hood_form" model="ir.ui.view">
+    <field name="name">pmk.vent.hood.form</field>
+    <field name="model">pmk.vent.hood</field>
+    <field name="arch" type="xml">
+      <form string="Вентзонт" class="pmk-doc-form">
+        <header>
+          <button name="action_download_dxf" type="object" string="Скачать DXF"
+                  class="btn-primary" icon="fa-download"
+                  invisible="not spec_json"/>
+          <field name="state" widget="statusbar" options="{'clickable': 1}"
+                 statusbar_visible="draft,confirmed,done"/>
+        </header>
+        <sheet>
+          <field name="spec_json" invisible="1"/>
+          <div class="oe_title">
+            <h1><field name="name" readonly="1"/></h1>
+            <field name="subtitle" class="text-muted" invisible="not subtitle"/>
+          </div>
+          <div class="alert alert-danger" role="alert" invisible="not spec_error">
+            <field name="spec_error"/>
+          </div>
+          <div class="alert alert-warning" role="status" invisible="not warnings_text">
+            <field name="warnings_text"/>
+          </div>
+          <div class="pmk-doc-head">
+            <div class="pmk-doc-head__fields">
+              <div class="pmk-field" name="pmk_f_partner">
+                <label for="partner_id"/>
+                <field name="partner_id" nolabel="1"/>
+              </div>
+              <div class="pmk-field" name="pmk_f_date">
+                <label for="order_date"/>
+                <field name="order_date" nolabel="1"/>
+              </div>
+              <div class="pmk-field pmk-field--wide" name="pmk_f_customer">
+                <label for="customer"/>
+                <field name="customer" nolabel="1" placeholder="На какой объект"/>
+              </div>
+              <div class="pmk-field" name="pmk_f_width">
+                <label for="width"/>
+                <field name="width" nolabel="1" required="1"/>
+              </div>
+              <div class="pmk-field" name="pmk_f_length">
+                <label for="length"/>
+                <field name="length" nolabel="1" required="1"/>
+              </div>
+              <div class="pmk-field" name="pmk_f_sheet">
+                <label for="sheet_id"/>
+                <field name="sheet_id" nolabel="1" required="1"
+                       options="{'no_create': True, 'no_open': True}"/>
+              </div>
+              <div class="pmk-field" name="pmk_f_coating">
+                <label for="coating_id"/>
+                <field name="coating_id" nolabel="1" required="1"
+                       options="{'no_create': True, 'no_open': True}"/>
+              </div>
+              <div class="pmk-field" name="pmk_f_qty">
+                <label for="qty"/>
+                <field name="qty" nolabel="1"/>
+              </div>
+            </div>
+
+            <div class="pmk-kpi">
+              <div class="pmk-kpi__card">
+                <div class="pmk-kpi__label">Лист 1250 всего, пог. м</div>
+                <div class="pmk-kpi__value"><field name="total_sheet_1250_m"/></div>
+              </div>
+              <div class="pmk-kpi__card">
+                <div class="pmk-kpi__label">Вес деталей всего, кг</div>
+                <div class="pmk-kpi__value"><field name="total_mass_net_kg"/></div>
+              </div>
+              <div class="pmk-kpi__note">
+                <span>Лапок:</span><field name="lapki"/>
+                <span class="pmk-kpi__dot">·</span>
+                <span>Клёпок:</span><field name="klepki"/>
+                <span class="pmk-kpi__dot">·</span>
+                <span>на один зонт</span>
+              </div>
+            </div>
+          </div>
+
+          <notebook>
+            <page string="Детали" name="parts">
+              <field name="spec_html" nolabel="1" readonly="1"
+                     invisible="not spec_json"/>
+              <p class="text-muted" invisible="spec_json or spec_error">
+                Впишите ширину и длину шахты — генератор покажет детали, лапки и клёпки.
+              </p>
+              <group invisible="not spec_json">
+                <group string="На один зонт">
+                  <field name="panels"/>
+                  <field name="layout"/>
+                  <field name="metal_net_m2"/>
+                  <field name="sheet_1250_m"/>
+                  <field name="mass_net_kg"/>
+                  <field name="mass_sheet_kg"/>
+                </group>
+                <group string="Как читать">
+                  <div colspan="2" class="text-muted">
+                    Расход листа 1250 — грубая оценка по простой раскладке без
+                    вложения деталей. Для закупки ориентир — «Металл нетто» и вес деталей.
+                    Лапка — пара отверстий Ø7, клёпка — отверстие Ø4.5 на крышке
+                    и паз 9×4.5 на теле.
+                  </div>
+                </group>
+              </group>
+            </page>
+          </notebook>
+        </sheet>
+        <chatter/>
+      </form>
+    </field>
+  </record>
+
+  <record id="view_vent_hood_list" model="ir.ui.view">
+    <field name="name">pmk.vent.hood.list</field>
+    <field name="model">pmk.vent.hood</field>
+    <field name="arch" type="xml">
+      <list string="Вентзонты" decoration-danger="spec_error">
+        <field name="name" width="105px"/>
+        <field name="order_date"/>
+        <field name="partner_id" optional="show" width="160px"/>
+        <field name="customer" optional="show"/>
+        <field name="hood_label" string="Размер" width="120px"/>
+        <field name="thickness" optional="show"/>
+        <field name="coating_id" optional="show"/>
+        <field name="qty"/>
+        <field name="total_sheet_1250_m" sum="Лист 1250, пог. м" optional="show"/>
+        <field name="total_mass_net_kg" sum="Итого, кг"/>
+        <field name="spec_error" column_invisible="1"/>
+        <field name="state" widget="badge" width="110px"
+               decoration-muted="state == 'draft'"
+               decoration-info="state == 'confirmed'"
+               decoration-success="state == 'done'"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="view_vent_hood_search" model="ir.ui.view">
+    <field name="name">pmk.vent.hood.search</field>
+    <field name="model">pmk.vent.hood</field>
+    <field name="arch" type="xml">
+      <search>
+        <field name="name" string="Номер"/>
+        <field name="partner_id" string="Клиент"/>
+        <field name="customer" string="Изделие / объект"/>
+        <field name="hood_label" string="Размер"/>
+        <filter name="draft" string="Черновики" domain="[('state', '=', 'draft')]"/>
+        <filter name="confirmed" string="В работе" domain="[('state', '=', 'confirmed')]"/>
+        <filter name="done" string="Изготовлены" domain="[('state', '=', 'done')]"/>
+        <separator/>
+        <filter name="open" string="Не изготовлены" domain="[('state', '!=', 'done')]"/>
+        <group>
+          <filter name="by_partner" string="Клиент" context="{'group_by': 'partner_id'}"/>
+          <filter name="by_state" string="Статус" context="{'group_by': 'state'}"/>
+          <filter name="by_date" string="Дата" context="{'group_by': 'order_date'}"/>
+        </group>
+      </search>
+    </field>
+  </record>
+
+  <record id="action_vent_hood" model="ir.actions.act_window">
+    <field name="name">Вентзонты</field>
+    <field name="res_model">pmk.vent.hood</field>
+    <field name="view_mode">list,form</field>
+    <field name="context">{'search_default_open': 1}</field>
+    <field name="help" type="html">
+      <p>По выбранным фильтрам вентзонтов нет.</p>
+      <p>Изготовленные — снимите фильтр «Не изготовлены». Новый зонт — кнопка «Новое».</p>
+    </field>
+  </record>
+</odoo>

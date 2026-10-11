@@ -21,3 +21,4 @@ access_pmk_paint_coating_user,pmk_paint_coating.user,model_pmk_paint_coating,bas
 access_pmk_paint_coating_mgr,pmk_paint_coating.mgr,model_pmk_paint_coating,base.group_system,1,1,1,1
 access_pmk_metal_pending_mgr,pmk.metal.pending.mgr,model_pmk_metal_pending,base.group_system,1,0,0,0
 access_pmk_metal_pending_bind_mgr,pmk.metal.pending.bind.mgr,model_pmk_metal_pending_bind,base.group_system,1,1,1,1
+access_pmk_vent_hood_user,pmk_vent_hood.user,model_pmk_vent_hood,base.group_user,1,1,1,1

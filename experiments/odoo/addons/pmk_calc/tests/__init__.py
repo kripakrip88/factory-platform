@@ -22,3 +22,4 @@ from . import test_step_z10_pending
 # (голым питоном: python3 addons/pmk_calc/tests/test_sheet_group.py).
 from . import test_sheet_group
 from . import test_step_z13
+from . import test_vent_hood

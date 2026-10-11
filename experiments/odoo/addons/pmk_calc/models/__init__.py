@@ -5,6 +5,8 @@ from . import metal_pending
 from . import metal_spec
 from . import dobor
 from . import dobor_report
+# 11.10.2026: вентзонты — генератор развёрток tools/vent_hood.py.
+from . import vent_hood
 from . import spec_layout
 # Шаг З-13: «Лист раскладки» — группа деталей одного листа и габарита.
 from . import spec_sheet_group

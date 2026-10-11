@@ -17,6 +17,10 @@
   <menuitem id="menu_pmk_calc_dobor" name="Доборные элементы"
             parent="menu_pmk_calc" action="action_dobor_order" sequence="20"/>
 
+  <!-- 11.10.2026: развёртки вентзонтов (генератор Антона, tools/vent_hood.py). -->
+  <menuitem id="menu_pmk_calc_vent_hood" name="Вентзонты"
+            parent="menu_pmk_calc" action="action_vent_hood" sequence="30"/>
+
   <menuitem id="menu_pmk_calc_reference" name="Справочники"
             parent="menu_pmk_calc" sequence="90"/>
 

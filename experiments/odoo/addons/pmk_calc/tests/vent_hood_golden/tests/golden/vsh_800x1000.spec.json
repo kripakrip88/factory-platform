@@ -1,0 +1,59 @@
+{
+ "hood": "вш 800х1000",
+ "material": {
+  "t_mm": null,
+  "coating": null,
+  "warnings": [
+   "толщина не задана — масса не считается"
+  ],
+  "name": "Лист оцинкованный",
+  "full_name": "Лист оцинкованный"
+ },
+ "parts": [
+  {
+   "name": "Крышка торцевая",
+   "size_mm": [
+    468.7,
+    1108.5
+   ],
+   "qty": 2,
+   "area_m2_each": 0.3018
+  },
+  {
+   "name": "Панель торцевая",
+   "size_mm": [
+    664.0,
+    1350.2
+   ],
+   "qty": 2,
+   "area_m2_each": 0.7195
+  }
+ ],
+ "lapki": 12,
+ "lapki_holes_d7": 24,
+ "klepki": 24,
+ "metal_net_m2": 2.043,
+ "metal_blanks_m2": 2.832,
+ "sheet_1250_m": 3.67,
+ "sheet_1250_m2": 4.58,
+ "sheet_layout": [
+  {
+   "what": "панель",
+   "across_mm": 664,
+   "along_mm": 1350
+  },
+  {
+   "what": "панель",
+   "across_mm": 664,
+   "along_mm": 1350
+  },
+  {
+   "what": "крышки ×2",
+   "across_mm": 1108,
+   "along_mm": 947
+  }
+ ],
+ "panels": 2,
+ "layout": "поперёк листа",
+ "rule_flags": []
+}

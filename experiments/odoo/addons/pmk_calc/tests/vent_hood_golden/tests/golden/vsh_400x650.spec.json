@@ -1,0 +1,54 @@
+{
+ "hood": "вш 400х650",
+ "material": {
+  "t_mm": 0.55,
+  "coating": null,
+  "warnings": [],
+  "name": "Лист оцинкованный",
+  "full_name": "Лист оцинкованный 0.55 мм"
+ },
+ "parts": [
+  {
+   "name": "Крышка торцевая",
+   "size_mm": [
+    316.0,
+    708.3
+   ],
+   "qty": 2,
+   "area_m2_each": 0.1384
+  },
+  {
+   "name": "Тело зонта",
+   "size_mm": [
+    950.0,
+    888.3
+   ],
+   "qty": 1,
+   "area_m2_each": 0.7013
+  }
+ ],
+ "lapki": 6,
+ "lapki_holes_d7": 12,
+ "klepki": 16,
+ "metal_net_m2": 0.978,
+ "metal_blanks_m2": 1.292,
+ "sheet_1250_m": 1.54,
+ "sheet_1250_m2": 1.93,
+ "sheet_layout": [
+  {
+   "what": "панель",
+   "across_mm": 950,
+   "along_mm": 888
+  },
+  {
+   "what": "крышки ×2",
+   "across_mm": 708,
+   "along_mm": 642
+  }
+ ],
+ "panels": 1,
+ "layout": "вдоль листа",
+ "rule_flags": [],
+ "mass_net_kg": 4.2,
+ "mass_sheet_kg": 8.3
+}
