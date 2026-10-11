@@ -44,7 +44,9 @@ class TestT262Employees(TransactionCase):
         self.assertNotIn("company_id", names)
         self.assertEqual(work.xpath(".//field[@name='job_title']")[0].get("string"), "Должность")
         self.assertFalse(arch.xpath("//div[@id='o_employee_org_chart']"))
-        self.assertFalse(arch.xpath("//header/field[@name='version_id']"))
+        self.assertFalse(arch.xpath("//header"), "пустая полоса шапки")
+        for gone in ("address_id", "work_location_id", "monday_location_id"):
+            self.assertNotIn(gone, names, "местоположение спрятано")
         self.assertFalse(arch.xpath("//div[@name='button_box']/button"))
         self.assertFalse(arch.xpath("//field[@name='category_ids']"))
 
@@ -55,6 +57,7 @@ class TestT262Employees(TransactionCase):
         self.assertIn("hr_settings", pages)
         self.assertIn("personal_information", pages)
         self.assertTrue(arch.xpath("//page[@name='work_information']//field[@name='job_id']"))
+        self.assertTrue(arch.xpath("//page[@name='work_information']//field[@name='address_id']"))
 
     def test_photo_goes_to_user_avatar(self):
         user = self.env["res.users"].create({"name": "Голубь Т262", "login": "t262_pigeon"})

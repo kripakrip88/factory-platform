@@ -248,15 +248,18 @@ STEP_Z9_NODES = {
 # «Убранное (показать)». Таблица — docs/disabled-features.md, задача 262.
 T262_NODES = {
     ("hr.employee", "form"): (
-        ("//header/button[@type='action']", REMOVED),
-        ("//header/field[@name='version_id']", REMOVED),
+        # Шапку целиком: без кнопок и версии от неё оставалась пустая
+        # белая полоса над листом.
+        ("//header", REMOVED),
         ("//div[@name='button_box']/button", REMOVED),
         ("//h5[field[@name='category_ids']]", REMOVED),
         ("//field[@name='employee_properties'][not(ancestor::field)]", REMOVED),
         ("//page[@name='work_information']//field[@name='company_id']", REMOVED),
         ("//page[@name='work_information']//field[@name='job_id']", REMOVED),
-        ("//page[@name='work_information']//group[@string='Location']", REMOVED),
-        ("//page[@name='work_information']//group[@string='Usual Work Location']", REMOVED),
+        # Группы — по полю внутри, не по подписи: подпись к этому моменту уже
+        # переведена («Местоположение»), и string='Location' не находился.
+        ("//page[@name='work_information']//group[field[@name='address_id']]", REMOVED),
+        ("//page[@name='work_information']//group[field[@name='monday_location_id']]", REMOVED),
         ("//page[@name='work_information']//group[@name='note']", REMOVED),
         ("//div[@id='o_employee_org_chart']", REMOVED),
         ("//page[@name='resume']", REMOVED),
