@@ -88,21 +88,21 @@ class TestVentHood(TransactionCase):
     def test_several_sizes_totals(self):
         order = self._order({"width": 750, "length": 4000, "qty": 2},
                             {"width": 1000, "length": 1200, "qty": 3},
-                            {"width": 1200, "length": 900})
+                            {"width": -100, "length": 900})
         self.assertTrue(order.name.startswith("ВЗ-"))
         good = order.line_ids.filtered("spec_json")
         self.assertEqual(len(good), 2)
         self.assertEqual(order.total_positions, 3)
         self.assertEqual(order.total_qty, 6)
-        self.assertTrue(order.has_errors, "Ш > Д — ошибка видна на заказе.")
+        self.assertTrue(order.has_errors, "Невозможный размер — ошибка видна на заказе.")
         self.assertAlmostEqual(order.total_mass_net_kg,
                                sum(l.mass_net_kg * l.qty for l in good), places=3)
         self.assertAlmostEqual(order.total_sheet_1250_m,
                                sum(l.sheet_1250_m * l.qty for l in good), places=3)
 
-    def test_width_over_length_is_error_not_drawing(self):
-        line = self._order({"width": 1200, "length": 900}).line_ids
-        self.assertIn("поменяйте местами", line.spec_error)
+    def test_bad_size_is_error_not_drawing(self):
+        line = self._order({"width": -100, "length": 900}).line_ids
+        self.assertIn("> 0", line.spec_error)
         self.assertFalse(line.spec_json)
         self.assertFalse(line.drawing_png)
         with self.assertRaises(UserError):
@@ -143,7 +143,7 @@ class TestVentHood(TransactionCase):
     def test_download_all_zip(self):
         order = self._order({"width": 750, "length": 4000},
                             {"width": 600, "length": 2400, "coating_id": self.ral.id},
-                            {"width": 1200, "length": 900})
+                            {"width": -100, "length": 900})
         order.action_download_all()
         att = self.env["ir.attachment"].search([("res_model", "=", order._name),
                                                 ("res_id", "=", order.id)])
@@ -155,21 +155,21 @@ class TestVentHood(TransactionCase):
             "%s_сборка.xlsx" % order.name]),
             "Размер с ошибкой в архив не попадает.")
         with self.assertRaises(UserError):
-            self._order({"width": 1200, "length": 900}).action_download_all()
+            self._order({"width": -100, "length": 900}).action_download_all()
 
     def test_open_line_and_name(self):
-        order = self._order({"width": 750, "length": 4000}, {"width": 1200, "length": 900})
+        order = self._order({"width": 750, "length": 4000}, {"width": -100, "length": 900})
         good, bad = order.line_ids.sorted("id")
         action = good.action_open_line()
         self.assertEqual((action["res_id"], action["target"]), (good.id, "new"))
         self.assertEqual(good.display_name, "вш 750х4000")
-        self.assertEqual(bad.display_name, "Размер 1200×900")
+        self.assertEqual(bad.display_name, "Размер -100×900")
 
     def test_assembly_xlsx(self):
         import openpyxl
         order = self._order({"width": 750, "length": 4000, "qty": 2, "coating_id": self.ral.id},
                             {"width": 1000, "length": 1000, "qty": 3},
-                            {"width": 1200, "length": 900})
+                            {"width": -100, "length": 900})
         order.partner_id = self.env["res.partner"].create({"name": "Тест Сборка"})
         order.action_download_assembly()
         att = self.env["ir.attachment"].search([("res_model", "=", order._name),
@@ -198,7 +198,7 @@ class TestVentHood(TransactionCase):
         self.assertEqual(total[4], 5)
         self.assertEqual(total[10], sum(l.lapki * l.qty for l in good))
         self.assertEqual(total[12], sum(l.klepki * l.qty for l in good))
-        self.assertTrue(any(str(v).startswith("Не вошёл: Размер 1200×900") for v in flat))
+        self.assertTrue(any(str(v).startswith("Не вошёл: Размер -100×900") for v in flat))
         merged = [str(m) for m in ws.merged_cells.ranges]
         top = rows.index(hoods[0]) + 1
         self.assertIn("B%d:B%d" % (top, top + 2), merged, "Зонт — одна ячейка на высоту деталей.")
@@ -208,6 +208,23 @@ class TestVentHood(TransactionCase):
                                                     ("name", "=like", "%.zip")])
         self.assertIn("%s_сборка.xlsx" % order.name,
                       zipfile.ZipFile(io.BytesIO(zip_att.raw)).namelist())
+
+    def test_sides_swapped_automatically(self):
+        line = self._order({"width": 1200, "length": 900}).line_ids
+        self.assertEqual((line.width, line.length), (900, 1200))
+        self.assertTrue(line.sides_swapped)
+        self.assertFalse(line.spec_error)
+        self.assertEqual(line.hood_label, "вш 900х1200")
+        line.write({"length": 1500})
+        self.assertEqual((line.width, line.length), (900, 1500))
+        self.assertFalse(line.sides_swapped, "Ввели как надо — отметки нет.")
+        line.write({"width": 2000})
+        self.assertEqual((line.width, line.length, line.sides_swapped), (1500, 2000, True))
+        square = self._order({"width": 1000, "length": 1000}).line_ids
+        self.assertFalse(square.sides_swapped)
+        draft = self.env["pmk.vent.hood"].new({"width": 1300, "length": 1100})
+        draft._onchange_sides()
+        self.assertEqual((draft.width, draft.length, draft.sides_swapped), (1100, 1300, True))
 
     def test_change_size_recomputes(self):
         line = self._order({"width": 750, "length": 4000}).line_ids

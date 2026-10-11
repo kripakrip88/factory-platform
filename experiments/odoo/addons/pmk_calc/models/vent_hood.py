@@ -299,10 +299,53 @@ class VentHood(models.Model):
     # он целиком следует из размера, толщины и цвета.
     drawing_png = fields.Binary("Чертёж заготовок", compute="_compute_drawing")
 
+    # Конёк зонта всегда вдоль длинной стороны шахты (так сделаны все 25
+    # шаблонов КОМПАС; решение Антона 11.10.2026: другого зонта не бывает),
+    # и генератор принимает «вш Ш×Д» только с Ш ≤ Д. Шахта 1200×900 — та же
+    # шахта, что 900×1200: стороны переставляем сами, генератор не трогаем.
+    sides_swapped = fields.Boolean(
+        "Стороны переставлены",
+        help="Ввели ширину больше длины — меньшая сторона поставлена первой: "
+             "конёк идёт вдоль длинной стороны.")
+
     def _default_sheet(self):
         return self.env["pmk.metal.sheet"].search(
             [("sheet_type", "=", "Оцинкованный"), ("thickness_mm", "=", STANDARD_THICKNESS)],
             limit=1).id
+
+    @staticmethod
+    def _vh_sides(vals, width, length):
+        """vals с меньшей стороной в «Ширине» (и отметкой), если ввели наоборот."""
+        if width and length and 0 < length < width:
+            return dict(vals, width=length, length=width, sides_swapped=True)
+        if "width" in vals or "length" in vals:
+            return dict(vals, sides_swapped=False)
+        return vals
+
+    @api.onchange("width", "length")
+    def _onchange_sides(self):
+        for rec in self:
+            if rec.width and rec.length and 0 < rec.length < rec.width:
+                rec.width, rec.length = rec.length, rec.width
+                rec.sides_swapped = True
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        vals_list = [self._vh_sides(vals, vals.get("width"), vals.get("length"))
+                     for vals in vals_list]
+        return super().create(vals_list)
+
+    def write(self, vals):
+        if "width" not in vals and "length" not in vals:
+            return super().write(vals)
+        for rec in self:
+            fixed = self._vh_sides(dict(vals), vals.get("width", rec.width),
+                                   vals.get("length", rec.length))
+            if vals.get("sides_swapped") and not fixed.get("sides_swapped"):
+                # Отметку поставил onchange в форме (стороны уже переставлены).
+                fixed["sides_swapped"] = True
+            super(VentHood, rec).write(fixed)
+        return True
 
     # ── генератор ────────────────────────────────────────────────────────
 

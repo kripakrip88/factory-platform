@@ -83,6 +83,7 @@
               <field name="total_mass_net_kg" readonly="1" sum="Вес"/>
               <field name="spec_error" column_invisible="1"/>
               <field name="spec_json" column_invisible="1"/>
+              <field name="sides_swapped" column_invisible="1"/>
               <button name="action_open_line" type="object" icon="fa-search-plus"
                       title="Детали и чертёж" string="Детали" invisible="not id"/>
               <button name="action_download_dxf" type="object" icon="fa-download"
@@ -111,9 +112,14 @@
         </header>
         <sheet>
           <field name="spec_json" invisible="1"/>
+          <field name="sides_swapped" invisible="1"/>
           <field name="subtitle" class="text-muted" invisible="not subtitle"/>
           <div class="alert alert-danger" role="alert" invisible="not spec_error">
             <field name="spec_error"/>
+          </div>
+          <div class="alert alert-info" role="status" invisible="not sides_swapped">
+            Ширину ввели больше длины — меньшая сторона поставлена первой: конёк зонта
+            идёт вдоль длинной стороны шахты. Шахта та же.
           </div>
           <div class="alert alert-warning" role="status" invisible="not warnings_text">
             <field name="warnings_text"/>
