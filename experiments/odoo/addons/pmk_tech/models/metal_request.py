@@ -575,6 +575,22 @@ class MetalSpecRequest(models.Model):
         return tasks
 
     # ─── Лента ──────────────────────────────────────────────────────────
+    @staticmethod
+    def _pmk_request_line_cells(name):
+        """Строка заявки «Двутавр 12Б2 — 28,84 м, ≈ 3 хлыста по 12 м, 300 кг»
+        → («Двутавр 12Б2», «28,84 м, ≈ 3 хлыста по 12 м», «300 кг»). Лист:
+        «Лист гладкий 10 мм, 1500 × 6000 — 2 листа, 1,4 т» → (…, «2 листа»,
+        «1,4 т»). Другой вид — всё в «Позицию», остальное «—»."""
+        name = (name or "").strip()
+        if " — " not in name:
+            return name or "—", "—", "—"
+        what, rest = name.split(" — ", 1)
+        if ", " in rest:
+            qty, weight = rest.rsplit(", ", 1)
+        else:
+            qty, weight = rest, "—"
+        return what.strip() or "—", qty.strip() or "—", weight.strip() or "—"
+
     def _pmk_log_request(self, rows, notes, res, tasks):
         self.ensure_one()
         items = []
@@ -586,14 +602,23 @@ class MetalSpecRequest(models.Model):
             else:
                 verb = _("без изменений")
             lines = order.order_line.filtered("pmk_request_key")
-            what = Markup("; ").join(escape(line.name or "") for line in lines)
-            items.append(Markup("<li>%s, %s (%s): %s</li>") % (
-                order._get_html_link(), order.partner_id.display_name, verb, what))
+            # 12.10.2026 (Антон про историю: «огромный кусок текста»): по
+            # заявке — заголовок и таблица «Позиция | Количество | Вес», по
+            # строке на позицию, вместо одного абзаца через «;».
+            rows_html = Markup("").join(
+                Markup("<tr><td>%s</td><td>%s</td><td>%s</td></tr>") % self._pmk_request_line_cells(line.name)
+                for line in lines)
+            items.append(Markup(
+                "<p><b>%s · %s</b> (%s)</p>"
+                "<table class=\"pmk-hist-table pmk-note-table\"><thead><tr><th>%s</th><th>%s</th><th>%s</th></tr></thead>"
+                "<tbody>%s</tbody></table>") % (
+                order._get_html_link(), order.partner_id.display_name, verb,
+                _("Позиция"), _("Количество"), _("Вес"), rows_html))
         if not rows:
             body = Markup("<p>%s</p>") % _(
                 "Заявка на металл: металла в расчёте нет — заказывать нечего.")
         else:
-            body = Markup("<p>%s</p><ul>%s</ul>") % (
+            body = Markup("<p>%s</p>%s") % (
                 _("Заявка на металл — черновики закупок по поставщикам:"),
                 Markup("").join(items))
         extra = []
