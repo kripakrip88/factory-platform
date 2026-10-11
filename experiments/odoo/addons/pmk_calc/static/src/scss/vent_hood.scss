@@ -66,54 +66,8 @@ body.o_nexus_dark {
   }
 }
 
-// ─── 11.10.2026: стрелка в строке, чередование зонтов ─────────────────────
-// Стрелка состава — в ячейке «Зонт» (vent_hood_lines.xml,
-// VentHoodRecordRow); отдельной строки «Состав: …» под зонтом больше нет.
-.pmk-vh-chev {
-  display: inline-flex;
-  align-items: center;
-  margin: 0 4px 0 -4px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--pmk-ink-3, #6b6f76);
-  cursor: pointer;
-
-  &:hover { color: var(--pmk-ink, #14141a); }
-
-  &:focus-visible {
-    outline: 2px solid var(--pmk-ink, #14141a);
-    outline-offset: 2px;
-    border-radius: 4px;
-  }
-}
-
+// ─── 11.10.2026: стрелка в строке и чередование — общие с расчётом ─────────
+// (.pmk-row-chev, .pmk-row-alt — dobor_builder.scss). Здесь только своё.
 .pmk-vh-row .pmk-vh-row__error {
   margin-left: 30px;
-}
-
-// Каждый второй зонт — вместе со строкой своего состава — чуть темнее, тем же
-// серым, что строки деталей (--pmk-row-alt, dobor_builder.scss). Фон — у
-// строки tr: подсветка под курсором темы (Nexus, tr:hover !important) так и
-// работает. Строка состава под курсором не подсвечивается
-// (dobor_builder.scss), но свой серый держит. Карточка состава — белая.
-// У ячеек строки свой белый фон (тема), он закрывал серый фон tr — серый
-// кладём на ячейки; под курсором ячейки прозрачные, и видна подсветка строки.
-// Только на ячейках: в тёмной теме серый полупрозрачный, и на строке плюс
-// ячейке он ложился дважды — первая ячейка (ручка) выходила другого тона.
-.o_list_renderer .o_list_table > tbody > tr.o_data_row.pmk-vh-alt > td {
-  background-color: var(--pmk-row-alt, #f4f5f7) !important;
-}
-
-.o_list_renderer .o_list_table > tbody > tr.o_data_row.pmk-vh-alt:hover > td {
-  background-color: transparent !important;
-}
-
-.o_list_renderer .o_list_table > tbody > tr.pmk-prow.pmk-vh-alt,
-.o_list_renderer .o_list_table > tbody > tr.pmk-prow.pmk-vh-alt:hover {
-  background-color: var(--pmk-row-alt, #f4f5f7) !important;
-}
-
-.pmk-vh-alt .pmk-prow__wrap {
-  background: var(--pmk-surface, #fff);
 }

@@ -8,19 +8,14 @@
   -->
   <t t-name="pmk_calc.ProductRows" t-inherit="web.ListRenderer.Rows" t-inherit-mode="primary">
     <xpath expr="//t[@t-call='{{ constructor.recordRowTemplate }}']" position="after">
-      <tr class="pmk-prow">
+      <!-- 11.10.2026 (Антон: строка «Состав: N деталей» под каждым изделием
+           «занимает слишком много места»): переключатель — стрелкой в ячейке
+           «Изделие» (pmk_calc.ProductRecordRow ниже), строка состава — только
+           раскрытая. Чередование изделий — класс pmk-row-alt. -->
+      <tr t-if="isOpen(record)" class="pmk-prow" t-att-class="{'pmk-row-alt': rowAlt(record)}">
         <td t-att-colspan="compositionColspan">
 
-          <!-- Кнопка, а не строка с обработчиком: так переключатель доступен
-               с клавиатуры и читается как переключатель. -->
-          <button type="button" class="pmk-prow__toggle" t-att-aria-expanded="isOpen(record)"
-                  t-on-click.stop.prevent="() => this.toggleComposition(record)">
-            <i class="fa fa-fw" t-att-class="isOpen(record) ? 'fa-angle-down' : 'fa-angle-right'"/>
-            <t t-if="countLines(record)">Состав: <t t-esc="linesLabel(record)"/></t>
-            <t t-else="">Состав не заполнен</t>
-          </button>
-
-          <div t-if="isOpen(record)" class="pmk-prow__wrap">
+          <div class="pmk-prow__wrap">
 
             <t t-foreach="compositionSections(record)" t-as="section" t-key="section.mode">
               <div class="pmk-prow__section" t-attf-style="--pmk-accent:{{ section.accent }}">
@@ -153,4 +148,22 @@
     </xpath>
   </t>
 
+
+  <!-- Стрелка состава и число деталей — в ячейке «Изделие». .stop: щелчок по
+       стрелке не открывает окно изделия; по числу — открывает, как раньше
+       по ячейке. -->
+  <t t-name="pmk_calc.ProductRecordRow" t-inherit="web.ListRenderer.RecordRow" t-inherit-mode="primary">
+    <xpath expr="//td[hasclass('o_data_cell')][@t-att-name='column.name']/t[@t-if='!isInvisible']" position="before">
+      <button t-if="column.name === 'name'" type="button" class="pmk-row-chev"
+              t-att-aria-expanded="isOpen(record)"
+              t-att-title="isOpen(record) ? 'Свернуть состав' : (countLines(record) ? 'Состав: ' + linesLabel(record) : 'Состав не заполнен — раскрыть, чтобы добавить детали')"
+              t-on-click.stop.prevent="() => this.toggleComposition(record)">
+        <i class="fa fa-fw" t-att-class="isOpen(record) ? 'fa-angle-down' : 'fa-angle-right'"/>
+      </button>
+    </xpath>
+    <xpath expr="//td[hasclass('o_data_cell')][@t-att-name='column.name']/t[@t-if='!isInvisible']" position="after">
+      <span t-if="column.name === 'name'" class="pmk-row-count"
+            t-esc="countLines(record) ? linesLabel(record).replace('деталей', 'дет.').replace('детали', 'дет.').replace('деталь', 'дет.') : 'состав пуст'"/>
+    </xpath>
+  </t>
 </templates>

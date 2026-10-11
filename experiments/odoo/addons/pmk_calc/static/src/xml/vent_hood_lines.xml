@@ -9,7 +9,7 @@
   <t t-name="pmk_calc.VentHoodRows" t-inherit="web.ListRenderer.Rows" t-inherit-mode="primary">
     <xpath expr="//t[@t-call='{{ constructor.recordRowTemplate }}']" position="after">
       <tr t-if="(record.data.spec_json and isOpen(record)) or record.data.spec_error"
-          class="pmk-prow pmk-vh-row" t-att-class="{'pmk-vh-alt': vhAlt(record)}">
+          class="pmk-prow pmk-vh-row" t-att-class="{'pmk-row-alt': vhAlt(record)}">
         <td t-att-colspan="vhColspan">
           <span t-if="record.data.spec_error" class="pmk-vh-row__error">
             <i class="fa fa-exclamation-circle"/> Размер не подходит: <t t-esc="record.data.spec_error"/>
@@ -79,7 +79,7 @@
   <t t-name="pmk_calc.VentHoodRecordRow" t-inherit="web.ListRenderer.RecordRow" t-inherit-mode="primary">
     <xpath expr="//td[hasclass('o_data_cell')][@t-att-name='column.name']/t[@t-if='!isInvisible']" position="before">
       <button t-if="column.name === 'hood_label' and record.data.spec_json" type="button"
-              class="pmk-vh-chev" t-att-aria-expanded="isOpen(record)"
+              class="pmk-row-chev" t-att-aria-expanded="isOpen(record)"
               t-att-title="isOpen(record) ? 'Свернуть состав' : 'Состав: ' + vhLabel(record)"
               t-on-click.stop.prevent="() => this.toggle(record)">
         <i class="fa fa-fw" t-att-class="isOpen(record) ? 'fa-angle-down' : 'fa-angle-right'"/>

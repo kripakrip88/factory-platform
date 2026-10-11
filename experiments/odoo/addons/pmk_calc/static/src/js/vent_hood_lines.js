@@ -75,7 +75,7 @@ export class VentHoodLinesRenderer extends ListRenderer {
      * строки состава вклиниваются между строками зонтов.
      */
     getRowClass(record) {
-        return `${super.getRowClass(record)} ${this.vhAlt(record) ? "pmk-vh-alt" : ""}`;
+        return `${super.getRowClass(record)} ${this.vhAlt(record) ? "pmk-row-alt" : ""}`;
     }
 
     vhAlt(record) {

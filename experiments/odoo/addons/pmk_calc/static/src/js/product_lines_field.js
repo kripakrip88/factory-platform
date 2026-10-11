@@ -160,6 +160,8 @@ const relName = (value) => {
 
 export class ProductLinesRenderer extends ListRenderer {
     static rowsTemplate = "pmk_calc.ProductRows";
+    // Стрелка состава — в ячейке «Изделие» (11.10.2026), см. шаблон.
+    static recordRowTemplate = "pmk_calc.ProductRecordRow";
     static components = { ...ListRenderer.components, Field };
 
     setup() {
@@ -447,6 +449,15 @@ export class ProductLinesRenderer extends ListRenderer {
      */
     get getEmptyRowIds() {
         return [];
+    }
+
+    /** Чередование изделий (11.10.2026): каждое второе — вместе с составом — темнее. */
+    getRowClass(record) {
+        return `${super.getRowClass(record)} ${this.rowAlt(record) ? "pmk-row-alt" : ""}`;
+    }
+
+    rowAlt(record) {
+        return this.props.list.records.indexOf(record) % 2 === 1;
     }
 
     get compositionColspan() {
