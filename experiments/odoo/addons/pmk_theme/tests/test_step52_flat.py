@@ -15,7 +15,7 @@
   • правило вне @media screen и (min-width: 768px) — задело телефон или
     печать; правило без .o_action_manager — задело окна-диалоги; правило без
     pmk-doc-top — задело формы без обёртки шапки;
-  • min()/max()/calc() — libsass Odoo роняет весь бандл; :has() в :has() —
+  • min()/max() — libsass Odoo роняет весь бандл (calc() — можно, им пользуется и ядро); :has() в :has() —
     браузер отбрасывает правило; яркий лайм;
   • правило слабее чужой темы (лист, строка кнопок, рамка таблицы — с
     !important) или ядра (отрицательные поля вкладки и таблицы);
@@ -62,6 +62,8 @@ TAB_BARE = TAB_CARD + ONE_TABLE
 FLOW = NOTEBOOK + " .o_pmk_flow:not(.o_pmk_flow--page) .o_pmk_flow_scroll"
 TABLE = AM + ".o_form_sheet:has(> .pmk-doc-top) .o_field_x2many_list > .o_list_renderer"
 KPI = AM + ".o_form_sheet > .pmk-doc-top .pmk-kpi__card"
+# 52.7 (осмотр 11.10): линия раздела во всю ширину группы — по отступу карточки.
+SEPARATOR = AM + ".o_form_sheet:has(> .pmk-doc-top) .o_notebook_content .o_group.row > .o_horizontal_separator"
 
 DARK = "body.o_nexus_dark "
 CARD_BG = "var(--pmk-surface, #fff)"
@@ -157,7 +159,7 @@ class TestStep52Flat(TransactionCase):
             with self.subTest(path=path):
                 self.assertEqual(code.count("@media"), 1)
                 self.assertIn(MEDIA, code)
-                for banned in ("min(", "max(", "calc(", "grid-column", "grid-template-columns",
+                for banned in ("min(", "max(", "grid-column", "grid-template-columns",
                                "white-space", "rgb", "hsl"):
                     self.assertNotIn(banned, code, "libsass и сетка формы — грабли (см. раздел).")
                 lower = code.lower()
@@ -171,7 +173,7 @@ class TestStep52Flat(TransactionCase):
         rules = _rules(_media_blocks(css, MEDIA))
         self.assertEqual(set(rules), {SHEET, TOP, TOP + ":last-child", BAR, BAR_SEAM, TOP_SEAM, BAR_PINNED,
                                       NOTEBOOK, NOTEBOOK + " > .o_notebook_headers .nav", TAB_CARD,
-                                      TAB_CARD + " > .tab-pane", TAB_BARE, FLOW, TABLE, KPI})
+                                      TAB_CARD + " > .tab-pane", TAB_BARE, FLOW, TABLE, KPI, SEPARATOR})
         for selector in rules:
             with self.subTest(selector=selector):
                 self.assertTrue(selector.startswith(".o_action_manager "), "Только основное окно, не диалоги.")
@@ -191,6 +193,8 @@ class TestStep52Flat(TransactionCase):
         self.assertEqual(rules[BAR_SEAM], {"margin-bottom": "0", "border-radius": "10px 10px 0 0"})
         self.assertEqual(rules[TOP_SEAM], {"border-top": "0", "border-radius": "0 0 10px 10px"})
         self.assertEqual(rules[BAR_PINNED], {"border-radius": "10px"})
+        self.assertEqual(rules[SEPARATOR], {"width": "calc(100% - 32px)", "margin-inline": "16px",
+                                            "padding-inline": "0"})
         self.assertEqual(rules[TAB_CARD]["margin-top"], "12px", "12 от ярлыков вкладок.")
         self.assertEqual(rules[TAB_CARD]["border"], CARD_LINE)
         self.assertEqual(rules[TAB_BARE], {"padding": "0", "background": "transparent", "border": "0",
