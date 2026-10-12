@@ -27,8 +27,6 @@ RUNNER = os.path.join(MODULE_DIR, "runner.py")
 # до ~25 мин. Предел с запасом; дольше — процесс завис.
 TIMEOUT = timedelta(minutes=45)
 NO_PID_GRACE = timedelta(minutes=2)
-# Пояс Хабаровска: см. runner.py — без него пакет 1.0.0 бракует все программы.
-RUN_TZ = "Asia/Vladivostok"
 
 
 def _alive(pid):
@@ -144,7 +142,7 @@ class VentNestJob(models.Model):
 
     @staticmethod
     def _env(workdir):
-        return dict(os.environ, TZ=RUN_TZ, TMPDIR=os.path.join(workdir, "tmp"),
+        return dict(os.environ, TMPDIR=os.path.join(workdir, "tmp"),
                     OMP_NUM_THREADS="2", PYTHONDONTWRITEBYTECODE="1")
 
     @classmethod

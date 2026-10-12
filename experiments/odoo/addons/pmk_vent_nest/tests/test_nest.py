@@ -3,7 +3,7 @@
 
 Сквозной тест гоняет настоящий пакет раскроя тем же runner.py и в том же окружении,
 что и боевой запуск (только ждёт процесс на месте). Он же ловит ошибку часового пояса
-пакета 1.0.0: без TZ в окружении все программы выходили «не выдавать».
+пакета 1.0.0 (в контейнере в UTC все программы выходили «не выдавать»).
 """
 import json
 import os
@@ -78,7 +78,7 @@ class TestVentNest(TransactionCase):
         build._launch(sync=True)
         self.assertEqual(build.state, "done", build.error)
         res = json.loads(build.result_json)
-        self.assertFalse(res["rejected"], "программа прошла самопроверку (часовой пояс задан)")
+        self.assertFalse(res["rejected"], "программа прошла самопроверку (в т.ч. пояс контейнера UTC)")
         att = self.env["ir.attachment"].search([("res_model", "=", order._name), ("res_id", "=", order.id),
                                                 ("name", "like", ".lxds")])
         self.assertEqual(len(att), 1)
