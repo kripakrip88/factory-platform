@@ -117,6 +117,15 @@ class TestDoborCut(TransactionCase):
         self.assertEqual((report.model, report.report_name), ("pmk.dobor.order", "pmk_calc.report_dobor_cut"))
         self.assertTrue(order.action_print_cut())
 
+    def test_print_ready_blanks(self):
+        order = self.env["pmk.dobor.order"].create({"cut_source": "coil", "line_ids": [Command.create({
+            "title": "Узкая", "coating_id": self.coating.id, "sheet_id": self.sheet.id,
+            "plank_length": 1250.0, "qty": 3, "profile_snapshot_json": json.dumps({
+                "start": {"x": 0, "y": 0}, "segs": [{"len": 100, "dir": 0}, {"len": 50, "dir": 90}]})})]})
+        html = str(order._cut_print_html())
+        self.assertIn("готовая заготовка с бухты 1250 × 150 мм, шт: 3", html)
+        self.assertIn("Заказать у поставщика с бухты 1250: 150 × 3", html)
+
     def test_plank_over_2500_forbidden(self):
         with self.assertRaises(ValidationError):
             self._order(length=2600.0)

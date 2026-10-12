@@ -178,8 +178,15 @@ class DoborOrderCutPrint(models.Model):
             out.append('<table class="pos"><thead><tr><th>№</th><th>Доборка</th><th>Заготовка, мм '
                        '(развёртка × длина)</th><th>Шт</th></tr></thead><tbody>%s</tbody></table>' % "".join(rows))
             for i, card in enumerate(v["maps"], 1):
-                head = "Карта %d — лист 1250 × %d мм%s" % (
-                    i, card["length"], (", листов: %d" % card["count"]) if card["count"] > 1 else "")
+                bands = card["bands"]
+                ready = (len(bands) == 1 and len(bands[0]["items"]) == 1
+                         and bands[0]["used"] >= C.SHEET_W - 0.5 and card["length"] - bands[0]["L"] < 1)
+                if ready:
+                    head = "Карта %d — готовая заготовка с бухты 1250 × %g мм, шт: %d" % (
+                        i, card["length"], card["count"])
+                else:
+                    head = "Карта %d — лист 1250 × %g мм%s" % (
+                        i, card["length"], (", листов: %d" % card["count"]) if card["count"] > 1 else "")
                 steps = "".join("<li>%s</li>" % escape(s) for s in C.card_steps(card))
                 out.append('<div class="card"><div class="card-head">%s<span class="box"></span></div>%s'
                            '<ol class="steps">%s</ol></div>' % (
