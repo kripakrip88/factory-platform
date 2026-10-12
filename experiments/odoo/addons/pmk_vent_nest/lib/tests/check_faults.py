@@ -491,6 +491,14 @@ def P30_other_machine_ulp():
     return all(out), "совпало при шуме: %s" % out
 
 
+def P31_one_generator():
+    """Генератор один: пакет берёт pmk_calc/tools/vent_hood.py (калькулятор ERP), а не свою копию; свес — его параметр."""
+    from vent_nesting import hood_sves as HS
+    p = os.path.normpath(HS.GENERATOR_PATH)
+    ok = p.endswith(os.path.join("pmk_calc", "tools", "vent_hood.py")) and os.path.isfile(p) and HS.hood(500, 1000, sves=140)["sves"] == 140
+    return ok, p
+
+
 CHECKS = [v for k, v in sorted(globals().items()) if re.match(r"P\d\d[a-z]?_", k)]
 SLOW = {"P14b_peak_memory"}
 
