@@ -108,8 +108,9 @@ class PmkMoysklad(models.AbstractModel):
             raise UserError("Нет токена МоегоСклада: системный параметр pmk_moysklad.token.")
         url = API + path
         if params:
+            # Фильтр — кодировать целиком («>=», «:», пробел), иначе МойСклад отвечает 400.
             url += ("&" if "?" in url else "?") + urllib.parse.urlencode(
-                params, safe=">=<:,;", quote_via=urllib.parse.quote)  # пробел — %20, не «+»
+                params, safe=",", quote_via=urllib.parse.quote)
         for attempt in range(6):
             req = urllib.request.Request(url, headers={
                 "Authorization": "Bearer " + token, "Accept-Encoding": "gzip"})
