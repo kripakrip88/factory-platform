@@ -12,6 +12,7 @@
         <header>
           <button name="action_print_sheet" type="object" string="Печать листа"
                   class="btn-primary" icon="fa-print"/>
+          <button name="action_print_cut" type="object" string="Печать раскроя" icon="fa-th-large"/>
           <!-- statusbar_visible — путь стадий для кнопки-выпадашки темы
                (деления и галочки пройденных, разбор UX, шаг 4). -->
           <field name="state" widget="statusbar" options="{'clickable': 1}"

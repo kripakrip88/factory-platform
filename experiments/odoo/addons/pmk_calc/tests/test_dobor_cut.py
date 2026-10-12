@@ -48,8 +48,19 @@ class TestDoborCut(TransactionCase):
         self.assertEqual(len(r["stock"]["maps"][0]["bands"]), 2)
 
     def test_coil_length_step_50(self):
-        r = C.plan([(300, 1230, "№1", 1)], 5.0)
-        self.assertEqual(r["coil"]["lengths_mm"], [1250.0])
+        r = C.plan([(300, 2230, "№1", 1)], 5.0)
+        self.assertEqual(r["coil"]["lengths_mm"], [2250.0])
+
+    def test_short_plank_across_sheet(self):
+        """Планка 1250 = ширина листа: рубится сразу поперёк полосой 150 × 1250, без отхода
+        по ширине (Антон 12.10.2026). С бухты — ровно 150 мм на штуку."""
+        self.assertEqual(C.orient(150, 1250), (1250, 150))
+        self.assertEqual(C.orient(166, 2000), (166, 2000), "длиннее 1250 — только вдоль")
+        r = C.plan([(150, 1250, "№3", 10)], 5.0)
+        self.assertEqual(r["coil"]["lengths"], "1500")
+        self.assertEqual(r["coil"]["util_pct"], 100.0)
+        steps = C.card_steps(r["coil"]["maps"][0])
+        self.assertEqual(steps, ["Полоса 150 мм поперёк листа — сразу заготовка №3 (150×1250) — 10 раз"])
 
     def test_limits(self):
         with self.assertRaises(C.CutError):
@@ -80,6 +91,17 @@ class TestDoborCut(TransactionCase):
         self.assertIn("№1", html)
         order.cut_source = "coil"
         self.assertIn('class="pmk-cut-chosen"><th>С бухты', str(order.cut_html))
+
+    def test_print_bw(self):
+        order = self._order()
+        html = str(order._cut_print_html())
+        self.assertIn("Раскрой листа · %s" % order.name, html)
+        self.assertIn("Карта 1", html)
+        self.assertIn("Лента 2000 мм поперёк листа", html)
+        self.assertIn("<svg", html)
+        for colour in ("#dfe9c4", "#f3f1ec", "#5d6b2a"):
+            self.assertNotIn(colour, html, "печать чёрно-белая — без цветных заливок")
+        self.assertEqual(order.action_print_cut()["report_name"], "pmk_calc.report_dobor_cut")
 
     def test_plank_over_2500_forbidden(self):
         with self.assertRaises(ValidationError):
