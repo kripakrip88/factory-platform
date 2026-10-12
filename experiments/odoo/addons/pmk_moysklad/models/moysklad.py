@@ -97,7 +97,8 @@ class PmkMoysklad(models.AbstractModel):
     @api.model
     def _ms_commit(self):
         """Перенос «за всё время» — тысячи записей: фиксируем по частям. В тестах нельзя."""
-        if not getattr(threading.current_thread(), "testing", False):
+        if not (self.env.context.get("pmk_ms_no_commit")
+                or getattr(threading.current_thread(), "testing", False)):
             self.env.cr.commit()
 
     @api.model

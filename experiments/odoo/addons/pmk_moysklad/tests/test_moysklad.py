@@ -76,7 +76,7 @@ class TestMoysklad(TransactionCase):
         self.assertEqual(ms.lead_days("15-20 рабочих дней"), 20)
 
     def test_sync_all(self):
-        report = self.env["pmk.moysklad"].sync_all(full=True)
+        report = self.env["pmk.moysklad"].with_context(pmk_ms_no_commit=True).sync_all(full=True)
         self.assertEqual(report, {"partners": 1, "invoices": 3, "demands": 1})
         Order = self.env["sale.order"].with_context(active_test=False)
         o1 = Order.search([("pmk_ms_id", "=", "i-1")])
@@ -101,14 +101,14 @@ class TestMoysklad(TransactionCase):
         self.assertFalse(o3.pmk_ms_note)
         self.assertEqual(o3.state, "cancel")
         # Повторный прогон — обновляет, не дублирует.
-        self.env["pmk.moysklad"].sync_all(full=True)
+        self.env["pmk.moysklad"].with_context(pmk_ms_no_commit=True).sync_all(full=True)
         self.assertEqual(Order.search_count([("pmk_ms_id", "!=", False)]), 3)
         self.assertEqual(self.env["res.partner"].search_count([("pmk_ms_id", "=", "c-1")]), 1)
         # Поиск счёта по клиенту — для «Заказов в работе».
         self.assertIn(o1, Order.search([("display_name", "ilike", "Тест МойСклад")]))
 
     def test_tech_spec_from_ms_invoice(self):
-        self.env["pmk.moysklad"].sync_all(full=True)
+        self.env["pmk.moysklad"].with_context(pmk_ms_no_commit=True).sync_all(full=True)
         order = self.env["sale.order"].search([("pmk_ms_id", "=", "i-1")])
         action = order.action_pmk_tech_spec()
         tech = self.env["pmk.metal.spec"].browse(action["res_id"])
