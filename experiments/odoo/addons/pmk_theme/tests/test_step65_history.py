@@ -455,7 +455,8 @@ class TestStep65History(TransactionCase):
                 later = source.find("// ═══", start + 1)
                 while later != -1:
                     head = source[later:later + 80]
-                    self.assertTrue("Шаг 66" in head or "Шаг 67" in head,
+                    step = re.search(r"Шаг (\d+)", head)
+                    self.assertTrue(step and int(step.group(1)) > 65,
                                     "Ниже шага 65 — только разделы новее него: %s" % head)
                     later = source.find("// ═══", later + 1)
                 self.assertLess(source.index("// ═══ Шаг 52"), start)

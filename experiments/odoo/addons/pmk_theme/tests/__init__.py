@@ -93,3 +93,4 @@ from . import test_step66_history_view
 from . import test_tracking_lang
 from . import test_t262_employees
 from . import test_t265_chrome_tabs
+from . import test_t266_wide

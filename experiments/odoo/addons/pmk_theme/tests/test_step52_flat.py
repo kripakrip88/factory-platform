@@ -151,9 +151,9 @@ class TestStep52Flat(TransactionCase):
                 later = source.find("// ═══", start + 1)
                 while later != -1:
                     head = source[later:later + 80]
+                    step = re.search(r"Шаг (\d+)", head)
                     self.assertTrue(
-                        "Лента документа в рамке" in head or "Шаг 65" in head or "Шаг 66" in head
-                        or "Шаг 67" in head,
+                        "Лента документа в рамке" in head or (step and int(step.group(1)) > 52),
                         "Ниже шага 52 — только разделы новее него: %s" % head)
                     later = source.find("// ═══", later + 1)
         forms = _read(FORMS_SCSS)

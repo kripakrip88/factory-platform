@@ -325,7 +325,8 @@ class TestStep66HistoryView(TransactionCase):
                 # Ниже — только разделы новее (шаг 67: вкладки как в Chrome).
                 later = source.find("// ═══", start + 1)
                 while later != -1:
-                    self.assertIn("Шаг 67", source[later:later + 80], "Ниже шага 66 — только новее")
+                    step = re.search(r"Шаг (\d+)", source[later:later + 80])
+                    self.assertTrue(step and int(step.group(1)) > 66, "Ниже шага 66 — только новее")
                     later = source.find("// ═══", later + 1)
                 self.assertLess(source.index("// ═══ Шаг 65"), start)
                 self.assertLess(source.index("// ═══ Шаг 52"), start)

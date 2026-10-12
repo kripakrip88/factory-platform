@@ -46,14 +46,18 @@ def _compile(source):
 @tagged("post_install", "-at_install")
 class TestT265ChromeTabs(TransactionCase):
 
-    def test_section_in_live_files_last(self):
+    def test_section_in_live_files(self):
         for path in (FORMS_SCSS, DARK_SCSS):
             with self.subTest(path=path):
                 self.assertIn(path, LIVE_THEME_PATHS)
                 source = _read(path)
                 self.assertEqual(source.count(MARK), 1)
                 start = source.index(MARK)
-                self.assertEqual(source.find("// ═══", start + 1), -1, "Раздел — последним в файле.")
+                later = source.find("// ═══", start + 1)
+                while later != -1:
+                    step = re.search(r"Шаг (\d+)", source[later:later + 80])
+                    self.assertTrue(step and int(step.group(1)) > 67, "Ниже шага 67 — только новее")
+                    later = source.find("// ═══", later + 1)
                 self.assertLess(source.index("// ═══ Шаг 66"), start)
 
     def test_section_compiles_without_min_max(self):
