@@ -89,3 +89,42 @@ class TestSpecCategories(TransactionCase):
         for xmlid in ("pmk_calc.view_metal_spec_search", "pmk_calc.view_dobor_order_search",
                       "pmk_calc.view_vent_hood_order_search"):
             self.assertIn('name="pmk_archived"', self.env.ref(xmlid).arch)
+
+    def test_move_products_to_calculators(self):
+        """Изделия → доборка / вентзонты переключателем и кнопкой, и обратно (13.10.2026)."""
+        from odoo.addons.pmk_calc.models import spec_move as sm
+        self.assertEqual(sm.parse_length("Отлив оконный RAL 8017, L=2000"), 2000)
+        self.assertEqual(sm.parse_size("Зонт вш 500х1000"), (500, 1000))
+        self.assertEqual(sm.move_hint("Планка угла наружного"), "dobor")
+        self.assertEqual(sm.move_hint("Зонт вш 500х1000"), "vent")
+        spec = self.env["pmk.metal.spec"].create({"product_ids": [
+            (0, 0, {"name": "Отлив оконный RAL 8017, L=2000", "qty": 12}),
+            (0, 0, {"name": "Зонт вш 500х1000, RAL 8017", "qty": 11}),
+            (0, 0, {"name": "Закладная деталь Зд3", "qty": 40})]})
+        dobor_p, vent_p, keep = spec.product_ids.sorted("id")
+        self.assertEqual((dobor_p.pmk_move_hint, vent_p.pmk_move_hint, keep.pmk_move_hint), ("dobor", "vent", False))
+        dobor_p.pmk_pick = True
+        self.assertEqual(spec.pmk_pick_count, 1)
+        spec.action_pmk_pick_to_dobor()
+        self.assertTrue(spec.cat_dobor)
+        line = spec.dobor_order_ids.line_ids
+        self.assertEqual((line.title, line.plank_length, line.qty, line.coating_id.ral_code),
+                         ("Отлив оконный RAL 8017, L=2000", 2000.0, 12, "8017"))
+        self.assertNotIn(dobor_p.exists(), spec.product_ids)
+        vent_p.pmk_pick = True
+        spec.action_pmk_pick_to_vent()
+        hood = spec.vent_order_ids.line_ids
+        self.assertEqual((hood.width, hood.length, hood.qty, hood.coating_id.ral_code), (500, 1000, 11, "8017"))
+        self.assertEqual(spec.product_ids, keep)
+        hood.action_pmk_back_to_metal()
+        self.assertEqual(len(spec.product_ids), 2)
+        self.assertFalse(spec.vent_order_ids.line_ids)
+
+    def test_copy_keeps_calculators(self):
+        """Копия расчёта (и технический расчёт) — с копиями доборки и зонтов, не пустыми."""
+        spec = self.env["pmk.metal.spec"].create({"cat_dobor": True})
+        spec.dobor_order_ids.write({"line_ids": [(0, 0, {"title": "Капельник", "plank_length": 2500, "qty": 6})]})
+        copy = spec.copy()
+        self.assertEqual(len(copy.dobor_order_ids), 1)
+        self.assertNotEqual(copy.dobor_order_ids, spec.dobor_order_ids)
+        self.assertEqual(copy.dobor_order_ids.line_ids.title, "Капельник")

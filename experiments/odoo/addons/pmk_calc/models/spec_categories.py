@@ -90,6 +90,19 @@ class MetalSpecCategories(models.Model):
                 spec.vent_order_ids.write({"partner_id": spec.partner_id.id})
         return res
 
+    def copy(self, default=None):
+        """Копия расчёта (и технический расчёт — копия расчёта КП, pmk_tech) получает копии
+        доборки и вентзонтов, а не пустые черновики (Антон 13.10.2026)."""
+        new = super().copy(default)
+        for src, dst in zip(self, new):
+            for _flag, _model, field in CHILDREN:
+                if not src[field]:
+                    continue
+                dst[field].filtered(lambda d: not d.line_ids).unlink()
+                for doc in src[field]:
+                    doc.copy({"spec_id": dst.id})
+        return new
+
     def _pmk_open_child(self, field):
         self.ensure_one()
         doc = self[field][:1]

@@ -289,6 +289,18 @@
   margin-bottom: 10px;
 }
 
+// Перенос изделий в доборку / вентзонты (13.10.2026): полоса над списком изделий.
+.pmk-move-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-bottom: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(200, 240, 0, 0.12);
+}
+
 // Категория выключена, а документ с позициями остался — черновик расчёта.
 .pmk-cat-draft {
   margin-left: 6px;

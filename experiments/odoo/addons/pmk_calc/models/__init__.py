@@ -16,6 +16,7 @@ from . import metal_pending_bind
 # После доборки и вентзонтов: цены (12.10.2026), категории и «Металл» расчёта.
 from . import calc_price
 from . import spec_categories
+from . import spec_move
 from . import spec_metal
 # Последним: представление базы по колонкам справочников (см. файл).
 from . import metal_pending_report

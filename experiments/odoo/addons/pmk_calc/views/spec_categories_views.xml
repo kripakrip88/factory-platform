@@ -25,6 +25,24 @@
         <attribute name="string">Металлоизделия</attribute>
         <attribute name="invisible">not cat_metal</attribute>
       </xpath>
+      <!-- Перенос изделий в доборку / вентзонты (13.10.2026, spec_move.py): переключатель в
+           строке изделия, кнопки — над списком, когда что-то отмечено. -->
+      <xpath expr="//field[@name='product_ids']" position="before">
+        <div class="pmk-move-bar" name="pmk_move_bar" invisible="not pmk_pick_count">
+          <span>Отмечено: <field name="pmk_pick_count" class="oe_inline"/></span>
+          <button name="action_pmk_pick_to_dobor" type="object" class="btn-secondary" string="В доборки"
+                  icon="fa-arrow-down" title="Отмеченные изделия — строками в доборку этого расчёта"/>
+          <button name="action_pmk_pick_to_vent" type="object" class="btn-secondary" string="В вентзонты"
+                  icon="fa-arrow-down" title="Отмеченные изделия — размерами в вентзонты этого расчёта"/>
+          <span class="pmk-cat-muted">строки уйдут из металлоизделий в калькулятор</span>
+        </div>
+      </xpath>
+      <xpath expr="//field[@name='product_ids']/list/field[@name='sequence']" position="after">
+        <field name="pmk_pick" widget="boolean_toggle" string="Перенести" width="90px" optional="show"/>
+      </xpath>
+      <xpath expr="//field[@name='product_ids']/list/field[@name='note']" position="after">
+        <field name="pmk_move_hint" optional="show" string="Подсказка"/>
+      </xpath>
       <xpath expr="//page[@name='composition']" position="after">
         <page string="Доборные элементы" name="pmk_cat_dobor" invisible="not cat_dobor and not dobor_order_ids">
           <div class="pmk-cat-head">
@@ -49,6 +67,8 @@
               <field name="weight_total" digits="[12,1]" sum="Вес"/>
               <field name="price_unit" string="Цена за шт, ₽"/>
               <field name="price_total" sum="Сумма"/>
+              <button name="action_pmk_back_to_metal" type="object" icon="fa-undo"
+                      title="Вернуть в металлоизделия"/>
             </list>
           </field>
         </page>
@@ -74,6 +94,8 @@
               <field name="total_mass_net_kg" string="Вес всего, кг" sum="Вес"/>
               <field name="price_unit" string="Цена за шт, ₽"/>
               <field name="price_total" sum="Сумма"/>
+              <button name="action_pmk_back_to_metal" type="object" icon="fa-undo"
+                      title="Вернуть в металлоизделия"/>
             </list>
           </field>
         </page>
