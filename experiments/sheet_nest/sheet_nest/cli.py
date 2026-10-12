@@ -59,8 +59,8 @@ def run(inputs, W=1250.0, L=2500.0, gap=2.0, edge=2.0, thickness=None, qty=None,
     for t in pl["tried"]:
         log("  раскрой %-40s %s" % (t["method"], ("%d листов, %d раскладок" % (t["sheets"], t["layouts"])) if "sheets" in t
                                     else ("пропущен: " + t["skipped"]) if "skipped" in t else t.get("error")))
-    log("раскрой: %s — %d листов %g×%g (нижняя граница %d%s)" % (pl["method"], pl["sheets"], W, L, pl["lower_bound"],
-                                                                  ", минимум" if pl["optimal"] else ""))
+    log("раскрой: %s — %d листов %g×%g (нижняя граница %d %s%s)" % (pl["method"], pl["sheets"], W, L, pl["lower_bound"],
+                                                                     pl["bound_kind"], ", минимум" if pl["optimal"] else ""))
     route_warn, x_tongue, x_parts = [], 0, 0
     for l in pl["layouts"]:
         r = route_sheet(l["placed"], parts, l["W"], l["L"])

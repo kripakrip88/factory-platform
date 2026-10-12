@@ -83,10 +83,24 @@ def plan(parts, W, L, gap, edge, methods=("rect", "raster")):
             tried.append(dict(method="растровый v1", error=str(e)))
     if best is None:
         raise ValueError("раскрой не удался: %s" % tried)
-    lb = max([t.get("lower_bound") or 0 for t in tried] + [area_bound(parts, W, L, gap, edge)])
+    # нижние границы: по площади настоящих деталей — строгая; по габаритам (прямоугольный упаковщик) — строгая только
+    # для прямоугольных деталей (фигурные растровый может уложить плотнее: зонты — 10 листов при «границе» 11)
+    lb_true = area_bound(parts, W, L, gap, edge)
+    lb_rect = max([t.get("lower_bound") or 0 for t in tried if "lower_bound" in t] + [0])
+    rect_like = min(rectangularity(p) for p in parts) >= RECT_LIKE
+    lb = max(lb_true, lb_rect) if rect_like else lb_true
     layouts = [dict(W=float(W), L=float(L), amount=l["amount"], placed=l["placed"]) for l in best[3]]
-    return dict(layouts=layouts, sheets=best[0], method=best[4]["method"], lower_bound=lb,
+    return dict(layouts=layouts, sheets=best[0], method=best[4]["method"], lower_bound=lb, lower_bound_area=lb_true,
+                lower_bound_rect=lb_rect, bound_kind="по габаритам" if (rect_like and lb_rect > lb_true) else "по площади",
                 optimal=best[0] <= lb, tried=tried)
+
+
+RECT_LIKE = 0.98            # деталь почти прямоугольник (площадь / габарит): граница по габаритам к ней применима
+
+
+def rectangularity(p):
+    x0, y0, x1, y1 = part_box(p)
+    return G.area(p["shapes"][-1]) / max(1e-9, (x1 - x0) * (y1 - y0))
 
 
 def area_bound(parts, W, L, gap, edge):
