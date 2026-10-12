@@ -1,0 +1,126 @@
+[
+ [
+  "пустые байты вместо zip",
+  "VentNestingError"
+ ],
+ [
+  "мусор вместо zip",
+  "VentNestingError"
+ ],
+ [
+  "zip без DXF",
+  "VentNestingError"
+ ],
+ [
+  "DXF в подпапке",
+  "VentNestingError"
+ ],
+ [
+  "zip без ведомости и без qty",
+  "VentNestingError"
+ ],
+ [
+  "имя DXF не генератора",
+  "VentNestingError"
+ ],
+ [
+  "имя без толщины",
+  "VentNestingError"
+ ],
+ [
+  "DXF дважды",
+  "VentNestingError"
+ ],
+ [
+  "qty 0",
+  "VentNestingError"
+ ],
+ [
+  "qty дробное",
+  "VentNestingError"
+ ],
+ [
+  "qty строкой",
+  "VentNestingError"
+ ],
+ [
+  "qty неизвестный размер",
+  "VentNestingError"
+ ],
+ [
+  "qty не на все DXF",
+  "VentNestingError"
+ ],
+ [
+  "один размер в двух цветах, qty по размеру",
+  "VentNestingError"
+ ],
+ [
+  "DXF обрезан на 75%",
+  "VentNestingError"
+ ],
+ [
+  "DXF обрезан на 97%",
+  "VentNestingError"
+ ],
+ [
+  "DXF другого размера под чужим именем",
+  "VentNestingError"
+ ],
+ [
+  "пустой DXF",
+  "VentNestingError"
+ ],
+ [
+  "зазор 0,4",
+  "VentNestingError"
+ ],
+ [
+  "зазор 51",
+  "VentNestingError"
+ ],
+ [
+  "зазор NaN",
+  "VentNestingError"
+ ],
+ [
+  "зазор строкой",
+  "VentNestingError"
+ ],
+ [
+  "отступ −1",
+  "VentNestingError"
+ ],
+ [
+  "отступ 100 (деталь не лезет)",
+  "VentNestingError"
+ ],
+ [
+  "свес 124",
+  "VentNestingError"
+ ],
+ [
+  "свес 151",
+  "VentNestingError"
+ ],
+ [
+  "свес 1000",
+  "VentNestingError"
+ ],
+ [
+  "свес NaN",
+  "VentNestingError"
+ ],
+ [
+  "вариант 'бухта'",
+  "VentNestingError"
+ ],
+ [
+  "материал не из заказа",
+  "VentNestingError"
+ ],
+ [
+  "имя заказа со / и ..",
+  "__ВЗ_2026_0001_оцинковка_0.65_склад.lxds"
+ ]
+]

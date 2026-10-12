@@ -1,0 +1,57 @@
+{
+ "from_zip": [
+  {
+   "dxf": "vsh_500x1000_t0.65_RAL8017.dxf",
+   "size": "500x1000",
+   "color": "RAL 8017",
+   "thickness": 0.65,
+   "qty": 11,
+   "parts_per_hood": 3
+  },
+  {
+   "dxf": "vsh_750x750_t0.65_RAL8017.dxf",
+   "size": "750x750",
+   "color": "RAL 8017",
+   "thickness": 0.65,
+   "qty": 1,
+   "parts_per_hood": 3
+  },
+  {
+   "dxf": "vsh_1000x2000_t0.65_RAL8017.dxf",
+   "size": "1000x2000",
+   "color": "RAL 8017",
+   "thickness": 0.65,
+   "qty": 1,
+   "parts_per_hood": 4
+  },
+  {
+   "dxf": "vsh_300x1000_t0.65_RAL8017.dxf",
+   "size": "300x1000",
+   "color": "RAL 8017",
+   "thickness": 0.65,
+   "qty": 1,
+   "parts_per_hood": 3
+  },
+  {
+   "dxf": "vsh_1000x3000_t0.65_RAL8017.dxf",
+   "size": "1000x3000",
+   "color": "RAL 8017",
+   "thickness": 0.65,
+   "qty": 1,
+   "parts_per_hood": 5
+  }
+ ],
+ "from_dxf_same": true,
+ "two_colors_one_size": [
+  [
+   "vsh_750x4000_t0.65_RAL8017.dxf",
+   1,
+   6
+  ],
+  [
+   "vsh_750x4000_t0.65_оц.dxf",
+   2,
+   6
+  ]
+ ]
+}

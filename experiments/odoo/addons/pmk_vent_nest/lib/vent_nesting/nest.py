@@ -225,10 +225,10 @@ class Sheet:
             ok = np.argwhere(C < 0.5)                      # (iy, ix) — левый нижний угол маски
             if not len(ok):
                 continue
-            ph = max(p[1] for p in poly)
+            ph = round(max(p[1] for p in poly), 4)          # округлено: повороты-двойники равны, а не «на последний знак»
             # клетка маски PAD ↔ 0 мм детали, клетка листа PAD ↔ 0 мм листа ⇒ начало детали = iy·RES
             top = ok[:, 0] * RES + ph
-            ext = np.maximum(self.ext, top)
+            ext = np.round(np.maximum(round(self.ext, 4), top), 4)
             score = np.lexsort((ok[:, 1], ok[:, 0], ext))
             k = score[0]
             cand = (ext[k], ok[k, 0], ok[k, 1], r, poly, m, md)
@@ -347,11 +347,14 @@ def pack(items, L, order):
     return sheets
 
 
+# Ключи порядка округлены: у одинаковых деталей (две крышки зонта) площадь и габарит совпадают лишь до последнего
+# знака, и этот знак разный на разных машинах (Mac/сервер) — порядок, а с ним и раскрой, расходились (12.10.2026).
+# Равные с точностью до 0,01 — равны; дальше решает зонт, роль и место детали в заказе (одинаковое везде).
 ORDERS = {
-    "площадь": lambda it: -_area(it["poly"]),
-    "длинная сторона": lambda it: -max(max(p[0] for p in it["poly"]), max(p[1] for p in it["poly"])),
-    "ширина": lambda it: -max(p[0] for p in it["poly"]),
-    "высота": lambda it: -max(p[1] for p in it["poly"]),
+    "площадь": lambda it: -round(_area(it["poly"]), 2),
+    "длинная сторона": lambda it: -round(max(max(p[0] for p in it["poly"]), max(p[1] for p in it["poly"])), 2),
+    "ширина": lambda it: -round(max(p[0] for p in it["poly"]), 2),
+    "высота": lambda it: -round(max(p[1] for p in it["poly"]), 2),
 }
 
 
@@ -360,17 +363,20 @@ def best_pack(items, lengths, trim):
     best, err = None, None
     for L in lengths:
         for oname, key in ORDERS.items():
-            order = sorted(range(len(items)), key=lambda i: (key(items[i]), items[i]["hood"], items[i]["role"]))
-            try:
-                sheets = pack(items, L, order)
-            except ValueError as e:
-                err = e
-                continue
-            lens = [min(L, math.ceil((s.ext + EDGE) / L_STEP - 1e-9) * L_STEP) if trim else L for s in sheets]
-            total = sum(lens)
-            cand = (total, len(sheets), -L, oname)
-            if best is None or cand < best[0]:
-                best = (cand, sheets, lens, L, oname)
+            # равные детали (две крышки, две торцевые панели) — в порядке заказа и в обратном: какой порядок лучше,
+            # заранее не знать, а «случайный» порядок по последнему знаку площади разный на разных машинах (12.10)
+            for tie in (1, -1):
+                order = sorted(range(len(items)), key=lambda i: (key(items[i]), items[i]["hood"], items[i]["role"], tie * i))
+                try:
+                    sheets = pack(items, L, order)
+                except ValueError as e:
+                    err = e
+                    continue
+                lens = [min(L, math.ceil((s.ext + EDGE) / L_STEP - 1e-9) * L_STEP) if trim else L for s in sheets]
+                total = sum(lens)
+                cand = (total, len(sheets), -L, oname, -tie)
+                if best is None or cand < best[0]:
+                    best = (cand, sheets, lens, L, oname)
     if best is None:
         raise ValueError("%s (отступ от края %g мм, зазор %g мм)" % (err or "раскрой не удался", EDGE, GAP))
     return best
@@ -466,7 +472,7 @@ def scenarios(items, which=("stock", "coil")):
         runs.append(("бухта", best_pack(items, coil_lengths, trim=True)))
     out = {}
     for name, res in runs:
-        (total, n, _, oname), sheets, lens, Lb, _ = res
+        (total, n, _, oname, _tie), sheets, lens, Lb, _ = res
         chk = [verify(s, L) for s, L in zip(sheets, lens)]
         m2 = total * SHEET_W / 1e6
         out[name] = {"sheets": [{"length_mm": int(L), "parts": [(it["hood"], it["role"]) for it, *_ in s.placed],

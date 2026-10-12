@@ -21,6 +21,7 @@ from .cypcut import spec_verify as SV
 from .cypcut import xml_validate as XV
 
 TECHNICAL = os.path.join(HERE, "cypcut", "technical_template.xml")
+FACTORY_UTC_OFFSET_H = 10        # завод (Хабаровск): SaveTime в info.xml и DOS-время zip — местное заводское
 BAD_NAME = str.maketrans({c: "" for c in "&<>\"'"})
 
 
@@ -174,9 +175,10 @@ def to_lxds(model, title):
                             plate=plates[float(r["size"][1])]["handle"], plate_shape_handle=next(tmp)))
     if bad:
         raise RuntimeError("размещения не совпали с раскроем: %d" % bad)
-    now = datetime.datetime.now().astimezone()
-    off_h = int(round(now.utcoffset().total_seconds() / 3600))
-    save_utc = now.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+    # время сохранения — заводское (UTC+10, как в программах инженера), НЕ пояс машины: в контейнере с UTC иначе
+    # «разбор → сборка» расходится на 10 часов (разбор считает, что программа сохранена на заводе, UTC+10)
+    off_h = FACTORY_UTC_OFFSET_H
+    save_utc = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
     M = dict(app_ver="6.3.907.11", user="vent_nesting", computer="VENT-NESTING", header_id=None, org_app=None,
              vport=None, technical=open(TECHNICAL, "rb").read(), zip_order=None, zip_mtimes=[SR.XZ.filetime(save_utc)],
              utc_offset_h=off_h, emf=dict(device=(2560, 1440), mm=(600, 330), face_tail=b""),
