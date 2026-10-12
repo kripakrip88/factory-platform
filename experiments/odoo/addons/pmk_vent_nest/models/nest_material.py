@@ -14,6 +14,11 @@ SVES_VALUES = [("150", "150"), ("145", "145"), ("140", "140"), ("135", "135"),
 SOURCES = [("stock", "Склад 2500"), ("coil", "Бухта")]
 
 
+def fmt_mm(v):
+    """Толщина как есть: 0,65 (не округлять до десятых, как килограммы)."""
+    return ("%g" % v).replace(".", ",") if v is not None else "—"
+
+
 def fmt_kg(v):
     return ("%.1f" % v).replace(".", ",").replace(",0", "") if v is not None else "—"
 

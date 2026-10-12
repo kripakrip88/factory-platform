@@ -68,6 +68,7 @@ class TestVentNest(TransactionCase):
         self.assertEqual(sves, {(s, src) for s in (150, 145, 140, 135, 130, 125) for src in ("stock", "coil")})
         html = str(order.nest_html)
         self.assertIn("Свес, мм", html)
+        self.assertIn("0,65 мм", html, "толщина не округляется до 0,7")
         self.assertIn("125", html)
         self.assertEqual(order.nest_status_kind, "done")
         self.assertIn("Раскрой готов", order.message_ids[0].body)

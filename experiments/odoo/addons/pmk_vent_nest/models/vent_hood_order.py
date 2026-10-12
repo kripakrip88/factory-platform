@@ -11,7 +11,7 @@ from markupsafe import Markup
 from odoo import api, fields, models
 from odoo.exceptions import UserError
 
-from .nest_material import fmt_kg
+from .nest_material import fmt_kg, fmt_mm
 
 GAP_RANGE, EDGE_RANGE = (0.5, 50.0), (0.0, 100.0)
 
@@ -99,7 +99,7 @@ class VentHoodOrder(models.Model):
             price, sheet_name = self._nest_price_kg(mat.thickness)
             best = mat._best()
             head = '<div class="pmk-nest-mat"><div class="pmk-nest-mat__title">%s · %s мм</div>' % (
-                escape(mat.color), fmt_kg(mat.thickness))
+                escape(mat.color), fmt_mm(mat.thickness))
             rows = []
             for sv, _l in mat._fields["sves"].selection:
                 cells = []
@@ -123,6 +123,9 @@ class VentHoodOrder(models.Model):
                 note = "Лучше всего: свес %s + %s — %s кг" % (fmt_kg(float(best["sves"])), src, fmt_kg(best["kg"]))
                 if d > 0.05:
                     note += ", экономия %s кг (%s %%) против %s" % (fmt_kg(d), _pct(d, ref_kg), ref_name)
+                    d2 = (base_coil or 0) - best["kg"]
+                    if ref_name != "150 + бухта" and base_coil and d2 > 0.05:
+                        note += ", %s кг против 150 + бухта" % fmt_kg(d2)
                     if price:
                         note += " ≈ %s ₽" % ("{:,.0f}".format(d * price).replace(",", " "))
                 note += "."
@@ -178,7 +181,7 @@ class VentHoodOrder(models.Model):
                 raise UserError("%s: %s при свесе %s невозможна — %s" % (
                     m.color, dict(m._fields["choice"].selection)[m.choice], m.sves, row["error"]))
             builds.append({"key": m.key, "source": m.choice, "sves": int(m.sves),
-                           "label": "%s %s, %s, свес %s" % (m.color, fmt_kg(m.thickness),
+                           "label": "%s %s, %s, свес %s" % (m.color, fmt_mm(m.thickness),
                                                              "склад" if m.choice == "stock" else "бухта", m.sves)})
         return self._nest_start("build", builds)
 
@@ -230,7 +233,7 @@ class VentHoodOrder(models.Model):
             parts = []
             for m in self.nest_material_ids:
                 best = m._best()
-                txt = "%s %s мм — склад %s кг, бухта %s кг" % (m.color, fmt_kg(m.thickness),
+                txt = "%s %s мм — склад %s кг, бухта %s кг" % (m.color, fmt_mm(m.thickness),
                                                               fmt_kg(m.stock_kg) if not m.stock_error else "нельзя",
                                                               fmt_kg(m.coil_kg) if not m.coil_error else "нельзя")
                 if best and float(best["sves"]) < 150:
@@ -241,7 +244,7 @@ class VentHoodOrder(models.Model):
         else:
             res = json.loads(job.result_json or "{}")
             body = "Программы CypCut готовы, во вкладке «Файлы»: %s." % (", ".join(res.get("attached") or []) or "нет")
-            coil = ["%s %s мм — %s" % (m.color, fmt_kg(m.thickness), m.choice_lengths)
+            coil = ["%s %s мм — %s" % (m.color, fmt_mm(m.thickness), m.choice_lengths)
                     for m in self.nest_material_ids if m.choice == "coil" and m.choice_lengths]
             if coil:
                 body += " Бухта — заказать листы: %s." % "; ".join(coil)
