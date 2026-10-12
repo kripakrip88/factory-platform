@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+  <t t-name="pmk_vent_nest.NestChoice">
+    <div class="pmk-nest">
+      <div t-foreach="materials" t-as="m" t-key="m.id" class="pmk-nest-mat">
+        <div class="pmk-nest-mat__title" t-esc="m.title"/>
+        <table class="pmk-nest-table" t-att-class="{'pmk-nest-table--ro': props.readonly}">
+          <thead>
+            <tr><th>Свес, мм</th><th t-foreach="sources" t-as="s" t-key="s[0]" t-esc="s[1] + ', кг'"/></tr>
+          </thead>
+          <tbody>
+            <tr t-foreach="m.rows" t-as="row" t-key="row.sv">
+              <th t-esc="row.sv"/>
+              <td t-foreach="row.cells" t-as="c" t-key="c.src"
+                  t-att-class="{'pmk-nest-best': c.best, 'pmk-nest-chosen': c.chosen,
+                                'pmk-nest-pick': c.pickable and !props.readonly, 'pmk-nest-na': !c.pickable}"
+                  t-att-title="c.error or (c.pickable and !props.readonly ? 'Выбрать: свес ' + c.sv + (c.src === 'coil' ? ', бухта' : ', склад') : '')"
+                  t-on-click="() => this.pick(m, c)">
+                <t t-if="c.error">нельзя</t>
+                <t t-elif="c.kg"><t t-esc="c.kg"/><span class="pmk-nest-len" t-esc="c.lengths"/></t>
+                <t t-else="">—</t>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="pmk-nest-decision" t-att-class="{'text-danger': m.decisionError}" t-esc="m.decision"/>
+        <div t-if="m.lowSves" class="pmk-nest-warn">Свес меньше 150 — решение инженера: после «Принять решение» он попадёт в заготовки, ведомость, DXF и чертежи этого цвета.</div>
+        <div t-if="m.hint" class="pmk-nest-note" t-esc="m.hint"/>
+        <div t-if="m.noPrice" class="pmk-nest-note pmk-nest-muted">Рублей нет: у «<t t-esc="m.priceSheet"/>» нет цены в прайсах.</div>
+      </div>
+    </div>
+  </t>
+</templates>

@@ -43,24 +43,15 @@
                 уйти с экрана — придёт уведомление.
               </div>
             </div>
-            <field name="nest_html" nolabel="1" invisible="not nest_material_ids"/>
             <div invisible="not nest_material_ids">
-              <h3 class="pmk-nest-h">Программы для лазера: выберите вариант и свес по каждому материалу</h3>
-              <field name="nest_material_ids" nolabel="1" readonly="nest_busy">
-                <list editable="bottom" create="0" delete="0">
-                  <field name="color" readonly="1"/>
-                  <field name="thickness" readonly="1"/>
-                  <field name="stock_kg" readonly="1"/>
-                  <field name="coil_kg" readonly="1"/>
-                  <field name="recommend" readonly="1"/>
-                  <field name="choice"/>
-                  <field name="sves"/>
-                  <field name="choice_kg"/>
-                  <field name="choice_lengths"/>
-                </list>
-              </field>
+              <h3 class="pmk-nest-h">Решение по каждому цвету: щёлкните ячейку — свес и лист</h3>
+              <field name="nest_material_ids" widget="pmk_nest_choice" nolabel="1" readonly="nest_busy"/>
               <button name="action_nest_build" type="object" class="btn-secondary mt-2"
-                      icon="fa-cogs" string="Собрать программы CypCut" invisible="nest_busy"/>
+                      icon="fa-check" string="Принять решение и собрать программы" invisible="nest_busy"/>
+              <div class="pmk-nest-muted mt-1">
+                Свес записывается в заказ — заготовки, сборочная ведомость, DXF и чертежи
+                пересчитаются под решение; программы CypCut появятся во вкладке «Файлы».
+              </div>
             </div>
             <field name="nest_png" widget="image" nolabel="1" readonly="1"
                    class="pmk-nest-png" invisible="not nest_png"/>

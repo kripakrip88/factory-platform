@@ -6,6 +6,12 @@
 с шириной меняются только длинные кромки.
 
 Запуск:  python3 vent_hood.py 850 3650 [-t 0.5] [-c 8017] [out.dxf]
+
+Свес торцов — параметр (12.10.2026, решение Антона: уменьшенный свес должен доходить до сборочной
+ведомости, DXF и чертежа, а не только до программ лазера). По умолчанию 150 — результат прежний,
+51/51 эталонов; 125…149 — только по решению инженера (раскрой вентзонтов, pmk_vent_nest). Правка
+та же, что в копии пакета раскроя (pmk_vent_nest/lib/vent_nesting/hood_sves.py), файл в файл
+кроме этой шапки — генератор один.
 """
 import math, sys
 
@@ -22,7 +28,9 @@ SLOT_L, SLOT_R = 4.5, 2.25           # паз-овал: прямая 4.5, рад
 NEST    = 14.383             # апекс V − правый край крышки (крышка вложена в V)
 CORNER = [(-22.17152, -3.90944), (-45.17152, -3.90944), (-62.17152, -9.90944)]  # угол крышки: фаска 17x6 + полка 23 (все ширины)
 LAP_X   = (65.0, 105.0)      # пара лапок Ø7: от кромки (карниза тела / наружной кромки крышки)
-SVES    = 150.0
+SVES    = 150.0              # свес торцов по стандарту (вариант раскроя может уменьшить до SVES_MIN)
+SVES_MIN = 125.0             # минимум по СНиП
+LAP_SHAFT = 150.0            # крайние лапки — 150 мм от торца шахты (не зависит от свеса)
 FALC, FALC_CUT = 14.0, 42.0  # фальц +14 на сторону, вырез 42x14 у углов
 RIDGE_N = 15.0               # V-вырез конька на стыке: глубина 15, высота 30
 SHEET_LIM, BEND_LIM = 1240.0, 2500.0
@@ -40,13 +48,17 @@ CLIP_TABLE = {400: 134.0, 550: 125.0, 600: 132.5, 800: 130.0, 850: 137.0, 900: 1
 W_TESTED = (200, 1350)           # ряд ширин, проверенный на геометрию и сверенный с эталонами
 
 
-def geometry(W, L):
+def geometry(W, L, sves=SVES):
     if W <= 0 or L <= 0:
         raise ValueError("размеры шахты должны быть > 0")
     if W > L:
         raise ValueError("ширина шахты %d больше длины %d: «вш Ш×Д» — Ш короткая сторона, "
                          "конёк идёт вдоль длинной; поменяйте местами" % (W, L))
-    g = {"W": W, "L": L, "flags": []}
+    if sves < SVES_MIN:
+        raise ValueError("свес %g меньше минимума %g по СНиП" % (sves, SVES_MIN))
+    g = {"W": W, "L": L, "flags": [], "sves": sves}
+    if sves != SVES:
+        g["flags"].append("свес торцов %g мм вместо стандартных %g" % (sves, SVES))
     if not (W_TESTED[0] <= W <= W_TESTED[1]):
         g["flags"].append("ширина %d вне проверенного ряда %d–%d" % (W, *W_TESTED))
     across = (W + ACR_C) / (math.sqrt(3) / 2)
@@ -63,7 +75,7 @@ def geometry(W, L):
         p = round((vlen - 37.38) / (n - 1) * 2) / 2
         g["flags"].append("шаг клёпок по правилу (нет эталона ширины)")
     caplaps = cap_laps_rule(W)
-    body = L + 2 * SVES
+    body = L + 2 * sves
     poperek = across > SHEET_LIM
     lim = SHEET_LIM if poperek else BEND_LIM
     N = max(1, math.ceil(body / lim))
@@ -74,7 +86,7 @@ def geometry(W, L):
     Pn = body / N
     g.update(across=across, Hh=Hh, cyV=cyV, dV=dV, vlen=vlen, D=D, n=n, p=p, caplaps=caplaps,
              body=body, poperek=poperek, lim=lim, N=N, Pn=Pn)
-    g["cols"] = body_lap_columns(L, N, Pn)
+    g["cols"] = body_lap_columns(L, N, Pn, sves)
     return g
 
 
@@ -88,24 +100,25 @@ def cap_laps_rule(W):
     return [(i - (c - 1) / 2) * step for i in range(c)]
 
 
-def body_lap_columns(L, N, Pn):
+def body_lap_columns(L, N, Pn, sves=SVES):
     """Ряды лапок тела в координатах зонта, равномерно: крайние 150 от торцов шахты.
     Одна панель — шаг ≤350. Несколько — на каждой панели ряд на каждые ≤350 мм
     (без 50 мм у каждого стыка). Ряд ближе LAP_JOINT к шву фальца — добавить ряд и раздвинуть."""
-    S = L - 2 * SVES
+    S = L - 2 * LAP_SHAFT
     if S <= 0:
-        return [SVES + L / 2]
+        return [sves + L / 2]
     joints = [Pn * i for i in range(1, N)]
     if N == 1:
         k = max(1, math.ceil(S / LAP_MAX - 1e-9))
     else:
         C = sum(math.ceil((Pn - 50.0 * ((i > 0) + (i < N - 1))) / LAP_MAX - 1e-9) for i in range(N))
         k = max(1, C - 1)
-    while True:
-        cols = [2 * SVES + S * i / k for i in range(k + 1)]
+    for _ in range(400):                       # предел: при нормальных размерах и свесе хватает нескольких шагов
+        cols = [sves + LAP_SHAFT + S * i / k for i in range(k + 1)]
         if all(abs(c - j) >= LAP_JOINT for c in cols for j in joints):
             return cols
         k += 1
+    raise ValueError("лапки тела не расставить вне швов (Д=%g, панелей %d, свес %g)" % (L, N, sves))
 
 
 # ---------- построение деталей (локальные координаты, ось Y = конёк) ----------
@@ -195,8 +208,8 @@ def bbox_x(part):
     return min(xs), max(xs)
 
 
-def hood(W, L):
-    g = geometry(W, L)
+def hood(W, L, sves=SVES):
+    g = geometry(W, L, sves)
     layout = []
     x = 0.0
     panels = []

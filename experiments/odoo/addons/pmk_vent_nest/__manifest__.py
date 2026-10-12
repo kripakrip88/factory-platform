@@ -25,7 +25,11 @@
         "views/vent_hood_order_views.xml",
     ],
     "assets": {
-        "web.assets_backend": ["pmk_vent_nest/static/src/scss/nest.scss"],
+        "web.assets_backend": [
+            "pmk_vent_nest/static/src/scss/nest.scss",
+            "pmk_vent_nest/static/src/js/nest_choice.js",
+            "pmk_vent_nest/static/src/xml/nest_choice.xml",
+        ],
     },
     "installable": True,
 }

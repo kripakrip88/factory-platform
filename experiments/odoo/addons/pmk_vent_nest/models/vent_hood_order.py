@@ -4,9 +4,6 @@ import base64
 import hashlib
 import json
 import os
-from html import escape
-
-from markupsafe import Markup
 
 from odoo import api, fields, models
 from odoo.exceptions import UserError
@@ -14,10 +11,6 @@ from odoo.exceptions import UserError
 from .nest_material import fmt_kg, fmt_mm
 
 GAP_RANGE, EDGE_RANGE = (0.5, 50.0), (0.0, 100.0)
-
-
-def _pct(part, whole):
-    return ("%.1f" % (100.0 * part / whole)).replace(".", ",") if whole else "0"
 
 
 class VentHoodOrder(models.Model):
@@ -34,7 +27,6 @@ class VentHoodOrder(models.Model):
     nest_status_kind = fields.Selection([("none", ""), ("busy", ""), ("done", ""), ("stale", ""),
                                          ("error", "")], compute="_compute_nest")
     nest_png = fields.Binary("Картинка раскроя", compute="_compute_nest")
-    nest_html = fields.Html("Экономия по свесу", compute="_compute_nest", sanitize=False)
 
     # ------------------------------------------------------------ состояние
     def _nest_fingerprint(self):
@@ -53,7 +45,6 @@ class VentHoodOrder(models.Model):
             last = jobs.filtered(lambda j: j.state in ("done", "error"))[:1]
             order.nest_busy = bool(busy)
             order.nest_png = plan.png if plan.state == "done" else False
-            order.nest_html = order._nest_economy_html()
             if busy:
                 what = "раскрой и перебор свеса" if busy.kind == "plan" else "программы CypCut"
                 if busy.state == "queued":
@@ -84,58 +75,6 @@ class VentHoodOrder(models.Model):
             if "pmk_price_ton" in s._fields and not s.pmk_price_missing and s.pmk_price_ton:
                 return s.pmk_price_ton / 1000.0, s.display_name
         return None, sheets[:1].display_name if sheets else None
-
-    def _nest_economy_html(self):
-        """Таблица «свес × склад/бухта» по каждому материалу и итог «лучше всего»."""
-        self.ensure_one()
-        if not self.nest_material_ids:
-            return False
-        out = []
-        for mat in self.nest_material_ids:
-            base = mat._row(150, "stock")
-            base_kg = base.get("kg") if not base.get("error") else None
-            base_coil = mat._row(150, "coil").get("kg")
-            ref_kg, ref_name = (base_kg, "150 + склад") if base_kg else (base_coil, "150 + бухта")
-            price, sheet_name = self._nest_price_kg(mat.thickness)
-            best = mat._best()
-            head = '<div class="pmk-nest-mat"><div class="pmk-nest-mat__title">%s · %s мм</div>' % (
-                escape(mat.color), fmt_mm(mat.thickness))
-            rows = []
-            for sv, _l in mat._fields["sves"].selection:
-                cells = []
-                for src in ("stock", "coil"):
-                    r = mat._row(int(sv), src)
-                    if r.get("error"):
-                        cells.append('<td class="pmk-nest-na" title="%s">нельзя</td>' % escape(r["error"]))
-                    elif r.get("kg"):
-                        is_best = best and int(float(best["sves"])) == int(sv) and best["source"] == src
-                        cells.append('<td class="%s">%s<span class="pmk-nest-len">%s</span></td>' % (
-                            "pmk-nest-best" if is_best else "", fmt_kg(r["kg"]), escape(r.get("lengths") or "")))
-                    else:
-                        cells.append("<td>—</td>")
-                rows.append('<tr><th>%s</th>%s</tr>' % (sv, "".join(cells)))
-            table = ('<table class="pmk-nest-table"><thead><tr><th>Свес, мм</th><th>Склад 2500, кг</th>'
-                     '<th>Бухта, кг</th></tr></thead><tbody>%s</tbody></table>' % "".join(rows))
-            note = ""
-            if best and ref_kg:
-                d = ref_kg - best["kg"]
-                src = "склад" if best["source"] == "stock" else "бухта"
-                note = "Лучше всего: свес %s + %s — %s кг" % (fmt_kg(float(best["sves"])), src, fmt_kg(best["kg"]))
-                if d > 0.05:
-                    note += ", экономия %s кг (%s %%) против %s" % (fmt_kg(d), _pct(d, ref_kg), ref_name)
-                    d2 = (base_coil or 0) - best["kg"]
-                    if ref_name != "150 + бухта" and base_coil and d2 > 0.05:
-                        note += ", %s кг против 150 + бухта" % fmt_kg(d2)
-                    if price:
-                        note += " ≈ %s ₽" % ("{:,.0f}".format(d * price).replace(",", " "))
-                note += "."
-                if float(best["sves"]) < 150:
-                    note += " Свес меньше 150 — только по решению инженера."
-            if not price:
-                note += ' <span class="pmk-nest-muted">Рублей нет: у «%s» нет цены в прайсах.</span>' % escape(
-                    sheet_name or "листа")
-            out.append(head + table + '<div class="pmk-nest-note">%s</div></div>' % note)
-        return Markup('<div class="pmk-nest">%s</div>' % "".join(out))
 
     # ------------------------------------------------------------ кнопки
     def _nest_check_params(self):
@@ -174,15 +113,24 @@ class VentHoodOrder(models.Model):
         plan = self.nest_job_ids.filtered(lambda j: j.kind == "plan" and j.state == "done").sorted("id")[-1:]
         if plan.fingerprint != self._nest_fingerprint():
             raise UserError("Заказ менялся после раскроя — пересчитайте раскрой, потом собирайте программы.")
-        builds = []
+        builds, applied = [], []
         for m in self.nest_material_ids:
             row = m._row(int(m.sves), m.choice)
             if row.get("error"):
                 raise UserError("%s: %s при свесе %s невозможна — %s" % (
                     m.color, dict(m._fields["choice"].selection)[m.choice], m.sves, row["error"]))
+            # Решение — в строки заказа: заготовки, ведомость, DXF, чертёж и габарит зонта
+            # считаются с тем же свесом, что и программы лазера.
+            lines = m._lines().filtered(lambda l, sv=int(m.sves): l.sves != sv)
+            if lines:
+                lines.write({"sves": int(m.sves)})
+                applied.append("%s %s мм — свес %s" % (m.color, fmt_mm(m.thickness), m.sves))
             builds.append({"key": m.key, "source": m.choice, "sves": int(m.sves),
                            "label": "%s %s, %s, свес %s" % (m.color, fmt_mm(m.thickness),
                                                              "склад" if m.choice == "stock" else "бухта", m.sves)})
+        if applied:
+            self.message_post(body="Свес применён к заказу (заготовки, ведомость, DXF, чертежи): %s."
+                                   % "; ".join(applied), subtype_xmlid="mail.mt_note")
         return self._nest_start("build", builds)
 
     # ------------------------------------------------------------ результат
@@ -208,6 +156,7 @@ class VentHoodOrder(models.Model):
     def _nest_apply_build(self, job, result):
         self.ensure_one()
         Att = self.env["ir.attachment"]
+        stamp = self._vh_stamp()
         good, bad = [], []
         for f in result.get("files") or []:
             if not f.get("ok"):
@@ -215,11 +164,19 @@ class VentHoodOrder(models.Model):
                 continue
             with open(os.path.join(job.workdir, f["path"]), "rb") as fh:
                 data = fh.read()
-            Att.create({"name": f["filename"], "datas": base64.b64encode(data),
+            # «ВЗ-00004_RAL8017_0.65_бухта_12.10.26_14-35.lxds»: дата и время сборки в имени;
+            # прежняя программа этого материала («ВЗ-00004_RAL8017_0.65_…») убирается —
+            # у оператора одна действующая программа на материал.
+            base = f["filename"][:-len(".lxds")] if f["filename"].endswith(".lxds") else f["filename"]
+            material = "_".join(base.split("_")[:3]) + "_"
+            Att.search([("res_model", "=", self._name), ("res_id", "=", self.id),
+                        ("name", "=like", material + "%.lxds")]).unlink()
+            name = "%s_%s.lxds" % (base, stamp)
+            Att.create({"name": name, "datas": base64.b64encode(data),
                         "res_model": self._name, "res_id": self.id,
                         "mimetype": "application/octet-stream"})
-            good.append(f)
-        job.result_json = json.dumps(dict(result, attached=[f["filename"] for f in good],
+            good.append(dict(f, attached_name=name))
+        job.result_json = json.dumps(dict(result, attached=[f["attached_name"] for f in good],
                                           rejected=[f["filename"] for f in bad]), ensure_ascii=False)
 
     def _nest_notify(self, job):

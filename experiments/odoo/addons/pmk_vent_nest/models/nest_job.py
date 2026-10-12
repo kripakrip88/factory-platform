@@ -104,7 +104,9 @@ class VentNestJob(models.Model):
         for line in order._vh_good_lines():
             name = line._vh_dxf_name()
             if name not in dxf:
-                dxf[name] = line._vh_dxf()
+                # При 150: пакет сверяет DXF со своим генератором при стандарте, а свес
+                # решения (если меньше) применяет сам — тот же, что записан в строку.
+                dxf[name] = line._vh_dxf_standard()
             qty[name] = qty.get(name, 0) + line.qty
         return dxf, qty, {
             "kind": self.kind, "lib": LIB_DIR, "gap": self.gap, "edge": self.edge,

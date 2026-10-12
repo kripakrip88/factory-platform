@@ -3,6 +3,7 @@
 
 import base64
 import io
+import re
 import json
 import os
 import shutil
@@ -11,7 +12,7 @@ import sys
 import tempfile
 import zipfile
 
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from odoo.tests import HttpCase, TransactionCase, tagged
 
 from odoo.addons.pmk_calc.tools import vent_hood as V
@@ -138,7 +139,16 @@ class TestVentHood(TransactionCase):
         line.action_download_png()
         att = self.env["ir.attachment"].search([("res_model", "=", "pmk.vent.hood.order"),
                                                 ("res_id", "=", line.order_id.id)])
-        self.assertEqual(att.name, "vsh_750x4000_t0.65_RAL8017_чертёж.png")
+        self.assertRegex(att.name, r"^vsh_750x4000_t0\.65_RAL8017_чертёж_\d\d\.\d\d\.\d\d_\d\d-\d\d\.png$", "дата и время в имени")
+        line.action_download_png()
+        self.assertEqual(len(self.env["ir.attachment"].search([("res_model", "=", "pmk.vent.hood.order"),
+                                                               ("res_id", "=", line.order_id.id)])), 1,
+                         "повторное скачивание заменяет прежний файл, а не копит")
+        line.action_download_dxf()
+        self.assertIn("vsh_750x4000_t0.65_RAL8017.dxf",
+                      self.env["ir.attachment"].search([("res_model", "=", "pmk.vent.hood.order"),
+                                                        ("res_id", "=", line.order_id.id)]).mapped("name"),
+                      "DXF — без даты: по имени CypCut называет детали")
 
     def test_download_all_zip(self):
         order = self._order({"width": 750, "length": 4000},
@@ -147,7 +157,7 @@ class TestVentHood(TransactionCase):
         order.action_download_all()
         att = self.env["ir.attachment"].search([("res_model", "=", order._name),
                                                 ("res_id", "=", order.id)])
-        self.assertEqual(att.name, "%s.zip" % order.name)
+        self.assertRegex(att.name, r"^%s_\d\d\.\d\d\.\d\d_\d\d-\d\d\.zip$" % re.escape(order.name))
         names = sorted(zipfile.ZipFile(io.BytesIO(att.raw)).namelist())
         self.assertEqual(names, sorted([
             "vsh_750x4000_t0.65_оц.dxf", "vsh_750x4000_t0.65_оц_чертёж.png",
@@ -174,7 +184,7 @@ class TestVentHood(TransactionCase):
         order.action_download_assembly()
         att = self.env["ir.attachment"].search([("res_model", "=", order._name),
                                                 ("res_id", "=", order.id)])
-        self.assertEqual(att.name, "%s_сборка.xlsx" % order.name)
+        self.assertRegex(att.name, r"^%s_сборка_\d\d\.\d\d\.\d\d_\d\d-\d\d\.xlsx$" % re.escape(order.name))
         wb = openpyxl.load_workbook(io.BytesIO(att.raw), data_only=True)
         ws = wb["Сборка"]
         rows = [[c.value for c in r] for r in ws.iter_rows()]
@@ -278,3 +288,20 @@ class TestVentHoodDrawingUrl(HttpCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.headers.get("Content-Type"), "image/png")
         self.assertTrue(res.content.startswith(PNG_MAGIC))
+
+    def test_sves_parameter(self):
+        """Свес — параметр строки (12.10.2026): 150 по умолчанию; меньший доходит до заготовок."""
+        order = self._order({"width": 750, "length": 4000})
+        line = order.line_ids
+        self.assertEqual(line.sves, 150)
+        std = line._vh_spec()
+        self.assertEqual(line.hood_size, "4300 × 1050")
+        self.assertEqual(line._vh_dxf(), line._vh_dxf_standard())
+        line.sves = 130
+        self.assertEqual(line.hood_size, "4260 × 1010")
+        self.assertNotEqual(line._vh_spec(), std, "заготовки пересчитаны под свес")
+        self.assertNotEqual(line._vh_dxf(), line._vh_dxf_standard())
+        self.assertIn("свес торцов 130", line.warnings_text or "")
+        for bad in (120, 160):
+            with self.assertRaises(ValidationError):
+                line.sves = bad

@@ -6,6 +6,7 @@
 не блокирует выбор: система показывает, решает инженер.
 """
 import json
+import re
 
 from odoo import api, fields, models
 
@@ -21,6 +22,25 @@ def fmt_mm(v):
 
 def fmt_kg(v):
     return ("%.1f" % v).replace(".", ",").replace(",0", "") if v is not None else "—"
+
+
+def color_key(c):
+    """Ключ цвета — как color_key пакета раскроя (lib/vent_nesting/api.py): «RAL8017»,
+    «RAL 8017 Шоколад» → «ral8017»; пусто и «оц…» → «оц». Своя копия: импорт пакета в
+    процесс Odoo тянул бы numpy и глобальное состояние раскроя."""
+    s = str(c or "").strip().lower()
+    m = re.search(r"ral\s*-?\s*(\d{4})", s) or re.match(r"^(\d{4})\b", s)
+    if m:
+        return "ral" + m.group(1)
+    if not s or s.startswith(("оц", "zn", "цинк", "без покрыт")):
+        return "оц"
+    return re.sub(r"[\s_\-]+", "", s)
+
+
+def line_key(line):
+    """Ключ материала строки заказа: «ral8017|0.65» — по имени DXF генератора."""
+    m = re.match(r"^vsh_\d+x\d+_t([\d.]+)_(.+)\.dxf$", line._vh_dxf_name())
+    return "%s|%g" % (color_key(m.group(2)), float(m.group(1))) if m else None
 
 
 class VentNestMaterial(models.Model):
@@ -45,8 +65,24 @@ class VentNestMaterial(models.Model):
     sves = fields.Selection(SVES_VALUES, "Свес, мм", required=True, default="150")
     sves_json = fields.Text("Перебор свеса (JSON)",
                             help="Строки пакета: {sves, source, kg, lengths, sheets, error}.")
+    price_kg = fields.Float("Цена листа, ₽/кг", compute="_compute_price",
+                            help="Из прайса справочника «Лист» по толщине материала; нет цены — 0 "
+                                 "(рублей экономии нет, соседнюю позицию не подставляем).")
+    price_sheet = fields.Char("Лист для цены", compute="_compute_price")
     choice_kg = fields.Float("Выбрано, кг", digits=(10, 1), compute="_compute_choice")
     choice_lengths = fields.Char("Выбрано: листы", compute="_compute_choice")
+
+    @api.depends("thickness", "order_id.line_ids.sheet_id")
+    def _compute_price(self):
+        for rec in self:
+            price, name = rec.order_id._nest_price_kg(rec.thickness)
+            rec.price_kg = price or 0.0
+            rec.price_sheet = name or False
+
+    def _lines(self):
+        """Строки заказа этого материала (цвет + толщина — как ключ пакета раскроя)."""
+        self.ensure_one()
+        return self.order_id.line_ids.filtered(lambda l: l.spec_json and line_key(l) == self.key)
 
     @api.depends("choice", "sves", "sves_json", "stock_kg", "coil_kg")
     def _compute_choice(self):

@@ -22,6 +22,7 @@
 
 import base64
 import io
+import re
 import json
 import os
 import tempfile
@@ -32,7 +33,7 @@ from xlsxwriter.utility import xl_rowcol_to_cell
 from markupsafe import Markup, escape
 
 from odoo import api, fields, models
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 
 from odoo.addons.pmk_calc.tools import vent_hood as V
 
@@ -232,13 +233,25 @@ class VentHoodOrder(models.Model):
         book.close()
         return buf.getvalue()
 
-    def _vh_download(self, data, fname, mimetype):
-        """Файл во вложения записи (прежний с тем же именем — заменить) и скачать."""
+    def _vh_stamp(self):
+        """Дата и время создания файла для имени: «12.10.26_14-35» по поясу пользователя.
+        Двоеточия нет — его не пускает Windows (Антон 12.10.2026: в «Загрузках» копились
+        одноимённые ведомости и архивы, не понять, какой свежий)."""
+        return fields.Datetime.context_timestamp(self, fields.Datetime.now()).strftime("%d.%m.%y_%H-%M")
+
+    def _vh_download(self, data, fname, mimetype, stamp=True):
+        """Файл во вложения записи и скачать. stamp — дата и время в имени
+        («ВЗ-00002_сборка_12.10.26_14-35.xlsx»); прежний файл того же вида (то же имя с
+        любой датой или без) заменяется. DXF — без даты: по имени DXF CypCut называет
+        детали, а раскрой узнаёт размер (vsh_ШxД_tТОЛЩ_ЦВЕТ.dxf)."""
         self.ensure_one()
+        base, ext = os.path.splitext(fname)
+        name = "%s_%s%s" % (base, self._vh_stamp(), ext) if stamp else fname
+        same = re.compile(r"^%s(_\d\d\.\d\d\.\d\d_\d\d-\d\d)?%s$" % (re.escape(base), re.escape(ext)))
         Attachment = self.env["ir.attachment"]
         Attachment.search([("res_model", "=", self._name), ("res_id", "=", self.id),
-                           ("name", "=", fname)]).unlink()
-        att = Attachment.create({"name": fname, "raw": data, "mimetype": mimetype,
+                           ("name", "=like", base + "%")]).filtered(lambda a: same.match(a.name)).unlink()
+        att = Attachment.create({"name": name, "raw": data, "mimetype": mimetype,
                                  "res_model": self._name, "res_id": self.id})
         return {"type": "ir.actions.act_url", "target": "self",
                 "url": "/web/content/%s?download=true" % att.id}
@@ -272,6 +285,11 @@ class VentHood(models.Model):
              "Стандарт — 0,65 мм.")
     thickness = fields.Float("Толщина, мм", related="sheet_id.thickness_mm", store=True,
                              digits=(6, 2))
+    sves = fields.Integer(
+        "Свес торцов, мм", default=150, required=True,
+        help="Стандарт — 150. Меньше (до 125 по СНиП) — только по решению инженера: обычно его "
+             "выбирают во вкладке «Раскрой», и он применяется к заказу. От свеса зависят заготовки, "
+             "ведомость, DXF, чертёж и габарит зонта.")
     coating_id = fields.Many2one(
         "pmk.dobor.coating", "Цвет", required=True,
         help="Цинк или RAL — справочник «Цвета доборки (RAL)», общий с доборкой. "
@@ -370,10 +388,20 @@ class VentHood(models.Model):
         self.ensure_one()
         return self.thickness or None
 
+    @api.constrains("sves")
+    def _check_sves(self):
+        for rec in self:
+            if not (V.SVES_MIN <= rec.sves <= V.SVES):
+                raise ValidationError("Свес торцов — от %d до %d мм (%s)." % (
+                    V.SVES_MIN, V.SVES, rec.display_name))
+
+    def _vh_sves(self):
+        return float(self.sves or V.SVES)
+
     def _vh_geometry(self):
-        """hood() генератора; ValueError — размер невозможен (Ш > Д, ≤ 0)."""
+        """hood() генератора; ValueError — размер невозможен (Ш > Д, ≤ 0) или свес вне 125…150."""
         self.ensure_one()
-        return V.hood(self.width, self.length)
+        return V.hood(self.width, self.length, self._vh_sves())
 
     def _vh_spec(self):
         self.ensure_one()
@@ -397,6 +425,12 @@ class VentHood(models.Model):
     def _vh_dxf(self):
         return V.to_dxf(self._vh_checked_geometry()).encode("utf-8")
 
+    def _vh_dxf_standard(self):
+        """DXF при стандартном свесе 150 — вход раскроя: пакет сверяет DXF заказа со своим
+        генератором при 150 и уменьшенный свес применяет сам (pmk_vent_nest)."""
+        self._vh_checked_geometry()
+        return V.to_dxf(V.hood(self.width, self.length)).encode("utf-8")
+
     def _vh_png(self):
         """Чертёж заготовок генератора (vent_hood_drawing.main пишет в файл)."""
         self._vh_checked_geometry()
@@ -404,13 +438,14 @@ class VentHood(models.Model):
         fd, path = tempfile.mkstemp(suffix=".png")
         os.close(fd)
         try:
-            D.main(self.width, self.length, path, self._vh_thickness(), self._vh_color())
+            D.main(self.width, self.length, path, self._vh_thickness(), self._vh_color(),
+                   sves=None if self._vh_sves() == V.SVES else self._vh_sves())
             with open(path, "rb") as fh:
                 return fh.read()
         finally:
             os.unlink(path)
 
-    @api.depends("width", "length", "qty", "thickness", "coating_id.ral_code")
+    @api.depends("width", "length", "qty", "thickness", "coating_id.ral_code", "sves")
     def _compute_spec(self):
         empty = dict(spec_json=False, hood_label=False, material_name=False, panels=0,
                      layout=False, lapki=0, klepki=0, metal_net_m2=0.0, sheet_1250_m=0.0,
@@ -443,11 +478,11 @@ class VentHood(models.Model):
                 "total_sheet_1250_m": s["sheet_1250_m"] * qty,
             })
 
-    @api.depends("width", "length", "spec_json")
+    @api.depends("width", "length", "spec_json", "sves")
     def _compute_sizes(self):
         for rec in self:
             if rec.spec_json:
-                sves = 2 * int(round(V.SVES))
+                sves = 2 * int(round(rec._vh_sves()))
                 rec.hood_size = "%d × %d" % (rec.length + sves, rec.width + sves)
                 rec.shaft_size = "%d × %d" % (rec.length, rec.width)
             else:
@@ -506,7 +541,7 @@ class VentHood(models.Model):
     def action_download_dxf(self):
         """DXF развёрток для лазера — во вложения заказа и сразу скачать."""
         self.ensure_one()
-        return self.order_id._vh_download(self._vh_dxf(), self._vh_dxf_name(), "application/dxf")
+        return self.order_id._vh_download(self._vh_dxf(), self._vh_dxf_name(), "application/dxf", stamp=False)
 
     def action_download_png(self):
         """Чертёж заготовок с размерами и спецификацией (PNG)."""

@@ -78,3 +78,34 @@
   border: 1px solid var(--pmk-border, #e3e4e8);
   border-radius: 10px;
 }
+
+// Решение: ячейка — кнопка выбора (щелчок), выбранная — в рамке, лучшая — подсветка.
+.pmk-nest-table {
+  td.pmk-nest-pick {
+    cursor: pointer;
+
+    &:hover { background: rgba(22, 25, 28, 0.06); }
+  }
+
+  td.pmk-nest-chosen {
+    outline: 2px solid var(--pmk-text-strong, #16191c);
+    outline-offset: -2px;
+    font-weight: 700;
+  }
+}
+
+.pmk-nest-decision {
+  margin-top: 8px;
+  font-weight: 600;
+}
+
+.pmk-nest-warn {
+  margin-top: 4px;
+  font-size: 13px;
+  color: #8a6100;
+}
+
+body.o_nexus_dark {
+  .pmk-nest-warn { color: #e0b44a; }
+  .pmk-nest-table td.pmk-nest-pick:hover { background: rgba(255, 255, 255, 0.07); }
+}

@@ -66,10 +66,7 @@ class TestVentNest(TransactionCase):
         self.assertGreater(mat.coil_kg, 0)
         sves = {(int(r["sves"]), r["source"]) for r in json.loads(mat.sves_json)}
         self.assertEqual(sves, {(s, src) for s in (150, 145, 140, 135, 130, 125) for src in ("stock", "coil")})
-        html = str(order.nest_html)
-        self.assertIn("Свес, мм", html)
-        self.assertIn("0,65 мм", html, "толщина не округляется до 0,7")
-        self.assertIn("125", html)
+        self.assertEqual(mat.price_sheet, self.sheet065.display_name)
         self.assertEqual(order.nest_status_kind, "done")
         self.assertIn("Раскрой готов", order.message_ids[0].body)
 
@@ -82,7 +79,16 @@ class TestVentNest(TransactionCase):
         att = self.env["ir.attachment"].search([("res_model", "=", order._name), ("res_id", "=", order.id),
                                                 ("name", "like", ".lxds")])
         self.assertEqual(len(att), 1)
-        self.assertIn("бухта", att.name)
+        self.assertRegex(att.name, r"_RAL8017_0\.65_бухта_\d\d\.\d\d\.\d\d_\d\d-\d\d\.lxds$",
+                         "дата и время сборки в имени")
+        # Пересборка того же материала — прежняя программа заменяется.
+        build2 = self._job(order, "build", [{"key": mat.key, "source": "stock", "sves": 150, "label": "t"}])
+        build2._launch(sync=True)
+        self.assertEqual(build2.state, "done", build2.error)
+        att = self.env["ir.attachment"].search([("res_model", "=", order._name), ("res_id", "=", order.id),
+                                                ("name", "like", ".lxds")])
+        self.assertEqual(len(att), 1, "одна действующая программа на материал")
+        self.assertIn("склад", att.name)
 
         order.line_ids.qty = 3
         self.assertEqual(order.nest_status_kind, "stale")
@@ -117,3 +123,31 @@ class TestVentNest(TransactionCase):
         ja.write({"state": "running", "workdir": tempfile.mkdtemp(), "started_at": "2099-01-01 00:00:00"})
         self.env["pmk.vent.nest.job"]._cron_collect()
         self.assertEqual(jb.state, "queued", "пока считается другой заказ — ждёт")
+
+    def test_decision_applies_sves_to_order(self):
+        """«Принять решение»: свес материала — в строки заказа; ведомость/габарит — по нему."""
+        order = self._order({"width": 500, "length": 1000, "qty": 2})
+        before = order.line_ids.hood_size
+        rows = [{"sves": sv, "source": src, "kg": 10.0, "lengths": "2500"}
+                for sv in (150, 145, 140, 135, 130, 125) for src in ("stock", "coil")]
+        plan = self._job(order)
+        plan.write({"state": "done", "finished_at": "2026-10-12 00:00:00"})
+        mat = self.env["pmk.vent.nest.material"].create({
+            "order_id": order.id, "key": "ral8017|0.65", "color": "RAL 8017", "thickness": 0.65,
+            "stock_kg": 10, "coil_kg": 10, "choice": "coil", "sves": "135", "sves_json": json.dumps(rows)})
+        self.assertEqual(mat._lines(), order.line_ids, "ключ материала строки = ключ пакета")
+        # Другой заказ считается — новое задание ждёт в очереди, процесс не запускается.
+        other = self._job(self._order({"width": 500, "length": 1000}))
+        other.write({"state": "running", "workdir": tempfile.mkdtemp(), "started_at": "2099-01-01 00:00:00"})
+        order.action_nest_build()
+        self.assertEqual(order.line_ids.sves, 135)
+        self.assertEqual(order.line_ids.hood_size, "1270 × 770", "габарит = шахта + 2 × 135")
+        self.assertNotEqual(order.line_ids.hood_size, before)
+        self.assertIn("свес 135", order.message_ids[0].body)
+        build = order.nest_job_ids.filtered(lambda j: j.kind == "build")
+        self.assertEqual(build.state, "queued")
+        self.assertEqual(json.loads(build.builds_json)[0]["sves"], 135)
+        # Вход раскроя — DXF при стандарте 150 (пакет сверяет со своим генератором).
+        dxf, _qty, _inp = build._input()
+        self.assertEqual(list(dxf.values())[0], order.line_ids._vh_dxf_standard())
+        self.assertNotEqual(list(dxf.values())[0], order.line_ids._vh_dxf())

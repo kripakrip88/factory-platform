@@ -79,8 +79,8 @@ def draw_part(cv, p, ox, oy, sc, title, qty, extra=None):
     return T
 
 
-def main(W, L, out, t=None, color=None):
-    g = G.hood(W, L)
+def main(W, L, out, t=None, color=None, sves=None):
+    g = G.hood(W, L) if sves is None else G.hood(W, L, sves)
     s = G.spec(g, t, color)
     m = s["material"]
     parts = {}
