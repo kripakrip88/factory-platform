@@ -24,9 +24,19 @@
   margin: 12px 0;
 }
 
+// Ширина таблицы цвета постоянная: один цвет в заказе (так чаще всего) растягивал её
+// на всю строку — колонки разъезжались, а кнопка решения вставала сбоку
+// (Антон 12.10.2026, скриншот ВЗ-00005). Два цвета и больше — рядом, переносом.
 .pmk-nest-mat {
-  flex: 1 1 420px;
-  max-width: 640px;
+  flex: 0 1 560px;
+  min-width: 0;
+}
+
+// Поле-виджет ядро ставит в строку с соседями — кнопка «Принять решение» оказывалась
+// справа от таблиц. Блоком на всю ширину: кнопка — под ними.
+.o_field_widget.o_field_pmk_nest_choice {
+  display: block;
+  width: 100%;
 }
 
 .pmk-nest-mat__title {
@@ -46,6 +56,7 @@
   }
 
   thead th { color: var(--pmk-text-muted, #8a8d96); font-weight: 500; }
+  thead th:first-child, tbody th { width: 90px; }
   tbody th { text-align: left; font-weight: 500; }
 
   td.pmk-nest-best {
