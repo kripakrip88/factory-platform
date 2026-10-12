@@ -101,7 +101,9 @@ class TestDoborCut(TransactionCase):
         self.assertIn("<svg", html)
         for colour in ("#dfe9c4", "#f3f1ec", "#5d6b2a"):
             self.assertNotIn(colour, html, "печать чёрно-белая — без цветных заливок")
-        self.assertEqual(order.action_print_cut()["report_name"], "pmk_calc.report_dobor_cut")
+        action = order.action_print_cut()
+        self.assertEqual(action["type"], "ir.actions.report")
+        self.assertIn("pmk_calc.report_dobor_cut", str(action))
 
     def test_plank_over_2500_forbidden(self):
         with self.assertRaises(ValidationError):
