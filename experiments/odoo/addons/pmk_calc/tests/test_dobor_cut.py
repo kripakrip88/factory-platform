@@ -47,9 +47,10 @@ class TestDoborCut(TransactionCase):
         self.assertEqual(r["stock"]["sheets"], 1)
         self.assertEqual(len(r["stock"]["maps"][0]["bands"]), 2)
 
-    def test_coil_length_step_50(self):
-        r = C.plan([(300, 2230, "№1", 1)], 5.0)
-        self.assertEqual(r["coil"]["lengths_mm"], [2250.0])
+    def test_coil_any_length(self):
+        """С бухты — любая длина листа (730, 840, 1100…), не кратно 50 (Антон 12.10.2026)."""
+        r = C.plan([(300, 2230, "№1", 1), (300, 730, "№2", 4)], 5.0)
+        self.assertEqual(sorted(r["coil"]["lengths_mm"]), [730.0, 2230.0])
 
     def test_short_plank_across_sheet(self):
         """Планка 1250 = ширина листа: рубится сразу поперёк полосой 150 × 1250, без отхода
