@@ -9,3 +9,5 @@ from . import partner_specs
 from . import dobor_link
 # Разбор UX, шаг 48: номер сделки «СД-00001 от 27.09.2026».
 from . import deal_number
+# Категории расчёта (12.10.2026): сделка расчёта — в его доборку.
+from . import spec_children

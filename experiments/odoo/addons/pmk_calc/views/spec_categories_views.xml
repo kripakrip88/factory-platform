@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Категории изделий в расчёте (12.10.2026): переключатели под полями шапки, вкладка на
+    категорию. «Состав» → «Металлоизделия» (видна при включённой категории), «Раскладка» →
+    «Металл» (лист, прокат, доборки, зонты и итог «что купить» — шаг 2 того же плана).
+    Позиции доборок и зонтов здесь только показаны: правят их в калькуляторе.
+    active в XML — грабли Odoo 19 (выключенный вид не проверяется).
+  -->
+  <record id="view_metal_spec_form_categories" model="ir.ui.view">
+    <field name="name">pmk.metal.spec.form.categories</field>
+    <field name="model">pmk.metal.spec</field>
+    <field name="inherit_id" ref="pmk_calc.view_metal_spec_form"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//div[hasclass('pmk-doc-head')]" position="after">
+        <div class="pmk-spec-cats" name="pmk_spec_cats">
+          <span class="pmk-spec-cats__label">Категории изделий</span>
+          <span class="pmk-spec-cats__item"><field name="cat_metal" widget="boolean_toggle" nolabel="1"/><label for="cat_metal"/></span>
+          <span class="pmk-spec-cats__item"><field name="cat_dobor" widget="boolean_toggle" nolabel="1"/><label for="cat_dobor"/></span>
+          <span class="pmk-spec-cats__item"><field name="cat_vent" widget="boolean_toggle" nolabel="1"/><label for="cat_vent"/></span>
+        </div>
+      </xpath>
+      <xpath expr="//page[@name='composition']" position="attributes">
+        <attribute name="string">Металлоизделия</attribute>
+        <attribute name="invisible">not cat_metal</attribute>
+      </xpath>
+      <xpath expr="//page[@name='composition']" position="after">
+        <page string="Доборные элементы" name="pmk_cat_dobor" invisible="not cat_dobor">
+          <div class="pmk-cat-head">
+            <button name="action_open_dobor" type="object" class="btn-secondary" icon="fa-external-link"
+                    string="Открыть калькулятор доборки" invisible="not dobor_order_ids"/>
+            <span class="pmk-cat-muted" invisible="dobor_order_ids">Доборка заведётся при сохранении расчёта.</span>
+            <span class="pmk-cat-muted" invisible="not dobor_order_ids">
+              Профили рисуются и правятся в калькуляторе доборки; здесь — состав и цены.
+            </span>
+            <field name="dobor_order_ids" invisible="1"/>
+          </div>
+          <field name="dobor_line_ids" nolabel="1" readonly="1">
+            <list create="0" delete="0" no_open="1">
+              <field name="sketch" widget="pmk_svg" string="Профиль"/>
+              <field name="title"/>
+              <field name="coating_id"/>
+              <field name="sheet_id"/>
+              <field name="plank_length" options="{'hide_trailing_zeros': True}"/>
+              <field name="qty" sum="Планок"/>
+              <field name="developed_width" options="{'hide_trailing_zeros': True}"/>
+              <field name="weight_total" digits="[12,1]" sum="Вес"/>
+              <field name="price_unit" string="Цена за шт, ₽"/>
+              <field name="price_total" sum="Сумма"/>
+            </list>
+          </field>
+        </page>
+        <page string="Вентзонты" name="pmk_cat_vent" invisible="not cat_vent">
+          <div class="pmk-cat-head">
+            <button name="action_open_vent" type="object" class="btn-secondary" icon="fa-external-link"
+                    string="Открыть калькулятор вентзонтов" invisible="not vent_order_ids"/>
+            <span class="pmk-cat-muted" invisible="vent_order_ids">Заказ вентзонтов заведётся при сохранении расчёта.</span>
+            <span class="pmk-cat-muted" invisible="not vent_order_ids">
+              Размеры, раскрой и программы лазера — в калькуляторе вентзонтов; здесь — состав и цены.
+            </span>
+            <field name="vent_order_ids" invisible="1"/>
+          </div>
+          <field name="vent_line_ids" nolabel="1" readonly="1">
+            <list create="0" delete="0" no_open="1">
+              <field name="hood_label" string="Зонт"/>
+              <field name="hood_size"/>
+              <field name="coating_id"/>
+              <field name="sheet_id"/>
+              <field name="sves" string="Свес, мм"/>
+              <field name="qty" sum="Зонтов"/>
+              <field name="total_mass_net_kg" string="Вес всего, кг" sum="Вес"/>
+              <field name="price_unit" string="Цена за шт, ₽"/>
+              <field name="price_total" sum="Сумма"/>
+            </list>
+          </field>
+        </page>
+      </xpath>
+      <xpath expr="//page[@name='layout']" position="attributes">
+        <attribute name="string">Металл</attribute>
+      </xpath>
+    </field>
+  </record>
+</odoo>

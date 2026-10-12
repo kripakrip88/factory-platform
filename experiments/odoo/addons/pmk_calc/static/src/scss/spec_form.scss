@@ -255,3 +255,41 @@
   font-weight: 600;
   color: var(--pmk-ink-2, #3d4047);
 }
+
+// ─── Категории изделий в расчёте (12.10.2026) ─────────────────────────────────
+.pmk-spec-cats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 22px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--pmk-border, #e3e4e8);
+
+  &__label {
+    color: var(--pmk-text-muted, #8a8d96);
+    font-weight: 500;
+  }
+
+  &__item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+
+    .o_field_boolean_toggle { width: auto; }
+    label { margin: 0; font-weight: 500; }
+  }
+}
+
+.pmk-cat-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin-bottom: 10px;
+}
+
+.pmk-cat-muted {
+  color: var(--pmk-text-muted, #8a8d96);
+  font-size: 13px;
+}

@@ -76,7 +76,7 @@
               parent="menu_pmk_sales" action="crm.crm_lead_action_pipeline" sequence="10"/>
     <!-- То же действие, что «Калькуляторы → Расчёт металлопроката» (там пункт
          остаётся). Ради этой ссылки pmk_theme зависит от pmk_calc. -->
-    <menuitem id="menu_pmk_sales_specs" name="Расчёты и КП"
+    <menuitem id="menu_pmk_sales_specs" name="Расчёты"
               parent="menu_pmk_sales" action="pmk_calc.action_metal_spec" sequence="30"/>
     <menuitem id="menu_pmk_sales_customers" name="Клиенты"
               parent="menu_pmk_sales" action="account.res_partner_action_customer" sequence="50"/>

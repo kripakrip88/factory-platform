@@ -25,3 +25,4 @@ from . import test_sheet_group
 from . import test_step_z13
 from . import test_vent_hood
 from . import test_dobor_cut
+from . import test_spec_categories

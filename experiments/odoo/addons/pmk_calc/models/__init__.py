@@ -14,5 +14,6 @@ from . import spec_layout
 from . import spec_sheet_group
 from . import res_partner
 from . import metal_pending_bind
+from . import spec_categories
 # Последним: представление базы по колонкам справочников (см. файл).
 from . import metal_pending_report

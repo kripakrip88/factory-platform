@@ -42,7 +42,7 @@ SWITCHES = (PRODUCTION, STOCK, MONEY, REMOVED)
 
 # Шаг З-2 (08.10.2026): «Счета покупателям» — менеджерам, после «Расчётов и
 # КП» (счёт выставляется сам из расчёта при «КП отправлено»).
-SALES = ["Воронка сделок", "Почта", "Расчёты и КП", "Счета покупателям", "Клиенты", "Лиды"]
+SALES = ["Воронка сделок", "Почта", "Расчёты", "Счета покупателям", "Клиенты", "Лиды"]
 MORE = ("pmk_theme.menu_pmk_production", "pmk_theme.menu_pmk_stock",
         "pmk_theme.menu_pmk_money", "pmk_theme.menu_pmk_reports")
 
@@ -289,7 +289,7 @@ class TestMenusStep38(TransactionCase):
                         continue  # раздел модуля, которого нет в базе (лазер)
                     self.assertIn(path, paths)
                     checked += 1
-        self.assertIn("«Продажи → Расчёты и КП»",
+        self.assertIn("«Продажи → Расчёты»",
                       texts["sale.action_order_report_quotation_salesteam"])
         self.assertGreater(checked, 5)
 

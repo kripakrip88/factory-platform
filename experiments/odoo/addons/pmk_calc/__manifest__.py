@@ -52,6 +52,7 @@
         "data/ir_sequence.xml",
         "views/metal_views.xml",
         "views/metal_spec_views.xml",
+        "views/spec_categories_views.xml",
         "views/dobor_views.xml",
         "views/vent_hood_views.xml",
         # Шаг З-10: окна «Новая позиция на разнос», формы справочника с
