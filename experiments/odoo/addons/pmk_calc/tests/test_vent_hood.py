@@ -273,22 +273,6 @@ class TestVentHood(TransactionCase):
                                                    "coating_id": self.zinc.id})]})
         self.assertTrue(order.line_ids.spec_json)
 
-
-@tagged("post_install", "-at_install")
-class TestVentHoodDrawingUrl(HttpCase):
-
-    def test_drawing_served_as_image(self):
-        """Окно «Чертёж» берёт картинку по /web/image/pmk.vent.hood/<id>/drawing_png."""
-        sheet = self.env["pmk.metal.sheet"].search([("sheet_type", "=", "Оцинкованный")], limit=1)
-        order = self.env["pmk.vent.hood.order"].create({"line_ids": [(0, 0, {
-            "width": 750, "length": 4000, "sheet_id": sheet.id,
-            "coating_id": self.env.ref("pmk_calc.coating_zinc").id})]})
-        self.authenticate("admin", "admin")
-        res = self.url_open("/web/image/pmk.vent.hood/%s/drawing_png" % order.line_ids.id)
-        self.assertEqual(res.status_code, 200)
-        self.assertEqual(res.headers.get("Content-Type"), "image/png")
-        self.assertTrue(res.content.startswith(PNG_MAGIC))
-
     def test_sves_parameter(self):
         """Свес — параметр строки (12.10.2026): 150 по умолчанию; меньший доходит до заготовок."""
         order = self._order({"width": 750, "length": 4000})
@@ -305,3 +289,20 @@ class TestVentHoodDrawingUrl(HttpCase):
         for bad in (120, 160):
             with self.assertRaises(ValidationError):
                 line.sves = bad
+
+
+@tagged("post_install", "-at_install")
+class TestVentHoodDrawingUrl(HttpCase):
+
+    def test_drawing_served_as_image(self):
+        """Окно «Чертёж» берёт картинку по /web/image/pmk.vent.hood/<id>/drawing_png."""
+        sheet = self.env["pmk.metal.sheet"].search([("sheet_type", "=", "Оцинкованный")], limit=1)
+        order = self.env["pmk.vent.hood.order"].create({"line_ids": [(0, 0, {
+            "width": 750, "length": 4000, "sheet_id": sheet.id,
+            "coating_id": self.env.ref("pmk_calc.coating_zinc").id})]})
+        self.authenticate("admin", "admin")
+        res = self.url_open("/web/image/pmk.vent.hood/%s/drawing_png" % order.line_ids.id)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.headers.get("Content-Type"), "image/png")
+        self.assertTrue(res.content.startswith(PNG_MAGIC))
+
