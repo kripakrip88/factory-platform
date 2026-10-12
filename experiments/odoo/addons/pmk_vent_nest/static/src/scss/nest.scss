@@ -1,0 +1,80 @@
+// Вкладка «Раскрой» заказа вентзонтов (pmk_vent_nest). Цвета — переменные темы
+// (--pmk-*): тёмная тема подхватывает их сама.
+.pmk-nest-run__params {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+
+  .o_field_widget { width: 5rem; }
+}
+
+.pmk-nest-status {
+  margin: 10px 0 4px;
+}
+
+.pmk-nest-muted {
+  color: var(--pmk-text-muted, #8a8d96);
+}
+
+.pmk-nest {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 12px 0;
+}
+
+.pmk-nest-mat {
+  flex: 1 1 420px;
+  max-width: 640px;
+}
+
+.pmk-nest-mat__title {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.pmk-nest-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th, td {
+    padding: 4px 10px;
+    border-bottom: 1px solid var(--pmk-border, #e3e4e8);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  thead th { color: var(--pmk-text-muted, #8a8d96); font-weight: 500; }
+  tbody th { text-align: left; font-weight: 500; }
+
+  td.pmk-nest-best {
+    font-weight: 700;
+    background: rgba(110, 130, 0, 0.12);
+  }
+
+  td.pmk-nest-na { color: var(--pmk-text-muted, #8a8d96); }
+}
+
+.pmk-nest-len {
+  display: block;
+  font-size: 11px;
+  color: var(--pmk-text-muted, #8a8d96);
+}
+
+.pmk-nest-note {
+  margin-top: 6px;
+  font-size: 13px;
+}
+
+.pmk-nest-h {
+  font-size: 15px;
+  margin: 16px 0 8px;
+}
+
+.pmk-nest-png img {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--pmk-border, #e3e4e8);
+  border-radius: 10px;
+}

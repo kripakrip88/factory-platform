@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Technical Handle="2">
+	<Channels>
+		<Channel ParamFlag="256"/>
+		<Channel ChannelPort="1" ParamFlag="768" DefPwmFreqFunc="true" DefPwmRatioFunc="true">
+			<CamParams CutGap="0,2" MicroLen="0,2" DelayBeforeLaserOff="0" LiftHeight="10" SlowEndSpeed="3" SlowEndLength="2" SlowLeadSpeed="3" SlowLeadLength="2" FlashCutPierceH="5" FlashCutPierctT="0" FlashCutFollowMs="30" FlashCutPierceFocus="0" FlashCutLaserPwmRatio="1" FlashCutLaserPwmFreq="5000" FlashCutLaserCurrent="100" CheckSensitiveLv="6" ShakeResLv="1" ShaleResMs="10" Version="19031813" ScanGap="0" WorkSpeed="100">
+				<LeadLineParam PwmFreq="5000" PwmRatio=".5" CurveSpd="10" LeadDecLen="3" LeadCutH="5" LeadDecSpd="10" LeadHoleSpd="10"/>
+				<LayerCutParams ArcTolerance=".05" CornerTolerance=".1" WorkAcc="2000" FirFreq="4"/>
+				<CornerParams PwmFreq="10" PwmRatio=".1" Current="100" Speed="5" CornerLen="5" Angle="100"/>
+				<SuperCut PierceH="5" PierceFocus="-5"/>
+				<SlopeCutParams/>
+				<Cut LaserCurrent="100" PeakPower="1000" PwmFreq="1000" PwmRatio="0" BlowGasPressure="5" FreqStart="5000" FreqEnd="3700" RatioStart="0" RatioEnd="0" CycleTime="30"/>
+				<SlowEndExt Freq="1000" Ratio="1" Height="1" GasPressure="1"/>
+				<SlowLeadExt Freq="1000" Ratio="1"/>
+				<Pierce1 LaserCurrent="100" PeakPower="1000" LaserMode="0" PwmFreq="5000" PwmRatio="0" TimeBlow="0" BlowGasPressure="5" FreqStart="5000" FreqEnd="3700" RatioStart="0" RatioEnd="0" CycleTime="20"/>
+				<Pierce2 Height="5" LaserCurrent="100" PeakPower="1000" LaserMode="0" PwmFreq="100" PwmRatio="0" TimeBlow="0" BlowGasPressure="5" FreqStart="5000" FreqEnd="3700" RatioStart="0" RatioEnd="0" CycleTime="20"/>
+				<Pierce3 Height="15" LaserCurrent="100" PeakPower="1000" LaserMode="0" PwmFreq="5000" PwmRatio="0" TimeBlow="0" BlowGasPressure="5" FreqStart="5000" FreqEnd="3700" RatioStart="0" RatioEnd="0" CycleTime="20"/>
+				<Pierce4 LaserCurrent="100" PeakPower="1000" LaserMode="0" PwmFreq="5000" PwmRatio="0" TimeBlow="0" BlowGasPressure="5" FreqStart="5000" FreqEnd="3700" RatioStart="0" RatioEnd="0" CycleTime="20"/>
+				<Pierce5 LaserCurrent="100" PeakPower="1000" LaserMode="0" PwmFreq="5000" PwmRatio="0" TimeBlow="0" BlowGasPressure="5" FreqStart="5000" FreqEnd="3700" RatioStart="0" RatioEnd="0" CycleTime="20"/>
+				<Pierce6 LaserCurrent="100" PeakPower="1000" LaserMode="0" PwmFreq="5000" PwmRatio="0" BlowGasPressure="5" FreqStart="5000" FreqEnd="3700" RatioStart="0" RatioEnd="0" CycleTime="30"/>
+				<Pierce7 LaserCurrent="100" PeakPower="1000" LaserMode="0" PwmFreq="5000" PwmRatio="0" BlowGasPressure="5" FreqStart="5000" FreqEnd="3700" RatioStart="0" RatioEnd="0" CycleTime="30"/>
+				<Pierce8 LaserCurrent="100" PeakPower="1000" LaserMode="0" PwmFreq="5000" PwmRatio="0" BlowGasPressure="5" FreqStart="5000" FreqEnd="3700" RatioStart="0" RatioEnd="0" CycleTime="30"/>
+				<Pierce9 LaserCurrent="100" PeakPower="1000" LaserMode="0" PwmFreq="5000" PwmRatio="0" BlowGasPressure="5" FreqStart="5000" FreqEnd="3700" RatioStart="0" RatioEnd="0" CycleTime="30"/>
+			</CamParams>
+			<PwmFreqFunc/>
+			<PwmRatioFunc/>
+			<MaterialParams MaterialName="Холоднокатаная сталь" NozzleSpec="1.2"/>
+		</Channel>
+		<Channel ChannelPort="2"/>
+		<Channel ChannelPort="3"/>
+		<Channel ChannelPort="4"/>
+		<Channel ChannelPort="5"/>
+		<Channel ChannelPort="6"/>
+		<Channel ChannelPort="7"/>
+		<Channel ChannelPort="8"/>
+		<Channel ChannelPort="9"/>
+		<Channel ChannelPort="10"/>
+		<Channel ChannelPort="11"/>
+		<Channel ChannelPort="12"/>
+		<Channel ChannelPort="13"/>
+		<Channel ChannelPort="14"/>
+		<Channel ChannelPort="15"/>
+	</Channels>
+</Technical>

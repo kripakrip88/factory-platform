@@ -165,6 +165,11 @@ class TestStep65History(TransactionCase):
             if arch is None:
                 continue
             checked += 1
+            # Раскрой вентзонтов (pmk_vent_nest, 12.10.2026) кладёт размеры во вкладку
+            # рядом с «Раскроем» — тогда и «Файлы» у заказа вентзонтов вкладкой.
+            if xmlid == "pmk_calc.view_vent_hood_order_form" and self.env["ir.module.module"].search_count(
+                    [("name", "=", "pmk_vent_nest"), ("state", "=", "installed")]):
+                expected = True
             with self.subTest(form=xmlid):
                 self.assertEqual(arch.tag, "form")
                 notebook = arch.find("sheet/notebook")
