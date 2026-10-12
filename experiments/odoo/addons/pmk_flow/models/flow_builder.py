@@ -63,9 +63,16 @@ _STAGES = {
     # счётчик «Доборки» на сделке — pmk_deal, dobor_link.py). Вторая строка
     # узла — штатное состояние: Черновик / В работе / Изготовлен.
     'pmk.dobor.order': (4, 'Доборка'),
+    # Вентзонты (pmk_calc) — как доборка. У доборки и вентзонтов, заведённых
+    # категорией расчёта (поле «Расчёт», 12.10.2026), колонка своя — сразу за
+    # их расчётом (_stage_of): это состав расчёта, а не работа цеха.
+    'pmk.vent.hood.order': (4, 'Вентзонты'),
     'mrp.production': (4, 'Производство'),
-    'project.project': (4, 'Проект'),
-    'project.task': (4, 'Задача'),
+    # Строка «Заказов в работе» (pmk_orders) и сам проект-котёл — своей
+    # колонкой за счётом (разбор схемы 12.10.2026): в колонке работ цеха они
+    # склеивались с раскроем и доборкой в «Раскрой · Доборка · Проект · Задача».
+    'project.task': (3.2, 'Заказ в работе'),
+    'project.project': (3.3, 'Проект'),
     'purchase.order': (5, 'Закупка'),
     # «Поступления» и отгрузки (stock.picking) — с шага З-6 (09.10.2026) на
     # схеме только у тех, кому они возвращены: «Убранное (показать)» или
@@ -84,6 +91,10 @@ _STAGES = {
 # схеме одним словом «Расчёт». Поля pmk_kind / pmk_tech_spec_id есть только
 # с pmk_tech — без него ветки молчат (_field).
 _TECH_STAGE = (3.5, 'Технический расчёт')
+
+# Калькуляторы, которые заводит категория расчёта (pmk_calc, spec_categories.py):
+# у них поле «Расчёт» (spec_id), и на схеме они висят на расчёте, а не на сделке.
+_CALC_MODELS = ('pmk.dobor.order', 'pmk.vent.hood.order')
 _METAL_REQUEST_KIND = 'Заявка на металл'
 
 # Кому схема показывает «Поступления» и отгрузки (шаг З-6, _pmk_pickings_shown).
@@ -133,6 +144,14 @@ def _weight(kg):
     if kg >= 1000:
         return '%s т' % _num(kg / 1000.0, 2)
     return '%s кг' % _num(kg)
+
+
+def _without(records, fname):
+    """Записи без ссылки fname: их покажет на схеме тот документ, на который они
+    ссылаются (разбор схемы 12.10.2026). Пустой список _referrers — как есть."""
+    if not isinstance(records, models.BaseModel) or fname not in records._fields:
+        return records
+    return records.filtered(lambda r: not r[fname])
 
 
 def _field(record, fname, default=None):
@@ -329,6 +348,9 @@ class PmkFlowBuilder(models.AbstractModel):
             rank, kind = _TECH_STAGE
         elif record._name == 'purchase.order' and _field(record, 'pmk_tech_spec_id'):
             kind = _METAL_REQUEST_KIND
+        elif record._name in _CALC_MODELS and _field(record, 'spec_id'):
+            # Калькулятор категории расчёта — колонкой сразу за своим расчётом.
+            rank = self._stage_of(record.spec_id)[0] + 0.25
         return rank, kind
 
     @api.model
@@ -515,7 +537,8 @@ class PmkFlowBuilder(models.AbstractModel):
             linked.append(self._optional_rel(record, 'project_ids', hidden))
             linked.append(self._optional_rel(record, 'tasks_ids', hidden))
             # Наше: заказ ← сделка (поле sale_crm) и заказ → задания лазеру.
-            linked.append(self._optional_rel(record, 'opportunity_id', hidden))
+            if not _field(record, 'pmk_spec_id'):
+                linked.append(self._optional_rel(record, 'opportunity_id', hidden))
             linked.append(self._referrers('pmk.laser.job', 'sale_order_id', record.id, hidden))
             # Шаг З-2 (pmk_orders): счёт ← расчёт, счёт → строка «Заказов в
             # работе». Полей нет без pmk_orders — _optional_rel/_referrers
@@ -537,7 +560,8 @@ class PmkFlowBuilder(models.AbstractModel):
                 linked.append(record.project_id)
             # Строка «Заказов в работе» (pmk_orders, шаг З-2): свой счёт и сделка.
             linked.append(self._optional_rel(record, 'pmk_sale_order_id', hidden))
-            linked.append(self._optional_rel(record, 'pmk_deal_id', hidden))
+            if not _field(record, 'pmk_sale_order_id'):
+                linked.append(self._optional_rel(record, 'pmk_deal_id', hidden))
         elif model == 'purchase.order':
             if 'invoice_ids' in record._fields:
                 linked.append(record.invoice_ids)
@@ -548,7 +572,9 @@ class PmkFlowBuilder(models.AbstractModel):
             # «Заявка на металл» (pmk_tech, шаг З-4) знает свой технический
             # расчёт; счёт и сделка — через него, строка планировщика — своя.
             linked.append(self._optional_rel(record, 'pmk_tech_spec_id', hidden))
-            linked.append(self._optional_rel(record, 'pmk_task_id', hidden))
+            # Строка планировщика — через расчёт и счёт, если заявка из расчёта.
+            if not _field(record, 'pmk_tech_spec_id'):
+                linked.append(self._optional_rel(record, 'pmk_task_id', hidden))
         elif model == 'mrp.production':
             if 'sale_line_id' in record._fields:
                 linked.append(record.sale_line_id.order_id)
@@ -585,13 +611,19 @@ class PmkFlowBuilder(models.AbstractModel):
             linked.append(self._optional_rel(record, 'spec_ids', hidden))
             # Доборки — тоже (pmk_deal, шаг 35): счётчик «Доборки» над формой
             # и схема на вкладке «Связи» говорят одно и то же.
-            linked.append(self._optional_rel(record, 'dobor_ids', hidden))
+            # Разбор схемы 12.10.2026: у сделки — только то, что не висит на
+            # другом её документе. Доборка категории расчёта — на расчёте, счёт
+            # из расчёта — на расчёте, строка «Заказов в работе» со счётом — на
+            # счёте. Иначе от сделки шли линии через всю схему, поверх узлов.
+            linked.append(_without(self._optional_rel(record, 'dobor_ids', hidden), 'spec_id'))
             # Заказы клиента из сделки (sale_crm). Поле opportunity_id у
             # заказа появляется только с sale_crm — отсюда проверка поля.
-            linked.append(self._referrers('sale.order', 'opportunity_id', record.id, hidden))
-            # Строки «Заказов в работе» сделки (pmk_orders, шаг З-2) — и те,
+            linked.append(_without(self._referrers('sale.order', 'opportunity_id', record.id, hidden),
+                                   'pmk_spec_id'))
+            # Строки «Заказов в работе» сделки (pmk_orders, шаг З-2) — те,
             # что появились без счёта.
-            linked.append(self._referrers('project.task', 'pmk_deal_id', record.id, hidden))
+            linked.append(_without(self._referrers('project.task', 'pmk_deal_id', record.id, hidden),
+                                   'pmk_sale_order_id'))
         elif model == 'pmk.metal.spec':
             linked.append(self._optional_rel(record, 'opportunity_id', hidden))
             # Счёт покупателю из расчёта (pmk_orders, шаг З-2) — только
@@ -610,11 +642,18 @@ class PmkFlowBuilder(models.AbstractModel):
             # отдельной стрелки между ними не рисуем.
             linked.append(self._optional_rel(record, 'pmk_tech_order_id', hidden))
             linked.append(self._referrers('purchase.order', 'pmk_tech_spec_id', record.id, hidden))
+            # Калькуляторы категорий расчёта (pmk_calc, 12.10.2026).
+            for calc in _CALC_MODELS:
+                linked.append(self._referrers(calc, 'spec_id', record.id, hidden))
         elif model == 'pmk.cut.plan':
             linked.append(self._optional_rel(record, 'spec_id', hidden))
-        elif model == 'pmk.dobor.order':
-            # Доборка знает свою сделку (pmk_deal, шаг 35).
-            linked.append(self._optional_rel(record, 'opportunity_id', hidden))
+        elif model in _CALC_MODELS:
+            # Калькулятор категории — к своему расчёту; доборка сама по себе —
+            # к своей сделке (pmk_deal, шаг 35).
+            if _field(record, 'spec_id'):
+                linked.append(self._optional_rel(record, 'spec_id', hidden))
+            else:
+                linked.append(self._optional_rel(record, 'opportunity_id', hidden))
         elif model == 'pmk.laser.job':
             linked.append(self._optional_rel(record, 'spec_id', hidden))
             linked.append(self._optional_rel(record, 'sale_order_id', hidden))

@@ -5,8 +5,10 @@
 самом расчёте, вкладка «Металлоизделия»), доборные элементы, вентзонты (отдельные
 документы калькуляторов ДОБ-… / ВЗ-…, привязанные к расчёту полем «Расчёт»). Включили
 категорию — создаётся черновик в калькуляторе (клиент, объект; сделку переносит
-pmk_deal); выключили — черновик удаляется (сейчас в системе демо-данные, решение Антона:
-«можем делать всё что хотим»). Позже — другие категории тем же приёмом.
+pmk_deal); выключили — категория прячется: вкладка, металл и счёт её не видят, а документ
+с позициями остаётся привязанным и возвращается при включении (Антон 12.10: «если случайно
+нажать и отключить… придётся всё забивать с нуля»). Удаляется только пустой черновик.
+Позже — другие категории тем же приёмом.
 """
 from odoo import api, fields, models
 
@@ -38,8 +40,10 @@ class MetalSpecCategories(models.Model):
 
     cat_metal = fields.Boolean("Металлоизделия", default=True,
                                help="Изделия по чертежу — состав здесь же, во вкладке «Металлоизделия».")
-    cat_dobor = fields.Boolean("Доборные элементы", help="Включить — заведётся доборка этого расчёта.")
-    cat_vent = fields.Boolean("Вентзонты", help="Включить — заведётся заказ вентзонтов этого расчёта.")
+    cat_dobor = fields.Boolean("Доборные элементы", help="Включить — заведётся доборка этого расчёта. Выключить — доборка с позициями сохранится, "
+                                    "только не войдёт в расчёт.")
+    cat_vent = fields.Boolean("Вентзонты", help="Включить — заведётся заказ вентзонтов этого расчёта. Выключить — заказ с размерами "
+                                   "сохранится, только не войдёт в расчёт.")
     dobor_order_ids = fields.One2many("pmk.dobor.order", "spec_id", "Доборки")
     vent_order_ids = fields.One2many("pmk.vent.hood.order", "spec_id", "Вентзонты")
     dobor_line_ids = fields.Many2many("pmk.dobor.order.line", compute="_compute_child_lines",
@@ -67,7 +71,19 @@ class MetalSpecCategories(models.Model):
                 if spec[flag] and not docs:
                     self.env[model].create(spec._pmk_child_vals(model))
                 elif not spec[flag] and docs:
-                    docs.unlink()
+                    # Пустой черновик — мусор; документ с позициями — работа, его не трогаем.
+                    docs.filtered(lambda d: not d.line_ids).unlink()
+
+    @api.onchange("cat_dobor", "cat_vent")
+    def _onchange_category_off(self):
+        for flag, _model, field in CHILDREN:
+            docs = self[field].filtered("line_ids")
+            if not self[flag] and docs:
+                return {"warning": {
+                    "title": "Категория выключена",
+                    "message": "%s не удаляется: позиции сохранены, документ просто не входит в расчёт "
+                               "(металл, сумма, счёт). Включите категорию снова — всё вернётся."
+                               % ", ".join(docs.mapped("name"))}}
 
     @api.model_create_multi
     def create(self, vals_list):

@@ -25,9 +25,23 @@ class TestSpecCategories(TransactionCase):
         self.assertEqual(dobor.partner_id, other, "клиент расчёта — клиент его калькуляторов")
 
         spec.cat_dobor = False
-        self.assertFalse(dobor.exists(), "выключили — черновик удалён (демо-данные)")
+        self.assertFalse(dobor.exists(), "выключили — пустой черновик удалён")
         spec.cat_dobor = True
         self.assertEqual(len(spec.dobor_order_ids), 1, "включили снова — новый черновик, не два")
+
+    def test_toggle_off_keeps_filled_document(self):
+        """Случайно выключили категорию — позиции не пропадают (Антон 12.10)."""
+        spec = self.env["pmk.metal.spec"].create({"cat_vent": True})
+        ral = self.env.ref("pmk_calc.coating_ral8017")
+        vent = spec.vent_order_ids
+        vent.write({"line_ids": [(0, 0, {"width": 500, "length": 1000, "qty": 2, "coating_id": ral.id})]})
+        spec.cat_vent = False
+        self.assertTrue(vent.exists(), "документ с позициями не удаляется")
+        self.assertEqual(vent.spec_id, spec, "и остаётся привязанным к расчёту")
+        self.assertFalse(spec._pmk_buy_rows(), "но в металл выключенная категория не входит")
+        spec.cat_vent = True
+        self.assertEqual(spec.vent_order_ids, vent, "включили — вернулся тот же документ")
+        self.assertEqual(len(vent.line_ids), 1)
 
     def test_child_lines_and_open(self):
         spec = self.env["pmk.metal.spec"].create({"cat_vent": True})
