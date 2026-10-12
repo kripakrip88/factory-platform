@@ -101,9 +101,10 @@ class TestDoborCut(TransactionCase):
         self.assertIn("<svg", html)
         for colour in ("#dfe9c4", "#f3f1ec", "#5d6b2a"):
             self.assertNotIn(colour, html, "печать чёрно-белая — без цветных заливок")
-        action = order.action_print_cut()
-        self.assertEqual(action["type"], "ir.actions.report")
-        self.assertIn("pmk_calc.report_dobor_cut", str(action))
+        # Действие печати в тестовой базе может вернуть окно «нет wkhtmltopdf» — сверяем отчёт.
+        report = self.env.ref("pmk_calc.action_report_dobor_cut")
+        self.assertEqual((report.model, report.report_name), ("pmk.dobor.order", "pmk_calc.report_dobor_cut"))
+        self.assertTrue(order.action_print_cut())
 
     def test_plank_over_2500_forbidden(self):
         with self.assertRaises(ValidationError):
