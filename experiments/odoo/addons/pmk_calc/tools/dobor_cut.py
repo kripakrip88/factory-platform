@@ -188,7 +188,7 @@ def plan(strips, mass_per_m2):
             "recommend": "coil" if save > 0.05 else "stock"}
 
 
-def sheet_svg(card, title="", bw=False, width=560.0, size_mm=None):
+def sheet_svg(card, title="", bw=False, width=560.0, size_mm=None, natural=False):
     """Карта раскроя одного листа: лента — поперёк, заготовки — вдоль; подписи — номер
     позиции и размер. Лист рисуется лёжа (длина — по горизонтали), как его кладут."""
     L = card["length"]
@@ -203,7 +203,14 @@ def sheet_svg(card, title="", bw=False, width=560.0, size_mm=None):
     vb_w, vb_h = W_px + 2, H_px + pad_top + 2
     # size_mm — для PDF: wkhtmltopdf не растягивает SVG «на 100 %» (рисунок пропадал),
     # ему нужен точный размер; на экране — во всю ширину блока.
-    size = ('width="%.1fmm" height="%.1fmm"' % (size_mm, size_mm * vb_h / vb_w)) if size_mm else 'width="100%"'
+    # natural — экран: рисунок в своих единицах (1 ед. = 1 px), чтобы все карты были в одном
+    # масштабе, а не растягивались на ширину блока.
+    if size_mm:
+        size = 'width="%.1fmm" height="%.1fmm"' % (size_mm, size_mm * vb_h / vb_w)
+    elif natural:
+        size = 'width="%.1f" height="%.1f"' % (vb_w, vb_h)
+    else:
+        size = 'width="100%"'
     parts = ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %.1f %.1f" %s '
              'class="pmk-cut-sheet">' % (vb_w, vb_h, size)]
     head = title or ("%d × %d мм%s" % (SHEET_W, L, (" — листов: %d" % card["count"]) if card["count"] > 1 else ""))
@@ -246,6 +253,20 @@ def sheet_svg(card, title="", bw=False, width=560.0, size_mm=None):
                     'stroke-width="%s"/></pattern></defs>' % (hatch, "0.8" if bw else "2"))
     parts.append("</svg>")
     return "".join(parts)
+
+
+def is_ready(card):
+    """Карта — готовая заготовка с бухты: одна лента во всю ширину, она же одна заготовка,
+    лист длиной с неё (резать не нужно)."""
+    b = card["bands"]
+    return (len(b) == 1 and len(b[0]["items"]) == 1 and b[0]["used"] >= SHEET_W - 0.5
+            and card["length"] - b[0]["L"] < 1)
+
+
+def card_title(card):
+    if is_ready(card):
+        return "Готовая заготовка с бухты 1250 × %g мм — шт: %d" % (card["length"], card["count"])
+    return "Лист 1250 × %g мм%s" % (card["length"], (" — листов: %d" % card["count"]) if card["count"] > 1 else "")
 
 
 def card_steps(card):

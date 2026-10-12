@@ -1019,5 +1019,13 @@ body.o_nexus_dark {
 
 // Подпись листа в SVG — currentColor: цвет текста формы (в тёмной теме светлый).
 .pmk-cut-map {
-  flex: 0 1 560px;
+  flex: 0 0 auto;   // ширина — по длине листа (style flex-basis), один масштаб
+
+  svg { display: block; max-width: 100%; }
+}
+
+.pmk-cut-map__title {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 2px;
 }
