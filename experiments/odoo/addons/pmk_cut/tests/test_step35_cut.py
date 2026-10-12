@@ -520,3 +520,18 @@ class TestCutStep35(TransactionCase):
             dark = f.read()
         self.assertIn("body.o_nexus_dark .o_list_renderer .o_field_badge.pmk-cut-waste"
                       " > .badge.text-bg-secondary", dark, "Тёмная пара серого нуля.")
+
+    # ─── вкладка «Металл» расчёта (12.10.2026) ──────────────────────────
+    def test_metal_tab_piece_longer_than_bar(self):
+        """Деталь длиннее хлыста (в расчёте — весь объём одной строкой) раскрой не
+        разместит: строка проката так и говорит, а металл считается по длине."""
+        spec = self.env["pmk.metal.spec"].create({"partner_id": self.client.id})
+        plan = self._parts_plan((self.p100, 30000.0, 1), (self.p100, 5000.0, 2), spec_id=spec.id,
+                                stock_ids=[Command.create({"profile_id": self.p100.id,
+                                                           "length_mm": 12000.0, "qty": 0})])
+        plan.action_compute()
+        row, = spec._pmk_metal_rows_linear()
+        self.assertIn("1 заг., 12 м", row["amount"])
+        self.assertIn("30 м одной деталью — длиннее хлыста 12 м", row["amount"])
+        self.assertNotIn("не размещено", row["amount"])
+        self.assertAlmostEqual(row["kg"], (12.0 + 30.0) * 9.0, places=1)

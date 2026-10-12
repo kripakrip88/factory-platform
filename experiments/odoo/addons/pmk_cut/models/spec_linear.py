@@ -6,6 +6,7 @@
 расчёта») и считает. Результат — таблица во вкладке и строки «что купить»; сам раскрой
 (схемы, заготовки со склада, печать) открывается кнопкой — прежний документ РК-….
 """
+import json
 from html import escape
 
 from markupsafe import Markup
@@ -14,6 +15,12 @@ from odoo import _, fields, models
 from odoo.exceptions import UserError
 
 from odoo.addons.pmk_calc.models.spec_metal import rows_table
+
+
+def _m(mm):
+    """Миллиметры → метры словом: 12000 → «12», 318269 → «318,3»."""
+    text = ("%.1f" % (mm / 1000.0)).replace(".", ",")
+    return text[:-2] if text.endswith(",0") else text
 
 
 class MetalSpecLinear(models.Model):
@@ -43,14 +50,34 @@ class MetalSpecLinear(models.Model):
                 "views": [(False, "form")], "target": "current"}
 
     def _pmk_metal_rows_linear(self):
+        """Строки проката по раскрою. Деталь длиннее самого длинного хлыста раскрой не
+        разместит — в расчёте она, скорее всего, записана одной строкой «весь объём»
+        (318 269 мм × 1). Тогда так и пишем и считаем металл по длине, чтобы итог
+        «что купить» не занижался."""
         plan = self._pmk_cut_plan()
         rows = []
         for r in plan.result_ids:
-            amount = "%d заг., %s м" % (r.bars_used, ("%.1f" % (r.stock_mm / 1000.0)).replace(".", ","))
-            if r.unplaced_text:
-                amount += "; не размещено: %s" % r.unplaced_text
+            mass = r.profile_id.mass_per_meter or 0.0
+            longest = max(plan.stock_ids.filtered(lambda s, p=r.profile_id: s.profile_id == p)
+                          .mapped("length_mm") or [0])
+            res = json.loads(r.result_json or "{}")
+            long_mm = other = 0
+            for u in res.get("unplaced", []):
+                if longest and u["length"] > longest:
+                    long_mm += u["length"] * u["qty"]
+                else:
+                    other += u["qty"]
+            parts = []
+            if r.bars_used:
+                parts.append("%d заг., %s м" % (r.bars_used, ("%.1f" % (r.stock_mm / 1000.0)).replace(".", ",")))
+            if long_mm:
+                parts.append("%s м одной деталью — длиннее хлыста %s м: разбейте на детали; металл — по длине"
+                             % (_m(long_mm), _m(longest)))
+            if other or (r.unplaced_text and not long_mm):
+                parts.append("не размещено: %s" % r.unplaced_text)
             rows.append({"kind": "Прокат", "material": r.profile_id.display_name, "source": plan.name,
-                         "amount": amount, "kg": r.weight_total})
+                         "amount": "; ".join(parts) or "—",
+                         "kg": r.weight_total + long_mm / 1000.0 * mass})
         return rows
 
     def _pmk_buy_rows(self):

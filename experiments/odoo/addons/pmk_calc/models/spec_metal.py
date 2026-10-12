@@ -66,6 +66,18 @@ class MetalSpecMetal(models.Model):
             rows.append({"kind": "Лист", "material": material, "source": "Металлоизделия",
                          "amount": "%d × %s" % (g.sheets, sizes.get(g.sheet_size, g.sheet_size or "")),
                          "kg": g.sheets * area * mass})
+        # Детали без группы (листы не раскладывали черновиком или расчёт старый) — по
+        # оценке «каждая деталь отдельно»: листы складываются по листу и габариту.
+        loose = {}
+        for line in self.sheet_line_ids.filtered(lambda l: l.layout_sheets and not l.layout_group_id):
+            key = (line.sheet_id, line.layout_sheet_size)
+            loose[key] = loose.get(key, 0) + line.layout_sheets
+        for (sheet, size), count in loose.items():
+            m = SIZE_RE.match(size or "")
+            area = int(m.group(1)) * int(m.group(2)) / 1e6 if m else 0.0
+            rows.append({"kind": "Лист", "material": sheet.display_name or "лист", "source": "Металлоизделия",
+                         "amount": "%d × %s (по деталям, без раскладки)" % (count, sizes.get(size, size or "")),
+                         "kg": count * area * (sheet.mass_per_sqm or 0.0)})
         return rows
 
     def _pmk_metal_rows_dobor(self):
