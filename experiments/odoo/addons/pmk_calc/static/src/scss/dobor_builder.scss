@@ -989,8 +989,10 @@ body.o_nexus_dark {
 
 .pmk-cut-table {
   border-collapse: collapse;
-  max-width: 720px;
+  max-width: 980px;
   width: 100%;
+
+  th { white-space: nowrap; }
 
   th, td {
     padding: 5px 10px;

@@ -199,7 +199,8 @@ def sheet_svg(card, title="", bw=False, width=560.0, size_mm=None, natural=False
         ("#f3f1ec", "#dfe9c4", "#5d6b2a", "#2b3312", "#c9c2b2"))
     fs = 16.0 if bw else 10.0
     W_px, H_px = L * scale, SHEET_W * scale
-    pad_top = 22
+    # title=" " — подпись снаружи рисунка (экран, печать): места под неё не нужно.
+    pad_top = 2 if (title and not title.strip()) else 22
     vb_w, vb_h = W_px + 2, H_px + pad_top + 2
     # size_mm — для PDF: wkhtmltopdf не растягивает SVG «на 100 %» (рисунок пропадал),
     # ему нужен точный размер; на экране — во всю ширину блока.
@@ -214,8 +215,9 @@ def sheet_svg(card, title="", bw=False, width=560.0, size_mm=None, natural=False
     parts = ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %.1f %.1f" %s '
              'class="pmk-cut-sheet">' % (vb_w, vb_h, size)]
     head = title or ("%d × %d мм%s" % (SHEET_W, L, (" — листов: %d" % card["count"]) if card["count"] > 1 else ""))
-    parts.append('<text x="1" y="14" font-size="12" font-weight="600" fill="%s">%s</text>'
-                 % ("#000000" if bw else "currentColor", _esc(head)))
+    if head.strip():
+        parts.append('<text x="1" y="14" font-size="12" font-weight="600" fill="%s">%s</text>'
+                     % ("#000000" if bw else "currentColor", _esc(head)))
     parts.append('<rect x="1" y="%d" width="%.1f" height="%.1f" fill="%s" stroke="%s" '
                  'stroke-width="%s"/>' % (pad_top, W_px, H_px, sheet_fill, "#000000" if bw else "#8a857a",
                                           "1.6" if bw else "1"))
