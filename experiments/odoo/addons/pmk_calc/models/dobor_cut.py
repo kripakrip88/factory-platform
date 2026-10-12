@@ -106,7 +106,6 @@ class DoborOrderCut(models.Model):
 
 
 PRINT_CSS = """
-@page { size: A4; margin: 12mm; }
 * { box-sizing: border-box; }
 body { font-family: 'DejaVu Sans', Arial, sans-serif; font-size: 10pt; color: #000; margin: 0; }
 h1 { font-size: 15pt; margin: 0 0 2mm; }
@@ -125,7 +124,7 @@ table.pos td.n { text-align: right; white-space: nowrap; }
 .steps { margin: 1mm 0 0; padding-left: 5mm; }
 .steps li { margin: 0.3mm 0; }
 .legend { margin-top: 4mm; font-size: 8.5pt; }
-svg { display: block; width: 100%; height: auto; }
+svg { display: block; }
 """
 
 
@@ -174,7 +173,8 @@ class DoborOrderCutPrint(models.Model):
                 steps = "".join("<li>%s</li>" % escape(s) for s in C.card_steps(card))
                 out.append('<div class="card"><div class="card-head">%s<span class="box"></span></div>%s'
                            '<ol class="steps">%s</ol></div>' % (
-                               escape(head), C.sheet_svg(card, title=" ", bw=True, width=1000.0), steps))
+                               escape(head), C.sheet_svg(card, title=" ", bw=True, width=1000.0 * card["length"] / C.SHEET_L,
+                                                     size_mm=180.0 * card["length"] / C.SHEET_L), steps))
         out.append('<p class="legend">Гильотина: лист рубится поперёк на ленты (рез 1250 мм), лента — вдоль '
                    'на полосы «развёртка» (рез до 2500 мм). На полосе — номер позиции и размер; штриховка — '
                    'отход. Квадратик у карты — отметка «сделано».</p>')

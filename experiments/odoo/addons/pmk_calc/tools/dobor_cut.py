@@ -146,7 +146,7 @@ def plan(strips, mass_per_m2):
             "recommend": "coil" if save > 0.05 else "stock"}
 
 
-def sheet_svg(card, title="", bw=False, width=560.0):
+def sheet_svg(card, title="", bw=False, width=560.0, size_mm=None):
     """Карта раскроя одного листа: лента — поперёк, заготовки — вдоль; подписи — номер
     позиции и размер. Лист рисуется лёжа (длина — по горизонтали), как его кладут."""
     L = card["length"]
@@ -155,11 +155,15 @@ def sheet_svg(card, title="", bw=False, width=560.0):
     sheet_fill, part_fill, part_line, text_fill, hatch = (
         ("#ffffff", "#ffffff", "#000000", "#000000", "#000000") if bw else
         ("#f3f1ec", "#dfe9c4", "#5d6b2a", "#2b3312", "#c9c2b2"))
-    fs = 13.0 if bw else 10.0
+    fs = 16.0 if bw else 10.0
     W_px, H_px = L * scale, SHEET_W * scale
     pad_top = 22
-    parts = ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %.1f %.1f" width="100%%" '
-             'class="pmk-cut-sheet">' % (W_px + 2, H_px + pad_top + 2)]
+    vb_w, vb_h = W_px + 2, H_px + pad_top + 2
+    # size_mm — для PDF: wkhtmltopdf не растягивает SVG «на 100 %» (рисунок пропадал),
+    # ему нужен точный размер; на экране — во всю ширину блока.
+    size = ('width="%.1fmm" height="%.1fmm"' % (size_mm, size_mm * vb_h / vb_w)) if size_mm else 'width="100%"'
+    parts = ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %.1f %.1f" %s '
+             'class="pmk-cut-sheet">' % (vb_w, vb_h, size)]
     head = title or ("%d × %d мм%s" % (SHEET_W, L, (" — листов: %d" % card["count"]) if card["count"] > 1 else ""))
     parts.append('<text x="1" y="14" font-size="12" font-weight="600" fill="%s">%s</text>'
                  % ("#000000" if bw else "currentColor", _esc(head)))
@@ -178,10 +182,18 @@ def sheet_svg(card, title="", bw=False, width=560.0):
             if b["L"] - it["l"] > 0.5:
                 parts.append('<rect x="%.1f" y="%.1f" width="%.1f" height="%.1f" fill="url(#h)" '
                              'stroke="none"/>' % (x + w, y, (b["L"] - it["l"]) * scale, h))
-            if h >= 9:
+            text = "%s · %s" % (it["label"], it["dims"])
+            need = len(text) * fs * 0.62 + 6          # ширина подписи, прикидка
+            if w < need and h > w:
+                # Узкая высокая полоса (заготовка поперёк листа) — подпись вдоль неё.
+                f = min(fs, w - 2)
+                if f >= 6:
+                    parts.append('<text transform="translate(%.1f %.1f) rotate(90)" font-size="%.1f" '
+                                 'fill="%s">%s</text>' % (x + (w - f) / 2 + 1, y + 3, f, text_fill, _esc(text)))
+            elif h >= 9:
                 f = min(fs, h - 2)
-                parts.append('<text x="%.1f" y="%.1f" font-size="%.1f" fill="%s">%s · %s</text>' % (
-                    x + 3, y + min(h - 2, f + 1), f, text_fill, _esc(it["label"]), it["dims"]))
+                parts.append('<text x="%.1f" y="%.1f" font-size="%.1f" fill="%s">%s</text>' % (
+                    x + 3, y + min(h - 2, f + 1), f, text_fill, _esc(text)))
         # Отход ленты поперёк (ширина, оставшаяся после заготовок).
         if SHEET_W - b["used"] > 0.5:
             parts.append('<rect x="%.1f" y="%.1f" width="%.1f" height="%.1f" fill="url(#h)" '

@@ -46,6 +46,21 @@
 
   <!-- Раскрой листа для гильотины (12.10.2026): чёрно-белый, A4, вёрстка — строкой из
        pmk.dobor.order._cut_print_html (models/dobor_cut.py), как у производственного листа. -->
+  <!-- Поля — у страницы (wkhtmltopdf не повторяет отступы тела на каждой странице:
+       со второй страницы карта прилипала к верхнему краю). -->
+  <record id="paperformat_dobor_cut" model="report.paperformat">
+    <field name="name">Раскрой листа доборки</field>
+    <field name="format">A4</field>
+    <field name="orientation">Portrait</field>
+    <field name="margin_top">10</field>
+    <field name="margin_bottom">10</field>
+    <field name="margin_left">12</field>
+    <field name="margin_right">12</field>
+    <field name="header_line" eval="False"/>
+    <field name="header_spacing">0</field>
+    <field name="dpi">96</field>
+  </record>
+
   <template id="report_dobor_cut">
     <t t-call="web.html_container">
       <t t-foreach="docs" t-as="doc">
@@ -61,7 +76,7 @@
     <field name="report_name">pmk_calc.report_dobor_cut</field>
     <field name="report_file">pmk_calc.report_dobor_cut</field>
     <field name="print_report_name">'Раскрой %s' % (object.name)</field>
-    <field name="paperformat_id" ref="paperformat_dobor_sheet"/>
+    <field name="paperformat_id" ref="paperformat_dobor_cut"/>
     <field name="binding_model_id" ref="model_pmk_dobor_order"/>
     <field name="binding_type">report</field>
   </record>
