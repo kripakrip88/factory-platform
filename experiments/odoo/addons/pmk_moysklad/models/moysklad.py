@@ -108,7 +108,8 @@ class PmkMoysklad(models.AbstractModel):
             raise UserError("Нет токена МоегоСклада: системный параметр pmk_moysklad.token.")
         url = API + path
         if params:
-            url += ("&" if "?" in url else "?") + urllib.parse.urlencode(params, safe=">=<:,;")
+            url += ("&" if "?" in url else "?") + urllib.parse.urlencode(
+                params, safe=">=<:,;", quote_via=urllib.parse.quote)  # пробел — %20, не «+»
         for attempt in range(6):
             req = urllib.request.Request(url, headers={
                 "Authorization": "Bearer " + token, "Accept-Encoding": "gzip"})
@@ -132,7 +133,7 @@ class PmkMoysklad(models.AbstractModel):
         """Все строки сущности (постранично), по возрастанию updated."""
         flt = []
         if updated_since:
-            flt.append("updated>=%s" % updated_since)
+            flt.append("updated>=%s" % updated_since[:19])  # без миллисекунд — иначе 400
         if extra_filter:
             flt.append(extra_filter)
         params = {"limit": PAGE, "order": "updated,asc"}
