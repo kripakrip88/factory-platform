@@ -85,7 +85,9 @@ class TestMoysklad(TransactionCase):
         self.assertIn(self.env.ref("pmk_moysklad.partner_tag_ms"), o1.partner_id.category_id)
         self.assertEqual(o1.pmk_org_id.inn, "272107382162")
         self.assertAlmostEqual(o1.amount_total, 2500.0, places=2, msg="НДС в цене — сумма как в МоёмСкладе")
-        self.assertEqual(o1.order_line.mapped("tax_ids.pmk_regime"), ["vat22"])
+        taxes = self.env["pmk.moysklad"]._taxes()
+        self.assertEqual(o1.order_line.mapped("tax_ids.pmk_regime"), ["vat22"],
+                         "налоги режимов: %s" % {k: v.ids for k, v in taxes.items()})
         self.assertEqual(o1.order_line[0].pmk_ms_group, "embed")
         self.assertFalse(o1.pmk_ms_note)
         self.assertEqual((o1.pmk_ms_state, o1.pmk_lead_days, o1.pmk_delivery, o1.pmk_ms_object),

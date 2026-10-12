@@ -372,6 +372,11 @@ class PmkMoysklad(models.AbstractModel):
                 order.write(vals)
             else:
                 order = Order.create(vals)
+            # Налог строки — как в МоёмСкладе: пересчёт налога по организации (pmk_org,
+            # _compute_tax_ids) мог его заменить при создании — ставим ещё раз.
+            for line, (_c, _i, lv) in zip(order.order_line.sorted("sequence"), vals["order_line"]):
+                if line.tax_ids.ids != lv["tax_ids"][0][2]:
+                    line.tax_ids = lv["tax_ids"]
             diff = abs(order.amount_total - vals["pmk_ms_sum"])
             if diff > 0.05:
                 order.pmk_ms_note = "; ".join(filter(None, [
