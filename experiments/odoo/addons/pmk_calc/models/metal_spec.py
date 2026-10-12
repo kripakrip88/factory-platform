@@ -36,6 +36,9 @@ class MetalSpec(models.Model):
     _description = "Расчёт металлопроката"
     _inherit = ["mail.thread"]
     _order = "date desc, id desc"
+    # Архив (Антон 12.10.2026: демо-данные «просто всё убрать в архив»): снятый документ
+    # не виден в списках и связях, вернуть — фильтр «Архив» → «Разархивировать».
+    active = fields.Boolean("Активен", default=True)
 
     name = fields.Char("Номер", required=True, copy=False, readonly=True, default="Черновик")
     date = fields.Date("Дата", required=True, default=fields.Date.context_today, tracking=True)

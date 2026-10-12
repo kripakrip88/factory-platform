@@ -328,6 +328,8 @@
           <filter name="by_partner" string="Клиент" context="{'group_by': 'partner_id'}"/>
           <filter name="by_date" string="Дата" context="{'group_by': 'date'}"/>
         </group>
+        <separator/>
+        <filter name="pmk_archived" string="Архив" domain="[('active', '=', False)]"/>
       </search>
     </field>
   </record>

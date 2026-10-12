@@ -249,6 +249,8 @@
           <filter name="by_state" string="Статус" context="{'group_by': 'state'}"/>
           <filter name="by_date" string="Дата" context="{'group_by': 'order_date'}"/>
         </group>
+        <separator/>
+        <filter name="pmk_archived" string="Архив" domain="[('active', '=', False)]"/>
       </search>
     </field>
   </record>

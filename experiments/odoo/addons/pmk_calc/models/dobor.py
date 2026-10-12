@@ -143,6 +143,9 @@ class DoborOrder(models.Model):
     _description = "Заказ доборных элементов"
     _inherit = ["mail.thread"]
     _order = "order_date desc, id desc"
+    # Архив (Антон 12.10.2026: демо-данные «просто всё убрать в архив»): снятый документ
+    # не виден в списках и связях, вернуть — фильтр «Архив» → «Разархивировать».
+    active = fields.Boolean("Активен", default=True)
 
     name = fields.Char("Номер", required=True, copy=False, readonly=True, default="Черновик")
     # Разбор UX, шаг 35 (02.10.2026): «Клиент / изделие» был свободным

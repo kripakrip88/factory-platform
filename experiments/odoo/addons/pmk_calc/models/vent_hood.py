@@ -51,6 +51,9 @@ class VentHoodOrder(models.Model):
     _description = "Заказ вентзонтов"
     _inherit = ["mail.thread"]
     _order = "order_date desc, id desc"
+    # Архив (Антон 12.10.2026: демо-данные «просто всё убрать в архив»): снятый документ
+    # не виден в списках и связях, вернуть — фильтр «Архив» → «Разархивировать».
+    active = fields.Boolean("Активен", default=True)
 
     name = fields.Char("Номер", required=True, copy=False, readonly=True, default="Черновик")
     partner_id = fields.Many2one("res.partner", "Клиент", tracking=True)

@@ -75,3 +75,18 @@ class TestSpecCategories(TransactionCase):
         html = str(spec.metal_total_html)
         self.assertIn("RAL 9999 (тест металла)", html)
         self.assertIn("Итого", html)
+
+    def test_archive_documents(self):
+        """Демо-данные — в архив (Антон 12.10): расчёт, доборка и зонты архивируются и
+        возвращаются; в поиске — фильтр «Архив»."""
+        spec = self.env["pmk.metal.spec"].create({"cat_dobor": True, "cat_vent": True})
+        docs = spec | spec.dobor_order_ids | spec.vent_order_ids
+        for rec in docs:
+            rec.action_archive()
+            self.assertFalse(rec.active)
+            self.assertFalse(rec.search([("id", "=", rec.id)]), "архив не виден в списке")
+            rec.action_unarchive()
+            self.assertTrue(rec.active)
+        for xmlid in ("pmk_calc.view_metal_spec_search", "pmk_calc.view_dobor_order_search",
+                      "pmk_calc.view_vent_hood_order_search"):
+            self.assertIn('name="pmk_archived"', self.env.ref(xmlid).arch)

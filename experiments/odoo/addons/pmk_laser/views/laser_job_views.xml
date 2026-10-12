@@ -512,6 +512,8 @@
           <filter name="group_partner" string="Заказчик" context="{'group_by': 'partner_id'}"/>
           <filter name="group_thickness" string="Толщина" context="{'group_by': 'thickness_mm'}"/>
         </group>
+        <separator/>
+        <filter name="pmk_archived" string="Архив" domain="[('active', '=', False)]"/>
       </search>
     </field>
   </record>
