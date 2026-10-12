@@ -1515,3 +1515,13 @@ $pmk-dark-alerts: (
   }
 }
 
+
+// ═══ Шаг 67: вкладки документа как в Chrome — тёмная пара (12.10.2026) ═══
+// Светлые правила — forms_nexus.scss, раздел «Шаг 67»; фон и черта открытой
+// вкладки — переменные карточки, тёмные сами. Здесь — подложка наведения.
+@media screen and (min-width: 768px) {
+
+  body.o_nexus_dark .o_action_manager .o_form_view .o_form_sheet:has(> .pmk-doc-top) > .o_notebook > .o_notebook_headers .nav-link:not(.active):hover::after {
+    background: rgba(255, 255, 255, 0.07);
+  }
+}

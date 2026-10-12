@@ -3511,3 +3511,150 @@ $pmk-card-line: unquote("var(--pmk-border, #e3e4e8)") !default;
     width: 24%;
   }
 }
+
+// ═══ Шаг 67: вкладки документа как в Chrome (задача 265, 12.10.2026) ═══════
+// Антон (карточка 265, скриншот Chrome): «смотри как в хроме реализованы
+// вкладки, может сделаем подобное в нашей ерп? будет комфортнее». Макет
+// принят 12.10: «макет подходит, делаем».
+//
+// Было (шаг 52.4): ярлыки-слова с чертой снизу, под ними с зазором 12 px
+// карточка содержимого. Стало: открытая вкладка — того же цвета, что
+// карточка, со скруглением сверху, и «вырастает» из неё: снизу по бокам
+// вогнутые скругления («ножки»), черта карточки под вкладкой не видна.
+// Закрытые — текст на фоне, при наведении бледная подложка; между закрытыми
+// тонкий разделитель, у соседей открытой он прячется — как у Chrome.
+//
+// Только документы с шапкой-карточкой (шаг 52: .o_form_sheet:has(>
+// .pmk-doc-top)) — у них вкладки стоят на бежевом. В белом листе (прочие
+// формы) вкладке не из чего «вырастать», там как было.
+//
+// Грабли:
+//  • полоса ярлыков (.o_notebook_headers) — overflow: auto hidden: всё, что
+//    выходит за её края, обрезается. Поэтому ножки — внутри полосы (отступ
+//    слева 14 px), а под вкладку уходит карточка: margin-top -1 px, полоса
+//    поверх (z-index), и низ открытой вкладки закрывает черту карточки;
+//  • ножка — фон radial-gradient: снаружи дуги — фон карточки, на дуге —
+//    цвет черты, внутри прозрачно (бежевый). Цвета — те же переменные, что у
+//    карточки, тёмная тема подхватывает их сама;
+//  • ядро/тема: у открытой ярлык подчёркнут box-shadow inset, у полосы
+//    border-bottom — снимаем;
+//  • !important вынужденный: тема Nexus красит ярлыки правилами
+//    .o_notebook .nav-tabs .nav-link{,.active,:hover} с !important (цвет,
+//    фон, черта), тёмная — body.o_nexus_dark … с !important (лайм открытой).
+//    Наши селекторы весомее (0,8,0), так что !important на !important
+//    выигрывает у обоих.
+//
+// ОТКАТ: удалить раздел (и тёмную пару в dark.scss) — вернётся вид шага 52.4.
+
+$pmk-tab-r: 10px !default;
+
+@media screen and (min-width: 768px) {
+
+  .o_action_manager .o_form_view .o_form_sheet:has(> .pmk-doc-top) > .o_notebook {
+
+    > .o_notebook_headers {
+      position: relative;
+      z-index: 1;
+      border-bottom: 0 !important;
+
+      // Черта полосы ярлыков (тема, светлая и тёмная, !important) легла бы
+      // поверх открытой вкладки — её роль играет верх карточки.
+      .nav {
+        gap: 0;
+        padding-inline-start: 14px;
+        border-bottom: 0 !important;
+      }
+
+      .nav-item {
+        margin: 0;
+      }
+
+      .nav-link {
+        position: relative;
+        margin: 0 2px 0 0;
+        padding: 9px 18px 10px;
+        border: 1px solid transparent !important;
+        border-bottom: 0 !important;
+        border-radius: $pmk-tab-r $pmk-tab-r 0 0;
+        background: transparent !important;
+        box-shadow: none !important;
+        color: var(--pmk-text-muted, #8a8d96) !important;
+        font-weight: 500;
+
+        &:not(.active):hover {
+          color: var(--pmk-text-strong, #16191c) !important;
+        }
+
+        // Подложка наведения — «таблетка» внутри ярлыка, не во всю высоту.
+        &:not(.active)::after {
+          content: "";
+          position: absolute;
+          inset: 4px 2px 5px;
+          border-radius: 8px;
+          background: transparent;
+          z-index: -1;
+        }
+
+        &:not(.active):hover::after {
+          background: rgba(22, 25, 28, 0.06);
+        }
+
+        &.active {
+          z-index: 1;
+          color: var(--pmk-text-strong, #16191c) !important;
+          background: $pmk-card-bg !important;
+          border-color: $pmk-card-line !important;
+        }
+
+        // Ножки открытой вкладки: вогнутая дуга радиуса $pmk-tab-r. Ножка на
+        // 1 px шире радиуса и крайним столбцом ложится на боковую черту
+        // вкладки: низ черты закрыт фоном, и дуга продолжает её без стыка.
+        &.active::before,
+        &.active::after {
+          content: "";
+          position: absolute;
+          bottom: 0;
+          width: $pmk-tab-r + 1px;
+          height: $pmk-tab-r + 1px;
+          pointer-events: none;
+        }
+
+        &.active::before {
+          left: -$pmk-tab-r - 1px;
+          background: radial-gradient(circle at 0 0, transparent $pmk-tab-r,
+            #{$pmk-card-line} $pmk-tab-r, #{$pmk-card-line} $pmk-tab-r + 1px, #{$pmk-card-bg} $pmk-tab-r + 1px);
+        }
+
+        &.active::after {
+          right: -$pmk-tab-r - 1px;
+          background: radial-gradient(circle at 100% 0, transparent $pmk-tab-r,
+            #{$pmk-card-line} $pmk-tab-r, #{$pmk-card-line} $pmk-tab-r + 1px, #{$pmk-card-bg} $pmk-tab-r + 1px);
+        }
+      }
+
+      // Разделитель между закрытыми; у соседей открытой и под курсором — нет.
+      .nav-item + .nav-item > .nav-link:not(.active)::before {
+        content: "";
+        position: absolute;
+        left: -1px;
+        top: 50%;
+        width: 1px;
+        height: 16px;
+        margin-top: -8px;
+        background: $pmk-card-line;
+      }
+
+      .nav-item:has(> .nav-link.active) + .nav-item > .nav-link:not(.active)::before,
+      .nav-item + .nav-item > .nav-link:not(.active):hover::before,
+      .nav-item:has(> .nav-link:hover) + .nav-item > .nav-link:not(.active)::before {
+        display: none;
+      }
+    }
+
+    // Карточка — вплотную под вкладками, на 1 px под полосой: черту карточки
+    // под открытой вкладкой закрывает её низ.
+    > .o_notebook_content {
+      margin-top: -1px;
+    }
+  }
+}

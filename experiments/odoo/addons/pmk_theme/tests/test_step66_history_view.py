@@ -322,7 +322,11 @@ class TestStep66HistoryView(TransactionCase):
             with self.subTest(path=path):
                 start = source.index(STEP_MARK)
                 self.assertEqual(source.count(STEP_MARK), 1)
-                self.assertEqual(source.find("// ═══", start + 1), -1, "Раздел — последним в файле.")
+                # Ниже — только разделы новее (шаг 67: вкладки как в Chrome).
+                later = source.find("// ═══", start + 1)
+                while later != -1:
+                    self.assertIn("Шаг 67", source[later:later + 80], "Ниже шага 66 — только новее")
+                    later = source.find("// ═══", later + 1)
                 self.assertLess(source.index("// ═══ Шаг 65"), start)
                 self.assertLess(source.index("// ═══ Шаг 52"), start)
         self.assertNotIn("Шаг 66", _read(OLD_FORMS_SCSS), "forms.scss выключен — правка туда не доедет.")
