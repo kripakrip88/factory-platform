@@ -95,6 +95,7 @@ class TestSpecCategories(TransactionCase):
         from odoo.addons.pmk_calc.models import spec_move as sm
         self.assertEqual(sm.parse_length("Отлив оконный RAL 8017, L=2000"), 2000)
         self.assertEqual(sm.parse_size("Зонт вш 500х1000"), (500, 1000))
+        self.assertEqual(sm.parse_size("Зонт 850мм x 1000мм (шахта: 550мм x700мм) 0,65мм цинк"), (550, 700))
         self.assertEqual(sm.move_hint("Планка угла наружного"), "dobor")
         self.assertEqual(sm.move_hint("Зонт вш 500х1000"), "vent")
         spec = self.env["pmk.metal.spec"].create({"product_ids": [

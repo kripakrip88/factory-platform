@@ -24,7 +24,10 @@ from odoo.addons.pmk_calc.tools import dobor_cut as C
 DOBOR_RX = r"отлив|планк|добор|капельн|кон[её]к|ендов|нащельник|откос|парапет|примыкан|желоб|жёлоб|фартук"
 VENT_RX = r"зонт|\bвш\b|дефлектор"
 RAL_RX = re.compile(r"ral\s*-?\s*(\d{4})", re.I)
-SIZE_RX = re.compile(r"(\d{2,4})\s*[хx×*]\s*(\d{2,4})", re.I)
+# «500х1000», «550мм x700мм»; у зонта из МоегоСклада — «Зонт 850мм x 1000мм (шахта: 550мм
+# x700мм)»: в калькуляторе размер — шахты, его и берём, если он назван.
+SIZE_RX = re.compile(r"(\d{2,4})\s*(?:мм)?\s*[хx×*]\s*(\d{2,4})", re.I)
+SHAFT_RX = re.compile(r"шахт\w*\s*:?\s*(\d{2,4})\s*(?:мм)?\s*[хx×*]\s*(\d{2,4})", re.I)
 LEN_RX = re.compile(r"(?:\bl\s*=?\s*|длин\w*\s*)(\d{3,4})|(\d{3,4})\s*мм", re.I)
 
 
@@ -43,7 +46,7 @@ def parse_ral(name):
 
 
 def parse_size(name):
-    m = SIZE_RX.search(name or "")
+    m = SHAFT_RX.search(name or "") or SIZE_RX.search(name or "")
     return (int(m.group(1)), int(m.group(2))) if m else (0, 0)
 
 
@@ -95,6 +98,8 @@ class MetalSpecMove(models.Model):
         Coating = self.env["pmk.dobor.coating"]
         ral = parse_ral(name)
         coating = ral and Coating.search([("ral_code", "=", ral)], limit=1)
+        if not coating and re.search(r"цинк|оцинк", (name or "").lower()):
+            coating = Coating.search([("ral_code", "in", (False, "")), ("name", "ilike", "цинк")], limit=1)
         if not coating:
             coating = Coating.search([("ral_code", "=", "8017")], limit=1) or Coating.search([], limit=1)
             notes.append("%s — цвет %s (в названии не найден, проверьте)" % (name, coating.name))
@@ -122,8 +127,8 @@ class MetalSpecMove(models.Model):
                 notes.append("%s — длина %d больше %d (гильотина и гибка), поставлено %d" % (
                     product.name, length, C.MAX_LEN, C.MAX_LEN))
                 length = C.MAX_LEN
-            ral = parse_ral(product.name)
-            coating = ral and self.env["pmk.dobor.coating"].search([("ral_code", "=", ral)], limit=1)
+            coating = self._pmk_coating(product.name, []) if (
+                parse_ral(product.name) or re.search(r"цинк", product.name.lower())) else False
             lines.append((0, 0, {"title": product.name[:250], "plank_length": float(length),
                                  "qty": product.qty or 1, "price_unit": product._pmk_price(),
                                  "coating_id": coating.id if coating else False}))
