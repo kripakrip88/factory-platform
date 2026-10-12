@@ -377,10 +377,10 @@ class SaleOrder(models.Model):
             if not spec:
                 continue
             if order.state == "draft":
-                skipped = spec.product_ids - self._pmk_priced_products(spec)
+                skipped = self._pmk_unpriced_names(spec)
                 if skipped:
                     order.pmk_skip_text = _(
-                        "Без цены клиенту, в счёт не попали: %s", ", ".join(skipped.mapped("name")))
+                        "Без цены клиенту, в счёт не попали: %s", ", ".join(skipped))
                 continue
             if order.state not in ("sent", "sale"):
                 continue
@@ -599,7 +599,7 @@ class SaleOrder(models.Model):
             raise UserError(_("У счёта нет расчёта — новую редакцию не собрать."))
         deal = self.opportunity_id.sudo() or spec.opportunity_id
         partner = self._pmk_invoice_partner(deal, spec)
-        if not partner or not self._pmk_priced_products(spec):
+        if not partner or not self._pmk_invoice_items(spec):
             raise UserError(_(
                 "В расчёте %s нет клиента или цены клиенту ни у одного изделия — "
                 "новую редакцию не собрать.", spec.name))
@@ -711,6 +711,55 @@ class SaleOrder(models.Model):
         return spec.product_ids.filtered(lambda product: product.price_customer_unit)
 
     @api.model
+    def _pmk_invoice_items(self, spec):
+        """Строки счёта из расчёта (12.10.2026): изделия металлоизделий с ценой клиенту, и —
+        по категориям расчёта — позиции доборки и размеры вентзонтов с ценой (цена ручная).
+        Ключ строки — откуда она: ("p", изделие) / ("d", позиция доборки) / ("v", зонт)."""
+        metal = "cat_metal" not in spec._fields or spec.cat_metal
+        items = [{"key": ("p", p.id), "name": p.name or "", "qty": p.qty, "price": p.price_customer_unit,
+                  "sequence": p.sequence, "link": {"pmk_spec_product_id": p.id}}
+                 for p in (self._pmk_priced_products(spec) if metal else [])]
+        if "cat_dobor" in spec._fields and spec.cat_dobor:
+            for line in spec.dobor_order_ids.line_ids.filtered("price_unit"):
+                items.append({
+                    "key": ("d", line.id),
+                    "name": "Доборный элемент «%s», %s, длина %g мм" % (
+                        line.display_name, line.coating_id.name or "без покрытия", line.plank_length),
+                    "qty": line.qty, "price": line.price_unit, "sequence": 1000 + line.sequence,
+                    "link": {"pmk_dobor_line_id": line.id}})
+        if "cat_vent" in spec._fields and spec.cat_vent:
+            for line in spec.vent_order_ids.line_ids.filtered(lambda l: l.price_unit and l.spec_json):
+                items.append({
+                    "key": ("v", line.id),
+                    "name": "Вентзонт %s мм (шахта %s мм), %s" % (
+                        line.hood_size or "", line.shaft_size or "", line.coating_id.name or "без покрытия"),
+                    "qty": line.qty, "price": line.price_unit, "sequence": 2000 + line.sequence,
+                    "link": {"pmk_vent_line_id": line.id}})
+        return items
+
+    @api.model
+    def _pmk_unpriced_names(self, spec):
+        """Что без цены клиенту и в счёт не попало — изделия, позиции доборки, зонты."""
+        names = []
+        if "cat_metal" not in spec._fields or spec.cat_metal:
+            names = (spec.product_ids - self._pmk_priced_products(spec)).mapped("name")
+        if "cat_dobor" in spec._fields and spec.cat_dobor:
+            names += spec.dobor_order_ids.line_ids.filtered(lambda l: not l.price_unit).mapped("display_name")
+        if "cat_vent" in spec._fields and spec.cat_vent:
+            names += spec.vent_order_ids.line_ids.filtered(lambda l: not l.price_unit).mapped("display_name")
+        return names
+
+    @staticmethod
+    def _pmk_line_key(line):
+        if line.pmk_spec_product_id:
+            return ("p", line.pmk_spec_product_id.id)
+        if line.pmk_dobor_line_id:
+            return ("d", line.pmk_dobor_line_id.id)
+        if line.pmk_vent_line_id:
+            return ("v", line.pmk_vent_line_id.id)
+        return ("x", 0)
+
+    @api.model
     def _pmk_invoice_partner(self, deal, spec):
         """Клиент счёта — компания клиента сделки, иначе расчёта."""
         return (deal.partner_id or spec.partner_id).commercial_partner_id
@@ -722,16 +771,16 @@ class SaleOrder(models.Model):
         Услуги (строки не из расчёта) в подпись не входят."""
         currency = spec.currency_id or self.env.company.currency_id
         rows = sorted(
-            (product.id, (product.name or "").strip(), round(float(product.qty or 0), 3),
-             currency.round(product.price_customer_unit))
-            for product in self._pmk_priced_products(spec))
+            (item["key"], (item["name"] or "").strip(), round(float(item["qty"] or 0), 3),
+             currency.round(item["price"]))
+            for item in self._pmk_invoice_items(spec))
         return (tuple(rows), partner.id, org.id or False)
 
     def _pmk_signature(self):
         self.ensure_one()
         currency = self.currency_id or self.company_id.currency_id
         rows = sorted(
-            (line.pmk_spec_product_id.id or 0, (line.name or "").strip(),
+            (self._pmk_line_key(line), (line.name or "").strip(),
              round(line.product_uom_qty, 3), currency.round(line.price_unit))
             for line in self.order_line.filtered("pmk_from_spec"))
         return (tuple(rows), self.partner_id.id, self.pmk_org_id.id or False)
@@ -750,27 +799,27 @@ class SaleOrder(models.Model):
 
     @api.model
     def _pmk_line_vals(self, item):
-        return {
+        """item — строка _pmk_invoice_items (словарь)."""
+        return dict({
             "product_id": self._pmk_service_product().id,
-            "name": item.name,
-            "product_uom_qty": item.qty,
+            "name": item["name"],
+            "product_uom_qty": item["qty"],
             "product_uom_id": self.env.ref("uom.product_uom_unit").id,
             # Цена — ручная для ядра: _compute_price_unit (зависит от
             # количества) не перетирает цену, если technical_price_unit ≠
             # price_unit. Без явного 0 ядро при создании ставит technical =
             # price (sale_order_line._add_precomputed_values), и смена одного
             # количества в расчёте сбросила бы цену в цену товара — 0 ₽.
-            "price_unit": item.price_customer_unit,
+            "price_unit": item["price"],
             "technical_price_unit": 0.0,
-            "sequence": item.sequence,
-            "pmk_spec_product_id": item.id,
+            "sequence": item["sequence"],
             "pmk_from_spec": True,
-        }
+        }, **item["link"])
 
     @api.model
     def _pmk_line_commands(self, spec):
         return [Command.create(self._pmk_line_vals(item))
-                for item in self._pmk_priced_products(spec)]
+                for item in self._pmk_invoice_items(spec)]
 
     def _pmk_sync_line_commands(self, spec):
         """Строки-изделия черновика = изделия расчёта с ценой: совпавшие по
@@ -778,33 +827,34 @@ class SaleOrder(models.Model):
         из расчёта (услуги) не трогаются."""
         self.ensure_one()
         currency = self.currency_id or self.company_id.currency_id
-        wanted = {item.id: item for item in self._pmk_priced_products(spec)}
+        wanted = {item["key"]: item for item in self._pmk_invoice_items(spec)}
         commands, seen = [], set()
         for line in self.order_line.filtered("pmk_from_spec"):
-            item = line.pmk_spec_product_id
-            if item.id not in wanted or item.id in seen:
+            key = self._pmk_line_key(line)
+            if key not in wanted or key in seen:
                 commands.append(Command.delete(line.id))
                 continue
-            seen.add(item.id)
+            seen.add(key)
+            item = wanted[key]
             vals = {}
-            if (line.name or "") != (item.name or ""):
-                vals["name"] = item.name
-            if float_compare(line.product_uom_qty, item.qty, precision_digits=3):
-                vals["product_uom_qty"] = item.qty
-            if (currency.compare_amounts(line.price_unit, item.price_customer_unit)
+            if (line.name or "") != (item["name"] or ""):
+                vals["name"] = item["name"]
+            if float_compare(line.product_uom_qty, item["qty"], precision_digits=3):
+                vals["product_uom_qty"] = item["qty"]
+            if (currency.compare_amounts(line.price_unit, item["price"])
                     or "product_uom_qty" in vals or line.technical_price_unit):
                 # Цена пишется вместе с количеством: записанное поле ядро в
                 # том же проходе не пересчитывает; technical = 0 — цена
                 # остаётся «ручной» и дальше (и у строк, заведённых до
                 # исправления, где technical = price).
-                vals["price_unit"] = item.price_customer_unit
+                vals["price_unit"] = item["price"]
                 vals["technical_price_unit"] = 0.0
-            if line.sequence != item.sequence:
-                vals["sequence"] = item.sequence
+            if line.sequence != item["sequence"]:
+                vals["sequence"] = item["sequence"]
             if vals:
                 commands.append(Command.update(line.id, vals))
         commands += [Command.create(self._pmk_line_vals(item))
-                     for item_id, item in wanted.items() if item_id not in seen]
+                     for key, item in wanted.items() if key not in seen]
         return commands
 
     @api.model

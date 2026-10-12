@@ -29,7 +29,8 @@ from .sale_order import ADD_SERVICE, freeze_allowed, snapshot_error, spec_lines_
 
 # Поля строки-изделия, которые меняют в расчёте, а не в счёте.
 SPEC_LOCKED_FIELDS = ("name", "product_uom_qty", "price_unit", "product_id",
-                      "product_uom_id", "discount", "pmk_spec_product_id", "pmk_from_spec")
+                      "product_uom_id", "discount", "pmk_spec_product_id", "pmk_from_spec",
+                      "pmk_dobor_line_id", "pmk_vent_line_id")
 
 
 class SaleOrderLine(models.Model):
@@ -39,6 +40,11 @@ class SaleOrderLine(models.Model):
         "pmk.metal.spec.product", "Изделие расчёта", index=True,
         ondelete="set null", copy=False,
         help="Изделие расчёта, из которого пришла строка. Состав и вес — в расчёте.")
+    # Категории расчёта (12.10.2026): позиция доборки и размер вентзонтов с ручной ценой.
+    pmk_dobor_line_id = fields.Many2one(
+        "pmk.dobor.order.line", "Позиция доборки", index=True, ondelete="set null", copy=False)
+    pmk_vent_line_id = fields.Many2one(
+        "pmk.vent.hood", "Вентзонт", index=True, ondelete="set null", copy=False)
     # Отдельный признак, а не «есть изделие»: изделие удалили из расчёта —
     # ссылка обнулится (set null), а строка всё равно расчётная, и новая
     # редакция должна её заменить, а не оставить как ручную.

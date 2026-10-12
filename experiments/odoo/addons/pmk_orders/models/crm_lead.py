@@ -292,7 +292,7 @@ class CrmLead(models.Model):
         lead = self.with_context(**{SKIP: True})
         Order = self.env["sale.order"].sudo()
         spec = spec.sudo()
-        priced = Order._pmk_priced_products(spec)
+        priced = Order._pmk_invoice_items(spec)
         if not priced:
             lead._pmk_orders_note(_(
                 "Счёт покупателю не отмечен отправленным: в расчёте %s нет цены клиенту ни "
@@ -307,7 +307,7 @@ class CrmLead(models.Model):
         org = spec.pmk_org_id or lead.pmk_org_id
         wanted = Order._pmk_spec_signature(spec, partner, org)
         invoice = lead._pmk_current_invoice()
-        skipped = spec.product_ids - priced
+        skipped = Order._pmk_unpriced_names(spec)
         if not invoice:
             invoice = Order._pmk_create_from_spec(lead, spec, partner, org)
             invoice._pmk_mark_sent(_("КП %s отправлено — счёт заведён из расчёта и отмечен "
@@ -347,8 +347,7 @@ class CrmLead(models.Model):
                      "%(total)s (%(tax)s). Ждём оплату.")
         text = text % lead._pmk_invoice_params(invoice, spec, priced)
         if skipped:
-            text += " " + _("Без цены клиенту, в счёт не попали: %s.",
-                            ", ".join(skipped.mapped("name")))
+            text += " " + _("Без цены клиенту, в счёт не попали: %s.", ", ".join(skipped))
         lead._pmk_orders_note(text)
         return invoice
 

@@ -39,7 +39,8 @@ _logger = logging.getLogger(__name__)
 
 # Контекст: изделия пишутся внутри записи расчёта — пересборка один раз, после.
 SPEC_WRITING = "pmk_orders_spec_writing"
-SPEC_FIELDS = frozenset({"product_ids", "partner_id", "pmk_org_id"})
+SPEC_FIELDS = frozenset({"product_ids", "partner_id", "pmk_org_id",
+                         "cat_metal", "cat_dobor", "cat_vent"})  # категории — 12.10.2026
 PRODUCT_FIELDS = frozenset({"name", "qty", "price_customer_unit", "sequence", "spec_id"})
 
 
