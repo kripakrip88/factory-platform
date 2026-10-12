@@ -23,6 +23,7 @@
         "security/ir.model.access.csv",
         "data/cron.xml",
         "views/vent_hood_order_views.xml",
+        "views/spec_vent_views.xml",
     ],
     "assets": {
         "web.assets_backend": [

@@ -40,3 +40,24 @@ class TestSpecCategories(TransactionCase):
         action = spec.action_open_vent()
         self.assertEqual((action["res_model"], action["res_id"]), ("pmk.vent.hood.order", spec.vent_order_ids.id))
         self.assertFalse(spec.action_open_dobor(), "доборки нет — нечего открыть")
+
+    def test_metal_tab_dobor_rows(self):
+        """«Металл»: раскрой доборки расчёта — строкой «что купить»."""
+        import json
+        from odoo import Command
+        spec = self.env["pmk.metal.spec"].create({"cat_dobor": True, "cat_metal": False})
+        sheet = self.env["pmk.metal.sheet"].create({"sheet_type": "Оцинкованный", "thickness_mm": 0.7,
+                                                    "gost": "ГОСТ 14918-2020 (тест металла)", "mass_per_sqm": 5.5})
+        coat = self.env["pmk.dobor.coating"].create({"name": "RAL 9999 (тест металла)", "ral_code": "9999"})
+        spec.dobor_order_ids.write({"line_ids": [Command.create({
+            "title": "Планка", "coating_id": coat.id, "sheet_id": sheet.id, "plank_length": 2500.0, "qty": 10,
+            "profile_snapshot_json": json.dumps({"start": {"x": 0, "y": 0},
+                                                 "segs": [{"len": 150, "dir": 0}, {"len": 100, "dir": 90}]})})]})
+        rows = spec._pmk_metal_rows()
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["source"], spec.dobor_order_ids.name)
+        self.assertIn("1250 × 2500", rows[0]["amount"])
+        self.assertGreater(rows[0]["kg"], 0)
+        html = str(spec.metal_total_html)
+        self.assertIn("RAL 9999 (тест металла)", html)
+        self.assertIn("Итого", html)

@@ -6,7 +6,6 @@ from . import metal_spec
 from . import dobor
 from . import dobor_report
 from . import dobor_cut
-from . import calc_price
 # 11.10.2026: вентзонты — генератор развёрток tools/vent_hood.py.
 from . import vent_hood
 from . import spec_layout
@@ -14,6 +13,9 @@ from . import spec_layout
 from . import spec_sheet_group
 from . import res_partner
 from . import metal_pending_bind
+# После доборки и вентзонтов: цены (12.10.2026), категории и «Металл» расчёта.
+from . import calc_price
 from . import spec_categories
+from . import spec_metal
 # Последним: представление базы по колонкам справочников (см. файл).
 from . import metal_pending_report

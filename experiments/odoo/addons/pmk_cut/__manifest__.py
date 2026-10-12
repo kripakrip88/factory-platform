@@ -46,6 +46,7 @@
         # 02.10.2026). «Название» заготовки шаг 29 тоже прятал — вернул шаг
         # 35: в нём пометка «(из прайса)» у хлыста-докупки.
         "views/step29_cut_hide.xml",
+        "views/spec_linear_views.xml",
     ],
     "assets": {
         "web.assets_backend": [

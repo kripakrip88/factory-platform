@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!-- «Металл» расчёта: раздел «Вентзонты» перед итогом (12.10.2026). -->
+  <record id="view_metal_spec_form_vent_metal" model="ir.ui.view">
+    <field name="name">pmk.metal.spec.form.vent.metal</field>
+    <field name="model">pmk.metal.spec</field>
+    <field name="inherit_id" ref="pmk_calc.view_metal_spec_form_categories"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//div[@name='pmk_metal_total']" position="before">
+        <div name="pmk_metal_vent" invisible="not cat_vent">
+          <h3 class="pmk-metal-h">Вентзонты — лазер</h3>
+          <div class="pmk-cat-head">
+            <button name="action_open_vent" type="object" class="btn-secondary" icon="fa-th-large"
+                    string="Раскрой вентзонтов" invisible="not vent_order_ids"/>
+            <span class="pmk-cat-muted">Склад / бухта и свес — решение во вкладке «Раскрой» заказа вентзонтов.</span>
+          </div>
+          <field name="metal_vent_html" nolabel="1" readonly="1"/>
+        </div>
+      </xpath>
+    </field>
+  </record>
+</odoo>

@@ -79,6 +79,26 @@
       <xpath expr="//page[@name='layout']" position="attributes">
         <attribute name="string">Металл</attribute>
       </xpath>
+      <!-- «Металл»: разделы по категориям и итог «что купить». Прокат (pmk_cut) и вентзонты
+           (pmk_vent_nest) встают перед итогом (якорь pmk_metal_total). -->
+      <xpath expr="//page[@name='layout']/*[1]" position="before">
+        <h3 class="pmk-metal-h">Лист — металлоизделия</h3>
+      </xpath>
+      <xpath expr="//page[@name='layout']" position="inside">
+        <div name="pmk_metal_dobor" invisible="not cat_dobor">
+          <h3 class="pmk-metal-h">Доборки — гильотина</h3>
+          <div class="pmk-cat-head">
+            <button name="action_open_dobor" type="object" class="btn-secondary" icon="fa-th-large"
+                    string="Раскрой листа доборки" invisible="not dobor_order_ids"/>
+            <span class="pmk-cat-muted">Вариант «стандарт / с бухты» выбирается во вкладке «Раскрой листа» доборки.</span>
+          </div>
+          <field name="metal_dobor_html" nolabel="1" readonly="1"/>
+        </div>
+        <div name="pmk_metal_total">
+          <h3 class="pmk-metal-h">Итого — что купить</h3>
+          <field name="metal_total_html" nolabel="1" readonly="1"/>
+        </div>
+      </xpath>
     </field>
   </record>
 </odoo>

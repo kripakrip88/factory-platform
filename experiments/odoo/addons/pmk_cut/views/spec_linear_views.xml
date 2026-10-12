@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!-- «Металл» расчёта: раздел «Прокат» перед итогом (12.10.2026). -->
+  <record id="view_metal_spec_form_linear" model="ir.ui.view">
+    <field name="name">pmk.metal.spec.form.linear</field>
+    <field name="model">pmk.metal.spec</field>
+    <field name="inherit_id" ref="pmk_calc.view_metal_spec_form_categories"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//div[@name='pmk_metal_dobor']" position="before">
+        <div name="pmk_metal_linear" invisible="not cat_metal">
+          <h3 class="pmk-metal-h">Прокат — металлоизделия</h3>
+          <div class="pmk-cat-head">
+            <button name="action_pmk_cut_linear" type="object" class="btn-secondary" icon="fa-scissors"
+                    string="Разложить прокат"
+                    title="Линейные детали расчёта — в раскрой сортамента, расчёт по хлыстам из прайса"/>
+            <button name="action_pmk_open_cut" type="object" class="btn-link" icon="fa-external-link"
+                    string="Открыть раскрой" invisible="not cut_plan_ids"/>
+            <field name="cut_plan_ids" invisible="1"/>
+          </div>
+          <field name="metal_linear_html" nolabel="1" readonly="1"/>
+        </div>
+      </xpath>
+    </field>
+  </record>
+</odoo>
