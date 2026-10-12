@@ -55,7 +55,7 @@
                 Схему построить не удалось: <t t-esc="state.error"/>
             </div>
 
-            <div t-if="state.loaded and state.count &gt; 1" class="o_pmk_flow_lanes">
+            <div t-if="state.loaded and state.count &gt; 1" class="o_pmk_flow_lanes o_pmk_flow_scroll">
                 <div t-foreach="state.lanes" t-as="lane" t-key="lane.key"
                      t-attf-class="o_pmk_flow_lane {{ lane.empty ? 'o_pmk_flow_lane--empty' : '' }}">
                     <div class="o_pmk_flow_lane_head">
