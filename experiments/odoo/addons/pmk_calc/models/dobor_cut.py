@@ -86,8 +86,9 @@ class DoborOrderCut(models.Model):
             for src, name in (("stock", "Стандарт 1250 × 2500"), ("coil", "С бухты")):
                 v = res[src]
                 cls = ' class="pmk-cut-chosen"' if src == self.cut_source else ""
-                rows.append('<tr%s><th>%s</th><td>%d</td><td>%s</td><td>%s</td><td>%s %%</td></tr>' % (
-                    cls, name, v["sheets"], escape(v["lengths"]), _kg(v["kg"]),
+                count = "%d" % v["sheets"] + (" + %d загот." % v["ready"] if v.get("ready") else "")
+                rows.append('<tr%s><th>%s</th><td>%s</td><td>%s</td><td>%s</td><td>%s %%</td></tr>' % (
+                    cls, name, count, escape(v["lengths"]), _kg(v["kg"]),
                     _kg(v["util_pct"])))
             table = ('<table class="pmk-cut-table"><thead><tr><th>Лист</th><th>Листов</th><th>Длины, мм</th>'
                      '<th>Металл, кг</th><th>Использование</th></tr></thead><tbody>%s</tbody></table>'
@@ -157,9 +158,17 @@ class DoborOrderCutPrint(models.Model):
                 out.append("<p><b>Не раскроить:</b> %s</p>" % escape(str(e)))
                 continue
             v = res[source]
-            out.append('<p class="sum">Листов: <b>%d</b> (%s мм) · металл %s кг · использование %s %%%s</p>' % (
-                v["sheets"], escape(v["lengths"]), _kg(v["kg"]), _kg(v["util_pct"]),
-                " · <b>заказать с бухты: 1250 × (%s)</b>" % escape(v["lengths"]) if source == "coil" else ""))
+            parts = []
+            if v["sheets"]:
+                parts.append("листов: <b>%d</b> (%s мм)" % (v["sheets"], escape(v["sheet_lengths"])))
+            if v.get("ready"):
+                parts.append("готовых заготовок с бухты: <b>%d</b> (1250 × %s мм) — резать не нужно"
+                             % (v["ready"], escape(v["ready_lengths"])))
+            out.append('<p class="sum">%s · металл %s кг · использование %s %%</p>' % (
+                "; ".join(parts), _kg(v["kg"]), _kg(v["util_pct"])))
+            if source == "coil":
+                out.append('<p class="sum"><b>Заказать у поставщика с бухты 1250: %s мм</b></p>'
+                           % escape(v["lengths"]))
             rows = []
             for line in lines.filtered(lambda l, k=key: (l.sheet_id.id, l.coating_id.id) == k
                                        and l.developed_width and l.plank_length and l.qty):

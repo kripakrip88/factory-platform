@@ -77,6 +77,38 @@ def _sheets(bands, cap):
     return sheets
 
 
+def _coil_sheets(bands):
+    """Бухта: лист — это лента нужной длины (Антон 12.10.2026: «почему не заказать листы
+    2000?», «почему не заказать с бухты сразу 150 × 1250?»). Поставщик рубит рулон кратно
+    50 мм — первого реза у нас нет, а лента-заготовка (150 × 1250) приходит готовой.
+    Длина ленты не кратна 50 — одинаковые ленты объединяются в один лист (до 2500), сколько
+    выгоднее, чтобы не терять металл на округлении до 50."""
+    groups, order = {}, []
+    for b in bands:
+        key = (round(b["L"], 1), tuple((round(i["w"], 1), round(i["l"], 1), i["label"]) for i in b["items"]))
+        if key not in groups:
+            groups[key] = []
+            order.append(key)
+        groups[key].append(b)
+    sheets = []
+    for key in order:
+        same = groups[key]
+        L = same[0]["L"]
+        best_k, best_waste = 1, None
+        for k in range(1, min(len(same), int(MAX_LEN // L)) + 1):
+            waste = (math.ceil(k * L / COIL_STEP - 1e-9) * COIL_STEP - k * L) / k
+            if best_waste is None or waste < best_waste - 1e-9:
+                best_k, best_waste = k, waste
+        for i in range(0, len(same), best_k):
+            chunk, y, sheet = same[i:i + best_k], 0.0, {"used": 0.0, "bands": []}
+            for b in chunk:
+                sheet["bands"].append(dict(b, y=y))
+                y += b["L"]
+            sheet["used"] = y
+            sheets.append(sheet)
+    return sheets
+
+
 def _signature(sheet):
     return tuple((round(b["L"], 1), tuple((round(i["w"], 1), round(i["l"], 1), i["label"], i["dims"])
                                           for i in b["items"])) for b in sheet["bands"])
@@ -108,8 +140,17 @@ def _variant(sheets, mass, coil):
         else:
             index[key] = len(maps)
             maps.append({"length": L, "count": 1, "bands": s["bands"]})
+    # Готовые заготовки с бухты: лист — одна лента, она же одна заготовка во всю ширину.
+    ready = [L for s, L in zip(sheets, lengths) if coil and len(s["bands"]) == 1
+             and len(s["bands"][0]["items"]) == 1 and s["bands"][0]["used"] >= SHEET_W - 0.5
+             and s["bands"][0]["items"][0]["l"] >= s["bands"][0]["L"] - 0.5]
+    rest = list(lengths)
+    for L in ready:
+        rest.remove(L)
     return {
-        "sheets": len(sheets), "lengths_mm": lengths, "lengths": group_lengths(lengths),
+        "sheets": len(sheets) - len(ready), "ready": len(ready),
+        "sheet_lengths": group_lengths(rest), "ready_lengths": group_lengths(ready),
+        "lengths_mm": lengths, "lengths": group_lengths(lengths),
         "length_m": round(sum(lengths) / 1000.0, 3), "m2": round(area, 3),
         "kg": round(area * mass, 1), "util_pct": round(100.0 * area_parts / area, 1) if area else 0.0,
         "maps": maps,
@@ -139,7 +180,7 @@ def plan(strips, mass_per_m2):
         return None
     bands = _bands(flat)
     stock = _variant(_sheets(bands, SHEET_L), mass_per_m2, coil=False)
-    coil = _variant(_sheets(bands, MAX_LEN), mass_per_m2, coil=True)
+    coil = _variant(_coil_sheets(bands), mass_per_m2, coil=True)
     save = stock["kg"] - coil["kg"]
     return {"stock": stock, "coil": coil,
             "saving": {"kg": round(save, 1), "pct": round(100.0 * save / stock["kg"], 1) if stock["kg"] else 0.0},
@@ -211,7 +252,12 @@ def card_steps(card):
     одной строкой «× N»; лента, которая сама и есть заготовка, — «сразу заготовка»."""
     rows = []
     for b in card["bands"]:
-        if len(b["items"]) == 1 and b["used"] >= SHEET_W - 0.5 and b["items"][0]["l"] >= b["L"] - 0.5:
+        whole = len(b["items"]) == 1 and b["used"] >= SHEET_W - 0.5 and b["items"][0]["l"] >= b["L"] - 0.5
+        if whole and len(card["bands"]) == 1 and card["length"] - b["L"] < COIL_STEP:
+            it = b["items"][0]
+            text = "Готовая заготовка %s (%s) — лист 1250 × %g, резать не нужно" % (
+                it["label"], it["dims"], card["length"])
+        elif whole:
             it = b["items"][0]
             text = "Полоса %g мм поперёк листа — сразу заготовка %s (%s)" % (b["L"], it["label"], it["dims"])
         else:

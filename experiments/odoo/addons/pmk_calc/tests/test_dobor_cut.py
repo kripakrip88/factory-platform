@@ -57,10 +57,20 @@ class TestDoborCut(TransactionCase):
         self.assertEqual(C.orient(150, 1250), (1250, 150))
         self.assertEqual(C.orient(166, 2000), (166, 2000), "длиннее 1250 — только вдоль")
         r = C.plan([(150, 1250, "№3", 10)], 5.0)
-        self.assertEqual(r["coil"]["lengths"], "1500")
+        self.assertEqual(r["coil"]["lengths"], "150 × 10", "готовые заготовки с бухты")
+        self.assertEqual((r["coil"]["sheets"], r["coil"]["ready"]), (0, 10))
         self.assertEqual(r["coil"]["util_pct"], 100.0)
-        steps = C.card_steps(r["coil"]["maps"][0])
-        self.assertEqual(steps, ["Полоса 150 мм поперёк листа — сразу заготовка №3 (150×1250) — 10 раз"])
+        self.assertEqual(C.card_steps(r["coil"]["maps"][0]),
+                         ["Готовая заготовка №3 (150×1250) — лист 1250 × 150, резать не нужно"])
+        # Со стандартного листа — полосы поперёк, 16 на лист.
+        self.assertIn("Полоса 150 мм поперёк листа — сразу заготовка №3 (150×1250) — 10 раз",
+                      C.card_steps(r["stock"]["maps"][0]))
+
+    def test_coil_sheet_per_band(self):
+        """С бухты лист = лента: листы 2000 для планок 2000, не 2450 вперемешку (Антон 12.10.2026)."""
+        r = C.plan([(166, 2000, "№1", 14), (150, 1250, "№3", 3)], 5.0)
+        self.assertEqual(r["coil"]["lengths"], "2000 × 2 + 150 × 3")
+        self.assertEqual(r["coil"]["ready_lengths"], "150 × 3")
 
     def test_limits(self):
         with self.assertRaises(C.CutError):
