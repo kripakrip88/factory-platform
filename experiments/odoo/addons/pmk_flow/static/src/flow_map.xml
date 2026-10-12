@@ -40,7 +40,7 @@
                 Схему построить не удалось: <t t-esc="state.error"/>
             </div>
 
-            <div t-if="state.nodes.length" class="o_pmk_flow_scroll">
+            <div t-if="state.nodes.length" class="o_pmk_flow_scroll" t-ref="scroll">
                 <svg class="o_pmk_flow_svg" role="img" aria-label="Схема связей документов"
                      t-att-width="state.width" t-att-height="state.height">
                     <text t-foreach="state.heads" t-as="h" t-key="h.key"

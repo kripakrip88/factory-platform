@@ -15,7 +15,7 @@
  * клиент не загрузится целиком. Поэтому всё с префиксом pmk.
  */
 
-import { Component, useEffect, useState } from "@odoo/owl";
+import { Component, useEffect, useRef, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { standardWidgetProps } from "@web/views/widgets/standard_widget_props";
@@ -239,6 +239,19 @@ export class PmkFlowMap extends Component {
                 this.load();
             },
             () => [this.props.resModel, this.props.resId]
+        );
+        // Схема шире вкладки (разбор 12.10.2026: 10+ колонок) — после загрузки
+        // прокручиваем к открытому документу, иначе он оставался за правым краем.
+        this.scrollRef = useRef("scroll");
+        useEffect(
+            (width) => {
+                const el = this.scrollRef.el;
+                const anchor = this.state.nodes.find((n) => n.anchor);
+                if (el && anchor && width > el.clientWidth) {
+                    el.scrollLeft = Math.max(0, anchor.x + GEO.nodeW / 2 - el.clientWidth / 2);
+                }
+            },
+            () => [this.state.width]
         );
     }
 

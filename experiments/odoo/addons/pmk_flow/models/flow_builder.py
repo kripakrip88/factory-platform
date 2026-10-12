@@ -726,6 +726,11 @@ class PmkFlowBuilder(models.AbstractModel):
             if hidden:
                 restricted = True
             for neigh in neighbours:
+                # Проект-котёл «Заказы в работе» — только на схеме своей строки
+                # или самого проекта: на схеме расчёта или сделки он лишняя колонка
+                # без сведений (разбор схемы 12.10.2026).
+                if neigh._name == 'project.project' and record != anchor:
+                    continue
                 nid = self._node_id(neigh)
                 ekey = tuple(sorted((self._node_id(record), nid)))
                 if ekey not in edge_seen:

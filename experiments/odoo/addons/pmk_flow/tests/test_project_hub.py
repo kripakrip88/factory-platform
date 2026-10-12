@@ -38,3 +38,14 @@ class TestProjectHub(TransactionCase):
         ids = self._ids("project.project", self.project)
         for task in self.tasks:
             self.assertIn(self._nid(task), ids)
+
+    def test_project_hidden_beyond_its_task(self):
+        """Разбор схемы 12.10.2026: на схеме сделки строка «Заказов в работе» есть,
+        а проект-котёл — нет (лишняя колонка без сведений)."""
+        if "pmk_deal_id" not in self.env["project.task"]._fields:
+            self.skipTest("нет pmk_orders")
+        deal = self.env["crm.lead"].create({"name": "Сделка котла", "type": "opportunity"})
+        self.tasks[0].pmk_deal_id = deal
+        ids = self._ids("crm.lead", deal)
+        self.assertIn(self._nid(self.tasks[0]), ids)
+        self.assertNotIn(self._nid(self.project), ids)
