@@ -24,11 +24,11 @@
     888.3
    ],
    "qty": 1,
-   "area_m2_each": 0.6124
+   "area_m2_each": 0.6126
   }
  ],
- "lapki": 6,
- "lapki_holes_d7": 12,
+ "lapki": 4,
+ "lapki_holes_d7": 8,
  "klepki": 16,
  "metal_net_m2": 0.889,
  "metal_blanks_m2": 1.203,

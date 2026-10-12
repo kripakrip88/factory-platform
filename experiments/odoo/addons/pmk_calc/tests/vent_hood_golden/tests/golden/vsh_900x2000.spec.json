@@ -24,13 +24,13 @@
     1465.6
    ],
    "qty": 2,
-   "area_m2_each": 1.4955
+   "area_m2_each": 1.4956
   }
  ],
- "lapki": 20,
- "lapki_holes_d7": 40,
+ "lapki": 16,
+ "lapki_holes_d7": 32,
  "klepki": 24,
- "metal_net_m2": 3.695,
+ "metal_net_m2": 3.696,
  "metal_blanks_m2": 4.637,
  "sheet_1250_m": 3.97,
  "sheet_1250_m2": 4.97,
