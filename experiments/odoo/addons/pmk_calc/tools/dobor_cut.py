@@ -250,6 +250,11 @@ def sheet_svg(card, title="", bw=False, width=560.0, size_mm=None, natural=False
             parts.append('<rect x="%.1f" y="%.1f" width="%.1f" height="%.1f" fill="url(#h)" '
                          'stroke="none"/>' % (x0, pad_top + b["used"] * scale, b["L"] * scale,
                                                (SHEET_W - b["used"]) * scale))
+    # Остаток листа по длине за последней лентой — тоже отход.
+    tail = L - sum(b["L"] for b in card["bands"])
+    if tail > 0.5:
+        parts.append('<rect x="%.1f" y="%d" width="%.1f" height="%.1f" fill="url(#h)" stroke="none"/>' % (
+            1 + (L - tail) * scale, pad_top, tail * scale, H_px))
     parts.insert(1, '<defs><pattern id="h" width="6" height="6" patternUnits="userSpaceOnUse" '
                     'patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="%s" '
                     'stroke-width="%s"/></pattern></defs>' % (hatch, "0.8" if bw else "2"))
