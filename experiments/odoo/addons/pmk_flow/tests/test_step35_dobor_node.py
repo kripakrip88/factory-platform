@@ -116,3 +116,36 @@ class TestCalcNodesOfSpec(TransactionCase):
     def test_task_and_project_own_column(self):
         self.assertNotEqual(_STAGES["project.task"][0], _STAGES["pmk.cut.plan"][0])
         self.assertNotEqual(_STAGES["project.project"][0], _STAGES["pmk.cut.plan"][0])
+
+    def test_lanes_layout(self):
+        """«Связи» строками по этапам (12.10.2026): лид и сделка — два блока, клиент —
+        свой блок, калькуляторы — деревом расчёта с блоком раскроя (вкладка)."""
+        client = self.env["res.partner"].create({"name": "ООО «Ангар» (тест схемы)", "is_company": True})
+        self.deal.write({"partner_id": client.id, "type": "opportunity"})
+        data = self.Builder.get_flow_lanes("pmk.metal.spec", self.spec.id)
+        lanes = {lane["key"]: lane for lane in data["lanes"]}
+        self.assertEqual([lane["key"] for lane in data["lanes"]],
+                         ["order", "calc", "buy", "make", "shops", "ship"])
+        cols = {c["title"]: c["items"] for c in lanes["order"]["cols"]}
+        deal = "crm.lead,%s" % self.deal.id
+        self.assertEqual(cols["Сделка"], [deal])
+        self.assertEqual(cols["Лид"], [deal + ":lead"])
+        self.assertEqual(cols["Клиент"], ["res.partner,%s" % client.id])
+        self.assertEqual(cols["Расчёт КП"], ["pmk.metal.spec,%s" % self.spec.id])
+        tree, = lanes["calc"]["trees"]
+        self.assertEqual((tree["root"], tree["ref"]), ("pmk.metal.spec,%s" % self.spec.id, True))
+        heads = [row["head"][0] for row in tree["rows"]]
+        self.assertIn("pmk.dobor.order,%s" % self.dobor.id, heads)
+        self.assertIn("pmk.vent.hood.order,%s" % self.vent.id, heads)
+        cut = data["nodes"]["pmk.dobor.order,%s:cut" % self.dobor.id]
+        self.assertEqual((cut["open_model"], cut["open_res_id"], cut["open_tab"]),
+                         ("pmk.dobor.order", self.dobor.id, "pmk_dobor_cut"))
+        self.assertTrue(lanes["shops"]["empty"])
+        self.assertTrue(data["nodes"]["pmk.metal.spec,%s" % self.spec.id]["anchor"])
+
+        self.vent.write({"line_ids": [(0, 0, {"width": 500, "length": 1000, "qty": 1,
+                                              "coating_id": self.env.ref("pmk_calc.coating_ral8017").id})]})
+        self.spec.cat_vent = False
+        node = self.Builder.get_flow_lanes("pmk.metal.spec", self.spec.id)["nodes"][
+            "pmk.vent.hood.order,%s" % self.vent.id]
+        self.assertTrue(node["draft"], "выключенная категория — черновик расчёта")

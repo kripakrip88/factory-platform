@@ -289,6 +289,16 @@
   margin-bottom: 10px;
 }
 
+// Категория выключена, а документ с позициями остался — черновик расчёта.
+.pmk-cat-draft {
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  color: var(--pmk-text-muted, #8a8d96);
+  border: 1px dashed currentColor;
+}
+
 .pmk-cat-muted {
   color: var(--pmk-text-muted, #8a8d96);
   font-size: 13px;

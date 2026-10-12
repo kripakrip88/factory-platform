@@ -2,9 +2,24 @@
 <templates xml:space="preserve">
 
     <!--
-        Сама схема. Порядок слоёв в SVG — подписи колонок, линии, узлы: узел
-        рисуется поверх линии, иначе связь через колонку перечёркивает текст.
+        Сама схема — строками по этапам жизни заказа (разбор схемы 12.10.2026).
+        Раскладку считает сервер (get_flow_lanes); линий между этапами нет,
+        связи подсвечиваются при наведении.
     -->
+    <t t-name="pmk_flow.Node">
+        <div t-att-class="nodeClass(nid)"
+             t-att-tabindex="node(nid).clickable ? '0' : '-1'"
+             t-att-role="node(nid).clickable ? 'link' : 'note'"
+             t-att-title="node(nid).hint"
+             t-on-click="() => this.openNode(node(nid))"
+             t-on-keydown="(ev) => this.onNodeKeydown(ev, node(nid))"
+             t-on-mouseenter="() => this.setHover(nid)"
+             t-on-mouseleave="() => this.setHover(null)">
+            <div class="o_pmk_flow_label"><t t-esc="node(nid).label"/></div>
+            <div class="o_pmk_flow_state"><t t-esc="node(nid).state"/></div>
+        </div>
+    </t>
+
     <t t-name="pmk_flow.FlowMap">
         <div t-attf-class="o_pmk_flow {{ props.page ? 'o_pmk_flow--page' : '' }}">
             <div class="o_pmk_flow_bar">
@@ -15,16 +30,16 @@
                         «ни на что не ссылается» при restricted писать нельзя:
                         технолог без CRM прочёл бы её у расчёта со сделкой.
                     -->
-                    <t t-elif="state.loaded and state.nodes.length &lt;= 1 and state.restricted">
+                    <t t-elif="state.loaded and state.count &lt;= 1 and state.restricted">
                         Связанные документы есть, но у вас нет на них прав.
                     </t>
-                    <t t-elif="state.loaded and state.nodes.length &lt;= 1">
+                    <t t-elif="state.loaded and state.count &lt;= 1">
                         Связанных документов нет. Это не сбой схемы: документ
                         ни на что не ссылается, и на него никто не ссылается.
                     </t>
                     <t t-elif="state.loaded">
-                        Документов на схеме: <t t-esc="state.nodes.length"/>.
-                        Нажмите на документ, чтобы открыть его.
+                        Документов на схеме: <t t-esc="state.count"/>. Наведите на документ —
+                        подсветятся связанные, нажмите — откроется.
                     </t>
                 </span>
                 <button type="button" class="btn btn-sm btn-secondary o_pmk_flow_refresh"
@@ -40,33 +55,54 @@
                 Схему построить не удалось: <t t-esc="state.error"/>
             </div>
 
-            <div t-if="state.nodes.length" class="o_pmk_flow_scroll" t-ref="scroll">
-                <svg class="o_pmk_flow_svg" role="img" aria-label="Схема связей документов"
-                     t-att-width="state.width" t-att-height="state.height">
-                    <text t-foreach="state.heads" t-as="h" t-key="h.key"
-                          class="o_pmk_flow_head"
-                          t-att-x="h.x" t-att-y="geo.pad + 12">
-                        <title><t t-esc="h.full"/></title>
-                        <t t-esc="h.label"/>
-                    </text>
-                    <path t-foreach="state.edges" t-as="e" t-key="e.id"
-                          t-att-d="e.d" t-att-class="edgeClass(e)"/>
-                    <g t-foreach="state.nodes" t-as="n" t-key="n.id"
-                       t-att-class="n.cls"
-                       t-att-transform="'translate(' + n.x + ',' + n.y + ')'"
-                       t-att-tabindex="n.clickable ? '0' : '-1'"
-                       t-att-role="n.clickable ? 'link' : 'img'"
-                       t-att-aria-label="n.hint"
-                       t-on-click="() => this.openNode(n)"
-                       t-on-keydown="(ev) => this.onNodeKeydown(ev, n)"
-                       t-on-mouseenter="() => this.setHover(n.id)"
-                       t-on-mouseleave="() => this.setHover(null)">
-                        <title><t t-esc="n.hint"/></title>
-                        <rect t-att-width="geo.nodeW" t-att-height="geo.nodeH" rx="8"/>
-                        <text x="12" y="21" class="o_pmk_flow_label"><t t-esc="n.shortLabel"/></text>
-                        <text x="12" y="38" class="o_pmk_flow_state"><t t-esc="n.shortState"/></text>
-                    </g>
-                </svg>
+            <div t-if="state.loaded and state.count &gt; 1" class="o_pmk_flow_lanes">
+                <div t-foreach="state.lanes" t-as="lane" t-key="lane.key"
+                     t-attf-class="o_pmk_flow_lane {{ lane.empty ? 'o_pmk_flow_lane--empty' : '' }}">
+                    <div class="o_pmk_flow_lane_head">
+                        <b><t t-esc="lane_index + 1"/>. <t t-esc="lane.title"/></b>
+                        <span t-if="lane.hint"><t t-esc="lane.hint"/></span>
+                    </div>
+                    <div class="o_pmk_flow_lane_body">
+                        <t t-if="lane.empty">
+                            <span class="o_pmk_flow_none">—</span>
+                        </t>
+                        <t t-elif="lane.cols">
+                            <div class="o_pmk_flow_cols">
+                                <div t-foreach="lane.cols" t-as="col" t-key="col.title" class="o_pmk_flow_col">
+                                    <div class="o_pmk_flow_col_head"><t t-esc="col.title"/></div>
+                                    <t t-foreach="col.items" t-as="nid" t-key="nid">
+                                        <t t-call="pmk_flow.Node"/>
+                                    </t>
+                                </div>
+                            </div>
+                        </t>
+                        <t t-elif="lane.trees">
+                            <div t-foreach="lane.trees" t-as="tree" t-key="tree_index" class="o_pmk_flow_tree">
+                                <div class="o_pmk_flow_tree_root">
+                                    <t t-if="tree.root" t-set="nid" t-value="tree.root"/>
+                                    <t t-if="tree.root"><t t-call="pmk_flow.Node"/></t>
+                                    <span t-else="" class="o_pmk_flow_none">без расчёта</span>
+                                </div>
+                                <div class="o_pmk_flow_tree_rows">
+                                    <div t-foreach="tree.rows" t-as="row" t-key="row_index" class="o_pmk_flow_tree_row">
+                                        <t t-foreach="row.head" t-as="nid" t-key="nid">
+                                            <t t-call="pmk_flow.Node"/>
+                                        </t>
+                                        <span t-if="row.tail.length" class="o_pmk_flow_arrow" aria-hidden="true">→</span>
+                                        <t t-foreach="row.tail" t-as="nid" t-key="nid">
+                                            <t t-call="pmk_flow.Node"/>
+                                        </t>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                        <div t-else="" class="o_pmk_flow_items">
+                            <t t-foreach="lane.items" t-as="nid" t-key="nid">
+                                <t t-call="pmk_flow.Node"/>
+                            </t>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div t-if="state.truncated" class="o_pmk_flow_msg text-warning">
@@ -74,7 +110,7 @@
                 одном экране. Показаны ближайшие к открытому документу.
             </div>
             <!-- При одном узле то же самое уже сказано в строке сверху. -->
-            <div t-if="state.restricted and state.nodes.length &gt; 1" class="o_pmk_flow_msg text-muted">
+            <div t-if="state.restricted and state.count &gt; 1" class="o_pmk_flow_msg text-muted">
                 Часть связей скрыта: на эти документы у вас нет прав.
             </div>
         </div>

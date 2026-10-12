@@ -17,8 +17,8 @@
         <div class="pmk-spec-cats" name="pmk_spec_cats">
           <span class="pmk-spec-cats__label">Категории изделий</span>
           <span class="pmk-spec-cats__item"><field name="cat_metal" widget="boolean_toggle" nolabel="1"/><label for="cat_metal"/></span>
-          <span class="pmk-spec-cats__item"><field name="cat_dobor" widget="boolean_toggle" nolabel="1"/><label for="cat_dobor"/></span>
-          <span class="pmk-spec-cats__item"><field name="cat_vent" widget="boolean_toggle" nolabel="1"/><label for="cat_vent"/></span>
+          <span class="pmk-spec-cats__item"><field name="cat_dobor" widget="boolean_toggle" nolabel="1"/><label for="cat_dobor"/><span class="pmk-cat-draft" invisible="cat_dobor or not dobor_order_ids">черновик</span></span>
+          <span class="pmk-spec-cats__item"><field name="cat_vent" widget="boolean_toggle" nolabel="1"/><label for="cat_vent"/><span class="pmk-cat-draft" invisible="cat_vent or not vent_order_ids">черновик</span></span>
         </div>
       </xpath>
       <xpath expr="//page[@name='composition']" position="attributes">
@@ -26,11 +26,12 @@
         <attribute name="invisible">not cat_metal</attribute>
       </xpath>
       <xpath expr="//page[@name='composition']" position="after">
-        <page string="Доборные элементы" name="pmk_cat_dobor" invisible="not cat_dobor">
+        <page string="Доборные элементы" name="pmk_cat_dobor" invisible="not cat_dobor and not dobor_order_ids">
           <div class="pmk-cat-head">
             <button name="action_open_dobor" type="object" class="btn-secondary" icon="fa-external-link"
                     string="Открыть калькулятор доборки" invisible="not dobor_order_ids"/>
             <span class="pmk-cat-muted" invisible="dobor_order_ids">Доборка заведётся при сохранении расчёта.</span>
+            <span class="pmk-cat-draft" invisible="cat_dobor">Черновик — в расчёт не входит</span>
             <span class="pmk-cat-muted" invisible="not dobor_order_ids">
               Профили рисуются и правятся в калькуляторе доборки; здесь — состав и цены.
             </span>
@@ -51,11 +52,12 @@
             </list>
           </field>
         </page>
-        <page string="Вентзонты" name="pmk_cat_vent" invisible="not cat_vent">
+        <page string="Вентзонты" name="pmk_cat_vent" invisible="not cat_vent and not vent_order_ids">
           <div class="pmk-cat-head">
             <button name="action_open_vent" type="object" class="btn-secondary" icon="fa-external-link"
                     string="Открыть калькулятор вентзонтов" invisible="not vent_order_ids"/>
             <span class="pmk-cat-muted" invisible="vent_order_ids">Заказ вентзонтов заведётся при сохранении расчёта.</span>
+            <span class="pmk-cat-draft" invisible="cat_vent">Черновик — в расчёт не входит</span>
             <span class="pmk-cat-muted" invisible="not vent_order_ids">
               Размеры, раскрой и программы лазера — в калькуляторе вентзонтов; здесь — состав и цены.
             </span>

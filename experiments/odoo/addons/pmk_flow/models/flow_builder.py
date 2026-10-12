@@ -51,6 +51,10 @@ _STATE_COLOR = {
 # схеме = строка здесь + ветка в _neighbors.
 _STAGES = {
     'mail.client.message': (0, 'Письмо'),
+    # Клиент — карточка контакта сделки (разбор схемы 12.10.2026: «лид — это
+    # потенциальный клиент»). Лист схемы: дальше от клиента обход не идёт, иначе
+    # схема заказа тащила бы все сделки клиента.
+    'res.partner': (0.5, 'Клиент'),
     'crm.lead': (1, 'Сделка'),
     'pmk.metal.spec': (2, 'Расчёт'),
     # Заказ клиента — по-заводски «Счёт покупателю» (шаги 58 и З-2,
@@ -273,6 +277,10 @@ class PmkFlowBuilder(models.AbstractModel):
             if record.type == 'lead':
                 return stage or 'лид', 'grey'
             return stage or 'без стадии', 'blue'
+
+        if model == 'res.partner':
+            deals = _field(record, 'opportunity_count', 0)
+            return ('сделок: %d' % deals if deals else 'клиент'), 'grey'
 
         if model == 'mail.client.message':
             if record.date:
@@ -607,6 +615,8 @@ class PmkFlowBuilder(models.AbstractModel):
             # Письма, из которых сделан лид. Лиды, пришедшие на алиас zakaz@
             # без кнопки, этой ссылки не имеют — их письмо лежит в чате лида.
             linked.append(self._referrers('mail.client.message', 'pmk_lead_id', record.id, hidden))
+            partner = self._optional_rel(record, 'partner_id', hidden)
+            linked.append(partner.commercial_partner_id if partner else partner)
             # Расчёты металлопроката висят на сделке (модуль pmk_deal).
             linked.append(self._optional_rel(record, 'spec_ids', hidden))
             # Доборки — тоже (pmk_deal, шаг 35): счётчик «Доборки» над формой
