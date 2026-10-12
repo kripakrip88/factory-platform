@@ -80,8 +80,7 @@ class TestSpecCategories(TransactionCase):
         """Демо-данные — в архив (Антон 12.10): расчёт, доборка и зонты архивируются и
         возвращаются; в поиске — фильтр «Архив»."""
         spec = self.env["pmk.metal.spec"].create({"cat_dobor": True, "cat_vent": True})
-        docs = spec | spec.dobor_order_ids | spec.vent_order_ids
-        for rec in docs:
+        for rec in (spec, spec.dobor_order_ids, spec.vent_order_ids):
             rec.action_archive()
             self.assertFalse(rec.active)
             self.assertFalse(rec.search([("id", "=", rec.id)]), "архив не виден в списке")
