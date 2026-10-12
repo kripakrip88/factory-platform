@@ -69,7 +69,8 @@ class TestT265ChromeTabs(TransactionCase):
     def test_key_rules(self):
         css = _compile(_section(_read(FORMS_SCSS)))
         # Открытая вкладка — фоном и чертой карточки, сильнее !important темы.
-        self.assertRegex(css, r"\.nav-link\.active \{[^}]*background: var\(--pmk-surface, #fff\) !important")
+        self.assertRegex(css, r"\.nav-link\.active \{[^}]*background: var\(--pmk-tab-fill\) !important")
+        self.assertIn("--pmk-tab-fill: var(--pmk-surface, #fff)", css)
         self.assertRegex(css, r"\.nav-link\.active \{[^}]*border-color: var\(--pmk-border, #e3e4e8\) !important")
         # Ножки — дуга radial-gradient по обе стороны.
         self.assertIn("radial-gradient(circle at 0 0", css)
@@ -82,3 +83,4 @@ class TestT265ChromeTabs(TransactionCase):
         css = _compile(_section(_read(DARK_SCSS)))
         self.assertIn("body.o_nexus_dark", css)
         self.assertIn("rgba(255, 255, 255, 0.07)", css)
+        self.assertIn("--pmk-tab-fill: var(--pmk-surface-2, #25272d)", css)

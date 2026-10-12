@@ -1518,10 +1518,17 @@ $pmk-dark-alerts: (
 
 // ═══ Шаг 67: вкладки документа как в Chrome — тёмная пара (12.10.2026) ═══
 // Светлые правила — forms_nexus.scss, раздел «Шаг 67»; фон и черта открытой
-// вкладки — переменные карточки, тёмные сами. Здесь — подложка наведения.
+// вкладки — переменные карточки, тёмные сами. Здесь — подложка наведения и
+// заливка вкладки над таблицей.
 @media screen and (min-width: 768px) {
 
   body.o_nexus_dark .o_action_manager .o_form_view .o_form_sheet:has(> .pmk-doc-top) > .o_notebook > .o_notebook_headers .nav-link:not(.active):hover::after {
     background: rgba(255, 255, 255, 0.07);
+  }
+
+  // Во вкладке одна таблица (шаг 52.4: карточки нет, рамка — сама таблица):
+  // вкладка срастается с шапкой таблицы, а она в тёмной светлее карточки.
+  body.o_nexus_dark .o_action_manager .o_form_view .o_form_sheet:has(> .pmk-doc-top) > .o_notebook:has(> .o_notebook_content > .tab-pane > .o_field_widget:only-child > .o_field_x2many_list) > .o_notebook_headers {
+    --pmk-tab-fill: var(--pmk-surface-2, #25272d);
   }
 }

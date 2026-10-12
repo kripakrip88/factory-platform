@@ -3531,7 +3531,7 @@ $pmk-card-line: unquote("var(--pmk-border, #e3e4e8)") !default;
 // Грабли:
 //  • полоса ярлыков (.o_notebook_headers) — overflow: auto hidden: всё, что
 //    выходит за её края, обрезается. Поэтому ножки — внутри полосы (отступ
-//    слева 14 px), а под вкладку уходит карточка: margin-top -1 px, полоса
+//    слева 24 px), а под вкладку уходит карточка: margin-top -1 px, полоса
 //    поверх (z-index), и низ открытой вкладки закрывает черту карточки;
 //  • ножка — фон radial-gradient: снаружи дуги — фон карточки, на дуге —
 //    цвет черты, внутри прозрачно (бежевый). Цвета — те же переменные, что у
@@ -3553,6 +3553,9 @@ $pmk-tab-r: 10px !default;
   .o_action_manager .o_form_view .o_form_sheet:has(> .pmk-doc-top) > .o_notebook {
 
     > .o_notebook_headers {
+      // Заливка открытой вкладки и её ножек — одна переменная: тёмная тема
+      // над таблицей (вкладка «Состав») подставляет цвет шапки таблицы.
+      --pmk-tab-fill: #{$pmk-card-bg};
       position: relative;
       z-index: 1;
       border-bottom: 0 !important;
@@ -3561,7 +3564,9 @@ $pmk-tab-r: 10px !default;
       // поверх открытой вкладки — её роль играет верх карточки.
       .nav {
         gap: 0;
-        padding-inline-start: 14px;
+        // 24 = ножка (11) + скругление карточки (10) + воздух: у первой
+        // вкладки ножка не ложится на угол карточки (была ступенька).
+        padding-inline-start: 24px;
         border-bottom: 0 !important;
       }
 
@@ -3602,7 +3607,7 @@ $pmk-tab-r: 10px !default;
         &.active {
           z-index: 1;
           color: var(--pmk-text-strong, #16191c) !important;
-          background: $pmk-card-bg !important;
+          background: var(--pmk-tab-fill) !important;
           border-color: $pmk-card-line !important;
         }
 
@@ -3622,13 +3627,13 @@ $pmk-tab-r: 10px !default;
         &.active::before {
           left: -$pmk-tab-r - 1px;
           background: radial-gradient(circle at 0 0, transparent $pmk-tab-r,
-            #{$pmk-card-line} $pmk-tab-r, #{$pmk-card-line} $pmk-tab-r + 1px, #{$pmk-card-bg} $pmk-tab-r + 1px);
+            #{$pmk-card-line} $pmk-tab-r, #{$pmk-card-line} $pmk-tab-r + 1px, var(--pmk-tab-fill) $pmk-tab-r + 1px);
         }
 
         &.active::after {
           right: -$pmk-tab-r - 1px;
           background: radial-gradient(circle at 100% 0, transparent $pmk-tab-r,
-            #{$pmk-card-line} $pmk-tab-r, #{$pmk-card-line} $pmk-tab-r + 1px, #{$pmk-card-bg} $pmk-tab-r + 1px);
+            #{$pmk-card-line} $pmk-tab-r, #{$pmk-card-line} $pmk-tab-r + 1px, var(--pmk-tab-fill) $pmk-tab-r + 1px);
         }
       }
 
