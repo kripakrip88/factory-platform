@@ -46,9 +46,8 @@
     <field name="arch" type="xml">
       <!-- Счёт из МоегоСклада «В работе» в Odoo не бывает — расчёт по нему заводится в любом
            статусе, кроме отменённого (Антон 12.10: «сделать по нему внутренний расчёт»). -->
-      <xpath expr="//header/button[@name='action_pmk_tech_spec']" position="after">
-        <button name="action_pmk_tech_spec" type="object" string="Технический расчёт"
-                class="btn-primary" invisible="not pmk_ms_id or pmk_tech_spec_id or state == 'cancel' or state == 'sale'"/>
+      <xpath expr="//header/button[@name='action_pmk_tech_spec'][1]" position="attributes">
+        <attribute name="invisible">pmk_tech_spec_id or pmk_is_revision or state == 'cancel' or (state != 'sale' and not pmk_ms_id)</attribute>
       </xpath>
       <xpath expr="//notebook" position="inside">
         <page string="МойСклад" name="pmk_ms" invisible="not pmk_ms_id">
