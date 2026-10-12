@@ -69,7 +69,7 @@ class MetalSpecLinear(models.Model):
                     other += u["qty"]
             parts = []
             if r.bars_used:
-                parts.append("%d заг., %s м" % (r.bars_used, ("%.1f" % (r.stock_mm / 1000.0)).replace(".", ",")))
+                parts.append("%d заг., %s м" % (r.bars_used, _m(r.stock_mm)))
             if long_mm:
                 parts.append("%s м одной деталью — длиннее хлыста %s м: разбейте на детали; металл — по длине"
                              % (_m(long_mm), _m(longest)))
