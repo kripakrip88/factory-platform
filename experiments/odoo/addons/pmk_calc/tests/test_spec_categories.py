@@ -53,7 +53,7 @@ class TestSpecCategories(TransactionCase):
             "title": "Планка", "coating_id": coat.id, "sheet_id": sheet.id, "plank_length": 2500.0, "qty": 10,
             "profile_snapshot_json": json.dumps({"start": {"x": 0, "y": 0},
                                                  "segs": [{"len": 150, "dir": 0}, {"len": 100, "dir": 90}]})})]})
-        rows = spec._pmk_metal_rows()
+        rows = spec._pmk_buy_rows()
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0]["source"], spec.dobor_order_ids.name)
         self.assertIn("1250 × 2500", rows[0]["amount"])

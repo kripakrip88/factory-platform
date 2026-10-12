@@ -37,7 +37,7 @@ class MetalSpecCategories(models.Model):
     _inherit = "pmk.metal.spec"
 
     cat_metal = fields.Boolean("Металлоизделия", default=True,
-                               help="Изделия по спецификации/чертежу — состав здесь же, во вкладке.")
+                               help="Изделия по чертежу — состав здесь же, во вкладке «Металлоизделия».")
     cat_dobor = fields.Boolean("Доборные элементы", help="Включить — заведётся доборка этого расчёта.")
     cat_vent = fields.Boolean("Вентзонты", help="Включить — заведётся заказ вентзонтов этого расчёта.")
     dobor_order_ids = fields.One2many("pmk.dobor.order", "spec_id", "Доборки")
@@ -82,7 +82,8 @@ class MetalSpecCategories(models.Model):
         if "partner_id" in vals:
             # Клиент расчёта — клиент его калькуляторов.
             for spec in self:
-                (spec.dobor_order_ids | spec.vent_order_ids).write({"partner_id": spec.partner_id.id})
+                spec.dobor_order_ids.write({"partner_id": spec.partner_id.id})
+                spec.vent_order_ids.write({"partner_id": spec.partner_id.id})
         return res
 
     def _pmk_open_child(self, field):

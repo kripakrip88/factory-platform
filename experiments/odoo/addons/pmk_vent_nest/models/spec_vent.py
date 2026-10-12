@@ -29,8 +29,8 @@ class MetalSpecVent(models.Model):
                              "source": order.name, "amount": amount, "kg": r.get("kg") or 0.0})
         return rows
 
-    def _pmk_metal_rows(self):
-        rows = super()._pmk_metal_rows()
+    def _pmk_buy_rows(self):
+        rows = super()._pmk_buy_rows()
         if self.cat_vent:
             rows += self._pmk_metal_rows_vent()
         return rows

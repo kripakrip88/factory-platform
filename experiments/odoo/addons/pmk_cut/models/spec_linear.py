@@ -53,8 +53,8 @@ class MetalSpecLinear(models.Model):
                          "amount": amount, "kg": r.weight_total})
         return rows
 
-    def _pmk_metal_rows(self):
-        rows = super()._pmk_metal_rows()
+    def _pmk_buy_rows(self):
+        rows = super()._pmk_buy_rows()
         if self.cat_metal:
             rows += self._pmk_metal_rows_linear()
         return rows
