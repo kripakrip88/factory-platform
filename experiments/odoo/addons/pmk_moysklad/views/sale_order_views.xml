@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!-- Счёт из МоегоСклада (12.10.2026): статус МоегоСклада колонкой, вкладка «МойСклад»
+       в форме, фильтры «Из МоегоСклада» и «Расхождения». active в XML — грабли Odoo 19. -->
+  <record id="view_order_list_pmk_ms" model="ir.ui.view">
+    <field name="name">sale.order.list.pmk.ms</field>
+    <field name="model">sale.order</field>
+    <field name="inherit_id" ref="sale.sale_order_tree"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='pmk_status']" position="after">
+        <field name="pmk_ms_state" string="МойСклад" widget="badge" optional="show"
+               decoration-success="pmk_ms_state in ('Оплачен', 'Заказ отгружен', 'Заказ готов')"
+               decoration-info="pmk_ms_state in ('Предоплата получена', 'Постоплата', 'В производство')"
+               decoration-muted="pmk_ms_state == 'Не актуальна'"/>
+        <field name="pmk_ms_shipped_date" optional="hide"/>
+        <field name="pmk_ms_note" optional="hide"/>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="view_order_search_pmk_ms" model="ir.ui.view">
+    <field name="name">sale.order.search.pmk.ms</field>
+    <field name="model">sale.order</field>
+    <field name="inherit_id" ref="sale.view_sales_order_filter"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//filter[@name='pmk_revisions']" position="after">
+        <separator/>
+        <filter name="pmk_from_ms" string="Из МоегоСклада" domain="[('pmk_ms_id', '!=', False)]"/>
+        <filter name="pmk_ms_issues" string="Расхождения с МоимСкладом" domain="[('pmk_ms_note', '!=', False)]"/>
+        <field name="pmk_ms_state"/>
+        <field name="pmk_ms_object"/>
+      </xpath>
+      <xpath expr="//filter[@name='pmk_group_status']" position="after">
+        <filter name="pmk_group_ms_state" string="Статус МоегоСклада" context="{'group_by': 'pmk_ms_state'}"/>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="view_order_form_pmk_ms" model="ir.ui.view">
+    <field name="name">sale.order.form.pmk.ms</field>
+    <field name="model">sale.order</field>
+    <field name="inherit_id" ref="sale.view_order_form"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//notebook" position="inside">
+        <page string="МойСклад" name="pmk_ms" invisible="not pmk_ms_id">
+          <group>
+            <group>
+              <field name="pmk_ms_state"/>
+              <field name="pmk_ms_url" widget="url" string="Счёт в МоёмСкладе"
+                     options="{'website_path': false}" text="Открыть"/>
+              <field name="pmk_ms_sum"/>
+              <field name="pmk_ms_shipped_sum"/>
+              <field name="pmk_ms_shipped_date"/>
+            </group>
+            <group>
+              <field name="pmk_ms_contract"/>
+              <field name="pmk_ms_object"/>
+              <field name="pmk_ms_weight"/>
+              <field name="pmk_ms_note" invisible="not pmk_ms_note" class="text-warning"/>
+              <field name="pmk_ms_id" invisible="1"/>
+            </group>
+          </group>
+        </page>
+      </xpath>
+      <xpath expr="//field[@name='order_line']/list//field[@name='name']" position="after">
+        <field name="pmk_ms_group" optional="hide"/>
+      </xpath>
+    </field>
+  </record>
+</odoo>
