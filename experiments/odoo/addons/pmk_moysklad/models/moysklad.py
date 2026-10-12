@@ -145,7 +145,9 @@ class PmkMoysklad(models.AbstractModel):
     # ------------------------------------------------------------ организации
     @api.model
     def _sync_orgs(self):
-        Org = self.env["pmk.org"].with_context(active_test=False, tracking_disable=True)
+        # ИНН — как в МоёмСкладе, без проверки контрольной суммы (опечатку покажет DaData).
+        Org = self.env["pmk.org"].with_context(active_test=False, tracking_disable=True,
+                                               no_vat_validation=True)
         out = {}
         for row in self._ms_rows("organization"):
             mid, inn = ms_id(row), row.get("inn") or ""
@@ -217,7 +219,7 @@ class PmkMoysklad(models.AbstractModel):
     @api.model
     def _upsert_partner(self, row, cache):
         Partner = self.env["res.partner"].with_context(
-            active_test=False, tracking_disable=True, mail_create_nolog=True)
+            active_test=False, tracking_disable=True, mail_create_nolog=True, no_vat_validation=True)
         vals, extra = self._partner_vals(row)
         partner = self._match_partner(row, cache)
         tag = cache.get("tag")
@@ -225,7 +227,7 @@ class PmkMoysklad(models.AbstractModel):
             # Своё не затираем: пустые поля дополняем, id МоегоСклада ставим.
             upd = {k: v for k, v in extra.items() if not partner[k]}
             upd["pmk_ms_id"] = vals["pmk_ms_id"]
-            partner.with_context(tracking_disable=True).write(upd)
+            partner.with_context(tracking_disable=True, no_vat_validation=True).write(upd)
         else:
             vals.update(extra)
             partner = Partner.create(vals)
