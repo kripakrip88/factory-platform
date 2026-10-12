@@ -81,7 +81,7 @@ STATUS_SLOT = ".//Layout/t[@t-set-slot='control-panel-status-indicator']"
 FORMS = (
     ("pmk.metal.spec", "pmk_calc.view_metal_spec_form", True),       # расчёт
     ("pmk.vent.hood.order", "pmk_calc.view_vent_hood_order_form", False),  # вентзонты
-    ("pmk.dobor.order", "pmk_calc.view_dobor_order_form", False),    # доборка
+    ("pmk.dobor.order", "pmk_calc.view_dobor_order_form", True),     # доборка (вкладки с «Раскроем листа», 12.10)
     ("crm.lead", "crm.crm_lead_view_form", True),                    # сделка, лид
     ("sale.order", "sale.view_order_form", True),                    # счёт покупателю
     ("purchase.order", "purchase.purchase_order_form", True),        # заявка на металл

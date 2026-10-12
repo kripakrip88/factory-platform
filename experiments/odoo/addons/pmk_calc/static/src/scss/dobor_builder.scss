@@ -968,3 +968,56 @@ body.o_nexus_dark {
 .pmk-row-alt .pmk-prow__wrap {
   background: var(--pmk-surface, #fff);
 }
+
+// ─── Раскрой листа доборки (вкладка заказа, 12.10.2026) ─────────────────────
+.pmk-cut-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.pmk-cut-mat {
+  margin-bottom: 18px;
+}
+
+.pmk-cut-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 6px 0;
+}
+
+.pmk-cut-table {
+  border-collapse: collapse;
+  max-width: 720px;
+  width: 100%;
+
+  th, td {
+    padding: 5px 10px;
+    border-bottom: 1px solid var(--pmk-border, #e3e4e8);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  thead th { color: var(--pmk-text-muted, #8a8d96); font-weight: 500; }
+  tbody th, thead th:first-child { text-align: left; font-weight: 500; }
+
+  tr.pmk-cut-chosen th, tr.pmk-cut-chosen td {
+    font-weight: 700;
+    background: rgba(110, 130, 0, 0.12);
+  }
+}
+
+.pmk-cut-note { margin: 6px 0 10px; font-size: 13px; }
+.pmk-cut-muted { color: var(--pmk-text-muted, #8a8d96); font-size: 13px; }
+
+.pmk-cut-maps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+// Подпись листа в SVG — currentColor: цвет текста формы (в тёмной теме светлый).
+.pmk-cut-map {
+  flex: 0 1 560px;
+}

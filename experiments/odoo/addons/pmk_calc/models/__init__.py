@@ -5,6 +5,7 @@ from . import metal_pending
 from . import metal_spec
 from . import dobor
 from . import dobor_report
+from . import dobor_cut
 # 11.10.2026: вентзонты — генератор развёрток tools/vent_hood.py.
 from . import vent_hood
 from . import spec_layout

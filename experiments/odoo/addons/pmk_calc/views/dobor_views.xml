@@ -91,6 +91,8 @@
             В editable-режиме Odoo правит ячейки и форму не открывает — тогда
             до построителя просто не добраться.
           -->
+          <notebook name="pmk_dobor_notebook">
+            <page string="Позиции" name="pmk_dobor_lines">
           <field name="line_ids" class="pmk-rows">
             <list>
               <field name="sequence" widget="handle"/>
@@ -200,6 +202,17 @@
               <field name="lock" invisible="1"/>
             </form>
           </field>
+            </page>
+            <page string="Раскрой листа" name="pmk_dobor_cut">
+              <!-- Гильотина со стандартного листа 1250 × 2500 или лист с бухты (длина кратна 50,
+                   до 2500 — гильотина и гибка). Расчёт — tools/dobor_cut.py, на лету. -->
+              <div class="pmk-cut-head">
+                <label for="cut_source"/>
+                <field name="cut_source" widget="radio" options="{'horizontal': true}" nolabel="1"/>
+              </div>
+              <field name="cut_html" nolabel="1" readonly="1"/>
+            </page>
+          </notebook>
         </sheet>
         <chatter/>
       </form>
