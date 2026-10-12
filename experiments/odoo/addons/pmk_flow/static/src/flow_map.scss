@@ -105,8 +105,8 @@ body.o_nexus_dark .o_pmk_flow {
 // этапа, вправо схема не растёт.
 .o_pmk_flow_lane {
   display: grid;
-  grid-template-columns: 150px minmax(0, 1fr);
-  gap: 16px;
+  grid-template-columns: 130px minmax(0, 1fr);
+  gap: 14px;
   padding: 12px 0;
   border-top: 1px solid var(--pmk-flow-frame);
 
@@ -154,7 +154,7 @@ body.o_nexus_dark .o_pmk_flow {
   flex-direction: column;
   gap: 6px;
   position: relative;
-  padding-left: 26px;
+  padding-left: 22px;
 
   &:first-child {
     padding-left: 0;
@@ -163,7 +163,7 @@ body.o_nexus_dark .o_pmk_flow {
   & + &::before {
     content: "→";
     position: absolute;
-    left: 7px;
+    left: 5px;
     top: 30px;
     color: var(--pmk-flow-head);
   }
@@ -213,8 +213,9 @@ body.o_nexus_dark .o_pmk_flow {
   padding: 0 2px;
 }
 
+// 168 px: шесть колонок «Заявки» со стрелками встают в строку на 1440 px.
 .o_pmk_flow_node {
-  width: 190px;
+  width: 168px;
   padding: 6px 10px;
   border: 1px solid;
   border-radius: 8px;
