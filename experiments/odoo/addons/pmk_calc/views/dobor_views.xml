@@ -78,6 +78,15 @@
                     <field name="total_weight" digits="[12,1]"/>
                   </div>
                 </div>
+                <!-- Цена — вручную (12.10.2026); пока у позиций нет цены — подпись под суммой. -->
+                <div class="pmk-kpi__card">
+                  <div class="pmk-kpi__label">Сумма, ₽</div>
+                  <div class="pmk-kpi__value">
+                    <field name="amount_total" digits="[12,2]"/>
+                  </div>
+                  <field name="has_unpriced" invisible="1"/>
+                  <div class="pmk-kpi__sub text-warning" invisible="not has_unpriced">есть позиции без цены</div>
+                </div>
                 <div class="pmk-kpi__note">
                   <span>Позиций:</span><field name="total_positions"/>
                   <span class="pmk-kpi__dot">·</span>
@@ -114,6 +123,8 @@
                    берёт те же знаки (pmk_theme/static/src/js/list_table_rules.js)
                    и совпадает с карточкой «Общий вес, кг» над таблицей. -->
               <field name="weight_total" readonly="1" digits="[12,1]" sum="Итого, кг"/>
+              <field name="price_unit" string="Цена за шт, ₽"/>
+              <field name="price_total" readonly="1" sum="Сумма"/>
               <!-- «Копировать» (приёмка 01.10.2026, R9b): копия позиции встаёт
                    сразу под исходной — тот же профиль, покрытие, металл и
                    количество; дальше меняют размеры. Работает и у ещё не
@@ -181,6 +192,7 @@
                     <field name="sheet_id" options="{'no_create': True}" required="1"/>
                     <field name="plank_length"/>
                     <field name="qty"/>
+                    <field name="price_unit"/>
                     <field name="coil_width"/>
                   </group>
                   <group string="Результат">

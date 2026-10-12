@@ -59,6 +59,13 @@
                   <div class="pmk-kpi__label">Вес деталей, кг</div>
                   <div class="pmk-kpi__value"><field name="total_mass_net_kg"/></div>
                 </div>
+                <!-- Цена — вручную (12.10.2026). -->
+                <div class="pmk-kpi__card">
+                  <div class="pmk-kpi__label">Сумма, ₽</div>
+                  <div class="pmk-kpi__value"><field name="amount_total" digits="[12,2]"/></div>
+                  <field name="has_unpriced" invisible="1"/>
+                  <div class="pmk-kpi__sub text-warning" invisible="not has_unpriced">есть размеры без цены</div>
+                </div>
                 <div class="pmk-kpi__note">
                   <span>Размеров:</span><field name="total_positions"/>
                   <span class="pmk-kpi__dot">·</span>
@@ -100,14 +107,17 @@
                      options="{'no_create': True, 'no_open': True}"/>
               <field name="sheet_id" width="190px" options="{'no_create': True, 'no_open': True}"/>
               <field name="qty" width="110px" sum="Зонтов"/>
+              <field name="price_unit" string="Цена за шт, ₽" width="110px"/>
+              <field name="price_total" readonly="1" width="110px" sum="Сумма" optional="hide"/>
               <field name="hood_label" string="Зонт" width="125px" readonly="1"/>
               <!-- Свес: 150 у всех, кроме решения инженера (вкладка «Раскрой») — такая строка
                    подсвечена, колонку можно включить в меню колонок. -->
               <field name="sves" string="Свес, мм" optional="hide"/>
               <field name="lapki" readonly="1" optional="hide"/>
               <field name="klepki" readonly="1" optional="hide"/>
+              <!-- Лист всего — по выбору (12.10.2026): место отдано цене, итог листа — в карточке. -->
               <field name="total_sheet_1250_m" string="Лист всего, пог. м" width="125px"
-                     readonly="1" sum="Лист 1250"/>
+                     readonly="1" sum="Лист 1250" optional="hide"/>
               <field name="total_mass_net_kg" string="Вес всего, кг" width="95px"
                      readonly="1" sum="Вес"/>
               <field name="spec_error" column_invisible="1"/>
@@ -155,6 +165,7 @@
               <field name="length" required="1"/>
               <field name="qty"/>
               <field name="sves"/>
+              <field name="price_unit"/>
             </group>
             <group>
               <field name="coating_id" options="{'no_create': True, 'no_open': True}"/>
