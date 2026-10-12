@@ -46,6 +46,10 @@ INVOICES = [
          shippedSum=0, vatEnabled=True, vatIncluded=True,
          positions={"rows": [pos("Лист 2 мм", 1, 120, 20)]}),
 ]
+INVOICES.append(dict(meta("invoiceout", "i-4"), name="00104", moment="2026-10-09 12:00:00.000",
+                     updated="2026-10-09 12:00:00.000", organization=meta("organization", "o-butov"),
+                     agent=meta("counterparty", "gone"), state={"name": "Согласование"}, sum=50 * 100,
+                     shippedSum=0, positions={"rows": [pos("Заглушка столба", 1, 50, 0)]}))
 DEMANDS = [dict(meta("demand", "d-1"), moment="2026-10-08 15:00:00.000", updated="2026-10-08 15:00:00.000",
                 invoicesOut=[meta("invoiceout", "i-1")])]
 
@@ -54,6 +58,9 @@ def fake_get(self, path, params=None):
     table = {"entity/organization": ORGS, "entity/counterparty": AGENTS,
              "entity/invoiceout": INVOICES, "entity/demand": DEMANDS}
     if path.startswith("entity/counterparty/"):
+        if path.endswith("/gone"):  # удалён в МоёмСкладе
+            from odoo.exceptions import UserError
+            raise UserError("404")
         return AGENTS[0]
     rows = table[path]
     return {"rows": rows if not (params or {}).get("offset") else [], "meta": {"size": len(rows)}}
@@ -80,7 +87,7 @@ class TestMoysklad(TransactionCase):
 
     def test_sync_all(self):
         report = self.env["pmk.moysklad"].with_context(pmk_ms_no_commit=True).sync_all(full=True)
-        self.assertEqual(report, {"partners": 1, "invoices": 3, "demands": 1})
+        self.assertEqual(report, {"partners": 1, "invoices": 4, "demands": 1})
         Order = self.env["sale.order"].with_context(active_test=False)
         o1 = Order.search([("pmk_ms_id", "=", "i-1")])
         self.assertEqual(o1.name, "00101")
@@ -107,7 +114,9 @@ class TestMoysklad(TransactionCase):
         self.assertEqual(o3.state, "cancel")
         # Повторный прогон — обновляет, не дублирует.
         self.env["pmk.moysklad"].with_context(pmk_ms_no_commit=True).sync_all(full=True)
-        self.assertEqual(Order.search_count([("pmk_ms_id", "!=", False)]), 3)
+        self.assertEqual(Order.search_count([("pmk_ms_id", "!=", False)]), 4)
+        o4 = Order.search([("pmk_ms_id", "=", "i-4")])
+        self.assertEqual(o4.partner_id.name, "Контрагент удалён в МоёмСкладе")
         self.assertEqual(self.env["res.partner"].search_count([("pmk_ms_id", "=", "c-1")]), 1)
         # Поиск счёта по клиенту — для «Заказов в работе».
         self.assertIn(o1, Order.search([("display_name", "ilike", "Тест МойСклад")]))

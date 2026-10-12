@@ -257,12 +257,23 @@ class PmkMoysklad(models.AbstractModel):
     @api.model
     def _partner_by_ms(self, meta, cache):
         mid = ms_id(meta)
-        partner = self.env["res.partner"].with_context(active_test=False).search(
-            [("pmk_ms_id", "=", mid)], limit=1)
-        if not partner:  # контрагент новее прошлой синхронизации — забираем по ссылке
+        href = (meta.get("meta", meta) or {}).get("href", "")
+        if "/organization/" in href:  # покупатель — наша же организация
+            org = self.env["pmk.org"].with_context(active_test=False).search([("pmk_ms_id", "=", mid)], limit=1)
+            if org:
+                return org.partner_id
+        Partner = self.env["res.partner"].with_context(active_test=False)
+        partner = Partner.search([("pmk_ms_id", "=", mid)], limit=1)
+        if partner:
+            return partner
+        try:  # контрагент новее прошлой синхронизации — забираем по ссылке
             row = self._ms_get("entity/counterparty/%s" % mid)
-            partner = self._upsert_partner(row, cache)
-        return partner
+        except UserError:
+            # Удалён в МоёмСкладе, а счёт на него остался — заглушка, чтобы счёт перенёсся.
+            return Partner.with_context(tracking_disable=True, mail_create_nolog=True).create({
+                "name": "Контрагент удалён в МоёмСкладе", "is_company": True, "pmk_ms_id": mid,
+                "category_id": [(4, cache["tag"].id)] if cache.get("tag") else False})
+        return self._upsert_partner(row, cache)
 
     # ------------------------------------------------------------ счета
     @api.model
@@ -360,35 +371,47 @@ class PmkMoysklad(models.AbstractModel):
         }
         orgs = {o.pmk_ms_id: o for o in self.env["pmk.org"].with_context(active_test=False).search(
             [("pmk_ms_id", "!=", False)])}
-        last, n = since, 0
+        last, n, failed = since, 0, 0
+        Param = self.env["ir.config_parameter"].sudo()
         for inv in self._ms_rows("invoiceout", updated_since=since,
                                  expand="positions.assortment.uom,state"):
-            vals, state = self._invoice_vals(inv, orgs, ctx)
-            order = Order.search([("pmk_ms_id", "=", vals["pmk_ms_id"])], limit=1)
-            if order:
-                if order.state == "cancel":
-                    order.write({"state": "draft"})
-                order.order_line.unlink()
-                order.write(vals)
-            else:
-                order = Order.create(vals)
-            # Налог строки — как в МоёмСкладе: пересчёт налога по организации (pmk_org,
-            # _compute_tax_ids) мог его заменить при создании — ставим ещё раз.
-            for line, (_c, _i, lv) in zip(order.order_line.sorted("sequence"), vals["order_line"]):
-                if line.tax_ids.ids != lv["tax_ids"][0][2]:
-                    line.tax_ids = lv["tax_ids"]
-            diff = abs(order.amount_total - vals["pmk_ms_sum"])
-            if diff > 0.05:
-                order.pmk_ms_note = "; ".join(filter(None, [
-                    order.pmk_ms_note, "сумма в Odoo %.2f, в МоёмСкладе %.2f" % (
-                        order.amount_total, vals["pmk_ms_sum"])]))
-            if state == "Не актуальна" and order.state != "cancel":
-                order.write({"state": "cancel"})
+            try:
+                with self.env.cr.savepoint():
+                    self._upsert_invoice(inv, orgs, ctx, Order)
+            except Exception as e:  # один счёт не останавливает перенос
+                failed += 1
+                _logger.warning("pmk_moysklad: счёт %s не перенесён: %s", inv.get("name"), e)
             last, n = inv.get("updated") or last, n + 1
             if n % 100 == 0:
+                Param.set_param("pmk_moysklad.last_invoices", last)
                 self._ms_commit()
-                _logger.info("pmk_moysklad: счетов %s (до %s)", n, last)
+                _logger.info("pmk_moysklad: счетов %s (до %s), не перенесено %s", n, last, failed)
         return n, last
+
+    @api.model
+    def _upsert_invoice(self, inv, orgs, ctx, Order):
+        vals, state = self._invoice_vals(inv, orgs, ctx)
+        order = Order.search([("pmk_ms_id", "=", vals["pmk_ms_id"])], limit=1)
+        if order:
+            if order.state == "cancel":
+                order.write({"state": "draft"})
+            order.order_line.unlink()
+            order.write(vals)
+        else:
+            order = Order.create(vals)
+        # Налог строки — как в МоёмСкладе: пересчёт налога по организации (pmk_org,
+        # _compute_tax_ids) мог его заменить при создании — ставим ещё раз.
+        for line, (_c, _i, lv) in zip(order.order_line.sorted("sequence"), vals["order_line"]):
+            if line.tax_ids.ids != lv["tax_ids"][0][2]:
+                line.tax_ids = lv["tax_ids"]
+        diff = abs(order.amount_total - vals["pmk_ms_sum"])
+        if diff > 0.05:
+            order.pmk_ms_note = "; ".join(filter(None, [
+                order.pmk_ms_note, "сумма в Odoo %.2f, в МоёмСкладе %.2f" % (
+                    order.amount_total, vals["pmk_ms_sum"])]))
+        if state == "Не актуальна" and order.state != "cancel":
+            order.write({"state": "cancel"})
+        return order
 
     # ------------------------------------------------------------ отгрузки
     @api.model
