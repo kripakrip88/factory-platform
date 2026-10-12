@@ -5,6 +5,7 @@ from unittest.mock import patch
 from odoo.tests import TransactionCase, tagged
 
 from odoo.addons.pmk_moysklad.models import moysklad as ms
+from odoo.addons.pmk_org.hooks import ensure_taxes
 
 H = "https://api.moysklad.ru/api/remap/1.2/entity/"
 
@@ -64,6 +65,8 @@ class TestMoysklad(TransactionCase):
     def setUp(self):
         super().setUp()
         self.env["ir.config_parameter"].sudo().set_param("pmk_moysklad.token", "test")
+        # Одноразовая база без плана счетов: налоги режимов — как при установке pmk_org.
+        ensure_taxes(self.env, self.env.company)
         patcher = patch.object(type(self.env["pmk.moysklad"]), "_ms_get", fake_get)
         patcher.start()
         self.addCleanup(patcher.stop)
