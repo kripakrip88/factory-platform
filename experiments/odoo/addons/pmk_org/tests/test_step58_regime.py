@@ -58,13 +58,13 @@ class TestRegimeAt(unittest.TestCase):
         self.assertEqual(rg.state_of(D(2025, 1, 1), D(2026, 1, 1), today), "past")
 
     def test_regimes_and_rates(self):
-        self.assertEqual([r for r, _l in rg.REGIMES], ["vat22", "usn0", "usn5", "usn7"])
+        self.assertEqual([r for r, _l in rg.REGIMES], ["vat22", "usn0", "usn5", "usn7", "vat20"])
         self.assertEqual(rg.REGIME_LABELS["usn0"], "УСН без НДС")
-        self.assertEqual(rg.RATES, {"vat22": 22.0, "usn0": 0.0, "usn5": 5.0, "usn7": 7.0})
+        self.assertEqual(rg.RATES, {"vat22": 22.0, "usn0": 0.0, "usn5": 5.0, "usn7": 7.0, "vat20": 20.0})
         self.assertTrue(rg.is_usn("usn5"))
         self.assertFalse(rg.is_usn("vat22"))
         names = [rg.TAXES[r][0] for r in rg.RATES]
-        self.assertEqual(len(set(names)), 4, "Имена налогов уникальны в компании.")
+        self.assertEqual(len(set(names)), 5, "Имена налогов уникальны в компании.")
         self.assertEqual(rg.TAXES["vat22"][0], "НДС 22% (продажа)", "Имя уже заведённого налога.")
 
     def test_signer_from_name(self):
