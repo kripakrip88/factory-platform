@@ -67,10 +67,6 @@ class TestMoysklad(TransactionCase):
         patcher = patch.object(type(self.env["pmk.moysklad"]), "_ms_get", fake_get)
         patcher.start()
         self.addCleanup(patcher.stop)
-        # Коммиты внутри переноса — в тесте не нужны.
-        commit = patch.object(type(self.env.cr), "commit", lambda cr: None)
-        commit.start()
-        self.addCleanup(commit.stop)
 
     def test_groups(self):
         self.assertEqual(ms.group_of("Закладная деталь Зд3"), "embed")

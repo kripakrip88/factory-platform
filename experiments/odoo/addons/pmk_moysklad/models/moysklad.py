@@ -21,6 +21,7 @@ import gzip
 import json
 import logging
 import re
+import threading
 import time
 import urllib.error
 import urllib.parse
@@ -93,6 +94,12 @@ class PmkMoysklad(models.AbstractModel):
     _description = "МойСклад → Odoo"
 
     # ------------------------------------------------------------ API
+    @api.model
+    def _ms_commit(self):
+        """Перенос «за всё время» — тысячи записей: фиксируем по частям. В тестах нельзя."""
+        if not getattr(threading.current_thread(), "testing", False):
+            self.env.cr.commit()
+
     @api.model
     def _ms_get(self, path, params=None):
         token = self.env["ir.config_parameter"].sudo().get_param("pmk_moysklad.token")
@@ -243,7 +250,7 @@ class PmkMoysklad(models.AbstractModel):
             self._upsert_partner(row, cache)
             last, n = row.get("updated") or last, n + 1
             if n % 200 == 0:
-                self.env.cr.commit()
+                self._ms_commit()
         return n, last
 
     @api.model
@@ -373,7 +380,7 @@ class PmkMoysklad(models.AbstractModel):
                 order.write({"state": "cancel"})
             last, n = inv.get("updated") or last, n + 1
             if n % 100 == 0:
-                self.env.cr.commit()
+                self._ms_commit()
                 _logger.info("pmk_moysklad: счетов %s (до %s)", n, last)
         return n, last
 
@@ -406,7 +413,7 @@ class PmkMoysklad(models.AbstractModel):
             n, last = method(since)
             if last:
                 Param.set_param("pmk_moysklad.last_%s" % key, last)
-            self.env.cr.commit()
+            self._ms_commit()
             report[key] = n
         Param.set_param("pmk_moysklad.last_run", fields.Datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         _logger.info("pmk_moysklad: синхронизация %s", report)
