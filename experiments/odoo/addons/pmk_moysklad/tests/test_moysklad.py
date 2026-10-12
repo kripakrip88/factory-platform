@@ -91,6 +91,7 @@ class TestMoysklad(TransactionCase):
         Order = self.env["sale.order"].with_context(active_test=False)
         o1 = Order.search([("pmk_ms_id", "=", "i-1")])
         self.assertEqual(o1.name, "00101")
+        self.assertEqual(o1.currency_id, self.env.company.currency_id, "валюта компании, без прайс-листа")
         self.assertEqual(o1.partner_id.vat, "2700000001")
         self.assertIn(self.env.ref("pmk_moysklad.partner_tag_ms"), o1.partner_id.category_id)
         self.assertEqual(o1.pmk_org_id.inn, "272107382162")

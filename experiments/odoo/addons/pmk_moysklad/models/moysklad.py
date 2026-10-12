@@ -310,6 +310,9 @@ class PmkMoysklad(models.AbstractModel):
             # Время МоегоСклада — московское (UTC+3), Odoo хранит UTC.
             "date_order": when - timedelta(hours=3) if when else fields.Datetime.now(),
             "user_id": False,
+            # Без прайс-листа, как у счетов из расчёта (pmk_orders): валюта — рубль компании,
+            # а не «Default» в долларах.
+            "pricelist_id": False,
             "note": inv.get("description") or False,
             "pmk_ms_id": ms_id(inv),
             "pmk_ms_state": state,
