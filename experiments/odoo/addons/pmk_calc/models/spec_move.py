@@ -96,12 +96,14 @@ class MetalSpecMove(models.Model):
 
     pmk_pick_count = fields.Integer("Отмечено изделий", compute="_compute_pmk_pick_count")
     pmk_hint_count = fields.Integer("С подсказкой", compute="_compute_pmk_pick_count")
+    pmk_product_count = fields.Integer("Изделий в списке", compute="_compute_pmk_pick_count")
 
     @api.depends("product_ids.pmk_pick", "product_ids.name")
     def _compute_pmk_pick_count(self):
         for spec in self:
             spec.pmk_pick_count = len(spec.product_ids.filtered("pmk_pick"))
             spec.pmk_hint_count = len(spec.product_ids.filtered("pmk_move_hint"))
+            spec.pmk_product_count = len(spec.product_ids)
 
     def _pmk_picked(self):
         self.ensure_one()
@@ -135,17 +137,13 @@ class MetalSpecMove(models.Model):
         self.ensure_one()
         return self._pmk_move_vent(self._pmk_picked())
 
-    def action_pmk_move_by_hint(self):
-        """«Разнести по подсказке»: все изделия с подсказкой — каждое в свой калькулятор."""
-        self.ensure_one()
-        dobor = self.product_ids.filtered(lambda p: p.pmk_move_hint == "dobor")
-        vent = self.product_ids.filtered(lambda p: p.pmk_move_hint == "vent")
-        if not (dobor or vent):
-            raise UserError("Нет изделий с подсказкой «→ доборка» или «→ вентзонт».")
-        if dobor:
-            self._pmk_move_dobor(dobor)
-        if vent:
-            self._pmk_move_vent(vent)
+    def action_pmk_pick_all(self):
+        """«Выбрать всё» (Антон 13.10.2026): отметить все изделия «Перенести»."""
+        self.product_ids.write({"pmk_pick": True})
+        return True
+
+    def action_pmk_pick_none(self):
+        self.product_ids.write({"pmk_pick": False})
         return True
 
     def _pmk_move_dobor(self, picked):

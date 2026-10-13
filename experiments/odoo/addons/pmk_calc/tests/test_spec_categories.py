@@ -131,17 +131,20 @@ class TestSpecCategories(TransactionCase):
         self.assertNotEqual(copy.dobor_order_ids, spec.dobor_order_ids)
         self.assertEqual(copy.dobor_order_ids.line_ids.title, "Капельник")
 
-    def test_move_by_hint_and_copy(self):
-        """«Разнести по подсказке» одной кнопкой; «Копировать» изделие с деталями (13.10.2026)."""
+    def test_pick_all_and_copy(self):
+        """«Выбрать всё» / «Снять выбор»; «Копировать» изделие с деталями (13.10.2026)."""
         spec = self.env["pmk.metal.spec"].create({"product_ids": [
             (0, 0, {"name": "Отлив оконный L=2000", "qty": 2, "sequence": 10}),
-            (0, 0, {"name": "Зонт вш 500х1000 RAL 8017", "qty": 1, "sequence": 20}),
+            (0, 0, {"name": "Капельник L=2500", "qty": 1, "sequence": 20}),
             (0, 0, {"name": "Полоса 40х3000х4", "qty": 8, "sequence": 30})]})
-        self.assertEqual(spec.pmk_hint_count, 2)
-        spec.action_pmk_move_by_hint()
+        spec.action_pmk_pick_all()
+        self.assertEqual(spec.pmk_pick_count, spec.pmk_product_count)
+        spec.action_pmk_pick_none()
+        self.assertEqual(spec.pmk_pick_count, 0)
+        spec.product_ids.filtered(lambda p: p.pmk_move_hint == "dobor").write({"pmk_pick": True})
+        spec.action_pmk_pick_to_dobor()
         self.assertEqual(spec.product_ids.mapped("name"), ["Полоса 40х3000х4"])
-        self.assertEqual(len(spec.dobor_order_ids.line_ids), 1)
-        self.assertEqual(len(spec.vent_order_ids.line_ids), 1)
+        self.assertEqual(len(spec.dobor_order_ids.line_ids), 2)
         strip = spec.product_ids
         strip.action_pmk_copy()
         self.assertEqual(len(spec.product_ids), 2)

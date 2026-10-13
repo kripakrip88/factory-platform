@@ -28,10 +28,11 @@
       <!-- Перенос изделий в доборку / вентзонты (13.10.2026, spec_move.py): переключатель в
            строке изделия, кнопки — над списком, когда что-то отмечено. -->
       <xpath expr="//field[@name='product_ids']" position="before">
-        <div class="pmk-move-bar" name="pmk_move_bar" invisible="not pmk_pick_count and not pmk_hint_count">
-          <button name="action_pmk_move_by_hint" type="object" class="btn-secondary" string="Разнести по подсказке"
-                  icon="fa-random" invisible="not pmk_hint_count"
-                  title="Все изделия с подсказкой «→ доборка» — в доборку, «→ вентзонт» — в вентзонты. Ошибся — ↺ в строке калькулятора вернёт"/>
+        <div class="pmk-move-bar" name="pmk_move_bar" invisible="not pmk_product_count">
+          <button name="action_pmk_pick_all" type="object" class="btn-link" string="Выбрать всё"
+                  icon="fa-check-square-o" invisible="pmk_pick_count == pmk_product_count"/>
+          <button name="action_pmk_pick_none" type="object" class="btn-link" string="Снять выбор"
+                  icon="fa-square-o" invisible="not pmk_pick_count"/>
           <span invisible="not pmk_pick_count">Отмечено: <field name="pmk_pick_count" class="oe_inline"/></span>
           <button name="action_pmk_pick_to_dobor" type="object" class="btn-secondary" string="В доборки"
                   icon="fa-arrow-down" invisible="not pmk_pick_count"
@@ -39,12 +40,13 @@
           <button name="action_pmk_pick_to_vent" type="object" class="btn-secondary" string="В вентзонты"
                   icon="fa-arrow-down" invisible="not pmk_pick_count"
                   title="Отмеченные изделия — размерами в вентзонты этого расчёта"/>
-          <span class="pmk-cat-muted">строки уйдут из металлоизделий в калькулятор</span>
-          <field name="pmk_hint_count" invisible="1"/>
+          <span class="pmk-cat-muted">Shift + щелчок по переключателю — отметить строки подряд</span>
+          <field name="pmk_product_count" invisible="1"/>
         </div>
       </xpath>
       <xpath expr="//field[@name='product_ids']/list/field[@name='sequence']" position="after">
-        <field name="pmk_pick" widget="boolean_toggle" string="Перенести" width="90px" optional="show"/>
+        <field name="pmk_pick" widget="pmk_pick_toggle" string="Перенести" width="90px" optional="show"
+               options="{'autosave': false}"/>
       </xpath>
       <xpath expr="//field[@name='product_ids']/list/field[@name='note']" position="after">
         <field name="pmk_move_hint" optional="show" string="Подсказка" width="110px"/>

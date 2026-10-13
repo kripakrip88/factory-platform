@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <!-- Переключатель «Перенести» с выбором диапазона через Shift (js/pick_toggle.js). -->
+    <t t-name="pmk_calc.PmkPickToggle">
+        <span class="pmk-pick-toggle" t-on-click.capture="onClickCapture" t-on-mousedown="onMouseDown">
+            <t t-call="web.BooleanToggleField"/>
+        </span>
+    </t>
+</templates>
