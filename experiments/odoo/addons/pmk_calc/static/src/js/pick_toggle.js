@@ -75,10 +75,11 @@ export class PmkPickListToggle extends ListBooleanToggleField {
             const value = !record.data[name];
             if (a >= 0 && b >= 0) {
                 const [from, to] = a < b ? [a, b] : [b, a];
-                for (const rec of list.records.slice(from, to + 1)) {
-                    if (rec.data[name] !== value) {
-                        await rec.update({ [name]: value });
-                    }
+                // Пачкой: строки меняются без пересчёта с сервером, пересчёт — один
+                // раз на последней (иначе десять строк — десять запросов подряд).
+                const recs = list.records.slice(from, to + 1).filter((r) => r.data[name] !== value);
+                for (const [i, rec] of recs.entries()) {
+                    await rec.update({ [name]: value }, { withoutOnchange: i < recs.length - 1 });
                 }
             }
         } else if (!onCheckbox) {
