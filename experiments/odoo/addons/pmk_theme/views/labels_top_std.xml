@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Подписи НАД полями в штатных формах Odoo (шаг 3, Антон 14.10.2026:
+    «исправляй сразу штатные формы, там где сильно растянется — сделаем
+    оптимизацию»). Класс pmk-labels-top-groups — стиль в scss/type.scss:
+    сетка группы в одну колонку, подпись строкой над полем.
+    Задание на лазер — классом прямо в своём виде (pmk_laser).
+    ВЕРНУТЬ подпись слева: убрать файл из __manifest__.py (или нужную запись).
+    active в XML — грабли Odoo 19.
+  -->
+
+  <!-- Сделка и лид -->
+  <record id="view_crm_lead_form_labels_top" model="ir.ui.view">
+    <field name="name">crm.lead.form.pmk.labels.top</field>
+    <field name="model">crm.lead</field>
+    <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="/form" position="attributes">
+        <attribute name="class" add="pmk-labels-top-groups" separator=" "/>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- Карточка контрагента -->
+  <record id="view_res_partner_form_labels_top" model="ir.ui.view">
+    <field name="name">res.partner.form.pmk.labels.top</field>
+    <field name="model">res.partner</field>
+    <field name="inherit_id" ref="base.view_partner_form"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="/form" position="attributes">
+        <attribute name="class" add="pmk-labels-top-groups" separator=" "/>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- Счёт покупателю -->
+  <record id="view_sale_order_form_labels_top" model="ir.ui.view">
+    <field name="name">sale.order.form.pmk.labels.top</field>
+    <field name="model">sale.order</field>
+    <field name="inherit_id" ref="sale.view_order_form"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="/form" position="attributes">
+        <attribute name="class" add="pmk-labels-top-groups" separator=" "/>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- Закупка -->
+  <record id="view_purchase_order_form_labels_top" model="ir.ui.view">
+    <field name="name">purchase.order.form.pmk.labels.top</field>
+    <field name="model">purchase.order</field>
+    <field name="inherit_id" ref="purchase.purchase_order_form"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="/form" position="attributes">
+        <attribute name="class" add="pmk-labels-top-groups" separator=" "/>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- Задача и заказ в работе -->
+  <record id="view_project_task_form_labels_top" model="ir.ui.view">
+    <field name="name">project.task.form.pmk.labels.top</field>
+    <field name="model">project.task</field>
+    <field name="inherit_id" ref="project.view_task_form2"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="/form" position="attributes">
+        <attribute name="class" add="pmk-labels-top-groups" separator=" "/>
+      </xpath>
+    </field>
+  </record>
+</odoo>
