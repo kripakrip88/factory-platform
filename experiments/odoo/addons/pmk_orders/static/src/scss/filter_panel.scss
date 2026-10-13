@@ -1,0 +1,215 @@
+// Фильтр документов в окне ползунков (13.10.2026) — js/filter_panel.js.
+// Вид первого прототипа: подписи 11 px серым над полями, поля 28 px в тонкой
+// рамке, сетка в четыре колонки, быстрые периоды кружками, внизу «Найдено».
+// Цвета — переменными темы (в тёмной теме dark.scss задаёт свои).
+
+// Окно ползунков: фильтр — во всю ширину сверху, три колонки ядра — под ним.
+.o_search_bar_menu:has(> .pmk-filter) {
+  flex-wrap: wrap !important;
+}
+
+.pmk-filter {
+  flex: 0 0 100%;
+  width: min(880px, calc(100vw - 32px));
+  margin: -4px 0 14px;
+  padding: 0 16px 14px;
+  border-bottom: 1px solid var(--pmk-border, #e3e4e8);
+  font-size: 13px;
+  color: var(--pmk-ink, #14141a);
+}
+
+.pmk-filter__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 14px;
+  font-weight: 500;
+
+  .fa {
+    color: var(--pmk-ink-3, #6b7079);
+  }
+}
+
+.pmk-filter__badge {
+  min-width: 18px;
+  padding: 0 6px;
+  border-radius: 9px;
+  background: rgba(61, 115, 214, 0.12);
+  color: #2d5fb8;
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+}
+
+.pmk-filter__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px 14px;
+}
+
+@media (max-width: 991.98px) {
+  .pmk-filter__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.pmk-filter__label {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--pmk-label, #6b7079);
+}
+
+.pmk-filter__in {
+  width: 100%;
+  min-width: 0;
+  min-height: 28px;
+  padding: 3px 8px;
+  border: 1px solid var(--pmk-border, #dcdde2);
+  border-radius: 6px;
+  background: var(--pmk-surface, #ffffff);
+  color: inherit;
+  font-size: 12px;
+
+  &:focus {
+    outline: none;
+    border-color: #3d73d6;
+  }
+
+  &::placeholder {
+    color: var(--pmk-ink-3, #9a9ea6);
+  }
+}
+
+// Выбор записей (контрагент, организация…) — тот же вид, что у полей.
+.pmk-filter__in--many {
+  display: flex;
+  align-items: center;
+  padding: 1px 6px;
+
+  .o_multi_record_selector,
+  .o_input {
+    width: 100%;
+    border: 0 !important;
+    background: transparent;
+    font-size: 12px;
+  }
+
+  .o_tag {
+    font-size: 11px;
+  }
+}
+
+.pmk-filter__pair {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  .pmk-filter__in {
+    flex: 1 1 0;
+  }
+}
+
+.pmk-filter__dash {
+  color: var(--pmk-ink-3, #9a9ea6);
+}
+
+// Варианты (статусы МоегоСклада, вид расчёта) — кружки, выбранные залиты.
+.pmk-filter__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.pmk-filter__chip,
+.pmk-filter__q {
+  padding: 1px 9px;
+  border: 1px solid var(--pmk-border, #dcdde2);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--pmk-ink-2, #4b4f58);
+  font-size: 11px;
+  line-height: 18px;
+  cursor: pointer;
+  transition: background-color 0.15s ease-out, border-color 0.15s ease-out;
+
+  &:hover {
+    border-color: #3d73d6;
+  }
+
+  &--on {
+    background: rgba(61, 115, 214, 0.12);
+    border-color: rgba(61, 115, 214, 0.5);
+    color: #2d5fb8;
+  }
+}
+
+// «все · да · нет» — одной полосой.
+.pmk-filter__seg {
+  display: flex;
+  min-height: 28px;
+  border: 1px solid var(--pmk-border, #dcdde2);
+  border-radius: 6px;
+  overflow: hidden;
+
+  button {
+    flex: 1 1 auto;
+    padding: 2px 6px;
+    border: 0;
+    background: transparent;
+    color: var(--pmk-ink-2, #4b4f58);
+    font-size: 12px;
+    white-space: nowrap;
+    cursor: pointer;
+
+    + button {
+      border-left: 1px solid var(--pmk-border, #dcdde2);
+    }
+
+    &.on {
+      background: rgba(61, 115, 214, 0.12);
+      color: #2d5fb8;
+    }
+  }
+}
+
+.pmk-filter__quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.pmk-filter__foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.pmk-filter__found {
+  margin-right: auto;
+  font-size: 11px;
+  color: var(--pmk-label, #6b7079);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pmk-filter__chip,
+  .pmk-filter__q {
+    transition: none;
+  }
+}
+
+// Тёмная тема: синий светлее, на тёмном фоне.
+.o_nexus_dark {
+  .pmk-filter__badge,
+  .pmk-filter__chip--on,
+  .pmk-filter__q--on,
+  .pmk-filter__seg button.on {
+    background: rgba(122, 162, 240, 0.18);
+    color: #a9c4f5;
+  }
+}

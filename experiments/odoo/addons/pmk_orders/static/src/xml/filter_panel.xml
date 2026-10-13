@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <!-- Фильтр документов в окне ползунков, вид первого прототипа: подписи мелко
+         серым над полями, сетка в четыре колонки — js/filter_panel.js. -->
+    <t t-name="pmk_orders.FilterPanel">
+        <div t-if="fields.length" class="pmk-filter">
+            <div class="pmk-filter__head">
+                <i class="fa fa-filter" aria-hidden="true"/>
+                <span>Фильтр</span>
+                <span t-if="activeCount" class="pmk-filter__badge" t-esc="activeCount"/>
+            </div>
+            <div class="pmk-filter__grid">
+                <t t-foreach="fields" t-as="f" t-key="f.name">
+                    <t t-set="v" t-value="value(f.name)"/>
+                    <div t-attf-class="pmk-filter__field pmk-filter__field--{{ f.type }}">
+                        <label class="pmk-filter__label" t-esc="f.label"/>
+                        <t t-if="f.type === 'period'">
+                            <div class="pmk-filter__pair">
+                                <input type="date" class="pmk-filter__in" t-att-value="v.from or ''" aria-label="С"
+                                       t-on-change="(ev) => this.set(f.name, { from: ev.target.value, quick: '' })"/>
+                                <span class="pmk-filter__dash">—</span>
+                                <input type="date" class="pmk-filter__in" t-att-value="v.to or ''" aria-label="По"
+                                       t-on-change="(ev) => this.set(f.name, { to: ev.target.value, quick: '' })"/>
+                            </div>
+                        </t>
+                        <t t-elif="f.type === 'range'">
+                            <div class="pmk-filter__pair">
+                                <input type="number" class="pmk-filter__in" placeholder="от" t-att-value="v.from or ''"
+                                       t-on-change="(ev) => this.set(f.name, { from: ev.target.value })"/>
+                                <span class="pmk-filter__dash">—</span>
+                                <input type="number" class="pmk-filter__in" placeholder="до" t-att-value="v.to or ''"
+                                       t-on-change="(ev) => this.set(f.name, { to: ev.target.value })"/>
+                            </div>
+                        </t>
+                        <t t-elif="f.type === 'many'">
+                            <div class="pmk-filter__in pmk-filter__in--many">
+                                <MultiRecordSelector resModel="f.model" resIds="v.ids or []" placeholder="'любой'"
+                                                     domain="f.domain ? f.domain(env.searchModel.globalContext or {}) : []"
+                                                     update="(ids) => this.set(f.name, { ids })"/>
+                            </div>
+                        </t>
+                        <t t-elif="f.type === 'choice'">
+                            <div class="pmk-filter__chips">
+                                <t t-foreach="f.choices" t-as="c" t-key="c[0]">
+                                    <button type="button" t-attf-class="pmk-filter__chip {{ (v.keys or []).includes(c[0]) ? 'pmk-filter__chip--on' : '' }}"
+                                            t-att-aria-pressed="(v.keys or []).includes(c[0]) ? 'true' : 'false'"
+                                            t-on-click="() => this.toggleChoice(f, c[0])" t-esc="c[1]"/>
+                                </t>
+                            </div>
+                        </t>
+                        <t t-elif="f.type === 'tri'">
+                            <div class="pmk-filter__seg" role="group" t-att-aria-label="f.label">
+                                <button type="button" t-attf-class="{{ !v.mode ? 'on' : '' }}" t-on-click="() => this.set(f.name, { mode: '' })">все</button>
+                                <button type="button" t-attf-class="{{ v.mode === 'yes' ? 'on' : '' }}" t-on-click="() => this.set(f.name, { mode: 'yes' })" t-esc="f.yes"/>
+                                <button type="button" t-attf-class="{{ v.mode === 'no' ? 'on' : '' }}" t-on-click="() => this.set(f.name, { mode: 'no' })" t-esc="f.no"/>
+                            </div>
+                        </t>
+                        <t t-elif="f.type === 'flag'">
+                            <div class="pmk-filter__seg" role="group" t-att-aria-label="f.label">
+                                <button type="button" t-attf-class="{{ !v.on ? 'on' : '' }}" t-on-click="() => this.set(f.name, { on: false })">все</button>
+                                <button type="button" t-attf-class="{{ v.on ? 'on' : '' }}" t-on-click="() => this.set(f.name, { on: true })">только такие</button>
+                            </div>
+                        </t>
+                    </div>
+                </t>
+            </div>
+            <div t-if="periodField" class="pmk-filter__quick">
+                <t t-foreach="periods" t-as="p" t-key="p[0]">
+                    <button type="button" t-attf-class="pmk-filter__q {{ quickActive(p[0]) ? 'pmk-filter__q--on' : '' }}"
+                            t-on-click="() => this.quick(p[0])" t-esc="p[1]"/>
+                </t>
+            </div>
+            <div class="pmk-filter__foot">
+                <span class="pmk-filter__found">
+                    <t t-if="state.count !== null">Найдено: <t t-esc="state.count"/></t>
+                </span>
+                <button type="button" class="btn btn-secondary btn-sm" t-on-click="() => this.clear()">Очистить</button>
+                <button type="button" class="btn btn-primary btn-sm" t-on-click="() => this.apply()">Найти</button>
+            </div>
+        </div>
+    </t>
+
+    <!-- Над «Фильтры / Группировка / Избранное» в окне ползунков. -->
+    <t t-inherit="web.SearchBarMenu" t-inherit-mode="extension">
+        <xpath expr="//t[@t-set-slot='content']/*[1]" position="before">
+            <t t-if="pmkFilterKey" t-component="pmkFilterPanel" configKey="pmkFilterKey"/>
+        </xpath>
+    </t>
+</templates>
