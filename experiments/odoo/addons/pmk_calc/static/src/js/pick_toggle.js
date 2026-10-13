@@ -1,5 +1,5 @@
 /** @odoo-module **/
-// «Перенести» в списке изделий расчёта (13.10.2026): переключатель с выбором
+// «Перенести» в списке изделий расчёта (13.10.2026): галочка с выбором
 // диапазона через Shift, как в проводнике (просьба Антона: «выбрал 2 позицию,
 // зажал шифт и выделил сразу 10 позиций по порядку»).
 //
@@ -27,7 +27,7 @@ window.addEventListener("keyup", (ev) => ev.key === "Shift" && (shiftDown = fals
 window.addEventListener("blur", () => (shiftDown = false));
 // Shift + нажатие мыши по переключателю выделяло бы текст таблицы — не даём.
 window.addEventListener("mousedown", (ev) => {
-    if ((ev.shiftKey || shiftDown) && ev.target.closest?.(".o_field_pmk_pick_toggle")) {
+    if ((ev.shiftKey || shiftDown) && ev.target.closest?.(".pmk-pick-check")) {
         ev.preventDefault();
     }
 }, true);
@@ -53,6 +53,8 @@ function indexIn(list, recordId) {
 }
 
 export class PmkPickListToggle extends ListBooleanToggleField {
+    static template = "pmk_calc.PmkPickCheck";
+
     // Строка вложенного списка «в правке» не бывает (список не редактируемый),
     // и штатный onClick списочного переключателя щелчок по ячейке пропускает.
     // Здесь щелчок по ячейке переключает сам; по самому флажку — его штатное

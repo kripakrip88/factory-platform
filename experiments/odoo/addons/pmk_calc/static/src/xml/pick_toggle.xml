@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <!-- «Перенести» — простая галочка, как в МоёмСкладе (Антон 13.10.2026: «экономить место»),
+         щелчок по ячейке и Shift-диапазон — js/pick_toggle.js. -->
+    <t t-name="pmk_calc.PmkPickCheck">
+        <div class="pmk-pick-check" t-on-click="onClick">
+            <CheckBox id="props.id" value="state.value" className="'d-inline-block'"
+                      disabled="props.readonly" onChange.bind="onChange"/>
+        </div>
+    </t>
+</templates>
