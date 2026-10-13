@@ -58,6 +58,11 @@ export class PmkPickListToggle extends ListBooleanToggleField {
     // Здесь щелчок по ячейке переключает сам; по самому флажку — его штатное
     // изменение (onChange), без двойного переключения.
     async onClick(ev) {
+        if (ev?.target) {
+            // Щелчок по переключателю не открывает окно изделия: список и
+            // product_lines_field пропускают щелчки с этой пометкой.
+            ev.target.special_click = true;
+        }
         if (this.props.readonly) {
             return;
         }
