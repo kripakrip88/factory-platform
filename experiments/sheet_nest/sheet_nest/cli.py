@@ -45,9 +45,9 @@ def load_parts(inputs, qty_over=None, engrave_layers=None):
 
 
 def run(inputs, W=1250.0, L=2500.0, gap=2.0, edge=2.0, thickness=None, qty=None, title=None, out=None, methods=("rect", "raster"),
-        engrave_layers=None, log=print):
-    from .pack import plan
-    from .route import route_sheet
+        engrave_layers=None, log=print, coedge=False):
+    from .pack import plan, plan_coedge
+    from .route import route_sheet, route_sheet_coedge
     from .write_lxds import build
     from .verify import check
     from . import render
@@ -55,7 +55,13 @@ def run(inputs, W=1250.0, L=2500.0, gap=2.0, edge=2.0, thickness=None, qty=None,
     for w in warns:
         log("  ⚠ " + w)
     log("деталей: %d видов, %d шт" % (len(parts), sum(p["qty"] for p in parts)))
-    pl = plan(parts, W, L, gap, edge, methods)
+    pl = None
+    if coedge:
+        pl, why = plan_coedge(parts, W, L, edge)
+        if pl is None:
+            log("  ⚠ общий рез не применён: %s — раскладываю с зазором %g мм" % (why, gap))
+    if pl is None:
+        pl = plan(parts, W, L, gap, edge, methods)
     for t in pl["tried"]:
         log("  раскрой %-40s %s" % (t["method"], ("%d листов, %d раскладок" % (t["sheets"], t["layouts"])) if "sheets" in t
                                     else ("пропущен: " + t["skipped"]) if "skipped" in t else t.get("error")))
@@ -63,7 +69,10 @@ def run(inputs, W=1250.0, L=2500.0, gap=2.0, edge=2.0, thickness=None, qty=None,
                                                                      pl["bound_kind"], ", минимум" if pl["optimal"] else ""))
     route_warn, x_tongue, x_parts = [], 0, 0
     for l in pl["layouts"]:
-        r = route_sheet(l["placed"], parts, l["W"], l["L"])
+        if l.get("groups"):
+            r = route_sheet_coedge(l["placed"], l["groups"], parts, l["W"], l["L"])
+        else:
+            r = route_sheet(l["placed"], parts, l["W"], l["L"])
         l["seq"], l["idle"] = r["seq"], r["idle"]
         x_tongue += r["crossings"] * l["amount"]; x_parts += r["crossings_parts"] * l["amount"]
         route_warn += r["warnings"]
@@ -74,6 +83,8 @@ def run(inputs, W=1250.0, L=2500.0, gap=2.0, edge=2.0, thickness=None, qty=None,
     stamp = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=10))).strftime("%Y-%m-%d_%H%M")
     title = title or os.path.splitext(os.path.basename(inputs[0]))[0]
     tag = "" if (gap, edge) == (2.0, 2.0) else "_зазор%g_край%g" % (gap, edge)
+    if pl.get("coedge"):
+        tag += "_общий_рез"
     fname = "%s_лист%gx%g%s_%s" % (title, W, L, tag, stamp)
     raw, M = build(parts, pl["layouts"], fname, technical)
     rep, rr, ctx = check(raw, parts, pl["layouts"], gap, edge, thickness)
@@ -90,7 +101,8 @@ def run(inputs, W=1250.0, L=2500.0, gap=2.0, edge=2.0, thickness=None, qty=None,
         open(os.path.join(out, fname + ".lxds"), "wb").write(raw)
         json.dump(res, open(os.path.join(out, fname + ".json"), "w"), ensure_ascii=False, indent=1)
         try:
-            render.png(ctx, os.path.join(out, fname + ".png"), "%s — %d листов %g×%g, холостой ход %.0f м" % (title, pl["sheets"], W, L, idle / 1000))
+            render.png_model(raw, os.path.join(out, fname + ".png"), "%s — %d листов %g×%g%s, холостой ход %.0f м" % (
+                title, pl["sheets"], W, L, ", общий рез" if pl.get("coedge") else "", idle / 1000))
         except ImportError:
             pass
         log("→ %s" % os.path.join(out, fname + ".lxds"))
@@ -108,6 +120,7 @@ def main(argv=None):
     ap.add_argument("--name", default=None)
     ap.add_argument("--out", default=None)
     ap.add_argument("--method", choices=("auto", "rect", "raster"), default="auto")
+    ap.add_argument("--coedge", action="store_true", help="общий рез: детали вплотную, общие кромки режутся один раз (группы CypCut)")
     a = ap.parse_args(argv)
     try:
         W, L = (float(x) for x in a.sheet.lower().replace("х", "x").split("x"))
@@ -119,7 +132,7 @@ def main(argv=None):
         qty[k] = int(v)
     methods = ("rect", "raster") if a.method == "auto" else (a.method,)
     try:
-        res, *_ = run(a.inputs, W, L, a.gap, a.edge, a.thickness, qty, a.name, a.out or os.getcwd(), methods)
+        res, *_ = run(a.inputs, W, L, a.gap, a.edge, a.thickness, qty, a.name, a.out or os.getcwd(), methods, coedge=a.coedge)
     except ValueError as e:
         sys.exit("ошибка: %s" % e)
     sys.exit(0 if res["ok"] else 1)

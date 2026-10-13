@@ -20,8 +20,12 @@ def ends(s):
     if s["kind"] == "Circle":
         p = (s["c"][0] + s["r"] * math.cos(s["a0"]), s["c"][1] + s["r"] * math.sin(s["a0"]))
         return p, p
-    a = tuple(s["verts"][0][:2])
-    return (a, a) if s["flag"] & 1 else (a, tuple(s["verts"][-1][:2]))
+    if s["flag"] & 1:
+        # замкнутая полилиния режется от вершины sp (у контуров групп общего реза sp ≠ 0; у остальных 0)
+        k = int(round(s.get("sp") or 0)) % len(s["verts"])
+        a = tuple(s["verts"][k][:2])
+        return a, a
+    return tuple(s["verts"][0][:2]), tuple(s["verts"][-1][:2])
 
 
 def reverse(s):
@@ -45,6 +49,7 @@ def rotate_start(s, k):
         t["a0"] = float(k) % (2 * math.pi)
     else:
         t["verts"] = s["verts"][k:] + s["verts"][:k]
+        t["sp"] = 0.0
     return t
 
 
