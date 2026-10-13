@@ -46,9 +46,10 @@ function listOf(record) {
     return null;
 }
 
-function indexIn(list, record) {
-    const raw = toRaw(record);
-    return list.records.findIndex((r) => toRaw(r) === raw);
+// По id записи-данных (datapoint), а не по объекту: после изменения строки
+// список может отдать её новым объектом-обёрткой.
+function indexIn(list, recordId) {
+    return list.records.findIndex((r) => r.id === recordId);
 }
 
 export class PmkPickListToggle extends ListBooleanToggleField {
@@ -65,12 +66,12 @@ export class PmkPickListToggle extends ListBooleanToggleField {
         const list = listOf(record);
         const onCheckbox = Boolean(ev?.target?.closest?.("input, label"));
         const shift = Boolean(ev?.shiftKey) || shiftDown;
-        if (shift && last && list && toRaw(last.list) === toRaw(list)) {
+        if (shift && last && list && last.parentId === record._parentRecord?.id && last.field === list.resModel) {
             if (onCheckbox) {
                 ev.preventDefault(); // флажок не переключать — диапазон ставим сами
             }
-            const a = indexIn(list, last.record);
-            const b = indexIn(list, record);
+            const a = indexIn(list, last.recordId);
+            const b = indexIn(list, record.id);
             const value = !record.data[name];
             if (a >= 0 && b >= 0) {
                 const [from, to] = a < b ? [a, b] : [b, a];
@@ -83,7 +84,7 @@ export class PmkPickListToggle extends ListBooleanToggleField {
         } else if (!onCheckbox) {
             await record.update({ [name]: !record.data[name] });
         }
-        last = { list, record };
+        last = { parentId: record._parentRecord?.id, field: list?.resModel, recordId: record.id };
     }
 }
 
