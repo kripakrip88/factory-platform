@@ -75,6 +75,16 @@ class MetalSpecProductMove(models.Model):
         for product in self:
             product.pmk_move_hint = move_hint(product.name)
 
+    def action_pmk_copy(self):
+        """«Копировать» (значок в строке, Антон 13.10.2026): копия изделия со всеми
+        деталями — сразу под исходной."""
+        for product in self:
+            after = product.spec_id.product_ids.filtered(lambda p, s=product: p.sequence > s.sequence)
+            for other in after:
+                other.sequence += 1
+            product.copy({"spec_id": product.spec_id.id, "sequence": product.sequence + 1})
+        return True
+
     def _pmk_price(self):
         """Цена клиенту за шт — поле моста (pmk_bridge), если он стоит."""
         self.ensure_one()
@@ -85,11 +95,13 @@ class MetalSpecMove(models.Model):
     _inherit = "pmk.metal.spec"
 
     pmk_pick_count = fields.Integer("Отмечено изделий", compute="_compute_pmk_pick_count")
+    pmk_hint_count = fields.Integer("С подсказкой", compute="_compute_pmk_pick_count")
 
-    @api.depends("product_ids.pmk_pick")
+    @api.depends("product_ids.pmk_pick", "product_ids.name")
     def _compute_pmk_pick_count(self):
         for spec in self:
             spec.pmk_pick_count = len(spec.product_ids.filtered("pmk_pick"))
+            spec.pmk_hint_count = len(spec.product_ids.filtered("pmk_move_hint"))
 
     def _pmk_picked(self):
         self.ensure_one()
@@ -117,7 +129,26 @@ class MetalSpecMove(models.Model):
 
     def action_pmk_pick_to_dobor(self):
         self.ensure_one()
-        picked = self._pmk_picked()
+        return self._pmk_move_dobor(self._pmk_picked())
+
+    def action_pmk_pick_to_vent(self):
+        self.ensure_one()
+        return self._pmk_move_vent(self._pmk_picked())
+
+    def action_pmk_move_by_hint(self):
+        """«Разнести по подсказке»: все изделия с подсказкой — каждое в свой калькулятор."""
+        self.ensure_one()
+        dobor = self.product_ids.filtered(lambda p: p.pmk_move_hint == "dobor")
+        vent = self.product_ids.filtered(lambda p: p.pmk_move_hint == "vent")
+        if not (dobor or vent):
+            raise UserError("Нет изделий с подсказкой «→ доборка» или «→ вентзонт».")
+        if dobor:
+            self._pmk_move_dobor(dobor)
+        if vent:
+            self._pmk_move_vent(vent)
+        return True
+
+    def _pmk_move_dobor(self, picked):
         if not self.cat_dobor:
             self.cat_dobor = True
         order = self.dobor_order_ids[:1]
@@ -143,9 +174,7 @@ class MetalSpecMove(models.Model):
             "Профиль доборки — нарисовать в калькуляторе %s." % order.name])
         return True
 
-    def action_pmk_pick_to_vent(self):
-        self.ensure_one()
-        picked = self._pmk_picked()
+    def _pmk_move_vent(self, picked):
         if not self.cat_vent:
             self.cat_vent = True
         order = self.vent_order_ids[:1]
