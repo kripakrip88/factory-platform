@@ -94,6 +94,7 @@ class TestSpecCategories(TransactionCase):
         """Изделия → доборка / вентзонты переключателем и кнопкой, и обратно (13.10.2026)."""
         from odoo.addons.pmk_calc.models import spec_move as sm
         self.assertEqual(sm.parse_length("Отлив оконный RAL 8017, L=2000"), 2000)
+        self.assertEqual(sm.parse_length("Колпак шириной 300 мм 0,45мм цинк"), 0, "ширина — не длина")
         self.assertEqual(sm.parse_size("Зонт вш 500х1000"), (500, 1000))
         self.assertEqual(sm.parse_size("Зонт 850мм x 1000мм (шахта: 550мм x700мм) 0,65мм цинк"), (550, 700))
         self.assertEqual(sm.move_hint("Планка угла наружного"), "dobor")

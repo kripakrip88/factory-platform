@@ -51,7 +51,11 @@ def parse_size(name):
 
 
 def parse_length(name):
-    for m in LEN_RX.finditer(name or ""):
+    text = name or ""
+    for m in LEN_RX.finditer(text):
+        # «Колпак шириной 300 мм» — 300 это ширина, не длина планки.
+        if re.search(r"ширин\w*\s*$", text[:m.start()].lower()):
+            continue
         value = int(m.group(1) or m.group(2))
         if value >= 200:
             return value
