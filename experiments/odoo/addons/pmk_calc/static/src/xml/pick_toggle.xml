@@ -8,4 +8,17 @@
                       disabled="false" onChange.bind="onChange"/>
         </div>
     </t>
+
+    <!-- Заголовок колонки галочек — «отметить все» (js/pick_head.js). Щелчок не
+         сортирует колонку: .stop. -->
+    <t t-inherit="web.ListRenderer" t-inherit-mode="extension">
+        <xpath expr="//th[@t-att-data-name='column.name']/t[@t-if]" position="before">
+            <div t-if="column.widget === 'pmk_pick_toggle'" class="pmk-pick-check pmk-pick-head"
+                 t-att-title="pmkPickAllOn(column) ? 'Снять все отметки' : 'Отметить все строки'"
+                 t-on-click.stop.prevent="() => this.pmkPickToggleAll(column)">
+                <CheckBox value="pmkPickAllOn(column)" className="'d-inline-block'"
+                          disabled="!props.list.records.length" onChange="() => {}"/>
+            </div>
+        </xpath>
+    </t>
 </templates>

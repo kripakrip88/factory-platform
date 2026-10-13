@@ -299,6 +299,12 @@
   padding: 8px 12px;
   border-radius: 8px;
   background: rgba(200, 240, 0, 0.12);
+
+  // Ничего не отмечено: полоса без подсветки, кнопки серые.
+  &--idle {
+    background: transparent;
+    padding-left: 0;
+  }
 }
 
 // Галочка «все» над списком изделий (как в МоёмСкладе).
@@ -355,6 +361,11 @@
 .pmk-pick-check {
   display: flex;
   justify-content: center;
+
+  // В заголовке колонки — «отметить все».
+  &.pmk-pick-head {
+    cursor: pointer;
+  }
 
   // Пустая галочка темы почти не видна на белой строке — рамка заметнее.
   .form-check-input:not(:checked) {

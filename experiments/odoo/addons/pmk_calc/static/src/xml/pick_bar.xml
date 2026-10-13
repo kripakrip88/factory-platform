@@ -1,39 +1,34 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
-    <!-- Полоса над списком позиций расчёта — js/pick_bar.js. -->
+    <!-- Полоса над списком позиций расчёта — js/pick_bar.js. «Отметить все» —
+         в заголовке колонки галочек (js/pick_head.js). Пока ничего не отмечено,
+         кнопки серые, но на месте: список не прыгает при первой отметке. -->
     <t t-name="pmk_calc.PmkPickBar">
-        <div t-if="rows.length" class="pmk-move-bar">
-            <button t-if="picked.length &lt; rows.length" type="button" class="btn btn-link pmk-pick-all"
-                    title="Отметить все строки" t-on-click="() => this.setAll(true)">
-                <i class="fa fa-square-o me-1" aria-hidden="true"/>Все <t t-esc="rows.length"/>
-            </button>
+        <div t-if="rows.length" class="pmk-move-bar" t-att-class="{'pmk-move-bar--idle': !picked.length}">
             <button t-if="picked.length" type="button" class="btn btn-link pmk-pick-all pmk-pick-all--on"
                     title="Снять все отметки" t-on-click="() => this.setAll(false)">
                 <i class="fa fa-check-square me-1" aria-hidden="true"/><t t-esc="picked.length"/> поз.
             </button>
-            <t t-if="picked.length">
-                <Dropdown>
-                    <button type="button" class="btn btn-secondary">
-                        Перенести в <i class="fa fa-caret-down ms-1" aria-hidden="true"/>
-                    </button>
-                    <t t-set-slot="content">
-                        <t t-foreach="targets" t-as="t" t-key="t.key">
-                            <DropdownItem onSelected="() => this.run('move', t.key)">
-                                <t t-esc="t.label"/>
-                            </DropdownItem>
-                        </t>
+            <Dropdown disabled="!picked.length">
+                <button type="button" class="btn btn-secondary" t-att-disabled="!picked.length">
+                    Перенести в <i class="fa fa-caret-down ms-1" aria-hidden="true"/>
+                </button>
+                <t t-set-slot="content">
+                    <t t-foreach="targets" t-as="t" t-key="t.key">
+                        <DropdownItem onSelected="() => this.run('move', t.key)">
+                            <t t-esc="t.label"/>
+                        </DropdownItem>
                     </t>
-                </Dropdown>
-                <button type="button" class="btn btn-secondary" title="Копировать отмеченные"
-                        t-on-click="() => this.run('copy')">
-                    <i class="fa fa-clone" aria-hidden="true"/>
-                </button>
-                <button type="button" class="btn btn-secondary" title="Удалить отмеченные"
-                        t-on-click="() => this.confirmDelete()">
-                    <i class="fa fa-trash-o" aria-hidden="true"/>
-                </button>
-            </t>
-            <span class="pmk-cat-muted">Shift + щелчок по галочке — строки подряд</span>
+                </t>
+            </Dropdown>
+            <button type="button" class="btn btn-secondary" title="Копировать отмеченные"
+                    t-att-disabled="!picked.length" t-on-click="() => this.run('copy')">
+                <i class="fa fa-clone" aria-hidden="true"/>
+            </button>
+            <button type="button" class="btn btn-secondary" title="Удалить отмеченные"
+                    t-att-disabled="!picked.length" t-on-click="() => this.confirmDelete()">
+                <i class="fa fa-trash-o" aria-hidden="true"/>
+            </button>
         </div>
     </t>
 </templates>

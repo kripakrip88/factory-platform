@@ -3,8 +3,9 @@
 // сделать так же везде, кнопку переноса объединить в выпадашку — когда появятся
 // другие калькуляторы, кнопок станет очень много»).
 //
-// <widget name="pmk_pick_bar" list="product_ids" source="metal"/>: «☐ Все N» /
-// «☑ N поз.» (галочки строк — pick_toggle.js), меню «Перенести в ▾» со всеми
+// <widget name="pmk_pick_bar" list="product_ids" source="metal"/>: «☑ N поз.»
+// (снять все; «отметить все» — в заголовке колонки, pick_head.js; галочки
+// строк — pick_toggle.js), меню «Перенести в ▾» со всеми
 // калькуляторами, кроме своего, «Копировать» и «Удалить» отмеченные. Действие
 // делает сервер (pmk.metal.spec.pmk_bulk), список перечитывается.
 //
@@ -18,6 +19,7 @@ import { Dropdown } from "@web/core/dropdown/dropdown";
 import { DropdownItem } from "@web/core/dropdown/dropdown_item";
 import { ConfirmationDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { standardWidgetProps } from "@web/views/widgets/standard_widget_props";
+import { pickAll } from "@pmk_calc/js/pick_head";
 
 const TARGETS = [
     { key: "metal", label: "Металлоизделия" },
@@ -49,14 +51,7 @@ export class PmkPickBar extends Component {
     }
 
     async setAll(value) {
-        const recs = this.rows.filter((r) => r.data.pmk_pick !== value);
-        for (const [i, rec] of recs.entries()) {
-            if (i < recs.length - 1) {
-                await rec._update({ pmk_pick: value }, { withoutOnchange: true, withoutParentUpdate: true });
-            } else {
-                await rec.update({ pmk_pick: value });
-            }
-        }
+        await pickAll(this.rows, "pmk_pick", value);
     }
 
     async run(action, target = false) {
