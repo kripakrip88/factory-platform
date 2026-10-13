@@ -2,10 +2,13 @@
 """Командная строка: детали (DXF и/или программы CypCut) → раскрой на листы → программа CypCut.
 
     python3 -m sheet_nest.cli ВХОД... [--sheet 1250x2500] [--gap 2] [--edge 2] [--thickness 1.5] [--qty ИМЯ=N] [--out DIR] [--name ИМЯ]
+                              [--coedge] [--strategy short|safe|safe0] [--compare] [--small 100] [--microjoints ИМЯ|*]
+                              [--machine ПРОФИЛЬ.json ...]
 
 ВХОД — .dxf (одна или несколько деталей; гравировка — слой «ГРАВИРОВКА»; количество — из имени «…_12шт.dxf»
 или --qty) и/или .lxds (детали с количеством из программы; раскладки в ней не важны).
 В DIR: <имя>_<дата>.lxds (одна программа на все листы), картинка раскладок .png, отчёт .json.
+Порядок резки — по стратегии (route.STRATEGIES), --compare — сводка по всем стратегиям (текст и отчёт).
 """
 import sys, os, json, argparse, datetime, collections
 from . import geom as G
@@ -44,23 +47,109 @@ def load_parts(inputs, qty_over=None, engrave_layers=None):
     return parts, technical, warns
 
 
+def mark_microjoints(parts, names):
+    """Детали с микроперемычками (держатся в листе): ИМЯ детали или файла без расширения; «*» — все."""
+    for k in names or ():
+        hit = parts if k == "*" else [p for p in parts if p["name"] == k or os.path.splitext(p["src"])[0] == k]
+        if not hit:
+            raise ValueError("--microjoints %s: нет такой детали (есть: %s)" % (k, ", ".join(p["name"] for p in parts)))
+        for p in hit:
+            p["microjoints"] = True
+    for p in parts:
+        p.setdefault("microjoints", False)
+
+
+def _cut_len(l):
+    """По маршруту раскладки: (длина реза, гравировки, врезок, начал гравировки, переходов), мм."""
+    cut = mark = 0.0
+    pierces = marks = n = 0
+    for e in l["seq"]:
+        for s in (e[1] if len(e) == 2 else e[2]):
+            n += 1
+            if s["layer"] == 2:
+                mark += G.length(s); marks += 1
+            else:
+                cut += G.length(s); pierces += 1
+    return cut, mark, pierces, marks, n
+
+
+def summary_row(pl, rs, name, title, secs, thickness=None, machines=(), warnings=()):
+    """Строка сводки стратегии: листы, рез, холостой, возврат, врезки, опасные переходы по классам, время станков
+    (machine_s — {станок: секунды или None}; без профилей — пусто)."""
+    from . import risk as RK, machine as MC
+    amounts = [l["amount"] for l in pl["layouts"]]
+    tot = RK.total([r["risk"] for r in rs], amounts)
+    cut = mark = 0.0
+    pierces = marks = moves = 0
+    for l, r in zip(pl["layouts"], rs):
+        c, m, p_, m_, n = _cut_len(dict(seq=r["seq"]))
+        cut += c * l["amount"]; mark += m * l["amount"]; pierces += p_ * l["amount"]; marks += m_ * l["amount"]
+        moves += n * l["amount"]
+    ms = {}
+    for prof in machines or ():
+        t = MC.estimate(prof, thickness, cut, mark, tot["idle_m"] * 1000, tot["ret"]["m"] * 1000, pierces, moves)
+        ms[prof["name"]] = round(t, 1) if t is not None else None
+    return dict(name=name, title=title, sheets=pl["sheets"], cut_m=round(cut / 1000, 2), mark_m=round(mark / 1000, 2),
+                idle_m=round(tot["idle_m"], 2), return_m=round(tot["ret"]["m"], 2), pierces=pierces, marks=marks,
+                danger={c: tot[c] for c in RK.CLASSES}, over_parts_m=tot["over_parts_m"],
+                ret=dict(over_m=tot["ret"]["over_m"], tongues_crossed=tot["ret"]["tongues_crossed"], over=tot["ret"]["over"]),
+                warnings=list(warnings), route_s=round(secs, 2), machine_s=ms)
+
+
+def summary_text(rows):
+    """Сводка по стратегиям текстом: строки — показатели, столбцы — стратегии."""
+    from . import risk as RK
+    lines = [("", ["%s (%s)" % (r["title"], r["name"]) for r in rows]),
+             ("листов", [str(r["sheets"]) for r in rows]),
+             ("рез, м", ["%.2f" % r["cut_m"] for r in rows]),
+             ("холостой, м", ["%.2f" % r["idle_m"] for r in rows]),
+             ("возврат в ноль, м", ["%.2f" % r["return_m"] for r in rows]),
+             ("врезок", [str(r["pierces"]) for r in rows])]
+    lines += [(RK.TITLES[c], [str(r["danger"][c]) for r in rows]) for c in RK.CLASSES]
+    lines += [("возврат над деталями, м", ["%.2f" % r["ret"]["over_m"] for r in rows]),
+              ("предупреждений", [str(len(r["warnings"])) for r in rows]),
+              ("маршрут, с", ["%.1f" % r["route_s"] for r in rows])]
+    names = list(rows[0]["machine_s"]) if rows else []
+    if not names:
+        lines.append(("станок, мин", ["—" for r in rows]))
+    for nm in names:                                    # строка на каждый станок
+        lines.append(("станок «%s», мин" % nm, ["—" if r["machine_s"].get(nm) is None else "%.1f" % (r["machine_s"][nm] / 60)
+                                                for r in rows]))
+    w0 = max(len(k) for k, v in lines)
+    ws = [max(len(v[j]) for k, v in lines) for j in range(len(rows))]
+    return "\n".join(k.ljust(w0) + " | " + " | ".join((x.ljust if not k else x.rjust)(w) for x, w in zip(v, ws)) for k, v in lines)
+
+
 def run(inputs, W=1250.0, L=2500.0, gap=2.0, edge=2.0, thickness=None, qty=None, title=None, out=None, methods=("rect", "raster"),
-        engrave_layers=None, log=print, coedge=False, labels=None, label_opts=None):
+        engrave_layers=None, log=print, coedge=False, labels=None, label_opts=None, strategy=None, compare=False, small=None,
+        microjoints=None, machine=None):
+    """strategy — порядок резки (route.STRATEGIES: short | safe | safe0; по умолчанию short); compare — посчитать сводку по
+    всем стратегиям (res["strategies"]); small — «мелкая» деталь, мм (100); microjoints — имена деталей с
+    микроперемычками («*» — все); machine — профиль станка (словарь или путь к JSON) или список профилей (станков два —
+    время в сводке по каждому)."""
+    import time
     from .pack import plan, plan_coedge
-    from .route import route_sheet, route_sheet_coedge
+    from .route import route_sheet, route_sheet_coedge, STRATEGIES, options
     from .write_lxds import build
     from .verify import check_safe as check
-    from . import render
+    from . import render, risk as RK
+    from . import machine as MC
+    o = options(strategy)
+    small = RK.SMALL if small is None else float(small)
+    machines = [MC.load(m) for m in (machine if isinstance(machine, (list, tuple)) else [machine] if machine else [])]
+    if len({m["name"] for m in machines}) < len(machines):
+        raise ValueError("профили станков: имена повторяются (%s) — задайте name в профиле" % ", ".join(m["name"] for m in machines))
     parts, technical, warns = load_parts(inputs, qty, engrave_layers)
+    mark_microjoints(parts, microjoints)
     for w in warns:
         log("  ⚠ " + w)
     log("деталей: %d видов, %d шт" % (len(parts), sum(p["qty"] for p in parts)))
     lab_rep = []
     if labels:
         from .labels import apply_labels
-        o = dict(H=15.0, H_min=10.0, margin=3.0, gap=1.0, font_path=None)
-        o.update(label_opts or {})
-        lab_rep = apply_labels(parts, labels, **o)
+        lo = dict(H=15.0, H_min=10.0, margin=3.0, gap=1.0, font_path=None)
+        lo.update(label_opts or {})
+        lab_rep = apply_labels(parts, labels, **lo)
         for name, text, h, why in lab_rep:
             log("  подпись %-30s «%s» %s" % (name, text, ("%g мм" % h) if h else "⚠ " + why))
             if not h:
@@ -79,29 +168,80 @@ def run(inputs, W=1250.0, L=2500.0, gap=2.0, edge=2.0, thickness=None, qty=None,
                                                                      pl["bound_kind"], ", минимум" if pl["optimal"] else ""))
     from .route import CoedgeRouteError
 
-    def route_all(pl):
-        rw, xt, xp = [], 0, 0
-        for l in pl["layouts"]:
+    def route_all(pl, st, caches):
+        """Маршруты всех раскладок по стратегии st: ([результат раскладки], секунд)."""
+        t0, rs = time.time(), []
+        for l, c in zip(pl["layouts"], caches):
             if l.get("groups"):
-                r = route_sheet_coedge(l["placed"], l["groups"], parts, l["W"], l["L"])
+                rs.append(route_sheet_coedge(l["placed"], l["groups"], parts, l["W"], l["L"], strategy=st, small=small, cache=c))
             else:
-                r = route_sheet(l["placed"], parts, l["W"], l["L"])
-            l["seq"], l["idle"] = r["seq"], r["idle"]
-            xt += r["crossings"] * l["amount"]; xp += r["crossings_parts"] * l["amount"]
-            rw += r["warnings"]
-        return rw, xt, xp
+                rs.append(route_sheet(l["placed"], parts, l["W"], l["L"], strategy=st, small=small, cache=c))
+        return rs, time.time() - t0
+
+    def route_plan(pl):
+        # у каждой стратегии свой кэш листа (планы деталей, пути оптимизатора) — время в сводке честное
+        res_ = {o["name"]: route_all(pl, o["name"] if strategy is None or isinstance(strategy, str) else strategy,
+                                     [{} for _ in pl["layouts"]])}
+        if compare:
+            for name in STRATEGIES:
+                if name not in res_:
+                    res_[name] = route_all(pl, name, [{} for _ in pl["layouts"]])
+        return res_
     try:
-        route_warn, x_tongue, x_parts = route_all(pl)
+        by = route_plan(pl)
     except CoedgeRouteError as e:
         log("  ⚠ общий рез не применён: %s — раскладываю с зазором %g мм" % (e, gap))
         pl = plan(parts, W, L, gap, edge, methods)
         log("раскрой: %s — %d листов %g×%g (нижняя граница %d %s%s)" % (pl["method"], pl["sheets"], W, L, pl["lower_bound"],
                                                                          pl["bound_kind"], ", минимум" if pl["optimal"] else ""))
-        route_warn, x_tongue, x_parts = route_all(pl)
+        by = route_plan(pl)
+    rs, secs = by[o["name"]]
+    for l, r in zip(pl["layouts"], rs):
+        l["seq"], l["idle"] = r["seq"], r["idle"]
+    route_warn = [w for r in rs for w in r["warnings"]]
+    amounts = [l["amount"] for l in pl["layouts"]]
+
+    def opt(n):                                         # переключатели стратегии по имени (своя — из strategy)
+        return options(n) if n in STRATEGIES else o
+
+    def risk_warn(name, rs_, safe):
+        """Опасные переходы, которые стратегия не обошла (только у безопасных — у «short» безопасность не цель). Обход —
+        поиск, а не доказательство: «не удалось обойти»; с --compare — у какой стратегии на этой раскладке их меньше
+        (ступени ключа: язычки → мелкие → детали → отверстия)."""
+        out_ = []
+        for k, (l, r) in enumerate(zip(pl["layouts"], rs_)):
+            m = r["risk"]
+            bad = ["%s %d" % (RK.TITLES[c], m[c]) for c in ("tongues", "small", "parts", "holes") if m[c]]
+            if bad and safe:
+                better = [n for n, (rs2, _) in by.items() if n != name and tuple(rs2[k]["risk"]["key"][:4]) < tuple(m["key"][:4])]
+                out_.append("раскладка №%d (×%d): опасные переходы остались — %s; эта стратегия их обойти не смогла%s "
+                            "(иначе — микроперемычки или другой раскрой)" % (
+                                k + 1, l["amount"], ", ".join(bad),
+                                ("; меньше у %s" % ", ".join("«%s»" % opt(n)["title"] for n in better)) if better else ""))
+        return out_
+    rwarn = risk_warn(o["name"], rs, o["key"] != "short")
+    x_tongue = sum(r["crossings"] * a for r, a in zip(rs, amounts))
+    x_parts = sum(r["crossings_parts"] * a for r, a in zip(rs, amounts))
+    tot = RK.total([r["risk"] for r in rs], amounts)
     idle = sum(l["idle"] * l["amount"] for l in pl["layouts"])
-    log("порядок резки: холостой ход %.1f м; переходов над вырезанными язычками %d, над вырезанными деталями %d" % (idle / 1000, x_tongue, x_parts))
-    for w in sorted(set(route_warn)):
+    log("порядок резки (%s «%s»): холостой ход %.1f м, возврат в ноль %.1f м; переходов над вырезанными язычками %d, "
+        "над вырезанными деталями %d" % (o["name"], o["title"], idle / 1000, tot["ret"]["m"], x_tongue, x_parts))
+    log("  опасные переходы: " + ", ".join("%s %d" % (RK.TITLES[c], tot[c]) for c in RK.CLASSES) +
+        "; возврат над деталями %.2f м, под ним язычков %d" % (tot["ret"]["over_m"], tot["ret"]["tongues_crossed"]))
+    for w in sorted(set(route_warn)) + rwarn:
         log("  ⚠ " + w)
+    rows = None
+    if compare:
+        rows = []
+        for name, (rs_, secs_) in by.items():
+            oo = opt(name)
+            rows.append(summary_row(pl, rs_, name, oo["title"], secs_, thickness, machines,
+                                    sorted(set(w for r in rs_ for w in r["warnings"])) + risk_warn(name, rs_, oo["key"] != "short")))
+        order_ = list(STRATEGIES) + [n for n in by if n not in STRATEGIES]
+        rows.sort(key=lambda r: order_.index(r["name"]))
+        log("сводка по стратегиям (%s):" % ("общий рез" if pl.get("coedge") else "с зазором"))
+        for line in summary_text(rows).split("\n"):
+            log("  " + line)
     stamp = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=10))).strftime("%Y-%m-%d_%H%M")
     title = title or os.path.splitext(os.path.basename(inputs[0]))[0]
     tag = "" if (gap, edge) == (2.0, 2.0) else "_зазор%g_край%g" % (gap, edge)
@@ -111,22 +251,45 @@ def run(inputs, W=1250.0, L=2500.0, gap=2.0, edge=2.0, thickness=None, qty=None,
     raw, M = build(parts, pl["layouts"], fname, technical)
     rep, rr, ctx = check(raw, parts, pl["layouts"], gap, edge, thickness)
     ok = all(x[1] is not False for x in rep)
-    for n, o, d in rep:
-        log("  %s %-62s %s" % ("✓" if o else "⚠" if o is None else "✗", n, d))
+    for n, o_, d in rep:
+        log("  %s %-62s %s" % ("✓" if o_ else "⚠" if o_ is None else "✗", n, d))
+    main_row = rows[[r["name"] for r in rows].index(o["name"])] if rows else \
+        summary_row(pl, rs, o["name"], o["title"], secs, thickness, machines, sorted(set(route_warn)) + rwarn)
     res = dict(file=fname + ".lxds", ok=ok, sheets=pl["sheets"], lower_bound=pl["lower_bound"], optimal=pl["optimal"],
-               method=pl["method"], tried=pl["tried"], idle_m=round(idle / 1000, 2), crossings=dict(tongues=x_tongue, parts=x_parts),
+               method=pl["method"], tried=pl["tried"], idle_m=round(idle / 1000, 2),
+               # tongues, parts — как было (маршрут: над вырезанными язычками; заходы в деталь над вырезанной — с зазором,
+               # все переходы — с общим резом); остальное — счёт risk.measure (классы опасных переходов)
+               crossings=dict(tongues=x_tongue, parts=x_parts, holes=tot["holes"], holes_small=tot["holes_s"],
+                              freed_small=tot["small"], freed_parts=tot["parts"], freed_mj=tot["mj"], near=tot["near"],
+                              short=tot["short"], cut_tongues=tot["tongues"]),
+               strategy=o["name"], strategy_title=o["title"], coedge=bool(pl.get("coedge")), small_mm=small,
+               microjoints=[p["name"] for p in parts if p.get("microjoints")],
+               risk=dict({c: tot[c] for c in RK.CLASSES}, moves=tot["moves_n"], over_parts_m=tot["over_parts_m"], ret=tot["ret"],
+                         cut_m=main_row["cut_m"], mark_m=main_row["mark_m"], pierces=main_row["pierces"], route_s=main_row["route_s"],
+                         machine_s=main_row["machine_s"]),
                layouts=[dict(index=k + 1, amount=l["amount"], parts=dict(collections.Counter(parts[q["part"]]["name"] for q in l["placed"])),
-                             idle_m=round(l["idle"] / 1000, 3)) for k, l in enumerate(pl["layouts"])],
-               totals={k: v for k, v in rr["totals"].items()} if rr else {}, checks=[(n, o, d) for n, o, d in rep], warnings=warns + route_warn,
+                             idle_m=round(l["idle"] / 1000, 3),
+                             # то же, что в итогах (res["risk"]), по раскладке: ret_m, ret_over_m — как были; ret —
+                             # возврат целиком (длина, метры над деталями, язычков под ним, классы перехода)
+                             risk=dict({c: r["risk"][c] for c in RK.CLASSES}, ret_m=round(r["risk"]["ret"]["m"], 3),
+                                       ret_over_m=round(r["risk"]["ret"]["over_m"], 3), over_parts_m=round(r["risk"]["over_parts_m"], 3),
+                                       ret={k_: (round(v_, 3) if isinstance(v_, float) else v_) for k_, v_ in r["risk"]["ret"].items()},
+                                       key=list(r["risk"]["key"]), key0=list(r["risk"]["key0"])))
+                        for k, (l, r) in enumerate(zip(pl["layouts"], rs))],
+               totals={k: v for k, v in rr["totals"].items()} if rr else {}, checks=[(n, o_, d) for n, o_, d in rep],
+               warnings=warns + route_warn + rwarn,
                labels=[dict(part=n, text=tx, height=h, rot=next((p["label"]["rot"] for p in parts if p["name"] == n and p.get("label")), None),
                             why=why) for n, tx, h, why in lab_rep])
+    if rows is not None:
+        res["strategies"] = {r["name"]: r for r in rows}
     if out:
         os.makedirs(out, exist_ok=True)
         open(os.path.join(out, fname + ".lxds"), "wb").write(raw)
         json.dump(res, open(os.path.join(out, fname + ".json"), "w"), ensure_ascii=False, indent=1)
         try:
-            render.png_model(raw, os.path.join(out, fname + ".png"), "%s — %d листов %g×%g%s, холостой ход %.0f м" % (
-                title, pl["sheets"], W, L, ", общий рез" if pl.get("coedge") else "", idle / 1000))
+            render.png_model(raw, os.path.join(out, fname + ".png"), "%s — %d листов %g×%g%s, «%s»: холостой ход %.0f м" % (
+                title, pl["sheets"], W, L, ", общий рез" if pl.get("coedge") else "", o["title"], idle / 1000),
+                moves=[r["risk"]["moves"] for r in rs])
         except ImportError:
             pass
         log("→ %s" % os.path.join(out, fname + ".lxds"))
@@ -134,6 +297,7 @@ def run(inputs, W=1250.0, L=2500.0, gap=2.0, edge=2.0, thickness=None, qty=None,
 
 
 def main(argv=None):
+    from .route import STRATEGIES, DEFAULT
     ap = argparse.ArgumentParser(prog="python3 -m sheet_nest.cli")
     ap.add_argument("inputs", nargs="+")
     ap.add_argument("--sheet", default="1250x2500", help="лист ШxД, мм (1250x2500)")
@@ -145,6 +309,13 @@ def main(argv=None):
     ap.add_argument("--out", default=None)
     ap.add_argument("--method", choices=("auto", "rect", "raster"), default="auto")
     ap.add_argument("--coedge", action="store_true", help="общий рез: детали вплотную, общие кромки режутся один раз (группы CypCut)")
+    ap.add_argument("--strategy", choices=list(STRATEGIES), default=DEFAULT,
+                    help="порядок резки: " + "; ".join("%s — %s" % (k, v["title"]) for k, v in STRATEGIES.items()))
+    ap.add_argument("--compare", action="store_true", help="сводка по всем стратегиям (программа — по --strategy)")
+    ap.add_argument("--small", type=float, default=100.0, help="мелкая деталь: меньше стольких мм по одной из сторон (100)")
+    ap.add_argument("--microjoints", action="append", default=[], help="ИМЯ детали с микроперемычками (* — все; повторяется)")
+    ap.add_argument("--machine", action="append", default=[], help="профиль станка (JSON) — время в сводке (повторяется: "
+                                                                   "строка на каждый станок)")
     ap.add_argument("--label", action="append", default=[], help="подпись гравировкой: ИМЯ=ТЕКСТ (имя детали; * — всем)")
     ap.add_argument("--label-height", type=float, default=15.0, help="высота букв, мм (15)")
     ap.add_argument("--label-min", type=float, default=10.0, help="наименьшая высота, если не помещается (10)")
@@ -169,7 +340,9 @@ def main(argv=None):
             labels[k.strip()] = v
         res, *_ = run(a.inputs, W, L, a.gap, a.edge, a.thickness, qty, a.name, a.out or os.getcwd(), methods, coedge=a.coedge,
                       labels=labels or None, label_opts=dict(H=a.label_height, H_min=a.label_min, margin=a.label_margin,
-                                                             font_path=a.font))
+                                                             font_path=a.font),
+                      strategy=a.strategy, compare=a.compare, small=a.small, microjoints=a.microjoints or None,
+                      machine=a.machine or None)
     except ValueError as e:
         sys.exit("ошибка: %s" % e)
     sys.exit(0 if res["ok"] else 1)

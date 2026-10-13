@@ -204,11 +204,13 @@ def inside(pt, poly):
     """Точка внутри многоугольника (чётность пересечений)."""
     x, y = pt
     c = False
-    n = len(poly)
-    for i in range(n):
-        (x1, y1), (x2, y2) = poly[i], poly[i - 1]
+    if not poly:
+        return c
+    x2, y2 = poly[-1]                                   # те же пары (i, i − 1) в том же порядке — без индексов
+    for x1, y1 in poly:
         if (y1 > y) != (y2 > y) and x < x1 + (y - y1) * (x2 - x1) / (y2 - y1):
             c = not c
+        x2, y2 = x1, y1
     return c
 
 

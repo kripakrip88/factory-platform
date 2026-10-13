@@ -18,7 +18,7 @@
 
 Общие участки — только прямые (дуг на общих кромках в образцах нет; детали с дугами на кромке в группу не идут).
 """
-import math, struct
+import math, struct, functools
 from . import geom as G
 
 TOL = 1e-4          # мм: вершина другой детали «лежит на ребре»; участок «на уже вырезанном»
@@ -96,9 +96,27 @@ def split_outline(verts, other_pts, tol=TOL):
     return out
 
 
+@functools.lru_cache(maxsize=65536)
+def _seg_box(s):
+    p, q, b = s
+    if not b:
+        return min(p[0], q[0]), min(p[1], q[1]), max(p[0], q[0]), max(p[1], q[1])
+    (cx, cy), r, _, _ = _arc_of(p, q, b)                 # дуга — в квадрате своей окружности (с запасом)
+    return cx - r, cy - r, cx + r, cy + r
+
+
 def _on(p, q, b, segs, tol=TOL):
-    for x in _seg_sample(p, q, b, 4):
-        if min((_pt_seg(x, *s) for s in segs), default=1e9) > tol:
+    X = _seg_sample(p, q, b, 4)
+    # участки дальше tol от проверяемых точек на результат не влияют (то же, что перебирать все)
+    x0, y0 = min(x for x, y in X) - tol, min(y for x, y in X) - tol
+    x1, y1 = max(x for x, y in X) + tol, max(y for x, y in X) + tol
+    near = []
+    for s in segs:
+        bx = _seg_box(s)
+        if not (bx[2] < x0 or bx[0] > x1 or bx[3] < y0 or bx[1] > y1):
+            near.append(s)
+    for x in X:
+        if min((_pt_seg(x, *s) for s in near), default=1e9) > tol:
             return False
     return True
 
@@ -209,44 +227,48 @@ def near_contact(A, B, safe=1.0, end_r=3.0, tol=TOL, step=0.1):
 
 
 # ------------------------------------------------------------------------------------------------ блок группы
-def build_group(members, head=(0.0, 0.0), inner_order=None, tol=TOL, sp_ref=None):
+def split_all(outers, tol=TOL):
+    """Контуры деталей группы, разбитые в точках Т-примыканий (вершины всех остальных деталей группы)."""
+    pts = [[(v[0], v[1]) for v in o["verts"]] for o in outers]
+    out = []
+    for k, o in enumerate(outers):
+        others = [p for j in range(len(outers)) if j != k for p in pts[j]]
+        out.append(split_outline(o["verts"], others, tol))
+    return out
+
+
+def build_group(members, head=(0.0, 0.0), inner_order=None, tol=TOL, sp_ref=None, look=None, ref_points=None, split=None,
+                final=None):
     """members — детали группы в порядке резки: [{"outer": внешний контур (LwPolyline) в координатах листа,
-    "inner": [внутренние фигуры в координатах листа]}]. inner_order(inner, head, targets) → (фигуры в порядке, конец пути) —
-    порядок внутренних контуров детали (по умолчанию — как даны). sp_ref — точка, к которой ближе всего выбирается
-    угол врезки замкнутого контура (CypCut 6.3.907.8: начало листа); по умолчанию — текущее положение головки.
-    Вернуть (фигуры блока по порядку, конец резки)."""
+    "inner": [внутренние фигуры в координатах листа]}]. inner_order(inner, head, targets, out[, after=]) → (фигуры в
+    порядке, конец пути) — порядок внутренних контуров детали (по умолчанию — как даны). sp_ref — точка, к которой
+    ближе всего выбирается угол врезки замкнутого контура (CypCut 6.3.907.8: начало листа); по умолчанию — текущее
+    положение головки.
+    look — «взгляд вперёд» (безопасность головки): после контура деталь освобождена и может встать на ребро, а
+    следующая деталь группы начинается рядом. look(e, k, nxt) → (ступени ключа, путь) — уход от точки e (конец контура
+    детали k) к следующей детали (nxt — её точки начала, ref_points(member)). Угол врезки замкнутого контура (из тех же
+    свободных выпуклых) и конец пути по внутренним контурам (inner_order получает after(p) → (начало внешней части,
+    ступени ключа ухода, путь до следующей детали)) выбираются по (ступени, путь), а не по близости. Без look —
+    как было (заводской тест 7/7). split — контуры, разбитые в Т-примыканиях (split_outline; от порядка деталей не
+    зависят — у перебора порядков считаются один раз). final (с look) — куда головка пойдёт после группы (возврат в
+    ноль): последняя деталь выбирает по нему то же, что остальные по следующей, и ещё сторону последнего куска цепочки
+    (конец блока). Вернуть (фигуры блока по порядку, конец резки)."""
     outers = [m["outer"] for m in members]
     for o in outers:
         if o["kind"] != "LwPolyline" or not o["flag"] & 1:
             raise ValueError("в группу общего реза идут только детали с внешним контуром-полилинией")
     pts = [[(v[0], v[1]) for v in o["verts"]] for o in outers]
-    split = []
-    for k, o in enumerate(outers):
-        others = [p for j in range(len(outers)) if j != k for p in pts[j]]
-        split.append(split_outline(o["verts"], others, tol))
+    if split is None:
+        split = split_all(outers, tol)
     out, cut, pos = [], [], head
     for k, m in enumerate(members):
         sv = split[k]
         n = len(sv)
         ccw = G.poly_area(outers[k]["verts"]) > 0
         flags = [_on((sv[i][0], sv[i][1]), (sv[(i + 1) % n][0], sv[(i + 1) % n][1]), sv[i][2], cut, tol) for i in range(n)]
-        # куда может прийти путь по внутренним контурам: концы невырезанных кусков (цепочки) или свободные углы
-        if any(flags) and not all(flags):
-            targets = []
-            for r in _runs(flags):
-                targets += [(sv[r[0]][0], sv[r[0]][1]), (sv[(r[-1] + 1) % n][0], sv[(r[-1] + 1) % n][1])]
-        else:
-            other = [p for j in range(len(outers)) if j != k for p in pts[j]]
-            targets = [(v[0], v[1]) for v in sv if min((math.dist((v[0], v[1]), q) for q in other), default=1e9) > tol] or \
-                [(v[0], v[1]) for v in sv]
-        inner = list(m["inner"])
-        if inner_order is not None and inner:
-            inner, pos = inner_order(inner, pos, targets, out)
-        elif inner:
-            pos = G.ends(inner[-1])[1]
-        for s in inner:
-            t = dict(s, flag64=0, member=k, role="inner")
-            out.append(t)
+        if all(flags):
+            raise ValueError("контур детали группы целиком лежит на уже вырезанном — деталь внутри соседей?")
+        closed = None
         if not any(flags):
             other_segs = [s for j in range(len(members)) if j != k for s in _segs(split[j])]
             shared = [_on((sv[i][0], sv[i][1]), (sv[(i + 1) % n][0], sv[(i + 1) % n][1]), sv[i][2], other_segs, tol)
@@ -264,7 +286,7 @@ def build_group(members, head=(0.0, 0.0), inner_order=None, tol=TOL, sp_ref=None
             touch = [min((_pt_seg(v[:2], *s) for s in other_segs), default=1e9) <= tol for v in vs]
             A = G.poly_area(vs)
 
-            def convex(i):
+            def convex(i, vs=vs, A=A):
                 p0, p1, p2 = vs[i - 1], vs[i], vs[(i + 1) % n]
                 cr = (p1[0] - p0[0]) * (p2[1] - p1[1]) - (p1[1] - p0[1]) * (p2[0] - p1[0])
                 return (cr > 0) == (A > 0) and abs(cr) > 1e-9
@@ -272,21 +294,88 @@ def build_group(members, head=(0.0, 0.0), inner_order=None, tol=TOL, sp_ref=None
             if not free:
                 raise ValueError("у детали группы нет свободного угла для врезки")
             conv = [i for i in free if convex(i)] or free
-            ref = sp_ref if sp_ref is not None else pos
-            sp = min((free if sp_ref is not None else conv), key=lambda i: (math.dist(ref, vs[i][:2]), i))
-            out.append(_shape("closed", vs, 1 | (2 if cw else 0), sp, k, lead_payload(sp), outers[k].get("layer_name"), rev))
-            pos = vs[sp][:2]
-        elif not all(flags):
+            closed = (vs, cw, rev, free if sp_ref is not None else conv)
+        # куда может прийти путь по внутренним контурам: концы невырезанных кусков (цепочки) или свободные углы
+        if any(flags):
+            targets = []
             for r in _runs(flags):
+                targets += [(sv[r[0]][0], sv[r[0]][1]), (sv[(r[-1] + 1) % n][0], sv[(r[-1] + 1) % n][1])]
+        else:
+            other = [p for j in range(len(outers)) if j != k for p in pts[j]]
+            targets = [(v[0], v[1]) for v in sv if min((math.dist((v[0], v[1]), q) for q in other), default=1e9) > tol] or \
+                [(v[0], v[1]) for v in sv]
+        nxt = ref_points(members[k + 1]) if look is not None and k + 1 < len(members) else None
+        last_m = look is not None and final is not None and k + 1 == len(members)
+        if last_m:
+            nxt = list(final)
+
+        def ahead(e, k=k, nxt=nxt, memo={}):
+            if e not in memo:
+                memo[e] = look(e, k, nxt)
+            return memo[e]
+
+        def chain_plan(p, flags=flags, sv=sv, n=n, ahead=ahead, last_m=last_m):
+            """Куски цепочки по порядку от точки p: [(начало, конец, участок, обратно)] — каждый от ближнего конца; у
+            последнего куска последней детали при final — сторона по (ступени ухода, путь)."""
+            plan, end = [], p
+            rs = list(_runs(flags))
+            for ri, r in enumerate(rs):
                 a = (sv[r[0]][0], sv[r[0]][1])
                 z = (sv[(r[-1] + 1) % n][0], sv[(r[-1] + 1) % n][1])
-                rev = math.dist(pos, z) < math.dist(pos, a)
+                if last_m and ri == len(rs) - 1:
+                    def kk(rv, a=a, z=z, end=end):
+                        s0, e0 = (z, a) if rv else (a, z)
+                        t, d = ahead(e0)
+                        return t, math.dist(end, s0) + d, rv
+                    rev = min((False, True), key=kk)
+                else:
+                    rev = math.dist(end, z) < math.dist(end, a)
+                s0, e0 = (z, a) if rev else (a, z)
+                plan.append((s0, e0, r, rev))
+                end = e0
+            return plan
+
+        def pick_sp(p, closed=closed, nxt=nxt, ahead=ahead):
+            vs_, _, _, cand = closed
+            if nxt is None or sp_ref is not None:
+                ref = sp_ref if sp_ref is not None else p
+                return min(cand, key=lambda i: (math.dist(ref, vs_[i][:2]), i))
+
+            def key(i):
+                t, d = ahead(vs_[i][:2])
+                return t, math.dist(p, vs_[i][:2]) + d, i
+            return min(cand, key=key)
+
+        def after(p, closed=closed, ahead=ahead, pick_sp=pick_sp, chain_plan=chain_plan):
+            """От конца пути p: (начало внешней части детали, ступени ключа ухода к следующей детали, путь туда)."""
+            if closed:
+                v = closed[0][pick_sp(p)][:2]
+                t, d = ahead(v)
+                return v, t, math.dist(p, v) + d
+            start, end, c = None, p, 0.0
+            for s0, e0, r, rev in chain_plan(p):
+                c += math.dist(end, s0); start = start or s0; end = e0
+            t, d = ahead(end)
+            return start, t, c + d
+        inner = list(m["inner"])
+        if inner_order is not None and inner:
+            inner, pos = inner_order(inner, pos, targets, out, after=after) if nxt else inner_order(inner, pos, targets, out)
+        elif inner:
+            pos = G.ends(inner[-1])[1]
+        for s in inner:
+            t = dict(s, flag64=0, member=k, role="inner")
+            out.append(t)
+        if closed:
+            vs, cw, rev, _ = closed
+            sp = pick_sp(pos)
+            out.append(_shape("closed", vs, 1 | (2 if cw else 0), sp, k, lead_payload(sp), outers[k].get("layer_name"), rev))
+            pos = vs[sp][:2]
+        else:
+            for s0, e0, r, rev in chain_plan(pos):
                 vs = _piece(sv, r, rev)
                 pos = vs[-1][:2]
                 cw = (not ccw) != rev
                 out.append(_shape("chain", vs, 4 | (2 if cw else 0), 0, k, None, outers[k].get("layer_name"), rev))
-        else:
-            raise ValueError("контур детали группы целиком лежит на уже вырезанном — деталь внутри соседей?")
         cut += _segs(sv)
     if out[-1]["role"] != "chain":
         raise ValueError("последний контур группы не цепочка — в группе нет общих кромок")
