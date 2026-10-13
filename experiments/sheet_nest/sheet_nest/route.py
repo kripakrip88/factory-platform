@@ -148,8 +148,6 @@ def analyze_rows(inner):
                 best[1]["tick"][best[2]] = s
                 continue
         other.append(s)
-    if len(other) > 4:
-        return None
     rows.sort(key=lambda r: r["pos"])
     return dict(rows=rows, other=other)
 
@@ -187,7 +185,13 @@ def snake_options(inner):
                 side = other
             cores.append(seq)
     macros = [None]
-    if A["other"]:
+    if len(A["other"]) > 4:
+        # много прочих фигур (подпись из десятков штрихов): одним куском — путь оптимизатора, в обе стороны
+        sh, c = order(A["other"], None, None)
+        rv = [G.reverse(s) if G.is_open(s) else s for s in reversed(sh)]
+        macros = [(G.ends(sh[0])[0], G.ends(sh[-1])[1], _seq_idle(sh) if len(sh) > 1 else 0.0, sh),
+                  (G.ends(rv[0])[0], G.ends(rv[-1])[1], _seq_idle(rv) if len(rv) > 1 else 0.0, rv)]
+    elif A["other"]:
         macros = []
         for perm in itertools.permutations(A["other"]):
             for dirs in itertools.product(*[((0, 1) if G.is_open(s) else (0,)) for s in perm]):

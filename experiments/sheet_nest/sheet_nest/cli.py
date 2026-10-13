@@ -45,7 +45,7 @@ def load_parts(inputs, qty_over=None, engrave_layers=None):
 
 
 def run(inputs, W=1250.0, L=2500.0, gap=2.0, edge=2.0, thickness=None, qty=None, title=None, out=None, methods=("rect", "raster"),
-        engrave_layers=None, log=print, coedge=False):
+        engrave_layers=None, log=print, coedge=False, labels=None, label_opts=None):
     from .pack import plan, plan_coedge
     from .route import route_sheet, route_sheet_coedge
     from .write_lxds import build
@@ -55,6 +55,16 @@ def run(inputs, W=1250.0, L=2500.0, gap=2.0, edge=2.0, thickness=None, qty=None,
     for w in warns:
         log("  ⚠ " + w)
     log("деталей: %d видов, %d шт" % (len(parts), sum(p["qty"] for p in parts)))
+    lab_rep = []
+    if labels:
+        from .labels import apply_labels
+        o = dict(H=15.0, H_min=10.0, margin=3.0, gap=1.0, font_path=None)
+        o.update(label_opts or {})
+        lab_rep = apply_labels(parts, labels, **o)
+        for name, text, h, why in lab_rep:
+            log("  подпись %-30s «%s» %s" % (name, text, ("%g мм" % h) if h else "⚠ " + why))
+            if not h:
+                warns.append("%s: %s — деталь без подписи" % (name, why))
     pl = None
     if coedge:
         pl, why = plan_coedge(parts, W, L, edge)
@@ -107,7 +117,9 @@ def run(inputs, W=1250.0, L=2500.0, gap=2.0, edge=2.0, thickness=None, qty=None,
                method=pl["method"], tried=pl["tried"], idle_m=round(idle / 1000, 2), crossings=dict(tongues=x_tongue, parts=x_parts),
                layouts=[dict(index=k + 1, amount=l["amount"], parts=dict(collections.Counter(parts[q["part"]]["name"] for q in l["placed"])),
                              idle_m=round(l["idle"] / 1000, 3)) for k, l in enumerate(pl["layouts"])],
-               totals={k: v for k, v in rr["totals"].items()} if rr else {}, checks=[(n, o, d) for n, o, d in rep], warnings=warns + route_warn)
+               totals={k: v for k, v in rr["totals"].items()} if rr else {}, checks=[(n, o, d) for n, o, d in rep], warnings=warns + route_warn,
+               labels=[dict(part=n, text=tx, height=h, rot=next((p["label"]["rot"] for p in parts if p["name"] == n and p.get("label")), None),
+                            why=why) for n, tx, h, why in lab_rep])
     if out:
         os.makedirs(out, exist_ok=True)
         open(os.path.join(out, fname + ".lxds"), "wb").write(raw)
@@ -133,6 +145,11 @@ def main(argv=None):
     ap.add_argument("--out", default=None)
     ap.add_argument("--method", choices=("auto", "rect", "raster"), default="auto")
     ap.add_argument("--coedge", action="store_true", help="общий рез: детали вплотную, общие кромки режутся один раз (группы CypCut)")
+    ap.add_argument("--label", action="append", default=[], help="подпись гравировкой: ИМЯ=ТЕКСТ (имя детали; * — всем)")
+    ap.add_argument("--label-height", type=float, default=15.0, help="высота букв, мм (15)")
+    ap.add_argument("--label-min", type=float, default=10.0, help="наименьшая высота, если не помещается (10)")
+    ap.add_argument("--label-margin", type=float, default=3.0, help="отступ подписи от отверстий, прорезей и края, мм (3)")
+    ap.add_argument("--font", default=None, help="файл шрифта GOST.FON (GOST type A plotter)")
     a = ap.parse_args(argv)
     try:
         W, L = (float(x) for x in a.sheet.lower().replace("х", "x").split("x"))
@@ -144,7 +161,15 @@ def main(argv=None):
         qty[k] = int(v)
     methods = ("rect", "raster") if a.method == "auto" else (a.method,)
     try:
-        res, *_ = run(a.inputs, W, L, a.gap, a.edge, a.thickness, qty, a.name, a.out or os.getcwd(), methods, coedge=a.coedge)
+        labels = {}
+        for q in a.label:
+            k, _, v = q.partition("=")
+            if not v.strip() or not k.strip():
+                raise ValueError("--label %r: нужно ИМЯ=ТЕКСТ (или *=ТЕКСТ)" % q)
+            labels[k.strip()] = v
+        res, *_ = run(a.inputs, W, L, a.gap, a.edge, a.thickness, qty, a.name, a.out or os.getcwd(), methods, coedge=a.coedge,
+                      labels=labels or None, label_opts=dict(H=a.label_height, H_min=a.label_min, margin=a.label_margin,
+                                                             font_path=a.font))
     except ValueError as e:
         sys.exit("ошибка: %s" % e)
     sys.exit(0 if res["ok"] else 1)

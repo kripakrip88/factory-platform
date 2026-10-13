@@ -213,6 +213,12 @@ def check(raw, parts, layouts, gap, edge, thickness=None, rep=None):
                 ("наименьшее %.1f мм (до 20)%s" % (lead_min, "" if lead_min >= LEAD_FREE - 1e-9
                                                     else " — подвод у таких деталей проверить/укоротить в CypCut"))
                 if lead_min is not None else "отдельных деталей нет — у групп общего реза врезка в свободном углу, подвод CypCut"))
+    labelled = [p for p in parts if p.get("label")]
+    if labelled:
+        bad_l = [p["name"] + ": " + why for p in labelled for why in [_check_label(p)] if why]
+        rep.append(("подписи: внутри детали, ≥ %g мм от отверстий, прорезей, язычков и края, штрихи не касаются (≥ %g мм)"
+                    % (labelled[0]["label"]["margin"], labelled[0]["label"]["gap"]), not bad_l,
+                    "; ".join(bad_l)[:300] if bad_l else "подписано деталей %d" % len(labelled)))
     util_ok = all(abs(l["util_cypcut"] - l["util_calc_cypcut"]) < 0.01 for l in r["layouts"])
     rep.append(("загрузка в файле = своя по геометрии", util_ok, ", ".join("%.1f%%" % l["util_cypcut"] for l in r["layouts"])))
     warns = [w for w in r["warnings"] if "от края" not in w and "толщин" not in w]
@@ -456,3 +462,33 @@ def _units_apart(M2, bn):
                 if on > 2:                      # больше 1 мм вплотную (точки через 0,5 мм) — общий участок
                     bad += 1
     return bad, dmin
+
+
+def _check_label(p):
+    """Подпись детали (фигуры с меткой label) — независимо от расстановки: все точки внутри внешнего контура, вне
+    отверстий и язычков; не ближе отступа к любой другой фигуре детали и к хорде язычка; разные куски подписи не
+    ближе разрыва друг к другу (CypCut не любит касаний). Вернуть причину или ""."""
+    info = p["label"]
+    m, gap = info["margin"], info["gap"]
+    lab = [s for s in p["shapes"] if s.get("label")]
+    rest = [s for s in p["shapes"] if not s.get("label")]
+    outer = rest[-1]
+    Po = G.points(outer, 0.02)
+    holes = [G.points(s, 0.05) for s in rest[:-1] if G.is_closed(s)]
+    tongues = [G.points(s, 0.05) for s in rest[:-1] if not G.is_closed(s) and s["layer"] == 1 and len(G.points(s, 0.05)) >= 3]
+    S = _Segs(rest)
+    for P in tongues:
+        S.add(dict(kind="Line", p1=P[-1], p2=P[0]))
+    for s in lab:
+        for x in _dense(s, 0.25):
+            if not G.inside(x, Po) or any(G.inside(x, h) for h in holes + tongues):
+                return "подпись вне детали или на отверстии/язычке у (%.1f; %.1f)" % x
+            if S.dist(x, m + 1) < m - 1e-3:
+                return "подпись ближе %g мм к контуру у (%.1f; %.1f)" % (m, x[0], x[1])
+    for i in range(len(lab)):
+        Si = _Segs([lab[i]])
+        for j in range(i + 1, len(lab)):
+            for x in _dense(lab[j], 0.1):
+                if Si.dist(x, gap + 1) < gap - 0.02:
+                    return "штрихи подписи ближе %g мм у (%.1f; %.1f)" % (gap, x[0], x[1])
+    return ""
