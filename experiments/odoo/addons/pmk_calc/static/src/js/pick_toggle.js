@@ -17,6 +17,23 @@ import {
 // Прошлый щелчок: список и строка. Один на страницу — список изделий один.
 let last = null;
 
+// Нажат ли Shift — по самой клавише: признак shiftKey у щелчка по переключателю
+// теряется (щелчок по подписи порождает внутренний щелчок по флажку без Shift).
+let shiftDown = false;
+window.addEventListener("keydown", (ev) => {
+    if (ev.key === "Shift") {
+        shiftDown = true;
+    }
+}, true);
+window.addEventListener("keyup", (ev) => {
+    if (ev.key === "Shift") {
+        shiftDown = false;
+    }
+}, true);
+window.addEventListener("blur", () => {
+    shiftDown = false;
+});
+
 function listOf(record) {
     const parent = record?._parentRecord;
     if (!parent) {
@@ -48,7 +65,7 @@ export class PmkPickToggle extends BooleanToggleField {
     // Признак Shift только ставим: щелчок по подписи переключателя порождает
     // второй, внутренний щелчок по флажку уже без Shift — он не должен его снять.
     onMouseDown(ev) {
-        if (ev.shiftKey) {
+        if (ev.shiftKey || shiftDown) {
             ev.preventDefault();
             this.shift = true;
         }
@@ -63,7 +80,7 @@ export class PmkPickToggle extends BooleanToggleField {
     async onChange(newValue) {
         const record = this.props.record;
         const list = listOf(record);
-        if (this.shift && last && list && toRaw(last.list) === toRaw(list)) {
+        if ((this.shift || shiftDown) && last && list && toRaw(last.list) === toRaw(list)) {
             const a = indexIn(list, last.record);
             const b = indexIn(list, record);
             if (a >= 0 && b >= 0) {
