@@ -149,3 +149,23 @@ class TestSpecCategories(TransactionCase):
         strip.action_pmk_copy()
         self.assertEqual(len(spec.product_ids), 2)
         self.assertEqual(set(spec.product_ids.mapped("name")), {"Полоса 40х3000х4"})
+
+    def test_bulk_everywhere(self):
+        """Отмеченные строки любого списка: перенести в любой калькулятор, копировать, удалить."""
+        spec = self.env["pmk.metal.spec"].create({"cat_dobor": True, "product_ids": [
+            (0, 0, {"name": "Закладная Зд3", "qty": 4})]})
+        dobor = spec.dobor_order_ids
+        dobor.write({"line_ids": [(0, 0, {"title": "Зонт шахта 500х700 RAL 8017", "plank_length": 2000, "qty": 2}),
+                                  (0, 0, {"title": "Капельник", "plank_length": 2500, "qty": 6})]})
+        zont, drip = dobor.line_ids.sorted("id")
+        spec.pmk_bulk("dobor", "move", "vent", [zont.id])
+        hood = spec.vent_order_ids.line_ids
+        self.assertEqual((hood.width, hood.length, hood.qty), (500, 700, 2))
+        spec.pmk_bulk("dobor", "copy", ids=[drip.id])
+        self.assertEqual(len(dobor.line_ids), 2)
+        spec.pmk_bulk("vent", "move", "metal", hood.ids)
+        self.assertIn("Зонт 500×700", " ".join(spec.product_ids.mapped("name")))
+        spec.pmk_bulk("dobor", "delete", ids=dobor.line_ids.ids)
+        self.assertFalse(dobor.line_ids)
+        with self.assertRaises(Exception):
+            spec.pmk_bulk("metal", "move", "metal", spec.product_ids.ids)

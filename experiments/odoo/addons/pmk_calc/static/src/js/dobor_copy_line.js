@@ -69,7 +69,9 @@ export class PmkDoborCopyLine extends Component {
             return;
         }
         const source = this.props.record;
-        await list.duplicateRecords([source], { copyFields: COPY_FIELDS });
+        // Скрытые поля доборки; у вентзонтов их нет — берём только существующие.
+        const copyFields = COPY_FIELDS.filter((name) => name in source.fields);
+        await list.duplicateRecords([source], { copyFields });
         if (AUTO_TITLE.test((source.data.title || "").trim())) {
             // После копирования список отсортирован по порядку: копия —
             // следующая за исходной.
@@ -103,7 +105,8 @@ export function nextAutoTitle(list) {
     return `Доборка ${number}`;
 }
 
+// Значком (13.10.2026: «без надписи, только иконкой») — узкая колонка.
 registry.category("view_widgets").add("pmk_dobor_copy_line", {
     component: PmkDoborCopyLine,
-    listViewWidth: 120,
+    listViewWidth: 36,
 });

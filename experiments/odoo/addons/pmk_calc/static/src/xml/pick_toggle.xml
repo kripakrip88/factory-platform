@@ -5,7 +5,7 @@
     <t t-name="pmk_calc.PmkPickCheck">
         <div class="pmk-pick-check" t-on-click="onClick">
             <CheckBox id="props.id" value="state.value" className="'d-inline-block'"
-                      disabled="props.readonly" onChange.bind="onChange"/>
+                      disabled="false" onChange.bind="onChange"/>
         </div>
     </t>
 </templates>

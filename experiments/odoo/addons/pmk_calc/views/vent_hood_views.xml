@@ -125,6 +125,8 @@
               <field name="sides_swapped" column_invisible="1"/>
               <field name="warnings_text" column_invisible="1"/>
               <field name="material_name" column_invisible="1"/>
+              <!-- «Копировать» значком, как у доборки и в расчёте (13.10.2026). -->
+              <widget name="pmk_dobor_copy_line"/>
             </list>
           </field>
         </sheet>

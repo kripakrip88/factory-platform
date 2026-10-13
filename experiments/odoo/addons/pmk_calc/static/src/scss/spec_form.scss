@@ -314,6 +314,11 @@
   }
 }
 
+// Значки строки «Копировать» / «Удалить» — к правому краю, рядом друг с другом.
+td:has(> .pmk-row-copy) {
+  text-align: right;
+}
+
 .pmk-pick-check {
   display: flex;
   justify-content: center;

@@ -5,10 +5,10 @@
        «Печать листа». .stop — щелчок не открывает окно позиции. -->
   <t t-name="pmk_calc.DoborCopyLine">
     <button t-if="canCopy" type="button"
-            class="btn btn-link btn-sm p-0 text-nowrap pmk-dobor-copy"
+            class="btn btn-link btn-sm p-0 text-nowrap pmk-dobor-copy" aria-label="Копировать"
             title="Копия позиции встанет сразу под ней: тот же профиль, покрытие, металл и количество. Останется поменять размеры. Сохраняется вместе с заказом."
             t-on-click.stop="onClick">
-      <i class="fa fa-clone me-1" aria-hidden="true"/>Копировать
+      <i class="fa fa-clone" aria-hidden="true"/>
     </button>
   </t>
 </templates>

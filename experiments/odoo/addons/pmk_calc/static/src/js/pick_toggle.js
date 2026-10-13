@@ -65,9 +65,8 @@ export class PmkPickListToggle extends ListBooleanToggleField {
             // product_lines_field пропускают щелчки с этой пометкой.
             ev.target.special_click = true;
         }
-        if (this.props.readonly) {
-            return;
-        }
+        // Отметка — не правка данных: работает и в списках «только для чтения»
+        // (вкладки доборки и вентзонтов в расчёте).
         const record = this.props.record;
         const name = this.props.name;
         const list = listOf(record);

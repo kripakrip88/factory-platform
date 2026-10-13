@@ -28,26 +28,7 @@
       <!-- Перенос изделий в доборку / вентзонты (13.10.2026, spec_move.py): переключатель в
            строке изделия, кнопки — над списком, когда что-то отмечено. -->
       <xpath expr="//field[@name='product_ids']" position="before">
-        <div class="pmk-move-bar" name="pmk_move_bar" invisible="not pmk_product_count">
-          <!-- Галочка «все», как в МоёмСкладе: «☐ Все N» — отметить всё; «☑ N позиций» —
-               снять. Отмечено не всё — видно обе. -->
-          <button name="action_pmk_pick_all" type="object" class="btn-link pmk-pick-all"
-                  icon="fa-square-o" invisible="pmk_pick_count == pmk_product_count"
-                  title="Отметить все изделия">
-            <span>Все <field name="pmk_product_count" class="oe_inline"/></span>
-          </button>
-          <button name="action_pmk_pick_none" type="object" class="btn-link pmk-pick-all pmk-pick-all--on"
-                  icon="fa-check-square" invisible="not pmk_pick_count" title="Снять все отметки">
-            <span><field name="pmk_pick_count" class="oe_inline"/> поз.</span>
-          </button>
-          <button name="action_pmk_pick_to_dobor" type="object" class="btn-secondary" string="В доборки"
-                  icon="fa-arrow-down" invisible="not pmk_pick_count"
-                  title="Отмеченные изделия — строками в доборку этого расчёта"/>
-          <button name="action_pmk_pick_to_vent" type="object" class="btn-secondary" string="В вентзонты"
-                  icon="fa-arrow-down" invisible="not pmk_pick_count"
-                  title="Отмеченные изделия — размерами в вентзонты этого расчёта"/>
-          <span class="pmk-cat-muted">Shift + щелчок по галочке — отметить строки подряд</span>
-        </div>
+        <widget name="pmk_pick_bar" list="product_ids" source="metal"/>
       </xpath>
       <xpath expr="//field[@name='product_ids']/list/field[@name='sequence']" position="after">
         <field name="pmk_pick" widget="pmk_pick_toggle" string=" " width="40px"
@@ -55,7 +36,8 @@
       </xpath>
       <xpath expr="//field[@name='product_ids']/list/field[@name='note']" position="after">
         <field name="pmk_move_hint" optional="show" string="Подсказка" width="110px"/>
-        <button name="action_pmk_copy" type="object" icon="fa-clone" title="Копировать изделие со всеми деталями"/>
+        <button name="action_pmk_copy" type="object" icon="fa-clone" class="pmk-row-copy"
+                title="Копировать изделие со всеми деталями"/>
       </xpath>
       <xpath expr="//page[@name='composition']" position="after">
         <page string="Доборные элементы" name="pmk_cat_dobor" invisible="not cat_dobor and not dobor_order_ids">
@@ -69,8 +51,10 @@
             </span>
             <field name="dobor_order_ids" invisible="1"/>
           </div>
+          <widget name="pmk_pick_bar" list="dobor_line_ids" source="dobor"/>
           <field name="dobor_line_ids" nolabel="1" readonly="1">
             <list create="0" delete="0" no_open="1">
+              <field name="pmk_pick" widget="pmk_pick_toggle" string=" " width="40px" options="{'autosave': false}"/>
               <field name="sketch" widget="pmk_svg" string="Профиль"/>
               <field name="title"/>
               <field name="coating_id"/>
@@ -81,8 +65,10 @@
               <field name="weight_total" digits="[12,1]" sum="Вес"/>
               <field name="price_unit" string="Цена за шт, ₽"/>
               <field name="price_total" sum="Сумма"/>
-              <button name="action_pmk_back_to_metal" type="object" icon="fa-undo"
-                      title="Вернуть в металлоизделия"/>
+              <button name="action_pmk_copy" type="object" icon="fa-clone" class="pmk-row-copy"
+                      title="Копировать строку — встанет сразу под ней"/>
+              <button name="action_pmk_delete" type="object" icon="fa-trash-o" class="pmk-row-delete"
+                      title="Удалить строку" confirm="Удалить строку?"/>
             </list>
           </field>
         </page>
@@ -97,8 +83,10 @@
             </span>
             <field name="vent_order_ids" invisible="1"/>
           </div>
+          <widget name="pmk_pick_bar" list="vent_line_ids" source="vent"/>
           <field name="vent_line_ids" nolabel="1" readonly="1">
             <list create="0" delete="0" no_open="1">
+              <field name="pmk_pick" widget="pmk_pick_toggle" string=" " width="40px" options="{'autosave': false}"/>
               <field name="hood_label" string="Зонт"/>
               <field name="hood_size"/>
               <field name="coating_id"/>
@@ -108,8 +96,10 @@
               <field name="total_mass_net_kg" string="Вес всего, кг" sum="Вес"/>
               <field name="price_unit" string="Цена за шт, ₽"/>
               <field name="price_total" sum="Сумма"/>
-              <button name="action_pmk_back_to_metal" type="object" icon="fa-undo"
-                      title="Вернуть в металлоизделия"/>
+              <button name="action_pmk_copy" type="object" icon="fa-clone" class="pmk-row-copy"
+                      title="Копировать строку — встанет сразу под ней"/>
+              <button name="action_pmk_delete" type="object" icon="fa-trash-o" class="pmk-row-delete"
+                      title="Удалить строку" confirm="Удалить строку?"/>
             </list>
           </field>
         </page>
