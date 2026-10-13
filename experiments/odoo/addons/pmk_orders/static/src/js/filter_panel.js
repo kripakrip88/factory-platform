@@ -212,6 +212,24 @@ function applyFilter(sm, fields, values) {
     }
 }
 
+// Условия поиска без нашей плашки: остальные плашки («Мои счета»…), боковая
+// панель и условия самого окна. Запрос поиска подменяется на время одного
+// синхронного расчёта и сразу возвращается.
+function domainWithoutPlate(sm) {
+    const groupId = plates.get(sm);
+    const query = sm.query;
+    if (groupId) {
+        sm.query = query.filter((q) => sm.searchItems[q.searchItemId]?.groupId !== groupId);
+    }
+    try {
+        return sm._getDomain({ raw: true });
+    } catch {
+        return new Domain(sm.globalDomain || []);
+    } finally {
+        sm.query = query;
+    }
+}
+
 // ─── Окно ползунков: поля фильтра над «Фильтры / Группировка / Избранное» ────
 
 export class PmkFilterPanel extends Component {
@@ -253,12 +271,13 @@ export class PmkFilterPanel extends Component {
         this.recount();
     }
 
-    // «Найдено: N» — сколько документов даст фильтр (с условиями самого окна списка).
+    // «Найдено: N» — сколько документов покажет список после «Найти»: условия
+    // окна плюс остальные плашки поиска.
     recount() {
         clearTimeout(this.timer);
         this.timer = setTimeout(async () => {
             const { domain } = domainAndLabel(this.fields, this.state.values);
-            const full = Domain.and([this.sm.globalDomain || [], domain]).toList();
+            const full = Domain.and([domainWithoutPlate(this.sm), domain]).toList(this.sm.domainEvalContext);
             try {
                 this.state.count = await this.orm.searchCount(this.sm.resModel, full);
             } catch {
