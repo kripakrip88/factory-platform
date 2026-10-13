@@ -78,8 +78,15 @@ export class PmkPickListToggle extends ListBooleanToggleField {
                 // Пачкой: строки меняются без пересчёта с сервером, пересчёт — один
                 // раз на последней (иначе десять строк — десять запросов подряд).
                 const recs = list.records.slice(from, to + 1).filter((r) => r.data[name] !== value);
+                // Публичный update в Odoo 19 опций не принимает — промежуточные
+                // строки через _update без пересчёта и без обновления расчёта,
+                // последнюю — обычным update (пересчёт счётчика «Отмечено»).
                 for (const [i, rec] of recs.entries()) {
-                    await rec.update({ [name]: value }, { withoutOnchange: i < recs.length - 1 });
+                    if (i < recs.length - 1) {
+                        await rec._update({ [name]: value }, { withoutOnchange: true, withoutParentUpdate: true });
+                    } else {
+                        await rec.update({ [name]: value });
+                    }
                 }
             }
         } else if (!onCheckbox) {
