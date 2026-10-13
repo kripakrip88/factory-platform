@@ -325,6 +325,24 @@ class PmkTelegramBot(models.AbstractModel):
         data = cq.get("data") or ""
         msg = cq.get("message") or {}
         chat_id = (msg.get("chat") or {}).get("id")
+        # Листалка картинок: листать может любой, кто видит сообщение (в
+        # группе — все участники), — это только просмотр. Запись листалки
+        # должна принадлежать этому же чату и сообщению.
+        if data.startswith("car:"):
+            rec_id, _sep, idx = data[4:].partition(":")
+            car = self.env["pmk.telegram.carousel"].sudo().browse(int(rec_id)).exists()
+            if (car and car.chat_id == str(chat_id)
+                    and car.message_id == msg.get("message_id") and idx.isdigit()):
+                if int(idx) != car.index:
+                    car.pmk_show(api_, int(idx))
+                api_.answer_callback(cq["id"])
+            else:
+                api_.answer_callback(cq["id"], "Сообщение устарело")
+            return
+        # Кнопки макетов (примеры заданий и сводок) — честно говорим, что это пример.
+        if data.startswith("demo:"):
+            api_.answer_callback(cq["id"], "Это пример — кнопка пока не работает")
+            return
         user = self._pmk_user(cq.get("from") or {})
         if not user or not chat_id:
             api_.answer_callback(cq["id"], "Нет доступа")
