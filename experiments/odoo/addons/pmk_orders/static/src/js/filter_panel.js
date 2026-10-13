@@ -9,7 +9,7 @@
 // default_pmk_metal в контексте, чтобы доска «Доработка системы» панели не получила).
 // Набор полей — CONFIG; поле, которого у модели нет (модуль не стоит), пропускается.
 
-import { Component, onWillStart, useState } from "@odoo/owl";
+import { Component, onMounted, onWillStart, useState } from "@odoo/owl";
 import { Domain } from "@web/core/domain";
 import { patch } from "@web/core/utils/patch";
 import { useService } from "@web/core/utils/hooks";
@@ -105,6 +105,10 @@ export class PmkFilterPanel extends Component {
             this.fields = CONFIG[this.props.configKey].filter((f) => f.name in meta)
                 .map((f) => ({ ...f, ftype: meta[f.name].type }));
             this.state.ready = true;
+        });
+        // Запомненный фильтр — в поиск, когда список уже показан: во время загрузки
+        // вида поиск ещё собирается, и добавленная плашка терялась.
+        onMounted(() => {
             if (this.activeCount) {
                 this.apply(false);
             }
