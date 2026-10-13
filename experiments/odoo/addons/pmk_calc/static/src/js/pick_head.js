@@ -28,7 +28,7 @@ patch(ListRenderer.prototype, {
         return recs.length > 0 && recs.every((r) => r.data[column.name]);
     },
 
-    async pmkPickToggleAll(column) {
-        await pickAll(this.props.list.records, column.name, !this.pmkPickAllOn(column));
+    async pmkPickSet(column, value) {
+        await pickAll(this.props.list.records, column.name, value);
     },
 });

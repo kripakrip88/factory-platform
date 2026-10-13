@@ -9,15 +9,21 @@
         </div>
     </t>
 
-    <!-- Заголовок колонки галочек — «отметить все» (js/pick_head.js). Щелчок не
-         сортирует колонку: .stop. -->
+    <!-- Заголовок колонки галочек — «отметить все» (js/pick_head.js). Щелчок по
+         флажку приходит в onChange (CheckBox сам гасит всплытие), по ячейке вокруг —
+         в t-on-click; ни тот ни другой не сортирует колонку. Подпись, стрелка
+         сортировки и ручка ширины у этой колонки не рисуются. -->
     <t t-inherit="web.ListRenderer" t-inherit-mode="extension">
+        <xpath expr="//th[@t-att-data-name='column.name']/t[@t-if]" position="attributes">
+            <attribute name="t-if">column.hasLabel and column.widget !== 'handle' and column.widget !== 'pmk_pick_toggle'</attribute>
+        </xpath>
         <xpath expr="//th[@t-att-data-name='column.name']/t[@t-if]" position="before">
             <div t-if="column.widget === 'pmk_pick_toggle'" class="pmk-pick-check pmk-pick-head"
                  t-att-title="pmkPickAllOn(column) ? 'Снять все отметки' : 'Отметить все строки'"
-                 t-on-click.stop.prevent="() => this.pmkPickToggleAll(column)">
+                 t-on-click.stop="() => this.pmkPickSet(column, !this.pmkPickAllOn(column))">
                 <CheckBox value="pmkPickAllOn(column)" className="'d-inline-block'"
-                          disabled="!props.list.records.length" onChange="() => {}"/>
+                          disabled="!props.list.records.length"
+                          onChange="(value) => this.pmkPickSet(column, value)"/>
             </div>
         </xpath>
     </t>
