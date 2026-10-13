@@ -272,6 +272,16 @@
     <field name="sequence">39</field>
   </record>
 
+  <!-- Шрифт Inter (13.10.2026): свои файлы шрифта, переменная шрифта темы и шрифт body.
+       Раньше навигации и форм: от него зависят их размеры. Подробности — в файле. -->
+  <record id="asset_scss_fonts" model="ir.asset">
+    <field name="name">ПМК: fonts.scss — шрифт Inter</field>
+    <field name="bundle">web.assets_backend</field>
+    <field name="directive">append</field>
+    <field name="path">pmk_theme/static/src/scss/fonts.scss</field>
+    <field name="sequence">38</field>
+  </record>
+
   <!-- Разметка переключателя тем в шапке. Идёт В ПАРЕ со светлой темой:
        механизм переключения приходит из чужой темы, и без неё кнопка не
        отрисуется (в шаблоне стоит проверка на наличие её метода). -->
