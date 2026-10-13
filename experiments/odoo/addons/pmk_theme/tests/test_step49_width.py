@@ -283,10 +283,14 @@ class TestFaviconAndFont(TransactionCase):
     """Значок вкладки — наш (13.10.2026); шрифт Inter подключён и включён."""
 
     def test_favicon_in_webclient(self):
-        for xmlid in ("web.webclient_bootstrap", "web.login_layout"):
-            with self.subTest(view=xmlid):
-                arch = self.env.ref(xmlid).get_combined_arch()
-                self.assertIn("/pmk_theme/static/src/img/favicon.png", arch)
+        arch = self.env.ref("web.webclient_bootstrap").get_combined_arch()
+        self.assertIn("/pmk_theme/static/src/img/favicon.png", arch)
+        # Вход — через «Сайт»: значок сайта — наш файл.
+        if "website" in self.env:
+            site = self.env["website"].sudo().search([], limit=1)
+            site.favicon = False
+            self.assertTrue(self.env["res.company"]._pmk_set_site_favicon())
+            self.assertTrue(site.favicon, "значок сайта (страница входа) — наш файл")
         with file_open("pmk_theme/static/src/img/favicon.png", "rb") as f:
             self.assertEqual(f.read(8), b"\x89PNG\r\n\x1a\n")
 

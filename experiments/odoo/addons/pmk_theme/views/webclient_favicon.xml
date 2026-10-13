@@ -13,9 +13,6 @@
     </xpath>
   </template>
 
-  <template id="login_layout_favicon" inherit_id="web.login_layout" name="ПМК: значок вкладки на входе">
-    <xpath expr="//t[@t-call='web.frontend_layout']" position="inside">
-      <t t-set="x_icon" t-value="'/pmk_theme/static/src/img/favicon.png'"/>
-    </xpath>
-  </template>
+  <!-- Страница входа — через «Сайт»: значок там из поля сайта (models/favicon.py). -->
+  <function model="res.company" name="_pmk_set_site_favicon"/>
 </odoo>

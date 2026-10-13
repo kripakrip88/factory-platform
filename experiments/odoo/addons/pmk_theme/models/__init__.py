@@ -26,3 +26,4 @@ from . import doc_history
 from . import tracking_lang
 # Задача 262 (12.10.2026): фото сотрудника — аватар его пользователя.
 from . import hr_avatar
+from . import favicon
