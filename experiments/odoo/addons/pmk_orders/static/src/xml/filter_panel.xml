@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <!-- Панель «Фильтр» над списком, как в МоёмСкладе — js/filter_panel.js. -->
+    <t t-name="pmk_orders.FilterPanel">
+        <div t-if="state.ready and fields.length" class="pmk-filter">
+            <div class="pmk-filter__bar">
+                <button type="button" t-attf-class="btn btn-sm pmk-filter__toggle {{ activeCount ? 'pmk-filter__toggle--on' : '' }}"
+                        t-on-click="() => this.state.open = !this.state.open">
+                    <i class="fa fa-filter me-1" aria-hidden="true"/>Фильтр<t t-if="activeCount"> · <t t-esc="activeCount"/></t>
+                    <i t-attf-class="fa ms-1 {{ state.open ? 'fa-angle-up' : 'fa-angle-down' }}" aria-hidden="true"/>
+                </button>
+                <button t-if="activeCount and !state.open" type="button" class="btn btn-sm btn-link"
+                        t-on-click="() => this.clear()">Очистить</button>
+            </div>
+            <div t-if="state.open" class="pmk-filter__panel">
+                <div class="pmk-filter__grid">
+                    <t t-foreach="fields" t-as="f" t-key="f.name">
+                        <div class="pmk-filter__field">
+                            <label t-esc="f.label"/>
+                            <t t-set="v" t-value="value(f.name)"/>
+                            <t t-if="f.type === 'period'">
+                                <div class="pmk-filter__pair">
+                                    <input type="date" class="form-control form-control-sm" t-att-value="v.from or ''"
+                                           t-on-change="(ev) => this.set(f.name, { from: ev.target.value })"/>
+                                    <span>—</span>
+                                    <input type="date" class="form-control form-control-sm" t-att-value="v.to or ''"
+                                           t-on-change="(ev) => this.set(f.name, { to: ev.target.value })"/>
+                                </div>
+                                <div class="pmk-filter__quick">
+                                    <button type="button" class="btn btn-link btn-sm" t-on-click="() => this.quick(f, 'today')">Сегодня</button>
+                                    <button type="button" class="btn btn-link btn-sm" t-on-click="() => this.quick(f, 'week')">Неделя</button>
+                                    <button type="button" class="btn btn-link btn-sm" t-on-click="() => this.quick(f, 'month')">Месяц</button>
+                                    <button type="button" class="btn btn-link btn-sm" t-on-click="() => this.quick(f, 'quarter')">Квартал</button>
+                                    <button type="button" class="btn btn-link btn-sm" t-on-click="() => this.quick(f, 'year')">Год</button>
+                                    <button type="button" class="btn btn-link btn-sm" t-on-click="() => this.quick(f, 'all')">Всё время</button>
+                                </div>
+                            </t>
+                            <t t-elif="f.type === 'range'">
+                                <div class="pmk-filter__pair">
+                                    <input type="number" class="form-control form-control-sm" placeholder="от" t-att-value="v.from or ''"
+                                           t-on-change="(ev) => this.set(f.name, { from: ev.target.value })"/>
+                                    <span>—</span>
+                                    <input type="number" class="form-control form-control-sm" placeholder="до" t-att-value="v.to or ''"
+                                           t-on-change="(ev) => this.set(f.name, { to: ev.target.value })"/>
+                                </div>
+                            </t>
+                            <t t-elif="f.type === 'many'">
+                                <MultiRecordSelector resModel="f.model" resIds="v.ids or []" placeholder="'любой'"
+                                                     domain="f.domain ? f.domain(props.context or {}) : []"
+                                                     update="(ids) => this.set(f.name, { ids })"/>
+                            </t>
+                            <t t-elif="f.type === 'choice'">
+                                <div class="pmk-filter__chips">
+                                    <t t-foreach="f.choices" t-as="c" t-key="c[0]">
+                                        <button type="button" t-attf-class="btn btn-sm pmk-filter__chip {{ (v.keys or []).includes(c[0]) ? 'pmk-filter__chip--on' : '' }}"
+                                                t-on-click="() => this.toggleChoice(f, c[0])" t-esc="c[1]"/>
+                                    </t>
+                                </div>
+                            </t>
+                            <t t-elif="f.type === 'tri'">
+                                <select class="form-select form-select-sm" t-on-change="(ev) => this.set(f.name, { mode: ev.target.value })">
+                                    <option value="" t-att-selected="!v.mode">все</option>
+                                    <option value="yes" t-att-selected="v.mode === 'yes'" t-esc="f.yes"/>
+                                    <option value="no" t-att-selected="v.mode === 'no'" t-esc="f.no"/>
+                                </select>
+                            </t>
+                            <t t-elif="f.type === 'flag'">
+                                <label class="pmk-filter__flag">
+                                    <input type="checkbox" class="form-check-input" t-att-checked="v.on"
+                                           t-on-change="(ev) => this.set(f.name, { on: ev.target.checked })"/>
+                                    только такие
+                                </label>
+                            </t>
+                        </div>
+                    </t>
+                </div>
+                <div class="pmk-filter__actions">
+                    <button type="button" class="btn btn-secondary btn-sm" t-on-click="() => this.clear()">Очистить</button>
+                    <button type="button" class="btn btn-primary btn-sm" t-on-click="() => this.apply()">Найти</button>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <t t-inherit="web.ListView" t-inherit-mode="extension">
+        <xpath expr="//t[@t-component='props.Renderer']" position="before">
+            <PmkFilterPanel t-if="pmkFilterKey" configKey="pmkFilterKey" resModel="props.resModel" context="props.context"/>
+        </xpath>
+    </t>
+    <t t-inherit="web.KanbanView" t-inherit-mode="extension">
+        <xpath expr="//t[@t-component='props.Renderer']" position="before">
+            <PmkFilterPanel t-if="pmkFilterKey" configKey="pmkFilterKey" resModel="props.resModel" context="props.context"/>
+        </xpath>
+    </t>
+</templates>

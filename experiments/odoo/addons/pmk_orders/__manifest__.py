@@ -81,8 +81,16 @@
         "views/crm_lead_views.xml",
         "views/menus.xml",
     ],
-    # Своих стилей нет: правила — в живых файлах темы (pmk_theme,
-    # forms_nexus.scss и dark.scss, раздел «Счета покупателям и планировщик»).
+    # Стили счетов и планировщика — в живых файлах темы (pmk_theme, forms_nexus.scss
+    # и dark.scss, раздел «Счета покупателям и планировщик»). Своё — только панель
+    # «Фильтр» над списками, как в МоёмСкладе (13.10.2026).
+    "assets": {
+        "web.assets_backend": [
+            "pmk_orders/static/src/js/filter_panel.js",
+            "pmk_orders/static/src/xml/filter_panel.xml",
+            "pmk_orders/static/src/scss/filter_panel.scss",
+        ],
+    },
     # Нумератор счетов «S00001» → «СЧ-00001» — при установке, только пока
     # заказов клиента нет (hooks.py).
     "post_init_hook": "post_init_hook",
