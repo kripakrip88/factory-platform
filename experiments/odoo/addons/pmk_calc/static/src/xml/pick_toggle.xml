@@ -23,8 +23,12 @@
                  t-on-click.stop="() => this.pmkPickSet(column, !this.pmkPickAllOn(column))">
                 <CheckBox value="pmkPickAllOn(column)" className="'d-inline-block'"
                           disabled="!props.list.records.length"
+                          indeterminate="pmkPickedCount(column) > 0 and !pmkPickAllOn(column)"
                           onChange="(value) => this.pmkPickSet(column, value)"/>
             </div>
+            <t t-if="column.widget === 'pmk_pick_toggle' and pmkPickedCount(column)"
+               t-component="pmkPickActions" list="props.list" name="column.name"
+               source="column.options.pick_source or 'metal'"/>
         </xpath>
     </t>
 </templates>

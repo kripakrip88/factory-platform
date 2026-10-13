@@ -317,4 +317,14 @@
     <field name="sequence">42</field>
   </record>
 
+  <!-- Типографика, шаг 1 (13.10.2026): 13 px, меньше жирного, серые подписи.
+       Sequence 44 — после всех наших: перекрывает веса и размеры темы. -->
+  <record id="asset_scss_type" model="ir.asset">
+    <field name="name">ПМК: type.scss — размеры, насыщенность, серые подписи</field>
+    <field name="bundle">web.assets_backend</field>
+    <field name="directive">append</field>
+    <field name="path">pmk_theme/static/src/scss/type.scss</field>
+    <field name="sequence">44</field>
+  </record>
+
 </odoo>

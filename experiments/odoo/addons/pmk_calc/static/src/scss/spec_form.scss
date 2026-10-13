@@ -289,35 +289,43 @@
   margin-bottom: 10px;
 }
 
-// Перенос изделий в доборку / вентзонты (13.10.2026): полоса над списком изделий.
-.pmk-move-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 12px;
-  margin-bottom: 8px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: rgba(200, 240, 0, 0.12);
+// Действия над отмеченными (13.10.2026, Антон: полоса над списком «занимает
+// очень много места») — в строке заголовков, поверх названий колонок, пока
+// что-то отмечено. Начинаются сразу за колонкой галочек.
+.o_list_renderer thead th:has(> .pmk-pick-head) {
+  position: relative;
+  overflow: visible;
+  z-index: 2;
+}
 
-  // Ничего не отмечено: полоса без подсветки, кнопки серые.
-  &--idle {
-    background: transparent;
-    padding-left: 0;
+.pmk-pick-actions {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px 0 4px;
+  white-space: nowrap;
+  font-weight: 400;
+  background: var(--pmk-surface, #ffffff);
+  // Тень вправо — названия колонок под действиями не просвечивают краем.
+  box-shadow: 12px 0 12px -8px var(--pmk-surface, #ffffff);
+
+  .btn-sm {
+    padding: 2px 10px;
   }
 }
 
-// Галочка «все» над списком изделий (как в МоёмСкладе).
+// «N поз.» — снять все отметки.
 .pmk-pick-all {
   padding: 2px 10px;
   border-radius: 14px;
-  background: rgba(0, 0, 0, 0.04);
+  background: rgba(61, 115, 214, 0.1);
   color: inherit;
+  font-weight: 500;
   text-decoration: none;
-
-  &--on .fa {
-    color: #3d73d6;
-  }
 }
 
 // Значки строки «Копировать» / «Удалить» — одинаковый промежуток везде (Антон 13.10.2026:
@@ -365,6 +373,11 @@
   // В заголовке колонки — «отметить все».
   &.pmk-pick-head {
     cursor: pointer;
+  }
+
+  // «Отмечены не все» — чёрточка во флажке.
+  .form-check-input:indeterminate {
+    border-color: #3d73d6;
   }
 
   // Пустая галочка темы почти не видна на белой строке — рамка заметнее.

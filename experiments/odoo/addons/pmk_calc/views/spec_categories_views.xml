@@ -25,14 +25,12 @@
         <attribute name="string">Металлоизделия</attribute>
         <attribute name="invisible">not cat_metal</attribute>
       </xpath>
-      <!-- Перенос изделий в доборку / вентзонты (13.10.2026, spec_move.py): переключатель в
-           строке изделия, кнопки — над списком, когда что-то отмечено. -->
-      <xpath expr="//field[@name='product_ids']" position="before">
-        <widget name="pmk_pick_bar" list="product_ids" source="metal"/>
-      </xpath>
+      <!-- Перенос изделий в доборку / вентзонты (13.10.2026, spec_move.py): галочка в
+           строке изделия, «отметить все» и действия над отмеченными — в заголовке
+           колонки галочек (pick_head.js, pick_bar.js); откуда список — pick_source. -->
       <xpath expr="//field[@name='product_ids']/list/field[@name='sequence']" position="after">
         <field name="pmk_pick" widget="pmk_pick_toggle" string=" " width="40px"
-               options="{'autosave': false}"/>
+               options="{'autosave': false, 'pick_source': 'metal'}"/>
       </xpath>
       <xpath expr="//field[@name='product_ids']/list/field[@name='note']" position="after">
         <field name="pmk_move_hint" optional="show" string="Подсказка" width="110px"/>
@@ -51,10 +49,9 @@
             </span>
             <field name="dobor_order_ids" invisible="1"/>
           </div>
-          <widget name="pmk_pick_bar" list="dobor_line_ids" source="dobor"/>
           <field name="dobor_line_ids" nolabel="1" readonly="1">
             <list create="0" delete="0" no_open="1">
-              <field name="pmk_pick" widget="pmk_pick_toggle" string=" " width="40px" options="{'autosave': false}"/>
+              <field name="pmk_pick" widget="pmk_pick_toggle" string=" " width="40px" options="{'autosave': false, 'pick_source': 'dobor'}"/>
               <field name="sketch" widget="pmk_svg" string="Профиль"/>
               <field name="title"/>
               <field name="coating_id"/>
@@ -83,10 +80,9 @@
             </span>
             <field name="vent_order_ids" invisible="1"/>
           </div>
-          <widget name="pmk_pick_bar" list="vent_line_ids" source="vent"/>
           <field name="vent_line_ids" nolabel="1" readonly="1">
             <list create="0" delete="0" no_open="1">
-              <field name="pmk_pick" widget="pmk_pick_toggle" string=" " width="40px" options="{'autosave': false}"/>
+              <field name="pmk_pick" widget="pmk_pick_toggle" string=" " width="40px" options="{'autosave': false, 'pick_source': 'vent'}"/>
               <field name="hood_label" string="Зонт"/>
               <field name="hood_size"/>
               <field name="coating_id"/>

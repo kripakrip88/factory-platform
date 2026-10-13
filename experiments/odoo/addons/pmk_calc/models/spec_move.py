@@ -234,7 +234,7 @@ class MetalSpecMove(models.Model):
         raise UserError("Неизвестный калькулятор: %s" % target)
 
     def pmk_bulk(self, source, action, target=None, ids=None):
-        """Действие над отмеченными строками списка source (виджет pmk_pick_bar):
+        """Действие над отмеченными строками списка source (действия в заголовке колонки галочек, pick_bar.js):
         move (в target), copy, delete. ids — отмеченные строки; нет — по pmk_pick."""
         self.ensure_one()
         lines = self._pmk_lines(source)

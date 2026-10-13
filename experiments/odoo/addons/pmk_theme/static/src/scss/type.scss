@@ -1,0 +1,49 @@
+// Типографика, шаг 1 (Антон 13.10.2026, по первому прототипу фильтра: «мне
+// больше нравился дизайн в прошлом прототипе»): мельче, легче, подписи серым.
+//
+// Шрифт Inter — fonts.scss (seq 38). Здесь — размеры, насыщенность и цвет
+// подписей поверх всего остального (seq 44, после dark.scss и hidden.scss):
+//   • основной текст 13 px вместо 14 (ядро: --body-font-size 0.875rem);
+//   • жирное (600/700) там, где оно не заголовок, — 500: кнопки, шапка
+//     таблицы, итоги;
+//   • подписи полей серым и обычным весом: глаз сначала видит значения.
+// Серый — 4,6:1 к белому и ~5:1 к тёмной поверхности (правило контраста 4,5:1).
+
+:root {
+  --body-font-size: 0.8125rem;
+  --pmk-label: #6b7079;
+  --pmk-head: #4b4f58;
+}
+
+body.o_nexus_dark {
+  --pmk-label: #9a9ea6;
+  --pmk-head: #b4b7bd;
+}
+
+body {
+  font-size: var(--body-font-size);
+}
+
+// Подписи полей формы.
+.o_form_view .o_form_label,
+.o_form_view .o_wrap_label .o_form_label,
+.o_form_view .o_td_label .o_form_label {
+  font-weight: 400;
+  color: var(--pmk-label);
+}
+
+// Шапка таблиц.
+.o_list_renderer .o_list_table > thead > tr > th {
+  font-weight: 500;
+  color: var(--pmk-head);
+}
+
+// Итоги под таблицей.
+.o_list_renderer .o_list_table > tfoot > tr > td {
+  font-weight: 600;
+}
+
+// Кнопки.
+.o_web_client .btn {
+  font-weight: 500;
+}

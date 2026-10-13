@@ -802,14 +802,26 @@
 //
 // Все четыре вида показаны всегда, даже когда раздела ещё нет: иначе первую
 // краску в изделии завести было бы негде.
+// Без линии сверху (Антон 13.10.2026: «дополнительная линия посередине, рамка
+// занимает очень много места»): под таблицей состава её граница и так есть.
 .pmk-prow__add {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  margin-top: 10px;
-  padding-top: 8px;
-  border-top: 1px solid var(--pmk-border, #eae6dc);
+  margin-top: 8px;
+}
+
+// Состав пуст — без рамки-карточки: только строка кнопок под изделием.
+.pmk-prow__wrap:not(:has(.pmk-prow__section)) {
+  margin-top: 2px;
+  margin-bottom: 8px;
+  padding: 0;
+  border: 0;
+
+  .pmk-prow__add {
+    margin-top: 0;
+  }
 }
 
 .pmk-prow__add-label {
