@@ -145,3 +145,33 @@ body {
     .pmk-field[name] { grid-column: 1 / -1; }
   }
 }
+
+// Штатные группы Odoo (o_inner_group) — подпись над полем: сетка группы в одну
+// колонку, ячейка подписи встаёт строкой над ячейкой поля. Отдельный класс
+// pmk-labels-top-groups — чтобы не задеть группы во вкладках форм, где
+// включена только шапка (pmk-labels-top). Включается по форме, по одной.
+.o_form_view.pmk-labels-top-groups .o_inner_group.grid {
+  grid-template-columns: minmax(0, 1fr) !important;
+  row-gap: 0;
+
+  > .o_wrap_label {
+    margin: 10px 0 3px;
+    padding: 0;
+
+    .o_form_label {
+      font-size: 12px;
+      line-height: 16px;
+      white-space: nowrap;
+      color: var(--pmk-label);
+    }
+  }
+
+  > .o_wrap_label:first-child,
+  > .g-col-sm-2 + .o_wrap_label {
+    margin-top: 0;
+  }
+
+  > .o_cell:not(.o_wrap_label) {
+    margin-bottom: 0 !important;
+  }
+}
