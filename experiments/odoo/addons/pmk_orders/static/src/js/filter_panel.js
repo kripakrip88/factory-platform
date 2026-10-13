@@ -247,11 +247,17 @@ export class PmkFilterPanel extends Component {
     }
 }
 
+// Компонент — через t-component и свойство прототипа, а не через static components:
+// у наследников списка (например, SaleFileUploadListController счетов) свой набор
+// components, скопированный раньше нас, — имя PmkFilterPanel там не найдётся и
+// список упадёт. Свойство прототипа наследники получают по цепочке.
 for (const Controller of [ListController, KanbanController]) {
-    Controller.components = { ...Controller.components, PmkFilterPanel };
     patch(Controller.prototype, {
         get pmkFilterKey() {
             return filterKeyFor(this);
+        },
+        get pmkFilterPanel() {
+            return PmkFilterPanel;
         },
     });
 }

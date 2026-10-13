@@ -84,12 +84,12 @@
 
     <t t-inherit="web.ListView" t-inherit-mode="extension">
         <xpath expr="//t[@t-component='props.Renderer']" position="before">
-            <PmkFilterPanel t-if="pmkFilterKey" configKey="pmkFilterKey" resModel="props.resModel" context="props.context"/>
+            <t t-if="pmkFilterKey" t-component="pmkFilterPanel" configKey="pmkFilterKey" resModel="props.resModel" context="props.context"/>
         </xpath>
     </t>
     <t t-inherit="web.KanbanView" t-inherit-mode="extension">
         <xpath expr="//t[@t-component='props.Renderer']" position="before">
-            <PmkFilterPanel t-if="pmkFilterKey" configKey="pmkFilterKey" resModel="props.resModel" context="props.context"/>
+            <t t-if="pmkFilterKey" t-component="pmkFilterPanel" configKey="pmkFilterKey" resModel="props.resModel" context="props.context"/>
         </xpath>
     </t>
 </templates>
