@@ -9,13 +9,24 @@
 центру детали; сначала вдоль длинной стороны, затем поперёк; не помещается — буквы меньше (до минимума);
 не поместилось и так — деталь без подписи, причина в отчёте. Найденное место перепроверяется точно (по геометрии).
 
-Шрифт: файл GOST.FON (из архива Антона fonts-GOST.zip; в КОМПАСе он есть) — путь: аргумент, переменная окружения
-SHEET_NEST_FONT, иначе ~/Downloads/vent_nesting/labels/GOST.FON.
+Шрифт — АСКОН (в файле «Copyright by ASCON 1996-2000, KOMPAS for Windows»), а репозиторий открытый: ни файл шрифта,
+ни таблица штрихов из него в репозиторий НЕ кладутся (решение Антона 13.10 — таблица на сервер отдельно, .gitignore).
+Источник — GOST.FON (архив Антона fonts-GOST.zip, есть в КОМПАСе) или таблица штрихов .json, выгруженная из него:
+    python3 -m sheet_nest.labels export GOST.FON gost_type_a_strokes.json
+Путь: аргумент (--font), переменная окружения SHEET_NEST_FONT, иначе первый найденный из DEFAULT_FONTS.
 """
 import os, math, struct, functools
 from . import geom as G
 
-DEFAULT_FONT = os.environ.get("SHEET_NEST_FONT") or os.path.expanduser("~/Downloads/vent_nesting/labels/GOST.FON")
+DEFAULT_FONTS = [os.path.expanduser("~/Downloads/vent_nesting/labels/gost_type_a_strokes.json"),
+                 os.path.expanduser("~/Downloads/vent_nesting/labels/GOST.FON")]
+
+
+def default_font():
+    env = os.environ.get("SHEET_NEST_FONT")
+    if env:
+        return env
+    return next((p for p in DEFAULT_FONTS if os.path.exists(p)), DEFAULT_FONTS[-1])
 FACE = "GOST type A (plotter)"
 CAP = 52            # высота прописных и цифр в единицах шрифта (от 18 до базовой линии 70)
 EXTRA = (20.0, 12.0, 6.0, 0.0)   # мм запаса вокруг подписи сверх отступа — по убыванию: «самое большое свободное место»
@@ -49,11 +60,21 @@ def _fnt_resources(b):
 
 @functools.lru_cache(maxsize=4)
 def load_font(path=None):
-    """Векторный шрифт FON → {"ascent", "glyphs": {код cp1251: {"width", "strokes": [[(u, v), …]]}}}.
-    Таблица символов векторного FNT 2.0 — с 0x75 (без dfReserved); байт −128 — подъём пера, затем пары dx, dy."""
-    path = path or DEFAULT_FONT
+    """Векторный шрифт FON или таблица штрихов .json (export_font) → {"face", "ascent", "glyphs": {код cp1251:
+    {"width", "strokes": [[(u, v), …]]}}}. Таблица символов векторного FNT 2.0 — с 0x75 (без dfReserved);
+    байт −128 — подъём пера, затем пары dx, dy."""
+    path = path or default_font()
     if not os.path.exists(path):
-        raise LabelError("нет файла шрифта %s (GOST.FON — «GOST type A (plotter)»; путь — --font или SHEET_NEST_FONT)" % path)
+        raise LabelError("нет файла шрифта %s (GOST.FON — «GOST type A (plotter)» или таблица штрихов .json; путь — --font "
+                         "или SHEET_NEST_FONT)" % path)
+    if path.lower().endswith(".json"):
+        import json
+        d = json.load(open(path, encoding="utf-8"))
+        if d.get("format") != "sheet_nest.strokes/1":
+            raise LabelError("%s — не таблица штрихов sheet_nest (выгрузить: python3 -m sheet_nest.labels export GOST.FON …)" % path)
+        return dict(face=d["face"], ascent=d["ascent"],
+                    glyphs={int(k): dict(width=g["width"], strokes=[[tuple(p) for p in st] for st in g["strokes"]])
+                            for k, g in d["glyphs"].items()})
     b = open(path, "rb").read()
     for f in _fnt_resources(b):
         if not (struct.unpack_from("<H", f, 0x42)[0] & 1):
@@ -417,3 +438,24 @@ def apply_labels(parts, texts, H=15.0, H_min=10.0, margin=3.0, gap=1.0, font_pat
         p["label"] = info
         rep.append((p["name"], text, info["height"], ""))
     return rep
+
+
+def export_font(fon_path, json_path):
+    """FON → таблица штрихов .json (то, что нужно серверу: формы букв без файла шрифта). Не класть в репозиторий."""
+    import json
+    F = load_font(fon_path)
+    d = dict(format="sheet_nest.strokes/1", face=F["face"], ascent=F["ascent"], source=os.path.basename(fon_path),
+             glyphs={str(k): dict(width=g["width"], strokes=[[list(p) for p in st] for st in g["strokes"]])
+                     for k, g in sorted(F["glyphs"].items())})
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump(d, f, ensure_ascii=False, separators=(",", ":"))
+    return len(d["glyphs"])
+
+
+if __name__ == "__main__":
+    import sys
+    if len(sys.argv) == 4 and sys.argv[1] == "export":
+        n = export_font(sys.argv[2], sys.argv[3])
+        print("знаков %d → %s (%d Б)" % (n, sys.argv[3], os.path.getsize(sys.argv[3])))
+    else:
+        sys.exit("python3 -m sheet_nest.labels export GOST.FON таблица.json")

@@ -87,6 +87,24 @@ def font():
         if abs(max(ys) - min(ys) - 15.0) > 0.05:
             bad.append("%s: %.2f" % (c, max(ys) - min(ys)))
     check("высота цифр и прописных = заданной (15 мм)", not bad, ", ".join(bad))
+    # таблица штрихов (то, что лежит на сервере вместо файла шрифта) = сам шрифт
+    fon = next((q for q in LB.DEFAULT_FONTS if q.lower().endswith(".fon") and os.path.exists(q)), None)
+    if fon:
+        with tempfile.TemporaryDirectory() as td:
+            js = os.path.join(td, "t.json")
+            LB.export_font(fon, js)
+            J, Fo = LB.load_font(js), LB.load_font(fon)
+            check("таблица штрихов .json = шрифт .FON (все знаки)", J["glyphs"] == Fo["glyphs"] and J["ascent"] == Fo["ascent"]
+                  and J["face"] == Fo["face"], "%d знаков, %d Б" % (len(J["glyphs"]), os.path.getsize(js)))
+            check("подпись из таблицы = подпись из шрифта", LB.gapify(LB.text_strokes("ВЗ-04689", 15.0, J)) ==
+                  LB.gapify(LB.text_strokes("ВЗ-04689", 15.0, Fo)))
+            bad = os.path.join(td, "bad.json")
+            open(bad, "w").write("{}")
+            try:
+                LB.load_font(bad)
+                check("чужой .json вместо таблицы — ошибка", False)
+            except LB.LabelError:
+                check("чужой .json вместо таблицы — ошибка", True)
     return True
 
 
