@@ -146,25 +146,44 @@ body {
   }
 }
 
-// Штатные группы Odoo (o_inner_group) — подпись над полем: сетка группы в одну
-// колонку, ячейка подписи встаёт строкой над ячейкой поля. Отдельный класс
-// pmk-labels-top-groups — чтобы не задеть группы во вкладках форм, где
-// включена только шапка (pmk-labels-top). Включается по форме, по одной.
-.o_form_view.pmk-labels-top-groups .o_inner_group.grid {
-  grid-template-columns: minmax(0, 1fr) !important;
-  row-gap: 0;
+// Пара «подпись + поле» в своём блоке (xml/form_group_rows.xml). Везде, кроме
+// форм с подписями над полями, блок невидим — ячейки остаются ячейками сетки.
+.o_pmk_row {
+  display: contents;
+}
 
-  // Ячейки поля ядро ставит во вторую колонку (и разделитель — через две):
-  // при одной колонке сетка достраивала лишнюю, поле уезжало вправо.
-  > * {
+// Штатные группы Odoo — подпись над полем, пары по две в ряд (шаг 3, прототип
+// 14.10.2026). Класс формы pmk-labels-top-groups (views/labels_top_std.xml).
+// Группа — две колонки; половины формы (две группы рядом) дают четыре.
+//   • во всю ширину группы: текст, заметки, адрес, поле без подписи,
+//     заголовок группы;
+//   • поле «только для чтения» — одной строкой «подпись значение»: подпись
+//     над тем, что нельзя править, только занимает место (закупка:
+//     сделка · счёт · расчёт; лазер: толщина · масса).
+.o_form_view.pmk-labels-top-groups .o_inner_group.grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 10px 12px;
+  align-items: start;
+
+  > :not(.o_pmk_row) {
     grid-column: 1 / -1 !important;
   }
 
-  > .o_wrap_label {
-    margin: 10px 0 3px;
-    padding: 0;
+  > .o_pmk_row {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+    grid-column: span 1;
 
-    .o_form_label {
+    > .o_cell {
+      margin: 0 !important;
+      padding: 0;
+      min-width: 0;
+      width: 100%;
+    }
+
+    > .o_wrap_label .o_form_label {
       font-size: 12px;
       line-height: 16px;
       white-space: nowrap;
@@ -172,12 +191,21 @@ body {
     }
   }
 
-  > .o_wrap_label:first-child,
-  > .g-col-sm-2 + .o_wrap_label {
-    margin-top: 0;
+  // Во всю ширину группы.
+  > .o_pmk_row:not(:has(> .o_wrap_label)),
+  > .o_pmk_row:has(.o_field_text, .o_field_html, .o_address_format, .o_field_many2many_tags, .pmk-job-file) {
+    grid-column: 1 / -1;
   }
 
-  > .o_cell:not(.o_wrap_label) {
-    margin-bottom: 0 !important;
+  // Только для чтения — строкой: «Сделка  Запрос МК п. Горный».
+  > .o_pmk_row:has(> .o_wrap_label):has(> .o_cell:not(.o_wrap_label) > .o_readonly_modifier) {
+    flex-direction: row;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 2px 8px;
+
+    > .o_cell {
+      width: auto;
+    }
   }
 }

@@ -145,6 +145,8 @@
             "pmk_theme/static/src/js/form_head_rules.js",
             "pmk_theme/static/src/js/form_head.js",
             "pmk_theme/static/src/xml/form_head.xml",
+            # Пара «подпись + поле» в своём блоке — подписи над полями (шаг 3).
+            "pmk_theme/static/src/xml/form_group_rows.xml",
             # Кнопки-счётчики: подсказка вместо надписи, ноль серым
             # (разбор UX, шаг 3, 28.09.2026).
             "pmk_theme/static/src/js/stat_buttons.js",

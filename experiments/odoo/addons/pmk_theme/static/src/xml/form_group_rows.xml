@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <!-- Пара «подпись + поле» штатной группы — в своём блоке (шаг 3, 14.10.2026).
+         Обычно блок невидим (display: contents — ячейки остаются ячейками сетки
+         ядра, вид прежний). В формах с подписями над полями
+         (pmk-labels-top-groups, scss/type.scss) блоки встают по два в ряд:
+         без общей обёртки подпись и поле — соседние ячейки, и разложить их
+         парами нельзя. -->
+    <t t-inherit="web.Form.InnerGroup" t-inherit-mode="extension">
+        <xpath expr="//t[@t-foreach='row']" position="replace">
+            <div class="o_pmk_row">$0</div>
+        </xpath>
+    </t>
+</templates>
