@@ -12,7 +12,7 @@
     <field name="name">pmk.vent.hood.order.form</field>
     <field name="model">pmk.vent.hood.order</field>
     <field name="arch" type="xml">
-      <form string="Заказ вентзонтов" class="pmk-doc-form">
+      <form string="Заказ вентзонтов" class="pmk-doc-form pmk-labels-top">
         <header>
           <button name="action_download_all" type="object" string="Скачать всё (DXF + чертежи)"
                   class="btn-primary" icon="fa-download" invisible="not total_positions"/>
