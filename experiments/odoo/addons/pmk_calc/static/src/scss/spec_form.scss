@@ -317,6 +317,11 @@
 .pmk-pick-check {
   display: flex;
   justify-content: center;
+
+  // Пустая галочка темы почти не видна на белой строке — рамка заметнее.
+  .form-check-input:not(:checked) {
+    border-color: #9aa3ad;
+  }
 }
 
 // Категория выключена, а документ с позициями остался — черновик расчёта.
