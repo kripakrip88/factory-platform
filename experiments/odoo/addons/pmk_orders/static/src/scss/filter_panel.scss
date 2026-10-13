@@ -10,7 +10,8 @@
 
 .pmk-filter {
   flex: 0 0 100%;
-  width: min(880px, calc(100vw - 32px));
+  width: 880px;
+  max-width: calc(100vw - 32px);
   margin: -4px 0 14px;
   padding: 0 16px 14px;
   border-bottom: 1px solid var(--pmk-border, #e3e4e8);
