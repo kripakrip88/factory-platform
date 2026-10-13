@@ -24,12 +24,21 @@ body {
   font-size: var(--body-font-size);
 }
 
-// Подписи полей формы.
+// Подписи полей формы. Размер у ядра свой ($font-size-base, 14 px) — ставим
+// общий; на телефоне (до 768 px) ядро держит 16 px под палец, его не трогаем.
 .o_form_view .o_form_label,
 .o_form_view .o_wrap_label .o_form_label,
-.o_form_view .o_td_label .o_form_label {
+.o_form_view .o_td_label .o_form_label,
+.o_form_view .o_group .o_wrap_label .o_form_label {
   font-weight: 400;
   color: var(--pmk-label);
+}
+
+@media (min-width: 768px) {
+  .o_form_view .o_form_label {
+    font-size: var(--body-font-size);
+    line-height: 1.5;
+  }
 }
 
 // Шапка таблиц.
@@ -43,7 +52,12 @@ body {
   font-weight: 600;
 }
 
-// Кнопки.
+// Кнопки: размер у Bootstrap в своей переменной (14 px); маленькие и большие
+// (btn-sm / btn-lg) задают её сами — их не трогаем.
 .o_web_client .btn {
   font-weight: 500;
+}
+
+.o_web_client:not(.o_touch_device) .btn:not(.btn-sm):not(.btn-lg) {
+  --btn-font-size: var(--body-font-size);
 }

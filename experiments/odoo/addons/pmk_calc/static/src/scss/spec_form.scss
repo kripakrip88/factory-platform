@@ -298,6 +298,12 @@
   z-index: 2;
 }
 
+// Пока видны действия, названия колонок прячутся целиком: иначе из-под
+// действий выглядывает обрезок соседней подписи («…ество, шт»).
+.o_list_renderer .o_list_table:has(.pmk-pick-actions) > thead > tr > th[data-name]:not(:has(> .pmk-pick-head)) > * {
+  visibility: hidden;
+}
+
 .pmk-pick-actions {
   position: absolute;
   top: 0;
@@ -309,9 +315,6 @@
   padding: 0 12px 0 4px;
   white-space: nowrap;
   font-weight: 400;
-  background: var(--pmk-surface, #ffffff);
-  // Тень вправо — названия колонок под действиями не просвечивают краем.
-  box-shadow: 12px 0 12px -8px var(--pmk-surface, #ffffff);
 
   .btn-sm {
     padding: 2px 10px;
