@@ -45,14 +45,19 @@ export class PmkPickToggle extends BooleanToggleField {
     }
 
     // Shift с нажатием мыши выделял бы текст таблицы — не даём.
+    // Признак Shift только ставим: щелчок по подписи переключателя порождает
+    // второй, внутренний щелчок по флажку уже без Shift — он не должен его снять.
     onMouseDown(ev) {
         if (ev.shiftKey) {
             ev.preventDefault();
+            this.shift = true;
         }
     }
 
     onClickCapture(ev) {
-        this.shift = ev.shiftKey;
+        if (ev.shiftKey) {
+            this.shift = true;
+        }
     }
 
     async onChange(newValue) {
