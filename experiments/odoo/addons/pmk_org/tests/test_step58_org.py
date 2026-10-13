@@ -602,7 +602,6 @@ class TestOrgShortName(TransactionCase):
         org = self.env["pmk.org"].create({
             "name": "ИП Короткий Тест Тестович",
             "org_type": "ip",
-            "inn": "272100005999",
             "regime_ids": [Command.create({"date_from": D(2026, 1, 1), "regime": "usn0"})],
         })
         self.assertEqual(org.name, "ИП Короткий Т.Т.")
