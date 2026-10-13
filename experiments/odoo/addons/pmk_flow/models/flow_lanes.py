@@ -147,10 +147,16 @@ class PmkFlowLanes(models.AbstractModel):
                     sum(spec.sheet_line_ids.mapped('layout_sheets'))
                 sheet = self._lane_virtual(nodes[sid], 'sheet', 'Раскладка листа',
                                            'листов: %d' % sheets if sheets else 'не раскладывали', 'layout')
-                for v in (metal, sheet):
+                # Металлоизделия — это и прокат, и лист (Антон 13.10.2026): блок проката есть
+                # всегда; раскроя (РК-…) ещё нет — «не раскладывали», щелчок — вкладка
+                # «Металл» расчёта с кнопкой «Разложить прокат».
+                linear = [] if my_cuts else [self._lane_virtual(
+                    nodes[sid], 'linear', 'Раскрой проката', 'не раскладывали', 'layout')]
+                for v in [metal, sheet] + linear:
                     nodes[v['id']] = v
                     edges.append({'from': sid, 'to': v['id']})
-                rows.append({'head': [metal['id']], 'tail': my_cuts + [sheet['id']]})
+                rows.append({'head': [metal['id']],
+                             'tail': (my_cuts or [v['id'] for v in linear]) + [sheet['id']]})
                 for cid in my_cuts:
                     edges.append({'from': metal['id'], 'to': cid})
                 used.update(my_cuts)

@@ -141,6 +141,9 @@ class TestCalcNodesOfSpec(TransactionCase):
         self.assertEqual((cut["open_model"], cut["open_res_id"], cut["open_tab"]),
                          ("pmk.dobor.order", self.dobor.id, "pmk_dobor_cut"))
         self.assertTrue(lanes["shops"]["empty"])
+        metal_row = tree["rows"][0]
+        self.assertIn("pmk.metal.spec,%s:linear" % self.spec.id, metal_row["tail"],
+                      "раскроя проката нет — блок «не раскладывали», а не пусто")
         self.assertTrue(data["nodes"]["pmk.metal.spec,%s" % self.spec.id]["anchor"])
 
         self.vent.write({"line_ids": [(0, 0, {"width": 500, "length": 1000, "qty": 1,
