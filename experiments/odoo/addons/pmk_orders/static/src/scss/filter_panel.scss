@@ -102,3 +102,32 @@ body.o_nexus_dark {
     border-color: rgba(255, 255, 255, 0.2);
   }
 }
+
+// Список с боковой панелью («Заказы в работе»: Статус / Ответственный): содержимое — строка
+// «панель | ручка | список», и фильтр вставал между ними узким столбцом. Сеткой:
+// боковая панель — слева во всю высоту, справа сверху фильтр, под ним список.
+main.o_component_with_search_panel:has(> .pmk-filter) {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+
+  > * {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+
+  > .o_search_panel {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+  }
+
+  > .pmk-filter {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  > .o_renderer {
+    grid-column: 3;
+    grid-row: 2;
+  }
+}
