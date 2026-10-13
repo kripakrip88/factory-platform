@@ -59,11 +59,14 @@ body,
   font-family: var(--pmk-font);
 }
 
-// Цифры одинаковой ширины в таблицах и карточках итогов: суммы встают ровным столбиком.
-.o_list_renderer,
-.o_kanban_renderer,
-.pmk-kpi,
-.pmk-metal-table,
-.pmk-cut-table {
+// Цифры одинаковой ширины — только в числовых колонках и итогах: суммы встают ровным
+// столбиком. Не на всю таблицу: у Inter вместе с цифрами расширяется и дефис, и в
+// тексте выходило «СД - 00001», «СБ - СИГМА».
+.o_list_renderer .o_list_number,
+.o_list_renderer tfoot td,
+.pmk-kpi__value,
+.pmk-kpi .o_field_widget,
+.pmk-metal-table td.n,
+.pmk-cut-table td {
   font-variant-numeric: tabular-nums;
 }

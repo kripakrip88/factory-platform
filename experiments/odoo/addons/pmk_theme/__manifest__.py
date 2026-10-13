@@ -31,6 +31,8 @@
         # ссылаются data/dangerous_actions.xml и views/res_config_settings_views.xml
         # (разбор UX, шаг 23, 01.10.2026).
         "security/pmk_theme_groups.xml",
+        # Значок вкладки — звёздочка ПМК Парк вместо значка Odoo (13.10.2026).
+        "views/webclient_favicon.xml",
         # Группы-выключатели шага 29 (02.10.2026): «Убранное», «Склад»,
         # «Деньги» (показать). На них ссылаются виды этого модуля и
         # pmk_partner / pmk_purchase — поэтому тоже в начале.

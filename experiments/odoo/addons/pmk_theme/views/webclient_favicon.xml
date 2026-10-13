@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!-- Значок вкладки — звёздочка ПМК Парк, как на pmkpark.ru (Антон 13.10.2026: «фавикон
+       ерп сделать как наш логотип, а не одоо»). Файл — /favicon.png сайта (70×70, белый фон:
+       на тёмной полосе вкладок чёрная звёздочка без фона терялась бы). Без этого ядро ставит
+       свой значок (web.layout: x_icon or '/web/static/img/favicon.ico'). -->
+  <template id="webclient_bootstrap_favicon" inherit_id="web.webclient_bootstrap" name="ПМК: значок вкладки">
+    <xpath expr="//t[@t-call='web.layout']" position="inside">
+      <t t-set="x_icon" t-value="'/pmk_theme/static/src/img/favicon.png'"/>
+    </xpath>
+    <xpath expr="//link[@rel='apple-touch-icon']" position="attributes">
+      <attribute name="href">/pmk_theme/static/src/img/favicon.png</attribute>
+    </xpath>
+  </template>
+
+  <template id="login_layout_favicon" inherit_id="web.login_layout" name="ПМК: значок вкладки на входе">
+    <xpath expr="//t[@t-call='web.frontend_layout']" position="inside">
+      <t t-set="x_icon" t-value="'/pmk_theme/static/src/img/favicon.png'"/>
+    </xpath>
+  </template>
+</odoo>

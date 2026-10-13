@@ -276,3 +276,26 @@ class TestStep49Width(TransactionCase):
         pmk-doc-form прозрачный — поэтому 49.4 заливает обёртку виджета."""
         source = _read(FORMS_SCSS)
         self.assertIn(".o_field_float:not(.pmk-doc-form *) input.o_input {", source)
+
+
+@tagged("post_install", "-at_install")
+class TestFaviconAndFont(TransactionCase):
+    """Значок вкладки — наш (13.10.2026); шрифт Inter подключён и включён."""
+
+    def test_favicon_in_webclient(self):
+        for xmlid in ("web.webclient_bootstrap", "web.login_layout"):
+            with self.subTest(view=xmlid):
+                arch = self.env.ref(xmlid).get_combined_arch()
+                self.assertIn("/pmk_theme/static/src/img/favicon.png", arch)
+        with file_open("pmk_theme/static/src/img/favicon.png", "rb") as f:
+            self.assertEqual(f.read(8), b"\x89PNG\r\n\x1a\n")
+
+    def test_inter_asset_active(self):
+        asset = self.env.ref("pmk_theme.asset_scss_fonts")
+        self.assertTrue(asset.active)
+        with file_open("pmk_theme/static/src/scss/fonts.scss") as f:
+            css = f.read()
+        for subset in ("latin", "latin-ext", "cyrillic", "cyrillic-ext"):
+            self.assertIn("inter-%s.woff2" % subset, css)
+            with file_open("pmk_theme/static/src/fonts/inter-%s.woff2" % subset, "rb") as font:
+                self.assertEqual(font.read(4), b"wOF2")
