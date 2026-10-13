@@ -56,45 +56,38 @@ function indexIn(list, record) {
 export class PmkPickToggle extends BooleanToggleField {
     static template = "pmk_calc.PmkPickToggle";
 
-    setup() {
-        super.setup();
-        this.shift = false;
-    }
-
     // Shift с нажатием мыши выделял бы текст таблицы — не даём.
-    // Признак Shift только ставим: щелчок по подписи переключателя порождает
-    // второй, внутренний щелчок по флажку уже без Shift — он не должен его снять.
     onMouseDown(ev) {
         if (ev.shiftKey || shiftDown) {
             ev.preventDefault();
-            this.shift = true;
         }
     }
 
-    onClickCapture(ev) {
-        if (ev.shiftKey) {
-            this.shift = true;
-        }
-    }
-
-    async onChange(newValue) {
+    // Щелчок с Shift диапазон отмечает сам (до переключателя: его внутренний
+    // щелчок по флажку Shift теряет). Без Shift — обычный переключатель, а
+    // строка запоминается как начало следующего диапазона.
+    async onClickCapture(ev) {
         const record = this.props.record;
         const list = listOf(record);
-        if ((this.shift || shiftDown) && last && list && toRaw(last.list) === toRaw(list)) {
+        const name = this.props.name;
+        if ((ev.shiftKey || shiftDown) && last && list && toRaw(last.list) === toRaw(list)) {
+            ev.preventDefault();
+            ev.stopPropagation();
             const a = indexIn(list, last.record);
             const b = indexIn(list, record);
+            const value = !record.data[name];
             if (a >= 0 && b >= 0) {
                 const [from, to] = a < b ? [a, b] : [b, a];
                 for (const rec of list.records.slice(from, to + 1)) {
-                    if (toRaw(rec) !== toRaw(record) && rec.data[this.props.name] !== newValue) {
-                        await rec.update({ [this.props.name]: newValue });
+                    if (rec.data[name] !== value) {
+                        await rec.update({ [name]: value });
                     }
                 }
             }
+            last = { list, record };
+            return;
         }
         last = { list, record };
-        this.shift = false;
-        return super.onChange(newValue);
     }
 }
 
