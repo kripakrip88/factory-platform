@@ -83,7 +83,6 @@
             "pmk_calc/static/src/xml/dobor_copy_line.xml",
             # 13.10.2026: «Перенести» в списке изделий — выбор диапазона через Shift.
             "pmk_calc/static/src/js/pick_toggle.js",
-            "pmk_calc/static/src/xml/pick_toggle.xml",
             # 11.10.2026: состав вентзонта под строкой заказа, чертёж крупно.
             "pmk_calc/static/src/js/vent_hood_lines.js",
             "pmk_calc/static/src/xml/vent_hood_lines.xml",

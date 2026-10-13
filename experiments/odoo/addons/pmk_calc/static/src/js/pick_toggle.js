@@ -3,36 +3,34 @@
 // диапазона через Shift, как в проводнике (просьба Антона: «выбрал 2 позицию,
 // зажал шифт и выделил сразу 10 позиций по порядку»).
 //
-// Щелчок с Shift ставит то же значение всем строкам между прошлым щелчком и
-// этим — в порядке строк на экране. Работает в браузере, до сохранения:
-// записи вложенного списка меняются так же, как обычным щелчком.
+// В списке Odoo берёт не сам переключатель, а его списочный вариант
+// (list.boolean_toggle: щелчок по всей ячейке). Наш — такой же, плюс Shift:
+// щелчок с Shift ставит строкам между прошлым щелчком и этим то же значение,
+// что получает эта строка, — в порядке строк на экране, до сохранения.
 
 import { toRaw } from "@odoo/owl";
 import { registry } from "@web/core/registry";
+import { booleanToggleField } from "@web/views/fields/boolean_toggle/boolean_toggle_field";
 import {
-    BooleanToggleField,
-    booleanToggleField,
-} from "@web/views/fields/boolean_toggle/boolean_toggle_field";
+    ListBooleanToggleField,
+    listBooleanToggleField,
+} from "@web/views/fields/boolean_toggle/list_boolean_toggle_field";
 
-// Прошлый щелчок: список и строка. Один на страницу — список изделий один.
+// Прошлый щелчок: список и строка. Список изделий на странице один.
 let last = null;
 
-// Нажат ли Shift — по самой клавише: признак shiftKey у щелчка по переключателю
-// теряется (щелчок по подписи порождает внутренний щелчок по флажку без Shift).
+// Нажат ли Shift — и по самой клавише: у щелчка признак shiftKey бывает
+// потерян (внутренний щелчок по флажку).
 let shiftDown = false;
-window.addEventListener("keydown", (ev) => {
-    if (ev.key === "Shift") {
-        shiftDown = true;
+window.addEventListener("keydown", (ev) => ev.key === "Shift" && (shiftDown = true), true);
+window.addEventListener("keyup", (ev) => ev.key === "Shift" && (shiftDown = false), true);
+window.addEventListener("blur", () => (shiftDown = false));
+// Shift + нажатие мыши по переключателю выделяло бы текст таблицы — не даём.
+window.addEventListener("mousedown", (ev) => {
+    if ((ev.shiftKey || shiftDown) && ev.target.closest?.(".o_field_pmk_pick_toggle")) {
+        ev.preventDefault();
     }
 }, true);
-window.addEventListener("keyup", (ev) => {
-    if (ev.key === "Shift") {
-        shiftDown = false;
-    }
-}, true);
-window.addEventListener("blur", () => {
-    shiftDown = false;
-});
 
 function listOf(record) {
     const parent = record?._parentRecord;
@@ -53,26 +51,14 @@ function indexIn(list, record) {
     return list.records.findIndex((r) => toRaw(r) === raw);
 }
 
-export class PmkPickToggle extends BooleanToggleField {
-    static template = "pmk_calc.PmkPickToggle";
-
-    // Shift с нажатием мыши выделял бы текст таблицы — не даём.
-    onMouseDown(ev) {
-        if (ev.shiftKey || shiftDown) {
-            ev.preventDefault();
-        }
-    }
-
-    // Щелчок с Shift диапазон отмечает сам (до переключателя: его внутренний
-    // щелчок по флажку Shift теряет). Без Shift — обычный переключатель, а
-    // строка запоминается как начало следующего диапазона.
-    async onClickCapture(ev) {
+export class PmkPickListToggle extends ListBooleanToggleField {
+    async onClick(ev) {
         const record = this.props.record;
-        const list = listOf(record);
         const name = this.props.name;
-        if ((ev.shiftKey || shiftDown) && last && list && toRaw(last.list) === toRaw(list)) {
-            ev.preventDefault();
-            ev.stopPropagation();
+        const list = listOf(record);
+        const shift = Boolean(ev?.shiftKey) || shiftDown;
+        if (shift && last && list && toRaw(last.list) === toRaw(list)
+                && !this.props.readonly && record.isInEdition) {
             const a = indexIn(list, last.record);
             const b = indexIn(list, record);
             const value = !record.data[name];
@@ -84,14 +70,15 @@ export class PmkPickToggle extends BooleanToggleField {
                     }
                 }
             }
-            last = { list, record };
-            return;
+        } else {
+            await super.onClick(ev);
         }
         last = { list, record };
     }
 }
 
-registry.category("fields").add("pmk_pick_toggle", {
-    ...booleanToggleField,
-    component: PmkPickToggle,
+registry.category("fields").add("pmk_pick_toggle", booleanToggleField);
+registry.category("fields").add("list.pmk_pick_toggle", {
+    ...listBooleanToggleField,
+    component: PmkPickListToggle,
 });
