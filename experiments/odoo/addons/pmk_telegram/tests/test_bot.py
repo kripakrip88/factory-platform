@@ -12,13 +12,20 @@ CHAT = 3578814
 
 
 class FakeApi:
+    bot_id = 8636440433
+
     def __init__(self):
         self.sent = []      # (chat_id, text, markup)
         self.edited = []
         self.answers = []
+        self.left = []
 
-    def send(self, chat_id, text, reply_markup=None):
+    def leave_chat(self, chat_id):
+        self.left.append(chat_id)
+
+    def send(self, chat_id, text, reply_markup=None, thread_id=None):
         self.sent.append((chat_id, text, reply_markup))
+        self.threads = getattr(self, "threads", []) + [thread_id]
         return {"message_id": len(self.sent)}
 
     def edit(self, chat_id, message_id, text, reply_markup=None):
@@ -271,3 +278,126 @@ class TestTelegramDevTask(TestTelegramBot):
         lead = self._session().lead_id
         self._click(f"done:{lead.id}")
         self.assertEqual(self._session().state, "idle")
+
+
+@tagged("post_install", "-at_install")
+class TestTelegramGroup(TransactionCase):
+    """Группа: подключает только свой, пишет туда только бот."""
+
+    GROUP = -100777
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.user = cls.env["res.users"].create({
+            "name": "Антон Тест", "login": "tg_anton_grp",
+            "group_ids": [(4, cls.env.ref("sales_team.group_sale_manager").id)],
+            "pmk_telegram_id": str(CHAT),
+        })
+
+    def setUp(self):
+        super().setUp()
+        self.api = FakeApi()
+        patcher = patch.object(type(self.env["pmk.telegram.bot"]), "_pmk_api",
+                               lambda _self: self.api)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.bot = self.env["pmk.telegram.bot"].sudo()
+        self.icp = self.env["ir.config_parameter"].sudo()
+
+    def _group_msg(self, from_id=CHAT, chat_id=None, **extra):
+        msg = {"message_id": 1, "from": {"id": from_id},
+               "chat": {"id": chat_id or self.GROUP, "type": "group", "title": "Цех"}}
+        msg.update(extra)
+        self.bot.pmk_handle_update({"message": msg})
+
+    def _added(self, from_id=CHAT):
+        self._group_msg(from_id=from_id, new_chat_members=[
+            {"id": FakeApi.bot_id, "is_bot": True}])
+
+    def test_owner_adds_bot_connects_group(self):
+        self._added()
+        self.assertEqual(self.icp.get_param(bot_mod.PARAM_GROUP), str(self.GROUP))
+        self.assertEqual(self.icp.get_param(bot_mod.PARAM_GROUP_TITLE), "Цех")
+        self.assertIn("Группа подключена", self.api.sent[-1][1])
+
+    def test_stranger_adds_bot_bot_leaves(self):
+        self._added(from_id=999)
+        self.assertEqual(self.api.left, [self.GROUP])
+        self.assertFalse(self.icp.get_param(bot_mod.PARAM_GROUP))
+
+    def test_connect_command_with_bot_name(self):
+        self._group_msg(text="/connect@Dv_laba_bot")
+        self.assertEqual(self.icp.get_param(bot_mod.PARAM_GROUP), str(self.GROUP))
+
+    def test_disconnect(self):
+        self._added()
+        self._group_msg(text="/disconnect")
+        self.assertFalse(self.icp.get_param(bot_mod.PARAM_GROUP))
+
+    def test_group_chatter_ignored(self):
+        self._added()
+        sent = len(self.api.sent)
+        self._group_msg(text=bot_mod.BTN_NEW_DEAL)
+        self._group_msg(text="обычная переписка")
+        self.assertEqual(len(self.api.sent), sent)
+        self.assertFalse(self.env["pmk.telegram.session"].search(
+            [("chat_id", "=", str(self.GROUP))]))
+
+    def test_supergroup_migration_keeps_group(self):
+        self._added()
+        self._group_msg(migrate_to_chat_id=-1009999)
+        self.assertEqual(self.icp.get_param(bot_mod.PARAM_GROUP), "-1009999")
+
+    def test_send_group(self):
+        self.assertFalse(self.bot.pmk_send_group("нет группы"))
+        self._added()
+        self.assertTrue(self.bot.pmk_send_group("📋 Планёрка"))
+        self.assertEqual(self.api.sent[-1][:2], (str(self.GROUP), "📋 Планёрка"))
+
+
+@tagged("post_install", "-at_install")
+class TestTelegramGroupTopics(TestTelegramGroup):
+    """Группа с темами: пишем туда, где дали /connect; виды — по темам."""
+
+    def _topic_cmd(self, text, thread):
+        self._group_msg(text=text, message_thread_id=thread, is_topic_message=True)
+
+    def test_connect_in_topic_remembers_topic(self):
+        self._topic_cmd("/connect@Dv_laba_bot", 11)
+        self.assertEqual(self.icp.get_param(bot_mod.PARAM_THREAD % "main"), "11")
+        self.assertEqual(self.api.threads[-1], 11)
+        self.bot.pmk_send_group("всё")
+        self.assertEqual(self.api.threads[-1], "11")
+
+    def test_money_and_plan_topics(self):
+        self._topic_cmd("/connect@Dv_laba_bot", 11)
+        self._topic_cmd("/connect@Dv_laba_bot деньги", 22)
+        self._topic_cmd("/connect@Dv_laba_bot планерка", 33)
+        self.bot.pmk_send_group("💰", kind="money")
+        self.assertEqual(self.api.threads[-1], "22")
+        self.bot.pmk_send_group("📋", kind="plan")
+        self.assertEqual(self.api.threads[-1], "33")
+        self.bot.pmk_send_group("прочее")
+        self.assertEqual(self.api.threads[-1], "11")
+
+    def test_kind_without_topic_falls_back_to_main(self):
+        self._topic_cmd("/connect@Dv_laba_bot", 11)
+        self.bot.pmk_send_group("💰", kind="money")
+        self.assertEqual(self.api.threads[-1], "11")
+
+    def test_unknown_word_not_connected(self):
+        self._topic_cmd("/connect@Dv_laba_bot склад", 44)
+        self.assertIn("Не знаю вид", self.api.sent[-1][1])
+        self.assertFalse(self.icp.get_param(bot_mod.PARAM_GROUP))
+
+    def test_where_lists_routes(self):
+        self._topic_cmd("/connect@Dv_laba_bot деньги", 22)
+        self._topic_cmd("/where@Dv_laba_bot", 22)
+        self.assertIn("Поступления денег — тема №22", self.api.sent[-1][1])
+
+    def test_general_topic_has_no_thread(self):
+        self._group_msg(text="/connect@Dv_laba_bot")
+        self.assertFalse(self.icp.get_param(bot_mod.PARAM_THREAD % "main"))
+        self.bot.pmk_send_group("всё")
+        self.assertFalse(self.api.threads[-1])
