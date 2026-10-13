@@ -61,3 +61,82 @@ body {
 .o_web_client:not(.o_touch_device) .btn:not(.btn-sm):not(.btn-lg) {
   --btn-font-size: var(--body-font-size);
 }
+
+// ─── Подписи НАД полями в шапках документов (шаг 3, 13–14.10.2026) ──────────
+//
+// Антон 13.10: «почему в прототипе название строк над строками, а в ЕРП у нас
+// слева». Подпись мелко серым над полем. Включается по форме — классом
+// pmk-labels-top в <form> (по одной: расчёт, доборка, вентзонты, раскрой…);
+// остальные шапки — подпись слева (шаг 27, forms_nexus.scss).
+//
+// В шаге 27 подписи увели влево: над полем шапка росла на ~100 px. Поэтому
+// поля плотнее — сетка в четыре колонки, ширина и порядок по ИМЕНАМ блоков
+// (pmk_f_*: одинаковые во всех документах; их ставят и чужие модули —
+// pmk_deal, pmk_bridge, pmk_org, — разметку не трогаем):
+//   половина — сделка, клиент, расчёт, организация;
+//   четверть — контакт, дата, цены на дату, пропил, годный остаток;
+//   три четверти — изделие / объект; во всю ширину — предмет КП, примечание.
+// Незнакомый блок — половина, в конце перед примечанием.
+// Уже 1100 px — две колонки, уже 700 — одна.
+.o_form_view.pmk-labels-top {
+  .pmk-doc-head__fields {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px 14px;
+  }
+
+  .pmk-field {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    grid-column: span 2;
+    order: 5;
+
+    > label,
+    > label.o_form_label {
+      margin: 0;
+      font-size: 12px;
+      line-height: 16px;
+      white-space: nowrap;
+      color: var(--pmk-label);
+    }
+
+    &--wide > :not(label) {
+      grid-column: auto;
+    }
+  }
+
+  .pmk-field[name="pmk_f_deal"],
+  .pmk-field[name="pmk_f_spec"] { order: 1; }
+  .pmk-field[name="pmk_f_partner"] { order: 2; }
+
+  .pmk-field[name="pmk_f_contact"],
+  .pmk-field[name="pmk_f_date"],
+  .pmk-field[name="pmk_f_price_date"],
+  .pmk-field[name="pmk_f_kerf"],
+  .pmk-field[name="pmk_f_min_useful"] { grid-column: span 1; order: 3; }
+
+  .pmk-field[name="pmk_f_customer"] { grid-column: span 3; order: 4; }
+
+  .pmk-field[name="pmk_f_note"] { grid-column: 1 / -1; order: 9; }
+
+  @media (max-width: 1099.98px) {
+    .pmk-doc-head__fields {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .pmk-field,
+    .pmk-field[name] { grid-column: span 1; }
+
+    .pmk-field[name="pmk_f_customer"],
+    .pmk-field[name="pmk_f_note"] { grid-column: 1 / -1; }
+  }
+
+  @media (max-width: 700px) {
+    .pmk-doc-head__fields {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .pmk-field,
+    .pmk-field[name] { grid-column: 1 / -1; }
+  }
+}

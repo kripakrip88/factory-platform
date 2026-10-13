@@ -5,7 +5,7 @@
     <field name="name">pmk.metal.spec.form</field>
     <field name="model">pmk.metal.spec</field>
     <field name="arch" type="xml">
-      <form string="Расчёт" class="pmk-spec-form pmk-doc-form" js_class="pmk_spec_form">
+      <form string="Расчёт" class="pmk-spec-form pmk-doc-form pmk-labels-top" js_class="pmk_spec_form">
         <!--
           class="pmk-spec-form" — крючок для стилей формы расчёта (разбор UX,
           шаг 32: одна залитая кнопка на экран, см. scss/dobor_builder.scss).
