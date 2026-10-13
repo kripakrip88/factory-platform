@@ -52,13 +52,23 @@ function indexIn(list, record) {
 }
 
 export class PmkPickListToggle extends ListBooleanToggleField {
+    // Строка вложенного списка «в правке» не бывает (список не редактируемый),
+    // и штатный onClick списочного переключателя щелчок по ячейке пропускает.
+    // Здесь щелчок по ячейке переключает сам; по самому флажку — его штатное
+    // изменение (onChange), без двойного переключения.
     async onClick(ev) {
+        if (this.props.readonly) {
+            return;
+        }
         const record = this.props.record;
         const name = this.props.name;
         const list = listOf(record);
+        const onCheckbox = Boolean(ev?.target?.closest?.("input, label"));
         const shift = Boolean(ev?.shiftKey) || shiftDown;
-        if (shift && last && list && toRaw(last.list) === toRaw(list)
-                && !this.props.readonly && record.isInEdition) {
+        if (shift && last && list && toRaw(last.list) === toRaw(list)) {
+            if (onCheckbox) {
+                ev.preventDefault(); // флажок не переключать — диапазон ставим сами
+            }
             const a = indexIn(list, last.record);
             const b = indexIn(list, record);
             const value = !record.data[name];
@@ -70,8 +80,8 @@ export class PmkPickListToggle extends ListBooleanToggleField {
                     }
                 }
             }
-        } else {
-            await super.onClick(ev);
+        } else if (!onCheckbox) {
+            await record.update({ [name]: !record.data[name] });
         }
         last = { list, record };
     }
