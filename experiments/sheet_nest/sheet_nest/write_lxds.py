@@ -114,18 +114,26 @@ def build(parts, layouts, title, technical=None, user="sheet_nest", computer="SH
              technical=technical or technical_template(), zip_order=None, zip_mtimes=[SR.XZ.filetime(save_utc)],
              utc_offset_h=FACTORY_UTC_OFFSET_H, emf=dict(device=(2560, 1440), mm=(600, 330), face_tail=b""),
              blocks=blocks, parts=nparts, groups=groups, plates=list(plates.values()), results=results)
-    _identity(M, rng)
-    with exact_coedge():
-        raw, _ = SR.compile_lxds(M, collections.defaultdict(collections.Counter), util_mode="computed")
+    import copy as _copy
+    M0, st = _copy.deepcopy(M), rng.getstate()
+    for start in (1001, 1002, 1003):
+        # номер окна просмотра = HandleSeed+1; 768 и 1024 совпали бы с размерами экрана в том же XML, и проверка
+        # C11 пакета (xml_validate заменяет номер в тексте целиком) ложно падает — такие номера обходим
+        M = _copy.deepcopy(M0); rng.setstate(st)
+        _identity(M, rng, start)
+        with exact_coedge():
+            raw, files = SR.compile_lxds(M, collections.defaultdict(collections.Counter), util_mode="computed")
+        if b'Handle="768"' not in files["Viewports/content.xml"] and b'Handle="1024"' not in files["Viewports/content.xml"]:
+            break
     return raw, M
 
 
-def _identity(M, rng):
+def _identity(M, rng, start=1001):
     """Хэндлы, GUID, имена блоков — как spec_rebuild.fresh_identity, но запись группы общего реза получает хэндл
     сразу после вставок своей раскладки (G = R+4+m, следующая раскладка — G+1; так у CypCut 9/9 в заводских)."""
     SR = vn.spec_rebuild
     Gd = lambda: "{%s}" % str(SR.uuid.UUID(int=rng.getrandbits(128), version=4)).upper()
-    h = [1001]
+    h = [start]
 
     def take(k=1):
         a = h[0]

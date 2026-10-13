@@ -49,7 +49,7 @@ def run(inputs, W=1250.0, L=2500.0, gap=2.0, edge=2.0, thickness=None, qty=None,
     from .pack import plan, plan_coedge
     from .route import route_sheet, route_sheet_coedge
     from .write_lxds import build
-    from .verify import check
+    from .verify import check_safe as check
     from . import render
     parts, technical, warns = load_parts(inputs, qty, engrave_layers)
     for w in warns:
@@ -67,15 +67,27 @@ def run(inputs, W=1250.0, L=2500.0, gap=2.0, edge=2.0, thickness=None, qty=None,
                                     else ("пропущен: " + t["skipped"]) if "skipped" in t else t.get("error")))
     log("раскрой: %s — %d листов %g×%g (нижняя граница %d %s%s)" % (pl["method"], pl["sheets"], W, L, pl["lower_bound"],
                                                                      pl["bound_kind"], ", минимум" if pl["optimal"] else ""))
-    route_warn, x_tongue, x_parts = [], 0, 0
-    for l in pl["layouts"]:
-        if l.get("groups"):
-            r = route_sheet_coedge(l["placed"], l["groups"], parts, l["W"], l["L"])
-        else:
-            r = route_sheet(l["placed"], parts, l["W"], l["L"])
-        l["seq"], l["idle"] = r["seq"], r["idle"]
-        x_tongue += r["crossings"] * l["amount"]; x_parts += r["crossings_parts"] * l["amount"]
-        route_warn += r["warnings"]
+    from .route import CoedgeRouteError
+
+    def route_all(pl):
+        rw, xt, xp = [], 0, 0
+        for l in pl["layouts"]:
+            if l.get("groups"):
+                r = route_sheet_coedge(l["placed"], l["groups"], parts, l["W"], l["L"])
+            else:
+                r = route_sheet(l["placed"], parts, l["W"], l["L"])
+            l["seq"], l["idle"] = r["seq"], r["idle"]
+            xt += r["crossings"] * l["amount"]; xp += r["crossings_parts"] * l["amount"]
+            rw += r["warnings"]
+        return rw, xt, xp
+    try:
+        route_warn, x_tongue, x_parts = route_all(pl)
+    except CoedgeRouteError as e:
+        log("  ⚠ общий рез не применён: %s — раскладываю с зазором %g мм" % (e, gap))
+        pl = plan(parts, W, L, gap, edge, methods)
+        log("раскрой: %s — %d листов %g×%g (нижняя граница %d %s%s)" % (pl["method"], pl["sheets"], W, L, pl["lower_bound"],
+                                                                         pl["bound_kind"], ", минимум" if pl["optimal"] else ""))
+        route_warn, x_tongue, x_parts = route_all(pl)
     idle = sum(l["idle"] * l["amount"] for l in pl["layouts"])
     log("порядок резки: холостой ход %.1f м; переходов над вырезанными язычками %d, над вырезанными деталями %d" % (idle / 1000, x_tongue, x_parts))
     for w in sorted(set(route_warn)):
@@ -95,7 +107,7 @@ def run(inputs, W=1250.0, L=2500.0, gap=2.0, edge=2.0, thickness=None, qty=None,
                method=pl["method"], tried=pl["tried"], idle_m=round(idle / 1000, 2), crossings=dict(tongues=x_tongue, parts=x_parts),
                layouts=[dict(index=k + 1, amount=l["amount"], parts=dict(collections.Counter(parts[q["part"]]["name"] for q in l["placed"])),
                              idle_m=round(l["idle"] / 1000, 3)) for k, l in enumerate(pl["layouts"])],
-               totals={k: v for k, v in rr["totals"].items()}, checks=[(n, o, d) for n, o, d in rep], warnings=warns + route_warn)
+               totals={k: v for k, v in rr["totals"].items()} if rr else {}, checks=[(n, o, d) for n, o, d in rep], warnings=warns + route_warn)
     if out:
         os.makedirs(out, exist_ok=True)
         open(os.path.join(out, fname + ".lxds"), "wb").write(raw)

@@ -140,8 +140,30 @@ def end2end():
         check("%s, общий рез: в программе есть группы" % nm, b"CoedgePart" in __import__("zipfile").ZipFile(__import__("io").BytesIO(raw)).read("Nest2D/Parts/Groups/content.xml"))
 
 
+def regress_rows():
+    """Ревизия 13.10: группа из 3–6 деталей в ряд падала (порядок с серединой ряда первой — нет свободного угла)."""
+    import tempfile
+    sys.path.insert(0, os.path.join(HERE, "fixtures"))
+    import dxf_writer as DW
+    with tempfile.TemporaryDirectory() as td:
+        for n in (3, 4, 6):
+            doc = DW.DxfDoc(version="AC1015", insunits=4)
+            doc.entities.lwpolyline([(0, 0), (400, 0), (400, 300), (0, 300)], closed=True)
+            doc.entities.circle((200, 150), 20)
+            path = os.path.join(td, "плита_%dшт.dxf" % n)
+            open(path, "wb").write(doc.dxf_bytes())
+            res, raw, pl, parts = run([path], 1250, 2500, 2, 2, 3, None, "p%d" % n, None, log=lambda *a: None, coedge=True)
+            check("%d одинаковых плит, общий рез: программа есть, все проверки" % n, res["ok"] and pl.get("coedge"),
+                  "%d листов; %s" % (res["sheets"], "; ".join(c[0] for c in res["checks"] if c[1] is False)))
+    path = os.path.join(SAMPLES, "m3_grpsh.lxds")
+    if os.path.exists(path):
+        res, raw, pl, parts = run([path], 1250, 2500, 2, 2, 3, None, "m3b", None, log=lambda *a: None, coedge=True)
+        check("m3 на листе 1250×2500, общий рез: программа есть, все проверки", res["ok"], "%d листов" % res["sheets"])
+
+
 synthetic()
 factory()
+regress_rows()
 end2end()
 print("ВСЁ ВЕРНО" if not fails else "ОШИБКИ: %s" % fails)
 sys.exit(1 if fails else 0)

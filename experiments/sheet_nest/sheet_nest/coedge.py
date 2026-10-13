@@ -135,8 +135,10 @@ def _piece(sv, idx, reverse):
     return vs
 
 
-def _shape(role, verts, flag, sp, member, lead=None):
-    return dict(handle=None, kind="LwPolyline", verts=verts, flag=flag, sp=float(sp), layer=1, layer_name="0",
+def _shape(role, verts, flag, sp, member, lead=None, layer_name="0", rev=False):
+    z = -0.0 if rev else 0.0
+    verts = [(x, y, (z if b == 0 else b)) for x, y, b in verts]
+    return dict(handle=None, kind="LwPolyline", verts=verts, flag=flag, sp=float(sp), layer=1, layer_name=layer_name,
                 coedge=1 if role == "chain" else 0, outer=1, flag64=0, lead=lead, member=member, role=role)
 
 
@@ -169,38 +171,40 @@ def shared_length(A, B, tol=TOL):
     return tot
 
 
-def near_contact(A, B, safe=1.0, end_r=3.0, tol=TOL):
-    """Небезопасное сближение двух контуров: точки ближе safe мм, но не на общем участке и не у его концов
-    (там цепочка общего реза и так расходится). Вернуть (расстояние, точка) или None."""
-    # общие участки — по контурам, разбитым в точках Т-примыканий (как строит CypCut): угол одной детали на кромке
-    # другой даёт общий кусок ребра, а не всё ребро
+def near_contact(A, B, safe=1.0, end_r=3.0, tol=TOL, step=0.1):
+    """Небезопасное сближение двух контуров: точка контура A ближе safe мм к B, но не на общем участке и не у
+    точек касания (концы общих участков, вершины одного контура на другом — там контуры и сходятся в ноль, это
+    место цепочки общего реза). Вернуть (расстояние, точка) или None. Точно по парам участков: близкие пары
+    (габариты ближе safe) проходятся точками через step мм."""
     A = split_outline(A, [(v[0], v[1]) for v in B], tol)
     B = split_outline(B, [(v[0], v[1]) for v in A], tol)
-    PA = G.points(dict(kind="LwPolyline", verts=A, flag=1), 0.05)
-    shared_pts = []
-    for p, q, b in _segs(A):
-        if not b and _on(p, q, 0, _segs(B), tol):
-            shared_pts += [p, q]
-    # касание в точке (углы встык, угол на кромке): вершины одного контура на другом — там контуры и сходятся в ноль
-    SB0 = _segs(B)
-    shared_pts += [(v[0], v[1]) for v in A if min(_pt_seg((v[0], v[1]), *s) for s in SB0) <= tol]
-    SA0 = _segs(A)
-    shared_pts += [(v[0], v[1]) for v in B if min(_pt_seg((v[0], v[1]), *s) for s in SA0) <= tol]
-
-    def dens(P, step=0.5):
-        out = []
-        for a, c in zip(P, P[1:] + P[:1]):
-            n = max(1, int(math.dist(a, c) / step))
-            out += [(a[0] + (c[0] - a[0]) * k / n, a[1] + (c[1] - a[1]) * k / n) for k in range(n)]
-        return out
     SA, SB = _segs(A), _segs(B)
-    for x in dens(PA):
-        d = min(_pt_seg(x, *s) for s in SB)
-        if d <= tol or d >= safe:
+    excl = []
+    for p, q, b in SA:
+        if not b and _on(p, q, 0, SB, tol):
+            excl += [p, q]
+    excl += [(v[0], v[1]) for v in A if min(_pt_seg((v[0], v[1]), *s) for s in SB) <= tol]
+    excl += [(v[0], v[1]) for v in B if min(_pt_seg((v[0], v[1]), *s) for s in SA) <= tol]
+
+    def box(p, q, b):
+        P = _seg_sample(p, q, b, 8) if b else [p, q]
+        return min(x for x, y in P), min(y for x, y in P), max(x for x, y in P), max(y for x, y in P)
+    BB = [(s, box(*s)) for s in SB]
+    for sa in SA:
+        ba = box(*sa)
+        near = [s for s, bb in BB if not (ba[0] > bb[2] + safe or bb[0] > ba[2] + safe or ba[1] > bb[3] + safe or bb[1] > ba[3] + safe)]
+        if not near:
             continue
-        if any(math.dist(x, e) <= end_r for e in shared_pts):
-            continue
-        return d, x
+        p, q, b = sa
+        L = math.dist(p, q) if not b else _arc_of(p, q, b)[1] * abs(_arc_of(p, q, b)[3])
+        n = max(2, int(L / step) + 1)
+        for x in _seg_sample(p, q, b, n):
+            d = min(_pt_seg(x, *s) for s in near)
+            if d <= tol or d >= safe:
+                continue
+            if any(math.dist(x, e) <= end_r for e in excl):
+                continue
+            return d, x
     return None
 
 
@@ -237,7 +241,7 @@ def build_group(members, head=(0.0, 0.0), inner_order=None, tol=TOL, sp_ref=None
                 [(v[0], v[1]) for v in sv]
         inner = list(m["inner"])
         if inner_order is not None and inner:
-            inner, pos = inner_order(inner, pos, targets)
+            inner, pos = inner_order(inner, pos, targets, out)
         elif inner:
             pos = G.ends(inner[-1])[1]
         for s in inner:
@@ -270,7 +274,7 @@ def build_group(members, head=(0.0, 0.0), inner_order=None, tol=TOL, sp_ref=None
             conv = [i for i in free if convex(i)] or free
             ref = sp_ref if sp_ref is not None else pos
             sp = min((free if sp_ref is not None else conv), key=lambda i: (math.dist(ref, vs[i][:2]), i))
-            out.append(_shape("closed", vs, 1 | (2 if cw else 0), sp, k, lead_payload(sp)))
+            out.append(_shape("closed", vs, 1 | (2 if cw else 0), sp, k, lead_payload(sp), outers[k].get("layer_name"), rev))
             pos = vs[sp][:2]
         elif not all(flags):
             for r in _runs(flags):
@@ -280,7 +284,7 @@ def build_group(members, head=(0.0, 0.0), inner_order=None, tol=TOL, sp_ref=None
                 vs = _piece(sv, r, rev)
                 pos = vs[-1][:2]
                 cw = (not ccw) != rev
-                out.append(_shape("chain", vs, 4 | (2 if cw else 0), 0, k))
+                out.append(_shape("chain", vs, 4 | (2 if cw else 0), 0, k, None, outers[k].get("layer_name"), rev))
         else:
             raise ValueError("контур детали группы целиком лежит на уже вырезанном — деталь внутри соседей?")
         cut += _segs(sv)

@@ -479,10 +479,34 @@ def _seg_hits(a, b, polys, margin=1.0):
 
 
 # =========================================================================================== лист с общим резом
+class CoedgeRouteError(ValueError):
+    """Группу общего реза не удалось разрезать ни одним порядком деталей — раскладывать без общего реза."""
+
+
+def _part_crossings(tagged, polys, head):
+    """Переходы над уже вырезанными деталями: деталь вырезана после последней своей фигуры.
+    tagged — [(фигура, индекс размещения)]."""
+    last = {}
+    for k, (s, i) in enumerate(tagged):
+        last[i] = k
+    done, n, pos = [], 0, head
+    for k, (s, i) in enumerate(tagged):
+        a, b = G.ends(s)
+        if done and D(pos, a) > 1.0 and _seg_hits(pos, a, done):
+            n += 1
+        pos = b
+        if last[i] == k:
+            done.append(polys[i])
+    return n
+
+
 def route_sheet_coedge(placed, groups, parts, W, L, head=(0.0, 0.0)):
     """Лист с группами общего реза. Единицы резки — группы (блок CypCut «CoedgePart») и одиночные детали.
-    Порядок единиц — ближайший сосед по центрам + 2-opt; в группе детали идут от ближней к головке, дальше —
-    соседняя по общей кромке, ближайшая к головке (CypCut: группу резать в одну сторону, чтобы детали не теряли опору).
+    Порядок единиц — ближайший сосед по центрам + 2-opt. Порядок деталей группы — лучший из кандидатов по
+    (переходы над вырезанными язычками, над вырезанными деталями, холостой ход): малые группы — все порядки, большие —
+    обходы (соседями от ближней к головке; от крайних деталей; по центрам; полосами змейкой). Порядок, при котором у
+    первой детали нет свободного угла или деталь целиком лежит на вырезанном, CypCut не строит — пропускается; если
+    не подошёл ни один — CoedgeRouteError (раскладывать с зазором).
     Вернуть dict(seq=[("part", i, фигуры) | ("group", [i…], фигуры)], idle, crossings, crossings_parts, lead_min, warnings)."""
     from . import coedge as CE
     plans = [_PartPlan(parts[q["part"]], q["rot"], (q["dx"], q["dy"])) for q in placed]
@@ -507,26 +531,37 @@ def route_sheet_coedge(placed, groups, parts, W, L, head=(0.0, 0.0)):
                 if D(a, c) + (D(b, dd) if dd else 0) < D(a, b) + (D(c, dd) if dd else 0) - 1e-9:
                     seq_u[i:j + 1] = seq_u[i:j + 1][::-1]; improved = True
     polys = [p.poly for p in plans]
-    out, warnings, pos = [], [], head
+    out, tagged, warnings, pos = [], [], [], head
+    cut_shapes = []                       # всё вырезанное на листе (язычки прорезей)
+    cut_parts = []                        # многоугольники вырезанных деталей
 
-    def inner_order(inner, h, targets):
-        """Путь по внутренним контурам детали группы от h к ближайшей из точек начала её внешней части:
-        змейка по рядам (если ряды прорезей) или оптимизатор; лучший по холостому ходу с учётом подхода к точке."""
+    def inner_order(inner, h, targets, done=()):
+        """Путь по внутренним контурам детали группы от h к одной из точек начала её внешней части: змейка или
+        оптимизатор; лучший по (переходы над вырезанными язычками — с учётом уже вырезанного, холостой ход)."""
+        extra = tongue_polys(cut_shapes + list(done))
         best = None
         snake = snake_options(inner)
+        cands = []
         for tg in targets[:24]:
             if snake:
                 for o in snake:
                     c, where = snake_cost(o, h, tg)
-                    sh = snake_shapes(o, where)
-                    if best is None or c < best[0]:
-                        best = (c, sh)
+                    cands.append((c, snake_shapes(o, where), tg))
             if len(inner) <= EXACT_N or not snake:
                 sh, c = order(inner, h, tg)
-                if best is None or c < best[0]:
-                    best = (c, sh)
+                cands.append((c, sh, tg))
+        cands.sort(key=lambda v: v[0])
+        for c, sh, tg in cands[:40]:                     # самые короткие — с проверкой язычков
+            x = crossings(sh, h, extra)
+            own = tongue_polys(sh)
+            if sh and _seg_hits(G.ends(sh[-1])[1], tg, extra + own, margin=0.5):
+                x += 1
+            key = (x, c)
+            if best is None or key < best[0]:
+                best = (key, sh)
         sh = best[1]
         return sh, (G.ends(sh[-1])[1] if sh else h)
+
     for k in seq_u:
         kind, idx = units[k]
         if kind == "part":
@@ -537,38 +572,69 @@ def route_sheet_coedge(placed, groups, parts, W, L, head=(0.0, 0.0)):
             ok = [c for c in p.cands if fr[c] >= LEAD_FREE] or [max(p.cands, key=lambda c: fr[c])]
             if fr[ok[0]] < LEAD_FREE:
                 warnings.append("деталь %s: под подвод свободно только %.1f мм" % (p.part["name"], fr[ok[0]]))
-            best = min((p.cost(pos, c) for c in ok), key=lambda v: v[0] + CROSS_PENALTY * v[2])
-            out.append(("part", placed[i]["part"], best[1]))
-            pos = G.ends(best[1][-1])[1]
+            best = None
+            for c in ok:
+                cost, sh, x = p.cost(pos, c)
+                xp = 1 if cut_parts and _seg_hits(pos, G.ends(sh[0])[0], cut_parts) else 0
+                key = (x, xp, cost)
+                if best is None or key < best[0]:
+                    best = (key, sh)
+            sh = best[1]
+            out.append(("part", placed[i]["part"], sh))
+            tagged += [(s, i) for s in sh]
+            cut_shapes += sh
+            cut_parts.append(polys[i])
+            pos = G.ends(sh[-1])[1]
             continue
-        # группа: порядок деталей — от ближней к головке, дальше соседние по общей кромке
         outs = {i: plans[i].outer for i in idx}
         nb = {i: set() for i in idx}
         for a in idx:
             for b in idx:
                 if a < b and CE.shared_length(outs[a]["verts"], outs[b]["verts"]) > 1e-3:
                     nb[a].add(b); nb[b].add(a)
+
         def build(order_m, h):
             members = [dict(outer=plans[i].outer, inner=plans[i].inner) for i in order_m]
-            sh, end = CE.build_group(members, head=h, inner_order=inner_order)
+            try:
+                sh, end = CE.build_group(members, head=h, inner_order=inner_order)
+            except ValueError:
+                return None                       # такой порядок CypCut не строит (нет свободного угла и т.п.)
             idle_g, p0 = 0.0, h
             for s in sh:
                 a, b = G.ends(s); idle_g += D(p0, a); p0 = b
-            return idle_g + CROSS_PENALTY * crossings(sh, h), sh, end
-        if len(idx) <= GROUP_PERM_MAX:
-            # небольшая группа — все порядки деталей: средняя деталь ряда часто лучше последней (её цепочки идут по
-            # краю, и к третьей детали головка не идёт над вырезанными язычками второй)
-            best = min((build(list(perm), pos) + (perm,) for perm in itertools.permutations(idx)), key=lambda v: (v[0], v[3]))
-        else:
-            # большая группа: несколько порядков деталей, лучший по расчёту (холостой + штраф за язычки)
-            orders = []
-            done, order_m, cur = set(), [], pos                 # а) соседняя по кромке, ближайшая к головке
+            xt = crossings(sh, h, tongue_polys(cut_shapes))
+            tg = [(s, order_m[s["member"]]) for s in sh]
+            xp = 0
+            # переходы над деталями: уже вырезанные на листе + детали группы после своего последнего куска
+            last = {}
+            for n_, (s, m) in enumerate(tg):
+                last[m] = n_
+            done_p, p0 = list(cut_parts), h
+            for n_, (s, m) in enumerate(tg):
+                a, b = G.ends(s)
+                if done_p and D(p0, a) > 1.0 and _seg_hits(p0, a, done_p):
+                    xp += 1
+                p0 = b
+                if last[m] == n_:
+                    done_p.append(polys[m])
+            return (xt, xp, idle_g), sh, end, tuple(order_m)
+
+        def grow(start):
+            """Соседями по общей кромке от детали start, каждый раз ближайшая к последней вырезанной."""
+            done, order_m, cur = {start}, [start], plans[start].center
             while len(done) < len(idx):
-                cand = [i for i in idx if i not in done and (not done or nb[i] & done)] or [i for i in idx if i not in done]
+                cand = [i for i in idx if i not in done and nb[i] & done] or [i for i in idx if i not in done]
                 i = min(cand, key=lambda i: (D(cur, plans[i].center), i))
                 done.add(i); order_m.append(i); cur = plans[i].center
-            orders.append(order_m)
-            rest_, tour, cur = set(idx), [], pos                # б) обход центров: ближайший сосед + 2-opt
+            return order_m
+        orders = []
+        if len(idx) <= GROUP_PERM_MAX:
+            orders = [list(p_) for p_ in itertools.permutations(idx)]
+        else:
+            orders.append(grow(min(idx, key=lambda i: (D(pos, plans[i].center), i))))
+            for f in ((lambda b: (b[1], b[0])), (lambda b: (b[1], -b[2])), (lambda b: (-b[3], b[0])), (lambda b: (-b[3], -b[2]))):
+                orders.append(grow(min(idx, key=lambda i: (f(plans[i].poly[1]), i))))   # от крайних деталей группы
+            rest_, tour, cur = set(idx), [], pos
             while rest_:
                 i = min(rest_, key=lambda i: (D(cur, plans[i].center), i)); rest_.remove(i); tour.append(i); cur = plans[i].center
             imp = True
@@ -583,22 +649,26 @@ def route_sheet_coedge(placed, groups, parts, W, L, head=(0.0, 0.0)):
                         if new_ < old_ - 1e-9:
                             tour[a_:b_ + 1] = tour[a_:b_ + 1][::-1]; imp = True
             orders.append(tour)
-            for axis in (0, 1):                                 # в) полосами вдоль оси змейкой (CypCut: «в одну сторону»)
-                band = max(1.0, min(min(plans[i].poly[1][2 + (1 - axis)] - plans[i].poly[1][1 - axis] for i in idx), 1e9))
+            for axis in (0, 1):
+                band = max(1.0, min(plans[i].poly[1][2 + (1 - axis)] - plans[i].poly[1][1 - axis] for i in idx))
                 rows = collections.defaultdict(list)
                 for i in idx:
                     rows[int(plans[i].center[1 - axis] // band)].append(i)
                 o_, flip = [], False
                 for key_ in sorted(rows):
-                    r_ = sorted(rows[key_], key=lambda i: plans[i].center[axis], reverse=flip)
-                    o_ += r_; flip = not flip
+                    o_ += sorted(rows[key_], key=lambda i: plans[i].center[axis], reverse=flip); flip = not flip
                 orders.append(o_)
-            cands = [build(o_, pos) + (tuple(o_),) for o_ in orders]
-            best = min(cands, key=lambda v: v[0])
-        _, sh, pos, perm = best
+        cands = [c for c in (build(o_, pos) for o_ in orders) if c is not None]
+        if not cands:
+            raise CoedgeRouteError("группу из %d деталей не удалось разрезать общим резом ни одним порядком" % len(idx))
+        _, sh, pos, perm = min(cands, key=lambda v: (v[0], v[3]))
         out.append(("group", [placed[i]["part"] for i in perm], sh))
-    shapes = [s for e in out for s in e[2]]
+        tagged += [(s, perm[s["member"]]) for s in sh]
+        cut_shapes += sh
+        cut_parts += [polys[i] for i in perm]
+    shapes = [s for s, i in tagged]
     idle, p0 = 0.0, head
     for s in shapes:
         a, b = G.ends(s); idle += D(p0, a); p0 = b
-    return dict(seq=out, idle=idle, crossings=crossings(shapes, head), crossings_parts=0, lead_min=None, warnings=warnings)
+    return dict(seq=out, idle=idle, crossings=crossings(shapes, head), crossings_parts=_part_crossings(tagged, polys, head),
+                lead_min=None, warnings=warnings)
