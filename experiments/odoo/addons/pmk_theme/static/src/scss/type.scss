@@ -191,21 +191,45 @@ body {
     }
   }
 
-  // Во всю ширину группы.
+  // Поле — на ширину своей колонки (у текстовых полей ядро ставит свою
+  // узкую ширину: три адреса вставали узкими строками друг под другом).
+  > .o_pmk_row > .o_cell:not(.o_wrap_label) > .o_field_widget:not(.o_field_boolean) {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  // Во всю ширину группы: заметки, адрес из частей, теги, файл задания,
+  // поле без подписи. Текст (адрес, наименование) — по два в ряд.
   > .o_pmk_row:not(:has(> .o_wrap_label)),
-  > .o_pmk_row:has(.o_field_text, .o_field_html, .o_address_format, .o_field_many2many_tags, .pmk-job-file) {
+  > .o_pmk_row:has(.o_field_html, .o_address_format, .o_field_many2many_tags, .pmk-job-file) {
     grid-column: 1 / -1;
   }
 
   // Только для чтения — строкой: «Сделка  Запрос МК п. Горный».
+  // Значение в одну строку, длинное — с многоточием.
   > .o_pmk_row:has(> .o_wrap_label):has(> .o_cell:not(.o_wrap_label) > .o_readonly_modifier) {
     flex-direction: row;
     align-items: baseline;
-    flex-wrap: wrap;
-    gap: 2px 8px;
+    gap: 8px;
 
-    > .o_cell {
+    > .o_wrap_label {
+      flex: 0 0 auto;
       width: auto;
+    }
+
+    > .o_cell:not(.o_wrap_label) {
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+
+      > .o_field_widget,
+      > .o_field_widget * {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
     }
   }
 }
