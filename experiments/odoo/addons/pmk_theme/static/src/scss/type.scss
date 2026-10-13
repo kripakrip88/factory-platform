@@ -196,6 +196,13 @@ body {
   > .o_pmk_row > .o_cell:not(.o_wrap_label) > .o_field_widget:not(.o_field_boolean) {
     width: 100%;
     max-width: 100%;
+
+    // Поле-ссылка (клиент, контакт): у выбора своя узкая ширина.
+    .o_field_many2one_selection,
+    .o_input_dropdown {
+      width: 100%;
+      max-width: 100%;
+    }
   }
 
   // Во всю ширину группы: заметки, адрес из частей, теги, файл задания,
@@ -209,12 +216,19 @@ body {
   // Значение в одну строку, длинное — с многоточием.
   > .o_pmk_row:has(> .o_wrap_label):has(> .o_cell:not(.o_wrap_label) > .o_readonly_modifier) {
     flex-direction: row;
-    align-items: baseline;
+    align-items: center;
     gap: 8px;
+    min-height: 24px;
 
     > .o_wrap_label {
       flex: 0 0 auto;
       width: auto;
+      white-space: nowrap;
+
+      .o_form_label {
+        margin: 0;
+        padding: 0;
+      }
     }
 
     > .o_cell:not(.o_wrap_label) {
