@@ -433,3 +433,74 @@
   .n { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
   tfoot td { font-weight: 700; border-bottom: 0; }
 }
+
+// ─── Шапка расчёта: подписи НАД полями (проба шага 3, 13.10.2026) ───────────
+//
+// Антон 13.10: «почему в прототипе название строк над строками, а в ЕРП у нас
+// слева». Подписи мелко серым над полем, как в первом прототипе фильтра.
+// Пробно — только на расчёте (.pmk-spec-form); доборка, раскрой и штатные
+// формы — как были (подпись слева, шаг 27).
+//
+// В шаге 27 подписи увели влево потому, что над полем шапка росла на ~100 px.
+// Чтобы не вырасти, поля плотнее: четыре колонки, три строки вместо четырёх —
+//   Сделка | Клиент
+//   Контактное лицо · Цены на дату | Наша организация
+//   Предмет КП — во всю ширину.
+// Порядок задаёт order по именам блоков (pmk_f_*: их ставят pmk_deal,
+// pmk_bridge, pmk_org — разметку не трогаем). Незнакомый блок — в конец.
+// Уже 1100 px — две колонки, уже 700 — одна.
+.o_form_view.pmk-spec-form {
+  .pmk-doc-head__fields {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px 14px;
+  }
+
+  .pmk-field {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    grid-column: span 1;
+    order: 9;
+
+    > label,
+    > label .o_form_label {
+      margin: 0;
+      font-size: 12px;
+      line-height: 16px;
+      white-space: nowrap;
+      color: var(--pmk-label, #6b7079);
+    }
+
+    &--wide > :not(label) {
+      grid-column: auto;
+    }
+  }
+
+  .pmk-field[name="pmk_f_deal"] { grid-column: span 2; order: 1; }
+  .pmk-field[name="pmk_f_partner"] { grid-column: span 2; order: 2; }
+  .pmk-field[name="pmk_f_contact"] { order: 3; }
+  .pmk-field[name="pmk_f_price_date"] { order: 4; }
+  .pmk-field[name="pmk_f_company"],
+  .pmk-field[name="pmk_f_org"] { grid-column: span 2; order: 5; }
+  .pmk-field[name="pmk_f_note"] { grid-column: 1 / -1; order: 6; }
+
+  @media (max-width: 1099.98px) {
+    .pmk-doc-head__fields {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .pmk-field[name="pmk_f_deal"],
+    .pmk-field[name="pmk_f_partner"],
+    .pmk-field[name="pmk_f_company"],
+    .pmk-field[name="pmk_f_org"] { grid-column: span 1; }
+  }
+
+  @media (max-width: 700px) {
+    .pmk-doc-head__fields {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .pmk-field,
+    .pmk-field[name] { grid-column: 1 / -1; }
+  }
+}
