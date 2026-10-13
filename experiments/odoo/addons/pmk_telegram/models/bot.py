@@ -11,6 +11,12 @@
 
 Меню — список MENU: следующая функция бота (заявка на снабжение и т.п.) —
 ещё одна строка в нём и метод-обработчик, без переделки остального.
+
+Группа (13.10.2026): бот только ПИШЕТ в одну общую группу (итоги планёрки,
+поступления денег). Подключает её человек с доступом к боту — добавив бота в
+группу или командой /connect в ней; чужого добавившего бот покидает. Сделки
+и задачи из группы не создаются: читать переписку группы боту незачем, режим
+приватности @BotFather оставлен включённым. Отправка — pmk_send_group().
 """
 import base64
 import html
@@ -29,6 +35,8 @@ _logger = logging.getLogger(__name__)
 
 PARAM_TOKEN = "pmk_telegram.token"
 PARAM_SECRET = "pmk_telegram.webhook_secret"
+PARAM_GROUP = "pmk_telegram.group_chat_id"
+PARAM_GROUP_TITLE = "pmk_telegram.group_title"
 WEBHOOK_PATH = "/pmk_telegram/webhook"
 
 BTN_NEW_DEAL = "➕ Создать сделку"
@@ -101,6 +109,52 @@ class PmkTelegramBot(models.AbstractModel):
         elif update.get("message"):
             self._pmk_on_message(api_, update["message"])
 
+    # ── группа ────────────────────────────────────────────────────────────
+
+    @api.model
+    def pmk_send_group(self, text, reply_markup=None):
+        """Сообщение в подключённую группу. False — группы нет или не дошло."""
+        chat_id = self.env["ir.config_parameter"].sudo().get_param(PARAM_GROUP)
+        api_ = self._pmk_api()
+        if not chat_id or not api_:
+            return False
+        return bool(api_.send(chat_id, text, reply_markup))
+
+    def _pmk_set_group(self, chat_id, title):
+        icp = self.env["ir.config_parameter"].sudo()
+        icp.set_param(PARAM_GROUP, str(chat_id) if chat_id else False)
+        icp.set_param(PARAM_GROUP_TITLE, title or False)
+
+    def _pmk_on_group_message(self, api_, message):
+        chat = message["chat"]
+        icp = self.env["ir.config_parameter"].sudo()
+        # Группа стала супергруппой — у неё новый ID, старый перестаёт работать.
+        if message.get("migrate_to_chat_id"):
+            if icp.get_param(PARAM_GROUP) == str(chat["id"]):
+                icp.set_param(PARAM_GROUP, str(message["migrate_to_chat_id"]))
+            return
+        text = (message.get("text") or "").strip()
+        command = text.split()[0].split("@")[0].lower() if text.startswith("/") else ""
+        added_me = any(m.get("id") == api_.bot_id
+                       for m in message.get("new_chat_members") or [])
+        if not added_me and command not in ("/connect", "/disconnect"):
+            return
+        user = self._pmk_user(message.get("from") or {})
+        if not user:
+            # Добавил или зовёт посторонний — уходим: бот пишет в группу
+            # данные Odoo, и группу выбирают только свои.
+            if added_me:
+                api_.leave_chat(chat["id"])
+            return
+        if command == "/disconnect":
+            if icp.get_param(PARAM_GROUP) == str(chat["id"]):
+                self._pmk_set_group(False, False)
+                api_.send(chat["id"], "Группа отключена: больше ничего сюда не пишу.")
+            return
+        self._pmk_set_group(chat["id"], chat.get("title"))
+        api_.send(chat["id"], "✅ Группа подключена. Буду присылать сюда сводки "
+                              "и уведомления из Odoo. Отключить — /disconnect")
+
     def _pmk_user(self, tg_user):
         return self.env["res.users"].sudo().search(
             [("pmk_telegram_id", "=", str(tg_user.get("id")))], limit=1)
@@ -154,6 +208,9 @@ class PmkTelegramBot(models.AbstractModel):
 
     def _pmk_on_message(self, api_, message):
         chat_id = message["chat"]["id"]
+        if message["chat"].get("type") in ("group", "supergroup"):
+            self._pmk_on_group_message(api_, message)
+            return
         if message["chat"].get("type") != "private":
             return
         user = self._pmk_user(message.get("from") or {})

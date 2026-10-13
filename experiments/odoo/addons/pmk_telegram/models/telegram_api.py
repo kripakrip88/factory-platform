@@ -49,6 +49,17 @@ class TelegramApi:
             params["reply_markup"] = reply_markup
         return self.call("editMessageText", **params)
 
+    def leave_chat(self, chat_id):
+        return self.call("leaveChat", chat_id=chat_id)
+
+    @property
+    def bot_id(self):
+        """ID бота — число до двоеточия в токене (так его выдаёт @BotFather)."""
+        try:
+            return int(str(self.token).split(":", 1)[0])
+        except ValueError:
+            return None
+
     def answer_callback(self, callback_id, text=None):
         params = {"callback_query_id": callback_id}
         if text:
