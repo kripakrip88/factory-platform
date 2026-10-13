@@ -592,3 +592,20 @@ class TestStep58Org(TransactionCase):
         self.assertEqual(org.partner_id.name, "ООО «Из формы» (шаг 58)")
         self.assertEqual(org.partner_id.city, "Хабаровск", "Реквизиты — в карточку контрагента.")
         self.assertEqual(org.regime_ids.regime, "usn0")
+
+
+@tagged("post_install", "-at_install")
+class TestOrgShortName(TransactionCase):
+    """Антон 14.10.2026: в карточке «ИП Чулков В.В.», в печати КП — полное ФИО."""
+
+    def test_ip_short_in_card_full_in_print(self):
+        org = self.env["pmk.org"].create({
+            "name": "ИП Короткий Тест Тестович",
+            "org_type": "ip",
+            "inn": "272100005999",
+            "regime_ids": [Command.create({"date_from": D(2026, 1, 1), "regime": "usn0"})],
+        })
+        self.assertEqual(org.name, "ИП Короткий Т.Т.")
+        self.assertEqual(org.partner_id.pmk_legal_name, "ИП Короткий Тест Тестович")
+        self.assertEqual(org._pmk_print_name(), "ИП Короткий Тест Тестович")
+        self.assertEqual(org._pmk_print_info()["name"], "ИП Короткий Тест Тестович")

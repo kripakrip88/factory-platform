@@ -6,3 +6,4 @@
 from . import test_step28_requisites
 # «Сверить по ИНН» (шаг З-17): ответ справочника подменён, в DaData не ходит.
 from . import test_z17_check_by_inn
+from . import test_short_names

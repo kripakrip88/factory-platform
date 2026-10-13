@@ -8,6 +8,8 @@ import requests
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
+from ..tools.legal_name import short_name
+
 _logger = logging.getLogger(__name__)
 
 API_URL = "https://suggestions.dadata.ru/suggestions/api/4_1/rs/findById/party"
@@ -22,6 +24,40 @@ class ResPartner(models.Model):
         help="Как в ЕГРЮЛ, с организационно-правовой формой. "
              "Идёт в договоры и печатные формы.",
     )
+    # ─── Короткое название (Антон 14.10.2026) ─────────────────────────────
+    # «ООО «ПРОЦЕСС»», «ИП Чулков В.В.» вместо «ОБЩЕСТВО С ОГРАНИЧЕННОЙ
+    # ОТВЕТСТВЕННОСТЬЮ…» и полного ФИО. Сокращаем при любой записи названия —
+    # руками, по ИНН, из МоегоСклада; длинное уходит в «Полное наименование»,
+    # если там пусто (договоры, печать). Контекст pmk_keep_full_name — не
+    # сокращать.
+    @api.model
+    def _pmk_short_vals(self, vals):
+        name = vals.get("name")
+        if not name or self.env.context.get("pmk_keep_full_name"):
+            return vals, None
+        short = short_name(name)
+        if short == name:
+            return vals, None
+        return dict(vals, name=short), name
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        new_list = []
+        for vals in vals_list:
+            vals, full = self._pmk_short_vals(vals)
+            if full and not vals.get("pmk_legal_name"):
+                vals["pmk_legal_name"] = full
+            new_list.append(vals)
+        return super().create(new_list)
+
+    def write(self, vals):
+        vals, full = self._pmk_short_vals(vals)
+        if full and "pmk_legal_name" not in vals:
+            empty = self.filtered(lambda p: not p.pmk_legal_name)
+            if empty:
+                super(ResPartner, empty).write({"pmk_legal_name": full})
+        return super().write(vals)
+
     pmk_legal_address = fields.Text(
         "Юридический адрес",
         help="Одной строкой, как в выписке. Адрес доставки и почтовый "
@@ -74,7 +110,7 @@ class ResPartner(models.Model):
             house = addr_data.get("house_with_type") or ""
             street = " ".join(x for x in (addr_data["street_with_type"], house) if x)
         values = {
-            "name": name.get("short_with_opf") or name.get("full_with_opf") or False,
+            "name": short_name(name.get("short_with_opf") or name.get("full_with_opf")) or False,
             "pmk_legal_name": name.get("full_with_opf") or False,
             "pmk_legal_address": address.get("value") or False,
             "pmk_dadata_status": self._pmk_status_label(state.get("status")),

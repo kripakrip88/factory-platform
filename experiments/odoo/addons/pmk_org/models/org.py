@@ -14,6 +14,7 @@ res.company тот же partner_id — перенос без потерь.
 """
 
 from odoo import _, api, fields, models
+from odoo.addons.pmk_dadata.tools.legal_name import ip_full_print_name
 from odoo.exceptions import ValidationError
 
 from odoo.addons.pmk_bridge.tools import seller
@@ -196,6 +197,18 @@ class PmkOrg(models.Model):
         rate = tax.amount if tax and tax.amount_type == "percent" else rg.RATES[row.regime]
         return seller.tax_line(rate, total, usn=rg.is_usn(row.regime))
 
+    def _pmk_print_name(self):
+        """Название продавца в печати. В карточке ИП — коротко («ИП Чулков
+        В.В.», Антон 14.10.2026), в КП — с полным ФИО, как печаталось до сих
+        пор: из «Полного наименования» карточки, иначе из названия."""
+        self.ensure_one()
+        if self.org_type == "ip":
+            full = ip_full_print_name(self.partner_id.pmk_legal_name) \
+                or ip_full_print_name(self.name)
+            if full:
+                return full
+        return self.name
+
     def _pmk_print_info(self):
         """Реквизиты для печати — словарём (pmk_bridge/tools/seller.py)."""
         self.ensure_one()
@@ -203,7 +216,7 @@ class PmkOrg(models.Model):
         partner = org.partner_id
         bank = org.bank_id or partner.bank_ids[:1]
         return seller.seller_info(
-            name=org.name,
+            name=org._pmk_print_name(),
             inn=org.inn,
             kpp=org.kpp,
             org_type=org.org_type,
