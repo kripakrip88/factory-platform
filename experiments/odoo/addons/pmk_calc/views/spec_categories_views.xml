@@ -41,7 +41,7 @@
         <field name="pmk_pick" widget="boolean_toggle" string="Перенести" width="90px" optional="show"/>
       </xpath>
       <xpath expr="//field[@name='product_ids']/list/field[@name='note']" position="after">
-        <field name="pmk_move_hint" optional="show" string="Подсказка"/>
+        <field name="pmk_move_hint" optional="show" string="Подсказка" width="110px"/>
       </xpath>
       <xpath expr="//page[@name='composition']" position="after">
         <page string="Доборные элементы" name="pmk_cat_dobor" invisible="not cat_dobor and not dobor_order_ids">

@@ -63,7 +63,7 @@ class MetalSpecProductMove(models.Model):
 
     pmk_pick = fields.Boolean("Перенести", copy=False,
                               help="Отметить, чтобы перенести изделие в доборку или вентзонты расчёта.")
-    pmk_move_hint = fields.Selection([("dobor", "похоже на доборку"), ("vent", "похоже на вентзонт")],
+    pmk_move_hint = fields.Selection([("dobor", "→ доборка"), ("vent", "→ вентзонт")],
                                      "Подсказка", compute="_compute_pmk_move_hint")
 
     @api.depends("name")
