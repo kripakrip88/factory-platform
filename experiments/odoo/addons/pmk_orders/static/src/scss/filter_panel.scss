@@ -4,10 +4,11 @@
 // Цвета — переменными темы (в тёмной теме dark.scss задаёт свои).
 
 // Окно ползунков: фильтр — во всю ширину сверху, три колонки ядра — под ним.
-// Ширина окна — по фильтру (~920 px), а не во весь экран.
+// Ширина окна — по фильтру (~920 px), а не во весь экран (у ядра w-md-auto
+// с !important — перебиваем тем же).
 .o_search_bar_menu:has(> .pmk-filter) {
   flex-wrap: wrap !important;
-  width: 920px;
+  width: 920px !important;
   max-width: calc(100vw - 16px);
 }
 
@@ -47,6 +48,7 @@
 .pmk-filter__grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-flow: row dense;
   gap: 10px 14px;
 }
 
