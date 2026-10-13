@@ -119,6 +119,11 @@ body {
 
   .pmk-field[name="pmk_f_note"] { grid-column: 1 / -1; order: 9; }
 
+  // Раскрой: примечание — в свободную четверть второй строки (дата · пропил ·
+  // остаток · примечание). Во всю ширину оно добавляло третью строку, и шапка
+  // раскроя (её высоту задают поля, не карточки) вырастала на ~23 px.
+  &.pmk-cut-form .pmk-field[name="pmk_f_note"] { grid-column: span 1; order: 4; }
+
   @media (max-width: 1099.98px) {
     .pmk-doc-head__fields {
       grid-template-columns: repeat(2, minmax(0, 1fr));
