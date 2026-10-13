@@ -14,7 +14,7 @@ res.company тот же partner_id — перенос без потерь.
 """
 
 from odoo import _, api, fields, models
-from odoo.addons.pmk_dadata.tools.legal_name import ip_full_print_name
+from odoo.addons.pmk_dadata.tools.legal_name import ip_full_print_name, short_name
 from odoo.exceptions import ValidationError
 
 from odoo.addons.pmk_bridge.tools import seller
@@ -115,6 +115,12 @@ class PmkOrg(models.Model):
         Partner = self.env["res.partner"]
         ru = self.env.ref("base.ru", raise_if_not_found=False)
         for vals in vals_list:
+            # Короткое название (Антон 14.10.2026) — и у организации, и в
+            # карточке: зеркало хранится в обеих таблицах, и сокращённая одна
+            # карточка оставила бы у организации длинное.
+            full = vals.get("name")
+            if full and not self.env.context.get("pmk_keep_full_name"):
+                vals["name"] = short_name(full)
             if not vals.get("partner_id"):
                 # Карточка контрагента — первой: реквизиты из vals (ИНН,
                 # адрес…) записываются в неё через зеркала после создания.
@@ -122,6 +128,9 @@ class PmkOrg(models.Model):
                     "name": vals.get("name") or _("Новая организация"),
                     "is_company": True,
                     "country_id": ru.id if ru else False,
+                    # Длинное — в «Полное наименование»: из него печать КП
+                    # берёт полное ФИО ИП (_pmk_print_name).
+                    "pmk_legal_name": full if full and full != vals.get("name") else False,
                 })
                 vals["partner_id"] = partner.id
             elif not vals.get("name"):
@@ -134,6 +143,14 @@ class PmkOrg(models.Model):
         return orgs
 
     def write(self, vals):
+        full = vals.get("name")
+        if full and not self.env.context.get("pmk_keep_full_name"):
+            short = short_name(full)
+            if short != full:
+                vals = dict(vals, name=short)
+                empty = self.partner_id.filtered(lambda p: not p.pmk_legal_name)
+                if empty:
+                    empty.write({"pmk_legal_name": full})
         res = super().write(vals)
         if vals.get("is_default"):
             self.filtered("is_default")[-1:]._pmk_make_only_default()
