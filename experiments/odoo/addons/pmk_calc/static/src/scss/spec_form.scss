@@ -345,6 +345,11 @@
   .pmk-row-delete.btn {
     padding: 0;
   }
+
+  // Своя корзина (вкладки калькуляторов) — тот же промежуток 9 px, что у штатной.
+  .pmk-row-delete.btn {
+    margin-left: 5px;
+  }
 }
 
 .pmk-pick-check {
