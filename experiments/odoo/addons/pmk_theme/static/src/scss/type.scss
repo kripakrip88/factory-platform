@@ -154,6 +154,12 @@ body {
   grid-template-columns: minmax(0, 1fr) !important;
   row-gap: 0;
 
+  // Ячейки поля ядро ставит во вторую колонку (и разделитель — через две):
+  // при одной колонке сетка достраивала лишнюю, поле уезжало вправо.
+  > * {
+    grid-column: 1 / -1 !important;
+  }
+
   > .o_wrap_label {
     margin: 10px 0 3px;
     padding: 0;
