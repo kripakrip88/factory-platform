@@ -17,6 +17,11 @@
 группу или командой /connect в ней; чужого добавившего бот покидает. Сделки
 и задачи из группы не создаются: читать переписку группы боту незачем, режим
 приватности @BotFather оставлен включённым. Отправка — pmk_send_group().
+
+Темы (комнаты) группы: бот пишет в ту тему, где дали /connect. Разные виды
+уведомлений — в разные темы: «/connect деньги» в теме «Финансы» — поступления
+туда, остальное — в тему простого /connect. Виды — GROUP_KINDS; /where —
+куда что идёт.
 """
 import base64
 import html
@@ -37,6 +42,15 @@ PARAM_TOKEN = "pmk_telegram.token"
 PARAM_SECRET = "pmk_telegram.webhook_secret"
 PARAM_GROUP = "pmk_telegram.group_chat_id"
 PARAM_GROUP_TITLE = "pmk_telegram.group_title"
+# Тема группы для вида уведомлений: pmk_telegram.thread.<вид>. «main» — всё,
+# у чего своей темы нет.
+PARAM_THREAD = "pmk_telegram.thread.%s"
+# вид → (слово в команде, подпись). Новый вид — строка здесь.
+GROUP_KINDS = {
+    "main": ("", "Основное"),
+    "money": ("деньги", "Поступления денег"),
+    "plan": ("планёрка", "Итоги планёрки"),
+}
 WEBHOOK_PATH = "/pmk_telegram/webhook"
 
 BTN_NEW_DEAL = "➕ Создать сделку"
@@ -112,18 +126,42 @@ class PmkTelegramBot(models.AbstractModel):
     # ── группа ────────────────────────────────────────────────────────────
 
     @api.model
-    def pmk_send_group(self, text, reply_markup=None):
-        """Сообщение в подключённую группу. False — группы нет или не дошло."""
-        chat_id = self.env["ir.config_parameter"].sudo().get_param(PARAM_GROUP)
+    def pmk_send_group(self, text, reply_markup=None, kind="main"):
+        """Сообщение в подключённую группу, в тему этого вида уведомлений.
+
+        Своей темы у вида нет — в тему «main», нет и её — в «Общую».
+        False — группы нет или сообщение не дошло.
+        """
+        icp = self.env["ir.config_parameter"].sudo()
+        chat_id = icp.get_param(PARAM_GROUP)
         api_ = self._pmk_api()
         if not chat_id or not api_:
             return False
-        return bool(api_.send(chat_id, text, reply_markup))
+        thread = (icp.get_param(PARAM_THREAD % kind)
+                  or icp.get_param(PARAM_THREAD % "main"))
+        return bool(api_.send(chat_id, text, reply_markup, thread_id=thread))
 
     def _pmk_set_group(self, chat_id, title):
         icp = self.env["ir.config_parameter"].sudo()
+        if str(chat_id or "") != (icp.get_param(PARAM_GROUP) or ""):
+            # Другая группа — темы старой группы к ней не относятся.
+            for kind in GROUP_KINDS:
+                icp.set_param(PARAM_THREAD % kind, False)
         icp.set_param(PARAM_GROUP, str(chat_id) if chat_id else False)
         icp.set_param(PARAM_GROUP_TITLE, title or False)
+
+    def _pmk_routes_text(self):
+        icp = self.env["ir.config_parameter"].sudo()
+        main = icp.get_param(PARAM_THREAD % "main")
+        lines = []
+        for kind, (_word, label) in GROUP_KINDS.items():
+            own = icp.get_param(PARAM_THREAD % kind)
+            where = ("тема №%s" % own if own else
+                     "как основное" if kind != "main" else "«Общая»")
+            if kind != "main" and not own and main:
+                where = "как основное (тема №%s)" % main
+            lines.append("• %s — %s" % (label, where))
+        return "\n".join(lines)
 
     def _pmk_on_group_message(self, api_, message):
         chat = message["chat"]
@@ -134,11 +172,16 @@ class PmkTelegramBot(models.AbstractModel):
                 icp.set_param(PARAM_GROUP, str(message["migrate_to_chat_id"]))
             return
         text = (message.get("text") or "").strip()
-        command = text.split()[0].split("@")[0].lower() if text.startswith("/") else ""
+        words = text.split()
+        command = words[0].split("@")[0].lower() if text.startswith("/") else ""
+        arg = " ".join(words[1:]).strip().lower()
         added_me = any(m.get("id") == api_.bot_id
                        for m in message.get("new_chat_members") or [])
-        if not added_me and command not in ("/connect", "/disconnect"):
+        if not added_me and command not in ("/connect", "/disconnect", "/where"):
             return
+        # Тема, где написали: у сообщения в теме — её номер; «Общая» — без.
+        thread = (message.get("message_thread_id")
+                  if message.get("is_topic_message") else None)
         user = self._pmk_user(message.get("from") or {})
         if not user:
             # Добавил или зовёт посторонний — уходим: бот пишет в группу
@@ -149,11 +192,32 @@ class PmkTelegramBot(models.AbstractModel):
         if command == "/disconnect":
             if icp.get_param(PARAM_GROUP) == str(chat["id"]):
                 self._pmk_set_group(False, False)
-                api_.send(chat["id"], "Группа отключена: больше ничего сюда не пишу.")
+                api_.send(chat["id"], "Группа отключена: больше ничего сюда не пишу.",
+                          thread_id=thread)
+            return
+        if command == "/where":
+            if icp.get_param(PARAM_GROUP) == str(chat["id"]):
+                api_.send(chat["id"], "Куда пишу:\n" + self._pmk_routes_text(),
+                          thread_id=thread)
+            return
+        kind = next((k for k, (word, _l) in GROUP_KINDS.items()
+                     if word and arg.startswith(word.replace("ё", "е"))
+                     or word and arg.startswith(word)), "main")
+        if arg and kind == "main":
+            words_hint = ", ".join(w for w, _l in GROUP_KINDS.values() if w)
+            api_.send(chat["id"], "Не знаю вид «%s». Есть: %s — или просто "
+                      "/connect для основного." % (_esc(arg), words_hint),
+                      thread_id=thread)
             return
         self._pmk_set_group(chat["id"], chat.get("title"))
-        api_.send(chat["id"], "✅ Группа подключена. Буду присылать сюда сводки "
-                              "и уведомления из Odoo. Отключить — /disconnect")
+        icp.set_param(PARAM_THREAD % kind, str(thread) if thread else False)
+        label = GROUP_KINDS[kind][1]
+        api_.send(chat["id"],
+                  "✅ Группа подключена. %s — пишу сюда.\n\n%s\n\nДругое уведомление в другую "
+                  "тему — /connect с его словом там (например «/connect деньги»). "
+                  "Куда что — /where. Отключить — /disconnect"
+                  % (label, self._pmk_routes_text()),
+                  thread_id=thread)
 
     def _pmk_user(self, tg_user):
         return self.env["res.users"].sudo().search(

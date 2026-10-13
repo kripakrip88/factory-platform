@@ -23,8 +23,9 @@ class FakeApi:
     def leave_chat(self, chat_id):
         self.left.append(chat_id)
 
-    def send(self, chat_id, text, reply_markup=None):
+    def send(self, chat_id, text, reply_markup=None, thread_id=None):
         self.sent.append((chat_id, text, reply_markup))
+        self.threads = getattr(self, "threads", []) + [thread_id]
         return {"message_id": len(self.sent)}
 
     def edit(self, chat_id, message_id, text, reply_markup=None):
@@ -353,3 +354,50 @@ class TestTelegramGroup(TransactionCase):
         self._added()
         self.assertTrue(self.bot.pmk_send_group("📋 Планёрка"))
         self.assertEqual(self.api.sent[-1][:2], (str(self.GROUP), "📋 Планёрка"))
+
+
+@tagged("post_install", "-at_install")
+class TestTelegramGroupTopics(TestTelegramGroup):
+    """Группа с темами: пишем туда, где дали /connect; виды — по темам."""
+
+    def _topic_cmd(self, text, thread):
+        self._group_msg(text=text, message_thread_id=thread, is_topic_message=True)
+
+    def test_connect_in_topic_remembers_topic(self):
+        self._topic_cmd("/connect@Dv_laba_bot", 11)
+        self.assertEqual(self.icp.get_param(bot_mod.PARAM_THREAD % "main"), "11")
+        self.assertEqual(self.api.threads[-1], 11)
+        self.bot.pmk_send_group("всё")
+        self.assertEqual(self.api.threads[-1], "11")
+
+    def test_money_and_plan_topics(self):
+        self._topic_cmd("/connect@Dv_laba_bot", 11)
+        self._topic_cmd("/connect@Dv_laba_bot деньги", 22)
+        self._topic_cmd("/connect@Dv_laba_bot планерка", 33)
+        self.bot.pmk_send_group("💰", kind="money")
+        self.assertEqual(self.api.threads[-1], "22")
+        self.bot.pmk_send_group("📋", kind="plan")
+        self.assertEqual(self.api.threads[-1], "33")
+        self.bot.pmk_send_group("прочее")
+        self.assertEqual(self.api.threads[-1], "11")
+
+    def test_kind_without_topic_falls_back_to_main(self):
+        self._topic_cmd("/connect@Dv_laba_bot", 11)
+        self.bot.pmk_send_group("💰", kind="money")
+        self.assertEqual(self.api.threads[-1], "11")
+
+    def test_unknown_word_not_connected(self):
+        self._topic_cmd("/connect@Dv_laba_bot склад", 44)
+        self.assertIn("Не знаю вид", self.api.sent[-1][1])
+        self.assertFalse(self.icp.get_param(bot_mod.PARAM_GROUP))
+
+    def test_where_lists_routes(self):
+        self._topic_cmd("/connect@Dv_laba_bot деньги", 22)
+        self._topic_cmd("/where@Dv_laba_bot", 22)
+        self.assertIn("Поступления денег — тема №22", self.api.sent[-1][1])
+
+    def test_general_topic_has_no_thread(self):
+        self._group_msg(text="/connect@Dv_laba_bot")
+        self.assertFalse(self.icp.get_param(bot_mod.PARAM_THREAD % "main"))
+        self.bot.pmk_send_group("всё")
+        self.assertFalse(self.api.threads[-1])

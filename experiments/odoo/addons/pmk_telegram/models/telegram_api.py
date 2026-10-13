@@ -35,11 +35,14 @@ class TelegramApi:
             return None
         return data.get("result")
 
-    def send(self, chat_id, text, reply_markup=None):
+    def send(self, chat_id, text, reply_markup=None, thread_id=None):
         params = {"chat_id": chat_id, "text": text, "parse_mode": "HTML",
                   "disable_web_page_preview": True}
         if reply_markup:
             params["reply_markup"] = reply_markup
+        # Тема (комната) группы с темами; без неё — «Общая».
+        if thread_id:
+            params["message_thread_id"] = int(thread_id)
         return self.call("sendMessage", **params)
 
     def edit(self, chat_id, message_id, text, reply_markup=None):
