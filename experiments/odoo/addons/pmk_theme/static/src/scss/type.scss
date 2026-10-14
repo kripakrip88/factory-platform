@@ -11,12 +11,13 @@
 
 :root {
   --body-font-size: 0.8125rem;
-  --pmk-label: #6b7079;
+  // 14.10: светло-серые подписи «очень плохо видно» (Антон) — темнее: 8:1 к белому.
+  --pmk-label: #474b53;
   --pmk-head: #4b4f58;
 }
 
 body.o_nexus_dark {
-  --pmk-label: #9a9ea6;
+  --pmk-label: #c4c7cc;
   --pmk-head: #b4b7bd;
 }
 
@@ -94,7 +95,8 @@ body {
     > label,
     > label.o_form_label {
       margin: 0;
-      font-size: 12px;
+      font-size: 12.5px;
+      font-weight: 500;
       line-height: 16px;
       white-space: nowrap;
       color: var(--pmk-label);
@@ -184,7 +186,8 @@ body {
     }
 
     > .o_wrap_label .o_form_label {
-      font-size: 12px;
+      font-size: 12.5px;
+      font-weight: 500;
       line-height: 16px;
       white-space: nowrap;
       color: var(--pmk-label);
