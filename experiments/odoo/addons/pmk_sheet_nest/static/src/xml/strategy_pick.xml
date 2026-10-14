@@ -12,7 +12,8 @@
                 t-att-title="props.readonly ? '' : 'Выбрать: ' + c.label"
                 t-on-click="() => this.pick(c)">
               <t t-esc="c.label"/>
-              <span t-if="c.untested" class="pmk-sn-untested" t-att-title="c.untested">не проверен</span>
+              <!-- Строка пометки есть у всех столбцов — подписи стратегий на одной линии. -->
+              <span class="pmk-sn-untested" t-att-title="c.untested or ''" t-esc="c.untested ? 'не проверен' : '\u00a0'"/>
             </th>
           </tr>
         </thead>

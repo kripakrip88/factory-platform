@@ -112,6 +112,11 @@
     box-shadow: inset 2px 0 0 var(--pmk-text-strong, #16191c), inset -2px 0 0 var(--pmk-text-strong, #16191c);
   }
 
+  tbody tr:last-child td.pmk-sn-chosen {
+    box-shadow: inset 2px 0 0 var(--pmk-text-strong, #16191c), inset -2px 0 0 var(--pmk-text-strong, #16191c),
+      inset 0 -2px 0 var(--pmk-text-strong, #16191c);
+  }
+
   thead th.pmk-sn-chosen {
     color: var(--pmk-text-strong, #16191c);
     font-weight: 700;
