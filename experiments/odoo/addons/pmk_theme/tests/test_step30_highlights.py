@@ -386,10 +386,13 @@ class TestHighlightsStep30(TransactionCase):
         compose = topbar[0].xpath("./button[contains(concat(' ', @class, ' '), ' btn-primary ')]")
         self.assertEqual(len(compose), 1, "«Написать» — единственная залитая в строке почты")
         self.assertTrue(composer.xpath("//div[contains(concat(' ', @class, ' '), ' o_mail_client_composer ')]"))
+        # Две «Отправить»: окно на всю ширину и ответ под письмом (редизайн
+        # почты, шаг 6) — в разных ветках t-if, на экране всегда одна.
         send = composer.xpath("//div[contains(concat(' ', @class, ' '), ' o_mail_client_composer_footer ')]"
-                              "/button[contains(concat(' ', @class, ' '), ' btn-primary ')]")
-        self.assertEqual(len(send), 1)
-        self.assertNotIn("btn-sm", _classes(send[0]), "«Отправить» не должна попасть под правило «</>»")
+                              "//button[contains(concat(' ', @class, ' '), ' btn-primary ')]")
+        self.assertEqual(len(send), 2)
+        for button in send:
+            self.assertNotIn("btn-sm", _classes(button), "«Отправить» не должна попасть под правило «</>»")
         code = [b for b in composer.iter("button") if "btn-primary" in (b.get("t-att-class") or "")]
         self.assertEqual(len(code), 1)
         self.assertIn("btn-sm", _classes(code[0]))
