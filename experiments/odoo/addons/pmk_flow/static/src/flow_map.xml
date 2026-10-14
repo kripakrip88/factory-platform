@@ -11,8 +11,8 @@
              t-att-tabindex="node(nid).clickable ? '0' : '-1'"
              t-att-role="node(nid).clickable ? 'link' : 'note'"
              t-att-title="node(nid).hint"
-             t-on-click="() => this.openNode(node(nid))"
-             t-on-keydown="(ev) => this.onNodeKeydown(ev, node(nid))"
+             t-on-click="() => this.openNode(this.node(nid))"
+             t-on-keydown="(ev) => this.onNodeKeydown(ev, this.node(nid))"
              t-on-mouseenter="() => this.setHover(nid)"
              t-on-mouseleave="() => this.setHover(null)">
             <div class="o_pmk_flow_label"><t t-esc="node(nid).label"/></div>
