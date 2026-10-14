@@ -678,6 +678,21 @@ export class MailClientInbox extends Component {
         return [];
     }
 
+    /** ПРАВКА ПМК (редизайн почты, шаг 3): фильтры меню «Ещё ▾» — те, которых
+     *  нет кружками в строке управления. */
+    get moreFilters() {
+        const quick = new Set(["all", ...this.quickFilters.map((f) => f.id)]);
+        return this.filters.filter((f) => !quick.has(f.id));
+    }
+
+    get moreFilterActive() {
+        return this.moreFilters.some((f) => f.id === this.state.filter);
+    }
+
+    get quickFiltersLabel() {
+        return _t("Quick filters");
+    }
+
     /** Повторный щелчок по нажатой кнопке-фильтру снимает фильтр. */
     async setQuickFilter(filterId) {
         await this.setFilter(toggleQuickFilter(this.state.filter, filterId));

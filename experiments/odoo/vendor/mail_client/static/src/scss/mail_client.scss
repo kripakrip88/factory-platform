@@ -1305,3 +1305,41 @@
         background-color: rgba(255, 255, 255, .1);
     }
 }
+
+// ПРАВКА ПМК (редизайн почты, шаг 3, 14.10.2026): строка управления — поиск
+// на всю ширину, кружки фильтров справа от него. На узком окне кружки не
+// переносятся строкой ниже, а уходят под прокрутку вбок.
+.o_mail_client_topbar {
+    .o_mail_client_search {
+        min-width: 12rem;
+    }
+
+    .o_mail_client_chips {
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+
+    // Кружки фильтров — тот же вид, что прежние кнопки-фильтры над списком
+    // (.o_mail_client_quick_btn выше).
+    .o_mail_client_chip {
+        padding: .1rem .6rem;
+        font-size: .8125rem;
+        border: 1px solid var(--mc-border);
+        border-radius: 999px;
+        background-color: transparent;
+        color: inherit;
+        font-weight: 500;
+        white-space: nowrap;
+
+        &:hover {
+            background-color: var(--mc-hover-bg);
+        }
+
+        &.active {
+            border-color: var(--mc-chip-active-border);
+            background-color: var(--mc-chip-active-bg);
+            color: var(--mc-chip-active-color);
+            font-weight: 600;
+        }
+    }
+}

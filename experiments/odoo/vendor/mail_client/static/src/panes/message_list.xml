@@ -26,7 +26,12 @@
         <t t-set="listItems" t-value="items"/>
         <div class="o_mail_client_list d-flex flex-column flex-shrink-0"
              t-att-class="{ o_compact: isCompact, o_has_selection: props.selectedIds.length }">
-            <div class="o_mail_client_list_header d-flex align-items-center gap-2 px-3 py-2">
+            <!-- ПРАВКА ПМК (редизайн почты, шаг 3, 14.10.2026): шапка списка —
+                 только когда выбраны письма или идёт поиск (имя папки видно
+                 слева, в папках; фильтры — кружками в строке управления).
+                 Строка писем начинается сразу под строкой управления. -->
+            <div class="o_mail_client_list_header d-flex align-items-center gap-2 px-3 py-2"
+                 t-if="props.selectedIds.length or searchScopeLabel">
                 <input type="checkbox" class="form-check-input mt-0 o_mail_client_tick"
                        t-att-checked="allTicked"
                        t-att-indeterminate="someTicked"
@@ -60,9 +65,11 @@
                 </div>
             </div>
 
+            <!-- ПРАВКА ПМК (редизайн, шаг 3): кнопки-фильтры переехали в строку
+                 управления (mail_client_action.xml, o_mail_client_chips). -->
             <div class="o_mail_client_quick d-flex align-items-center gap-1 px-2 py-1"
                  role="group" t-att-aria-label="quickFiltersLabel"
-                 t-if="props.quickFilters and props.quickFilters.length">
+                 t-if="false">
                 <button type="button" t-foreach="props.quickFilters" t-as="quick" t-key="quick.id"
                         class="btn btn-sm o_mail_client_quick_btn flex-shrink-0"
                         t-att-class="{ active: isQuickActive(quick.id) }"
@@ -228,7 +235,10 @@
                                     — <t t-esc="message.preview"/>
                                 </span>
                             </div>
-                            <div class="o_mail_client_line3" t-if="rowChips.shown.length">
+                            <!-- ПРАВКА ПМК (редизайн, шаг 3): строки одной высоты —
+                                 имена вложений не плашками, а в подсказке скрепки
+                                 (attachmentTitle). -->
+                            <div class="o_mail_client_line3" t-if="false">
                                 <i class="fa fa-paperclip text-muted" aria-hidden="true"/>
                                 <span t-foreach="rowChips.shown" t-as="name" t-key="name_index"
                                       class="o_mail_client_att" t-att-title="name" t-esc="name"/>

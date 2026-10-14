@@ -29,34 +29,11 @@
                         t-on-click="() => this.compose('new')">
                     <i class="fa fa-pencil" aria-hidden="true"/><span class="o_mail_client_label ms-1">Compose</span>
                 </button>
-                <button class="btn btn-light btn-sm"
-                        t-on-click="() => this.syncNow()"
-                        t-att-disabled="state.syncing or !activeAccount">
-                    <i class="fa fa-refresh" t-att-class="state.syncing ? 'fa-spin' : ''" aria-hidden="true"/><span class="o_mail_client_label ms-1">Sync</span>
-                </button>
-                <button class="btn btn-light btn-sm"
-                        t-att-class="state.threaded ? 'active' : ''"
-                        title="Group messages into conversations"
-                        t-on-click="() => this.toggleThreaded()">
-                    <i class="fa fa-comments-o"/>
-                </button>
-                <!-- ПРАВКА ПМК (шаг 18): штатное меню Odoo вместо своего —
-                     своё не закрывалось ни щелчком мимо, ни клавишей Esc. -->
-                <Dropdown menuClass="'o_mail_client_filter_menu'">
-                    <button class="btn btn-light btn-sm"
-                            t-att-class="state.filter !== 'all' ? 'active' : ''"
-                            title="Filter messages">
-                        <i class="fa fa-filter" aria-hidden="true"/><span class="o_mail_client_label ms-1" t-esc="activeFilter.label"/>
-                    </button>
-                    <t t-set-slot="content">
-                        <DropdownItem t-foreach="filters" t-as="item" t-key="item.id"
-                                      class="{ 'd-flex align-items-center gap-2': true, active: item.id === state.filter }"
-                                      onSelected="() => this.setFilter(item.id)">
-                            <i class="fa fa-fw" t-att-class="item.icon"/>
-                            <t t-esc="item.label"/>
-                        </DropdownItem>
-                    </t>
-                </Dropdown>
+                <!-- ПРАВКА ПМК (редизайн почты, шаг 3, 14.10.2026): одна строка
+                     управления — поиск на всю ширину, сразу за ним фильтры
+                     кружками («Все» и быстрые; редкие — в «Ещё ▾»), значками —
+                     группировка в переписки и «Синхронизировать». Ряд «Входящие»
+                     и кнопки-фильтры над списком убраны (message_list.xml). -->
                 <div class="o_mail_client_search flex-grow-1 d-flex gap-1">
                     <!-- ПРАВКА ПМК (шаг 18, Г11): ищем и по получателю.
                          ПРАВКА ПМК (шаг 41, А7): по мере ввода, во всех
@@ -76,6 +53,51 @@
                         <i class="fa" t-att-class="state.searchingServer ? 'fa-circle-o-notch fa-spin' : 'fa-server'" aria-hidden="true"/><span class="o_mail_client_label ms-1">Server</span>
                     </button>
                 </div>
+                <div class="o_mail_client_chips d-flex align-items-center gap-1 flex-shrink-0"
+                     role="group" t-att-aria-label="quickFiltersLabel">
+                    <button type="button" class="btn btn-sm o_mail_client_chip"
+                            t-att-class="{ active: state.filter === 'all' }"
+                            t-att-aria-pressed="state.filter === 'all' ? 'true' : 'false'"
+                            t-on-click="() => this.setFilter('all')">All</button>
+                    <button type="button" t-foreach="quickFilters" t-as="quick" t-key="quick.id"
+                            class="btn btn-sm o_mail_client_chip"
+                            t-att-class="{ active: state.filter === quick.id }"
+                            t-att-aria-pressed="state.filter === quick.id ? 'true' : 'false'"
+                            t-on-click="() => this.setQuickFilter(quick.id)">
+                        <t t-esc="quick.label"/>
+                    </button>
+                    <!-- ПРАВКА ПМК (шаг 18): штатное меню Odoo вместо своего —
+                         своё не закрывалось ни щелчком мимо, ни клавишей Esc.
+                         Редизайн: здесь только фильтры, которых нет кружками. -->
+                    <Dropdown menuClass="'o_mail_client_filter_menu'">
+                        <button class="btn btn-sm o_mail_client_chip"
+                                t-att-class="{ active: moreFilterActive }"
+                                title="Filter messages">
+                            <t t-if="moreFilterActive" t-esc="activeFilter.label"/><t t-else="">More</t> <i class="fa fa-caret-down ms-1" aria-hidden="true"/>
+                        </button>
+                        <t t-set-slot="content">
+                            <DropdownItem t-foreach="moreFilters" t-as="item" t-key="item.id"
+                                          class="{ 'd-flex align-items-center gap-2': true, active: item.id === state.filter }"
+                                          onSelected="() => this.setFilter(item.id)">
+                                <i class="fa fa-fw" t-att-class="item.icon"/>
+                                <t t-esc="item.label"/>
+                            </DropdownItem>
+                        </t>
+                    </Dropdown>
+                </div>
+                <button class="btn btn-light btn-sm"
+                        t-att-class="state.threaded ? 'active' : ''"
+                        title="Group messages into conversations"
+                        aria-label="Group messages into conversations"
+                        t-on-click="() => this.toggleThreaded()">
+                    <i class="fa fa-comments-o" aria-hidden="true"/>
+                </button>
+                <button class="btn btn-light btn-sm"
+                        title="Sync" aria-label="Sync"
+                        t-on-click="() => this.syncNow()"
+                        t-att-disabled="state.syncing or !activeAccount">
+                    <i class="fa fa-refresh" t-att-class="state.syncing ? 'fa-spin' : ''" aria-hidden="true"/>
+                </button>
                 <span class="o_mail_client_account_email text-muted small d-none d-lg-inline" t-if="activeAccount">
                     <t t-esc="activeAccount.email"/>
                 </span>
