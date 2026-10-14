@@ -32,4 +32,22 @@
         <field name="interval_type">minutes</field>
     </record>
 
+    <!-- Дочитка текста писем (шаг 1 редизайна почты, 14.10.2026): текст
+         сохраняется заранее, письмо открывается сразу, без ожидания mail.ru.
+         Новые — первыми, потом за mail_client.prefetch_days дней (90), без
+         спама и корзины, по mail_client.prefetch_batch писем (60) за запуск.
+         Только просмотр — отметки «прочитано» на сервере не меняются.
+         Метод — vendor/mail_client (mail.client.account._prefetch_bodies),
+         запись — здесь: новые записи в vendor не кладём (deploy.sh делает -u
+         вендору только при I18N=1). -->
+    <record id="ir_cron_pmk_mail_prefetch_bodies" model="ir.cron">
+        <field name="name">Почта: дочитка текста писем</field>
+        <field name="model_id" ref="mail_client.model_mail_client_account"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_prefetch_bodies()</field>
+        <field name="interval_number">2</field>
+        <field name="interval_type">minutes</field>
+        <field name="active" eval="True"/>
+    </record>
+
 </odoo>

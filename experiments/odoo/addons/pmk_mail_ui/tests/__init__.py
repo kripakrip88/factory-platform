@@ -33,3 +33,4 @@ from . import test_step53_open
 # Подпись без базы: python3 addons/pmk_mail_ui/tests/test_signature_rules.py
 from . import test_signature_rules
 from . import test_z14_lead_client
+from . import test_prefetch_bodies

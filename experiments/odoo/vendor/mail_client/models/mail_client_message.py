@@ -182,8 +182,7 @@ class MailClientMessage(models.Model):
         try:
             connection = self.account_id._open_connection()
             connection.select(self.folder_id.imap_path, readonly=True)
-            parts = connection.fetch_structure(self.imap_uid)
-            html, text = self._fetch_text_parts(connection, parts) if needs_body else ('', '')
+            return self._fetch_body_with(connection)
         except (ImapError, UserError) as exc:
             _logger.warning("Mail Client: body fetch failed for UID %s: %s", self.imap_uid, exc)
             self.write({
@@ -194,6 +193,21 @@ class MailClientMessage(models.Model):
         finally:
             if connection:
                 connection.close()
+
+    def _fetch_body_with(self, connection):
+        """ПРАВКА ПМК (шаг 1 редизайна почты, 14.10.2026): тело письма через
+        уже открытое соединение с выбранной папкой (EXAMINE). Так дочитка
+        (mail.client.account._prefetch_bodies) читает пачку писем одним входом
+        в ящик, а не входом на каждое письмо. Только просмотр: BODYSTRUCTURE и
+        BODY.PEEK — отметку \\Seen на сервере не ставит. Ошибки IMAP —
+        вызывающему."""
+        self.ensure_one()
+        needs_body = self.body_state != 'fetched'
+        needs_structure = self.structure_state != 'parsed'
+        if not needs_body and not needs_structure:
+            return True
+        parts = connection.fetch_structure(self.imap_uid)
+        html, text = self._fetch_text_parts(connection, parts) if needs_body else ('', '')
 
         attachments = bodystructure.attachments(parts)
         values = {'structure_state': 'parsed', 'has_attachment': bool(attachments)}

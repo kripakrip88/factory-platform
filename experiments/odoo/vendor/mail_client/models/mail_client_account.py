@@ -4,6 +4,7 @@
 import logging
 import secrets
 from collections import Counter
+from datetime import timedelta
 
 import psycopg2
 
@@ -922,6 +923,78 @@ class MailClientAccount(models.Model):
                     connection.close()
             finally:
                 self._unlock_mailbox(cr)
+
+    # ------------------------------------------------------------------
+    # ПРАВКА ПМК (шаг 1 редизайна почты, 14.10.2026): дочитка текста писем
+    # ------------------------------------------------------------------
+    # Текст письма приходил с mail.ru только при открытии — отдельным входом
+    # в ящик, 1–3 секунды, а при сбое «Не удалось загрузить» (на боевом из
+    # 8229 писем текст был у 85). Дочитка заранее сохраняет текст: сначала
+    # новые письма, потом за PREFETCH_DAYS дней, без спама и корзины.
+    # Только просмотр (EXAMINE + BODY.PEEK) — отметки «прочитано» на сервере
+    # не меняются (общие отметки с mail.ru, шаг 16). Та же блокировка ящика,
+    # что у прохода и дочитки структуры: не мешает синхронизации.
+    def _prefetch_bodies(self, days=None, limit=None):
+        """Сохранить текст до `limit` писем за `days` дней (новые — первыми).
+        Возвращает, сколько писем дочитано."""
+        self.ensure_one()
+        Param = self.env['ir.config_parameter'].sudo()
+        days = days if days is not None else int(Param.get_param('mail_client.prefetch_days', 90))
+        limit = limit if limit is not None else int(Param.get_param('mail_client.prefetch_batch', 60))
+        since = fields.Datetime.now() - timedelta(days=days)
+        Message = self.env['mail.client.message'].sudo()
+        pending = Message.search([
+            ('account_id', '=', self.id),
+            ('body_state', '=', 'header_only'),
+            ('date', '>=', since),
+            ('folder_id.role', 'not in', ('spam', 'trash')),
+            ('folder_id.active', '=', True),
+        ], order='date desc', limit=limit)
+        if not pending:
+            return 0
+
+        cr = self.env.cr
+        if not self._try_lock_mailbox(cr):
+            _logger.info("Mail Client: %s is being synchronised; body prefetch skipped.", self.email)
+            return 0
+        connection = None
+        done = 0
+        try:
+            connection = self._open_connection()
+            for folder in pending.folder_id:
+                connection.select(folder.imap_path, readonly=True)
+                for message in pending.filtered(lambda m: m.folder_id == folder):
+                    try:
+                        if message._fetch_body_with(connection):
+                            done += 1
+                    except ImapError as exc:
+                        # Одно письмо (удалено на сервере, битая структура) не
+                        # останавливает пачку: 'failed' — откроется по щелчку,
+                        # get_message_detail читает 'failed' заново.
+                        _logger.info("Mail Client: prefetch UID %s failed: %s", message.imap_uid, exc)
+                        message.write({'body_state': 'failed'})
+                cr.commit()
+        except (ImapError, UserError) as exc:
+            _logger.warning("Mail Client: body prefetch failed for %s: %s", self.email, exc)
+            cr.rollback()
+        except Exception:  # noqa: BLE001 - один ящик не останавливает крон
+            _logger.exception("Mail Client: unexpected prefetch error for %s", self.email)
+            cr.rollback()
+        finally:
+            try:
+                if connection:
+                    connection.close()
+            finally:
+                self._unlock_mailbox(cr)
+        if done:
+            _logger.info("Mail Client: %s — дочитано текстов: %s", self.email, done)
+        return done
+
+    @api.model
+    def _cron_prefetch_bodies(self):
+        for account in self._syncable_accounts():
+            account._prefetch_bodies()
+        return True
 
     @api.model
     def _cron_backfill_structures(self):
