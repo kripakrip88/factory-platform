@@ -25,6 +25,30 @@
     <field name="priority">995</field>
     <field name="active" eval="True"/>
     <field name="arch" type="xml">
+      <!-- Атрибуты — ДО переноса, на старых местах полей. Контрагент: без
+           адреса и ИНН под названием — ИНН у подписи. -->
+      <xpath expr="//group[@name='partner_details']/field[@name='partner_id']" position="attributes">
+        <attribute name="nolabel">1</attribute>
+        <attribute name="context">{'res_partner_search_mode': 'customer', 'show_address': 0, 'show_vat': False}</attribute>
+      </xpath>
+      <xpath expr="//field[@name='pmk_org_id']" position="attributes">
+        <attribute name="nolabel">1</attribute>
+      </xpath>
+      <xpath expr="//field[@name='pmk_payment_note']" position="attributes">
+        <attribute name="nolabel">1</attribute>
+        <attribute name="placeholder">100% предоплата</attribute>
+      </xpath>
+      <xpath expr="//field[@name='pmk_delivery']" position="attributes">
+        <attribute name="nolabel">1</attribute>
+      </xpath>
+      <xpath expr="//field[@name='pmk_delivery_address']" position="attributes">
+        <attribute name="nolabel">1</attribute>
+      </xpath>
+
+      <xpath expr="//group[@name='order_details']/field[@name='date_order'][not(@groups)]" position="attributes">
+        <attribute name="widget">pmk_long_datetime</attribute>
+        <attribute name="class">pmk-inv-title__date</attribute>
+      </xpath>
       <!-- Заголовок -->
       <xpath expr="//div[@name='pmk_doc_top']/div[hasclass('oe_title')]" position="attributes">
         <attribute name="class" add="pmk-inv-title" separator=" "/>
@@ -36,17 +60,15 @@
         <span class="pmk-inv-title__from">от</span>
         <xpath expr="//group[@name='order_details']/field[@name='date_order'][not(@groups)]" position="move"/>
       </xpath>
-      <xpath expr="//div[hasclass('pmk-inv-title')]/h1/field[@name='date_order']" position="attributes">
-        <attribute name="widget">pmk_long_datetime</attribute>
-        <attribute name="class">pmk-inv-title__date</attribute>
-      </xpath>
 
-      <!-- Поля шапки -->
+      <!-- Поля шапки. Сначала каркас с подписями, потом перенос полей —
+           ОТДЕЛЬНЫМИ правками position="inside": Odoo переносит узел, только
+           если xpath переноса — прямой потомок правки (вложенный в новый
+           div перенос молча не срабатывает, поле остаётся на старом месте). -->
       <xpath expr="//div[@name='pmk_doc_top']/group[@name='sale_header']" position="before">
         <div class="pmk-inv-head" name="pmk_inv_head">
           <div class="pmk-inv-f pmk-inv-half" name="pmk_f_org">
             <label for="pmk_org_id" string="Организация"/>
-            <xpath expr="//field[@name='pmk_org_id']" position="move"/>
           </div>
           <div class="pmk-inv-f pmk-inv-half" name="pmk_f_bank">
             <label for="pmk_bank_id"/>
@@ -59,34 +81,23 @@
               <label for="partner_id" string="Контрагент"/>
               <span class="pmk-inv-vat" invisible="not pmk_partner_vat">ИНН <field name="pmk_partner_vat" nolabel="1"/></span>
             </div>
-            <xpath expr="//group[@name='partner_details']/field[@name='partner_id']" position="move"/>
           </div>
           <div class="pmk-inv-f pmk-inv-half" name="pmk_f_contract">
             <label for="pmk_ms_contract" string="Договор"/>
-            <xpath expr="//field[@name='pmk_ms_contract']" position="move"/>
           </div>
           <div class="pmk-inv-f pmk-inv-half" name="pmk_f_request">
             <label for="client_order_ref" string="Заявка контрагента"/>
-            <xpath expr="//page[@name='other_information']//field[@name='client_order_ref']" position="move"/>
           </div>
           <div class="pmk-inv-f pmk-inv-half" name="pmk_f_object">
             <label for="pmk_ms_object" string="Объект"/>
-            <xpath expr="//field[@name='pmk_ms_object']" position="move"/>
           </div>
-          <div class="pmk-inv-f pmk-inv-third" name="pmk_f_lead">
-            <xpath expr="//group[@name='pmk_terms']/label[@for='pmk_lead_days']" position="move"/>
-            <xpath expr="//div[@name='pmk_lead']" position="move"/>
-          </div>
+          <div class="pmk-inv-f pmk-inv-third" name="pmk_f_lead"/>
           <div class="pmk-inv-f pmk-inv-third" name="pmk_f_payment">
             <label for="pmk_payment_note" string="Условия оплаты"/>
-            <xpath expr="//field[@name='pmk_payment_note']" position="move"/>
           </div>
           <div class="pmk-inv-f pmk-inv-third" name="pmk_f_delivery">
             <label for="pmk_delivery" string="Условия доставки"/>
-            <div class="pmk-inv-delivery">
-              <xpath expr="//field[@name='pmk_delivery']" position="move"/>
-              <xpath expr="//field[@name='pmk_delivery_address']" position="move"/>
-            </div>
+            <div class="pmk-inv-delivery" name="pmk_inv_delivery"/>
           </div>
           <div class="pmk-inv-foot" name="pmk_f_foot">
             <span class="pmk-inv-foot__item" invisible="not pmk_weight_text">
@@ -95,35 +106,45 @@
               <span class="pmk-inv-foot__muted">· по расчёту</span>
               <field name="pmk_spec_id" nolabel="1" readonly="1" class="pmk-inv-foot__link"/>
             </span>
-            <span class="pmk-inv-foot__item ms-auto" invisible="not opportunity_id">
+            <span class="pmk-inv-foot__item ms-auto" name="pmk_f_deal" invisible="not opportunity_id">
               <span class="pmk-inv-foot__k">Сделка</span>
-              <xpath expr="//group[@name='order_details']/field[@name='opportunity_id']" position="move"/>
             </span>
           </div>
         </div>
+      </xpath>
+      <xpath expr="//div[@name='pmk_f_org']" position="inside">
+        <xpath expr="//field[@name='pmk_org_id']" position="move"/>
+      </xpath>
+      <xpath expr="//div[@name='pmk_f_partner']" position="inside">
+        <xpath expr="//group[@name='partner_details']/field[@name='partner_id']" position="move"/>
+      </xpath>
+      <xpath expr="//div[@name='pmk_f_contract']" position="inside">
+        <xpath expr="//field[@name='pmk_ms_contract']" position="move"/>
+      </xpath>
+      <xpath expr="//div[@name='pmk_f_request']" position="inside">
+        <xpath expr="//page[@name='other_information']//field[@name='client_order_ref']" position="move"/>
+      </xpath>
+      <xpath expr="//div[@name='pmk_f_object']" position="inside">
+        <xpath expr="//field[@name='pmk_ms_object']" position="move"/>
+      </xpath>
+      <xpath expr="//div[@name='pmk_f_lead']" position="inside">
+        <xpath expr="//group[@name='pmk_terms']/label[@for='pmk_lead_days']" position="move"/>
+        <xpath expr="//div[@name='pmk_lead']" position="move"/>
+      </xpath>
+      <xpath expr="//div[@name='pmk_f_payment']" position="inside">
+        <xpath expr="//field[@name='pmk_payment_note']" position="move"/>
+      </xpath>
+      <xpath expr="//div[@name='pmk_inv_delivery']" position="inside">
+        <xpath expr="//field[@name='pmk_delivery']" position="move"/>
+        <xpath expr="//field[@name='pmk_delivery_address']" position="move"/>
+      </xpath>
+      <xpath expr="//span[@name='pmk_f_deal']" position="inside">
+        <xpath expr="//group[@name='order_details']/field[@name='opportunity_id']" position="move"/>
       </xpath>
       <xpath expr="//div[@name='pmk_doc_top']/group[@name='sale_header']" position="attributes">
         <attribute name="invisible">1</attribute>
       </xpath>
 
-      <!-- Контрагент: без адреса и ИНН под названием — ИНН у подписи. -->
-      <xpath expr="//div[@name='pmk_f_partner']/field[@name='partner_id']" position="attributes">
-        <attribute name="nolabel">1</attribute>
-        <attribute name="context">{'res_partner_search_mode': 'customer', 'show_address': 0, 'show_vat': False}</attribute>
-      </xpath>
-      <xpath expr="//div[@name='pmk_f_org']/field[@name='pmk_org_id']" position="attributes">
-        <attribute name="nolabel">1</attribute>
-      </xpath>
-      <xpath expr="//div[@name='pmk_f_payment']/field[@name='pmk_payment_note']" position="attributes">
-        <attribute name="nolabel">1</attribute>
-        <attribute name="placeholder">100% предоплата</attribute>
-      </xpath>
-      <xpath expr="//div[@name='pmk_f_delivery']//field[@name='pmk_delivery']" position="attributes">
-        <attribute name="nolabel">1</attribute>
-      </xpath>
-      <xpath expr="//div[@name='pmk_f_delivery']//field[@name='pmk_delivery_address']" position="attributes">
-        <attribute name="nolabel">1</attribute>
-      </xpath>
     </field>
   </record>
 </odoo>

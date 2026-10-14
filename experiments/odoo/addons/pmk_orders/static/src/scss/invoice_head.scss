@@ -95,17 +95,28 @@
     color: var(--pmk-label);
   }
 
+  // Все поля — на всю ширину своей ячейки (у ссылок и счёта банка ядро и
+  // тема ставят свою ширину — поля одной колонки выходили разной длины).
   > .o_field_widget,
   > .o_row,
   > .pmk-inv-delivery {
-    width: 100%;
-    max-width: 100%;
+    width: 100% !important;
+    max-width: 100% !important;
   }
 
-  .o_field_many2one_selection,
-  .o_input_dropdown {
-    width: 100%;
-    max-width: 100%;
+  > .o_field_widget .o_field_many2one_selection,
+  > .o_field_widget .o_input_dropdown,
+  > .o_field_widget .o_many2one,
+  > .o_field_widget input {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  // Подпись поля «только для чтения» ядро бледнит — здесь все одного цвета.
+  .o_form_label,
+  .o_form_label.o_form_label_readonly {
+    color: var(--pmk-label) !important;
+    opacity: 1 !important;
   }
 }
 
@@ -128,13 +139,27 @@
 
 // Срок изготовления: «20 раб. дней с момента оплаты» одной строкой.
 .pmk-inv-f > .o_row {
-  display: flex;
+  display: flex !important;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 6px;
   margin: 0;
 
-  .o_pmk_lead_days {
-    max-width: 4.5em;
+  > .o_field_widget.o_pmk_lead_days {
+    flex: 0 0 4em;
+    width: 4em !important;
+    max-width: 4em !important;
+  }
+
+  > span {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  > .o_field_widget:last-child {
+    flex: 1 1 auto;
+    width: auto !important;
+    min-width: 0;
   }
 }
 
@@ -150,9 +175,15 @@
     width: auto !important;
   }
 
-  .o_field_widget:not(.o_field_radio) {
+  > .o_field_widget:not(.o_field_radio) {
     flex: 1 1 auto;
+    width: auto !important;
+    max-width: none !important;
     min-width: 0;
+
+    input {
+      width: 100% !important;
+    }
   }
 }
 
