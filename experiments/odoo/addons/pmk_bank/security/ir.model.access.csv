@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_pmk_bank_account_admin,pmk.bank.account admin,model_pmk_bank_account,base.group_system,1,1,1,1
+access_pmk_bank_payment_admin,pmk.bank.payment admin,model_pmk_bank_payment,base.group_system,1,1,1,1

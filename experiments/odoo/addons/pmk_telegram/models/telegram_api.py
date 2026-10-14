@@ -5,6 +5,7 @@
 Ошибка Телеграма не роняет обработку: вызов пишет её в журнал и возвращает
 None. Сделка важнее ответа бота — если ответ не дошёл, запись в Odoo остаётся.
 """
+import json
 import logging
 
 import requests
@@ -34,6 +35,49 @@ class TelegramApi:
             _logger.warning("Телеграм: %s → %s", method, data.get("description"))
             return None
         return data.get("result")
+
+    def call_files(self, method, files, **params):
+        """Вызов с загрузкой файлов (multipart): files = {поле: (имя, байты)}.
+
+        Вложенные структуры (reply_markup, media) Телеграм в multipart ждёт
+        строкой JSON.
+        """
+        data = {k: (json.dumps(v, ensure_ascii=False) if isinstance(v, (dict, list)) else v)
+                for k, v in params.items() if v is not None}
+        try:
+            resp = requests.post(f"{API}/bot{self.token}/{method}", data=data,
+                                 files=files, timeout=60)
+            res = resp.json()
+        except Exception:  # noqa: BLE001
+            _logger.exception("Телеграм: %s не выполнен", method)
+            return None
+        if not res.get("ok"):
+            _logger.warning("Телеграм: %s → %s", method, res.get("description"))
+            return None
+        return res.get("result")
+
+    def send_photo(self, chat_id, photo, caption=None, reply_markup=None, thread_id=None):
+        """photo — (имя, байты) для загрузки или file_id уже загруженной картинки."""
+        params = {"chat_id": chat_id, "caption": caption, "parse_mode": "HTML",
+                  "reply_markup": reply_markup,
+                  "message_thread_id": int(thread_id) if thread_id else None}
+        if isinstance(photo, tuple):
+            return self.call_files("sendPhoto", {"photo": photo}, **params)
+        params["photo"] = photo
+        return self.call("sendPhoto", **{k: v for k, v in params.items() if v is not None})
+
+    def edit_photo(self, chat_id, message_id, photo, caption=None, reply_markup=None):
+        """Заменить картинку (и подпись, кнопки) в отправленном сообщении."""
+        media = {"type": "photo", "caption": caption, "parse_mode": "HTML"}
+        params = {"chat_id": chat_id, "message_id": message_id,
+                  "reply_markup": reply_markup}
+        if isinstance(photo, tuple):
+            media["media"] = "attach://slide"
+            return self.call_files("editMessageMedia", {"slide": photo},
+                                   media=media, **params)
+        media["media"] = photo
+        return self.call("editMessageMedia", media=media,
+                         **{k: v for k, v in params.items() if v is not None})
 
     def send(self, chat_id, text, reply_markup=None, thread_id=None):
         params = {"chat_id": chat_id, "text": text, "parse_mode": "HTML",

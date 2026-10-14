@@ -23,6 +23,16 @@ class FakeApi:
     def leave_chat(self, chat_id):
         self.left.append(chat_id)
 
+    def send_photo(self, chat_id, photo, caption=None, reply_markup=None, thread_id=None):
+        self.photos = getattr(self, "photos", []) + [(chat_id, photo, caption, reply_markup)]
+        return {"message_id": 500, "photo": [{"file_id": "fid-%d" % len(self.photos),
+                                              "file_size": 10}]}
+
+    def edit_photo(self, chat_id, message_id, photo, caption=None, reply_markup=None):
+        self.edits = getattr(self, "edits", []) + [(chat_id, message_id, photo, caption, reply_markup)]
+        return {"message_id": message_id, "photo": [{"file_id": "fid-e%d" % len(self.edits),
+                                                     "file_size": 10}]}
+
     def send(self, chat_id, text, reply_markup=None, thread_id=None):
         self.sent.append((chat_id, text, reply_markup))
         self.threads = getattr(self, "threads", []) + [thread_id]
@@ -401,3 +411,66 @@ class TestTelegramGroupTopics(TestTelegramGroup):
         self.assertFalse(self.icp.get_param(bot_mod.PARAM_THREAD % "main"))
         self.bot.pmk_send_group("всё")
         self.assertFalse(self.api.threads[-1])
+
+
+@tagged("post_install", "-at_install")
+class TestTelegramCarousel(TransactionCase):
+    """Листалка: одна картинка в сообщении, «◀ n/N ▶» меняют её на месте."""
+
+    def setUp(self):
+        super().setUp()
+        self.api = FakeApi()
+        patcher = patch.object(type(self.env["pmk.telegram.bot"]), "_pmk_api",
+                               lambda _self: self.api)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.bot = self.env["pmk.telegram.bot"].sudo()
+        self.Car = self.env["pmk.telegram.carousel"]
+        self.imgs = [("l%d.jpg" % i, b"img%d" % i) for i in range(1, 4)]
+
+    def _click(self, data, message_id=500, chat=CHAT):
+        self.bot.pmk_handle_update({"callback_query": {
+            "id": "cb", "data": data, "from": {"id": 999},
+            "message": {"message_id": message_id, "chat": {"id": chat}}}})
+
+    def test_send_first_slide_with_nav_and_extra(self):
+        extra = [[{"text": "▶️ Взял", "callback_data": "demo:take"}]]
+        car = self.Car.pmk_send(CHAT, self.imgs, "<b>Задание</b>", extra)
+        self.assertEqual(car.message_id, 500)
+        chat, photo, caption, kb = self.api.photos[-1]
+        self.assertEqual(photo, ("l1.jpg", b"img1"))
+        self.assertEqual(caption, "<b>Задание</b>")
+        self.assertEqual(kb["inline_keyboard"][0][1]["text"], "1 / 3")
+        self.assertEqual(kb["inline_keyboard"][1], extra[0])
+
+    def test_flip_uploads_once_then_uses_file_id(self):
+        car = self.Car.pmk_send(CHAT, self.imgs, "cap")
+        self._click("car:%d:1" % car.id)
+        self.assertEqual(self.api.edits[-1][2], ("l2.jpg", b"img2"))
+        self.assertEqual(car.index, 1)
+        self.assertEqual(self.api.edits[-1][4]["inline_keyboard"][0][1]["text"], "2 / 3")
+        self.assertEqual(self.api.edits[-1][3], "cap")
+        self._click("car:%d:0" % car.id)
+        self.assertEqual(self.api.edits[-1][2], "fid-1")      # первая уже в Телеграме
+        self._click("car:%d:1" % car.id)
+        self.assertEqual(self.api.edits[-1][2], "fid-e1")     # вторая — тоже
+
+    def test_wraps_around(self):
+        car = self.Car.pmk_send(CHAT, self.imgs, "cap")
+        kb = self.api.photos[-1][3]["inline_keyboard"][0]
+        self.assertEqual(kb[0]["callback_data"], "car:%d:2" % car.id)   # ◀ с первой — на последнюю
+
+    def test_foreign_message_ignored(self):
+        car = self.Car.pmk_send(CHAT, self.imgs, "cap")
+        self._click("car:%d:1" % car.id, message_id=777)
+        self._click("car:%d:1" % car.id, chat=-100)
+        self.assertFalse(getattr(self.api, "edits", []))
+        self.assertEqual(self.api.answers[-1], "Сообщение устарело")
+
+    def test_single_image_no_arrows(self):
+        self.Car.pmk_send(CHAT, self.imgs[:1], "cap")
+        self.assertEqual(self.api.photos[-1][3]["inline_keyboard"], [])
+
+    def test_demo_button_says_example(self):
+        self._click("demo:take")
+        self.assertIn("пример", self.api.answers[-1])
