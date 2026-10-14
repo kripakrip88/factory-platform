@@ -549,6 +549,9 @@ class TestStep58Org(TransactionCase):
 
     def test_sale_order_form_field(self):
         arch = self._arch("sale.order")
+        # С 14.10.2026 поле может стоять в шапке счёта (pmk_moysklad, pmk_f_org).
+        if arch.xpath("//div[@name='pmk_f_org']/field[@name='pmk_org_id']"):
+            return
         details = arch.xpath("//group[@name='order_details']")[0]
         names = [f.get("name") for f in details.findall("field")]
         self.assertIn("pmk_org_id", names)

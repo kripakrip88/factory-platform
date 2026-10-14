@@ -490,16 +490,21 @@ class TestStepZ9Invoice(Z2Common):
             self.assertEqual(len(control), 1)
             self.assertEqual(control[0].get("string"), "Добавить услугу")
         # Условия и итог.
-        terms = lean.xpath("//group[@name='pmk_terms']")[0]
-        names = [f.get("name") for f in terms.iter("field")]
+        # С 14.10.2026 условия (кроме срока оплаты и прочих) — в шапке счёта
+        # (pmk_moysklad, div pmk_inv_head); ищем и там, и в «Условиях».
+        names = [f.get("name") for t in lean.xpath("//group[@name='pmk_terms'] | //div[@name='pmk_inv_head']")
+                 for f in t.iter("field")]
         for name in ("payment_term_id", "pmk_payment_note", "pmk_lead_days", "pmk_lead_from",
                      "pmk_delivery", "pmk_delivery_address", "note"):
             self.assertIn(name, names)
         self.assertTrue(lean.xpath("//div[@name='pmk_invoice_total']//field[@name='pmk_tax_text']"))
         # Шапка листа: дата счёта видна у черновика, сделка — тут же.
-        date = lean.xpath("//group[@name='order_details']/field[@name='date_order'][not(@invisible)]")
+        # Дата — в группе шапки или (с 14.10.2026) в заголовке «Счёт покупателю № … от …».
+        date = lean.xpath("(//group[@name='order_details'] | //div[contains(concat(' ', @class, ' '), ' oe_title ')]//h1)"
+                          "/field[@name='date_order'][not(@invisible)]")
         self.assertEqual(len(date), 1)
-        self.assertTrue(lean.xpath("//group[@name='order_details']/field[@name='opportunity_id']"))
+        self.assertTrue(lean.xpath("(//group[@name='order_details'] | //div[@name='pmk_inv_head']//span)"
+                                   "/field[@name='opportunity_id']"))
         # Строки-изделия — только для чтения.
         for name in ("name", "product_uom_qty", "price_unit"):
             node = lean.xpath("//field[@name='order_line']/list/field[@name='%s']" % name)[0]
@@ -668,10 +673,12 @@ class TestStepZ9Invoice(Z2Common):
         lines = arch.xpath("//field[@name='order_line'][@widget='sol_o2m']")[0]
         self.assertIn("'sent'", lines.get("readonly"))
         for name in ("pmk_payment_note", "pmk_lead_days", "pmk_delivery", "note", "payment_term_id"):
-            node = arch.xpath("//group[@name='pmk_terms']//field[@name='%s']" % name)[0]
+            node = arch.xpath("(//group[@name='pmk_terms'] | //div[@name='pmk_inv_head'])"
+                              "//field[@name='%s']" % name)[0]
             with self.subTest(sent_readonly=name):
                 self.assertIn("'sent'", node.get("readonly"))
-        date = arch.xpath("//group[@name='order_details']/field[@name='date_order'][not(@invisible)]")[0]
+        date = arch.xpath("(//group[@name='order_details'] | //div[contains(concat(' ', @class, ' '), ' oe_title ')]//h1)"
+                          "/field[@name='date_order'][not(@invisible)]")[0]
         self.assertIn("'sent'", date.get("readonly"))
         button = arch.xpath("//button[@name='action_pmk_new_revision']")
         self.assertEqual(len(button), 1)
@@ -728,7 +735,8 @@ class TestStepZ9Invoice(Z2Common):
                           "[contains(@class, 'fw-bold')]")
         self.assertTrue(card, "Карточка строки — название изделия.")
         for name in ("partner_id", "pmk_org_id"):
-            node = arch.xpath("//group[@name='sale_header']//field[@name='%s']" % name)[0]
+            node = arch.xpath("(//group[@name='sale_header'] | //div[@name='pmk_inv_head'])"
+                              "//field[@name='%s']" % name)[0]
             with self.subTest(from_spec=name):
                 self.assertIn("pmk_spec_id", node.get("readonly"))
         header = arch.find(".//header")
