@@ -19,7 +19,6 @@ def migrate(cr, version):
                     CASE WHEN field_description->>'en_US' = 'Клиент' THEN 'Контрагент'
                          ELSE field_description->>'en_US' END)
          WHERE field_description->>'ru_RU' = 'Клиент'
-           AND name IN ('partner_id', 'pmk_client_id', 'pmk_partner_id')
     """)
     fields_n = cr.rowcount
     cr.execute("""
