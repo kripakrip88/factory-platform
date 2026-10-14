@@ -200,12 +200,41 @@ def translate(s, dx, dy):
     return transform(s, 0, (dx, dy))
 
 
+class Poly(list):
+    """Объединение частей — общий контур моста: точки контура (хордами, для габарита и картинки) и части: окружности
+    деталей ("c", cx, cy, r) и прямоугольники перемычек между окружностями ("r", [4 точки]). Внутри, глубина и
+    препятствие (risk) считаются по частям — окружности точно, как у отдельной шайбы (по хордам пять окружностей —
+    ~180 рёбер на каждый переход: m14 с мостами считался в 6 раз дольше)."""
+
+    def __init__(self, pts, parts):
+        super().__init__(pts)
+        self.parts = parts
+
+
+def _part_depth(pt, q):
+    if q[0] == "c":
+        return q[3] - math.hypot(pt[0] - q[1], pt[1] - q[2])
+    P = q[1]
+    d = min(seg_point_dist(pt, P[i - 1], P[i]) for i in range(len(P)))
+    return d if inside(pt, P) else -d
+
+
+def far_from_edges(pt, poly, m):
+    """Точка дальше m от кромки многоугольника (после inside — глубже m внутри: min(расстояние до рёбер) > m); у
+    объединения (Poly) — глубже m в одной из частей."""
+    if type(poly) is Poly:
+        return any(_part_depth(pt, q) > m for q in poly.parts)
+    return min(seg_point_dist(pt, poly[i - 1], poly[i]) for i in range(len(poly))) > m
+
+
 def inside(pt, poly):
-    """Точка внутри многоугольника (чётность пересечений)."""
+    """Точка внутри многоугольника (чётность пересечений); объединение (Poly) — внутри одной из частей."""
     x, y = pt
     c = False
     if not poly:
         return c
+    if type(poly) is Poly:
+        return any((math.hypot(x - q[1], y - q[2]) < q[3]) if q[0] == "c" else inside(pt, q[1]) for q in poly.parts)
     x2, y2 = poly[-1]                                   # те же пары (i, i − 1) в том же порядке — без индексов
     for x1, y1 in poly:
         if (y1 > y) != (y2 > y) and x < x1 + (y - y1) * (x2 - x1) / (y2 - y1):

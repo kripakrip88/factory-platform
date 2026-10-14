@@ -11,6 +11,8 @@ from .libpath import vn
 
 FACTORY_UTC_OFFSET_H = 10
 BAD_NAME = str.maketrans({c: "" for c in "&<>\"'"})
+FREE = ("Free", None)       # вставка без NestPart/NestGroup — группа моста (так пишет CypCut 6.3.907.11)
+FREE_MARK = -1              # метка такой вставки на время разбора пакетом (decompile_free)
 
 
 def _attr_exact(s):
@@ -28,6 +30,133 @@ def exact_coedge():
         yield
     finally:
         SR.attr_bytes = old
+
+
+def compile_free(M, checks=None, util_mode="given"):
+    """spec_rebuild.compile_lxds + вставки без NestPart/NestGroup (мост CypCut, ref FREE; members — NestPart деталей
+    моста, если известны). Пакет таких вставок не знает (у него вставка — деталь или группа), поэтому на время сборки
+    вставка моста ссылается на первую деталь программы, затем в XML — как у CypCut: у вставки ссылки нет; PartCount
+    раскладки — без деталей мостов; NestPart AmountUsed — без них, Amount — с ними (заказ; у разобранной программы, где
+    детали моста неизвестны, — как в ней); Utilization — с деталями мостов (у CypCut после моста загрузка та же).
+    Архив собирается заново тем же правилом, что в пакете (порядок записей и времена). Без мостов — пакет как есть."""
+    SR, XM, XZ = vn.spec_rebuild, vn.xml_model, vn.xml_zip
+    checks = collections.defaultdict(collections.Counter) if checks is None else checks
+    free = [(r, i) for r in M["results"] for i in r["inserts"] if i["ref"] == FREE]
+    if not free:
+        return SR.compile_lxds(M, checks, util_mode=util_mode)
+    rep = M["parts"][0]["handle"]
+    for r, i in free:
+        i["ref"] = ("NestPart", rep)
+    try:
+        _, files = SR.compile_lxds(M, checks, util_mode=util_mode)
+    finally:
+        for r, i in free:
+            i["ref"] = FREE
+    bn = {b["name"]: b for b in M["blocks"]}
+    pby = {p["handle"]: p for p in M["parts"]}
+    gby = {g["handle"]: g for g in M["groups"]}
+    plates = {p["handle"]: p for p in M["plates"]}
+    known = all("members" in i for r, i in free)
+    used, bridged, util, nfree = collections.Counter(), collections.Counter(), {}, collections.Counter()
+    for r in M["results"]:
+        tot, a = 0.0, r["plate_amount"]
+        for i in r["inserts"]:                         # загрузка — тем же счётом, что в пакете, детали моста — на месте моста
+            if i["ref"][0] == "NestPart":
+                hs = [i["ref"][1]]
+                used[hs[0]] += a
+            elif i["ref"][0] == "NestGroup":
+                hs = gby[i["ref"][1]]["objects"]
+                for o in hs:
+                    used[o] += a
+            else:
+                hs = list(i.get("members", ()))
+                nfree[r["index"]] += 1
+                for o in hs:
+                    bridged[o] += a
+            for h in hs:
+                if h in pby:
+                    tot += SR.block_util_area(bn[pby[h]["block"]]["shapes"])
+        pl = plates[r["plate"]]
+        util[r["index"]] = XM.fmt_num(100.0 * tot / (pl["W"] * pl["L"]))
+    fh = {i["handle"] for r, i in free}
+    for r in M["results"]:
+        if not nfree[r["index"]]:
+            continue
+        n = "Nest2D/Results/%d/content.xml" % r["index"]
+        root = XM.parse(files[n])
+        for s in root.find("Shapes").children:
+            if s.get("Class") == "Insert" and int(s.get("Handle")) in fh:
+                s.attrs = [(k, v) for k, v in s.attrs if k != "NestPart"]
+        if util_mode == "computed":
+            root.set("Utilization", util[r["index"]])
+        files[n] = XM.serialize(root)
+    root = XM.parse(files["Nest2D/Results/content.xml"])
+    for x in root.children:
+        k = int(x.get("Index"))
+        if nfree[k]:
+            x.set("PartCount", str(int(x.get("PartCount")) - nfree[k]))
+            if util_mode == "computed":
+                x.set("Utilization", util[k])
+    files["Nest2D/Results/content.xml"] = XM.serialize(root)
+    root = XM.parse(files["Nest2D/Parts/content.xml"])
+    for x in root.children:
+        h = int(x.get("Handle"))
+        given = pby[h]["given"].get("Amount")
+        amt = used[h] + bridged[h] if known or given is None else int(given)
+        x.set("Amount", str(amt))
+        x.set("AmountUsed", str(used[h]))
+    files["Nest2D/Parts/content.xml"] = XM.serialize(root)
+    # архив — как в конце spec_rebuild.compile_lxds
+    save_utc = SR.FT_EPOCH + datetime.timedelta(microseconds=M["zip_mtimes"][0] // 10)
+    if M.get("zip_order"):
+        seq_z = [(n, b"" if n.endswith("/") else files[n]) for n in M["zip_order"]]
+        mt = M["zip_mtimes"]
+    else:
+        st = collections.OrderedDict()
+        rank = {"info.xml": 0, "data.bin": 1, "content.xml": 2, "thumbnail.emf": 3}
+        for n in sorted(files, key=lambda n: (n.rpartition("/")[0], rank[n.rpartition("/")[2]])):
+            folder, _, fn = n.rpartition("/")
+            st.setdefault(folder, collections.OrderedDict())[fn] = files[n]
+        seq_z = XZ.canonical_order(st)
+        base = M["zip_mtimes"][0]
+        mt = [base + 10000 * i for i in range(len(seq_z))]
+    return XZ.write_new(seq_z, save_utc, M["utc_offset_h"], mtimes=mt), files
+
+
+class _ETFree:
+    """xml.etree для spec_rebuild.decompile: вставке без NestPart/NestGroup (мост CypCut) — метка NestPart=FREE_MARK
+    (пакет ждёт одну из двух ссылок и падает)."""
+
+    def __init__(self, et):
+        self._et = et
+
+    def __getattr__(self, n):
+        return getattr(self._et, n)
+
+    def fromstring(self, data):
+        root = self._et.fromstring(data)
+        if root.tag == "NestResult" and root.find("Shapes") is not None:
+            for s in root.find("Shapes"):
+                if s.get("Class") == "Insert" and s.get("NestPart") is None and s.get("NestGroup") is None:
+                    s.set("NestPart", str(FREE_MARK))
+        return root
+
+
+def decompile_free(raw):
+    """spec_rebuild.decompile, который не падает на вставках мостов: их ref — FREE (на время разбора модуль xml.etree
+    пакета подменяется — как exact_coedge, в процессе с потоками небезопасно; исправить в пакете)."""
+    SR = vn.spec_rebuild
+    old = SR.ET
+    SR.ET = _ETFree(old)
+    try:
+        M = SR.decompile(raw)
+    finally:
+        SR.ET = old
+    for r in M["results"]:
+        for i in r["inserts"]:
+            if i["ref"] == ("NestPart", FREE_MARK):
+                i["ref"] = FREE
+    return M
 
 
 def technical_template():
@@ -61,13 +190,14 @@ def build(parts, layouts, title, technical=None, user="sheet_nest", computer="SH
     guid = lambda: "{%s}" % str(SR.uuid.UUID(int=rng.getrandbits(128), version=4)).upper()
     tmp = iter(range(-100, -10 ** 8, -1))
     def entries(l):
-        """Элементы маршрута раскладки: ("part", i, фигуры) | ("group", [i…], фигуры); старый вид (i, фигуры) — деталь."""
+        """Элементы маршрута раскладки: ("part", i, фигуры) | ("group", [i…], фигуры) | ("bridge", [i…], фигуры); старый
+        вид (i, фигуры) — деталь."""
         for e in l["seq"]:
             if len(e) == 2:
                 yield ("part", e[0], e[1])
             else:
                 yield e
-    used = sorted({i for l in layouts for e in entries(l) for i in (e[1] if e[0] == "group" else [e[1]])})
+    used = sorted({i for l in layouts for e in entries(l) for i in (e[1] if e[0] in ("group", "bridge") else [e[1]])})
     blocks, nparts, idx = [], [], {}
     for i in used:
         p = parts[i]
@@ -103,6 +233,14 @@ def build(parts, layouts, title, technical=None, user="sheet_nest", computer="SH
                 groups.append(g)
                 ins.append(dict(handle=next(tmp), ref=("NestGroup", g["handle"]), block=bn, channelport=True, selected=None))
                 continue
+            if kind == "bridge":
+                # мост (как у CypCut): вставка без NestPart/NestGroup, блок — роль вставки (OutlineID = общий контур, без
+                # Flags), имя — число (после _identity); детали моста — members (для Amount и загрузки)
+                blocks.append(dict(handle=next(tmp), name=bn, role="insert", outline_override="derive", bridge=True,
+                                   given=dict(OutlineID=None, Flags=None, ShapesHandle=None), shapes=sh2))
+                ins.append(dict(handle=next(tmp), ref=FREE, block=bn, channelport=True, selected=None,
+                                members=[nparts[idx[m]]["handle"] for m in i]))
+                continue
             blocks.append(dict(handle=next(tmp), name=bn, role="insert", outline_override="derive",
                                given=dict(OutlineID=None, Flags=None, ShapesHandle=None), shapes=sh2))
             ins.append(dict(handle=next(tmp), ref=("NestPart", nparts[idx[i]]["handle"]), block=bn, channelport=True, selected=None))
@@ -122,7 +260,7 @@ def build(parts, layouts, title, technical=None, user="sheet_nest", computer="SH
         M = _copy.deepcopy(M0); rng.setstate(st)
         _identity(M, rng, start)
         with exact_coedge():
-            raw, files = SR.compile_lxds(M, collections.defaultdict(collections.Counter), util_mode="computed")
+            raw, files = compile_free(M, collections.defaultdict(collections.Counter), util_mode="computed")
         if b'Handle="768"' not in files["Viewports/content.xml"] and b'Handle="1024"' not in files["Viewports/content.xml"]:
             break
     return raw, M
@@ -155,8 +293,14 @@ def _identity(M, rng, start=1001):
         remap[p["handle"]] = p["handle"] = take(3)
         p["poly_handle"] = p["handle"] + 2
         p["guid"] = Gd()
+    names = set()
     for b in blocks_res:
         nm = Gd()
+        if b.get("bridge"):                            # блок моста — число (у CypCut: 1518434396, 11665997262 …)
+            nm = str(rng.randrange(10 ** 9, 2 * 10 ** 10))
+            while nm in names:
+                nm = str(rng.randrange(10 ** 9, 2 * 10 ** 10))
+        names.add(nm)
         newname[b["name"]] = nm
         b["name"] = nm
         b["handle"] = take(2)
@@ -175,6 +319,8 @@ def _identity(M, rng, start=1001):
             i["selected"] = None
             if i["ref"][0] == "NestPart":
                 i["ref"] = ("NestPart", remap[i["ref"][1]])
+            elif i["ref"] == FREE:
+                i["members"] = [remap[h] for h in i.get("members", ())]
         for i in r["inserts"]:                        # записи групп — после вставок раскладки
             if i["ref"][0] == "NestGroup":
                 g = gby[i["ref"][1]]

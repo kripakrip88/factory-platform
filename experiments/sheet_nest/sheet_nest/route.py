@@ -65,13 +65,21 @@ START_CELL = 50.0           # мм: ячейка сетки вырезанног
 #   по цене «как было» (_short_route); ret — возврат в (0,0) в ключе (risk key0, risk.ret_move); pool — кандидаты безопасных
 #   (_safe_pool / _coedge_pool, общие для всех стратегий с этим переключателем: маршрут «short», замкнутый обход, другие
 #   порядки, правка порядка).
+#   hill — порядок деталей «Горкой» (_hill, _hill_orders: фронт резки ступенькой по диагонали от головки, остаток листа к концу —
+#   компактный, а не узкая полоса во всю длину), внутри — динамика по ключу безопасных и правка порядка, не ломающая
+#   ступеньку (только внутри полосы); ступенька — пока не опаснее: остались у неё опасные (или полоса), или полосы на
+#   листе быть не может — в выбор идут и кандидаты пула safe (_hill_pick: без полосы → опасные → ступенька → холостой).
 STRATEGIES = {
     "short": dict(title="Минимум холостого", key="short", hole_starts=True, lead_ties=True, look=True, orders=True, ret=False,
                   pool=False),
     "safe": dict(title="Безопасный", key="safe", hole_starts=True, lead_ties=True, look=True, orders=True, ret=False, pool=True),
     "safe0": dict(title="Безопасный, конец у нуля", key="safe", hole_starts=True, lead_ties=True, look=True, orders=True, ret=True,
                   pool=True),
+    "hill": dict(title="Горкой", key="safe", hole_starts=True, lead_ties=True, look=True, orders=False, ret=False, pool=False,
+                 hill=True),
 }
+HILL_ANGLE = math.pi / 4    # «Горкой»: фронт резки под 45° (в мм) — на листе 1500×6000 ступенька поперёк ширины идёт вдоль длины
+HILL_BANDS = (3.0,)         # «Горкой»: полоса ещё и во столько раз шире медианной детали (если путь по центрам короче)
 DEFAULT = "short"
 ZERO4 = (0, 0, 0, 0)
 _TIERS = (RK.TONGUE, RK.SMALLP, RK.PART, RK.HOLE)   # ступени опасных в ключе безопасных (risk.safe_key), по порядку
@@ -353,8 +361,7 @@ def _over_tongue(pos, a, cut):
         t = k / steps
         pt = (pos[0] + (a[0] - pos[0]) * t, pos[1] + (a[1] - pos[1]) * t)
         for P, bx in near:
-            if bx[0] < pt[0] < bx[2] and bx[1] < pt[1] < bx[3] and G.inside(pt, P) \
-                    and min(G.seg_point_dist(pt, P[i - 1], P[i]) for i in range(len(P))) > 0.5:
+            if bx[0] < pt[0] < bx[2] and bx[1] < pt[1] < bx[3] and G.inside(pt, P) and G.far_from_edges(pt, P, 0.5):
                 return 1
     return 0
 
@@ -518,7 +525,10 @@ def choose_starts(sh, head, tail, mode, feat=RK.feature, starts=hole_starts, mem
 
 # =========================================================================== точка врезки внешнего контура
 def outer_candidates(outer):
-    """Кандидаты точки врезки: индексы вершин (полилиния) или углы (окружность)."""
+    """Кандидаты точки врезки: индексы вершин (полилиния) или углы (окружность); общий контур моста — номера его точек
+    врезки на дугах (bridge.Contour.cands)."""
+    if outer.get("_bridge") is not None:
+        return list(range(len(outer["_bridge"].cands)))
     if outer["kind"] == "Circle":
         return [k * math.pi / 4 for k in range(8)]
     V = outer["verts"]
@@ -553,8 +563,12 @@ def outer_candidates(outer):
 
 def lead_free(outer_started, W, L, polys, limit=20.0, step=0.05, skip=None):
     """Свободно по наружной нормали к началу реза внешнего контура, мм (до limit). polys — [(точки, габарит)] или
-    risk.Grid таких; skip — свой многоугольник (не препятствие)."""
-    if outer_started["kind"] == "Circle":
+    risk.Grid таких; skip — свой многоугольник (не препятствие). Общий контур моста (_lead: точка врезки на дуге и
+    нормаль по радиусу) — свой многоугольник тоже препятствие: луч от дуги может уйти на соседнюю деталь группы."""
+    if outer_started.get("_lead") is not None:
+        (x1, y1), (nx, ny) = outer_started["_lead"]
+        skip = None
+    elif outer_started["kind"] == "Circle":
         cx, cy = outer_started["c"]; a = outer_started["a0"]
         x1, y1 = cx + outer_started["r"] * math.cos(a), cy + outer_started["r"] * math.sin(a)
         nx, ny = math.cos(a), math.sin(a)
@@ -602,11 +616,13 @@ class _PartPlan:
         self.tongues = tongue_polys(self.inner)
         self._segx, self._intx = {}, {}
         P = G.points(self.outer, 0.2)
+        if self.outer.get("_bridge") is not None:       # общий контур моста — объединение окружностей и перемычек
+            P = G.Poly(P, self.outer["_bridge"].parts())
         self.poly = (P, (min(x for x, y in P), min(y for x, y in P), max(x for x, y in P), max(y for x, y in P)))
         self.center = ((self.poly[1][0] + self.poly[1][2]) / 2, (self.poly[1][1] + self.poly[1][3]) / 2)
         self.kind = RK.part_kind(part, small)
         self._ob, self._feat, self._ord, self._free, self._hs, self._cs = None, {}, {}, {}, {}, {}
-        self._hz, self._memo, self._core, self._bs = None, {}, {}, {}
+        self._hz, self._memo, self._core, self._bs, self._bst = None, {}, {}, {}, {}
         ib = G.bbox(self.inner) if self.inner else None    # где ходит головка внутри детали (+ впритирку) — для кэша
         self.inner_box = (ib[0] - RK.NEAR - 1, ib[1] - RK.NEAR - 1, ib[2] + RK.NEAR + 1, ib[3] + RK.NEAR + 1) if ib else None
 
@@ -660,6 +676,11 @@ class _PartPlan:
         return self._feat[j]
 
     def started(self, k):
+        b = self.outer.get("_bridge")
+        if b is not None:                               # общий контур моста: дуга разбита точкой врезки (кэш)
+            if k not in self._bst:
+                self._bst[k] = b.started(k)
+            return self._bst[k]
         return G.rotate_start(self.outer, k)
 
     def order_path(self, head, k):
@@ -961,6 +982,119 @@ def _sweep(plans, axis):
     return out
 
 
+def _hill(items, flip=False, phi=HILL_ANGLE, mult=1.0):
+    """Порядок «Горкой» (решение Антона 14.10.2026: к концу не должна оставаться узкая полоса во всю длину листа — её
+    ведёт от перегрева): полосы поперёк направления n = (cos φ, sin φ) от головки — фронт резки идёт ступенькой по
+    диагонали, остаток листа — дальний угол/торец во всю ширину; в полосе — змейкой вдоль фронта (у сетки шайб полоса —
+    две диагонали, путь — ступенька через соседей). Ширина полосы — медианный размер детали поперёк фронта. items —
+    [(центр, габарит)]; flip — первая полоса в другую сторону. Вернуть (порядок, номер полосы по детали)."""
+    n_, t_ = (math.cos(phi), math.sin(phi)), (-math.sin(phi), math.cos(phi))
+    ext = sorted((bx[2] - bx[0]) * abs(n_[0]) + (bx[3] - bx[1]) * abs(n_[1]) for _, bx in items)
+    band = max(1.0, ext[len(ext) // 2]) * mult if ext else 1.0
+    rows = collections.defaultdict(list)
+    bands = {}
+    for i, (c, bx) in enumerate(items):
+        k = int(math.floor((c[0] * n_[0] + c[1] * n_[1]) / band + 1e-9))
+        rows[k].append(i)
+        bands[i] = k
+    ks = sorted(rows)
+    seqs, fl = [], flip
+    for k in ks:
+        seqs.append(sorted(rows[k], key=lambda i: (items[i][0][0] * t_[0] + items[i][0][1] * t_[1], i), reverse=fl))
+        fl = not fl
+    # 2-opt внутри полосы (вход — от последней детали прошлой полосы, выход — к первой следующей): на повороте у края
+    # листа змейка по фронту кончалась через ряд от начала следующей полосы — переход шёл над вырезанной деталью
+    C = [c for c, _ in items]
+    out = []
+    for bi, s in enumerate(seqs):
+        prev = C[out[-1]] if out else None
+        nxt = C[seqs[bi + 1][0]] if bi + 1 < len(seqs) else None
+        improved = len(s) > 2
+        while improved:
+            improved = False
+            for i in range(len(s) - 1):
+                for j in range(i + 1, len(s)):
+                    a = C[s[i - 1]] if i else prev
+                    dd = C[s[j + 1]] if j + 1 < len(s) else nxt
+                    old = (D(a, C[s[i]]) if a else 0.0) + (D(C[s[j]], dd) if dd else 0.0)
+                    new = (D(a, C[s[j]]) if a else 0.0) + (D(C[s[i]], dd) if dd else 0.0)
+                    if new < old - 1e-6:
+                        s[i:j + 1] = s[i:j + 1][::-1]
+                        improved = True
+        out += s
+    return out, bands
+
+
+def _hill_orders(items, head):
+    """Порядки «Горкой» для прогона: ширина полосы — медианный размер детали и шире в HILL_BANDS раз, у каждой — обе фазы
+    змейки (лист из крупных и мелких деталей: m30 — полоса по мелким, каждая поперёк листа: холостой 108 м, у полосы
+    втрое шире — 94 м; у сетки шайб узкая полоса — лучшая). Все — кандидаты: выбирает ключ безопасных, а не путь по
+    центрам (разбор 14.10: отсев широких полос по пути отбрасывал порядки с меньшим числом опасных). Вернуть
+    [(порядок, номер полосы по детали)]."""
+    seen, out = set(), []
+    for mult in (1.0,) + HILL_BANDS:
+        for fl in (False, True):
+            seq, bands = _hill(items, fl, mult=mult)
+            if tuple(seq) in seen:
+                continue
+            seen.add(tuple(seq))
+            out.append((seq, bands))
+    return out
+
+
+def _hill_pool(C, head, o):
+    """«Горкой»: динамика по ключу безопасных по порядкам _hill_orders, остались опасные — правка порядка, не выводящая
+    деталь из её полосы (ступенька не ломается). Вернуть [(счёт measure, номер, маршрут, прогон)]."""
+    pk = ("hill", bool(o["hole_starts"]), bool(o.get("lead_ties")))
+    if pk in C:
+        return C[pk]
+    plans = C["plans"]
+    ms, band_of = [], {}
+
+    def add(route, run=None):
+        m = _measure(C, route, head)
+        m["key1"] = _key1(m)
+        ms.append((m, len(ms), route, run))
+        return m
+    for seq, bands in _hill_orders([(p.center, p.poly[1]) for p in plans], head):
+        tr = []
+        rk, = _dp_safe(C, seq, head, o, trace=tr, ends=("key",))
+        add(rk, (seq, tr))
+        band_of[len(ms) - 1] = bands
+    # опасные остались — правка порядка у каждой нарезки полос (от лучшей), не выводящая деталь из её полосы: правка
+    # одной лучшей находила не всё (m30: у другой нарезки ступенька без переходов над деталями)
+    starts = sorted(band_of, key=lambda n: (ms[n][0]["key"], n))
+    for n in starts:
+        m, _, b, run = ms[n]
+        if m["key"][:4] == ZERO4 or min(v[0]["key"][:4] for v in ms) == ZERO4:
+            break
+        bands = band_of[n]
+
+        def ok(c, bands=bands):                        # полосы по порядку не убывают — деталь в своей полосе
+            return all(bands[c[t]] <= bands[c[t + 1]] for t in range(len(c) - 1))
+        _repair(C, b, m, run, head, o, "key", [max(REPAIR_WORK * len(plans), REPAIR_MIN)], add, ok=ok)
+    C[pk] = ms
+    return ms
+
+
+def _hill_pick(hill, pool, strip_of, pointless):
+    """«Горкой»: выбор из кандидатов ступенькой (hill) и, если дан, пула безопасных (pool) — [(счёт measure, номер,
+    маршрут, …)]. Сперва — без узкой полосы в конце (strip_of(кандидат) → risk.end_strip), затем ступени опасных (как у
+    безопасных), при равных — ступенька, затем холостой. pointless — ступенька на этом листе ничего не даёт (меньше
+    risk.STRIP_MIN деталей или одна единица резки): тогда по ключу безопасных целиком."""
+    def k(c):
+        v, src = c
+        s = strip_of(v)
+        return (bool(s and s["strip"]), tuple(v[0]["key"][:4]), 0 if pointless else src, v[0]["key"][4], src, v[1])
+    return min([(v, 0) for v in hill] + [(v, 1) for v in pool or ()], key=k)[0]
+
+
+def _hill_need_pool(best, strip, pointless):
+    """Нужен ли «Горкой» пул безопасных: лист, где ступенька ничего не даёт; у лучшей ступеньки остались опасные; или и у
+    неё узкая полоса в конце."""
+    return pointless or tuple(best[0]["key"][:4]) != ZERO4 or bool(strip and strip["strip"])
+
+
 def _repair_cands(C, seq, route, m, kn, window=REPAIR_WINDOW):
     """Варианты порядка деталей около опасных переходов маршрута route (порядок seq), по важности: сперва ступень ключа
     (язычки → мелкие → детали → отверстия), в ступени — от конца листа (динамика продолжается с места изменения —
@@ -1017,12 +1151,13 @@ def _repair_cands(C, seq, route, m, kn, window=REPAIR_WINDOW):
     return out
 
 
-def _repair(C, route, m, run, head, o, kn, budget, add):
+def _repair(C, route, m, run, head, o, kn, budget, add, ok=None):
     """Остались опасные переходы (ступени ключа kn: "key" — без возврата, "key0" — с ним, "key1" — с ним «одним
     переходом», прежнее правило) — правка порядка деталей около них (_repair_cands). Каждый вариант — той же динамикой,
     но с места первого изменения (состояния до него — из трассы прогона run = (порядок, трасса)); оба конца прогона
     (без возврата и по kn; у "key" — по key1, как было) — кандидаты (add); вариант принят, если ступени опасных kn
-    строго лучше; пока лучше и хватает budget (шагов-деталей, общий на все правки листа)."""
+    строго лучше; пока лучше и хватает budget (шагов-деталей, общий на все правки листа). ok(порядок) — какие варианты
+    допустимы («Горкой»: деталь не уходит из своей полосы)."""
     ends = ("key", "key0" if kn == "key0" else "key1")
     if run is None:                                    # маршрут «short»: прогон динамики по его порядку, с трассой
         seq = [i for i, _ in route]
@@ -1037,6 +1172,8 @@ def _repair(C, route, m, run, head, o, kn, budget, add):
     while m[kn][:4] != ZERO4 and budget[0] > 0:
         improved = False
         for c in _repair_cands(C, seq, route, m, kn):
+            if ok is not None and not ok(c):
+                continue
             a = next(t for t in range(n) if c[t] != seq[t])
             if n - a > budget[0]:
                 continue
@@ -1303,7 +1440,20 @@ def route_sheet(placed, parts, W, L, head=(0.0, 0.0), strategy=DEFAULT, small=RK
     o = options(strategy)
     C = _prep(placed, parts, W, L, head, small, cache)
     plans, seq = C["plans"], C["seq"]
-    if o["key"] == "short":
+    if o.get("hill"):
+        hp = _hill_pool(C, head, o)
+        units1 = [_unit_of(plans, [i]) for i in range(len(plans))]
+        strips = {}
+
+        def strip_of(v):
+            if id(v[2]) not in strips:
+                strips[id(v[2])] = RK.end_strip([units1[i] for i, _ in v[2]], W, L)
+            return strips[id(v[2])]
+        pointless = len(plans) <= 1 or sum(u[1] for u in units1) < RK.STRIP_MIN
+        bh = min(hp, key=lambda v: (v[0]["key"], v[1]))
+        pool = _safe_pool(C, head, options("safe")) if _hill_need_pool(bh, strip_of(bh), pointless) else None
+        m, _, best, _ = _hill_pick(hp, pool, strip_of, pointless)
+    elif o["key"] == "short":
         best = _short_route(C, head, o)
         m = _measure(C, best, head)
     else:
@@ -1329,7 +1479,33 @@ def route_sheet(placed, parts, W, L, head=(0.0, 0.0), strategy=DEFAULT, small=RK
         cut_parts.add(plans[i].poly, plans[i].poly[1])
     return dict(seq=[(placed[i]["part"], sh) for i, sh in best], order=[i for i, _ in best], idle=idle,
                 crossings=crossings(shapes, head), crossings_parts=x_parts, risk=m, lead_min=lead_min,
-                warnings=list(C["warnings"]), strategy=o["name"])
+                warnings=list(C["warnings"]), strategy=o["name"],
+                strip=RK.end_strip([_unit_of(plans, [i]) for i, _ in best], W, L))
+
+
+def _unit_of(plans, idx):
+    """Единица резки для «конца листа» (risk.end_strip): (габарит, деталей, [меньшая сторона габарита каждой детали],
+    [большая сторона]). Группа моста — её детали (bridge: диаметры деталей)."""
+    bx = [plans[i].poly[1] for i in idx]
+    box = (min(b[0] for b in bx), min(b[1] for b in bx), max(b[2] for b in bx), max(b[3] for b in bx))
+    ws, ls = [], []
+    for i in idx:
+        br = plans[i].part.get("bridge")
+        if br:
+            ws += list(br["widths"]); ls += list(br["widths"])
+        else:
+            b = plans[i].poly[1]
+            ws.append(min(b[2] - b[0], b[3] - b[1])); ls.append(max(b[2] - b[0], b[3] - b[1]))
+    return box, len(ws), ws, ls
+
+
+def _done_order(tagged):
+    """Детали в порядке освобождения: деталь вырезана после последней своей фигуры (у общего реза — кромки, общие с
+    уже вырезанными соседками, режутся раньше, у соседок, — деталь свободна после последнего своего куска)."""
+    last = {}
+    for k, (s, i) in enumerate(tagged):
+        last[i] = k
+    return sorted(last, key=lambda i: last[i])
 
 
 def _chosen_k(best, plans):
@@ -1355,8 +1531,7 @@ def _seg_hits(a, b, polys, margin=1.0):
         t = k / steps
         pt = (a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t)
         for P, bx in near:
-            if bx[0] < pt[0] < bx[2] and bx[1] < pt[1] < bx[3] and G.inside(pt, P) \
-                    and min(G.seg_point_dist(pt, P[i - 1], P[i]) for i in range(len(P))) > margin:
+            if bx[0] < pt[0] < bx[2] and bx[1] < pt[1] < bx[3] and G.inside(pt, P) and G.far_from_edges(pt, P, margin):
                 return True
     return False
 
@@ -1439,7 +1614,29 @@ def route_sheet_coedge(placed, groups, parts, W, L, head=(0.0, 0.0), strategy=DE
 
     def meas(rr):
         return [(RK.measure(r["tagged"], kinds, outs, head, feat=feat), n, r) for n, r in enumerate(rr)]
-    if o["key"] == "short":
+    units1 = [_unit_of(plans, [i]) for i in range(len(plans))]
+    strips = {}
+
+    def strip_of(v):                                    # конец листа — по деталям в порядке освобождения (не группами)
+        if id(v[2]) not in strips:
+            strips[id(v[2])] = RK.end_strip([units1[i] for i in _done_order(v[2]["tagged"])], W, L)
+        return strips[id(v[2])]
+    if o.get("hill"):                                   # «Горкой»: единицы (группы и детали) по ступеньке, обе фазы змейки
+        pk = ("hill", bool(o["hole_starts"]), bool(o["look"]))
+        if pk not in P:
+            rr = []
+            for seq_u, _ in _hill_orders([_unit_box(plans, u[1]) for u in P["units"]], head):
+                # у последней единицы — и концы, лучшие с возвратом (у большой группы — обходы в обратную сторону):
+                # лишние кандидаты порядка внутри группы, выбор — по ключу без возврата
+                rr += _coedge_run(P, seq_u, placed, W, L, head, o, "safe", ret=True)
+            P[pk] = meas(rr)
+        hp = P[pk]
+        pointless = len(P["units"]) <= 1 or len(plans) < RK.STRIP_MIN
+        bh = min(hp, key=lambda v: (v[0]["key"], v[1]))
+        pool = _coedge_pool(P, placed, W, L, head, options("safe"), meas) if _hill_need_pool(bh, strip_of(bh), pointless) else None
+        sel = _hill_pick(hp, pool, strip_of, pointless)
+        ms = [sel]
+    elif o["key"] == "short":
         ms = meas(_coedge_run(P, P["seq"], placed, W, L, head, o, "short"))
     elif o.get("pool"):
         ms = _coedge_pool(P, placed, W, L, head, o, meas)
@@ -1452,8 +1649,17 @@ def route_sheet_coedge(placed, groups, parts, W, L, head=(0.0, 0.0), strategy=DE
     idle, p0 = 0.0, head
     for s in shapes:
         a, b = G.ends(s); idle += D(p0, a); p0 = b
+    done = _done_order(r["tagged"])                     # детали в порядке освобождения — для конца листа и картинки
     return dict(seq=r["out"], idle=idle, crossings=crossings(shapes, head), crossings_parts=_part_crossings(r["tagged"], polys, head),
-                risk=m, lead_min=None, warnings=r["warnings"], strategy=o["name"])
+                risk=m, lead_min=None, warnings=r["warnings"], strategy=o["name"], strip=strip_of((m, None, r)),
+                done_polys=[plans[i].poly[0] for i in done])
+
+
+def _unit_box(plans, idx):
+    """(центр, габарит) единицы общего реза — для порядка «Горкой»."""
+    bx = [plans[i].poly[1] for i in idx]
+    box = (min(b[0] for b in bx), min(b[1] for b in bx), max(b[2] for b in bx), max(b[3] for b in bx))
+    return ((box[0] + box[2]) / 2, (box[1] + box[3]) / 2), box
 
 
 def _coedge_pool(P, placed, W, L, head, o, meas):

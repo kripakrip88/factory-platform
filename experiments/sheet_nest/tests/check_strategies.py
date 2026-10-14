@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-"""Стратегии порядка резки (short / safe / safe0) и счёт опасных переходов (risk).
+"""Стратегии порядка резки (short / safe / safe0 / hill) и счёт опасных переходов (risk). «Горкой» (hill) — ещё
+tests/check_hill.py (ступенька, конец листа).
 
     python3 tests/check_strategies.py [КАТАЛОГ_ОБРАЗЦОВ] [--quick]     (--quick — без m14 и зонтов, синтетики меньше)
 
@@ -18,11 +19,11 @@
 3) DXF: плиты с отверстиями и пазом, мелкие детали, решётка с жалюзи, подписи — все стратегии, все проверки ✓,
    сводка --compare (текст и JSON), возврат по раскладкам в JSON, предупреждения без «не обойти», два профиля станка,
    плохой профиль — сообщение, а не трассировка;
-4) образцы инженера (если есть): с зазором и с общим резом — у всех стратегий те же листы, все проверки программы ✓,
-   подвод внешнего контура как было, на каждой раскладке safe ≤ short и safe ≤ safe0 (без возврата), safe0 ≤ safe и
-   safe0 ≤ short (с возвратом), счёт = независимый пересчёт по программе (tests/recount_lxds.py, и возврат в ноль: длина,
-   метры, язычки, число объектов под ним по ступеням; key0 − key = это число), m14 — 0 переходов над вырезанными
-   отверстиями Ø50.
+4) образцы инженера (если есть): с зазором и с общим резом — у всех стратегий (и «Горкой») те же листы, все проверки
+   программы ✓, подвод внешнего контура как было, на каждой раскладке safe ≤ short и safe ≤ safe0 (без возврата), safe0 ≤ safe и
+   safe0 ≤ short (с возвратом), hill не хуже safe по (узкая полоса, ступени опасных), счёт = независимый пересчёт по
+   программе (tests/recount_lxds.py, и возврат в ноль: длина, метры, язычки, число объектов под ним по ступеням;
+   key0 − key = это число), m14 — 0 переходов над вырезанными отверстиями Ø50.
 """
 import sys, os, math, random, itertools, tempfile, json, io, contextlib, time
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -421,7 +422,7 @@ def dxf_run():
                   "; ".join(c[0] for c in res["checks"] if c[1] is False))
             if st == "safe":
                 S = res.get("strategies") or {}
-                check("--compare: сводка по трём стратегиям, листы одинаковые", sorted(S) == sorted(R.STRATEGIES) and
+                check("--compare: сводка по всем стратегиям (%d), листы одинаковые" % len(R.STRATEGIES), sorted(S) == sorted(R.STRATEGIES) and
                       len({v["sheets"] for v in S.values()}) == 1, str(sorted(S)))
                 check("--compare: в сводке рез, холостой, возврат, врезки, классы, время маршрута, станков нет — пусто",
                       all({"cut_m", "idle_m", "return_m", "pierces", "danger", "route_s", "machine_s"} <= set(v) and v["machine_s"] == {}
@@ -455,7 +456,8 @@ def dxf_run():
         js = [f for f in os.listdir(td) if f.startswith("cmp") and f.endswith(".json")]
         js = json.load(open(os.path.join(td, js[0]))) if js else {}
         check("командная строка --compare: таблица и JSON, программа — по --strategy", code == 0 and "сводка по стратегиям" in txt and
-              all(v["title"] in txt for v in R.STRATEGIES.values()) and js.get("strategy") == "safe0" and len(js.get("strategies", {})) == 3)
+              all(v["title"] in txt for v in R.STRATEGIES.values()) and js.get("strategy") == "safe0" and
+              len(js.get("strategies", {})) == len(R.STRATEGIES))
         ms = [v["machine_s"] for v in js.get("strategies", {}).values()]
         check("два профиля станка: строка на каждый; толщины нет в профиле — «—»", "станок «Станок 1»" in txt and "станок «Станок 2»" in txt
               and ms and all(m.get("Станок 1") and m.get("Станок 2", 0) is None for m in ms), str(ms[:1]))
@@ -496,7 +498,7 @@ def samples():
             S = res["strategies"]
             check("%s: у всех стратегий одни листы (%d)" % (tag, res["sheets"]), len({v["sheets"] for v in S.values()}) == 1)
             lay = pl["layouts"]
-            risks, lead = {}, {}
+            risks, lead, strips = {}, {}, {}
             for st in list(R.STRATEGIES) + ["как было"]:
                 strat = st if st in R.STRATEGIES else dict(key="short")
                 rs = []
@@ -510,6 +512,7 @@ def samples():
                 ok = all(x[1] is not False for x in rep)
                 lead[st] = next(((x[1], x[2]) for x in rep if "подвод" in x[0]), (True, ""))
                 risks[st] = [r["risk"] for r in rs]
+                strips[st] = [r["strip"] for r in rs]
                 if st in R.STRATEGIES:
                     check("%s, %s: все проверки программы" % (tag, st), ok, "; ".join(x[0] for x in rep if x[1] is False))
                     rc = recount(raw2, parts, L2)
@@ -535,6 +538,11 @@ def samples():
             bad = [b for k in range(len(lay)) for b in keys_ok({st: risks[st][k] for st in R.STRATEGIES}, "раскладка %d" % (k + 1))]
             check("%s: на каждой раскладке safe ≤ short, safe ≤ safe0; с возвратом safe0 ≤ safe, safe0 ≤ short" % tag, not bad,
                   "; ".join(bad[:3]))
+            # «Горкой» — ступенька, пока не опаснее; иначе кандидат безопасных без узкой полосы: не хуже safe по (полоса, опасные)
+            hb = [k + 1 for k in range(len(lay)) if (bool(strips["hill"][k]["strip"]), tuple(risks["hill"][k]["key"][:4])) >
+                  (bool(strips["safe"][k]["strip"]), tuple(risks["safe"][k]["key"][:4]))]
+            check("%s: на каждой раскладке «Горкой» не хуже safe по (узкая полоса в конце, ступени опасных)" % tag, not hb,
+                  "раскладки %s" % hb[:5])
 
             def lmin(v):
                 import re

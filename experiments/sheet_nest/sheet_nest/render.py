@@ -58,6 +58,7 @@ C_HOLE = (140, 40, 190)       # над вырезанным отверстием
 C_NEAR = (245, 140, 0)        # впритирку к освобождённой детали — оранжевый
 C_IDLE = (238, 160, 150)      # обычный холостой — тонкий светло-красный
 C_RET = (120, 120, 120)       # возврат в ноль (настройка станка, в программе его нет) — серый пунктир
+C_BRIDGE = (0, 125, 70)       # общий контур моста (детали с перемычками) — тёмно-зелёный, толще
 
 
 def _move_style(v):
@@ -89,9 +90,9 @@ def png_model(raw, path, title="", px_per_mm=None, cols=6, moves=None):
     [(откуда, куда, вектор risk)] в порядке программы (последний — возврат в ноль): опасные переходы своими цветами,
     возврат — пунктиром; переходы сверяются с программой (не совпали — рисуются как обычные)."""
     from PIL import Image, ImageDraw
-    from .libpath import vn
     from . import geom as G
-    M = vn.spec_rebuild.decompile(raw)
+    from .write_lxds import decompile_free, FREE
+    M = decompile_free(raw)                             # вставки мостов (без NestPart) пакет сам не разбирает
     bn = {b["name"]: b for b in M["blocks"]}
     plates = {p["handle"]: p for p in M["plates"]}
     res = M["results"]
@@ -134,11 +135,14 @@ def png_model(raw, path, title="", px_per_mm=None, cols=6, moves=None):
         P = lambda p: (ox + p[0] * px_per_mm, oy + h - p[1] * px_per_mm)
         dr.rectangle([ox, oy, ox + pl["W"] * px_per_mm, oy + h], outline=(150, 150, 150), fill=(250, 250, 247))
         mv = moves[n] if moves and n < len(moves) else None
-        pos, idle, ng, k, danger = (0.0, 0.0), 0.0, 0, 0, 0
+        pos, idle, ng, nb, k, danger = (0.0, 0.0), 0.0, 0, 0, 0, 0
         segs, shapes = [], []
         for ins in r["inserts"]:
             ng += ins["ref"][0] == "NestGroup"
-            for s in bn[ins["block"]]["shapes"]:
+            nb += ins["ref"] == FREE
+            blk = bn[ins["block"]]["shapes"]
+            bo = max((x for x in blk if G.is_closed(x)), key=G.area, default=None) if ins["ref"] == FREE else None
+            for s in blk:
                 a, b = G.ends(s)
                 style = (C_IDLE, 1)
                 if mv and k < len(mv) and math.dist(mv[k][0], pos) < 0.01 and math.dist(mv[k][1], a) < 0.01:
@@ -146,15 +150,21 @@ def png_model(raw, path, title="", px_per_mm=None, cols=6, moves=None):
                     danger += style[0] in (C_PART, C_HOLE)
                 segs.append((P(pos), P(a), style))
                 idle += math.dist(pos, a)
-                shapes.append(s)
+                shapes.append((s, s is bo))
                 pos = b
                 k += 1
-        for s in shapes:
+        for s, bridge in shapes:
             pts = G.points(s, 0.5)
             if G.is_closed(s):
                 pts = pts + pts[:1]
-            col = (40, 90, 210) if s["layer"] == 2 else ((150, 70, 0) if s.get("coedge") else (20, 20, 20))
-            dr.line([P(p) for p in pts], fill=col, width=1)
+            col = (40, 90, 210) if s["layer"] == 2 else ((150, 70, 0) if s.get("coedge") else C_BRIDGE if bridge else (20, 20, 20))
+            dr.line([P(p) for p in pts], fill=col, width=2 if bridge else 1)
+            if bridge and s["kind"] == "LwPolyline":    # перемычки (прямые общего контура, по две на мост) — метка
+                V = s["verts"]
+                for i in range(len(V)):
+                    if abs(V[i][2]) < 1e-12:
+                        x, y = P(((V[i][0] + V[(i + 1) % len(V)][0]) / 2, (V[i][1] + V[(i + 1) % len(V)][1]) / 2))
+                        dr.ellipse([x - 2.5, y - 2.5, x + 2.5, y + 2.5], fill=C_BRIDGE)
         for a, b, (col, w) in sorted(segs, key=lambda v: v[2][1]):        # опасные — поверх
             dr.line([a, b], fill=col, width=w)
         if mv and len(mv) == k + 1 and math.dist(mv[-1][0], pos) < 0.01:   # возврат в ноль: над деталями — толще
@@ -162,9 +172,103 @@ def png_model(raw, path, title="", px_per_mm=None, cols=6, moves=None):
         x, y = P((0, 0)); dr.ellipse([x - 4, y - 4, x + 4, y + 4], fill=(0, 160, 60))
         dr.text((ox, oy - top + 6), "№%d  ×%d лист.  %g×%g" % (r["index"], r["plate_amount"], pl["W"], pl["L"]), fill=(0, 0, 0), font=Fb)
         # подпись — строками (в одну строку с общим резом налезала на соседнюю раскладку: 6 в ряд при 0,2 пикс/мм)
-        dr.text((ox, oy - top + 26), "холостой %.1f м%s" % (idle / 1000, ("  · групп общего реза %d" % ng) if ng else ""),
-                fill=(60, 60, 60), font=F)
+        dr.text((ox, oy - top + 26), "холостой %.1f м%s%s" % (idle / 1000, ("  · групп общего реза %d" % ng) if ng else "",
+                                                             ("  · мостов %d" % nb) if nb else ""), fill=(60, 60, 60), font=F)
         if mv:
             dr.text((ox, oy - top + 46), "опасных переходов %d" % danger, fill=C_PART if danger else (60, 60, 60), font=F)
+    img.save(path)
+    return path
+
+
+def order_color(t):
+    """Цвет места в порядке резки t ∈ [0, 1]: синий → голубой → зелёный → жёлтый → красный."""
+    stops = [(0.0, (40, 70, 200)), (0.25, (30, 170, 220)), (0.5, (60, 180, 75)), (0.75, (240, 200, 40)), (1.0, (215, 40, 30))]
+    t = min(1.0, max(0.0, t))
+    for (t0, c0), (t1, c1) in zip(stops, stops[1:]):
+        if t <= t1:
+            f = (t - t0) / (t1 - t0) if t1 > t0 else 0.0
+            return tuple(int(round(a + (b - a) * f)) for a, b in zip(c0, c1))
+    return stops[-1][1]
+
+
+def png_order(raw, path, title="", px_per_mm=None, cols=6, strips=None, done_polys=None):
+    """Порядок резки цветом (решение 14.10: «Горкой» должно быть видно): каждая вставка программы (деталь, группа общего
+    реза, мост) залита цветом своего места в программе — от синего (первая) к красному (последняя), отверстия — белые.
+    strips — остаток к концу резки по раскладкам (risk.end_strip): его габарит — пунктиром, узкая полоса — красным.
+    done_polys — по раскладкам контуры деталей в порядке освобождения (маршрут общего реза: группа — одна вставка, а
+    детали в ней освобождаются по очереди): тогда цвет — у каждой детали по её месту, вставки групп не заливаются."""
+    from PIL import Image, ImageDraw
+    from . import geom as G
+    from .write_lxds import decompile_free
+    M = decompile_free(raw)
+    bn = {b["name"]: b for b in M["blocks"]}
+    plates = {p["handle"]: p for p in M["plates"]}
+    res = M["results"]
+    Wm = max(plates[r["plate"]]["W"] for r in res); Lm = max(plates[r["plate"]]["L"] for r in res)
+    cols = min(cols, len(res))
+    if px_per_mm is None:
+        px_per_mm = max(0.2, min(1.0, 1200.0 / (cols * Wm)))
+    W, H = int(Wm * px_per_mm), int(Lm * px_per_mm)
+    pad, top = 24, 78
+    F, Fb = _font(15), _font(16, True)
+    width = cols * (W + pad) + pad
+    head = (50 if title else 8) + 30
+    rows = (len(res) + cols - 1) // cols
+    img = Image.new("RGB", (width, head + rows * (H + top + pad) + pad), "white")
+    dr = ImageDraw.Draw(img)
+    if title:
+        dr.text((pad, 14), title, fill=(0, 0, 0), font=_font(20, True))
+    y = (50 if title else 8)
+    for j in range(200):                                 # шкала порядка
+        dr.line([(pad + j, y + 4), (pad + j, y + 18)], fill=order_color(j / 199))
+    dr.text((pad + 210, y + 2), "первая → последняя", fill=(40, 40, 40), font=F)
+    _dashed(dr, (pad + 420, y + 11), (pad + 460, y + 11), (215, 0, 0), 2)
+    dr.text((pad + 466, y + 2), "остаток к концу резки (последние 20 % деталей)", fill=(40, 40, 40), font=F)
+    for n, r in enumerate(res):
+        pl = plates[r["plate"]]
+        ox, oy = pad + (n % cols) * (W + pad), head + pad + top + (n // cols) * (H + top + pad)
+        h = pl["L"] * px_per_mm
+        P = lambda p: (ox + p[0] * px_per_mm, oy + h - p[1] * px_per_mm)
+        dr.rectangle([ox, oy, ox + pl["W"] * px_per_mm, oy + h], outline=(150, 150, 150), fill=(250, 250, 247))
+        ins = r["inserts"]
+        dp = done_polys[n] if done_polys and n < len(done_polys) else None
+        if dp:                                          # детали по порядку освобождения (общий рез)
+            for k, Pp in enumerate(dp):
+                pts = [P(p) for p in Pp]
+                if len(pts) >= 3:
+                    dr.polygon(pts, fill=order_color(k / max(1, len(dp) - 1)), outline=(60, 60, 60))
+        for k, i in enumerate(ins):
+            col = order_color(k / max(1, len(ins) - 1))
+            blk = bn[i["block"]]["shapes"]
+            cl = [s for s in blk if G.is_closed(s) and s["layer"] == 1]
+            big = max(cl, key=G.area, default=None)
+            # с done_polys детали уже залиты своим цветом — внешние контуры только обводятся
+            outer = [s for s in cl if s.get("outer") or (s is big and not dp)]
+            for s in outer:
+                pts = [P(p) for p in G.points(s, 0.5)]
+                if len(pts) >= 3:
+                    dr.polygon(pts, fill=None if dp else col, outline=(60, 60, 60))
+            for s in blk:
+                if any(s is o for o in outer):
+                    continue
+                pts = [P(p) for p in G.points(s, 0.5)]
+                if G.is_closed(s) and len(pts) >= 3 and s["layer"] == 1:
+                    dr.polygon(pts, fill=(255, 255, 255), outline=(60, 60, 60))
+                elif len(pts) >= 2:
+                    th = s.get("outer") and not dp
+                    dr.line(pts + (pts[:1] if G.is_closed(s) else []), fill=col if th else (60, 60, 60), width=3 if th else 1)
+        st = strips[n] if strips and n < len(strips) else None
+        if st:
+            x0, y0, x1, y1 = st["box"]
+            c = (215, 0, 0) if st["strip"] else (90, 90, 90)
+            for a, b in (((x0, y0), (x1, y0)), ((x1, y0), (x1, y1)), ((x1, y1), (x0, y1)), ((x0, y1), (x0, y0))):
+                _dashed(dr, P(a), P(b), c, 3)
+        x, y_ = P((0, 0)); dr.ellipse([x - 4, y_ - 4, x + 4, y_ + 4], fill=(0, 160, 60))
+        dr.text((ox, oy - top + 6), "№%d  ×%d лист.  %g×%g" % (r["index"], r["plate_amount"], pl["W"], pl["L"]), fill=(0, 0, 0), font=Fb)
+        dr.text((ox, oy - top + 26), "вставок %d%s" % (len(ins), (", цвет — по деталям (%d)" % len(dp)) if dp else ""),
+                fill=(60, 60, 60), font=F)
+        if st:
+            dr.text((ox, oy - top + 46), "остаток %.0f×%.0f мм%s" % (st["w"], st["l"], " — узкая полоса" if st["strip"] else ""),
+                    fill=(215, 0, 0) if st["strip"] else (60, 60, 60), font=F)
     img.save(path)
     return path

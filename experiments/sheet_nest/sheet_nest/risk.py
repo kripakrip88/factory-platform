@@ -69,7 +69,23 @@ def obstacle(s, sag=0.2):
         cx, cy, r = s["c"][0], s["c"][1], s["r"]
         return (None, (cx - r, cy - r, cx + r, cy + r), (cx, cy, r))
     P = G.points(s, sag)
+    if s.get("_bridge") is not None:                    # общий контур моста — объединение окружностей и перемычек
+        P = G.Poly(P, s["_bridge"].parts())
     return (P, _bbox(P), None)
+
+
+def _subs(P):
+    """Части объединения (G.Poly) — препятствия: окружности точно, перемычки — прямоугольники (кэш в объекте)."""
+    sub = getattr(P, "_subs", None)
+    if sub is None:
+        sub = []
+        for q in P.parts:
+            if q[0] == "c":
+                sub.append((None, (q[1] - q[3], q[2] - q[3], q[1] + q[3], q[2] + q[3]), (q[1], q[2], q[3])))
+            else:
+                sub.append((q[1], _bbox(q[1]), None))
+        P._subs = sub
+    return sub
 
 
 def _area(P):
@@ -336,6 +352,8 @@ def deep_len(a, b, ob, margin):
     L = D(a, b)
     if L < 1e-9:
         return 0.0
+    if type(P) is G.Poly:                               # объединение (мост): по частям — окружности не пересекаются,
+        return sum(deep_len(a, b, q, margin) for q in _subs(P))    # перемычки между ними (наложение < 0,01 мм)
     if circ:
         cx, cy, r = circ
         rr = r - margin
@@ -382,6 +400,8 @@ def inside_len(a, b, ob):
     L = D(a, b)
     if L < 1e-9:
         return 0.0
+    if type(P) is G.Poly:
+        return sum(inside_len(a, b, q) for q in _subs(P))
     if circ:
         return deep_len(a, b, ob, 0.0)
     return sum(t1 - t0 for t0, t1 in _inside_runs(a, b, P))
@@ -398,6 +418,8 @@ def _seg_seg(p1, p2, q1, q2):
 def near_to(a2, b2, ob, near=NEAR):
     """Отрезок a2→b2 ближе near к препятствию (к кромке или внутри)."""
     P, bx, circ = ob
+    if type(P) is G.Poly:
+        return any(near_to(a2, b2, q, near) for q in _subs(P))
     if circ:
         return G.seg_point_dist((circ[0], circ[1]), a2, b2) < circ[2] + near
     if G.inside(a2, P):
@@ -603,6 +625,44 @@ def measure(tagged, kinds, polys, head=(0.0, 0.0), ret=True, feat=None, obs=None
     out["key0"] = safe_key(vadd(vec, rv), idle + rl)
     out["moves"] = moves + [(pos, head, rv)] if ret else moves
     return out
+
+
+# ================================================================================ конец листа: узкая полоса
+END_FRAC = 0.2       # «конец листа» — последние 20 % деталей по порядку резки (остаток при 80 % готовности)
+STRIP_PARTS = 3      # узкая полоса — не больше стольких деталей поперёк (уже STRIP_PARTS + 0,5 ширины детали — медиана меньшей
+                     # стороны габарита детали на листе; m14: три колонки шайб — 319 мм при ширине 104,6)…
+STRIP_MIN = 10       # …на листе хотя бы из стольких деталей (у листа из трёх решёток «конец» — одна решётка)
+STRIP_ALONG = 2.5    # …и полоса — из деталей вдоль неё: длиннее стольких длин детали остатка (хотя бы три; три бруса 200×2105 рядом —
+                     # не полоса, которую можно убрать порядком: это сами детали; m3_grpsh, разбор 14.10)
+
+
+def end_strip(units, W, L, frac=END_FRAC):
+    """«Узкая полоса в конце» (решение Антона 14.10.2026: к концу резки не должна оставаться узкая полоса во всю длину
+    листа — её ведёт от перегрева). units — детали или единицы резки в порядке освобождения: [(габарит (x0, y0, x1, y1),
+    деталей, [меньшая сторона габарита каждой детали][, [большая сторона]])] (группа моста освобождается целиком — одна
+    единица из нескольких деталей; у общего реза — каждая деталь отдельно, по последнему своему куску). Остаток —
+    последние единицы, в которых frac деталей (не меньше одной единицы): его габарит, меньшая (w) и большая (l)
+    сторона, вытянутость; strip — полоса не больше STRIP_PARTS деталей поперёк (уже STRIP_PARTS + 0,5 ширины детали),
+    длиннее половины большей стороны листа и длиннее STRIP_ALONG длин детали остатка (медиана большей стороны) — полоса
+    из деталей вдоль неё, а не сами длинные детали (на листе ≥ STRIP_MIN деталей). None — на листе ничего нет."""
+    if not units:
+        return None
+    tot = sum(u[1] for u in units)
+    acc, k = 0, len(units)
+    while k > 0 and (acc < frac * tot - 1e-9 or k == len(units)):
+        k -= 1
+        acc += units[k][1]
+    rest = units[k:]
+    x0, y0 = min(u[0][0] for u in rest), min(u[0][1] for u in rest)
+    x1, y1 = max(u[0][2] for u in rest), max(u[0][3] for u in rest)
+    a, b = sorted((x1 - x0, y1 - y0))
+    ws = sorted(w for u in units for w in u[2])
+    pw = ws[len(ws) // 2]
+    ls = sorted(x for u in rest for x in (u[3] if len(u) > 3 else u[2]))
+    pl = ls[len(ls) // 2]
+    strip = tot >= STRIP_MIN and a < (STRIP_PARTS + 0.5) * pw and b > max(W, L) / 2 and b > STRIP_ALONG * pl
+    return dict(w=round(float(a), 1), l=round(float(b), 1), aspect=round(float(b / max(a, 1e-9)), 2), parts=acc, of=tot,
+                part_w=round(float(pw), 1), part_l=round(float(pl), 1), strip=bool(strip), box=[round(float(v), 1) for v in (x0, y0, x1, y1)])
 
 
 def total(rs, amounts):

@@ -5,7 +5,8 @@
 
     parts, info = parts_from_lxds(data, filename)
     info: technical (байты Technical/content.xml — параметры резки инженера), groups (пары общего реза CypCut),
-          app (версия CypCut), plates (размеры листов программы), warnings
+          app (версия CypCut), plates (размеры листов программы), bridges (вставок мостов CypCut — без ссылки на деталь;
+          количество деталей всё равно из Amount — у CypCut это заказ, детали моста в него входят), warnings
 """
 import io, zipfile, math
 import xml.etree.ElementTree as ET
@@ -74,6 +75,18 @@ def parts_from_lxds(data, filename="программа.lxds"):
             info["plates"].append((pts[2][0], pts[2][1], int(p.get("Amount") or 0)))
     except Exception:
         pass
+    # мосты CypCut: вставка раскладки без NestPart/NestGroup (детали моста в AmountUsed не входят, Amount — заказ)
+    info["bridges"] = 0
+    try:
+        for r in X("Nest2D/Results/content.xml"):
+            rc = X("Nest2D/Results/%s/content.xml" % r.get("Index"))
+            info["bridges"] += sum(1 for s in rc.iter("Shape") if s.get("Class") == "Insert" and s.get("NestPart") is None
+                                   and s.get("NestGroup") is None)
+    except Exception:
+        pass
+    if info["bridges"]:
+        info["warnings"].append("в программе мостов CypCut: %d (вставки без ссылки на деталь) — количество деталей взято из "
+                                "Amount (заказ, с деталями мостов)" % info["bridges"])
     if not parts:
         raise LxdsError("%s: в программе нет деталей" % filename)
     return parts, info
