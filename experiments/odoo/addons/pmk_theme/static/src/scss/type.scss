@@ -256,3 +256,25 @@ body {
 .o_form_view.pmk-labels-top-groups.pmk-lt-wide-partner .o_inner_group.grid > .o_pmk_row:has(.o_field_widget[name="partner_id"]) {
   grid-column: 1 / -1;
 }
+
+
+// ─── Заголовки документов (Антон 15.10.2026: «занимают крайне много места») ─
+// Счёт, расчёт, доборка, закупка, задача, контрагент — 18 px, как у лида
+// (forms_nexus.scss, .o_lead_opportunity_form). Было 28 px ядра. Поля внутри
+// заголовка (номер, дата, название) — тем же размером. Заголовки в тексте
+// заметок и писем (html-поля) не трогаем.
+.o_form_view .o_form_sheet h1:not(:where(.o_field_html *, .odoo-editor-editable *)) {
+  font-size: 18px;
+  line-height: 1.3;
+  margin-bottom: 4px;
+  // У ядра min-height 55px под 28-px заголовок — без неё пустая полоса.
+  min-height: 0;
+
+  .o_input,
+  .o_field_widget,
+  .o_field_widget input,
+  button.o_input {
+    font-size: inherit;
+    line-height: inherit;
+  }
+}
