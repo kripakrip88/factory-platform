@@ -29,6 +29,9 @@ class TestShortNames(TransactionCase):
         self.assertEqual(ip_full_print_name("Индивидуальный предприниматель Данилов Кирилл Анатольевич"),
                          "ИП Данилов Кирилл Анатольевич")
         self.assertIsNone(ip_full_print_name("ООО «Х»"))
+        # Уже с инициалами — инициалы как есть (на боевом печаталось «А.в.»).
+        self.assertEqual(ip_full_print_name("ИП Карнеев А.В."), "ИП Карнеев А.В.")
+        self.assertEqual(ip_full_print_name("ИП ЧУЛКОВ ВЛАДИСЛАВ ВИТАЛЬЕВИЧ"), "ИП Чулков Владислав Витальевич")
 
     def test_partner_create_write(self):
         Partner = self.env["res.partner"]

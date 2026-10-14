@@ -29,8 +29,9 @@ _QUOTED = re.compile(r'^(ООО|ПАО|АО|ЗАО|ОАО)\s+"([^"]+)"$')
 
 
 def _surname(word):
-    # «ЧУЛКОВ» → «Чулков», «Римский-Корсаков» — как есть.
-    if word.isupper():
+    # «ЧУЛКОВ» → «Чулков», «Римский-Корсаков» — как есть; инициалы «А.В.» —
+    # как есть (иначе «А.в.»).
+    if word.isupper() and word.replace("-", "").isalpha():
         return "-".join(part.capitalize() for part in word.split("-"))
     return word
 
