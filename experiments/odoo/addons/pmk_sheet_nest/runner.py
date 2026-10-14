@@ -25,6 +25,9 @@ def _engine_dir(inp):
 
 
 def run(workdir):
+    """Код выхода движка (0 итог, 1 ошибка, 2 ничего не записано, 3 сторож) — для журнала;
+    Odoo итог берёт из файлов."""
+    inp = {}
     try:
         with open(os.path.join(workdir, "input.json"), encoding="utf-8") as f:
             inp = json.load(f)
@@ -35,15 +38,21 @@ def run(workdir):
         else:
             sys.path.insert(0, os.path.join(MODULE_DIR, "stub"))
             import stub_job as job
-        job.main(workdir)
-    except BaseException:  # noqa: BLE001 — сбой должен дойти до Odoo, а не умереть молча
+        return job.main(workdir) or 0
+    except SystemExit:
+        raise
+    except BaseException as e:  # noqa: BLE001 — сбой должен дойти до Odoo, а не умереть молча
         path = os.path.join(workdir, "error.json")
         if not os.path.exists(path) and not os.path.exists(os.path.join(workdir, "result.json")):
+            run_id = inp.get("run_id") if isinstance(inp, dict) else None
             with open(path + ".tmp", "w", encoding="utf-8") as f:
                 json.dump({"contract": "sheet_nest.job/1", "kind": "engine", "user": False,
-                           "message": traceback.format_exc()[-4000:], "trace": ""}, f, ensure_ascii=False)
+                           "message": ("%s: %s" % (type(e).__name__, e))[:1000],
+                           "trace": traceback.format_exc()[-4000:], "run_id": run_id, "input": None},
+                          f, ensure_ascii=False)
             os.replace(path + ".tmp", path)
+        return 1
 
 
 if __name__ == "__main__":
-    run(sys.argv[1])
+    sys.exit(run(sys.argv[1]))

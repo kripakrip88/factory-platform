@@ -32,7 +32,7 @@ def _write(workdir, name, data):
 
 def _error(workdir, inp, kind, message, user=True):
     _write(workdir, "error.json", {"contract": CONTRACT, "run_id": inp.get("run_id"),
-                                   "kind": kind, "user": user, "message": message, "trace": ""})
+                                   "kind": kind, "user": user, "message": message, "trace": "", "input": None})
 
 
 def _png(path, text):
@@ -98,16 +98,19 @@ def main(workdir):
     if inp.get("coedge") and sheets > 2:
         sheets -= 1
     rows = []
+    titles = {"short": "Минимум холостого", "safe": "Безопасный", "safe0": "Безопасный, конец у нуля",
+              "hill": "Горкой"}
     for i, key in enumerate(STRATEGIES):
         rows.append({
-            "strategy": key, "sheets": sheets,
+            "name": key, "title": titles[key], "sheets": sheets,
             "cut_m": round(22.6 * sheets, 1), "idle_m": round(7.8 * sheets + 3 * i, 1),
             "return_m": round(1.8 * sheets if key != "safe0" else 0.2 * sheets, 1),
-            "pierces": 32 * sheets if not inp.get("bridge") else 19 * sheets,
+            "pierces": 32 * sheets if not inp.get("bridge") else 19 * sheets, "bridges": None,
             "danger": {"tongues": 0, "small": [3, 0, 1, 2][i], "parts": [11, 0, 0, 1][i], "holes": 0,
                        "holes_s": 2, "near": 40, "short": 12, "mj": 0},
-            "strip": {"rest_mm": 58, "narrow": 0}, "ret": round([4.1, 1.2, 0.3, 2.2][i] * sheets, 1),
-            "warnings": 1 if key == "hill" else 0, "machine_s": None,
+            "strip": {"sheets": 0, "worst": None},
+            "ret": {"over_m": round([4.1, 1.2, 0.3, 2.2][i] * sheets, 1), "tongues_crossed": 0, "over": 0},
+            "warnings": ["заглушка"] if key == "hill" else [], "machine_s": {}, "error": None,
         })
     files = {"lxds": None, "png_layouts": None, "png_order": None, "report": None}
     os.makedirs(os.path.join(workdir, "out"), exist_ok=True)

@@ -8,6 +8,7 @@ sheet_nest, те же тесты погоняют его: проверки зд�
 import base64
 import json
 import os
+import sys
 from unittest import mock
 
 from lxml import etree
@@ -17,14 +18,24 @@ from odoo.tests import TransactionCase, tagged
 
 from ..models.run import LIB_DIR
 
-DXF = "\n".join([
-    "  0", "SECTION", "  2", "ENTITIES",
-    "  0", "LINE", "  8", "0",
-    " 10", "0.0", " 20", "0.0", " 30", "0.0",
-    " 11", "120.0", " 21", "40.0", " 31", "0.0",
-    "  0", "ENDSEC", "  0", "EOF", "",
-]).encode()
 STUB = not os.path.isdir(os.path.join(LIB_DIR, "sheet_nest"))
+
+
+def _dxf(w=120, h=40, hole=8):
+    """Пластина w×h с отверстием — тем же писателем DXF, что тесты движка (lib/tests/fixtures)."""
+    sys.path.insert(0, os.path.join(LIB_DIR, "tests", "fixtures"))
+    try:
+        from dxf_writer import DxfDoc
+    finally:
+        sys.path.pop(0)
+    doc = DxfDoc()
+    doc.entities.lwpolyline([(0, 0), (w, 0), (w, h), (0, h)], closed=True)
+    if hole:
+        doc.entities.circle((w / 2, h / 2), hole)
+    return doc.dxf_bytes()
+
+
+DXF = _dxf()
 
 
 @tagged("post_install", "-at_install")
@@ -91,11 +102,13 @@ class TestSheetNest(TransactionCase):
         job = self._job(parts=(("Решётка", 3), ("Решётка", 2)))
         with self.assertRaisesRegex(UserError, "одинаковые имена"):
             job.action_nest_plan()
-        job = self._job(parts=(("Решётка_12шт", 3),))
-        with self.assertRaisesRegex(UserError, "Переименуйте"):
+        job = self._job(parts=(("Решётка", 15000), ("Косынка", 5001)))
+        with self.assertRaisesRegex(UserError, "не больше 20000"):
             job.action_nest_plan()
-        job = self._job(parts=(("A&B", 3),))
-        with self.assertRaisesRegex(UserError, "Переименуйте"):
+        job = self._job()
+        job.part_ids.nest_label = "ЗК-1"
+        self.env["ir.config_parameter"].sudo().set_param("pmk_sheet_nest.font_strokes_json", False)
+        with self.assertRaisesRegex(UserError, "Подписи пока недоступны"):
             job.action_nest_plan()
         job = self._job(parts=())
         with self.assertRaisesRegex(UserError, "Нечего раскладывать"):
@@ -135,6 +148,17 @@ class TestSheetNest(TransactionCase):
             self.assertIn("Заглушка", job.nest_warnings)
             with self.assertRaises(UserError):
                 job.action_nest_accept()
+        else:
+            self.assertTrue(build.ok, build.result_json)
+            self.assertTrue(build.lxds_name.endswith(".lxds"))
+            self.assertTrue(job.nest_can_accept)
+            self.assertTrue(job.with_context(bin_size=False).nest_png_order, "картинка порядка резки")
+            # Программа движка — в разбор pmk_laser как есть: листы в очередь, детали с чертежами.
+            job.action_nest_accept()
+            self.assertEqual(job.file_name, build.lxds_name)
+            self.assertEqual(len(job.sheet_ids), build.sheets)
+            self.assertEqual(job.part_ids.filtered(lambda p: p.name == "Решётка").qty, 30)
+            self.assertTrue(job.part_ids.filtered(lambda p: p.name == "Решётка").drawing, "чертёж сохранился")
         notes = job.message_ids.mapped("body")
         self.assertTrue(any("Раскрой готов" in (b or "") for b in notes), "заметка о раскрое в истории")
 

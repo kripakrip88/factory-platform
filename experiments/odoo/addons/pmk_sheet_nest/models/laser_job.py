@@ -14,11 +14,11 @@ import re
 from odoo import api, fields, models
 from odoo.exceptions import UserError, ValidationError
 
-from .run import CONTRACT, LIB_DIR, STRATEGIES
+from .run import CONTRACT, LIB_DIR, STRATEGIES, TIME_LIMIT_S
 
-BAD_NAME = re.compile(r"[&<>\"']")
-# Хвосты, которые движок принимает за количество: «_12шт», «(2)», « x12».
-QTY_TAIL = re.compile(r"(_\d+\s*шт\.?|\(\d+\)|\s[xх×]\s*\d+)\s*$", re.I)
+# Деталей в прогоне (сумма количеств) — не больше: память контейнера кончалась раньше
+# предела времени (контракт sheet_nest.job/1, уточнение 19).
+MAX_PARTS = 20000
 TITLE_BAD = re.compile(r"[/\\:*?\"<>|]")
 CUT_WARN = "Автосортировку в CypCut не запускать — она затрёт порядок резки."
 
@@ -202,17 +202,31 @@ class LaserJob(models.Model):
         if not parts and not self.nest_source_file:
             raise UserError("Нечего раскладывать: приложите чертежи .dxf к деталям (вкладка «Детали и чертежи») "
                             "или программу-источник CypCut.")
-        names = [p.name for p in parts]
+        names = [(p.name or "").strip() for p in parts]
         dup = sorted({n for n in names if names.count(n) > 1})
         if dup:
             raise UserError("У деталей одинаковые имена: %s. Имя детали должно быть уникальным — по нему "
                             "чертёж находит свою деталь после разбора программы." % ", ".join(dup))
-        bad = [p.name for p in parts if BAD_NAME.search(p.name or "") or QTY_TAIL.search(p.name or "")]
-        if bad:
-            raise UserError("Переименуйте детали: %s. В имени нельзя & < > \" ' и хвосты вида «_12шт», «(2)», "
-                            "« x12» — движок примет их за количество." % ", ".join(bad))
+        if any(not n for n in names):
+            raise UserError("У каждой детали с чертежом должно быть имя.")
         if any(p.qty <= 0 for p in parts):
             raise UserError("У каждой детали с чертежом должно быть количество больше нуля.")
+        if sum(parts.mapped("qty")) > MAX_PARTS:
+            raise UserError("В одном раскрое — не больше %d деталей. Разделите задание на несколько." % MAX_PARTS)
+        if (self.nest_label_all or any(parts.mapped("nest_label"))) and not self._nest_font():
+            raise UserError("Подписи пока недоступны: не загружена таблица шрифта ГОСТ (ставит администратор). "
+                            "Уберите подписи или запустите раскрой без них.")
+
+    def _nest_font(self):
+        """Таблица штрихов шрифта ГОСТ тип А (gost_type_a_strokes.json) — системный параметр.
+        Шрифт АСКОН в git не кладём (репозиторий открытый): администратор вставляет таблицу,
+        выгруженную `python3 -m sheet_nest.labels export GOST.FON …`."""
+        return self.env["ir.config_parameter"].sudo().get_param("pmk_sheet_nest.font_strokes_json") or ""
+
+    def _nest_write_font(self, workdir):
+        with open(os.path.join(workdir, "in/font.json"), "w", encoding="utf-8") as f:
+            f.write(self._nest_font())
+        return "in/font.json"
 
     def _nest_input(self, run, workdir):
         """input.json по контракту sheet_nest.job/1 и файлы в in/."""
@@ -224,14 +238,19 @@ class LaserJob(models.Model):
             rel = "in/%d.dxf" % i
             with open(os.path.join(workdir, rel), "wb") as f:
                 f.write(base64.b64decode(part.drawing))
-            inputs.append({"file": rel, "name": part.name, "qty": part.qty,
+            inputs.append({"file": rel, "name": part.name.strip(), "qty": part.qty,
                            "key": "pmk.laser.job.part,%d" % part.id})
         if self.nest_source_file:
-            with open(os.path.join(workdir, "in/source.lxds"), "wb") as f:
+            # Под настоящим именем: оно попадает в тексты ошибок движка.
+            name = os.path.basename(self.nest_source_name or "") or "программа.lxds"
+            if not name.lower().endswith(".lxds"):
+                name += ".lxds"
+            rel = "in/" + name
+            with open(os.path.join(workdir, rel), "wb") as f:
                 f.write(base64.b64decode(self.nest_source_file))
-            inputs.append({"file": "in/source.lxds"})
+            inputs.append({"file": rel, "key": "pmk.laser.job,%d" % self.id})
         params = json.loads(run.params_json or "{}")
-        labels = {p.name: p.nest_label for p in self.part_ids if p.nest_label}
+        labels = {p.name.strip(): p.nest_label for p in self.part_ids if p.nest_label}
         if params.get("label_all"):
             labels["*"] = params["label_all"]
         vent_lib = os.path.join(os.path.dirname(os.path.dirname(LIB_DIR)), "pmk_vent_nest", "lib")
@@ -243,9 +262,10 @@ class LaserJob(models.Model):
             "thickness": self.thickness_mm,
             "strategy": run.strategy or "safe", "compare": run.kind == "plan",
             "coedge": params["coedge"], "bridge": params["bridge"], "small_mm": params["small_mm"],
-            "microjoints": [p.name for p in self.part_ids if p.nest_microjoint],
+            "microjoints": [p.name.strip() for p in self.part_ids if p.nest_microjoint],
             "labels": labels or None, "label_opts": {"H": 15, "H_min": 10, "margin": 3},
-            "font": None, "machines": [], "time_limit_s": 1800,
+            "font": self._nest_write_font(workdir) if labels else None,
+            "machines": [], "time_limit_s": TIME_LIMIT_S,
         }
 
     # ------------------------------------------------------------ кнопки

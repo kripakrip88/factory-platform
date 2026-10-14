@@ -47,14 +47,20 @@ export function summaryView(json, chosen) {
     }
     let list = res.strategies || [];
     if (!Array.isArray(list)) {
-        list = Object.entries(list).map(([strategy, row]) => ({ strategy, ...row }));
+        list = Object.entries(list).map(([name, row]) => ({ name, ...row }));
     }
-    const byKey = Object.fromEntries(list.map((r) => [r.strategy, r]));
+    // Строка сводки — по name (контракт sheet_nest.job/1); strategy — у заглушки до 15.10.
+    const byKey = Object.fromEntries(list.map((r) => [r.name || r.strategy, r]));
     const cols = STRATEGIES.filter(([k]) => byKey[k]).map(([key, label]) => ({
         key, label, chosen: key === chosen, untested: UNTESTED[key] || "",
+        error: byKey[key].error || "",
     }));
     const row = (label, get, opts = {}) => {
-        const values = cols.map((c) => get(byKey[c.key] || {}));
+        // Лучшее — по показанному (до десятых): 22,17 и 22,2 на экране одинаковы.
+        const values = cols.map((c) => {
+            const v = get(byKey[c.key] || {});
+            return typeof v === "number" ? Math.round(v * 10) / 10 : v;
+        });
         const nums = values.filter((v) => typeof v === "number" && !Number.isNaN(v));
         const best = nums.length && opts.better ? Math[opts.better === "min" ? "min" : "max"](...nums) : null;
         const allSame = nums.length > 1 && nums.every((v) => v === nums[0]);
@@ -76,7 +82,7 @@ export function summaryView(json, chosen) {
     ];
     if (list.some((r) => r.bridges)) {
         rows.push(row("мосты: групп / перемычек / деталей", (r) => r.bridges, {
-            fmt: (b) => (b ? `${b.groups ?? "—"} / ${b.joints ?? "—"} / ${b.parts ?? "—"}` : "—"),
+            fmt: (b) => (b ? `${b.groups ?? "—"} / ${b.bridges ?? "—"} / ${b.parts ?? "—"}` : "—"),
         }));
     }
     rows.push(row("опасные переходы", (r) => dangerTotal(r.danger), { better: "min", fmt: (v) => num(v, 0) }));
@@ -84,13 +90,17 @@ export function summaryView(json, chosen) {
         row(label, (r) => Number((r.danger || {})[k]) || 0,
             { sub: true, better: i < DANGER_MAIN.length ? "min" : null, fmt: (v) => num(v, 0) }));
     rows.push(
-        row("конец листа: остаток, мм", (r) => (r.strip || {}).rest_mm, { fmt: (v) => num(v, 0) }),
-        row("листов с узкой полосой", (r) => (r.strip || {}).narrow, { better: "min", fmt: (v) => num(v, 0) }),
-        row("возврат над деталями, м", (r) => r.ret, { better: "min" }),
-        row("предупреждений", (r) => r.warnings, { better: "min", fmt: (v) => num(v, 0) }),
+        row("листов с узкой полосой", (r) => (r.strip || {}).sheets, { better: "min", fmt: (v) => num(v, 0) }),
+        row("худший остаток листа, мм", (r) => ((r.strip || {}).worst || null), {
+            fmt: (w) => (w && w.w ? `${num(w.w, 0)} × ${num(w.l, 0)}` : "—"),
+        }),
+        row("возврат над деталями, м", (r) => (r.ret && typeof r.ret === "object" ? r.ret.over_m : r.ret),
+            { better: "min" }),
+        row("предупреждений", (r) => (Array.isArray(r.warnings) ? r.warnings.length : r.warnings),
+            { better: "min", fmt: (v) => num(v, 0) }),
         row("станок, мин", (r) => r.machine_s, {
-            fmt: (v) => (v && typeof v === "object"
-                ? Object.entries(v).map(([m, s]) => `${m}: ${num(s / 60)}`).join(", ")
+            fmt: (v) => (v && typeof v === "object" && Object.keys(v).length
+                ? Object.entries(v).map(([m, s]) => `${m}: ${s === null ? "—" : num(s / 60)}`).join(", ")
                 : (typeof v === "number" ? num(v / 60) : "—")),
         }),
     );
@@ -113,6 +123,11 @@ export function summaryView(json, chosen) {
     if (pick && pick.untested) {
         notes.push(pick.untested + ".");
     }
+    for (const c of cols) {
+        if (c.error) {
+            notes.push(`«${c.label}» с общим резом не строится: ${c.error}`);
+        }
+    }
     return { cols, rows, details, decision, notes, empty: !cols.length };
 }
 
@@ -130,7 +145,9 @@ export class SheetNestStrategyField extends Component {
     }
 
     async pick(col) {
-        if (this.props.readonly) {
+        // Столбец, который с общим резом не строится (error), не выбирается.
+        const c = this.view.cols.find((x) => x.key === col.key);
+        if (this.props.readonly || !c || c.error) {
             return;
         }
         await this.props.record.update({ [this.props.name]: col.key });

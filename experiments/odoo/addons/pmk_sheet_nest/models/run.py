@@ -33,6 +33,8 @@ CONTRACT = "sheet_nest.job/1"
 # Образцы ERP.md: до ~30 с на Mac, сервер ~3 раза медленнее. Предел с большим запасом;
 # выставить по замеру на сервере ×3 (пункт 9 задания).
 TIMEOUT = timedelta(minutes=45)
+# Предел движка (time_limit_s): SIGALRM → сторож → faulthandler (ERP.md); TIMEOUT с SIGKILL — страховка сверх.
+TIME_LIMIT_S = 1800
 NO_PID_GRACE = timedelta(minutes=2)
 # Общий ключ очереди раскроя (лист + вентзонты): pg_advisory_xact_lock.
 QUEUE_LOCK = 774201
@@ -233,6 +235,10 @@ class SheetNestRun(models.Model):
             if err is not None:
                 return self._apply_error(err)
             _logger.error("раскрой листа %s: процесс прервался\n%s", self.id, _log_tail(wd))
+            if (now - self.started_at).total_seconds() > TIME_LIMIT_S:
+                # Третья ступень предела (faulthandler) снимает процесс без итога.
+                return self._finish("error", "Расчёт не уложился в предел %d мин — остановлен."
+                                    % (TIME_LIMIT_S // 60), user_error=True, kind="timeout")
             return self._finish("error", "Расчёт прервался (например, перезапуск сервера). Запустите ещё раз.",
                                 kind="engine")
         if now - self.started_at > TIMEOUT:
