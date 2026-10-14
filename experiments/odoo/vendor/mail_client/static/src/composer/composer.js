@@ -1,4 +1,4 @@
-import { Component, markup, useRef, useState } from "@odoo/owl";
+import { Component, markup, onMounted, onWillUnmount, useRef, useState } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 import { _t } from "@web/core/l10n/translation";
 import { Wysiwyg } from "@html_editor/wysiwyg";
@@ -10,6 +10,9 @@ import { formatSize } from "../utils";
 
 // Anything larger and the SMTP submission is likely to be refused anyway.
 const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024;
+// ПРАВКА ПМК (шаг 6, разбор Г7): пауза в наборе, после которой черновик
+// сохраняется сам — только в Odoo; в «Черновики» ящика — при закрытии.
+const AUTOSAVE_DELAY = 2500;
 
 export class Composer extends Component {
     static template = "mail_client.Composer";
@@ -18,6 +21,14 @@ export class Composer extends Component {
         draft: { type: Object },
         onClose: { type: Function },
         onSent: { type: Function },
+        // ПРАВКА ПМК (шаг 6): ответ под письмом — компактный вид в окне
+        // чтения; ⤢ — тот же черновик на всю ширину (onExpand получает его
+        // свежую копию с сервера).
+        inline: { type: Boolean, optional: true },
+        onExpand: { type: Function, optional: true },
+        // Сохранил набранное сам, закрываясь без кнопки, — обновить список
+        // черновиков.
+        onFlushed: { type: Function, optional: true },
     };
 
     setup() {
@@ -39,6 +50,82 @@ export class Composer extends Component {
             showCode: false,
         });
         this.body = this.props.draft.body_html || "";
+
+        // ПРАВКА ПМК (шаг 6, Г7): автосохранение. pristine — ничего не
+        // тронуто: только что начатый ответ при закрытии не оставляет
+        // черновика (адрес, тема и цитата подставлены сами, «пустым» он не
+        // выглядит). Черновик, открытый из списка, не трогаем.
+        this.pristine = Boolean(this.props.draft.fresh);
+        this.closed = false;
+        this.autosaveTimer = null;
+        onMounted(() => {
+            const failed = this.props.draft.pmk_forward_failed;
+            if (failed && failed.length) {
+                this.notification.add(
+                    _t("Not attached, the mail server did not return: %s", failed.join(", ")),
+                    { type: "warning", sticky: true }
+                );
+            }
+        });
+        // Окно закрыли не кнопкой (открыли другое письмо, ушли из раздела) —
+        // набранное не теряем.
+        onWillUnmount(() => {
+            clearTimeout(this.autosaveTimer);
+            if (!this.closed && !this.pristine) {
+                this.saveDraft()
+                    .then(() => this.props.onFlushed?.())
+                    .catch(() => {});
+            } else if (!this.closed && this.props.draft.fresh) {
+                // Начатый и не тронутый ответ — следа не оставляет.
+                this.orm
+                    .call("mail.client.compose", "discard", [], { compose_id: this.props.draft.id })
+                    .catch(() => {});
+            }
+        });
+    }
+
+    get modeIcon() {
+        switch (this.props.draft.compose_mode) {
+            case "reply_all":
+                return "fa-reply-all";
+            case "forward":
+                return "fa-share";
+            default:
+                return "fa-reply";
+        }
+    }
+
+    /** Что-то изменили — сохранить, когда набор затихнет. */
+    touch() {
+        this.pristine = false;
+        this.state.savedAt = null;
+        clearTimeout(this.autosaveTimer);
+        this.autosaveTimer = setTimeout(() => this.autosave(), AUTOSAVE_DELAY);
+    }
+
+    async autosave() {
+        if (this.closed || this.state.sending) {
+            return;
+        }
+        try {
+            await this.saveDraft({ fileOnServer: false });
+            if (!this.closed) {
+                this.state.savedAt = new Date();
+            }
+        } catch {
+            // Нет связи — сохранится при закрытии или по кнопке.
+        }
+    }
+
+    async onExpand() {
+        clearTimeout(this.autosaveTimer);
+        const draft = await this.orm.call("mail.client.compose", "save_draft", [], {
+            compose_id: this.props.draft.id,
+            values: this.values(),
+            file_on_server: false,
+        });
+        this.closed = true;
+        this.props.onExpand({ ...draft, fresh: this.pristine });
     }
 
     /**
@@ -65,12 +152,12 @@ export class Composer extends Component {
 
     onCodeChange(ev) {
         this.body = ev.target.value;
-        this.state.savedAt = null;
+        this.touch();
     }
 
     updateField(field, value) {
         this.state[field] = value;
-        this.state.savedAt = null;
+        this.touch();
     }
 
     get title() {
@@ -99,6 +186,8 @@ export class Composer extends Component {
             // mail.client.compose._to_payload().
             content: markup(this.body),
             Plugins: MAIN_PLUGINS,
+            // ПРАВКА ПМК (шаг 6, Г7): шаг истории редактора — правка текста.
+            onChange: () => this.touch(),
         };
     }
 
@@ -160,6 +249,7 @@ export class Composer extends Component {
                     mimetype: file.type || "application/octet-stream",
                 });
                 this.state.attachments = draft.attachments;
+                this.pristine = false;
             }
         } finally {
             this.state.uploading = false;
@@ -182,6 +272,7 @@ export class Composer extends Component {
             attachment_id: attachmentId,
         });
         this.state.attachments = draft.attachments;
+        this.pristine = false;
     }
 
     // ------------------------------------------------------------------
@@ -191,11 +282,13 @@ export class Composer extends Component {
             return;
         }
         this.state.sending = true;
+        clearTimeout(this.autosaveTimer);
         try {
             await this.orm.call("mail.client.compose", "send", [], {
                 compose_id: this.props.draft.id,
                 values: this.values(),
             });
+            this.closed = true;
             this.notification.add(_t("Message sent."), { type: "success" });
             this.props.onSent();
         } finally {
@@ -204,16 +297,19 @@ export class Composer extends Component {
     }
 
     async onDiscard() {
+        clearTimeout(this.autosaveTimer);
+        this.closed = true;
         await this.orm.call("mail.client.compose", "discard", [], {
             compose_id: this.props.draft.id,
         });
         this.props.onClose();
     }
 
-    async saveDraft() {
+    async saveDraft({ fileOnServer = true } = {}) {
         await this.orm.call("mail.client.compose", "save_draft", [], {
             compose_id: this.props.draft.id,
             values: this.values(),
+            file_on_server: fileOnServer,
         });
     }
 
@@ -244,7 +340,9 @@ export class Composer extends Component {
     }
 
     async onSaveAndClose() {
-        if (this.isEmpty) {
+        clearTimeout(this.autosaveTimer);
+        this.closed = true;
+        if (this.isEmpty || this.pristine) {
             // Opening the composer and closing it again should leave no trace;
             // otherwise the drafts list fills up with "(no subject)" entries.
             await this.orm.call("mail.client.compose", "discard", [], {

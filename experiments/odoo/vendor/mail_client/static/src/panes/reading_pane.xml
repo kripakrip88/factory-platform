@@ -195,6 +195,23 @@
                         </t>
                     </MessageCard>
                 </div>
+
+                <!-- ПРАВКА ПМК (редизайн почты, шаг 6; доска №40): ответ —
+                     внизу окна чтения, письмо видно над ним. Пока ответа
+                     нет — строка «Ответить …»: щелчок = кнопка «Ответить». -->
+                <div class="o_mail_client_reply_dock flex-shrink-0">
+                    <Composer t-if="props.draft" t-key="props.draft.id"
+                              draft="props.draft" inline="true"
+                              onClose="props.onCloseDraft"
+                              onSent="props.onDraftSent"
+                              onExpand="props.onExpandDraft"
+                              onFlushed="props.onDraftFlushed"/>
+                    <button t-else="" type="button"
+                            class="o_mail_client_reply_stub text-start text-muted w-100"
+                            t-on-click="() => props.onReply('reply', replyTargetId)">
+                        <i class="fa fa-reply me-2" aria-hidden="true"/><t t-esc="replyStubLabel"/>
+                    </button>
+                </div>
             </t>
         </div>
     </t>

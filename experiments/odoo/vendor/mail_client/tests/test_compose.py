@@ -271,7 +271,9 @@ class TestCompose(TransactionCase):
         message = sent_messages[0]
         self.assertEqual(message['In-Reply-To'], '<original@customer.co.id>')
         self.assertIn('<original@customer.co.id>', message['References'])
-        self.assertEqual(message['From'], 'me@example.org')
+        # ПРАВКА ПМК (шаг 6, Г4): pmk_mail_ui ставит имя отправителя —
+        # «Имя <адрес>»; адрес ящика тот же.
+        self.assertIn('me@example.org', message['From'])
 
     def test_replying_marks_the_original_answered(self):
         draft = self._draft(parent_id=self.parent.id, compose_mode='reply')

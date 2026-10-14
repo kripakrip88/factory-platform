@@ -34,4 +34,21 @@
     </field>
   </record>
 
+  <!--
+    Имя отправителя у ящика (редизайн почты, шаг 6; доска №40, разбор Г4):
+    письмо из Odoo уходит как «Имя <адрес>», а не голым адресом. Пусто — имя
+    пользователя, который отправляет. Поле — pmk_mail_ui/models/mail_client_reply.py.
+  -->
+  <record id="view_mail_client_account_form_pmk_sender" model="ir.ui.view">
+    <field name="name">mail.client.account.form: имя отправителя (pmk)</field>
+    <field name="model">mail.client.account</field>
+    <field name="inherit_id" ref="mail_client.mail_client_account_view_form"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='smtp_server_id']" position="before">
+        <field name="pmk_sender_name" placeholder="Например: ПМК Парк, Владимир Голубенко"/>
+      </xpath>
+    </field>
+  </record>
+
 </odoo>

@@ -916,6 +916,19 @@ class MailClientMessage(models.Model):
         # запуске.
         lead._assign_userless_lead_in_team(_("письмо из почты"))
 
+        self._pmk_post_letter(lead, attachments, "crm.mt_lead_create")
+
+        note = self._pmk_client_note(match, phone)
+        if note:
+            lead.message_post(body=note, message_type="comment", subtype_xmlid="mail.mt_note")
+
+        self._pmk_note_failed(lead, failed)
+        return lead
+
+    def _pmk_post_letter(self, lead, attachments, subtype_xmlid):
+        """Письмо — в чат лида или сделки: при создании лида из письма и при
+        «Привязать к сделке» (карточка контрагента, шаг 7 редизайна почты)."""
+        self.ensure_one()
         lead.message_post(
             # Именно _display_body(), а не body_html: поле хранит письмо без
             # санитизации атрибутов, а вырезание удалённых картинок и
@@ -924,7 +937,7 @@ class MailClientMessage(models.Model):
             body=Markup(self._display_body() or ""),
             subject=self.subject,
             message_type="email",
-            subtype_id=self.env.ref("crm.mt_lead_create").id,
+            subtype_id=self.env.ref(subtype_xmlid).id,
             # False, а не None: при None ядро подставит текущего пользователя,
             # и письмо в чате будет выглядеть написанным менеджером.
             author_id=self.partner_id.id or False,
@@ -939,10 +952,7 @@ class MailClientMessage(models.Model):
             partner_ids=[],
         )
 
-        note = self._pmk_client_note(match, phone)
-        if note:
-            lead.message_post(body=note, message_type="comment", subtype_xmlid="mail.mt_note")
-
+    def _pmk_note_failed(self, lead, failed):
         if failed:
             items = Markup("").join(Markup("<li>%s</li>") % name for name, _err in failed)
             lead.message_post(
@@ -950,7 +960,6 @@ class MailClientMessage(models.Model):
                 message_type="comment",
                 subtype_xmlid="mail.mt_note",
             )
-        return lead
 
     # ------------------------------------------------------------------
     # клиент и телефон из письма (шаг З-14, 10.10.2026)

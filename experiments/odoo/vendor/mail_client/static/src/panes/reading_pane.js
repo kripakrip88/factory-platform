@@ -8,6 +8,7 @@ import { user } from "@web/core/user";
 import { formatMessageDate, pluralForm } from "../utils";
 import { Conversation, newestOf } from "./conversation";
 import { MessageCard } from "./message_card";
+import { Composer } from "../composer/composer";
 
 /**
  * ПРАВКА ПМК: форма числа писем по правилам языка («14 писем», «2 письма»,
@@ -38,7 +39,7 @@ function threadCountLabel(count) {
  */
 export class ReadingPane extends Component {
     static template = "mail_client.ReadingPane";
-    static components = { Dropdown, DropdownItem, Conversation, MessageCard };
+    static components = { Dropdown, DropdownItem, Conversation, MessageCard, Composer };
     static props = {
         detail: { optional: true },
         loading: { type: Boolean },
@@ -69,6 +70,14 @@ export class ReadingPane extends Component {
         onBack: { type: Function, optional: true },
         onNeighbour: { type: Function, optional: true },
         onToggleLayout: { type: Function, optional: true },
+        // ПРАВКА ПМК (редизайн почты, шаг 6; доска №40): ответ под письмом.
+        // draft — открытый ответ/пересылка этого письма (компактный
+        // композер внизу окна), без него внизу строка «Ответить …».
+        draft: { optional: true },
+        onCloseDraft: { type: Function, optional: true },
+        onDraftSent: { type: Function, optional: true },
+        onExpandDraft: { type: Function, optional: true },
+        onDraftFlushed: { type: Function, optional: true },
     };
 
     setup() {
@@ -182,6 +191,33 @@ export class ReadingPane extends Component {
         }
         const theirs = newestOf(thread.filter((item) => !item.is_outgoing));
         return theirs ? theirs.id : null;
+    }
+
+    /**
+     * ПРАВКА ПМК (шаг 6): кому уйдёт «Ответить» из строки внизу — имя без
+     * адреса. Своё письмо — получатель (Г3), иначе отправитель того письма,
+     * на которое отвечаем (replyTargetId — последнее письмо клиента).
+     */
+    get replyName() {
+        const detail = this.props.detail;
+        const targetId = this.replyTargetId;
+        const target = targetId
+            ? (this.props.thread || []).find((item) => item.id === targetId)
+            : null;
+        let raw;
+        if (target) {
+            raw = target.email_from;
+        } else {
+            raw = detail.is_outgoing ? detail.email_to : detail.email_from;
+        }
+        const first = (raw || "").split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/)[0].trim();
+        const match = first.match(/^"?([^"<]*?)"?\s*<([^>]+)>/);
+        return match ? match[1].trim() || match[2] : first;
+    }
+
+    get replyStubLabel() {
+        const name = this.replyName;
+        return name ? _t("Reply to %s…", name) : _t("Reply…");
     }
 
     toggleContact() {

@@ -128,6 +128,7 @@ export class MailClientInbox extends Component {
             selectedIds: [],
             bulkBusy: false,
             draft: null,
+            draftInline: false,
             drafts: [],
             threaded: readPref(THREADED_KEY) !== "false",
             filter: "all",
@@ -196,7 +197,7 @@ export class MailClientInbox extends Component {
             arrowsMoveRows({
                 rows: this.state.messages.length,
                 current: Boolean(this.rowOnScreen()),
-                draft: Boolean(this.state.draft),
+                draft: Boolean(this.fullDraft),
                 readerCovers: this.fullLayout && this.readerShown,
                 inReader:
                     this.pointerInReader ||
@@ -363,7 +364,35 @@ export class MailClientInbox extends Component {
     }
 
     get showListResizer() {
-        return !this.fullLayout && !this.state.draft;
+        return !this.fullLayout && !this.fullDraft;
+    }
+
+    /**
+     * ПРАВКА ПМК (редизайн почты, шаг 6; доска №40): ответ и пересылка
+     * открытого письма — под письмом, в окне чтения (inlineDraft); новое
+     * письмо, черновик из списка и всё на телефоне — на всю ширину
+     * (fullDraft), как было.
+     */
+    get inlineDraft() {
+        return this.state.draft && this.state.draftInline ? this.state.draft : null;
+    }
+
+    get fullDraft() {
+        return this.state.draft && !this.state.draftInline ? this.state.draft : null;
+    }
+
+    /** Ответ под письмом закрыть без кнопки (другое письмо, другая папка):
+     *  набранное композер сохранит сам при закрытии (onWillUnmount). */
+    dropInlineDraft() {
+        if (this.inlineDraft) {
+            this.state.draft = null;
+            this.state.draftInline = false;
+        }
+    }
+
+    expandDraft(draft) {
+        this.state.draft = draft;
+        this.state.draftInline = false;
     }
 
     toggleFolders() {
@@ -637,6 +666,7 @@ export class MailClientInbox extends Component {
     }
 
     clearSelection() {
+        this.dropInlineDraft();
         this.state.selectedMessageId = null;
         this.state.detail = null;
         this.state.selectedIds = [];
@@ -1063,6 +1093,9 @@ export class MailClientInbox extends Component {
         this.openToken = token;
         const isCurrent = () =>
             this.openToken === token && this.state.selectedMessageId === messageId;
+        if (messageId !== this.state.selectedMessageId) {
+            this.dropInlineDraft();
+        }
         this.state.selectedMessageId = messageId;
         this.state.loadingDetail = true;
         // ПРАВКА ПМК (шаг 41, А10): в раскладке «на весь экран» и на
@@ -1433,14 +1466,19 @@ export class MailClientInbox extends Component {
         if (!account) {
             return;
         }
-        this.state.draft = await this.orm.call("mail.client.compose", "start", [], {
+        const draft = await this.orm.call("mail.client.compose", "start", [], {
             account_id: account.id,
             mode,
             message_id: mode === "new" ? null : messageId ?? this.state.selectedMessageId,
         });
+        // ПРАВКА ПМК (шаг 6): fresh — только что начатый: закрыли, ничего
+        // не тронув, — черновика не остаётся (composer.js, pristine).
+        this.state.draftInline = mode !== "new" && !this.isPhone && Boolean(this.state.detail);
+        this.state.draft = { ...draft, fresh: true };
     }
 
     async resumeDraft(composeId) {
+        this.state.draftInline = false;
         this.state.draft = await this.orm.call("mail.client.compose", "open_draft", [], {
             compose_id: composeId,
         });
@@ -1448,11 +1486,13 @@ export class MailClientInbox extends Component {
 
     async closeComposer() {
         this.state.draft = null;
+        this.state.draftInline = false;
         await this.loadDrafts();
     }
 
     async onSent() {
         this.state.draft = null;
+        this.state.draftInline = false;
         await this.loadDrafts();
         // The sent copy is APPENDed to the server's Sent folder, so Odoo only
         // learns about it by syncing. Reloading the list alone would leave the

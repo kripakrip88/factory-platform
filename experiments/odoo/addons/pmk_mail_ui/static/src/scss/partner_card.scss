@@ -1,0 +1,160 @@
+// Карточка контрагента справа от письма (редизайн почты, шаг 7, 14.10.2026).
+// Цвета — токены почты (--mc-*): тёмная тема переопределяет их сама, своих
+// правил под body.o_nexus_dark карточке не нужно.
+
+.pmk-pcard {
+  width: 17rem;
+  min-width: 0;
+  border-left: 1px solid var(--mc-border);
+  background-color: var(--mc-panel-bg);
+  overflow: hidden;
+
+  &.pmk-pcard--closed {
+    width: 2.25rem;
+  }
+}
+
+.pmk-pcard__rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .75rem;
+  height: 100%;
+  width: 100%;
+  padding: .75rem 0;
+  color: var(--pmk-label, #474b53);
+  text-decoration: none;
+
+  &:hover {
+    background-color: var(--mc-hover-bg);
+  }
+}
+
+.pmk-pcard__rail-label {
+  writing-mode: vertical-rl;
+  font-size: .8125rem;
+  font-weight: 500;
+  letter-spacing: .02em;
+}
+
+.pmk-pcard__head {
+  padding: .625rem .5rem .25rem 1rem;
+}
+
+.pmk-pcard__caption {
+  font-size: .6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--pmk-label, #474b53);
+}
+
+.pmk-pcard__body {
+  overflow-y: auto;
+  padding: 0 1rem 1rem;
+}
+
+.pmk-pcard__name,
+.pmk-pcard__name-plain {
+  display: block;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.pmk-pcard__name {
+  color: inherit;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.pmk-pcard__sub {
+  font-size: .8125rem;
+  color: var(--pmk-label, #474b53);
+  overflow-wrap: anywhere;
+}
+
+.pmk-pcard__facts {
+  margin: .75rem 0 0;
+  font-size: .8125rem;
+
+  > div {
+    display: flex;
+    justify-content: space-between;
+    gap: .5rem;
+    padding: .125rem 0;
+  }
+
+  dt {
+    font-weight: 400;
+    color: var(--pmk-label, #474b53);
+  }
+
+  dd {
+    margin: 0;
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+}
+
+.pmk-pcard__section {
+  margin-top: 1rem;
+
+  .pmk-pcard__caption {
+    margin-bottom: .375rem;
+  }
+}
+
+.pmk-pcard__item {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin-bottom: .375rem;
+  padding: .375rem .625rem;
+  border: 1px solid var(--mc-border);
+  border-radius: .375rem;
+  background-color: var(--mc-panel-bg);
+  color: inherit;
+  text-align: left;
+  font-size: .8125rem;
+
+  &:hover {
+    background-color: var(--mc-hover-bg);
+  }
+
+  &.pmk-pcard__item--current {
+    border-color: var(--mc-chip-active-border);
+    background-color: var(--mc-chip-active-bg);
+  }
+}
+
+.pmk-pcard__item-name {
+  color: var(--bs-link-color, #017e84);
+  overflow-wrap: anywhere;
+}
+
+.pmk-pcard__item-sub {
+  color: var(--pmk-label, #474b53);
+  font-size: .75rem;
+}
+
+.pmk-pcard__empty {
+  font-size: .8125rem;
+  color: var(--pmk-label, #474b53);
+  padding: .125rem 0;
+}
+
+.pmk-pcard__actions {
+  display: flex;
+  flex-direction: column;
+  gap: .375rem;
+  margin-top: 1.25rem;
+
+  .btn {
+    width: 100%;
+  }
+}

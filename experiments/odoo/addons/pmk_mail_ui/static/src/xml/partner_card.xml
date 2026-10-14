@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+  <!--
+    Карточка контрагента справа от письма (редизайн почты, шаг 7,
+    14.10.2026). Логика — static/src/js/partner_card.js, данные —
+    models/mail_partner_card.py.
+
+    Встаёт после окна чтения (mail_client.ReadingPane в шаблоне корня) —
+    только когда письмо открыто и пишут не на всю ширину (fullDraft), не на
+    телефоне. Свернуть вправо — в узкую полосу с подписью «Контрагент».
+
+    Подписи по-русски прямо здесь: перевод вставленного узла ищется в
+    контексте этого модуля, а не mail_client.
+  -->
+  <t t-name="pmk_mail_ui.InboxPartnerCard"
+     t-inherit="mail_client.Inbox"
+     t-inherit-mode="extension">
+    <xpath expr="//ReadingPane" position="after">
+      <PmkPartnerCard t-if="state.detail and !isPhone" messageId="state.detail.id"/>
+    </xpath>
+  </t>
+
+  <t t-name="pmk_mail_ui.PartnerCard">
+    <aside class="pmk-pcard flex-shrink-0 d-flex flex-column"
+           t-att-class="{ 'pmk-pcard--closed': !state.open }"
+           aria-label="Контрагент">
+      <t t-if="!state.open">
+        <button type="button" class="pmk-pcard__rail btn btn-link"
+                title="Показать карточку контрагента" aria-label="Показать карточку контрагента"
+                t-on-click="() => this.toggle()">
+          <i class="fa fa-angle-double-left" aria-hidden="true"/>
+          <span class="pmk-pcard__rail-label">Контрагент</span>
+        </button>
+      </t>
+      <t t-else="">
+        <div class="pmk-pcard__head d-flex align-items-center">
+          <span class="pmk-pcard__caption flex-grow-1">Контрагент</span>
+          <i t-if="state.loading" class="fa fa-circle-o-notch fa-spin text-muted me-2" aria-hidden="true"/>
+          <button type="button" class="btn btn-sm btn-link text-muted px-1"
+                  title="Свернуть вправо" aria-label="Свернуть вправо"
+                  t-on-click="() => this.toggle()">
+            <i class="fa fa-angle-double-right" aria-hidden="true"/>
+          </button>
+        </div>
+
+        <div class="pmk-pcard__body flex-grow-1" t-if="state.card" t-att-class="{ 'opacity-50': state.loading }">
+          <t t-set="card" t-value="state.card"/>
+
+          <t t-if="card.partner">
+            <button type="button" class="pmk-pcard__name btn btn-link p-0 text-start"
+                    title="Открыть контрагента"
+                    t-on-click="() => this.openRecord('res.partner', card.partner.id)"
+                    t-esc="card.partner.name"/>
+            <div class="pmk-pcard__sub">
+              <span t-if="card.partner.vat">ИНН <t t-esc="card.partner.vat"/></span>
+              <span t-if="card.partner.vat and card.partner.city"> · </span>
+              <span t-if="card.partner.city" t-esc="card.partner.city"/>
+            </div>
+            <div class="pmk-pcard__sub" t-if="howLabel" t-esc="howLabel"/>
+            <dl class="pmk-pcard__facts">
+              <div t-if="card.partner.manager"><dt>Менеджер</dt><dd t-esc="card.partner.manager"/></div>
+              <div t-if="card.partner.phone"><dt>Телефон</dt><dd t-esc="card.partner.phone"/></div>
+              <div><dt>Писем за год</dt><dd t-esc="card.letters_year"/></div>
+            </dl>
+
+            <div class="pmk-pcard__section">
+              <div class="pmk-pcard__caption">Сделки<t t-if="card.deals_total"> · <t t-esc="card.deals_total"/></t></div>
+              <div t-if="!card.deals.length" class="pmk-pcard__empty">Открытых сделок нет</div>
+              <button t-foreach="card.deals" t-as="deal" t-key="deal.id" type="button"
+                      class="pmk-pcard__item" t-att-class="{ 'pmk-pcard__item--current': deal.current }"
+                      t-att-title="deal.current ? 'Письмо привязано к этой сделке' : 'Открыть сделку'"
+                      t-on-click="() => this.openRecord('crm.lead', deal.id)">
+                <span class="pmk-pcard__item-name" t-esc="deal.name"/>
+                <span class="pmk-pcard__item-sub"><t t-esc="deal.stage"/><t t-if="deal.amount"> · <t t-esc="deal.amount"/></t></span>
+              </button>
+              <button t-if="dealsMore > 0" type="button" class="btn btn-link btn-sm p-0"
+                      t-on-click="() => this.openDeals()">ещё <t t-esc="dealsMore"/></button>
+            </div>
+
+            <div class="pmk-pcard__section" t-if="card.invoices_total or card.invoices.length">
+              <div class="pmk-pcard__caption">Счета · <t t-esc="card.invoices_total"/></div>
+              <button t-foreach="card.invoices" t-as="invoice" t-key="invoice.id" type="button"
+                      class="pmk-pcard__item" title="Открыть счёт"
+                      t-on-click="() => this.openRecord('sale.order', invoice.id)">
+                <span class="pmk-pcard__item-name"><t t-esc="invoice.name"/><t t-if="invoice.status"> · <t t-esc="invoice.status"/></t></span>
+                <span class="pmk-pcard__item-sub"><t t-if="invoice.date">от <t t-esc="invoice.date"/> · </t><t t-esc="invoice.amount"/></span>
+              </button>
+              <button t-if="invoicesMore > 0" type="button" class="btn btn-link btn-sm p-0"
+                      t-on-click="() => this.openInvoices()">ещё <t t-esc="invoicesMore"/></button>
+            </div>
+          </t>
+          <t t-else="">
+            <div class="pmk-pcard__name-plain" t-esc="card.sender or card.email or 'Адрес не указан'"/>
+            <div class="pmk-pcard__sub" t-if="card.sender and card.email" t-esc="card.email"/>
+            <t t-if="card.candidates.length">
+              <div class="pmk-pcard__sub mt-2">Похожие контрагенты — выберите:</div>
+              <button t-foreach="card.candidates" t-as="item" t-key="item.id" type="button"
+                      class="pmk-pcard__item" t-on-click="() => this.openRecord('res.partner', item.id)">
+                <span class="pmk-pcard__item-name" t-esc="item.name"/>
+              </button>
+            </t>
+            <div t-else="" class="pmk-pcard__empty">Нет в контрагентах</div>
+          </t>
+
+          <div class="pmk-pcard__actions">
+            <button t-if="card.lead" type="button" class="btn btn-sm btn-light"
+                    t-on-click="() => this.openRecord('crm.lead', card.lead.id)">
+              <i class="fa fa-handshake-o me-1" aria-hidden="true"/>Открыть лид
+            </button>
+            <button t-elif="card.can_lead" type="button" class="btn btn-sm btn-light"
+                    t-att-disabled="state.busy" t-on-click="() => this.createLead()">
+              <i class="fa me-1" aria-hidden="true" t-att-class="state.busy ? 'fa-circle-o-notch fa-spin' : 'fa-user-plus'"/>Лид из письма
+            </button>
+            <button t-if="card.can_link" type="button" class="btn btn-sm btn-light"
+                    t-on-click="() => this.linkDeal()">
+              <i class="fa fa-link me-1" aria-hidden="true"/>Привязать к сделке
+            </button>
+            <button t-if="card.partner" type="button" class="btn btn-sm btn-light"
+                    t-on-click="() => this.openRecord('res.partner', card.partner.id)">
+              <i class="fa fa-address-card-o me-1" aria-hidden="true"/>Открыть контрагента
+            </button>
+            <button t-elif="card.email" type="button" class="btn btn-sm btn-light"
+                    t-on-click="() => this.createPartner()">
+              <i class="fa fa-plus me-1" aria-hidden="true"/>Создать контрагента
+            </button>
+          </div>
+        </div>
+      </t>
+    </aside>
+  </t>
+
+</templates>

@@ -34,3 +34,5 @@ from . import test_step53_open
 from . import test_signature_rules
 from . import test_z14_lead_client
 from . import test_prefetch_bodies
+from . import test_reply_rules
+from . import test_partner_card

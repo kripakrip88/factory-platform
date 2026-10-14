@@ -754,6 +754,72 @@
     min-width: 0;
 }
 
+// ПРАВКА ПМК (редизайн почты, шаг 6; доска №40): ответ под письмом — внизу
+// окна чтения. Письмо и переписка остаются видны над ним, поэтому редактор
+// ограничен по высоте и прокручивается сам (цитата бывает длинной).
+.o_mail_client_reply_dock {
+    border-top: 1px solid var(--mc-border);
+    background-color: var(--mc-panel-bg);
+    padding: .5rem 1.5rem .75rem;
+}
+
+.o_mail_client_reply_stub {
+    display: flex;
+    align-items: center;
+    min-height: 2.75rem;
+    padding: .5rem .875rem;
+    border: 1px solid var(--mc-border);
+    border-radius: .375rem;
+    background-color: var(--mc-panel-bg);
+    cursor: text;
+
+    &:hover,
+    &:focus-visible {
+        border-color: var(--mc-chip-active-border);
+        background-color: var(--mc-hover-bg);
+        outline: 0;
+    }
+}
+
+.o_mail_client_composer.o_mail_client_composer_inline {
+    border-left: 0;
+    flex: 0 0 auto;
+    max-height: 60vh;
+
+    .o_mail_client_composer_inline_body {
+        min-height: 0;
+    }
+
+    .o_mail_client_editor_wrap {
+        min-height: 7.5rem;
+        max-height: 32vh;
+        overflow: auto;
+        padding: .5rem .75rem;
+    }
+
+    .o_mail_client_composer_footer {
+        border-top: 0;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        padding-bottom: 0 !important;
+    }
+}
+
+.o_mail_client_inline_from {
+    min-height: 2.25rem;
+    background-color: var(--mc-hover-bg);
+}
+
+.o_mail_client_inline_mode {
+    font-weight: 600;
+    font-size: .875rem;
+}
+
+.o_mail_client_inline_sender {
+    font-size: .8125rem;
+    min-width: 0;
+}
+
 .o_mail_client_bulkbar {
     border-bottom: 1px solid var(--mc-border);
     background-color: var(--mc-hover-bg);

@@ -270,14 +270,21 @@ class MailClientMessage(models.Model):
         if values_list:
             Attachment.create(values_list)
 
-    def _quoted_body(self):
-        """Return this message wrapped as a quotation, for replies."""
+    def _quote_header(self):
+        """Строка над цитатой. ПРАВКА ПМК (шаг 6 редизайна почты): вынесено
+        отдельным методом — pmk_mail_ui ставит дату по-русски в поясе
+        пользователя (разбор Г5)."""
         self.ensure_one()
-        header = _(
+        return _(
             "On %(date)s, %(sender)s wrote:",
             date=self.date and fields.Datetime.to_string(self.date) or '',
             sender=self.email_from or '',
         )
+
+    def _quoted_body(self):
+        """Return this message wrapped as a quotation, for replies."""
+        self.ensure_one()
+        header = self._quote_header()
         return Markup(
             '<p><br/></p><p>%s</p><blockquote style="margin:0 0 0 .8ex;'
             'border-left:2px solid #ccc;padding-left:1ex;">%s</blockquote>'
@@ -770,6 +777,9 @@ class MailClientMessage(models.Model):
             'email_from': message.email_from or '',
             'email_to': message.email_to or '',
             'email_cc': message.email_cc or '',
+            # ПРАВКА ПМК (шаг 6): строка «Ответить …» внизу окна чтения
+            # называет адресата — у своего письма это получатель.
+            'is_outgoing': message._is_outgoing(),
             'date': message.date and fields.Datetime.to_string(message.date),
             'body': message._display_body(),
             'body_state': message.body_state,

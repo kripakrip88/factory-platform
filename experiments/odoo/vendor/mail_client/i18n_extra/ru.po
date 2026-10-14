@@ -3051,3 +3051,45 @@ msgstr "Нет связи с сервером — файл не скачался
 #: code:addons/mail_client/static/src/attachments/attachment_preview_dialog.js:0
 msgid "The drawing viewer is not loaded — download the file to open it on your computer."
 msgstr "Окно чертежа не загрузилось — скачайте файл и откройте его у себя."
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/mail_client_action.xml:0
+msgid "More"
+msgstr "Ещё"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/composer/composer.xml:0
+msgid "Cc, subject"
+msgstr "Копия, тема"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/composer/composer.xml:0
+msgid "from"
+msgstr "от"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/composer/composer.xml:0
+msgid "Open full size"
+msgstr "Открыть на весь экран"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/composer/composer.js:0
+msgid "Not attached, the mail server did not return: %s"
+msgstr "Не приложены — почтовый сервер их не отдал: %s"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/reading_pane.js:0
+msgid "Reply to %s…"
+msgstr "Ответить: %s…"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/reading_pane.js:0
+msgid "Reply…"
+msgstr "Ответить…"

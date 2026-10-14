@@ -127,11 +127,11 @@
                      t-on-keydown="(ev) => this.onResizerKeydown(ev, 'folders')"
                      t-on-dblclick="() => this.resetPaneWidth('folders')"/>
 
-                <t t-if="state.draft">
+                <t t-if="fullDraft">
                     <!-- Writing gets the full width: the message list is of no
                          use while composing, and a cramped editor is the single
                          most common complaint about in-app mail clients. -->
-                    <Composer draft="state.draft"
+                    <Composer draft="fullDraft" t-key="fullDraft.id"
                               onClose.bind="closeComposer"
                               onSent.bind="onSent"/>
                 </t>
@@ -205,6 +205,11 @@
                                  onMove.bind="moveMessage"
                                  onDelete.bind="deleteMessage"
                                  onReply.bind="compose"
+                                 draft="inlineDraft"
+                                 onCloseDraft.bind="closeComposer"
+                                 onDraftSent.bind="onSent"
+                                 onExpandDraft.bind="expandDraft"
+                                 onDraftFlushed.bind="loadDrafts"
                                  onDownloadAttachment.bind="downloadAttachment"
                                  onConversationShown.bind="conversationShown"/>
                 </t>

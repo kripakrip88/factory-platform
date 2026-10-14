@@ -84,6 +84,8 @@ patch(ReadingPane.prototype, {
                 { type: result.created ? "success" : "info" }
             );
             await this.action.doAction(result.action);
+            // Карточка контрагента справа (partner_card.js, шаг 7) — лид новый.
+            this.env.bus.trigger("PMK_MAIL_CARD:RELOAD");
         } finally {
             this.pmkLead.busy = false;
         }

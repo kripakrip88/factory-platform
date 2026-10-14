@@ -1,9 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
 
+    <!-- ПРАВКА ПМК (редизайн почты, шаг 6; доска №40): ответ и пересылка —
+         под письмом, в окне чтения (props.inline): письмо и переписка видны
+         над редактором. Строка «Кому» — первая, с ней вид ответа, «⤢ на весь
+         экран» и «×»; тема и копии — по «Копия, тема». Новое письмо и
+         черновик из списка — на всю ширину, как было.
+         Черновик сохраняется сам (Г7, autosave в composer.js). -->
     <t t-name="mail_client.Composer">
-        <div class="o_mail_client_composer d-flex flex-column h-100">
-            <div class="o_mail_client_composer_header d-flex align-items-center px-4 py-2">
+        <div class="o_mail_client_composer d-flex flex-column"
+             t-att-class="props.inline ? 'o_mail_client_composer_inline' : 'h-100'">
+            <div t-if="!props.inline" class="o_mail_client_composer_header d-flex align-items-center px-4 py-2">
                 <h5 class="mb-0 flex-grow-1"><t t-esc="title"/></h5>
                 <small class="text-muted me-2" t-if="state.savedAt">
                     <i class="fa fa-check me-1"/>Draft saved
@@ -15,8 +22,32 @@
                 </button>
             </div>
 
-            <div class="flex-grow-1 overflow-auto p-3 d-flex">
+            <div class="flex-grow-1 d-flex" t-att-class="props.inline ? 'o_mail_client_composer_inline_body' : 'overflow-auto p-3'">
                 <div class="o_mail_client_compose_card d-flex flex-column flex-grow-1">
+                    <div t-if="props.inline" class="o_mail_client_field o_mail_client_inline_from d-flex align-items-center gap-2">
+                        <span class="o_mail_client_inline_mode flex-shrink-0">
+                            <i class="fa me-1" t-att-class="modeIcon" aria-hidden="true"/><t t-esc="title"/>
+                        </span>
+                        <span class="o_mail_client_inline_sender text-muted text-truncate" t-if="props.draft.pmk_from"
+                              t-att-title="props.draft.pmk_from">
+                            from <t t-esc="props.draft.pmk_from"/>
+                        </span>
+                        <div class="flex-grow-1"/>
+                        <small class="text-muted flex-shrink-0" t-if="state.savedAt">
+                            <i class="fa fa-check me-1"/>Draft saved
+                        </small>
+                        <button t-if="props.onExpand" class="btn btn-sm btn-link text-muted flex-shrink-0 px-1"
+                                title="Open full size" aria-label="Open full size"
+                                t-on-click="() => this.onExpand()">
+                            <i class="fa fa-expand" aria-hidden="true"/>
+                        </button>
+                        <button class="btn btn-sm btn-link text-muted flex-shrink-0 px-1"
+                                title="Close (keeps a draft if anything was typed)"
+                                aria-label="Close (keeps a draft if anything was typed)"
+                                t-on-click="() => this.onSaveAndClose()">
+                            <i class="fa fa-times" aria-hidden="true"/>
+                        </button>
+                    </div>
                     <div class="o_mail_client_field d-flex align-items-center">
                         <label class="o_mail_client_composer_label">To</label>
                         <RecipientInput label="''" value="state.email_to"
@@ -24,7 +55,7 @@
                                         onUpdate="(value) => this.updateField('email_to', value)"/>
                         <button class="btn btn-sm btn-link text-muted flex-shrink-0 px-2"
                                 t-on-click="() => state.showCc = !state.showCc">
-                            Cc/Bcc
+                            <t t-if="props.inline">Cc, subject</t><t t-else="">Cc/Bcc</t>
                         </button>
                     </div>
 
@@ -40,10 +71,11 @@
                                         onUpdate="(value) => this.updateField('email_bcc', value)"/>
                     </div>
 
-                    <div class="o_mail_client_field d-flex align-items-center">
+                    <div class="o_mail_client_field d-flex align-items-center" t-if="!props.inline or state.showCc">
                         <label class="o_mail_client_composer_label">Subject</label>
                         <input type="text" class="o_mail_client_plain_input flex-grow-1"
-                               placeholder="Subject" t-model="state.subject"/>
+                               placeholder="Subject" t-model="state.subject"
+                               t-on-input="() => this.touch()"/>
                     </div>
 
                     <div class="d-flex align-items-center o_mail_client_editor_bar">
@@ -98,7 +130,8 @@
                 </div>
             </div>
 
-            <div class="o_mail_client_composer_footer d-flex align-items-center gap-2 px-4 py-3">
+            <div class="o_mail_client_composer_footer d-flex align-items-center gap-2"
+                 t-att-class="props.inline ? 'px-3 py-2' : 'px-4 py-3'">
                 <button class="btn btn-primary"
                         t-att-disabled="state.sending"
                         t-on-click="() => this.onSend()">

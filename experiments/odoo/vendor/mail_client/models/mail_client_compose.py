@@ -331,7 +331,11 @@ class MailClientCompose(models.Model):
         }
 
     @api.model
-    def save_draft(self, compose_id, values):
+    def save_draft(self, compose_id, values, file_on_server=True):
+        """ПРАВКА ПМК (шаг 6, разбор Г7): file_on_server=False — автосохранение
+        композера, только в Odoo. Каждая подшивка в «Черновики» удаляет и
+        заново кладёт письмо на сервер, поэтому в ящик — только при закрытии
+        и по кнопке «Сохранить черновик»."""
         draft = self.browse(compose_id).exists()
         if not draft:
             raise UserError(_("This draft no longer exists."))
@@ -340,7 +344,8 @@ class MailClientCompose(models.Model):
         draft.write({key: value for key, value in (values or {}).items() if key in allowed})
         # Filing on the server is best-effort: a save must still succeed when
         # the mail server is unreachable.
-        draft.sudo()._sync_to_imap_drafts()
+        if file_on_server:
+            draft.sudo()._sync_to_imap_drafts()
         return draft._to_payload()
 
     @api.model
