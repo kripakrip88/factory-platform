@@ -180,6 +180,10 @@ def snapshot_error(order):
 class SaleOrder(models.Model):
     _inherit = "sale.order"
 
+    # «Продавец» → «Менеджер» (Антон 14.10.2026): в счетах МоегоСклада это
+    # «Владелец-сотрудник» — кто завёл документ (pmk_moysklad.sync_owners).
+    user_id = fields.Many2one(string="Менеджер")
+
     # Шапка счёта (14.10.2026): вес продукции — из расчёта Odoo (основание —
     # ссылкой на расчёт); ИНН контрагента — серым рядом с подписью.
     pmk_weight_text = fields.Char("Вес продукции", compute="_compute_pmk_weight_text")

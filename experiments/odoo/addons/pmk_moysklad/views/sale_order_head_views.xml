@@ -45,6 +45,14 @@
         <attribute name="nolabel">1</attribute>
       </xpath>
 
+      <!-- Срок изготовления одной строкой «20 рабочих дней» (Антон 14.10.2026):
+           «с момента оплаты» допишет печатная форма — в шапке не выбирается. -->
+      <xpath expr="//div[@name='pmk_lead']/field[@name='pmk_lead_from']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//div[@name='pmk_lead']/span" position="replace">
+        <span class="pmk-inv-lead-unit">рабочих дней</span>
+      </xpath>
       <xpath expr="//group[@name='order_details']/field[@name='date_order'][not(@groups)]" position="attributes">
         <attribute name="widget">pmk_long_datetime</attribute>
         <attribute name="class">pmk-inv-title__date</attribute>

@@ -309,7 +309,8 @@ class PmkMoysklad(models.AbstractModel):
             "pmk_org_id": org.id or False,
             # Время МоегоСклада — московское (UTC+3), Odoo хранит UTC.
             "date_order": when - timedelta(hours=3) if when else fields.Datetime.now(),
-            "user_id": False,
+            "user_id": self._ms_owner_user(inv.get("owner"), ctx).id or False,
+            "pmk_ms_owner": self._ms_owner_name(inv.get("owner")),
             # Без прайс-листа, как у счетов из расчёта (pmk_orders): валюта — рубль компании,
             # а не «Default» в долларах.
             "pricelist_id": False,
@@ -373,13 +374,14 @@ class PmkMoysklad(models.AbstractModel):
             "tag": self.env.ref("pmk_moysklad.partner_tag_ms", raise_if_not_found=False),
             "taxes": self._taxes(),
             "product": self.env.ref("pmk_moysklad.product_ms_line"),
+            "users": self._ms_user_index(),
         }
         orgs = {o.pmk_ms_id: o for o in self.env["pmk.org"].with_context(active_test=False).search(
             [("pmk_ms_id", "!=", False)])}
         last, n, failed = since, 0, 0
         Param = self.env["ir.config_parameter"].sudo()
         for inv in self._ms_rows("invoiceout", updated_since=since,
-                                 expand="positions.assortment.uom,state"):
+                                 expand="positions.assortment.uom,state,owner"):
             try:
                 with self.env.cr.savepoint():
                     self._upsert_invoice(inv, orgs, ctx, Order)
@@ -392,6 +394,59 @@ class PmkMoysklad(models.AbstractModel):
                 self._ms_commit()
                 _logger.info("pmk_moysklad: счетов %s (до %s), не перенесено %s", n, last, failed)
         return n, last
+
+    # ------------------------------------------------------------ владелец → менеджер
+    @staticmethod
+    def _ms_owner_name(owner):
+        owner = owner or {}
+        name = owner.get("fullName") or owner.get("name") or " ".join(
+            x for x in (owner.get("lastName"), owner.get("firstName")) if x)
+        return (name or "").strip() or False
+
+    @api.model
+    def _ms_user_index(self):
+        """Пользователи Odoo по словам имени: «Владимир Голубенко» → {владимир, голубенко}."""
+        users = self.env["res.users"].with_context(active_test=False).search([("share", "=", False)])
+        return [(set(u.name.lower().replace("ё", "е").split()), u) for u in users if u.name]
+
+    @api.model
+    def _ms_owner_user(self, owner, ctx):
+        """Пользователь Odoo для сотрудника МоегоСклада — по фамилии и имени (порядок
+        слов любой). Нет такого — пусто: менеджера проставят руками."""
+        owner = owner or {}
+        last, first = owner.get("lastName"), owner.get("firstName")
+        words = {w.lower().replace("ё", "е") for w in (last, first) if w}
+        if not words:
+            words = set((self._ms_owner_name(owner) or "").lower().replace("ё", "е").split()[:2])
+        if len(words) < 2:
+            return self.env["res.users"]
+        index = ctx.get("users") if ctx and "users" in ctx else self._ms_user_index()
+        found = [u for names, u in index if words <= names]
+        return found[0] if len(found) == 1 else self.env["res.users"]
+
+    @api.model
+    def sync_owners(self):
+        """Один раз для уже перенесённых счетов: «Владелец-сотрудник» → «Менеджер».
+        Только чтение из МоегоСклада; в Odoo — user_id и pmk_ms_owner."""
+        Order = self.env["sale.order"].with_context(
+            active_test=False, tracking_disable=True, mail_notrack=True)
+        by_ms = {o.pmk_ms_id: o for o in Order.search([("pmk_ms_id", "!=", False)])}
+        ctx = {"users": self._ms_user_index()}
+        n = set_user = 0
+        for inv in self._ms_rows("invoiceout", expand="owner"):
+            order = by_ms.get(ms_id(inv))
+            if not order:
+                continue
+            user = self._ms_owner_user(inv.get("owner"), ctx)
+            order.write({"pmk_ms_owner": self._ms_owner_name(inv.get("owner")),
+                         "user_id": user.id or False})
+            n += 1
+            set_user += bool(user)
+            if n % 500 == 0:
+                self._ms_commit()
+        self._ms_commit()
+        _logger.info("pmk_moysklad: владельцы — счетов %s, с менеджером %s", n, set_user)
+        return n, set_user
 
     @api.model
     def _upsert_invoice(self, inv, orgs, ctx, Order):

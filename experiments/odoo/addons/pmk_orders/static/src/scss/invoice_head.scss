@@ -115,6 +115,27 @@
     max-width: 100% !important;
   }
 
+  // Кнопка «→» (открыть карточку) — внутри поля у правого края, а не
+  // отдельным столбиком: поля-ссылки той же длины, что соседние (как в
+  // документах, forms_nexus.scss «Поле-ссылка той же ширины»).
+  .o_field_many2one_selection {
+    position: relative;
+
+    > .o_external_button {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      right: 1.5rem;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+    }
+
+    &:has(> .o_external_button):is(:hover, :focus-within) .o_input_dropdown input.o_input {
+      padding-right: calc(1.5rem + 26px) !important;
+    }
+  }
+
   // Подпись поля «только для чтения» ядро бледнит — здесь все одного цвета.
   .o_form_label,
   .o_form_label.o_form_label_readonly {
@@ -159,7 +180,7 @@
     white-space: nowrap;
   }
 
-  > .o_field_widget:last-child {
+  > .o_field_widget:last-child:not(.o_field_invisible) {
     flex: 1 1 auto;
     width: auto !important;
     min-width: 0;

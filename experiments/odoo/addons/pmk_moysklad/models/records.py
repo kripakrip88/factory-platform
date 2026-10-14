@@ -43,6 +43,10 @@ class SaleOrderMs(models.Model):
     pmk_ms_contract = fields.Char("Договор поставки", copy=False)
     pmk_ms_object = fields.Char("Объект", copy=False)
     pmk_ms_weight = fields.Char("Вес продукции", copy=False)
+    # «Владелец-сотрудник» МоегоСклада — кто завёл счёт (Антон 14.10.2026:
+    # «фактически это тот, кто создал документ»). По нему ставится «Менеджер»
+    # (user_id), если такой пользователь есть в Odoo.
+    pmk_ms_owner = fields.Char("Владелец в МоёмСкладе", copy=False, readonly=True)
     pmk_ms_sum = fields.Monetary("Сумма в МоёмСкладе", copy=False, readonly=True)
     pmk_ms_shipped_sum = fields.Monetary("Отгружено на сумму", copy=False, readonly=True)
     pmk_ms_shipped_date = fields.Date("Дата отгрузки", copy=False, readonly=True)
