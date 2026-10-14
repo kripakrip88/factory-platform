@@ -755,7 +755,10 @@ class TestJobFormTop(LaserStep36Case):
         arch = self._form()
         pages = [p.get("name") for p in arch.xpath("//sheet/notebook/page")]
         self.assertNotIn("balance", pages, "«Баланс металла» ушёл строкой карточек наверх.")
-        self.assertEqual(pages[:5], ["sheets", "parts", "operators", "offcuts", "measures"])
+        # Порядок своих вкладок; чужие (pmk_sheet_nest — «Раскрой листа» после
+        # «Детали и чертежи») в него не входят.
+        own = ["sheets", "parts", "operators", "offcuts", "measures"]
+        self.assertEqual([p for p in pages if p in own], own)
         offcuts = arch.xpath("//page[@name='offcuts']")[0]
         for name in ("kerf_mm", "min_offcut_mm"):
             with self.subTest(field=name):
