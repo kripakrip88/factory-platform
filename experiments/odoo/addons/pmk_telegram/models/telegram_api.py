@@ -66,6 +66,16 @@ class TelegramApi:
         params["photo"] = photo
         return self.call("sendPhoto", **{k: v for k, v in params.items() if v is not None})
 
+    def send_document(self, chat_id, document, caption=None, reply_markup=None,
+                      thread_id=None, reply_to=None):
+        """document — (имя файла, байты)."""
+        return self.call_files("sendDocument", {"document": document},
+                               chat_id=chat_id, caption=caption,
+                               parse_mode="HTML" if caption else None,
+                               reply_markup=reply_markup,
+                               message_thread_id=int(thread_id) if thread_id else None,
+                               reply_to_message_id=reply_to)
+
     def edit_photo(self, chat_id, message_id, photo, caption=None, reply_markup=None):
         """Заменить картинку (и подпись, кнопки) в отправленном сообщении."""
         media = {"type": "photo", "caption": caption, "parse_mode": "HTML"}

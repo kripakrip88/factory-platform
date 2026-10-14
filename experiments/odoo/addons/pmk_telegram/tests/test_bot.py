@@ -28,6 +28,13 @@ class FakeApi:
         return {"message_id": 500, "photo": [{"file_id": "fid-%d" % len(self.photos),
                                               "file_size": 10}]}
 
+    def send_document(self, chat_id, document, caption=None, reply_markup=None,
+                      thread_id=None, reply_to=None):
+        self.docs = getattr(self, "docs", []) + [(chat_id, document, caption, reply_markup, thread_id, reply_to)]
+        if getattr(self, "fail_docs", False):
+            return None
+        return {"message_id": 900 + len(self.docs)}
+
     def edit_photo(self, chat_id, message_id, photo, caption=None, reply_markup=None):
         self.edits = getattr(self, "edits", []) + [(chat_id, message_id, photo, caption, reply_markup)]
         return {"message_id": message_id, "photo": [{"file_id": "fid-e%d" % len(self.edits),
@@ -474,3 +481,35 @@ class TestTelegramCarousel(TransactionCase):
     def test_demo_button_says_example(self):
         self._click("demo:take")
         self.assertIn("пример", self.api.answers[-1])
+
+
+@tagged("post_install", "-at_install")
+class TestTelegramGroupFiles(TestTelegramGroup):
+    """Сообщение с файлами в группу: первый файл с текстом, остальные — ответами."""
+
+    def setUp(self):
+        super().setUp()
+        self._added()
+        self.files = [("a.pdf", b"%PDF-a"), ("b.pdf", b"%PDF-b")]
+
+    def test_first_with_caption_rest_as_replies(self):
+        self.assertTrue(self.bot.pmk_send_group_files("💰 текст", self.files, {"k": 1}))
+        first, second = self.api.docs[-2:]
+        self.assertEqual((first[1], first[2], first[3]), (self.files[0], "💰 текст", {"k": 1}))
+        self.assertEqual((second[1], second[2], second[5]), (self.files[1], None, 901))
+
+    def test_long_text_goes_separately(self):
+        long = "x" * 1500
+        self.bot.pmk_send_group_files(long, self.files)
+        self.assertEqual(self.api.sent[-1][1], long)
+        self.assertEqual([d[1] for d in self.api.docs], self.files)
+        self.assertTrue(all(d[2] is None for d in self.api.docs))
+
+    def test_file_failure_text_still_sent(self):
+        self.api.fail_docs = True
+        self.assertTrue(self.bot.pmk_send_group_files("💰 текст", self.files))
+        self.assertEqual(self.api.sent[-1][1], "💰 текст")
+
+    def test_no_files_plain_message(self):
+        self.bot.pmk_send_group_files("💰", [])
+        self.assertEqual(self.api.sent[-1][1], "💰")
