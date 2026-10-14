@@ -169,10 +169,14 @@
   gap: 6px;
   margin: 0;
 
-  > .o_field_widget.o_pmk_lead_days {
-    flex: 0 0 4em;
-    width: 4em !important;
-    max-width: 4em !important;
+  // Число дней — узкое поле; тема даёт полям ввода свою ширину — и рамка
+  // заходила под «рабочих дней».
+  > .o_field_widget.o_pmk_lead_days,
+  > .o_field_widget.o_pmk_lead_days input {
+    flex: 0 0 4.5em;
+    width: 4.5em !important;
+    min-width: 0 !important;
+    max-width: 4.5em !important;
   }
 
   > span {
