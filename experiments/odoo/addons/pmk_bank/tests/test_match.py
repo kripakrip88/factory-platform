@@ -5,6 +5,7 @@ from datetime import date
 from odoo.tests import BaseCase, tagged
 
 from ..tools import match
+from ..tools import message
 
 
 @tagged("post_install", "-at_install")
@@ -18,6 +19,8 @@ class TestMatch(BaseCase):
             "ОПЛАТА ПО СЧ 987 ОТ 24.08.2026Г. ЗА ДОБОРНЫЙ ЭЛ.": ["987"],
             "Оплата счета № 01113 от 24.09.2026 г. за лазерную резку": ["1113"],
             "Оплата по сч. 1200 и сч.1201": ["1200", "1201"],
+            "Оплата по счету №00683, №733, №832 без НДС": ["683", "733", "832"],
+            "по счету 555, 12 шт": ["555"],
             # ловушки: «расчёт» содержит «счёт», сумма без «счёт» — не номер
             "Оплата по расчету 555 за металл": [],
             "Перевод между счетами. Без НДС": [],
@@ -44,3 +47,39 @@ class TestMatch(BaseCase):
     def test_money(self):
         self.assertEqual(match.money(11500), "11\u00a0500\u00a0₽")
         self.assertEqual(match.money(29509.6), "29\u00a0509,60\u00a0₽")
+
+    def test_what_for_live_purposes(self):
+        cases = {
+            "ОПЛАТА ПО СЧЕТУ 01183 ОТ 09.10.2026 ЗА СНЕГОЗАДЕРЖАТЕЛЬ НА СУММУ 11500, В Т.Ч. НДС": "снегозадержатель",
+            "Оплата по счету № 01166 от 07.10.2026 за грнутый швеллер 28*85*28*2 - 40800-00, в т.ч. НДС":
+                "грнутый швеллер 28*85*28*2",
+            "Оплата по счету № 01177 от 08.10.2026 за ТМЦ 29509-60 руб. В т.ч. НДС 22%": "ТМЦ",
+            "Оплата счета № 01113 от 24.09.2026 г. за лазерную резку. В том числе НДС": "лазерную резку",
+            "МСП Оплата 70% поставки по счету№01155 от 06.10.2026": "",
+        }
+        for purpose, expected in cases.items():
+            self.assertEqual(message.what_for(purpose), expected, purpose)
+
+    def test_org_short(self):
+        self.assertEqual(message.org_short("ИП Бутов Игорь Евгеньевич"), "ИП Бутов")
+        self.assertEqual(message.org_short("ООО «Ромашка»"), "ООО «Ромашка»")
+
+    def test_tochka_statement_only_booked_credit(self):
+        from unittest.mock import patch
+        from ..tools import tochka
+        st = {"Statement": [{"status": "Ready", "Transaction": [
+            {"transactionId": "t1", "creditDebitIndicator": "Credit", "status": "Booked",
+             "documentProcessDate": "2026-10-02", "Amount": {"amount": 22000.0, "currency": "RUB"},
+             "DebtorParty": {"inn": "2700000000", "name": "ООО Клиент"},
+             "description": "Оплата по счету №01128", "documentNumber": "5"},
+            {"transactionId": "t2", "creditDebitIndicator": "Debit", "status": "Booked",
+             "Amount": {"amount": 100.0}},
+            {"transactionId": "t3", "creditDebitIndicator": "Credit", "status": "Pending",
+             "Amount": {"amount": 50.0}},
+        ]}]}
+        calls = iter([{"Statement": {"statementId": "s1"}}, st])
+        with patch.object(tochka.Tochka, "_req", lambda *_a, **_k: next(calls)):
+            ops = tochka.Tochka("jwt").incoming("acc/bic", "2026-10-01")
+        self.assertEqual([o["id"] for o in ops], ["t1"])
+        self.assertEqual(ops[0]["payer_inn"], "2700000000")
+        self.assertEqual(ops[0]["purpose"], "Оплата по счету №01128")

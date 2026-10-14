@@ -59,7 +59,8 @@ class Modulbank:
         return out
 
     def incoming(self, account_id, date_from):
-        """Зачисленные поступления на счёт с даты (yyyy-mm-dd), все страницы.
+        """Зачисленные поступления на счёт с даты (yyyy-mm-dd), все страницы,
+        в общем виде (_norm).
 
         Банк сортирует по дате проведения по убыванию, и при новых операциях
         страницы сдвигаются — дубли отсекает вызывающий по id операции.
@@ -70,7 +71,22 @@ class Modulbank:
                 "category": INCOMING, "from": date_from, "records": PAGE, "skip": skip})
             if not isinstance(page, list):
                 raise ModulbankError(f"неожиданный ответ: {str(page)[:200]}")
-            ops += [o for o in page if o.get("status") in RECEIVED]
+            ops += [_norm(o) for o in page if o.get("status") in RECEIVED]
             if len(page) < PAGE:
                 return ops
             skip += PAGE
+
+
+def _norm(o):
+    """Операция Модульбанка → общий вид (как у Точки)."""
+    return {
+        "id": o.get("id"),
+        "executed": (o.get("executed") or o.get("created") or "")[:10],
+        "amount": o.get("amount") or 0.0,
+        "currency": o.get("currency"),
+        "payer_name": o.get("contragentName"),
+        "payer_inn": o.get("contragentInn"),
+        "purpose": o.get("paymentPurpose"),
+        "doc_number": o.get("docNumber"),
+        "raw": o,
+    }

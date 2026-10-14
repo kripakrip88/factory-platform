@@ -19,6 +19,7 @@ from datetime import timedelta
 from odoo import api, fields, models
 
 from ..tools.modulbank import Modulbank, ModulbankError
+from ..tools.tochka import Tochka
 
 _logger = logging.getLogger(__name__)
 
@@ -39,6 +40,11 @@ class PmkBankAccount(models.Model):
     org_id = fields.Many2one("pmk.org", "Организация", required=True, ondelete="restrict")
     bank = fields.Selection(BANKS, "Банк", required=True, default="modulbank")
     number = fields.Char("Номер счёта", required=True)
+    token_param = fields.Char(
+        "Ключ (системный параметр)",
+        help="Имя системного параметра с ключом банка. Пусто — pmk_bank.<банк>.token. "
+             "Свой ключ нужен, когда у организаций разные ключи (Точка: Бутов и "
+             "Астахов — каждый выпускает свой).")
     bank_ref = fields.Char("ID счёта в банке", readonly=True, copy=False,
                            help="Находится по номеру при первом опросе.")
     last_sync = fields.Datetime("Последний опрос", readonly=True)
@@ -57,12 +63,11 @@ class PmkBankAccount(models.Model):
     # ── опрос ────────────────────────────────────────────────────────────
 
     def _pmk_client(self):
-        token = self.env["ir.config_parameter"].sudo().get_param(PARAM_TOKEN % self.bank)
+        key = self.token_param or PARAM_TOKEN % self.bank
+        token = self.env["ir.config_parameter"].sudo().get_param(key)
         if not token:
-            raise ModulbankError("не задан токен (системный параметр %s)" % (PARAM_TOKEN % self.bank))
-        if self.bank != "modulbank":
-            raise ModulbankError("банк «%s» ещё не подключён" % self.bank)
-        return Modulbank(token)
+            raise ModulbankError("не задан ключ (системный параметр %s)" % key)
+        return Tochka(token) if self.bank == "tochka" else Modulbank(token)
 
     @api.model
     def _cron_sync(self):
@@ -97,7 +102,7 @@ class PmkBankAccount(models.Model):
             if op.get("id") in known:
                 continue
             known.add(op.get("id"))
-            new |= Payment._pmk_create_from_modulbank(self, op, baseline=baseline)
+            new |= Payment._pmk_create_from_op(self, op, baseline=baseline)
         self.write({"last_error": False, "last_sync": fields.Datetime.now()})
         if notify and not baseline:
             for pay in new.filtered(lambda p: p.state == "new").sorted("executed"):
