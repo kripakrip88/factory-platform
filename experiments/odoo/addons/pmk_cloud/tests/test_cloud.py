@@ -128,3 +128,29 @@ class TestCloud(TransactionCase):
             b'</d:response></d:multistatus>')
         self.assertEqual([(i["path"], i["dir"], i["size"]) for i in items],
                          [("/А", True, 0), ("/А/x 1.dxf", False, 12)])
+
+    def test_retry_on_timeout(self):
+        """Медленное Облако: два сбоя сети подряд — не ошибка, третий — ошибка с именем папки."""
+        import requests
+
+        class Resp:
+            status_code = 207
+            content = (b'<d:multistatus xmlns:d="DAV:"><d:response><d:href>/X/</d:href><d:propstat><d:prop>'
+                       b'<d:resourcetype><d:collection/></d:resourcetype></d:prop></d:propstat></d:response>'
+                       b'</d:multistatus>')
+
+        class Http:
+            def __init__(self, fails):
+                self.fails, self.calls, self.auth = fails, 0, None
+
+            def request(self, *a, **kw):
+                self.calls += 1
+                if self.calls <= self.fails:
+                    raise requests.exceptions.ReadTimeout()
+                return Resp()
+
+        http = Http(2)
+        self.assertEqual(WebDav("u", "p", session=http, sleep=lambda s: None).list("/X"), [])
+        self.assertEqual(http.calls, 3)
+        with self.assertRaisesRegex(WebDavError, "ReadTimeout.*«/X».*3"):
+            WebDav("u", "p", session=Http(3), sleep=lambda s: None).list("/X")

@@ -69,10 +69,16 @@ def is_recent(name, today, days):
 
 
 class WebDav:
-    def __init__(self, login, password, base_url=BASE_URL, timeout=30, session=None):
+    # Облако бывает медленным: первый обход «ПРОИЗВОДСТВА» (85+ папок) 15.10 упал на ReadTimeout
+    # одной папки при 30 с. Ждём ответа до минуты и повторяем сетевой сбой дважды.
+    RETRY_PAUSES = (3, 10)
+
+    def __init__(self, login, password, base_url=BASE_URL, timeout=(15, 60), session=None, sleep=None):
         import requests
+        import time
         self.base = base_url.rstrip("/")
         self.timeout = timeout
+        self.sleep = sleep or time.sleep
         self.http = session or requests.Session()
         self.http.auth = (login, password)
 
@@ -80,11 +86,20 @@ class WebDav:
         """Содержимое папки (без неё самой)."""
         path = norm(path)
         url = self.base + quote(path if path.endswith("/") else path + "/")
-        try:
-            r = self.http.request("PROPFIND", url, data=BODY.encode(), timeout=self.timeout,
-                                  headers={"Depth": "1", "Content-Type": "application/xml; charset=utf-8"})
-        except Exception as e:  # noqa: BLE001 — сеть: текст без пароля
-            raise WebDavError("Облако недоступно: %s" % type(e).__name__)
+        for attempt, pause in enumerate(self.RETRY_PAUSES + (None,)):
+            try:
+                r = self.http.request("PROPFIND", url, data=BODY.encode(), timeout=self.timeout,
+                                      headers={"Depth": "1", "Content-Type": "application/xml; charset=utf-8"})
+            except Exception as e:  # noqa: BLE001 — сеть: текст без пароля
+                if pause is None:
+                    raise WebDavError("Облако недоступно: %s (папка «%s», попыток %d)"
+                                      % (type(e).__name__, path, attempt + 1))
+                self.sleep(pause)
+                continue
+            if r.status_code in (429, 500, 502, 503, 504) and pause is not None:
+                self.sleep(pause)
+                continue
+            break
         if r.status_code == 401:
             raise WebDavError("Облако не пускает: неверная почта или пароль для внешнего приложения "
                               "(нужен доступ «Облако (WebDAV)»).")

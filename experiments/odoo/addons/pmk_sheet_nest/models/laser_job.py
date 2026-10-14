@@ -66,10 +66,10 @@ class LaserJob(models.Model):
                                          ("error", "")], compute="_compute_nest")
     nest_summary_json = fields.Text("Сводка по стратегиям", compute="_compute_nest")
     nest_png_layouts = fields.Binary("Раскладки", compute="_compute_nest")
-    nest_png_order = fields.Binary("Порядок резки", compute="_compute_nest")
+    nest_png_order = fields.Binary("Картинка порядка резки", compute="_compute_nest")
     nest_can_build = fields.Boolean(compute="_compute_nest")
     nest_can_accept = fields.Boolean(compute="_compute_nest")
-    nest_program = fields.Char("Программа раскроя", compute="_compute_nest")
+    nest_program = fields.Char("Собранная программа CypCut", compute="_compute_nest")
     nest_warnings = fields.Text("Предупреждения раскроя", compute="_compute_nest")
 
     @api.constrains("nest_coedge", "nest_bridge")
