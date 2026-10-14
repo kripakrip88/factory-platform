@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- «Настройки → Банк: счета / Банк: поступления» — только администраторы,
+         рядом с «Нашими организациями». Меню сотрудников не меняется. -->
+    <record id="view_pmk_bank_account_list" model="ir.ui.view">
+        <field name="name">pmk.bank.account.list</field>
+        <field name="model">pmk.bank.account</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="org_id"/>
+                <field name="bank"/>
+                <field name="number"/>
+                <field name="last_sync"/>
+                <field name="last_error"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_pmk_bank_account_form" model="ir.ui.view">
+        <field name="name">pmk.bank.account.form</field>
+        <field name="model">pmk.bank.account</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_sync" type="object" string="Забрать сейчас"
+                            class="btn-secondary"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="org_id"/>
+                            <field name="bank"/>
+                            <field name="number"/>
+                            <field name="active"/>
+                        </group>
+                        <group>
+                            <field name="bank_ref"/>
+                            <field name="last_sync"/>
+                            <field name="last_error"/>
+                        </group>
+                    </group>
+                    <field name="payment_ids" readonly="1">
+                        <list>
+                            <field name="executed"/>
+                            <field name="amount"/>
+                            <field name="payer_name"/>
+                            <field name="sale_order_id"/>
+                            <field name="state"/>
+                        </list>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_pmk_bank_payment_list" model="ir.ui.view">
+        <field name="name">pmk.bank.payment.list</field>
+        <field name="model">pmk.bank.payment</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0">
+                <field name="executed"/>
+                <field name="org_id"/>
+                <field name="amount" sum="Итого"/>
+                <field name="payer_name"/>
+                <field name="payer_inn" optional="hide"/>
+                <field name="partner_id"/>
+                <field name="sale_order_id"/>
+                <field name="purpose" optional="show"/>
+                <field name="state"/>
+            </list>
+        </field>
+    </record>
+    <record id="action_pmk_bank_account" model="ir.actions.act_window">
+        <field name="name">Банк: счета</field>
+        <field name="res_model">pmk.bank.account</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_pmk_bank_payment" model="ir.actions.act_window">
+        <field name="name">Банк: поступления</field>
+        <field name="res_model">pmk.bank.payment</field>
+        <field name="view_mode">list</field>
+    </record>
+    <menuitem id="menu_pmk_bank_account" name="Банк: счета" parent="base.menu_administration"
+              action="action_pmk_bank_account" sequence="2" groups="base.group_system"/>
+    <menuitem id="menu_pmk_bank_payment" name="Банк: поступления" parent="base.menu_administration"
+              action="action_pmk_bank_payment" sequence="3" groups="base.group_system"/>
+</odoo>
