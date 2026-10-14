@@ -118,6 +118,25 @@ class SaleOrderOrg(models.Model):
     def _compute_pmk_org_id(self):
         _org_from_deal(self, "opportunity_id")
 
+    # Расчётный счёт в шапке счёта (Антон 14.10.2026, «как в МоёмСкладе»):
+    # по умолчанию — счёт организации, можно выбрать другой её счёт.
+    pmk_org_partner_id = fields.Many2one(related="pmk_org_id.partner_id", string="Карточка организации")
+    pmk_bank_id = fields.Many2one(
+        "res.partner.bank", "Расчётный счёт", tracking=True, copy=True,
+        compute="_compute_pmk_bank_id", store=True, readonly=False, precompute=True,
+        domain="[('partner_id', '=', pmk_org_partner_id)]",
+        help="Счёт организации, на который платит контрагент. По умолчанию — "
+             "счёт из карточки «Нашей организации».")
+
+    @api.depends("pmk_org_id")
+    def _compute_pmk_bank_id(self):
+        for order in self:
+            org = order.pmk_org_id
+            if not org:
+                order.pmk_bank_id = False
+            elif order.pmk_bank_id.partner_id != org.partner_id:
+                order.pmk_bank_id = org.bank_id or org.partner_id.bank_ids[:1]
+
 
 class SaleOrderLineOrg(models.Model):
     _inherit = "sale.order.line"

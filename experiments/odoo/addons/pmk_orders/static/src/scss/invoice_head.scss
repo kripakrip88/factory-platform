@@ -1,0 +1,193 @@
+// Шапка счёта покупателю «как в МоёмСкладе» (14.10.2026) — разметка в
+// pmk_moysklad/views/sale_order_head_views.xml. Подпись над полем (как во
+// всех формах, type.scss), строки: две половины × 3, затем три трети,
+// затем строка «вес · сделка». Узкий экран — по одному полю в строку.
+
+.o_form_view .pmk-inv-title {
+  max-width: 100%;
+
+  > h1 {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 0.3em;
+    row-gap: 0.1em;
+  }
+
+  // Ядро растягивает Char-поля заголовка на всю ширину (0,4,0).
+  > h1 > .o_field_widget,
+  > h1 > span {
+    width: auto !important;
+    flex: 0 0 auto;
+    min-width: 0;
+    white-space: nowrap;
+  }
+
+  .pmk-inv-title__doc {
+    font-weight: 500;
+  }
+
+  .pmk-inv-title__from {
+    font-weight: 400;
+    opacity: 0.6;
+  }
+
+  // Дата словами — без рамки, пунктир при наведении (как в расчёте,
+  // spec_form.scss: !important против чужой темы).
+  .pmk-inv-title__date {
+    .o_input {
+      font: inherit;
+      color: inherit !important;
+      letter-spacing: inherit;
+      padding: 0;
+      background: transparent !important;
+      border: 0 !important;
+      border-bottom: 1px dashed transparent !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      outline: 0 !important;
+    }
+
+    button.o_input {
+      width: auto !important;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    button.o_input:hover,
+    button.o_input:focus,
+    button.o_input:focus-visible,
+    input.o_input {
+      border-bottom-color: currentColor !important;
+    }
+
+    input.o_input {
+      width: 16ch;
+    }
+  }
+}
+
+.pmk-inv-head {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px 16px;
+  margin: 6px 0 4px;
+  max-width: 1100px;
+}
+
+.pmk-inv-f {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+
+  &.pmk-inv-half { grid-column: span 3; }
+  &.pmk-inv-third { grid-column: span 2; }
+
+  > label,
+  > .pmk-inv-label > label,
+  > label.o_form_label {
+    margin: 0;
+    font-size: 12.5px;
+    font-weight: 500;
+    line-height: 16px;
+    white-space: nowrap;
+    color: var(--pmk-label);
+  }
+
+  > .o_field_widget,
+  > .o_row,
+  > .pmk-inv-delivery {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .o_field_many2one_selection,
+  .o_input_dropdown {
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+// Подпись «Контрагент» и ИНН серым в одной строке.
+.pmk-inv-label {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+
+  .pmk-inv-vat {
+    font-size: 12px;
+    color: var(--pmk-ink-3, #6b7079);
+
+    .o_field_widget {
+      display: inline;
+      font-size: inherit;
+    }
+  }
+}
+
+// Срок изготовления: «20 раб. дней с момента оплаты» одной строкой.
+.pmk-inv-f > .o_row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+
+  .o_pmk_lead_days {
+    max-width: 4.5em;
+  }
+}
+
+// Доставка: «Самовывоз · Доставка» и адрес рядом.
+.pmk-inv-delivery {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 30px;
+
+  .o_field_radio {
+    flex: 0 0 auto;
+    width: auto !important;
+  }
+
+  .o_field_widget:not(.o_field_radio) {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+}
+
+.pmk-inv-foot {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  font-size: 13px;
+}
+
+.pmk-inv-foot__item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+
+  .o_field_widget {
+    width: auto !important;
+  }
+}
+
+.pmk-inv-foot__k {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--pmk-label);
+}
+
+.pmk-inv-foot__muted {
+  color: var(--pmk-ink-3, #6b7079);
+}
+
+@media (max-width: 991.98px) {
+  .pmk-inv-f.pmk-inv-half,
+  .pmk-inv-f.pmk-inv-third {
+    grid-column: 1 / -1;
+  }
+}

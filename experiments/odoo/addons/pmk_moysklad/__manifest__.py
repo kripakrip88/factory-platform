@@ -17,6 +17,8 @@
     "data": [
         "data/data.xml",
         "views/sale_order_views.xml",
+        # Шапка счёта «как в МоёмСкладе» (14.10.2026).
+        "views/sale_order_head_views.xml",
     ],
     "installable": True,
 }

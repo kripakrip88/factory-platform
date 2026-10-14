@@ -10,7 +10,7 @@
 // числовой датой, пустое значение, только чтение.
 
 import { registry } from "@web/core/registry";
-import { DateTimeField, dateField } from "@web/views/fields/datetime/datetime_field";
+import { DateTimeField, dateField, dateTimeField } from "@web/views/fields/datetime/datetime_field";
 
 export class PmkLongDateField extends DateTimeField {
     /**
@@ -20,7 +20,7 @@ export class PmkLongDateField extends DateTimeField {
      */
     getFormattedValue(valueIndex, numeric = this.props.numeric) {
         const value = this.values[valueIndex];
-        if (!numeric && value && this.field.type === "date") {
+        if (!numeric && value && (this.field.type === "date" || this.field.type === "datetime")) {
             return value.toLocaleString(luxon.DateTime.DATE_FULL);
         }
         return super.getFormattedValue(valueIndex, numeric);
@@ -29,5 +29,12 @@ export class PmkLongDateField extends DateTimeField {
 
 registry.category("fields").add("pmk_long_date", {
     ...dateField,
+    component: PmkLongDateField,
+});
+
+// Дата-и-время (дата счёта, 14.10.2026): в заголовке — только дата словами,
+// время видно в поле ввода по клику.
+registry.category("fields").add("pmk_long_datetime", {
+    ...dateTimeField,
     component: PmkLongDateField,
 });

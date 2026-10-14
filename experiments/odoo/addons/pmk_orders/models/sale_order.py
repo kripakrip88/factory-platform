@@ -180,6 +180,22 @@ def snapshot_error(order):
 class SaleOrder(models.Model):
     _inherit = "sale.order"
 
+    # Шапка счёта (14.10.2026): вес продукции — из расчёта Odoo (основание —
+    # ссылкой на расчёт); ИНН контрагента — серым рядом с подписью.
+    pmk_weight_text = fields.Char("Вес продукции", compute="_compute_pmk_weight_text")
+    pmk_partner_vat = fields.Char("ИНН контрагента", related="partner_id.vat")
+
+    @api.depends("pmk_spec_id.total_weight")
+    def _compute_pmk_weight_text(self):
+        for order in self:
+            kg = order.pmk_spec_id.total_weight
+            if not kg:
+                order.pmk_weight_text = False
+            elif kg >= 1000:
+                order.pmk_weight_text = ("%.3f т" % (kg / 1000)).replace(".", ",")
+            else:
+                order.pmk_weight_text = ("%.1f кг" % kg).replace(".", ",")
+
     pmk_spec_id = fields.Many2one(
         "pmk.metal.spec", "Расчёт", index=True, ondelete="set null", copy=False,
         tracking=True,
