@@ -132,7 +132,10 @@
     <field name="priority">50</field>
     <field name="active" eval="True"/>
     <field name="arch" type="xml">
-      <form string="Заказ в работе" class="o_pmk_header_up">
+      <!-- Подписи над полями, ровные колонки — как в остальных документах
+           (pmk_theme, type.scss, pmk-labels-top-groups; Антон 15.10.2026:
+           «заказы в работе тоже некрасиво»). -->
+      <form string="Заказ в работе" class="o_pmk_header_up pmk-labels-top-groups">
         <header>
           <field name="stage_id" widget="statusbar" options="{'clickable': '1', 'fold_field': 'fold'}"/>
         </header>
