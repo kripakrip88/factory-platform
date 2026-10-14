@@ -23,6 +23,7 @@ import { patch } from "@web/core/utils/patch";
 import { SelectCreateDialog } from "@web/views/view_dialogs/select_create_dialog";
 
 import { MailClientInbox } from "@mail_client/mail_client_action";
+import { PmkNewPartnerDialog } from "./partner_dialog";
 
 const PREF = "pmk_mail.partner_card";
 // Кнопка «Лид» над письмом (reading_pane_lead.js) шлёт это же событие —
@@ -158,10 +159,9 @@ export class PmkPartnerCard extends Component {
     }
 
     /**
-     * «Создать контрагента» (14.10.2026): реквизиты и контакт из письма и его
-     * вложений правилами (models/mail_partner_card.py, tools/requisites.py),
-     * по ИНН — справочник. Окно карточки заполнено, но не сохранено:
-     * сохраняет человек, проверив. Что и откуда взято — уведомлением.
+     * «Создать контрагента» (14.10.2026): окно «Новый контрагент из письма»
+     * (partner_dialog.js) — найденное в письме, вложениях и справочнике, с
+     * источниками. ИНН из письма уже есть в базе — открываем ту карточку.
      */
     async createPartner() {
         if (this.state.busy) {
@@ -169,20 +169,21 @@ export class PmkPartnerCard extends Component {
         }
         this.state.busy = true;
         try {
-            const result = await this.orm.call("mail.client.message", "pmk_partner_from_letter", [
+            const data = await this.orm.call("mail.client.message", "pmk_partner_from_letter", [
                 this.props.messageId,
             ]);
-            if (result.found.length) {
-                this.notification.add(result.found.join(" · "), {
-                    title: _t("Найдено в письме"),
-                    type: "info",
-                });
+            if (data.existing) {
+                this.notification.add(
+                    _t("Контрагент с ИНН %(inn)s уже есть: %(name)s", data.existing),
+                    { type: "info" }
+                );
+                await this.openRecord("res.partner", data.existing.id);
+                return;
             }
-            for (const warning of result.warnings) {
-                this.notification.add(warning, { type: "warning", sticky: true });
-            }
-            await this.action.doAction(result.action, {
-                onClose: () => this.load(this.props.messageId),
+            this.dialog.add(PmkNewPartnerDialog, {
+                messageId: this.props.messageId,
+                data,
+                onDone: () => this.load(this.props.messageId),
             });
         } finally {
             this.state.busy = false;

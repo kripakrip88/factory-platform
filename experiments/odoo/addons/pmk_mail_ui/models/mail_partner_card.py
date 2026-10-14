@@ -212,10 +212,13 @@ class MailClientMessage(models.Model):
     READ_PARTS = 5
 
     def _pmk_requisites_from_parts(self, own_inns):
-        """Реквизиты из вложений письма: (найденное, имя файла | False)."""
+        """Реквизиты и названия организаций из вложений письма:
+        (найденное, имя файла с реквизитами | False, [названия], имя файла с
+        названиями | False)."""
         self.ensure_one()
         merged = requisites.requisites("")
-        source = False
+        source = names_source = False
+        names = []
         parts = self.client_attachment_ids.filtered(
             lambda part: not part.pmk_inline
             and requisites.file_kind(part.name, part.content_type)
@@ -235,13 +238,61 @@ class MailClientMessage(models.Model):
                     useful = True
             if useful and not source:
                 source = part.name
-        return merged, source
+            for name in requisites.legal_names_in(text, self._pmk_own_names()):
+                if name not in names:
+                    names.append(name)
+                    names_source = names_source or part.name
+        return merged, source, names, names_source
+
+    @api.model
+    def _pmk_own_names(self):
+        """Свои организации — их названия во вложениях (договор, акт) не
+        клиент: «ИП «…»», «ООО «…»» компаний Odoo и «Наших организаций»."""
+        env = self.env
+        partners = env["res.company"].sudo().search([]).partner_id
+        if "pmk.org" in env:
+            partners |= env["pmk.org"].sudo().with_context(active_test=False).search([]).partner_id
+        own = set()
+        for partner in partners:
+            for value in (partner.name, getattr(partner, "pmk_legal_name", "")):
+                if value:
+                    own.add(value)
+                    own.update(requisites.legal_names_in(value))
+        return own
+
+    # Поля организации, которые окно «Новый контрагент» может прислать назад.
+    COMPANY_KEYS = ("name", "vat", "kpp", "ogrn", "okpo", "pmk_legal_name",
+                    "pmk_legal_address", "pmk_dadata_status", "fias_id", "zip", "city", "street")
+    CONTACT_KEYS = ("name", "function", "phone", "email")
+
+    @api.model
+    def _pmk_dadata_company(self, data):
+        """Ответ справочника → поля организации для окна (+ ИНН)."""
+        Partner = self.env["res.partner"]
+        values, status = Partner._pmk_dadata_values(data)
+        company = {key: value for key, value in values.items() if value and key in self.COMPANY_KEYS}
+        if data.get("inn"):
+            company["vat"] = data["inn"]
+        company["status"] = Partner._pmk_status_label(status) if status else ""
+        company["active"] = not status or status == "ACTIVE"
+        address = data.get("address") or {}
+        company["place"] = (address.get("value") or "")[:90]
+        return company
+
+    @api.model
+    def pmk_partner_suggest(self, query):
+        """Похожие организации из справочника по названию — для окна."""
+        Partner = self.env["res.partner"]
+        if not hasattr(Partner, "_pmk_dadata_suggest"):
+            return []
+        return [self._pmk_dadata_company(data) for data in Partner._pmk_dadata_suggest(query)]
 
     @api.model
     def pmk_partner_from_letter(self, message_id):
-        """Окно новой карточки контрагента, заполненное из письма; ничего не
-        сохраняет — сохраняет человек, проверив. -> {"action", "found",
-        "warnings"}."""
+        """Что нашлось в письме для «Новый контрагент из письма» — с
+        источниками. Ничего не сохраняет. -> {"existing", "company",
+        "company_sources", "query", "candidates", "contact", "contact_sources",
+        "bank", "notes", "warnings", "sender", "email", "subject"}."""
         message = self._checked(message_id, "read")
         Partner = self.env["res.partner"]
         Partner.check_access("create")
@@ -251,95 +302,170 @@ class MailClientMessage(models.Model):
             message.email_to if message._is_outgoing() else message.email_from)
         lines = signature.own_lines(message.body_html or "", message.subject)
         own_inns = (Partner._pmk_own_inns() if hasattr(Partner, "_pmk_own_inns") else set())
+        domain = address.split("@", 1)[-1] if address else ""
 
-        found, notes, warnings = {}, [], []
         letter = requisites.requisites(signature.letter_text(lines), own_inns)
-        attached, source = message._pmk_requisites_from_parts(own_inns)
-        for key, value in letter.items():
-            found[key] = value or attached[key]
+        attached, source, attached_names, names_source = message._pmk_requisites_from_parts(own_inns)
+        found = {key: value or attached[key] for key, value in letter.items()}
+        result = {
+            "sender": sender or "", "email": address, "subject": message.subject or "",
+            "existing": False, "company": {}, "company_sources": {}, "query": "",
+            "candidates": [], "contact": {}, "contact_sources": {}, "bank": {},
+            "warnings": [],
+        }
+        company, sources = result["company"], result["company_sources"]
+
         inn = (found["inns"] or [""])[0]
         if inn:
-            where = _("в тексте письма") if letter["inns"] else _("во вложении «%s»", source)
-            notes.append(_("ИНН %(inn)s — %(where)s", inn=inn, where=where))
-            if len(found["inns"]) > 1:
-                warnings.append(_("В письме несколько ИНН (%s) — взят первый.",
-                                  ", ".join(found["inns"])))
+            where = "письмо" if letter["inns"] else "вложение «%s»" % source
             existing = Partner.with_context(active_test=False).search(
                 [("vat", "in", [inn, "RU" + inn])], limit=1)
             if existing:
-                company = existing.commercial_partner_id
-                return {
-                    "action": self._pmk_partner_window(company.id, {}),
-                    "found": [_("Контрагент с ИНН %(inn)s уже есть: %(name)s — открыт он.",
-                                inn=inn, name=company.display_name)],
-                    "warnings": [],
-                }
-
-        values = {"is_company": True, "company_type": "company"}
-        if inn:
-            values["vat"] = inn
+                result["existing"] = {"id": existing.commercial_partner_id.id,
+                                      "name": existing.commercial_partner_id.display_name,
+                                      "inn": inn}
+                return result
+            company["vat"] = inn
+            sources["vat"] = where
             finder = getattr(Partner, "_pmk_dadata_find", None)
             if finder:
                 try:
-                    dadata, status = Partner._pmk_dadata_values(finder(inn))
-                    values.update({key: value for key, value in dadata.items()
-                                   if value and key in Partner._fields})
-                    notes.append(_("Название, КПП, ОГРН и адрес — из справочника по ИНН"))
-                    if status and status != "ACTIVE":
-                        warnings.append(_("По ЕГРЮЛ организация «%s».",
-                                          Partner._pmk_status_label(status)))
+                    company.update(self._pmk_dadata_company(finder(inn)))
+                    for key in company:
+                        sources.setdefault(key, "справочник")
                 except UserError as exc:
-                    warnings.append(_("Справочник по ИНН не ответил: %s", exc.args[0]))
+                    result["warnings"].append(_("Справочник по ИНН не ответил: %s", exc.args[0]))
+            if len(found["inns"]) > 1:
+                result["warnings"].append(_("В письме несколько ИНН (%s) — взят первый.",
+                                            ", ".join(found["inns"])))
         for key in ("kpp", "ogrn"):
-            if found[key] and not values.get(key) and key in Partner._fields:
-                values[key] = found[key]
-        if not values.get("name"):
-            values["name"] = (requisites.company_from_sender(sender)
-                              or (address.split("@", 1)[-1] if address else "")
-                              or sender or _("Новый контрагент"))
+            if found[key] and not company.get(key):
+                company[key] = found[key]
+                sources[key] = "письмо" if letter[key] else "вложение"
+
+        # Без ИНН — название для поиска в справочнике: подпись, вложение,
+        # имя отправителя с правовой формой; домен — последним.
+        if not company.get("name"):
+            named = requisites.company_from_lines(lines, domain)
+            name_source = "подпись"
+            # Правовое название в теме или тексте письма: «ООО "Альфамобиль" О
+            # предстоящем платеже…» у писем-роботов без подписи.
+            in_letter = requisites.legal_names_in(
+                "%s\n%s" % (message.subject or "", signature.letter_text(lines)), self._pmk_own_names())
+            if not named and in_letter:
+                named, name_source = in_letter[0], "письмо"
+            query_sources = {name: "письмо" for name in in_letter}
+            query_sources.update({name: "вложение" for name in attached_names
+                                  if name not in query_sources})
+            attached_names = [name for name in in_letter if name != named] + [
+                name for name in attached_names if name not in in_letter]
+            if not named and attached_names:
+                named, name_source = attached_names[0], "вложение"
+            if not named:
+                named, name_source = requisites.company_from_sender(sender), "имя отправителя"
+            if not named and domain:
+                named, name_source = domain, "адрес"
+            if named:
+                company["name"] = named
+                sources["name"] = name_source
             if not inn:
-                warnings.append(_("ИНН в письме и вложениях не найден — название "
-                                  "взято из письма, проверьте его."))
+                # Домен справочник по названию не ищет — только как подсказка.
+                queries = [query for query in
+                           ([named] if name_source != "адрес" else []) + attached_names if query][:2]
+                result["query"] = queries[0] if queries else ""
+                seen = set()
+                per_query = 5 if len(queries) == 1 else 3
+                for query in queries:
+                    try:
+                        for item in self.pmk_partner_suggest(query)[:per_query]:
+                            if item.get("vat") and item["vat"] not in seen and item["vat"] not in own_inns:
+                                seen.add(item["vat"])
+                                item["source"] = (name_source if query == named
+                                                  else query_sources.get(query, ""))
+                                result["candidates"].append(item)
+                    except UserError as exc:
+                        result["warnings"].append(_("Справочник не ответил: %s", exc.args[0]))
+                        break
+                result["candidates"] = result["candidates"][:5]
+
+        # Контакт — человек из письма.
+        contact, csources = result["contact"], result["contact_sources"]
+        if requisites.looks_like_person(sender):
+            contact["name"], csources["name"] = sender, "имя отправителя"
+        else:
+            person = requisites.person_from_lines(lines)
+            if person:
+                contact["name"], csources["name"] = person, "подпись"
+        position = requisites.position_from_lines(lines)
+        if position:
+            contact["function"], csources["function"] = position, "подпись"
+        own_digits = {signature.phone_digits(phone) for phone in self._pmk_own_phones()}
+        phone = requisites.contact_phone(lines, own_digits) if address else ""
+        if phone:
+            contact["phone"], csources["phone"] = phone, "подпись"
+        if address:
+            contact["email"], csources["email"] = address, "письмо"
+
+        if found["account"]:
+            bank = self.env["res.bank"].search([("bic", "=", found["bik"])], limit=1) \
+                if found["bik"] else self.env["res.bank"]
+            result["bank"] = {"acc_number": found["account"], "bik": found["bik"],
+                              "bank_id": bank.id or False, "bank_name": bank.name or "",
+                              "source": "письмо" if letter["account"] else "вложение «%s»" % source}
+        return result
+
+    @api.model
+    def _pmk_partner_values(self, company, contact, bank):
+        """Значения новой карточки из окна: только известные поля."""
+        Partner = self.env["res.partner"]
+        values = {key: value for key, value in (company or {}).items()
+                  if key in self.COMPANY_KEYS and value and key in Partner._fields}
+        if not values.get("name"):
+            raise UserError(_("Укажите название организации."))
+        values.update({"is_company": True, "company_type": "company"})
         ru = self.env.ref("base.ru", raise_if_not_found=False)
         if ru:
             values["country_id"] = ru.id
+        person = {key: value for key, value in (contact or {}).items()
+                  if key in self.CONTACT_KEYS and value}
+        if person.get("name") or person.get("phone"):
+            person.setdefault("name", person.get("email") or _("Контакт"))
+            person["type"] = "contact"
+            values["child_ids"] = [fields.Command.create(person)]
+        elif person.get("email"):
+            values["email"] = person["email"]
+        if (bank or {}).get("acc_number"):
+            line = {"acc_number": bank["acc_number"]}
+            if bank.get("bank_id"):
+                line["bank_id"] = bank["bank_id"]
+            values["bank_ids"] = [fields.Command.create(line)]
+        return values
 
-        # Контакт — человек из письма.
-        person = sender if requisites.looks_like_person(sender) else requisites.person_from_lines(lines)
-        phone = message._pmk_letter_phone(address, lines, own, False) if address else ""
-        position = requisites.position_from_lines(lines)
-        if person or phone or position:
-            contact = {"name": person or address or _("Контакт"), "type": "contact"}
-            if address:
-                contact["email"] = address
-            if phone:
-                contact["phone"] = phone
-            if position:
-                contact["function"] = position
-            values["child_ids"] = [fields.Command.create(contact)]
-            notes.append(_("Контакт: %s", ", ".join(
-                item for item in (person, position, phone, address) if item)))
-        elif address:
-            values["email"] = address
+    @api.model
+    def pmk_partner_create_from_letter(self, message_id, company, contact=None, bank=None):
+        """«Создать контрагента» в окне: карточка организации, контакт и
+        счёт. ИНН уже есть в базе — не дублируем, отдаём существующую."""
+        self._checked(message_id, "read")
+        Partner = self.env["res.partner"]
+        Partner.check_access("create")
+        inn = (company or {}).get("vat") or ""
+        if inn:
+            existing = Partner.with_context(active_test=False).search(
+                [("vat", "in", [inn, "RU" + inn])], limit=1)
+            if existing:
+                partner = existing.commercial_partner_id
+                return {"id": partner.id, "name": partner.display_name, "created": False}
+        partner = Partner.create(self._pmk_partner_values(company, contact, bank))
+        return {"id": partner.id, "name": partner.display_name, "created": True}
 
-        # Банк: счёт и БИК — строкой «Банковские счета», банк — если такой БИК
-        # уже есть в справочнике банков.
-        if found["account"]:
-            bank_line = {"acc_number": found["account"]}
-            bank = self.env["res.bank"].search([("bic", "=", found["bik"])], limit=1) \
-                if found["bik"] else self.env["res.bank"]
-            if bank:
-                bank_line["bank_id"] = bank.id
-            values["bank_ids"] = [fields.Command.create(bank_line)]
-            notes.append(_("Расчётный счёт %(acc)s%(bik)s", acc=found["account"],
-                           bik=(_(", БИК %s", found["bik"]) if found["bik"] else "")))
-            if found["bik"] and not bank:
-                warnings.append(_("Банка с БИК %s нет в справочнике — выберите банк "
-                                  "в строке счёта.", found["bik"]))
-
+    @api.model
+    def pmk_partner_full_card(self, message_id, company, contact=None, bank=None):
+        """«Открыть полную карточку»: обычная форма с теми же данными, не
+        сохранённая."""
+        self._checked(message_id, "read")
+        values = self._pmk_partner_values(company, contact, bank)
         context = {"default_%s" % key: value for key, value in values.items()}
-        return {"action": self._pmk_partner_window(False, context),
-                "found": notes, "warnings": warnings}
+        return self._pmk_partner_window(False, context)
 
     @api.model
     def _pmk_partner_window(self, partner_id, context):

@@ -158,3 +158,166 @@
     width: 100%;
   }
 }
+
+// ─── Окно «Новый контрагент из письма» (partner_dialog.js) ────────────────
+// Окно — поверх страницы, вне почты: токенов --mc-* здесь нет, цвета —
+// переменные Bootstrap (тёмная тема переопределяет их сама).
+.pmk-npd {
+  .modal-body {
+    padding: 0;
+  }
+
+  .modal-footer {
+    display: flex;
+    gap: .5rem;
+    justify-content: flex-start;
+  }
+}
+
+.pmk-npd__from {
+  padding: .5rem 1.25rem .75rem;
+  font-size: .8125rem;
+  color: var(--pmk-label, #474b53);
+  overflow-wrap: anywhere;
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+.pmk-npd__sec {
+  padding: .75rem 1.25rem;
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+.pmk-npd__cap {
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--pmk-label, #474b53);
+  margin-bottom: .5rem;
+}
+
+.pmk-npd__warn {
+  font-size: .8125rem;
+  color: var(--bs-warning-text-emphasis, #7a5a00);
+  margin-bottom: .5rem;
+}
+
+.pmk-npd__search {
+  display: flex;
+  gap: .5rem;
+  align-items: center;
+  margin-bottom: .25rem;
+
+  // Тема растит поля и кнопки в окнах — здесь строка поиска одной высоты.
+  .form-control {
+    height: 2rem;
+    min-height: 2rem;
+    padding: .25rem .625rem;
+  }
+
+  .btn {
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    height: 2rem;
+    white-space: nowrap;
+  }
+}
+
+.pmk-npd__row .form-control {
+  height: 1.875rem;
+  min-height: 1.875rem;
+  padding: .2rem .5rem;
+}
+
+.pmk-npd__opt {
+  display: flex;
+  gap: .625rem;
+  align-items: flex-start;
+  width: 100%;
+  margin-top: .375rem;
+  padding: .4rem .625rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: .375rem;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font-size: .8125rem;
+
+  > .fa {
+    margin-top: .2rem;
+    color: var(--pmk-label, #474b53);
+  }
+
+  &:hover {
+    background-color: var(--bs-tertiary-bg);
+  }
+
+  &.pmk-npd__opt--on {
+    border-color: var(--bs-emphasis-color);
+
+    > .fa {
+      color: var(--bs-emphasis-color);
+    }
+  }
+}
+
+.pmk-npd__opt-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pmk-npd__opt-sub {
+  font-size: .75rem;
+  color: var(--pmk-label, #474b53);
+}
+
+.pmk-npd__rows--after {
+  margin-top: .75rem;
+  padding-top: .5rem;
+  border-top: 1px dashed var(--bs-border-color);
+}
+
+.pmk-npd__row {
+  display: grid;
+  grid-template-columns: 7rem minmax(0, 1fr) auto;
+  gap: .625rem;
+  align-items: center;
+  padding: .2rem 0;
+  font-size: .8125rem;
+}
+
+.pmk-npd__k {
+  color: var(--pmk-label, #474b53);
+}
+
+.pmk-npd__v {
+  overflow-wrap: anywhere;
+}
+
+.pmk-npd__tag {
+  font-size: .6875rem;
+  color: var(--pmk-label, #474b53);
+  border: 1px solid var(--bs-border-color);
+  border-radius: 999px;
+  padding: 0 .5rem;
+  white-space: nowrap;
+  font-weight: 400;
+}
+
+.pmk-npd__muted {
+  font-size: .8125rem;
+  color: var(--pmk-label, #474b53);
+  padding: .25rem 1.25rem;
+}
+
+.pmk-npd__sec .pmk-npd__muted {
+  padding: 0;
+}
+
+.pmk-npd__error {
+  font-size: .8125rem;
+  color: var(--bs-danger-text-emphasis, #a32d2d);
+  padding: .5rem 1.25rem 0;
+}

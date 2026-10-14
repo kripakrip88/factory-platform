@@ -13,6 +13,12 @@ from ..tools.legal_name import short_name
 _logger = logging.getLogger(__name__)
 
 API_URL = "https://suggestions.dadata.ru/suggestions/api/4_1/rs/findById/party"
+# Поиск по названию (14.10.2026, «Новый контрагент из письма»): ИНН в письме
+# нет — выбрать организацию из похожих.
+SUGGEST_URL = "https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/party"
+# Одноимённых организаций по стране много («ООО «АПЕКС ГРУПП»» — пять штук):
+# свой край — выше в выдаче (КЛАДР 27 — Хабаровский край).
+BOOST_KLADR = "27"
 TIMEOUT = 10
 
 
@@ -219,6 +225,37 @@ class ResPartner(models.Model):
             _logger.info("DaData вернула %s записей по ИНН %s, берём первую",
                          len(suggestions), inn)
         return suggestions[0].get("data") or {}
+
+    @api.model
+    def _pmk_dadata_suggest(self, query, count=5):
+        """Организации, похожие на название: [данные справочника, …] — как
+        у _pmk_dadata_find, только списком. Ошибка связи — понятный отказ."""
+        query = (query or "").strip()
+        if len(query) < 3:
+            return []
+        api_key = self.env["ir.config_parameter"].sudo().get_param("pmk.dadata.api_key")
+        if not api_key:
+            raise UserError(_(
+                "Не задан ключ DaData. Системный параметр pmk.dadata.api_key пуст."))
+        try:
+            response = requests.post(
+                SUGGEST_URL,
+                json={"query": query[:300], "count": count,
+                      "locations_boost": [{"kladr_id": BOOST_KLADR}]},
+                headers={
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    "Authorization": "Token %s" % api_key,
+                },
+                timeout=TIMEOUT,
+            )
+        except requests.RequestException as exc:
+            _logger.warning("DaData недоступна: %s", exc)
+            raise UserError(_("Не удалось связаться со справочником: %s", exc))
+        if response.status_code != 200:
+            raise UserError(_("Справочник ответил ошибкой %s.", response.status_code))
+        return [item.get("data") or {} for item in
+                (response.json() or {}).get("suggestions") or []]
 
     @staticmethod
     def _pmk_status_label(status):

@@ -80,5 +80,20 @@ class TestRequisites(unittest.TestCase):
         self.assertEqual(requisites.attachment_text("scan.jpg", "image/jpeg", b"xx"), "")
 
 
+    def test_company_name_from_signature_and_attachment(self):
+        lines = ["Анастасия Жидкова", "Ведущий специалист", "Альфа-Тест | alfatest.example.org",
+                 "+7 (800) 000-00-00, доб. 2212"]
+        self.assertEqual(requisites.company_from_lines(lines, "alfatest.example.org"), "Альфа-Тест")
+        self.assertEqual(requisites.company_from_lines(["ООО «Ромашка», г. Хабаровск"], ""), "ООО «Ромашка»")
+        self.assertEqual(requisites.legal_names_in(
+            "Лизингодатель ООО «Тестмобиль» и ИП «Свой»", own={"ИП «Свой»"}), ["ООО «Тестмобиль»"])
+
+    def test_contact_phone_keeps_extension_and_800(self):
+        lines = ["Анастасия", "+7 (800) 000-00-00, доб. 2212"]
+        self.assertEqual(requisites.contact_phone(lines), "+7 (800) 000-00-00, доб. 2212")
+        self.assertEqual(requisites.contact_phone(["тел. 8 (4212) 00-00-00", "моб. +7 914 000-00-01"]),
+                         "+7 914 000-00-01")
+
+
 if __name__ == "__main__":
     unittest.main()

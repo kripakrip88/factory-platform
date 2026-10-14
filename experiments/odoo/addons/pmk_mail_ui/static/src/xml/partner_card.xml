@@ -132,4 +132,103 @@
     </aside>
   </t>
 
+
+  <!-- Окно «Новый контрагент из письма» (static/src/js/partner_dialog.js).
+       Справа у каждого значения — откуда оно взято. -->
+  <t t-name="pmk_mail_ui.NewPartnerDialog">
+    <Dialog title="'Новый контрагент из письма'" size="'md'" contentClass="'pmk-npd'">
+      <div class="pmk-npd__from">
+        <t t-esc="data.sender or data.email"/><t t-if="data.sender and data.email"> · <t t-esc="data.email"/></t>
+        <t t-if="data.subject"> · «<t t-esc="data.subject"/>»</t>
+      </div>
+
+      <section class="pmk-npd__sec">
+        <div class="pmk-npd__cap">Организация</div>
+        <t t-if="needsChoice">
+          <div class="pmk-npd__warn">
+            <i class="fa fa-exclamation-circle me-1" aria-hidden="true"/>ИНН в письме и вложениях нет — выберите организацию из справочника
+          </div>
+          <div class="pmk-npd__search">
+            <input type="text" class="form-control form-control-sm" placeholder="Название организации"
+                   t-model="state.query" t-on-keydown="onQueryKey"/>
+            <button type="button" class="btn btn-sm btn-secondary" t-att-disabled="state.searching"
+                    t-on-click="() => this.search()">
+              <i class="fa me-1" aria-hidden="true" t-att-class="state.searching ? 'fa-circle-o-notch fa-spin' : 'fa-search'"/>Найти
+            </button>
+          </div>
+          <button t-foreach="state.candidates" t-as="item" t-key="item.vat" type="button"
+                  class="pmk-npd__opt" t-att-class="{ 'pmk-npd__opt--on': state.chosen === item_index }"
+                  t-on-click="() => this.choose(item_index)">
+            <i class="fa" aria-hidden="true" t-att-class="state.chosen === item_index ? 'fa-dot-circle-o' : 'fa-circle-o'"/>
+            <span class="pmk-npd__opt-body">
+              <span class="pmk-npd__opt-name"><t t-esc="item.name"/>
+                <span t-if="item.source" class="pmk-npd__tag" t-esc="item.source"/></span>
+              <span class="pmk-npd__opt-sub">ИНН <t t-esc="item.vat"/><t t-if="item.place"> · <t t-esc="item.place"/></t>
+                <t t-if="item.status"> · <span t-att-class="{ 'text-danger': !item.active }" t-esc="item.status"/></t></span>
+            </span>
+          </button>
+        </t>
+        <div class="pmk-npd__rows" t-att-class="{ 'pmk-npd__rows--after': needsChoice }">
+          <div class="pmk-npd__row">
+            <span class="pmk-npd__k">Название</span>
+            <input type="text" class="form-control form-control-sm" t-att-value="state.company.name or ''"
+                   t-on-change="(ev) => this.setCompany('name', ev.target.value)"/>
+            <span class="pmk-npd__tag" t-if="state.sources.name" t-esc="state.sources.name"/>
+          </div>
+          <div class="pmk-npd__row" t-if="innLine">
+            <span class="pmk-npd__k">ИНН / КПП</span><span t-esc="innLine"/>
+            <span class="pmk-npd__tag" t-if="state.sources.vat" t-esc="state.sources.vat"/>
+          </div>
+          <div class="pmk-npd__row" t-if="addressLine">
+            <span class="pmk-npd__k">Адрес</span><span class="pmk-npd__v" t-esc="addressLine"/>
+            <span class="pmk-npd__tag">справочник</span>
+          </div>
+          <div class="pmk-npd__row" t-if="state.company.pmk_dadata_status and state.company.pmk_dadata_status !== 'Действующая'">
+            <span class="pmk-npd__k">Состояние</span><span class="text-danger" t-esc="state.company.pmk_dadata_status"/>
+            <span class="pmk-npd__tag">справочник</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="pmk-npd__sec">
+        <div class="pmk-npd__cap">Контакт</div>
+        <div class="pmk-npd__rows">
+          <t t-foreach="[['name', 'ФИО'], ['function', 'Должность'], ['phone', 'Телефон'], ['email', 'Почта']]"
+             t-as="field" t-key="field[0]">
+            <div class="pmk-npd__row">
+              <span class="pmk-npd__k" t-esc="field[1]"/>
+              <input type="text" class="form-control form-control-sm" t-att-value="state.contact[field[0]] or ''"
+                     t-on-change="(ev) => this.setContact(field[0], ev.target.value)"/>
+              <span class="pmk-npd__tag" t-if="state.contactSources[field[0]]" t-esc="state.contactSources[field[0]]"/>
+            </div>
+          </t>
+        </div>
+      </section>
+
+      <section class="pmk-npd__sec">
+        <div class="pmk-npd__cap">Банк</div>
+        <div class="pmk-npd__row" t-if="data.bank.acc_number">
+          <span class="pmk-npd__k">Р/с</span>
+          <span><t t-esc="data.bank.acc_number"/><t t-if="data.bank.bik">, БИК <t t-esc="data.bank.bik"/></t>
+            <t t-if="data.bank.bank_name"> · <t t-esc="data.bank.bank_name"/></t></span>
+          <span class="pmk-npd__tag" t-esc="data.bank.source"/>
+        </div>
+        <div t-else="" class="pmk-npd__muted">Расчётного счёта в письме нет — добавите в карточке, когда пришлют реквизиты.</div>
+      </section>
+
+      <div t-if="state.error" class="pmk-npd__error" t-esc="state.error"/>
+      <div t-foreach="data.warnings" t-as="warning" t-key="warning_index" class="pmk-npd__muted" t-esc="warning"/>
+
+      <t t-set-slot="footer">
+        <button type="button" class="btn btn-primary" t-att-disabled="state.busy" t-on-click="() => this.create()">
+          Создать контрагента
+        </button>
+        <button type="button" class="btn btn-secondary" t-att-disabled="state.busy" t-on-click="() => this.openFull()">
+          Открыть полную карточку
+        </button>
+        <button type="button" class="btn btn-link ms-auto" t-on-click="() => this.props.close()">Отмена</button>
+      </t>
+    </Dialog>
+  </t>
+
 </templates>

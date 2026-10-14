@@ -127,35 +127,41 @@ class TestPartnerFromLetter(TransactionCase):
                           "тел. +7 924 000-11-22<br/>ООО «Новый клиент», ИНН %s</p>" % cls.inn)})
         cls.Message = cls.env["mail.client.message"]
 
-    def _run(self):
+    def _patched(self, suggest=None):
+        """Справочник без сети: по ИНН — отказ, по названию — заданный список."""
+        from contextlib import ExitStack
+        from odoo.exceptions import UserError
         Partner = type(self.env["res.partner"])
+        stack = ExitStack()
         if hasattr(Partner, "_pmk_dadata_find"):
-            from odoo.exceptions import UserError
-
             def no_network(self, inn):
                 raise UserError("нет сети в тесте")
-            with patch.object(Partner, "_pmk_dadata_find", no_network):
-                return self.Message.pmk_partner_from_letter(self.letter.id)
-        return self.Message.pmk_partner_from_letter(self.letter.id)
+            stack.enter_context(patch.object(Partner, "_pmk_dadata_find", no_network))
+        if hasattr(Partner, "_pmk_dadata_suggest"):
+            stack.enter_context(patch.object(
+                Partner, "_pmk_dadata_suggest", lambda self, query, count=5: list(suggest or [])))
+        return stack
 
-    def test_window_is_filled_and_nothing_saved(self):
+    def _run(self):
+        with self._patched():
+            return self.Message.pmk_partner_from_letter(self.letter.id)
+
+    def test_found_with_sources_and_nothing_saved(self):
         before = self.env["res.partner"].search_count([])
         result = self._run()
-        context = result["action"]["context"]
-        self.assertEqual(context["default_vat"], self.inn)
-        contact = context["default_child_ids"][0][2]
-        self.assertEqual(contact["name"], "Мария Иванова")
-        self.assertEqual(contact["email"], "maria@newclient.example.org")
-        self.assertIn("924", contact["phone"])
-        self.assertEqual(contact["function"], "Менеджер по закупкам")
-        self.assertTrue(any(self.inn in note for note in result["found"]))
+        self.assertEqual(result["company"]["vat"], self.inn)
+        self.assertEqual(result["company_sources"]["vat"], "письмо")
+        self.assertEqual(result["contact"]["name"], "Мария Иванова")
+        self.assertEqual(result["contact_sources"]["name"], "имя отправителя")
+        self.assertEqual(result["contact"]["function"], "Менеджер по закупкам")
+        self.assertIn("924", result["contact"]["phone"])
+        self.assertEqual(result["contact"]["email"], "maria@newclient.example.org")
         self.assertEqual(self.env["res.partner"].search_count([]), before)
 
     def test_known_inn_opens_existing(self):
         company = self.env["res.partner"].create(
             {"name": "ООО «Новый клиент»", "is_company": True, "vat": self.inn})
-        result = self._run()
-        self.assertEqual(result["action"]["res_id"], company.id)
+        self.assertEqual(self._run()["existing"]["id"], company.id)
 
     def test_account_from_attachment(self):
         part = self.env["mail.client.attachment"].create({
@@ -163,8 +169,44 @@ class TestPartnerFromLetter(TransactionCase):
             "content_type": "text/plain"})
         stored = self.env["ir.attachment"].create({
             "name": "Карточка.txt", "raw": "р/с 40702810400000001234\nБИК 040813608".encode()})
-        Part = type(part)
-        with patch.object(Part, "_fetch", lambda self: stored):
+        with patch.object(type(part), "_fetch", lambda self: stored):
             result = self._run()
-        bank = result["action"]["context"]["default_bank_ids"][0][2]
-        self.assertEqual(bank["acc_number"], "40702810400000001234")
+        self.assertEqual(result["bank"]["acc_number"], "40702810400000001234")
+
+    def test_no_inn_name_from_signature_and_candidates(self):
+        self.letter.body_html = ("<p>Добрый день.</p><p>Анна Тестова<br/>Ведущий специалист<br/>"
+                                 "Альфа-Тест | alfatest.example.org<br/>+7 (800) 000-00-00, доб. 22</p>")
+        self.letter.email_from = '"Анна Тестова" <anna@alfatest.example.org>'
+        inn = _inn10("770000111")
+        suggest = [{"inn": inn, "name": {"short_with_opf": "АО «Альфа-Тест»",
+                                         "full_with_opf": "АКЦИОНЕРНОЕ ОБЩЕСТВО «АЛЬФА-ТЕСТ»"},
+                    "kpp": "770001001", "state": {"status": "ACTIVE"},
+                    "address": {"value": "г Москва", "data": {"city": "Москва"}}}]
+        with self._patched(suggest):
+            result = self.Message.pmk_partner_from_letter(self.letter.id)
+        if not hasattr(type(self.env["res.partner"]), "_pmk_dadata_suggest"):
+            self.skipTest("pmk_dadata не установлен")
+        self.assertEqual(result["company"]["name"], "Альфа-Тест")
+        self.assertEqual(result["company_sources"]["name"], "подпись")
+        self.assertEqual(result["query"], "Альфа-Тест")
+        self.assertEqual(result["candidates"][0]["vat"], inn)
+        self.assertIn("доб. 22", result["contact"]["phone"])
+
+    def test_create_from_window_once(self):
+        Message = self.Message
+        company = {"name": "ООО «Новый клиент»", "vat": self.inn, "kpp": "270001001", "status": "x"}
+        contact = {"name": "Мария Иванова", "phone": "+7 924 000-11-22",
+                   "email": "maria@newclient.example.org", "function": "Менеджер"}
+        bank = {"acc_number": "40702810400000001234"}
+        created = Message.pmk_partner_create_from_letter(self.letter.id, company, contact, bank)
+        self.assertTrue(created["created"])
+        partner = self.env["res.partner"].browse(created["id"])
+        self.assertTrue(partner.is_company)
+        self.assertEqual(partner.vat, self.inn)
+        self.assertEqual(partner.child_ids.name, "Мария Иванова")
+        self.assertEqual(partner.bank_ids.acc_number, "40702810400000001234")
+        again = Message.pmk_partner_create_from_letter(self.letter.id, company, contact, bank)
+        self.assertFalse(again["created"])
+        self.assertEqual(again["id"], partner.id)
+        action = Message.pmk_partner_full_card(self.letter.id, {"name": "ООО «Другой»"}, contact, {})
+        self.assertEqual(action["context"]["default_name"], "ООО «Другой»")

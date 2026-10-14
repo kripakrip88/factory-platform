@@ -218,3 +218,67 @@ def company_from_sender(name):
     """«ООО Завод МашМетиз» в имени отправителя — название компании."""
     name = (name or "").strip().strip('"')
     return name if name and _LEGAL.search(name) else ""
+
+
+# ----------------------------------------------------------------------
+# название организации и телефон контакта (окно «Новый контрагент», 14.10)
+# ----------------------------------------------------------------------
+_LEGAL_NAME = re.compile(
+    r"\b(ООО|АО|ПАО|ЗАО|ОАО|НАО|ИП)\s*[«\"“]\s*([^»\"”\n]{2,60}?)\s*[»\"”]")
+_SPLIT = re.compile(r"\s*(?:\||•|·|—|–|,)\s*")
+
+
+def legal_names_in(text, own=()):
+    """«ООО «Альфамобиль»» и т. п. из текста — без повторов и без своих."""
+    own = {name.lower() for name in own or ()}
+    found = []
+    for form, body in _LEGAL_NAME.findall(text or ""):
+        name = "%s «%s»" % (form.upper(), re.sub(r"\s+", " ", body).strip())
+        if name.lower() not in own and name not in found and body.lower() not in own:
+            found.append(name)
+    return found
+
+
+def company_from_lines(lines, domain=""):
+    """Название из подписи: строка с правовой формой или строка с доменом
+    адреса («Альфа-Лизинг | alfaleasing.ru» → «Альфа-Лизинг»)."""
+    domain = (domain or "").lower()
+    stem = domain.split(".")[0] if domain else ""
+    for line in reversed(list(lines or ())[-15:]):
+        named = legal_names_in(line)
+        if named:
+            return named[0]
+    for line in reversed(list(lines or ())[-15:]):
+        low = (line or "").lower()
+        if not domain or (domain not in low and not (stem and len(stem) > 3 and stem in low.replace("-", ""))):
+            continue
+        for piece in _SPLIT.split(line):
+            piece = piece.strip(" .")
+            if (piece and domain not in piece.lower() and "@" not in piece and "http" not in piece.lower()
+                    and re.search(r"[A-Za-zА-Яа-яЁё]{3}", piece) and len(piece) <= 60
+                    and not _NOT_POSITION.search(piece)):
+                return piece
+    return ""
+
+
+_CONTACT_PHONE = re.compile(
+    r"(?<![\d+])(?:\+\s*7|8)[\s\-.]*\(?\s*\d{3,5}\s*\)?[\s\-.]*\d{1,3}[\s\-.]*\d{2}[\s\-.]*\d{2}(?!\d)"
+    r"(?:\s*,?\s*(?:доб\.?|добавочный|ext\.?)\s*\d{1,6})?", re.I)
+
+
+def contact_phone(lines, own_digits=()):
+    """Телефон из подписи вместе с добавочным; 8-800 тоже (у банков и
+    лизинга другого часто нет). Мобильный — главнее."""
+    first = ""
+    for line in list(lines or ())[-15:]:
+        if re.search(r"(?i)\b(ИНН|КПП|ОГРН|БИК)\b|р\s*/\s*с", line or ""):
+            continue
+        for match in _CONTACT_PHONE.finditer(line or ""):
+            found = re.sub(r"\s+", " ", match.group(0)).strip()
+            digits = re.sub(r"\D", "", found.split("доб")[0])[-10:]
+            if digits in own_digits:
+                continue
+            if digits.startswith("9"):
+                return found
+            first = first or found
+    return first
