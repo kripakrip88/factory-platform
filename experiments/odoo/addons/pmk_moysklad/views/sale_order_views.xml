@@ -75,4 +75,22 @@
       </xpath>
     </field>
   </record>
+
+  <!-- Список счетов: «Менеджер» — пользователь Odoo или владелец из МоегоСклада
+       (Антон 14.10.2026: «продавец можно переименовать на менеджер»). Аватар
+       пользователя — в ⚙ (optional), по умолчанию — имя. -->
+  <record id="view_sale_order_list_pmk_manager" model="ir.ui.view">
+    <field name="name">sale.order.list.pmk.manager</field>
+    <field name="model">sale.order</field>
+    <field name="inherit_id" ref="sale.sale_order_tree"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='user_id']" position="attributes">
+        <attribute name="optional">hide</attribute>
+      </xpath>
+      <xpath expr="//field[@name='user_id']" position="after">
+        <field name="pmk_manager_name" optional="show"/>
+      </xpath>
+    </field>
+  </record>
 </odoo>

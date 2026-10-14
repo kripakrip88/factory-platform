@@ -47,6 +47,14 @@ class SaleOrderMs(models.Model):
     # «фактически это тот, кто создал документ»). По нему ставится «Менеджер»
     # (user_id), если такой пользователь есть в Odoo.
     pmk_ms_owner = fields.Char("Владелец в МоёмСкладе", copy=False, readonly=True)
+    # Колонка «Менеджер» списка: пользователь Odoo, а если такого нет (Басов,
+    # Гацерелия, Жуков… — в Odoo не заведены) — имя владельца из МоегоСклада.
+    pmk_manager_name = fields.Char("Менеджер", compute="_compute_pmk_manager_name", store=True)
+
+    @api.depends("user_id.name", "pmk_ms_owner")
+    def _compute_pmk_manager_name(self):
+        for order in self:
+            order.pmk_manager_name = order.user_id.name or order.pmk_ms_owner or False
     pmk_ms_sum = fields.Monetary("Сумма в МоёмСкладе", copy=False, readonly=True)
     pmk_ms_shipped_sum = fields.Monetary("Отгружено на сумму", copy=False, readonly=True)
     pmk_ms_shipped_date = fields.Date("Дата отгрузки", copy=False, readonly=True)
