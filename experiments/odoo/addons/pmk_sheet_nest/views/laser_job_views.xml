@@ -82,12 +82,12 @@
             </div>
 
             <div class="pmk-sn-status pmk-sn-status--error" invisible="nest_status_kind != 'error'">
-              <i class="fa fa-exclamation-triangle me-1"/>
+              <i class="fa fa-exclamation-triangle me-1" title="Ошибка"/>
               <field name="nest_status" nolabel="1"/>
             </div>
             <div class="pmk-sn-status" invisible="nest_status_kind in ('none', 'error')">
-              <i class="fa fa-spinner fa-spin me-1" invisible="nest_status_kind != 'busy'"/>
-              <i class="fa fa-exclamation-triangle me-1 text-warning" invisible="nest_status_kind != 'stale'"/>
+              <i class="fa fa-spinner fa-spin me-1" title="Считается" invisible="nest_status_kind != 'busy'"/>
+              <i class="fa fa-exclamation-triangle me-1 text-warning" title="Устарело" invisible="nest_status_kind != 'stale'"/>
               <field name="nest_status" nolabel="1"/>
             </div>
             <div class="pmk-sn-status pmk-sn-muted" invisible="nest_status_kind != 'none'">
@@ -110,7 +110,7 @@
                 <field name="nest_program" nolabel="1" class="pmk-sn-program" invisible="not nest_program"/>
               </div>
               <div class="pmk-sn-warn" invisible="not nest_can_accept">
-                <i class="fa fa-exclamation-triangle me-1"/>
+                <i class="fa fa-exclamation-triangle me-1" title="Внимание"/>
                 Автосортировку в CypCut не запускать — она затрёт порядок резки.
               </div>
               <field name="nest_warnings" nolabel="1" class="pmk-sn-warnings" invisible="not nest_warnings"/>
