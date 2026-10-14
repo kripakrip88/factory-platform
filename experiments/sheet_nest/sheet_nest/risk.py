@@ -12,6 +12,8 @@
                    уход от только что вырезанного контура и подход к врезке у соседки — не в счёт).
 В отчёт также: «короткие» (< SHORT_MOVE: CypCut может идти без подъёма — «Short move unlift»), «с перемычками»
 (над освобождённой деталью с микроперемычками) и возврат головки в ноль после листа (настройка станка, не в .lxds).
+Переход программы в каждом классе — 0/1 (move); возврат в ноль идёт над всем готовым листом — в классе число объектов
+под ним (ret_move, решение инженера 14.10.2026).
 Детали с микроперемычками (part["microjoints"]) держатся в листе — правила освобождённых деталей к ним не применяются;
 их отверстия и язычки опасны, как у невырезанных. Деталь освобождена после последнего куска своего внешнего контура
 (в группе общего реза — после своей последней цепочки).
@@ -429,6 +431,23 @@ IDX = dict(tongues=TONGUE, small=SMALLP, parts=PART, holes=HOLE, holes_s=HOLE_S,
 _MARGIN = dict(small=DEEP_PART, parts=DEEP_PART, mj=DEEP_PART, tongues=DEEP_CUT, holes=DEEP_CUT, holes_s=DEEP_CUT)
 
 
+def _near(a, b, L, sheet, extra):
+    """1 — переход a→b (длиннее 2·NEAR_SKIP) без первых и последних NEAR_SKIP мм ближе NEAR к освобождённой детали."""
+    ux, uy = (b[0] - a[0]) / L, (b[1] - a[1]) / L
+    a2, b2 = (a[0] + ux * NEAR_SKIP, a[1] + uy * NEAR_SKIP), (b[0] - ux * NEAR_SKIP, b[1] - uy * NEAR_SKIP)
+    qx0, qx1 = min(a2[0], b2[0]) - NEAR, max(a2[0], b2[0]) + NEAR
+    qy0, qy1 = min(a2[1], b2[1]) - NEAR, max(a2[1], b2[1]) + NEAR
+    for kind, ob in itertools.chain(sheet.query(qx0, qy0, qx1, qy1), extra):
+        if kind not in ("small", "parts"):
+            continue
+        bx = ob[1]
+        if bx[2] < qx0 or bx[0] > qx1 or bx[3] < qy0 or bx[1] > qy1:
+            continue
+        if near_to(a2, b2, ob):
+            return 1
+    return 0
+
+
 def move(a, b, sheet, own=(), extra=()):
     """Вектор классов перехода a→b (8 чисел 0/1). sheet — Sheet; own — [(класс, препятствие)] вырезанного внутри
     ещё не освобождённых деталей; extra — то, чего ещё нет в sheet (освобождённые детали группы и т.п.)."""
@@ -451,21 +470,52 @@ def move(a, b, sheet, own=(), extra=()):
         tot[i] += deep_len(a, b, ob, _MARGIN[kind])
         if tot[i] >= MIN_OVER - 1e-9:
             v[i] = 1
-    if not v[SMALLP] and not v[PART] and L > 2 * NEAR_SKIP:
-        ux, uy = (b[0] - a[0]) / L, (b[1] - a[1]) / L
-        a2, b2 = (a[0] + ux * NEAR_SKIP, a[1] + uy * NEAR_SKIP), (b[0] - ux * NEAR_SKIP, b[1] - uy * NEAR_SKIP)
-        qx0, qx1 = min(a2[0], b2[0]) - NEAR, max(a2[0], b2[0]) + NEAR
-        qy0, qy1 = min(a2[1], b2[1]) - NEAR, max(a2[1], b2[1]) + NEAR
-        for kind, ob in itertools.chain(sheet.query(qx0, qy0, qx1, qy1), extra):
-            if kind not in ("small", "parts"):
-                continue
-            bx = ob[1]
-            if bx[2] < qx0 or bx[0] > qx1 or bx[3] < qy0 or bx[1] > qy1:
-                continue
-            if near_to(a2, b2, ob):
-                v[NEARP] = 1
-                break
+    if not v[SMALLP] and not v[PART] and L > 2 * NEAR_SKIP + 1e-9:   # середина перехода есть (20 мм + 1e-13 — нет)
+        v[NEARP] = _near(a, b, L, sheet, extra)
     return tuple(v)
+
+
+def ret_move(a, b, sheet, own=(), extra=()):
+    """Вектор классов возврата головки в ноль a→b после листа (решение инженера 14.10.2026): возврат идёт над всем
+    готовым листом, поэтому у вырезанного (язычки, освобождённые мелкие и прочие детали, отверстия ≥ и < HOLE_MIN,
+    детали с перемычками) — не 0/1, как у переходов программы (move), а ЧИСЛО разных объектов, над которыми он прошёл:
+    каждый — по тому же правилу глубины (≥ MIN_OVER мм пути глубже _MARGIN). Над несколькими объектами по чуть-чуть,
+    но вместе ≥ MIN_OVER — как move, один. Класс ненулевой ровно там, где у move; впритирку и короткий — как у move
+    (0/1). Аргументы — как у move; на нём считают и маршрут (динамика, общий рез), и measure (key0)."""
+    L = D(a, b)
+    if L <= 1.0:
+        return ZERO if L <= 0.01 else (0, 0, 0, 0, 0, 0, 1, 0)
+    v = [0] * 8
+    if L < SHORT_MOVE:
+        v[SHORT] = 1
+    x0, x1 = min(a[0], b[0]), max(a[0], b[0])
+    y0, y1 = min(a[1], b[1]), max(a[1], b[1])
+    tot, seen = [0.0] * 8, set()
+    for kind, ob in itertools.chain(sheet.query(x0, y0, x1, y1), own, extra):
+        if id(ob) in seen:                               # разные объекты: одно препятствие — один раз
+            continue
+        seen.add(id(ob))
+        bx = ob[1]
+        if bx[2] < x0 or bx[0] > x1 or bx[3] < y0 or bx[1] > y1:
+            continue
+        i = IDX[kind]
+        d = deep_len(a, b, ob, _MARGIN[kind])
+        tot[i] += d
+        if d >= MIN_OVER - 1e-9:
+            v[i] += 1
+    for i in IDX.values():
+        if not v[i] and tot[i] >= MIN_OVER - 1e-9:
+            v[i] = 1
+    if not v[SMALLP] and not v[PART] and L > 2 * NEAR_SKIP + 1e-9:   # середина перехода есть (20 мм + 1e-13 — нет)
+        v[NEARP] = _near(a, b, L, sheet, extra)
+    return tuple(v)
+
+
+def ret_once(v):
+    """Вектор ret_move → возврат «одним переходом» (0/1 в классе — ровно то, что дал бы move; правило до 14.10.2026). Не
+    для счёта: ключ с возвратом — key0 по ret_move. Маршрут строит по нему ещё одних кандидатов, как прежде, — пул
+    безопасных стратегий остаётся надмножеством прежнего (safe на любой раскладке не хуже, чем был)."""
+    return tuple(min(x, 1) for x in v)
 
 
 def walk(tagged, head, sheet, kinds, obs, feat=None, extra0=(), rec=None, commit=False):
@@ -510,8 +560,9 @@ def measure(tagged, kinds, polys, head=(0.0, 0.0), ret=True, feat=None, obs=None
     ("small" | "parts" | "mj", part_kind); polys[i] — внешний контур размещения (фигура). feat(s, i) — что оставляет
     вырезанным фигура (по умолчанию feature; маршрут передаёт кэш своих деталей — то же самое), obs — готовые
     препятствия внешних контуров {i: препятствие}. Вернуть dict: число переходов по классам, холостой ход, метры пути
-    над освобождёнными деталями, возврат в ноль (длина, метры над деталями, язычков под ним, классы), key — ключ
-    безопасных стратегий, key0 — он же с возвратом, moves — классы каждого перехода."""
+    над освобождёнными деталями, возврат в ноль (длина, метры над деталями, язычков под ним, классы, число объектов
+    под ним по ступеням), key — ключ безопасных стратегий, key0 — он же с возвратом (ret_move: в ступенях — число
+    объектов под возвратом, в холостом — его длина), moves — классы каждого перехода (у возврата — числа ret_move)."""
     obs = dict(obs or {})
     for s, i in tagged:
         if i not in obs:
@@ -534,7 +585,7 @@ def measure(tagged, kinds, polys, head=(0.0, 0.0), ret=True, feat=None, obs=None
                 freed.append((kinds[i], obs[i]))
     out = {c: vec[n] for n, c in enumerate(CLASSES)}
     out.update(moves_n=len(moves), idle=idle, over_parts_m=over_m / 1000, key=safe_key(vec, idle))
-    rv = move(pos, head, sheet, own, extra)
+    rv = ret_move(pos, head, sheet, own, extra)
     rl = D(pos, head)
     bx = (min(pos[0], head[0]), min(pos[1], head[1]), max(pos[0], head[0]), max(pos[1], head[1]))
 
@@ -544,9 +595,11 @@ def measure(tagged, kinds, polys, head=(0.0, 0.0), ret=True, feat=None, obs=None
     tongues = [f[1] for s, i in tagged for f in [feat(s, i) if feat else feature(s)] if f and f[0] == "tongues"]
     r_tongues = sum(1 for o in tongues if hit(o) and deep_len(pos, head, o, DEEP_CUT) >= MIN_OVER - 1e-9)
     # возврат: длина, метры над вырезанными деталями (всеми — к концу листа вырезано всё), сколько язычков под ним;
-    # классы перехода (как у всех: over — над освобождёнными деталями, мелкими или прочими)
+    # классы перехода 0/1 (как у всех: over — над освобождёнными деталями, мелкими или прочими); в ключе (key0) —
+    # число объектов под ним по ступеням (ret_move): n_tongues, n_small, n_parts, n_holes
     out["ret"] = dict(m=rl / 1000, over_m=r_over / 1000, tongues_crossed=r_tongues, over=int(bool(rv[SMALLP] or rv[PART])),
-                      near=rv[NEARP], holes=rv[HOLE])
+                      near=rv[NEARP], holes=int(bool(rv[HOLE])), n_tongues=rv[TONGUE], n_small=rv[SMALLP], n_parts=rv[PART],
+                      n_holes=rv[HOLE])
     out["key0"] = safe_key(vadd(vec, rv), idle + rl)
     out["moves"] = moves + [(pos, head, rv)] if ret else moves
     return out

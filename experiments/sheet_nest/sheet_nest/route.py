@@ -20,7 +20,9 @@
   • safe «Безопасный» — ключ листа по порядку (risk.safe_key): переходы над язычками, над освобождёнными мелкими
     деталями, над прочими освобождёнными, над отверстиями ≥ 10 мм, затем холостой + NEAR_COST за впритирку;
   • safe0 «Безопасный, конец у нуля» — тот же ключ, но с возвратом головки в (0,0) после листа (настройка станка, в
-    программе его нет): он входит и в холостой, и в ступени опасных (risk key0).
+    программе его нет): он входит и в холостой, и в ступени опасных (risk key0) — в ступенях числом объектов, над
+    которыми прошёл (risk.ret_move: возврат идёт над всем готовым листом; переходы программы — 0/1). Везде, где маршрут
+    оценивает возврат (конец динамики, последняя единица общего реза, «взгляд вперёд» к нулю), — та же ret_move.
 safe и safe0 выбирают из ОДНИХ кандидатов (_safe_pool; общий рез — _coedge_pool), каждая — лучший по своему ключу:
 safe поэтому не хуже safe0 по ключу без возврата, safe0 не хуже safe по ключу с возвратом, обе — не хуже «short»
 (его маршрут тоже кандидат). Кандидаты: динамика по порядкам деталей (ближайший сосед, замкнутый обход от нуля в обе
@@ -60,7 +62,7 @@ START_CELL = 50.0           # мм: ячейка сетки вырезанног
 #   hole_starts — начало отверстий по ходу пути; lead_ties — у детали без места под подвод все одинаково свободные
 #   углы (свобода та же, что у угла «как было»), а не первый из них; look — «взгляд вперёд» в группах общего реза;
 #   orders — маршрут «short» ещё и по другим порядкам деталей (змейкой по рядам, замкнутый обход), лучший
-#   по цене «как было» (_short_route); ret — возврат в (0,0) в ключе (risk key0); pool — кандидаты безопасных
+#   по цене «как было» (_short_route); ret — возврат в (0,0) в ключе (risk key0, risk.ret_move); pool — кандидаты безопасных
 #   (_safe_pool / _coedge_pool, общие для всех стратегий с этим переключателем: маршрут «short», замкнутый обход, другие
 #   порядки, правка порядка).
 STRATEGIES = {
@@ -964,14 +966,14 @@ def _repair_cands(C, seq, route, m, kn, window=REPAIR_WINDOW):
     (язычки → мелкие → детали → отверстия), в ступени — от конца листа (динамика продолжается с места изменения —
     поздние дешевле). Для перехода над освобождёнными деталями — прицельно: вырезать деталь, к которой шёл переход,
     раньше пересечённой; пересечённую — после неё; развернуть участок между ними. Затем окно ±window: развернуть
-    участок или переставить деталь. kn = "key0" — и возврат в ноль (переход после последней детали)."""
+    участок или переставить деталь. kn = "key0" / "key1" — и возврат в ноль (переход после последней детали)."""
     plans = C["plans"]
     n = len(seq)
     owner = [t for t, (i, sh) in enumerate(route) for s in sh]
     moves = m["moves"]
     bad = []
     for k, (a, b, v) in enumerate(moves):
-        if k >= len(owner) and kn != "key0":
+        if k >= len(owner) and kn == "key":
             break
         tier = next((z for z, c in enumerate(_TIERS) if v[c]), None)
         if tier is not None:
@@ -1016,14 +1018,16 @@ def _repair_cands(C, seq, route, m, kn, window=REPAIR_WINDOW):
 
 
 def _repair(C, route, m, run, head, o, kn, budget, add):
-    """Остались опасные переходы (ступени ключа kn: "key" — без возврата, "key0" — с ним) — правка порядка деталей около
-    них (_repair_cands). Каждый вариант — той же динамикой, но с места первого изменения (состояния до него — из трассы
-    прогона run = (порядок, трасса)); оба конца прогона — кандидаты (add); вариант принят, если ступени опасных kn
+    """Остались опасные переходы (ступени ключа kn: "key" — без возврата, "key0" — с ним, "key1" — с ним «одним
+    переходом», прежнее правило) — правка порядка деталей около них (_repair_cands). Каждый вариант — той же динамикой,
+    но с места первого изменения (состояния до него — из трассы прогона run = (порядок, трасса)); оба конца прогона
+    (без возврата и по kn; у "key" — по key1, как было) — кандидаты (add); вариант принят, если ступени опасных kn
     строго лучше; пока лучше и хватает budget (шагов-деталей, общий на все правки листа)."""
+    ends = ("key", "key0" if kn == "key0" else "key1")
     if run is None:                                    # маршрут «short»: прогон динамики по его порядку, с трассой
         seq = [i for i, _ in route]
         tr = []
-        rk, rk0 = _dp_safe(C, seq, head, o, trace=tr)
+        rk, rk0 = _dp_safe(C, seq, head, o, trace=tr, ends=ends)
         budget[0] -= len(seq)
         run = (seq, tr)
         m1, m2 = add(rk, run), add(rk0, run)
@@ -1038,7 +1042,7 @@ def _repair(C, route, m, run, head, o, kn, budget, add):
                 continue
             budget[0] -= n - a
             tr2 = tr[:a]
-            rk, rk0 = _dp_safe(C, c, head, o, trace=tr2, start=a, init=tr[a])
+            rk, rk0 = _dp_safe(C, c, head, o, trace=tr2, start=a, init=tr[a], ends=ends)
             run2 = (c, tr2)
             m1 = add(rk, run2)
             m2 = add(rk0, run2) if rk0 is not rk else m1
@@ -1135,14 +1139,15 @@ def _commit(sheet, p):
                 sheet.add(*f)
 
 
-def _dp_safe(C, seq, head, o, alt_states=None, trace=None, start=0, init=None, keys=False):
+def _dp_safe(C, seq, head, o, alt_states=None, trace=None, start=0, init=None, keys=False, ends=("key", "key0")):
     """Динамика по ключу безопасных (risk.safe_key): состояние — точка врезки предыдущей детали; вырезанное к детали от
     состояния не зависит (порядок деталей задан). Остался опасный переход — путь оптимизатора у змейки и другой первый
-    элемент детали — от ALT_STATES лучших состояний (от всех — решётки втрое дольше при тех же числах). Вернуть два
-    маршрута: лучший по ключу без возврата и лучший с возвратом в ноль (key0; конец листа — точка врезки последней
-    детали, так что возврат зависит только от последнего состояния). trace — список, куда состояния перед каждым местом
-    порядка (для _repair); start, init — продолжить с места start от состояний init (порядок до него тот же); keys — и их
-    ключи (без возврата, с возвратом)."""
+    элемент детали — от ALT_STATES лучших состояний (от всех — решётки втрое дольше при тех же числах). Вернуть маршруты
+    по концам ends: "key" — лучший по ключу без возврата, "key0" — с возвратом в ноль (risk.ret_move, как key0 в
+    measure: в ступенях — число объектов под возвратом), "key1" — с возвратом «одним переходом» (risk.ret_once — прежнее
+    правило, только кандидаты пула); конец листа — точка врезки последней детали, так что возврат зависит только от
+    последнего состояния. trace — список, куда состояния перед каждым местом порядка (для _repair); start, init —
+    продолжить с места start от состояний init (порядок до него тот же); keys — и их ключи (в том же порядке)."""
     plans, cands = C["plans"], C["cands_t" if o.get("lead_ties") else "cands"]
     hs = "safe" if o["hole_starts"] else None
     sheet = RK.Sheet()
@@ -1169,13 +1174,20 @@ def _dp_safe(C, seq, head, o, alt_states=None, trace=None, start=0, init=None, k
         _commit(sheet, p)
     b = min(states.values(), key=lambda v: v[0])
     fin = []
-    for kk, tv, ti, pos, acc in states.values():
-        rv = RK.move(pos, head, sheet)
-        fin.append((RK.safe_key(RK.vadd(tv, rv), ti + D(pos, head)), acc))
-    b0 = min(fin, key=lambda v: v[0])
-    if keys:
-        return b[4], b0[1], b[0], b0[0]
-    return b[4], b0[1]
+    if any(e != "key" for e in ends):
+        for kk, tv, ti, pos, acc in states.values():
+            rv = RK.ret_move(pos, head, sheet)        # возврат — как в measure (key0): по числу объектов под ним
+            tl = ti + D(pos, head)
+            fin.append((RK.safe_key(RK.vadd(tv, rv), tl), RK.safe_key(RK.vadd(tv, RK.ret_once(rv)), tl), acc))
+    rs, ks = [], []
+    for e in ends:
+        if e == "key":
+            k_, r_ = b[0], b[4]
+        else:
+            j = 0 if e == "key0" else 1
+            k_, r_ = min(((f[j], f[2]) for f in fin), key=lambda v: v[0])
+        rs.append(r_); ks.append(k_)
+    return tuple(rs) + (tuple(ks) if keys else ())
 
 
 def _all_orders(C, head, o, kn, add):
@@ -1187,10 +1199,9 @@ def _all_orders(C, head, o, kn, add):
     for perm in itertools.permutations(seq):
         a = 0 if prev is None else next(t for t in range(len(perm)) if perm[t] != prev[t])
         tr2 = [] if prev is None else tr[:a]
-        r = _dp_safe(C, list(perm), head, o, trace=tr2, start=a, init=None if prev is None else tr[a], keys=True)
-        k = r[2] if kn == "key" else r[3]
+        r, k = _dp_safe(C, list(perm), head, o, trace=tr2, start=a, init=None if prev is None else tr[a], keys=True, ends=(kn,))
         if best is None or k < best[0]:
-            best = (k, r[0] if kn == "key" else r[1], (list(perm), tr2))
+            best = (k, r, (list(perm), tr2))
         prev, tr = perm, tr2
     add(best[1], best[2])
 
@@ -1206,21 +1217,24 @@ def _measure(C, best, head):
 
 def _safe_pool(C, head, o):
     """Кандидаты маршрута листа безопасных стратегий — общие для safe и safe0 (каждая берёт лучший по своему ключу):
-    динамика по порядкам деталей — ближайший сосед и замкнутый обход от нуля в обе стороны (у каждой — оба конца: без
+    динамика по порядкам деталей — ближайший сосед и замкнутый обход от нуля в обе стороны (у каждой — концы: без
     возврата и с ним); маршрут «short»; остались опасные переходы (лучший без возврата или лучший с возвратом) —
     порядки «ближайший без опасных», «мелкие последними», змейкой по колонкам и по рядам (пока не уйдут), затем правка
     порядка около опасных переходов (_repair: REPAIR_WORK проходов на лист, не меньше REPAIR_MIN шагов), на листе до
-    EXACT_ORDERS деталей с опасными в программе — все порядки. Вернуть [(счёт measure, номер, маршрут, прогон)]; кэш в C
-    (по переключателям пула — safe и safe0 с общим кэшем листа считают его один раз). Работа ограничена: 3 прогона +
-    «short» + до 4 порядков + правка ≤ max(REPAIR_WORK·n, REPAIR_MIN) шагов на ключ (прежде — до 80 полных прогонов)."""
+    EXACT_ORDERS деталей с опасными в программе — все порядки. Сперва всё это — как до 14.10 (конец с возвратом «одним
+    переходом», key1), затем концы и правка по key0 (возврат по числу объектов под ним, risk.ret_move): пул — надмножество
+    прежнего, safe не хуже прежнего на любой раскладке, при равном ключе выбор прежний. Вернуть [(счёт measure, номер,
+    маршрут, прогон)]; кэш в C (по переключателям пула — safe и safe0 с общим кэшем листа считают его один раз). Работа
+    ограничена: 3 прогона + «short» + до 4 порядков + правка ≤ max(REPAIR_WORK·n, REPAIR_MIN) шагов на ключ."""
     pk = ("pool", bool(o["hole_starts"]), bool(o.get("lead_ties")), bool(o.get("orders")))
     if pk in C:
         return C[pk]
     plans, seq = C["plans"], C["seq"]
-    ms, tried = [], set()
+    ms, tried, late = [], set(), []
 
     def add(route, run=None):
         m = _measure(C, route, head)
+        m["key1"] = _key1(m)
         ms.append((m, len(ms), route, run))
         return m
 
@@ -1229,17 +1243,20 @@ def _safe_pool(C, head, o):
             return
         tried.add(tuple(s))
         tr = []
-        rk, rk0 = _dp_safe(C, s, head, o, trace=tr)
+        rk, rk1, rk0 = _dp_safe(C, s, head, o, trace=tr, ends=("key", "key1", "key0"))
         run = (list(s), tr)
         add(rk, run)
-        if rk0 is not rk:
-            add(rk0, run)
+        if rk1 is not rk:
+            add(rk1, run)
+        if rk0 is not rk and rk0 is not rk1:
+            late.append((rk0, run))
 
     def top(kn):
         return min(ms, key=lambda v: (v[0][kn], v[1]))
 
     def danger(kn):
         return top(kn)[0][kn][:4] != ZERO4
+    # кандидаты как прежде (конец с возвратом — «одним переходом», key1): пул — надмножество прежнего
     sr = _short_route(C, head, o)                      # маршрут «short» (те же переключатели) — тоже кандидат; первым —
     dp(seq)                                            # его динамика заполняет кэш путей по деталям (дешевле остальное)
     if "seq0" not in C["closed"]:
@@ -1248,20 +1265,34 @@ def _safe_pool(C, head, o):
     dp(s0)
     dp(s0[::-1])
     add(sr)
-    if danger("key") or danger("key0"):               # опасные остались — другие порядки деталей
+    if danger("key") or danger("key1"):               # опасные остались — другие порядки деталей
         for f in (lambda: _safe_nn(C, head), lambda: _small_last(plans, head), lambda: _sweep(plans, 0), lambda: _sweep(plans, 1)):
             dp(f())
-            if not (danger("key") or danger("key0")):
+            if not (danger("key") or danger("key1")):
                 break
-    for kn in ("key", "key0"):                         # и правка порядка (с возвратом — у конца листа, дёшево)
+    for kn in ("key", "key1"):                         # и правка порядка (с возвратом — у конца листа, дёшево)
         if danger(kn):
             m, _, b, run = top(kn)
             budget = [max(REPAIR_WORK * len(seq), REPAIR_MIN if kn == "key" else 0)]
             _repair(C, b, m, run, head, o, kn, budget, add)
     if len(seq) <= EXACT_ORDERS and danger("key"):    # малый лист, опасные в программе — все порядки (только возврат
         _all_orders(C, head, o, "key", add)            # над деталью — не повод: его решают обход и правка у конца)
+    # возврат по числу объектов под ним (key0, ret_move): концы прогонов, лучшие по key0, — после прежних кандидатов (при
+    # равном ключе выбор прежний), и правка порядка по key0
+    for r, run in late:
+        add(r, run)
+    if danger("key0"):
+        m, _, b, run = top("key0")
+        _repair(C, b, m, run, head, o, "key0", [REPAIR_WORK * len(seq)], add)
     C[pk] = ms
     return ms
+
+
+def _key1(m):
+    """Ключ с возвратом «одним переходом» (risk.ret_once — правило до 14.10.2026) по счёту measure: ступени — как в key
+    плюс 0/1 возврата, холостой — как в key0. Только для кандидатов пула (прежние концы прогонов и правка по ним)."""
+    rv = RK.ret_once(m["moves"][-1][2])
+    return tuple(k + rv[c] for k, c in zip(m["key"][:4], _TIERS)) + (m["key0"][4],)
 
 
 def route_sheet(placed, parts, W, L, head=(0.0, 0.0), strategy=DEFAULT, small=RK.SMALL, cache=None):
@@ -1428,7 +1459,9 @@ def route_sheet_coedge(placed, groups, parts, W, L, head=(0.0, 0.0), strategy=DE
 def _coedge_pool(P, placed, W, L, head, o, meas):
     """Кандидаты листа с общим резом у безопасных стратегий — общие для safe и safe0: проходы по порядкам единиц
     (ближайший сосед, замкнутый обход в обе стороны — без повторов; у последней единицы — лучшая без возврата и лучшая
-    с возвратом в ноль, у последней большой группы — ещё и обходы в обратную сторону) и проход «short». Кэш в P."""
+    с возвратом в ноль, у последней большой группы — ещё и обходы в обратную сторону) и проход «short». Варианты конца,
+    лучшие с возвратом по числу объектов под ним (key0, ret_move), — после прежних (с возвратом «одним переходом»): пул —
+    надмножество прежнего, при равном ключе выбор прежний. Кэш в P."""
     pk = ("pool", bool(o["hole_starts"]), bool(o["look"]))
     if pk not in P:
         seqs = [P["seq"]]
@@ -1440,15 +1473,17 @@ def _coedge_pool(P, placed, W, L, head, o, meas):
         for s in seqs:
             rr += _coedge_run(P, s, placed, W, L, head, o, "safe", ret=True)
         rr += _coedge_run(P, P["seq"], placed, W, L, head, o, "short")
-        P[pk] = meas(rr)
+        P[pk] = meas([r for r in rr if not r.get("late")] + [r for r in rr if r.get("late")])
     return P[pk]
 
 
 def _coedge_run(P, seq_u, placed, W, L, head, o, mode, ret=False):
     """Один проход по единицам листа с общим резом: mode "short" — ключи как было (+ начала отверстий и «взгляд
     вперёд» по переключателям), "safe" — risk.safe_key по вырезанному к этому моменту. ret (только "safe") — у последней
-    единицы ещё и вариант, лучший с возвратом в ноль (у большой группы — и обходы в обратную сторону: конец у нуля).
-    Вернуть список проходов [dict(out, tagged, warnings)] — один или два (лучший без возврата, лучший с ним)."""
+    единицы ещё и варианты, лучшие с возвратом в ноль (у большой группы — и обходы в обратную сторону: конец у нуля):
+    как прежде — с возвратом «одним переходом» (risk.ret_once; «взгляд вперёд» к нулю — по нему же), и по числу объектов
+    под ним (risk.ret_move, key0 measure; свой «взгляд вперёд» к нулю) — этот с меткой late (в пуле — после прежних).
+    Вернуть список проходов [dict(out, tagged, warnings[, late])] — от одного до трёх (лучший без возврата, лучшие с ним)."""
     from . import coedge as CE
     plans, units = P["plans"], P["units"]
     hs = bool(o["hole_starts"])
@@ -1456,7 +1491,7 @@ def _coedge_run(P, seq_u, placed, W, L, head, o, mode, ret=False):
     kinds = [p.kind for p in plans]
     obs = {}
     ret = ret and mode == "safe"
-    alt0 = None                           # последняя единица, лучшая с возвратом: (out, tagged) — если не та же
+    alts = []                             # последняя единица, лучшие с возвратом: (out, tagged, late) — если не та же
 
     def ob(i):
         if i not in obs:
@@ -1570,18 +1605,26 @@ def _coedge_run(P, seq_u, placed, W, L, head, o, mode, ret=False):
                 last = ret and k == seq_u[-1]
                 if last:                          # возврат в ноль — над этой деталью уже освобождённой
                     ex0 = [(p.kind, p.ob)] + ([f for f in (p.feat(s) for s in p.inner) if f] if p.kind == "mj" else [])
-                best0 = None
+                best0 = best1 = None
                 for c in ok:
                     b = p.best_safe(pos, c, ev, "safe" if hs else None)
                     if best is None or b[0] < best[0]:
                         best = (b[0], b[3])
                     if last:                      # конец детали — её точка врезки: возврат зависит только от угла c
                         e = G.ends(b[3][-1])[1]
-                        k0 = RK.safe_key(RK.vadd(b[1], RK.move(e, head, sheet, (), ex0)), b[2] + D(e, head))
+                        rv = RK.ret_move(e, head, sheet, (), ex0)
+                        k0 = RK.safe_key(RK.vadd(b[1], rv), b[2] + D(e, head))
+                        k1 = RK.safe_key(RK.vadd(b[1], RK.ret_once(rv)), b[2] + D(e, head))
                         if best0 is None or k0 < best0[0]:
                             best0 = (k0, b[3])
-                if last and best0[1] is not best[1]:
-                    alt0 = (out + [("part", placed[i]["part"], best0[1])], tagged + [(s, i) for s in best0[1]])
+                        if best1 is None or k1 < best1[0]:
+                            best1 = (k1, b[3])
+                if last:                          # прежний конец (возврат «одним переходом»), затем по числу под ним
+                    seen = [best[1]]
+                    for bb, late in ((best1, False), (best0, True)):
+                        if all(bb[1] is not x for x in seen):
+                            seen.append(bb[1])
+                            alts.append((out + [("part", placed[i]["part"], bb[1])], tagged + [(s, i) for s in bb[1]], late))
             sh = best[1]
             out.append(("part", placed[i]["part"], sh))
             tagged += [(s, i) for s in sh]
@@ -1599,7 +1642,10 @@ def _coedge_run(P, seq_u, placed, W, L, head, o, mode, ret=False):
                 if a < b and CE.shared_length(outs[a]["verts"], outs[b]["verts"]) > 1e-3:
                     nb[a].add(b); nb[b].add(a)
 
-        def build(order_m, h, look):
+        def build(order_m, h, look, once=True):
+            """Блок группы порядком order_m: (ключ, фигуры, конец, порядок, ключ с возвратом по числу объектов под ним
+            (key0), он же с возвратом «одним переходом» (key1)); у последней единицы «взгляд вперёд» последней детали
+            смотрит на возврат в ноль — once: «одним переходом», как прежде, иначе по числу (как key0)."""
             members = [dict(outer=plans[i].outer, inner=plans[i].inner) for i in order_m]
 
             def member_of(done):
@@ -1618,12 +1664,23 @@ def _coedge_run(P, seq_u, placed, W, L, head, o, mode, ret=False):
             lookf = None
             if look:
                 def lookf(e, k_, nxt):
-                    """Уход от конца контура детали k_ к ближайшему началу следующей: (ступени ключа, путь)."""
+                    """Уход от конца контура детали k_ к ближайшему началу следующей: (ступени ключа, путь). У последней
+                    детали последней единицы (final) — возврат в ноль (ret_move): once — «одним переходом», как прежде;
+                    иначе по числу объектов под ним, вырезанное — как в measure (и у деталей группы с перемычками — их
+                    отверстия и язычки)."""
                     q = min(nxt, key=lambda q: D(e, q))
                     if mode == "short":
                         return ((1 if _seg_hits(e, q, cut_parts + [polys[order_m[m]] for m in range(k_ + 1)]) else 0),), D(e, q)
                     ex = [(kinds[order_m[m]], ob(order_m[m])) for m in range(k_ + 1)]
-                    v = RK.move(e, q, sheet, (), ex)
+                    if last_unit and k_ + 1 == len(order_m):
+                        if once:
+                            v = RK.ret_once(RK.ret_move(e, q, sheet, (), ex))
+                        else:
+                            ex += [f for m in range(k_ + 1) if kinds[order_m[m]] == "mj"
+                                   for f in (feat(s, order_m[m]) for s in plans[order_m[m]].inner) if f]
+                            v = RK.ret_move(e, q, sheet, (), ex)
+                    else:
+                        v = RK.move(e, q, sheet, (), ex)
                     return (v[RK.TONGUE], v[RK.SMALLP], v[RK.PART], v[RK.HOLE]), D(e, q) + RK.NEAR_COST * v[RK.NEARP]
             try:
                 sh, end = CE.build_group(members, head=h, inner_order=io, look=lookf, ref_points=_ref_points,
@@ -1649,13 +1706,15 @@ def _coedge_run(P, seq_u, placed, W, L, head, o, mode, ret=False):
                     p0 = b
                     if last[m] == n_:
                         done_p.append(polys[m])
-                key, key0 = (xt, xp, idle_g), None
+                key, key0, key1 = (xt, xp, idle_g), None, None
             else:
                 v, idle_g, _, ex, _ = RK.walk(tg, h, sheet, kinds, {m: ob(m) for m in order_m}, feat)
-                key, key0 = RK.safe_key(v, idle_g), None
+                key, key0, key1 = RK.safe_key(v, idle_g), None, None
                 if last_unit:                     # с возвратом в ноль — над освобождёнными деталями группы
-                    key0 = RK.safe_key(RK.vadd(v, RK.move(end, head, sheet, (), ex)), idle_g + D(end, head))
-            return key, sh, end, tuple(order_m), key0
+                    rv = RK.ret_move(end, head, sheet, (), ex)
+                    key0 = RK.safe_key(RK.vadd(v, rv), idle_g + D(end, head))
+                    key1 = RK.safe_key(RK.vadd(v, RK.ret_once(rv)), idle_g + D(end, head))
+            return key, sh, end, tuple(order_m), key0, key1
 
         def grow(start):
             """Соседями по общей кромке от детали start, каждый раз ближайшая к последней вырезанной."""
@@ -1703,11 +1762,19 @@ def _coedge_run(P, seq_u, placed, W, L, head, o, mode, ret=False):
         cands = [c for c in (build(o_, pos, lk) for o_, lk in builds) if c is not None]
         if not cands:
             raise CoedgeRouteError("группу из %d деталей не удалось разрезать общим резом ни одним порядком" % len(idx))
-        _, sh, end_, perm, _ = min(cands, key=lambda v: (v[0], v[3]))
+        _, sh, end_, perm, _, _ = min(cands, key=lambda v: (v[0], v[3]))
         if last_unit:
-            _, sh0, _, perm0, _ = min(cands, key=lambda v: (v[4], v[3]))
-            if sh0 is not sh:
-                alt0 = (out + [("group", [placed[i]["part"] for i in perm0], sh0)], tagged + [(s, perm0[s["member"]]) for s in sh0])
+            # прежний конец блока (возврат «одним переходом»); затем по числу объектов под возвратом — те же порядки со
+            # «взглядом вперёд» к нулю по этому правилу, лучший среди всех вариантов
+            c1 = min(cands, key=lambda v: (v[5], v[3]))
+            c0 = min(cands + [c for c in (build(o_, pos, lk, once=False) for o_, lk in builds if lk) if c is not None],
+                     key=lambda v: (v[4], v[3]))
+            seen = [sh]
+            for c, late in ((c1, False), (c0, True)):
+                if all(c[1] is not x for x in seen):
+                    seen.append(c[1])
+                    alts.append((out + [("group", [placed[i]["part"] for i in c[3]], c[1])],
+                                 tagged + [(s, c[3][s["member"]]) for s in c[1]], late))
         pos = end_
         out.append(("group", [placed[i]["part"] for i in perm], sh))
         tagged += [(s, perm[s["member"]]) for s in sh]
@@ -1716,6 +1783,6 @@ def _coedge_run(P, seq_u, placed, W, L, head, o, mode, ret=False):
         for i in perm:
             _commit(sheet, plans[i])
     res = [dict(out=out, tagged=tagged, warnings=warnings)]
-    if alt0 is not None:
-        res.append(dict(out=alt0[0], tagged=alt0[1], warnings=warnings))
+    for o_, t_, late in alts:
+        res.append(dict(out=o_, tagged=t_, warnings=warnings, late=late))
     return res

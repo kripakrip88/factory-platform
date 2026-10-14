@@ -6,9 +6,11 @@
 1) счёт: вписанная окружность (окружность, паз, квадрат), отверстие ≥ 10 мм — поиск до ответа совпадает с вписанной
    окружностью и быстрый у длинного паза, классы вырезанного, «мелкая» деталь при любой толщине, глубина перехода
    внутри многоугольника — точно (против перебора точек); профиль станка — время только по данным профиля, плохой
-   профиль — понятная ошибка;
+   профиль — понятная ошибка; возврат в ноль (решение инженера 14.10): ret_move — число объектов под ним (против
+   перебора точек), класс там же, где у move; в ключе с возвратом возврат над тремя плитами — 3, над одной — 1;
 2) синтетика: плотные ряды мелких деталей у крупных (до 6 деталей) — на КАЖДОЙ раскладке safe не хуже short и safe0 по
-   ключу без возврата, safe0 не хуже safe и short по ключу с возвратом; где перебор всех порядков той же динамикой
+   ключу без возврата, safe0 не хуже safe и short по ключу с возвратом (то же на сетках плит, где возврат идёт над
+   несколькими; key0 конца динамики safe0 = key0 счёта measure); где перебор всех порядков той же динамикой
    обходится без переходов над освобождёнными мелкими — safe обходится (все такие раскладки); микроперемычки — правила
    освобождённых к детали не применяются; шайба с отверстием Ø50 — выход не над отверстием; язычки жалюзи — над ними
    не ходит; плита с прорезями и отверстиями — язычки строго выше отверстий (ревизия 14.10: safe0 менял язычок на
@@ -18,8 +20,9 @@
    плохой профиль — сообщение, а не трассировка;
 4) образцы инженера (если есть): с зазором и с общим резом — у всех стратегий те же листы, все проверки программы ✓,
    подвод внешнего контура как было, на каждой раскладке safe ≤ short и safe ≤ safe0 (без возврата), safe0 ≤ safe и
-   safe0 ≤ short (с возвратом), счёт = независимый пересчёт по программе (tests/recount_lxds.py, и возврат в ноль),
-   m14 — 0 переходов над вырезанными отверстиями Ø50.
+   safe0 ≤ short (с возвратом), счёт = независимый пересчёт по программе (tests/recount_lxds.py, и возврат в ноль: длина,
+   метры, язычки, число объектов под ним по ступеням; key0 − key = это число), m14 — 0 переходов над вырезанными
+   отверстиями Ø50.
 """
 import sys, os, math, random, itertools, tempfile, json, io, contextlib, time
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -157,6 +160,66 @@ def unit():
                  if G.inside(pt, P) and min(G.seg_point_dist(pt, p, q) for p, q in edges) > m)
         bad += abs(RK.deep_len(a, b, (P, RK._bbox(P), None), m) - bf) > 0.02 + 2 * L / N
     check("глубина перехода внутри многоугольника — точно (150 случайных)", bad == 0, "расхождений %d" % bad)
+    ret_unit()
+
+
+def ret_unit():
+    """Возврат в ноль (решение инженера 14.10.2026): в ключе с возвратом — число объектов под ним, переходы программы —
+    0/1."""
+    sh = RK.Sheet()
+    for k in range(4):                                    # 4 плиты на диагонали, мелкая — в стороне
+        sh.add("parts", RK.obstacle(rect(150, 150, 20 + 200 * k, 20 + 200 * k)))
+    sh.add("small", RK.obstacle(rect(60, 40, 700, 300)))
+    v1, v0 = RK.move((900.0, 900.0), H0, sh), RK.ret_move((900.0, 900.0), H0, sh)
+    check("возврат: ret_move — число деталей под ним (4 плиты на диагонали — 4), переход программы (move) — 1",
+          v0[RK.PART] == 4 and v1[RK.PART] == 1 and v0[RK.SMALLP] == v1[RK.SMALLP] == 0, "ret_move %s, move %s" % (v0, v1))
+    # случайные: число объектов — по перебору точек (глубина у прямоугольника и круга — аналитически, не risk.deep_len);
+    # класс ненулевой там же, где у move; впритирку и короткий — как у move
+    rnd, bad, multi, amb = random.Random(11), [], 0, 0
+    for case in range(150):
+        sh, objs = RK.Sheet(), []
+        for k in range(rnd.randint(6, 14)):
+            kind = rnd.choice(["small", "parts", "holes", "tongues"])
+            x, y = rnd.uniform(0, 380), rnd.uniform(0, 380)
+            if kind == "holes" and rnd.random() < 0.5:
+                r = rnd.uniform(5, 40)
+                ob, dep = RK.obstacle(circ(x, y, r)), (lambda p, x=x, y=y, r=r: r - math.dist(p, (x, y)))
+            else:
+                w, h = rnd.uniform(8, 110), rnd.uniform(8, 110)
+                ob = RK.obstacle(rect(w, h, x, y, outer=0))
+                dep = (lambda p, x=x, y=y, w=w, h=h: min(p[0] - x, x + w - p[0], p[1] - y, y + h - p[1]))
+            sh.add(kind, ob); objs.append((kind, dep))
+        a, b = (rnd.uniform(0, 500), rnd.uniform(0, 500)), (rnd.uniform(0, 500), rnd.uniform(0, 500))
+        L, N = math.dist(a, b), 3000
+        pts = [(a[0] + (b[0] - a[0]) * (k + 0.5) / N, a[1] + (b[1] - a[1]) * (k + 0.5) / N) for k in range(N)]
+        lens = [(kind, sum(L / N for p in pts if dep(p) > RK._MARGIN[kind])) for kind, dep in objs]
+        if any(abs(x - RK.MIN_OVER) < 0.05 for _, x in lens):
+            amb += 1                                      # у порога перебор точек не решает — пропуск
+            continue
+        v1, v0 = RK.move(a, b, sh), RK.ret_move(a, b, sh)
+        for kind in ("small", "parts", "holes", "tongues"):
+            i = RK.IDX[kind]
+            n = sum(1 for k_, x in lens if k_ == kind and x >= RK.MIN_OVER)
+            multi += n >= 2
+            if v0[i] != max(n, v1[i]) or bool(v0[i]) != bool(v1[i]):
+                bad.append((case, kind, v0[i], n, v1[i]))
+        if v0[RK.NEARP] != v1[RK.NEARP] or v0[RK.SHORT] != v1[RK.SHORT]:
+            bad.append((case, "near/short", v0, v1))
+    check("возврат: ret_move = число объектов по перебору точек, класс там же, где у move (150 случайных, из них по ≥ 2 "
+          "объекта в классе — %d)" % multi, not bad and multi >= 10, "расхождений %d %s; у порога пропущено %d" % (len(bad), bad[:3], amb))
+    # ключ с возвратом (measure key0): четыре плиты на диагонали, два порядка — у X возврат над тремя плитами, у Y — над
+    # одной; по холостому с возвратом X короче (правило «возврат — один переход» выбрало бы его), по числу — Y лучше
+    P = [rect(150, 150, 20 + 200 * k, 20 + 200 * k) for k in range(4)]
+    tr = lambda i: G.rotate_start(P[i], 2)                # врезка в правом верхнем углу
+    mx = RK.measure([(tr(0), 0), (tr(1), 1), (tr(2), 2), (P[3], 3)], ["parts"] * 4, P)
+    my = RK.measure([(P[3], 3), (P[2], 2), (tr(0), 0), (P[1], 1)], ["parts"] * 4, P)
+    ok = (mx["key"][:4] == my["key"][:4] == (0, 0, 0, 0) and mx["ret"]["n_parts"] == 3 and my["ret"]["n_parts"] == 1 and
+          mx["key0"][:4] == (0, 0, 3, 0) and my["key0"][:4] == (0, 0, 1, 0) and mx["ret"]["over"] == my["ret"]["over"] == 1 and
+          abs(mx["key0"][4] - mx["key"][4] - mx["ret"]["m"] * 1000) < 1e-6 and mx["key0"][4] < my["key0"][4] and
+          my["key0"] < mx["key0"] and mx["moves"][-1][2][RK.PART] == 3)
+    check("ключ с возвратом: возврат над тремя плитами — 3 в ступени деталей (не 1), над одной — 1; по ключу лучше Y, "
+          "хотя холостой с возвратом короче у X", ok, "X: key0 %s, Y: key0 %s" % (
+              [round(x, 1) for x in mx["key0"]], [round(x, 1) for x in my["key0"]]))
 
 
 # ============================================================================================ 2) синтетика
@@ -177,6 +240,25 @@ def dense(seed):
             x, y, rowh = 2.0, y + rowh + 2.0, 0.0
         placed.append(dict(part=pi, rot=0, dx=x, dy=y)); x += w + 2.0; rowh = max(rowh, h)
     return parts, placed, W, y + rowh + 2.0
+
+
+def grid(seed):
+    """Сетка плит и мелких деталей с отверстиями (зазор 2 мм): возврат от дальней детали идёт над несколькими."""
+    rnd = random.Random(seed)
+    parts = [part("плита", 220, 160, [circ(60, 50, 12), circ(160, 110, 6)]), part("мелкая", 80, 60, [circ(40, 30, 8)]),
+             part("полоса", 300, 90)]
+    dims = {0: (220, 160), 1: (80, 60), 2: (300, 90)}
+    cols, rows = rnd.randint(3, 5), rnd.randint(2, 4)
+    placed, y = [], 2.0
+    for j in range(rows):
+        x, rowh = 2.0, 0.0
+        for i in range(cols):
+            pi = rnd.choice([0, 0, 1, 2])
+            w, h = dims[pi]
+            placed.append(dict(part=pi, rot=0, dx=x, dy=y)); x += w + 2.0; rowh = max(rowh, h)
+        y += rowh + 2.0
+    W = max(q["dx"] + dims[q["part"]][0] for q in placed) + 2.0
+    return parts, placed, W, y
 
 
 def plate406():
@@ -216,6 +298,25 @@ def synthetic():
           "; ".join(bad[:4]))
     check("плотные ряды: где перебор порядков обходится без переходов над мелкими — safe тоже (все)", n_av > 0 and not miss,
           "%d из %d; не обошёл: %s" % (n_ok, n_av, miss or "—"))
+    # возврат по числу объектов под ним: динамика safe0 оптимизирует тот же ключ, что считает measure (key0 конца динамики
+    # = key0 счёта готового маршрута) — порядок «от нуля к дальней», возврат от дальней детали идёт над несколькими;
+    # и порядок стратегий на сетках
+    o0, bad0, bad1, multi = R.options("safe0"), [], [], 0
+    for seed in range(10 if QUICK else 30):
+        parts, placed, W, L = grid(seed)
+        C = R._prep(placed, parts, W, L, H0, RK.SMALL, None)
+        s = sorted(range(len(placed)), key=lambda i: (math.dist(C["plans"][i].center, H0), i))
+        rk, rk0, k, k0 = R._dp_safe(C, s, H0, o0, keys=True)
+        m0 = R._measure(C, rk0, H0)
+        multi += m0["ret"]["n_small"] + m0["ret"]["n_parts"] >= 2
+        if m0["key0"][:4] != k0[:4] or abs(m0["key0"][4] - k0[4]) > 1e-6:
+            bad0.append((seed, k0, m0["key0"]))
+        rs = {st: R.route_sheet(placed, parts, W, L, strategy=st)["risk"] for st in R.STRATEGIES}
+        bad1 += keys_ok(rs, "сетка %d" % seed)
+    check("возврат: key0 динамики safe0 = key0 счёта measure (одна ret_move; сеток %d, возврат над ≥ 2 деталями — %d)" % (
+        10 if QUICK else 30, multi), not bad0 and multi > 0, str(bad0[:3]))
+    check("сетки плит: safe ≤ short и ≤ safe0 по ключу, safe0 ≤ safe и ≤ short с возвратом (по числу под ним)", not bad1,
+          "; ".join(bad1[:4]))
     # микроперемычки: те же раскладки — правила освобождённых не применяются, переход над такой деталью — «с перемычками»
     parts, placed, W, L = dense(27)                       # у «short» здесь переходы над мелкими есть (2)
     r0 = R.route_sheet(placed, parts, W, L, strategy="short")["risk"]
@@ -266,7 +367,8 @@ def synthetic():
     finally:
         R._dp_safe = f
     n = len(placed)
-    lim = (3 + 4 + R.REPAIR_WORK + 2) * n + max(R.REPAIR_WORK * n, R.REPAIR_MIN)
+    # правка по ключам: key — max(REPAIR_WORK·n, REPAIR_MIN), key1 (прежний конец) и key0 (возврат по числу) — по REPAIR_WORK·n
+    lim = (3 + 4 + 2 * R.REPAIR_WORK + 2) * n + max(R.REPAIR_WORK * n, R.REPAIR_MIN)
     check("безопасный: работа на лист ограничена (шагов динамики ≤ %d при %d деталях; прежде — до 80 прогонов)" % (lim, n),
           steps[0] <= lim, "шагов %d, осталось над мелкими %d, над деталями %d" % (steps[0], r["risk"]["small"], r["risk"]["parts"]))
 
@@ -328,9 +430,10 @@ def dxf_run():
                 check("старые ключи crossings — как были, новые — рядом", {"tongues", "parts"} <= set(res["crossings"]) and
                       res["crossings"]["holes"] == res["risk"]["holes"])
                 lr = res["layouts"][0]["risk"]
-                check("раскладка в отчёте: возврат целиком (длина, над деталями, язычков под ним), метры над деталями, ключи",
+                check("раскладка в отчёте: возврат целиком (длина, над деталями, язычков под ним, объектов под ним по ступеням), "
+                      "метры над деталями, ключи",
                       {"ret_m", "ret_over_m", "ret", "over_parts_m", "key", "key0"} <= set(lr) and
-                      {"m", "over_m", "tongues_crossed", "over"} <= set(lr["ret"]) and
+                      {"m", "over_m", "tongues_crossed", "over", "n_tongues", "n_small", "n_parts", "n_holes"} <= set(lr["ret"]) and
                       sum(l["risk"]["ret"]["tongues_crossed"] * l["amount"] for l in res["layouts"]) == res["risk"]["ret"]["tongues_crossed"])
                 w = [x for x in res["warnings"] if "раскладка" in x]
                 check("предупреждение об оставшихся опасных — «не смогла», без «не обойти»", all("не обойти" not in x for x in res["warnings"]),
@@ -418,7 +521,14 @@ def samples():
                              if abs(r["risk"]["ret"]["over_m"] - rc[k]["ret_over_m"]) > 0.002 + 0.002 * rc[k]["ret_over_m"]]
                     diff += [(k, "ret_tg", r["risk"]["ret"]["tongues_crossed"], rc[k]["ret_tongues"]) for k, r in enumerate(rs)
                              if r["risk"]["ret"]["tongues_crossed"] != rc[k]["ret_tongues"]]
-                    check("%s, %s: счёт и возврат в ноль = независимый пересчёт по программе" % (tag, st), not diff, str(diff[:4]) if diff else
+                    # возврат в ключе с возвратом — число объектов под ним по ступеням (ret_move) = пересчёт точками
+                    diff += [(k, "ret_n_" + c, r["risk"]["ret"]["n_" + c], rc[k]["ret_n_" + c]) for k, r in enumerate(rs)
+                             for c in ("tongues", "small", "parts", "holes") if r["risk"]["ret"]["n_" + c] != rc[k]["ret_n_" + c]]
+                    diff += [(k, "key0-key", r["risk"]["key0"][:4], r["risk"]["key"][:4]) for k, r in enumerate(rs)
+                             if tuple(a - b for a, b in zip(r["risk"]["key0"][:4], r["risk"]["key"][:4])) !=
+                             tuple(r["risk"]["ret"]["n_" + c] for c in ("tongues", "small", "parts", "holes"))]
+                    check("%s, %s: счёт и возврат в ноль (и число объектов под ним) = независимый пересчёт по программе" % (tag, st),
+                          not diff, str(diff[:4]) if diff else
                           ", ".join("%s %d" % (c, sum(r["risk"][c] * l["amount"] for r, l in zip(rs, lay))) for c in RK.CLASSES))
                     if nm == "m14" and st == "safe":
                         check("m14, безопасный: над вырезанными отверстиями Ø50 — 0", sum(r["risk"]["holes"] for r in rs) == 0)

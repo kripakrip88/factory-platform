@@ -9,7 +9,8 @@
 
     from recount_lxds import recount
     per_layout = recount(raw, parts, layouts, small=100)   # [{tongues, small, parts, holes, holes_s, near, short, mj,
-                                                           #   ret_m, ret_over_m, ret_tongues}]
+                                                           #   ret_m, ret_over_m, ret_tongues, ret_n_tongues,
+                                                           #   ret_n_small, ret_n_parts, ret_n_holes}]
 """
 import math
 import numpy as np
@@ -192,9 +193,14 @@ def recount(raw, parts, layouts, small=100.0):
                             freed[j] = True
                 pos = b
         # возврат в ноль после листа (настройка станка): длина; метры над вырезанными деталями (к концу листа вырезано
-        # всё — над любой); сколько вырезанных язычков он пересекает глубже 0,5 мм (≥ 0,5 мм пути)
+        # всё — над любой); сколько вырезанных язычков он пересекает глубже 0,5 мм (≥ 0,5 мм пути); в ключе — число
+        # объектов под ним по ступеням (ret_n_*): освобождённые мелкие и прочие — каждая ≥ 0,5 мм пути глубже 1 мм,
+        # язычки и отверстия ≥ 10 не освобождённых (и с перемычками) — глубже 0,5 мм; по чуть-чуть над несколькими, но
+        # вместе ≥ 0,5 мм — один (как переход программы)
         Q = samples(pos, (0.0, 0.0))
         cnt["ret_m"] = math.dist(pos, (0.0, 0.0)) / 1000
+        for kd in ("tongues", "small", "parts", "holes"):
+            cnt["ret_n_" + kd] = 0
         if Q is None:
             cnt["ret_over_m"], cnt["ret_tongues"] = 0.0, 0
         else:
@@ -205,5 +211,10 @@ def recount(raw, parts, layouts, small=100.0):
                     ins[np.where(m)[0][pp.inside(Q[m])]] = True
             cnt["ret_over_m"] = float(ins.sum()) * (math.dist(pos, (0.0, 0.0)) / len(Q)) / 1000
             cnt["ret_tongues"] = sum(1 for c, pp, j in cut if c == "tongues" and pp.deep(Q, 0.5) >= 0.5 - 1e-6)
+            ds = {kd: [polys[j].deep(Q, 1.0) for j in range(len(polys)) if freed[j] and kinds[j] == kd] for kd in ("small", "parts")}
+            for kd in ("tongues", "holes"):
+                ds[kd] = [pp.deep(Q, 0.5) for c, pp, j in cut if c == kd and (j is None or not freed[j] or kinds[j] == "mj")]
+            for kd, d in ds.items():
+                cnt["ret_n_" + kd] = sum(1 for x in d if x >= 0.5 - 1e-6) or int(sum(d) >= 0.5 - 1e-6)
         out.append(cnt)
     return out
