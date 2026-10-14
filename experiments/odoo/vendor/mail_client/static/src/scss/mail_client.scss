@@ -230,6 +230,79 @@
     }
 }
 
+// ПРАВКА ПМК (14.10.2026): аватар с инициалами (avatar.js). Колонка шире —
+// точка непрочитанного слева, аватар 2rem; галочка встаёт на место аватара
+// по тем же правилам, что раньше на место точки. Тона бледные, текст тёмный
+// (у тёмной темы — свои, pmk_mail_ui/static/src/scss/avatars.scss).
+.o_mail_client_lead.o_mail_client_lead_avatar {
+    flex: 0 0 2.75rem;
+    align-self: center;
+    height: 2rem;
+    justify-content: flex-end;
+
+    .o_mail_client_dot {
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+    .o_mail_client_tick {
+        left: calc(100% - 1rem);
+    }
+}
+
+.o_mail_client_initials {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    font-size: .75rem;
+    font-weight: 600;
+    letter-spacing: .02em;
+    line-height: 1;
+    background-color: var(--mc-av-bg, #ececec);
+    color: var(--mc-av-fg, #45484d);
+    user-select: none;
+}
+
+.o_mc_av_0 { --mc-av-bg: #e3ecf7; --mc-av-fg: #2f4a6b; }
+.o_mc_av_1 { --mc-av-bg: #e4efe3; --mc-av-fg: #31522d; }
+.o_mc_av_2 { --mc-av-bg: #f3e8dc; --mc-av-fg: #6b4a26; }
+.o_mc_av_3 { --mc-av-bg: #ece6f3; --mc-av-fg: #4d3a6b; }
+.o_mc_av_4 { --mc-av-bg: #f5e3e3; --mc-av-fg: #6b3030; }
+.o_mc_av_5 { --mc-av-bg: #e0eeee; --mc-av-fg: #285656; }
+.o_mc_av_6 { --mc-av-bg: #efeedf; --mc-av-fg: #55532a; }
+.o_mc_av_7 { --mc-av-bg: #ebebeb; --mc-av-fg: #45484d; }
+
+.o_mail_client_row:hover .o_mail_client_lead_avatar,
+.o_mail_client_lead_avatar:focus-within,
+.o_mail_client_row.o_ticked .o_mail_client_lead_avatar,
+.o_has_selection .o_mail_client_lead_avatar {
+    .o_mail_client_initials {
+        visibility: hidden;
+    }
+
+    // Точка — левее аватара, галочке не мешает: остаётся.
+    .o_mail_client_dot {
+        visibility: visible;
+    }
+}
+
+@media (hover: none) {
+    .o_mail_client_lead_avatar {
+        .o_mail_client_initials {
+            visibility: hidden;
+        }
+
+        .o_mail_client_dot {
+            visibility: visible;
+        }
+    }
+}
+
 .o_mail_client_dot {
     width: .5rem;
     height: .5rem;
@@ -803,6 +876,11 @@
         padding-right: 0 !important;
         padding-bottom: 0 !important;
     }
+}
+
+.o_mail_client_send_inline {
+    padding: .25rem .875rem;
+    font-size: .875rem;
 }
 
 .o_mail_client_inline_from {

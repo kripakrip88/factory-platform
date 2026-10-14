@@ -12,8 +12,11 @@ import {
     readPref,
     recipientLabel,
     senderName,
+    splitAddress,
+    splitRecipients,
     writePref,
 } from "../utils";
+import { avatarInitials, avatarTone } from "./avatar";
 import { buildListItems } from "./list_items";
 import { attachmentChips } from "./quick_filters";
 
@@ -178,6 +181,21 @@ export class MessageList extends Component {
 
     sender(message) {
         return senderName(message.email_from);
+    }
+
+    /**
+     * ПРАВКА ПМК (14.10.2026): кружок с инициалами — того, кто в строке:
+     * у входящего отправитель, у нашего письма получатель (avatar.js).
+     */
+    avatar(message) {
+        const raw = message.is_outgoing
+            ? splitRecipients(message.email_to)[0] || ""
+            : message.email_from || "";
+        const { name, address } = splitAddress(raw);
+        return {
+            initials: avatarInitials(name, address),
+            tone: `o_mc_av_${avatarTone(address || name)}`,
+        };
     }
 
     // ПРАВКА ПМК (шаг 18): у нашего письма в строке — кому, а не от кого.

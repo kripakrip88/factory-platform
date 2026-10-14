@@ -1,0 +1,15 @@
+// Аватары строки списка (mail_client: avatar.js, .o_mc_av_0…7) в тёмной
+// теме: те же восемь тонов, приглушённые под тёмный фон. Только на экране —
+// как остальные тёмные правила модуля (mail_step41.scss).
+@media screen {
+  body.o_nexus_dark {
+    .o_mc_av_0 { --mc-av-bg: #2c3a4c; --mc-av-fg: #c9daf0; }
+    .o_mc_av_1 { --mc-av-bg: #2e3d2c; --mc-av-fg: #cde3c9; }
+    .o_mc_av_2 { --mc-av-bg: #463626; --mc-av-fg: #f0dcc4; }
+    .o_mc_av_3 { --mc-av-bg: #3a3148; --mc-av-fg: #ddd0ef; }
+    .o_mc_av_4 { --mc-av-bg: #4a2d2d; --mc-av-fg: #f2cfcf; }
+    .o_mc_av_5 { --mc-av-bg: #253f3f; --mc-av-fg: #c6e6e6; }
+    .o_mc_av_6 { --mc-av-bg: #3e3d26; --mc-av-fg: #e6e4c4; }
+    .o_mc_av_7 { --mc-av-bg: #3a3c40; --mc-av-fg: #dcdde0; }
+  }
+}

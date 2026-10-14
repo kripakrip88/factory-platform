@@ -194,8 +194,15 @@
                         <t t-set="message" t-value="item.message"/>
                         <t t-set="rowChips" t-value="chips(message)"/>
                         <t t-set="rowFolder" t-value="folderTag(message)"/>
-                        <label class="o_mail_client_lead">
+                        <!-- ПРАВКА ПМК (14.10.2026): аватар с инициалами на месте
+                             галочки — галочка встаёт вместо него при наведении,
+                             у отмеченной строки и когда что-то выбрано. Точка
+                             непрочитанного — левее аватара. -->
+                        <t t-set="rowAvatar" t-value="avatar(message)"/>
+                        <label class="o_mail_client_lead o_mail_client_lead_avatar">
                             <span class="o_mail_client_dot" t-if="!message.flag_seen" aria-hidden="true"/>
+                            <span class="o_mail_client_initials" t-att-class="rowAvatar.tone"
+                                  aria-hidden="true" t-esc="rowAvatar.initials"/>
                             <input type="checkbox" class="form-check-input o_mail_client_tick"
                                    t-att-aria-label="message.subject"
                                    t-att-checked="isTicked(message.id)"

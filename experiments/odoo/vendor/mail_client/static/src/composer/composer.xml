@@ -132,6 +132,32 @@
 
             <div class="o_mail_client_composer_footer d-flex align-items-center gap-2"
                  t-att-class="props.inline ? 'px-3 py-2' : 'px-4 py-3'">
+                <!-- ПРАВКА ПМК (шаг 6): под письмом — одна узкая строка:
+                     «Отправить», скрепка, корзина значками. «Сохранить
+                     черновик» не нужен: черновик сохраняется сам. -->
+                <t t-if="props.inline">
+                    <!-- Без btn-sm: тема делает маленькую основную кнопку
+                         редактора контурной (forms_nexus.scss, 30.2б), а
+                         «Отправить» — единственная залитая. -->
+                    <button class="btn btn-primary text-nowrap o_mail_client_send_inline"
+                            t-att-disabled="state.sending"
+                            t-on-click="() => this.onSend()">
+                        <i class="fa fa-paper-plane me-1"/>
+                        <t t-if="state.sending">Sending…</t>
+                        <t t-else="">Send</t>
+                    </button>
+                    <button class="btn btn-light btn-sm" t-att-disabled="state.uploading"
+                            title="Attach" aria-label="Attach"
+                            t-on-click="() => this.onAttachClick()">
+                        <i class="fa" aria-hidden="true" t-att-class="state.uploading ? 'fa-circle-o-notch fa-spin' : 'fa-paperclip'"/>
+                    </button>
+                    <div class="flex-grow-1"/>
+                    <button class="btn btn-link btn-sm text-danger" title="Discard" aria-label="Discard"
+                            t-on-click="() => this.onDiscard()">
+                        <i class="fa fa-trash-o" aria-hidden="true"/>
+                    </button>
+                </t>
+                <t t-else="">
                 <button class="btn btn-primary"
                         t-att-disabled="state.sending"
                         t-on-click="() => this.onSend()">
@@ -145,8 +171,6 @@
                     <t t-if="state.uploading">Uploading…</t>
                     <t t-else="">Attach</t>
                 </button>
-                <input type="file" multiple="multiple" class="d-none" t-ref="fileInput"
-                       t-on-change="(ev) => this.onFilesSelected(ev)"/>
                 <button class="btn btn-light" t-att-disabled="state.saving"
                         t-on-click="() => this.onSaveDraft()">
                     <i class="fa fa-floppy-o me-1"/>
@@ -158,6 +182,9 @@
                         t-on-click="() => this.onDiscard()">
                     Discard
                 </button>
+                </t>
+                <input type="file" multiple="multiple" class="d-none" t-ref="fileInput"
+                       t-on-change="(ev) => this.onFilesSelected(ev)"/>
             </div>
         </div>
     </t>
