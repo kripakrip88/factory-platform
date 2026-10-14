@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!-- Настройки → «Облако Mail.ru»: почта, пароль для внешнего приложения, папка, расширения,
+       «Проверить». Пароль вписывает Антон сам. active в XML — грабли Odoo 19. -->
+  <record id="view_res_config_settings_pmk_cloud" model="ir.ui.view">
+    <field name="name">res.config.settings.pmk.cloud</field>
+    <field name="model">res.config.settings</field>
+    <field name="inherit_id" ref="base_setup.res_config_settings_view_form"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//form" position="inside">
+        <app data-string="Облако Mail.ru" string="Облако Mail.ru" name="pmk_cloud" groups="base.group_system">
+          <block title="Облако Mail.ru → Телеграм" name="pmk_cloud_block">
+            <setting string="Подключение" help="Новые файлы папки (с вложенными) — сообщением в группу Телеграма. Только чтение списка файлов.">
+              <div class="row mt8">
+                <label for="pmk_cloud_login" class="col-lg-4 o_light_label"/>
+                <field name="pmk_cloud_login"/>
+              </div>
+              <div class="row">
+                <label for="pmk_cloud_password" class="col-lg-4 o_light_label"/>
+                <field name="pmk_cloud_password" password="True"/>
+              </div>
+              <div class="row">
+                <label for="pmk_cloud_root" class="col-lg-4 o_light_label"/>
+                <field name="pmk_cloud_root" placeholder="/ПРОИЗВОДСТВО"/>
+              </div>
+              <div class="row">
+                <label for="pmk_cloud_exts" class="col-lg-4 o_light_label"/>
+                <field name="pmk_cloud_exts"/>
+              </div>
+              <div class="row">
+                <label for="pmk_cloud_status" class="col-lg-4 o_light_label"/>
+                <field name="pmk_cloud_status" readonly="1"/>
+              </div>
+              <button name="action_pmk_cloud_check" type="object" string="Проверить" icon="fa-plug"
+                      class="btn-secondary mt8"/>
+            </setting>
+          </block>
+        </app>
+      </xpath>
+    </field>
+  </record>
+</odoo>

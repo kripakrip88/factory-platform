@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!-- Свежие папки (последние дни) — раз в 5 минут; вся папка — раз в сутки ночью:
+       файл, положенный в старую дату, не теряется. -->
+  <record id="cron_cloud_recent" model="ir.cron">
+    <field name="name">Облако Mail.ru: новые файлы (свежие папки)</field>
+    <field name="model_id" ref="model_pmk_cloud_file"/>
+    <field name="state">code</field>
+    <field name="code">model._cron_scan(full=False)</field>
+    <field name="interval_number">5</field>
+    <field name="interval_type">minutes</field>
+    <field name="active" eval="True"/>
+  </record>
+  <record id="cron_cloud_full" model="ir.cron">
+    <field name="name">Облако Mail.ru: новые файлы (вся папка)</field>
+    <field name="model_id" ref="model_pmk_cloud_file"/>
+    <field name="state">code</field>
+    <field name="code">model._cron_scan(full=True)</field>
+    <field name="interval_number">1</field>
+    <field name="interval_type">days</field>
+    <field name="nextcall" eval="(DateTime.now().replace(hour=19, minute=40, second=0) + timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')"/>
+    <field name="active" eval="True"/>
+  </record>
+</odoo>
