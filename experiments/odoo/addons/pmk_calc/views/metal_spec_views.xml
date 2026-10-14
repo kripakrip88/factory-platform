@@ -677,7 +677,7 @@
         <!-- Номер, клиент и содержимое: расчёт ищут по всем трём —
              по номеру из переписки, по клиенту и «где мы считали уголок». -->
         <field name="name" string="Номер"/>
-        <field name="partner_id" string="Клиент"/>
+        <field name="partner_id" string="Контрагент"/>
         <field name="note"/>
         <field name="product_ids" string="Изделие"
                filter_domain="[('product_ids.name', 'ilike', self)]"/>
@@ -692,7 +692,7 @@
         <filter name="no_partner" string="Без клиента" domain="[('partner_id', '=', False)]"/>
 
         <group>
-          <filter name="by_partner" string="Клиент" context="{'group_by': 'partner_id'}"/>
+          <filter name="by_partner" string="Контрагент" context="{'group_by': 'partner_id'}"/>
           <filter name="by_date" string="Дата" context="{'group_by': 'date'}"/>
         </group>
         <separator/>

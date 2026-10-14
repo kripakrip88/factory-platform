@@ -316,7 +316,7 @@
     <field name="arch" type="xml">
       <search>
         <field name="name" string="Номер"/>
-        <field name="partner_id" string="Клиент"/>
+        <field name="partner_id" string="Контрагент"/>
         <field name="spec_id" string="Расчёт"/>
         <filter name="this_month" string="Этот месяц"
                 domain="[('date', '&gt;=', (context_today() + relativedelta(day=1)).strftime('%Y-%m-%d'))]"/>
@@ -325,7 +325,7 @@
         <filter name="wasteful" string="Отход больше 10%" domain="[('waste_ratio', '&gt;', 10)]"/>
         <filter name="unplaced" string="Есть неразмещённые" domain="[('has_unplaced', '=', True)]"/>
         <group>
-          <filter name="by_partner" string="Клиент" context="{'group_by': 'partner_id'}"/>
+          <filter name="by_partner" string="Контрагент" context="{'group_by': 'partner_id'}"/>
           <filter name="by_date" string="Дата" context="{'group_by': 'date'}"/>
         </group>
         <separator/>

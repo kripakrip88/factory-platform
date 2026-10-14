@@ -196,7 +196,7 @@
         <group>
           <filter name="group_deal" string="Сделка" context="{'group_by': 'pmk_deal_id'}"/>
           <filter name="group_partner" string="Поставщик" context="{'group_by': 'partner_id'}"/>
-          <filter name="group_client" string="Клиент" context="{'group_by': 'pmk_client_id'}"/>
+          <filter name="group_client" string="Контрагент" context="{'group_by': 'pmk_client_id'}"/>
         </group>
       </search>
     </field>

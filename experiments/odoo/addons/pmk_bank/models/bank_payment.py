@@ -43,7 +43,7 @@ class PmkBankPayment(models.Model):
     payer_inn = fields.Char("ИНН плательщика", index=True)
     purpose = fields.Text("Назначение")
     doc_number = fields.Char("Номер платёжки")
-    partner_id = fields.Many2one("res.partner", "Клиент")
+    partner_id = fields.Many2one("res.partner", "Контрагент")
     sale_order_id = fields.Many2one("sale.order", "Счёт покупателю")
     state = fields.Selection(STATES, "Состояние", default="new", required=True)
     notified_at = fields.Datetime("Отправлено")
@@ -141,7 +141,7 @@ class PmkBankPayment(models.Model):
                 row.append({"text": "🧾 Открыть счёт",
                             "url": f"{base}/odoo/action-{SALE_ACTION}/{order.id}"})
             elif self.partner_id:
-                row.append({"text": "👤 Клиент", "url": f"{base}/odoo/contacts/{self.partner_id.id}"})
+                row.append({"text": "👤 Контрагент", "url": f"{base}/odoo/contacts/{self.partner_id.id}"})
         return text, ({"inline_keyboard": [row]} if row else None)
 
     def pmk_notify(self, test=False):

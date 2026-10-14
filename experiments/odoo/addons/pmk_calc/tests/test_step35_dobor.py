@@ -42,7 +42,7 @@ class TestDoborStep35(TransactionCase):
     def test_client_field_and_object_text(self):
         fields_ = self.Order._fields
         self.assertEqual(fields_["partner_id"].comodel_name, "res.partner")
-        self.assertEqual(fields_["partner_id"].string, "Клиент")
+        self.assertEqual(fields_["partner_id"].string, "Контрагент")
         self.assertEqual(fields_["customer"].type, "char",
                          "Текст на месте — старые доборки не переносились.")
         self.assertEqual(fields_["customer"].string, "Изделие / объект")
@@ -118,10 +118,10 @@ class TestDoborStep35(TransactionCase):
 
     def test_search_client_and_object(self):
         search = self._arch("pmk.dobor.order", "search", "pmk_calc.view_dobor_order_search")
-        self.assertEqual(self._one(search, "//field[@name='partner_id']").get("string"), "Клиент")
+        self.assertEqual(self._one(search, "//field[@name='partner_id']").get("string"), "Контрагент")
         self.assertEqual(self._one(search, "//field[@name='customer']").get("string"),
                          "Изделие / объект")
-        self.assertEqual(self._one(search, "//filter[@name='by_partner']").get("string"), "Клиент")
+        self.assertEqual(self._one(search, "//filter[@name='by_partner']").get("string"), "Контрагент")
         self.assertEqual(self._one(search, "//filter[@name='by_customer']").get("string"),
                          "Изделие / объект")
         self.assertFalse(search.xpath("//*[@string='Заказчик']"), "Одно понятие — одно слово.")

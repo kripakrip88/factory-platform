@@ -75,6 +75,9 @@ def date_text(value):
 class ProjectTask(models.Model):
     _inherit = "project.task"
 
+    # «Клиент» → «Контрагент» по всей системе (Антон 14.10.2026).
+    partner_id = fields.Many2one(string="Контрагент")
+
     pmk_is_order = fields.Boolean(related="project_id.pmk_is_orders", string="Строка заказа")
     pmk_stage_code = fields.Selection(related="stage_id.pmk_order_stage", string="Смысл этапа")
     pmk_sale_order_id = fields.Many2one(

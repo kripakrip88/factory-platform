@@ -114,7 +114,7 @@ class PurchaseOrderTech(models.Model):
         help="Строка планировщика «Заказы в работе»: после заявки — «Ждём "
              "металл», после прихода металла — «Металл: получен».")
     pmk_client_id = fields.Many2one(
-        "res.partner", "Клиент", compute="_compute_pmk_client_id", store=True,
+        "res.partner", "Контрагент", compute="_compute_pmk_client_id", store=True,
         index=True, help="Клиент счёта покупателю (без счёта — сделки).")
     pmk_no_supplier = fields.Boolean(
         "Поставщик не выбран", compute="_compute_pmk_no_supplier", store=True,

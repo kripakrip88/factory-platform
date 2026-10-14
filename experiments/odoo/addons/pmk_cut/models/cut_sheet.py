@@ -40,7 +40,7 @@ class PmkCutPlanSheet(models.Model):
     def _sheet_header(self):
         rows = [("Дата", self.date and self.date.strftime("%d.%m.%Y") or "—")]
         if self.partner_id:
-            rows.append(("Клиент", self.partner_id.display_name))
+            rows.append(("Контрагент", self.partner_id.display_name))
         if self.note:
             rows.append(("Примечание", self.note))
         rows.append(("Ширина пропила", "%s мм" % self._fmt(self.kerf_mm)))

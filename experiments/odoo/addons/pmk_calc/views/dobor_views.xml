@@ -280,7 +280,7 @@
         <!-- Поиск по номеру, клиенту и изделию: по ним заказ и ищут, когда
              звонит клиент (шаг 35: клиент — полем, текст — изделие / объект). -->
         <field name="name" string="Номер заказа"/>
-        <field name="partner_id" string="Клиент"/>
+        <field name="partner_id" string="Контрагент"/>
         <field name="customer" string="Изделие / объект"/>
         <field name="line_ids" string="Позиция"
                filter_domain="[('line_ids.title', 'ilike', self)]"/>
@@ -298,7 +298,7 @@
                 domain="[('order_date', '&gt;=', (context_today() + relativedelta(month=1, day=1)).strftime('%Y-%m-%d'))]"/>
 
         <group>
-          <filter name="by_partner" string="Клиент" context="{'group_by': 'partner_id'}"/>
+          <filter name="by_partner" string="Контрагент" context="{'group_by': 'partner_id'}"/>
           <filter name="by_customer" string="Изделие / объект" context="{'group_by': 'customer'}"/>
           <filter name="by_state" string="Статус" context="{'group_by': 'state'}"/>
           <filter name="by_date" string="Дата" context="{'group_by': 'order_date'}"/>

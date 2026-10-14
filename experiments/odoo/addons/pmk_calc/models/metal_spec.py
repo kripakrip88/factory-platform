@@ -42,7 +42,7 @@ class MetalSpec(models.Model):
 
     name = fields.Char("Номер", required=True, copy=False, readonly=True, default="Черновик")
     date = fields.Date("Дата", required=True, default=fields.Date.context_today, tracking=True)
-    partner_id = fields.Many2one("res.partner", "Клиент", tracking=True)
+    partner_id = fields.Many2one("res.partner", "Контрагент", tracking=True)
     # Разбор UX, шаг 11 (Антон, 28.09.2026: «подставлять компанию контакта;
     # человек остаётся контактным лицом — делаем»). Клиент расчёта — всегда
     # компания: по нему список, поиск и группировка «Клиент», по нему

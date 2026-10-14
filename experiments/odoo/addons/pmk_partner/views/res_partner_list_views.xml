@@ -34,7 +34,7 @@
          ниже. -->
     <field name="priority">32</field>
     <field name="arch" type="xml">
-      <list string="Клиенты" multi_edit="1">
+      <list string="Контрагенты" multi_edit="1">
         <!-- «Возможные дубли» (шаг З-14, 10.10.2026): группы похожих карточек
              всех контрагентов — и поставщиков, и архива, не только этого
              фильтра (models/partner_duplicate.py). Кнопка контурная: это

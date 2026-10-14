@@ -81,7 +81,7 @@ class PmkCutPlan(models.Model):
     # копирует, и копия раскроя с клиентом, поправленным руками, получила
     # бы клиента расчёта.
     partner_id = fields.Many2one(
-        "res.partner", "Клиент", tracking=True, copy=True,
+        "res.partner", "Контрагент", tracking=True, copy=True,
         compute="_compute_partner_id", store=True, readonly=False,
         help="Подставляется из расчёта; можно поправить руками.")
     note = fields.Char("Примечание")

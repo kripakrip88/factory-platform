@@ -189,7 +189,7 @@ class TestVentHood(TransactionCase):
         ws = wb["Сборка"]
         rows = [[c.value for c in r] for r in ws.iter_rows()]
         flat = [v for r in rows for v in r if v is not None]
-        self.assertIn("Клиент: Тест Сборка", flat)
+        self.assertIn("Контрагент: Тест Сборка", flat)
         head = next(r for r in rows if r[0] == "№")
         self.assertEqual(head[1:3], ["Зонт, мм", "Шахта, мм"], "Габарит зонта — первым (номенклатура склада).")
         self.assertEqual(head[6:14], ["Деталь", "Заготовка, мм", "Деталей на зонт", "Деталей всего",

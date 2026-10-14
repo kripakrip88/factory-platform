@@ -161,7 +161,7 @@ class CrmLeadMoney(models.Model):
         SOURCES, "Откуда пришёл", tracking=True, index=True,
         help="Кнопка «Лид» в почте ставит «Почта» сама. Остальное — руками.")
     pmk_client_id = fields.Many2one(
-        "res.partner", "Клиент", related="partner_id.commercial_partner_id",
+        "res.partner", "Контрагент", related="partner_id.commercial_partner_id",
         help="С кем договор: у человека в компании — компания, у компании — "
              "она сама, у частного лица — он сам.")
     date_deadline = fields.Date(string="Ответить клиенту до", help=DEADLINE_HELP)

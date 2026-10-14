@@ -149,7 +149,7 @@ class DoborOrderCutPrint(models.Model):
         source = self.cut_source
         src_name = dict(self._fields["cut_source"].selection)[source]
         when = fields.Datetime.context_timestamp(self, fields.Datetime.now()).strftime("%d.%m.%Y %H:%M")
-        meta = [("Клиент", self.partner_id.display_name or "—"), ("Изделие / объект", self.customer or "—"),
+        meta = [("Контрагент", self.partner_id.display_name or "—"), ("Изделие / объект", self.customer or "—"),
                 ("Дата заказа", self.order_date and self.order_date.strftime("%d.%m.%Y") or "—"),
                 ("Лист", src_name), ("Напечатано", when)]
         out = ['<h1>Раскрой листа · %s</h1>' % escape(self.name),

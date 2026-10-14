@@ -401,7 +401,7 @@
         <attribute name="invisible">1</attribute>
       </xpath>
       <xpath expr="//filter[@name='customer']" position="before">
-        <filter string="Клиенты" name="pmk_customers"
+        <filter string="Покупатели" name="pmk_customers"
                 domain="[('supplier_rank', '=', 0), ('pmk_price_supplier', '=', False), ('user_ids', '=', False), ('ref_company_ids', '=', False)]"/>
       </xpath>
       <!-- Подпись «Поставщики»: перевод ядра подписывал фильтр «Счета

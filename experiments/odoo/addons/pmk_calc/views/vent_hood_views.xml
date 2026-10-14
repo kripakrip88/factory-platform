@@ -237,7 +237,7 @@
     <field name="arch" type="xml">
       <search>
         <field name="name" string="Номер"/>
-        <field name="partner_id" string="Клиент"/>
+        <field name="partner_id" string="Контрагент"/>
         <field name="customer" string="Изделие / объект"/>
         <field name="line_ids" string="Размер"
                filter_domain="[('line_ids.hood_label', 'ilike', self)]"/>
@@ -247,7 +247,7 @@
         <separator/>
         <filter name="open" string="Не изготовлены" domain="[('state', '!=', 'done')]"/>
         <group>
-          <filter name="by_partner" string="Клиент" context="{'group_by': 'partner_id'}"/>
+          <filter name="by_partner" string="Контрагент" context="{'group_by': 'partner_id'}"/>
           <filter name="by_state" string="Статус" context="{'group_by': 'state'}"/>
           <filter name="by_date" string="Дата" context="{'group_by': 'order_date'}"/>
         </group>

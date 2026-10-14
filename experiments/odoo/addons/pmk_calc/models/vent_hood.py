@@ -56,7 +56,7 @@ class VentHoodOrder(models.Model):
     active = fields.Boolean("Активен", default=True)
 
     name = fields.Char("Номер", required=True, copy=False, readonly=True, default="Черновик")
-    partner_id = fields.Many2one("res.partner", "Клиент", tracking=True)
+    partner_id = fields.Many2one("res.partner", "Контрагент", tracking=True)
     customer = fields.Char("Изделие / объект", tracking=True,
                            help="На какой объект (адрес, дом). Клиент — полем «Клиент».")
     order_date = fields.Date("Дата", required=True, default=fields.Date.context_today)
@@ -157,7 +157,7 @@ class VentHoodOrder(models.Model):
         for col, (_title, width) in enumerate(self.ASSEMBLY_COLS):
             ws.set_column(col, col, width)
         ws.write(0, 0, "Сборочная ведомость вентзонтов — заказ %s" % self.name, f_title)
-        info = [("Клиент", self.partner_id.display_name or "—"),
+        info = [("Контрагент", self.partner_id.display_name or "—"),
                 ("Изделие / объект", self.customer or "—"),
                 ("Дата", self.order_date.strftime("%d.%m.%Y") if self.order_date else "—")]
         for i, (label, value) in enumerate(info, start=1):

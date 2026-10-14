@@ -156,7 +156,7 @@ class DoborOrder(models.Model):
     # Сделку к доборке добавляет pmk_deal (models/dobor_link.py): калькулятор
     # о CRM не знает.
     partner_id = fields.Many2one(
-        "res.partner", "Клиент", tracking=True,
+        "res.partner", "Контрагент", tracking=True,
         help="Кому делаем. В листе — строкой «Заказчик» вместе с изделием / "
              "объектом.")
     customer = fields.Char(

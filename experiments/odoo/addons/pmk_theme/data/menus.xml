@@ -78,7 +78,7 @@
          остаётся). Ради этой ссылки pmk_theme зависит от pmk_calc. -->
     <menuitem id="menu_pmk_sales_specs" name="Расчёты"
               parent="menu_pmk_sales" action="pmk_calc.action_metal_spec" sequence="30"/>
-    <menuitem id="menu_pmk_sales_customers" name="Клиенты"
+    <menuitem id="menu_pmk_sales_customers" name="Контрагенты"
               parent="menu_pmk_sales" action="account.res_partner_action_customer" sequence="50"/>
     <menuitem id="menu_pmk_sales_leads" name="Лиды"
               parent="menu_pmk_sales" action="crm.crm_lead_all_leads" sequence="60"/>
