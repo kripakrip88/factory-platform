@@ -1,3 +1,11 @@
+> **15.10.2026:** боевая система — Odoo. Ночной бэкап сохраняет базу Odoo
+> (`/opt/factory-platform/backups/odoo/db/odoo-<стамп>.dump`, pg_dump -Fc, 14 дней) и
+> вложения (`/opt/factory-platform/backups/odoo/filestore/<стамп>/`, снимок «только новое»
+> через rsync --link-dest, 7 снимков). ERPNext из бэкапа убран. Восстановить базу Odoo:
+> `docker exec -i odoo-db pg_restore -U odoo -d <новая_база> --no-owner < odoo-<стамп>.dump`;
+> вложения — скопировать снимок в `/var/lib/docker/volumes/odoo_odoo_data/_data/filestore/odoo/`.
+> Разделы ниже про ERPNext — история.
+
 # Бэкапы и восстановление
 
 Два независимых уровня. Они решают разные задачи и не заменяют друг друга.

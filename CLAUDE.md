@@ -91,8 +91,9 @@ services/ai-assistant/
 - ⏳ n8n воркфлоу: email → лид
 - ⏳ Email Analyzer → лид в ERP
 - ⏳ Telegram-уведомление менеджеру
-- ✅ Автобэкап баз данных — cron 03:00 (`services/erp/scripts/backup.sh`): ERPNext,
-  n8n, factory, brain-db. Плюс Бегет сам снимает VPS раз в 2-4 дня в отдельный ДЦ.
+- ✅ Автобэкап — cron 03:00 (`services/erp/scripts/backup.sh`): **Odoo** (база каждую ночь,
+  14 дней; вложения — снимок «только новое», 7 шт.) с 15.10.2026, n8n, factory, brain-db.
+  ERPNext из бэкапа убран. Плюс Бегет сам снимает VPS раз в 2-4 дня в отдельный ДЦ.
   Подробности и восстановление — `docs/backup.md`. **Offsite покупать не нужно.**
 
 **Месяц 3-4 — первая ценность**

@@ -3,12 +3,18 @@
 # Подробности и политика восстановления — docs/backup.md
 #
 # ЧТО ПОКРЫВАЕТ:
-#   1. ERPNext PROD — дамп БД ежедневно; вложения (--with-files) раз в неделю (вс).
-#      Вложения ~1.6 ГБ и почти не меняются: ежедневная копия давала +1.6 ГБ/сутки
-#      и съела 13 ГБ диска (см. CHANGELOG v1.3.1).
+#   1. Odoo (боевой с 21.09.2026) — дамп базы odoo ежедневно (pg_dump -Fc, ~23 МБ),
+#      14 дней; вложения (filestore, ~0.9 ГБ) — ежедневный снимок «только новое»
+#      (rsync --link-dest: неизменившиеся файлы — жёсткие ссылки на прошлый
+#      снимок, места не занимают), 7 снимков. До 15.10.2026 Odoo этот скрипт НЕ
+#      сохранял — только бэкапы перед выкладкой (/opt/backups/odoo) и снимки Бегета.
 #   2. infra-postgres — n8n (БЕЗ истории выполнений: она 533 МБ из 551 МБ и
 #      расходная), factory, globals (роли).
 #   3. brain-db — целиком, она мелкая.
+#
+#   ERPNext убран 15.10.2026 (Антон: «к нему больше не вернёмся»): контейнеры
+#   остановлены с 21.09, скрипт каждую ночь падал «С ОШИБКАМИ» на остановленном
+#   контейнере. Последние дампы ERPNext — в $BACKUP_DIR (erp_localhost-*).
 #
 # ЧЕГО НЕ ПОКРЫВАЕТ (сознательно):
 #   - STAGING — расходная среда, восстанавливается клоном с prod
@@ -22,9 +28,11 @@ set -uo pipefail
 BACKUP_DIR="/opt/factory-platform/backups/erp"
 PG_DIR="$BACKUP_DIR/postgres"
 
-ERP_CONTAINER="erp-backend-1"
-ERP_SITE="erp.localhost"
-ERP_IN_CONTAINER="/home/frappe/frappe-bench/sites/$ERP_SITE/private/backups"
+ODOO_DIR="/opt/factory-platform/backups/odoo"
+ODOO_DB_CONTAINER="odoo-db"
+ODOO_DB="odoo"
+ODOO_FILESTORE="/var/lib/docker/volumes/odoo_odoo_data/_data/filestore/$ODOO_DB"
+KEEP_FILESTORE_SNAPSHOTS=7
 
 PG_CONTAINER="infra-postgres-1"
 BRAIN_PG_CONTAINER="brain-db"
@@ -37,7 +45,7 @@ STAMP="$(date +%Y%m%d_%H%M%S)"
 failed=0
 fail() { echo "❌ $*"; failed=1; }
 
-mkdir -p "$BACKUP_DIR" "$PG_DIR"
+mkdir -p "$BACKUP_DIR" "$PG_DIR" "$ODOO_DIR/db" "$ODOO_DIR/filestore"
 
 # ─── Предохранитель: не начинать бэкап на переполненном диске ─────────────────
 free_gb=$(df -BG --output=avail / | tail -1 | tr -dc '0-9')
@@ -48,24 +56,35 @@ fi
 
 echo "═══ Бэкап $(date '+%F %T') · свободно ${free_gb} ГБ ═══"
 
-# ─── 1. ERPNext PROD ─────────────────────────────────────────────────────────
-# Вложения — только по воскресеньям (date +%u == 7).
-if [ "$(date +%u)" = "7" ]; then WITH_FILES="--with-files"; else WITH_FILES=""; fi
-
-echo "── ERPNext $ERP_SITE${WITH_FILES:+ (+ вложения, недельный)}"
-if ! docker ps --format '{{.Names}}' | grep -qx "$ERP_CONTAINER"; then
-  fail "контейнер $ERP_CONTAINER не запущен — бэкап ERP пропущен"
-elif docker exec "$ERP_CONTAINER" \
-       bench --site "$ERP_SITE" backup $WITH_FILES; then
-  # Забрать на хост И освободить том контейнера (иначе там навсегда висит 1.6 ГБ)
-  if docker cp "$ERP_CONTAINER:$ERP_IN_CONTAINER/." "$BACKUP_DIR/"; then
-    docker exec "$ERP_CONTAINER" sh -c "rm -f $ERP_IN_CONTAINER/*" \
-      || fail "не удалось очистить $ERP_IN_CONTAINER в контейнере"
+# ─── 1. Odoo ─────────────────────────────────────────────────────────────────
+echo "── Odoo"
+if ! docker ps --format '{{.Names}}' | grep -qx "$ODOO_DB_CONTAINER"; then
+  fail "контейнер $ODOO_DB_CONTAINER не запущен — база Odoo НЕ сохранена"
+else
+  out="$ODOO_DIR/db/odoo-$STAMP.dump"
+  # -Fc: сжатый формат pg_restore; пользователь — из окружения контейнера.
+  if docker exec "$ODOO_DB_CONTAINER" sh -c 'pg_dump -U "$POSTGRES_USER" -Fc '"$ODOO_DB" > "$out.part" \
+     && [ -s "$out.part" ]; then
+    mv "$out.part" "$out"
+    echo "   база: $(basename "$out") — $(du -h "$out" | cut -f1)"
   else
-    fail "не удалось скопировать бэкап ERP на хост (в контейнере НЕ чистим)"
+    rm -f "$out.part"
+    fail "дамп базы Odoo не снят"
+  fi
+fi
+
+if [ -d "$ODOO_FILESTORE" ]; then
+  snap="$ODOO_DIR/filestore/$STAMP"
+  prev="$(ls -1d "$ODOO_DIR"/filestore/2* 2>/dev/null | tail -1)"
+  if rsync -a --delete ${prev:+--link-dest="$prev"} "$ODOO_FILESTORE/" "$snap.part/"; then
+    mv "$snap.part" "$snap"
+    echo "   вложения: $(basename "$snap") — $(du -sh "$snap" | cut -f1) (новое за сутки — без повторов)"
+  else
+    rm -rf "$snap.part"
+    fail "снимок вложений Odoo не снят"
   fi
 else
-  fail "bench backup упал"
+  fail "нет папки вложений Odoo $ODOO_FILESTORE"
 fi
 
 # ─── 2/3. Postgres ───────────────────────────────────────────────────────────
@@ -101,6 +120,10 @@ pg_dump_to "$BRAIN_PG_CONTAINER" "brain-$STAMP.sql.gz" \
   'pg_dumpall -U "$POSTGRES_USER"'
 
 # ─── 4. Ретеншен ─────────────────────────────────────────────────────────────
+# Odoo: дампы базы — 14 дней, снимки вложений — последние 7.
+find "$ODOO_DIR/db" -maxdepth 1 -type f -name 'odoo-*.dump' -mtime "+$KEEP_DB_DAYS" -delete
+ls -1d "$ODOO_DIR"/filestore/2* 2>/dev/null | head -n -"$KEEP_FILESTORE_SNAPSHOTS" | xargs -r rm -rf
+
 # Тяжёлые архивы вложений держим 28 дней, всё остальное 14.
 find "$BACKUP_DIR" -maxdepth 1 -type f -name '*private-files.tar' \
   -mtime "+$KEEP_FILES_DAYS" -delete
@@ -110,7 +133,7 @@ find "$PG_DIR" -maxdepth 1 -type f -name '*.sql.gz' \
   -mtime "+$KEEP_DB_DAYS" -delete
 
 # ─── Итог ────────────────────────────────────────────────────────────────────
-occupied="$(du -sh "$BACKUP_DIR" | cut -f1)"
+occupied="$(du -sh "$BACKUP_DIR" "$ODOO_DIR" | awk '{print $1}' | paste -sd+ -)"
 free_after="$(df -h / | awk 'NR==2{print $4}')"
 if [ "$failed" = 0 ]; then
   echo "✅ Бэкап завершён $(date '+%F %T') · занято $occupied · свободно $free_after"
