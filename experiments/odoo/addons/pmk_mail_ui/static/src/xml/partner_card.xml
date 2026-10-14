@@ -50,7 +50,7 @@
           <t t-if="card.partner">
             <button type="button" class="pmk-pcard__name btn btn-link p-0 text-start"
                     title="Открыть контрагента"
-                    t-on-click="() => this.openRecord('res.partner', card.partner.id)"
+                    t-on-click="() => this.openPartner(card.partner.id)"
                     t-esc="card.partner.name"/>
             <div class="pmk-pcard__sub">
               <span t-if="card.partner.vat">ИНН <t t-esc="card.partner.vat"/></span>
@@ -96,7 +96,7 @@
             <t t-if="card.candidates.length">
               <div class="pmk-pcard__sub mt-2">Похожие контрагенты — выберите:</div>
               <button t-foreach="card.candidates" t-as="item" t-key="item.id" type="button"
-                      class="pmk-pcard__item" t-on-click="() => this.openRecord('res.partner', item.id)">
+                      class="pmk-pcard__item" t-on-click="() => this.openPartner(item.id)">
                 <span class="pmk-pcard__item-name" t-esc="item.name"/>
               </button>
             </t>
@@ -117,7 +117,7 @@
               <i class="fa fa-link me-1" aria-hidden="true"/>Привязать к сделке
             </button>
             <button t-if="card.partner" type="button" class="btn btn-sm btn-light"
-                    t-on-click="() => this.openRecord('res.partner', card.partner.id)">
+                    t-on-click="() => this.openPartner(card.partner.id)">
               <i class="fa fa-address-card-o me-1" aria-hidden="true"/>Открыть контрагента
             </button>
             <button t-elif="card.email" type="button" class="btn btn-sm btn-light"
@@ -162,12 +162,17 @@
             <i class="fa" aria-hidden="true" t-att-class="state.chosen === item_index ? 'fa-dot-circle-o' : 'fa-circle-o'"/>
             <span class="pmk-npd__opt-body">
               <span class="pmk-npd__opt-name"><t t-esc="item.name"/>
+                <span t-if="item.existing_id" class="pmk-npd__tag pmk-npd__tag--known">уже в базе</span>
                 <span t-if="item.source" class="pmk-npd__tag" t-esc="item.source"/></span>
               <span class="pmk-npd__opt-sub">ИНН <t t-esc="item.vat"/><t t-if="item.place"> · <t t-esc="item.place"/></t>
                 <t t-if="item.status"> · <span t-att-class="{ 'text-danger': !item.active }" t-esc="item.status"/></t></span>
             </span>
           </button>
         </t>
+        <div t-if="existingId" class="pmk-npd__known">
+          <i class="fa fa-check-circle me-1" aria-hidden="true"/>Уже есть в базе: <b t-esc="state.company.existing_name"/>.
+          Новый контрагент не нужен — отправителя добавим к нему контактом, и в следующий раз карточка его узнает.
+        </div>
         <div class="pmk-npd__rows" t-att-class="{ 'pmk-npd__rows--after': needsChoice }">
           <div class="pmk-npd__row">
             <span class="pmk-npd__k">Название</span>
@@ -221,10 +226,104 @@
 
       <t t-set-slot="footer">
         <button type="button" class="btn btn-primary" t-att-disabled="state.busy" t-on-click="() => this.create()">
-          Создать контрагента
+          <t t-if="existingId">Добавить контакт</t><t t-else="">Создать контрагента</t>
         </button>
-        <button type="button" class="btn btn-secondary" t-att-disabled="state.busy" t-on-click="() => this.openFull()">
-          Открыть полную карточку
+        <button t-if="existingId" type="button" class="btn btn-secondary" t-on-click="() => this.openExisting()">
+          Открыть карточку
+        </button>
+        <button type="button" class="btn btn-link ms-auto" t-on-click="() => this.props.close()">Отмена</button>
+      </t>
+    </Dialog>
+  </t>
+
+
+  <!-- Окно «Новый лид из письма» (static/src/js/lead_dialog.js) — те же
+       классы, что у окна контрагента. -->
+  <t t-name="pmk_mail_ui.NewLeadDialog">
+    <Dialog title="'Новый лид из письма'" size="'md'" contentClass="'pmk-npd'">
+      <div class="pmk-npd__from">
+        <t t-esc="draft.sender or draft.email"/><t t-if="draft.sender and draft.email"> · <t t-esc="draft.email"/></t>
+      </div>
+
+      <section class="pmk-npd__sec">
+        <div class="pmk-npd__cap">Лид</div>
+        <div class="pmk-npd__rows">
+          <div class="pmk-npd__row">
+            <span class="pmk-npd__k">Название</span>
+            <input type="text" class="form-control form-control-sm" t-att-value="state.name"
+                   t-on-change="(ev) => this.setName(ev.target.value)"/>
+            <span class="pmk-npd__tag" t-if="state.nameSource" t-esc="state.nameSource"/>
+          </div>
+          <div class="pmk-npd__row" t-if="draft.lead.received">
+            <span class="pmk-npd__k">Получен</span><span t-esc="draft.lead.received"/>
+            <span class="pmk-npd__tag">письмо</span>
+          </div>
+          <div class="pmk-npd__row">
+            <span class="pmk-npd__k">Откуда</span><span>Почта</span><span/>
+          </div>
+          <div class="pmk-npd__row">
+            <span class="pmk-npd__k">Менеджер</span><span t-esc="draft.lead.manager"/>
+            <span class="pmk-npd__tag">кто создаёт</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="pmk-npd__sec">
+        <div class="pmk-npd__cap">Клиент</div>
+        <t t-if="state.client">
+          <div class="pmk-npd__row">
+            <span class="pmk-npd__k">Контрагент</span><span t-esc="state.client.name"/>
+            <span class="pmk-npd__tag" t-if="state.client.how" t-esc="state.client.how"/>
+          </div>
+          <button type="button" class="btn btn-link btn-sm px-0" t-on-click="() => this.chooseClient(null)">
+            Без клиента
+          </button>
+        </t>
+        <t t-elif="state.candidates.length">
+          <div class="pmk-npd__warn">
+            <i class="fa fa-exclamation-circle me-1" aria-hidden="true"/>Подходят несколько контрагентов<t t-if="draft.candidates_how"> (<t t-esc="draft.candidates_how"/>)</t> — выберите
+          </div>
+          <button t-foreach="state.candidates" t-as="item" t-key="item.id" type="button"
+                  class="pmk-npd__opt" t-on-click="() => this.chooseClient(item)">
+            <i class="fa fa-circle-o" aria-hidden="true"/>
+            <span class="pmk-npd__opt-body"><span class="pmk-npd__opt-name" t-esc="item.name"/></span>
+          </button>
+        </t>
+        <t t-else="">
+          <div class="pmk-npd__muted mb-2">Отправителя нет в контрагентах — лид можно завести и без клиента.</div>
+          <button type="button" class="btn btn-sm btn-secondary" t-on-click="() => this.newPartner()">
+            <i class="fa fa-plus me-1" aria-hidden="true"/>Создать контрагента…
+          </button>
+        </t>
+      </section>
+
+      <section class="pmk-npd__sec">
+        <div class="pmk-npd__cap">Контакт</div>
+        <div class="pmk-npd__rows">
+          <t t-foreach="[['contact_name', 'Имя'], ['phone', 'Телефон'], ['email_from', 'Почта']]"
+             t-as="field" t-key="field[0]">
+            <div class="pmk-npd__row">
+              <span class="pmk-npd__k" t-esc="field[1]"/>
+              <input type="text" class="form-control form-control-sm" t-att-value="state.contact[field[0]] or ''"
+                     t-on-change="(ev) => this.setContact(field[0], ev.target.value)"/>
+              <span class="pmk-npd__tag" t-if="state.contactSources[field[0]]" t-esc="state.contactSources[field[0]]"/>
+            </div>
+          </t>
+        </div>
+      </section>
+
+      <section class="pmk-npd__sec">
+        <div class="pmk-npd__cap">В ленту лида ляжет</div>
+        <div class="pmk-npd__muted">
+          Письмо целиком<t t-if="draft.attachments.length"> и вложения: <t t-esc="draft.attachments.join(', ')"/></t><t t-else=""> (вложений нет)</t>.
+        </div>
+      </section>
+
+      <div t-if="state.error" class="pmk-npd__error" t-esc="state.error"/>
+
+      <t t-set-slot="footer">
+        <button type="button" class="btn btn-primary" t-att-disabled="state.busy" t-on-click="() => this.create()">
+          Создать лид
         </button>
         <button type="button" class="btn btn-link ms-auto" t-on-click="() => this.props.close()">Отмена</button>
       </t>

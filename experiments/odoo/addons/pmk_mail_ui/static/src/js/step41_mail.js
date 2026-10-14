@@ -28,13 +28,13 @@
  * момент вызова они уже на месте.
  */
 import { useState, useSubEnv } from "@odoo/owl";
-import { _t } from "@web/core/l10n/translation";
 import { patch } from "@web/core/utils/patch";
 
 import { MailClientInbox } from "@mail_client/mail_client_action";
 import { MessageList } from "@mail_client/panes/message_list";
 import { ReadingPane } from "@mail_client/panes/reading_pane";
 import "@pmk_mail_ui/js/reading_pane_lead";
+import { openInTab, openLeadDialog } from "./lead_dialog";
 
 /** Фильтр «С лидом»: имя — как на сервере (mail_client_step41.py, LEAD_FILTER). */
 export const LEAD_FILTER = { id: "pmk_lead", label: "С лидом", icon: "fa-handshake-o" };
@@ -125,25 +125,15 @@ patch(MailClientInbox.prototype, {
         this.env?.services?.pmk_mail_counter?.refresh();
     },
 
-    /** «Лид» у строки списка — тот же путь, что кнопка окна письма. */
+    /** «Лид» у строки списка — то же окно «Новый лид из письма»
+     *  (lead_dialog.js), что у кнопки окна письма. */
     async pmkRowCreateLead(message) {
-        const result = await this.orm.call(
-            "mail.client.message",
-            "action_pmk_create_lead",
-            [[message.id]]
-        );
-        this.notification.add(
-            result.created
-                ? result.client
-                    ? _t("Лид создан · клиент: %s", result.client)
-                    : _t("Лид создан")
-                : result.from_thread
-                  ? _t("У этой переписки лид уже есть — открыт он")
-                  : _t("Из этого письма лид уже есть"),
-            { type: result.created ? "success" : "info" }
-        );
-        this.pmkSetLead(message.id, result.thread_key, result.lead);
-        await this.env.services.action.doAction(result.action);
+        await openLeadDialog(this.env, message.id, {
+            onDone: (result) => {
+                this.pmkSetLead(message.id, result.thread_key, result.lead);
+                this.env.bus.trigger("PMK_MAIL_CARD:RELOAD");
+            },
+        });
     },
 
     /** Значок сделки у строк письма и его переписки — сразу, без перечитывания. */
@@ -166,18 +156,13 @@ patch(MailClientInbox.prototype, {
         }
     },
 
-    /** Лид открывается окном поверх почты: открытое письмо и список на месте. */
+    /** Лид — обычной страницей в новой вкладке (14.10.2026: формы в окошке
+     *  Антон назвал «недоразумением»); почта с открытым письмом на месте. */
     pmkOpenLead(lead) {
         if (!lead) {
             return;
         }
-        return this.env.services.action.doAction({
-            type: "ir.actions.act_window",
-            res_model: "crm.lead",
-            res_id: lead.id,
-            views: [[false, "form"]],
-            target: "new",
-        });
+        openInTab("crm.lead", lead.id);
     },
 });
 

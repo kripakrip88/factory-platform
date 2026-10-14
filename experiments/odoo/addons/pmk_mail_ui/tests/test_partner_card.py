@@ -158,10 +158,36 @@ class TestPartnerFromLetter(TransactionCase):
         self.assertEqual(result["contact"]["email"], "maria@newclient.example.org")
         self.assertEqual(self.env["res.partner"].search_count([]), before)
 
-    def test_known_inn_opens_existing(self):
+    def test_known_inn_offers_contact_to_existing(self):
         company = self.env["res.partner"].create(
             {"name": "ООО «Новый клиент»", "is_company": True, "vat": self.inn})
-        self.assertEqual(self._run()["existing"]["id"], company.id)
+        result = self._run()
+        self.assertEqual(result["company"]["existing_id"], company.id)
+        self.assertEqual(result["contact"]["name"], "Мария Иванова")
+        added = self.Message.pmk_partner_create_from_letter(
+            self.letter.id, result["company"], result["contact"], {})
+        self.assertFalse(added["created"])
+        self.assertEqual(added["id"], company.id)
+        self.assertEqual(added["contact_added"], "Мария Иванова")
+        self.assertEqual(company.child_ids.email, "maria@newclient.example.org")
+        again = self.Message.pmk_partner_create_from_letter(
+            self.letter.id, result["company"], result["contact"], {})
+        self.assertFalse(again["contact_added"])
+        self.assertEqual(len(company.child_ids), 1)
+        card = self.Message.pmk_partner_card(self.letter.id)
+        self.assertEqual(card["partner"]["id"], company.id)
+
+    def test_candidates_already_in_base_are_marked(self):
+        inn = _inn10("770000222")
+        known = self.env["res.partner"].create(
+            {"name": "АО «Известный»", "is_company": True, "vat": inn})
+        suggest = [{"inn": inn, "name": {"short_with_opf": "АО «Известный»"},
+                    "state": {"status": "ACTIVE"}, "address": {"value": "г Хабаровск"}}]
+        with self._patched(suggest):
+            if not hasattr(type(self.env["res.partner"]), "_pmk_dadata_suggest"):
+                self.skipTest("pmk_dadata не установлен")
+            items = self.Message.pmk_partner_suggest("Известный")
+        self.assertEqual(items[0]["existing_id"], known.id)
 
     def test_account_from_attachment(self):
         part = self.env["mail.client.attachment"].create({
@@ -208,5 +234,3 @@ class TestPartnerFromLetter(TransactionCase):
         again = Message.pmk_partner_create_from_letter(self.letter.id, company, contact, bank)
         self.assertFalse(again["created"])
         self.assertEqual(again["id"], partner.id)
-        action = Message.pmk_partner_full_card(self.letter.id, {"name": "ООО «Другой»"}, contact, {})
-        self.assertEqual(action["context"]["default_name"], "ООО «Другой»")

@@ -746,8 +746,10 @@ class MailClientMessage(models.Model):
     # ------------------------------------------------------------------
     # кнопка
     # ------------------------------------------------------------------
-    def action_pmk_create_lead(self):
-        """Создать лид из письма либо открыть уже созданный."""
+    def action_pmk_create_lead(self, overrides=None):
+        """Создать лид из письма либо открыть уже созданный. overrides — то,
+        что поправили в окне «Новый лид из письма» (static/src/js/lead_dialog.js):
+        название, клиент, имя контакта, телефон, почта."""
         self.ensure_one()
         self.check_access("read")
         # Разбор UX, шаг 38 (доводка): почта одна — «Продажи → Почта», её
@@ -764,7 +766,7 @@ class MailClientMessage(models.Model):
         lead = self._pmk_find_lead()
         created = not lead
         if created:
-            lead = self._pmk_create_lead()
+            lead = self._pmk_create_lead(overrides)
 
         # sudo точечно на одно наше поле: у зрителя общего ящика прав на запись
         # в письмо нет, а проверки на чтение письма и на создание лида уже
@@ -835,7 +837,10 @@ class MailClientMessage(models.Model):
             active_test=False).search([]).mapped("smtp_user")
         return {email for email in map(email_normalize, filter(None, raw)) if email}
 
-    def _pmk_create_lead(self):
+    # Что окно «Новый лид из письма» может поправить в будущем лиде.
+    LEAD_OVERRIDES = ("name", "partner_id", "contact_name", "phone", "email_from")
+
+    def _pmk_create_lead(self, overrides=None):
         self.ensure_one()
         attachments, failed = self._pmk_letter_attachments()
 
@@ -897,6 +902,18 @@ class MailClientMessage(models.Model):
         # группировкой видно, какой канал приносит заявки и маржу. Поле
         # объявлено в pmk_deal; проверка наличия — чтобы почта не зависела от
         # модуля сделки и работала и без него.
+        if overrides:
+            overrides = {key: value for key, value in overrides.items()
+                         if key in self.LEAD_OVERRIDES}
+            if "partner_id" in overrides:
+                partner = self.env["res.partner"].browse(int(overrides["partner_id"] or 0)).exists()
+                overrides["partner_id"] = partner.id or False
+                # Клиента выбрал человек — заметка «найден по ИНН / домену» не про него.
+                match = None
+            for key, value in overrides.items():
+                values[key] = (value.strip() if isinstance(value, str) else value) or False
+            values["name"] = values.get("name") or lead_text.clean_subject(self.subject) or _("Без темы")
+            phone = values.get("phone") or ""
         if "pmk_source" in self.env["crm.lead"]._fields:
             values["pmk_source"] = "mail"
         # «Получен» (разбор UX, шаг 25) — когда пришло письмо, а не когда

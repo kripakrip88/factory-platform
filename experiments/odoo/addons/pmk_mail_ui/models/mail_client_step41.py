@@ -186,12 +186,12 @@ class MailClientMessage(models.Model):
         lead = super()._pmk_find_lead()
         return lead or self._pmk_thread_lead()
 
-    def action_pmk_create_lead(self):
+    def action_pmk_create_lead(self, overrides=None):
         """Кнопка «Лид» — плюс значок для строки списка. from_thread — лид
         не создан, а взят у переписки (подпись уведомления в окне)."""
         self.ensure_one()
         from_thread = not super()._pmk_find_lead() and bool(self._pmk_thread_lead())
-        result = super().action_pmk_create_lead()
+        result = super().action_pmk_create_lead(overrides)
         badge = self._pmk_thread_leads().get(self.id, False)
         result.update({
             "lead": badge,

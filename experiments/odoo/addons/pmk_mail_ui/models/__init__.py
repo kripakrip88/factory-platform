@@ -16,3 +16,5 @@ from . import mail_client_step53
 from . import mail_client_reply
 # Карточка контрагента справа от письма (редизайн почты, шаг 7).
 from . import mail_partner_card
+# Окно «Новый лид из письма» (14.10.2026).
+from . import mail_lead_draft

@@ -23,6 +23,7 @@ import { patch } from "@web/core/utils/patch";
 import { SelectCreateDialog } from "@web/views/view_dialogs/select_create_dialog";
 
 import { MailClientInbox } from "@mail_client/mail_client_action";
+import { openInTab, openLeadDialog } from "./lead_dialog";
 import { PmkNewPartnerDialog } from "./partner_dialog";
 
 const PREF = "pmk_mail.partner_card";
@@ -119,14 +120,18 @@ export class PmkPartnerCard extends Component {
         return card ? card.invoices_total - card.invoices.length : 0;
     }
 
+    /** Сделка, лид, счёт — обычной страницей в новой вкладке, как контрагент. */
     openRecord(resModel, resId) {
-        return this.action.doAction({
-            type: "ir.actions.act_window",
-            res_model: resModel,
-            res_id: resId,
-            views: [[false, "form"]],
-            target: "new",
-        });
+        openInTab(resModel, resId);
+    }
+
+    /**
+     * Карточка контрагента — обычной страницей в новой вкладке браузера
+     * (Антон 14.10.2026: форма контрагента в окошке — «недоразумение»).
+     * Почта с открытым письмом остаётся как была.
+     */
+    openPartner(partnerId) {
+        openInTab("res.partner", partnerId);
     }
 
     openList(resModel, name, domain) {
@@ -172,14 +177,6 @@ export class PmkPartnerCard extends Component {
             const data = await this.orm.call("mail.client.message", "pmk_partner_from_letter", [
                 this.props.messageId,
             ]);
-            if (data.existing) {
-                this.notification.add(
-                    _t("Контрагент с ИНН %(inn)s уже есть: %(name)s", data.existing),
-                    { type: "info" }
-                );
-                await this.openRecord("res.partner", data.existing.id);
-                return;
-            }
             this.dialog.add(PmkNewPartnerDialog, {
                 messageId: this.props.messageId,
                 data,
@@ -194,16 +191,14 @@ export class PmkPartnerCard extends Component {
         if (this.state.busy) {
             return;
         }
+        const messageId = this.props.messageId;
         this.state.busy = true;
         try {
-            const result = await this.orm.call("mail.client.message", "action_pmk_create_lead", [
-                [this.props.messageId],
-            ]);
-            this.notification.add(result.created ? _t("Лид создан") : _t("Из этого письма лид уже есть"), {
-                type: result.created ? "success" : "info",
-            });
-            await this.action.doAction(result.action, {
-                onClose: () => this.load(this.props.messageId),
+            await openLeadDialog(this.env, messageId, {
+                onDone: () => {
+                    this.load(messageId);
+                    this.env.pmkMail?.refreshLead(messageId);
+                },
             });
         } finally {
             this.state.busy = false;

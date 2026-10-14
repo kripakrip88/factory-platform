@@ -18,7 +18,6 @@
  * проверяет то же самое (action_pmk_create_lead).
  */
 import { onWillStart, useState, useSubEnv } from "@odoo/owl";
-import { _t } from "@web/core/l10n/translation";
 import { user } from "@web/core/user";
 import { useService } from "@web/core/utils/hooks";
 import { patch } from "@web/core/utils/patch";
@@ -27,6 +26,7 @@ import { patch } from "@web/core/utils/patch";
 // загрузчик упадёт с понятной ошибкой, а не оставит немую кнопку.
 import { MailClientInbox } from "@mail_client/mail_client_action";
 import { ReadingPane } from "@mail_client/panes/reading_pane";
+import { openLeadDialog } from "./lead_dialog";
 
 patch(MailClientInbox.prototype, {
     setup() {
@@ -66,26 +66,18 @@ patch(ReadingPane.prototype, {
         if (!this.props.detail || this.pmkLead.busy) {
             return;
         }
+        const messageId = this.props.detail.id;
         this.pmkLead.busy = true;
         try {
-            const result = await this.orm.call(
-                "mail.client.message",
-                "action_pmk_create_lead",
-                [[this.props.detail.id]]
-            );
-            this.notification.add(
-                result.created
-                    ? result.client
-                        ? _t("Лид создан · клиент: %s", result.client)
-                        : _t("Лид создан")
-                    : result.from_thread
-                      ? _t("У этой переписки лид уже есть — открыт он")
-                      : _t("Из этого письма лид уже есть"),
-                { type: result.created ? "success" : "info" }
-            );
-            await this.action.doAction(result.action);
-            // Карточка контрагента справа (partner_card.js, шаг 7) — лид новый.
-            this.env.bus.trigger("PMK_MAIL_CARD:RELOAD");
+            // 14.10.2026: окно «Новый лид из письма» (lead_dialog.js) вместо
+            // мгновенного лида и его формы в окошке.
+            await openLeadDialog(this.env, messageId, {
+                onDone: () => {
+                    // Карточка справа (partner_card.js) и значок у строки.
+                    this.env.bus.trigger("PMK_MAIL_CARD:RELOAD");
+                    this.env.pmkMail?.refreshLead(messageId);
+                },
+            });
         } finally {
             this.pmkLead.busy = false;
         }

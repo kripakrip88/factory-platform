@@ -285,7 +285,23 @@ class MailClientMessage(models.Model):
         Partner = self.env["res.partner"]
         if not hasattr(Partner, "_pmk_dadata_suggest"):
             return []
-        return [self._pmk_dadata_company(data) for data in Partner._pmk_dadata_suggest(query)]
+        return self._pmk_mark_existing(
+            [self._pmk_dadata_company(data) for data in Partner._pmk_dadata_suggest(query)])
+
+    @api.model
+    def _pmk_mark_existing(self, items):
+        """Организации справочника, которые уже есть в базе (по ИНН): новый
+        контрагент не нужен — отправителя добавляем к ней контактом."""
+        Partner = self.env["res.partner"].with_context(active_test=False)
+        for item in items:
+            inn = item.get("vat")
+            existing = Partner.search([("vat", "in", [inn, "RU" + inn])], limit=1) if inn else Partner
+            if existing:
+                company = existing.commercial_partner_id
+                item["existing_id"] = company.id
+                item["existing_name"] = company.display_name
+        # Уже знакомая организация — скорее всего, она и есть: первой.
+        return sorted(items, key=lambda item: not item.get("existing_id"))
 
     @api.model
     def pmk_partner_from_letter(self, message_id):
@@ -320,15 +336,18 @@ class MailClientMessage(models.Model):
             where = "письмо" if letter["inns"] else "вложение «%s»" % source
             existing = Partner.with_context(active_test=False).search(
                 [("vat", "in", [inn, "RU" + inn])], limit=1)
-            if existing:
-                result["existing"] = {"id": existing.commercial_partner_id.id,
-                                      "name": existing.commercial_partner_id.display_name,
-                                      "inn": inn}
-                return result
             company["vat"] = inn
             sources["vat"] = where
             finder = getattr(Partner, "_pmk_dadata_find", None)
-            if finder:
+            if existing:
+                existing = existing.commercial_partner_id
+                company.update({
+                    "name": existing.display_name, "existing_id": existing.id,
+                    "existing_name": existing.display_name, "kpp": existing.kpp or "",
+                    "pmk_legal_address": getattr(existing, "pmk_legal_address", "") or "",
+                })
+                sources["name"] = "уже в базе"
+            elif finder:
                 try:
                     company.update(self._pmk_dadata_company(finder(inn)))
                     for key in company:
@@ -386,7 +405,8 @@ class MailClientMessage(models.Model):
                     except UserError as exc:
                         result["warnings"].append(_("Справочник не ответил: %s", exc.args[0]))
                         break
-                result["candidates"] = result["candidates"][:5]
+                result["candidates"] = sorted(
+                    result["candidates"], key=lambda item: not item.get("existing_id"))[:5]
 
         # Контакт — человек из письма.
         contact, csources = result["contact"], result["contact_sources"]
@@ -454,28 +474,26 @@ class MailClientMessage(models.Model):
                 [("vat", "in", [inn, "RU" + inn])], limit=1)
             if existing:
                 partner = existing.commercial_partner_id
-                return {"id": partner.id, "name": partner.display_name, "created": False}
+                added = self._pmk_add_contact(partner, contact)
+                return {"id": partner.id, "name": partner.display_name, "created": False,
+                        "contact_added": added.name if added else False}
         partner = Partner.create(self._pmk_partner_values(company, contact, bank))
-        return {"id": partner.id, "name": partner.display_name, "created": True}
+        return {"id": partner.id, "name": partner.display_name, "created": True,
+                "contact_added": False}
 
     @api.model
-    def pmk_partner_full_card(self, message_id, company, contact=None, bank=None):
-        """«Открыть полную карточку»: обычная форма с теми же данными, не
-        сохранённая."""
-        self._checked(message_id, "read")
-        values = self._pmk_partner_values(company, contact, bank)
-        context = {"default_%s" % key: value for key, value in values.items()}
-        return self._pmk_partner_window(False, context)
-
-    @api.model
-    def _pmk_partner_window(self, partner_id, context):
-        action = {
-            "type": "ir.actions.act_window",
-            "res_model": "res.partner",
-            "views": [[False, "form"]],
-            "target": "new",
-            "context": context,
-        }
-        if partner_id:
-            action["res_id"] = partner_id
-        return action
+    def _pmk_add_contact(self, company, contact):
+        """Отправитель — контактом к уже заведённому контрагенту: в следующий
+        раз карточка справа узнает его по адресу. Такой адрес у компании или
+        её контактов уже есть — ничего не добавляем."""
+        person = {key: value for key, value in (contact or {}).items()
+                  if key in self.CONTACT_KEYS and value}
+        email = email_normalize(person.get("email") or "")
+        if not (person.get("name") or email):
+            return self.env["res.partner"]
+        if email and self.env["res.partner"].with_context(active_test=False).search_count([
+                ("id", "child_of", company.id), ("email_normalized", "=", email)]):
+            return self.env["res.partner"]
+        person.setdefault("name", person.get("email"))
+        person.update({"parent_id": company.id, "type": "contact"})
+        return self.env["res.partner"].create(person)

@@ -36,3 +36,4 @@ from . import test_z14_lead_client
 from . import test_prefetch_bodies
 from . import test_reply_rules
 from . import test_partner_card
+from . import test_lead_dialog

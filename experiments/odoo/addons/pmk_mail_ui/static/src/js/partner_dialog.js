@@ -4,11 +4,13 @@
  * Только найденное и откуда взято («справочник», «подпись», «вложение»…),
  * вместо полной карточки контрагента с пустыми полями. Нет ИНН в письме —
  * похожие организации из справочника по названию, выбор щелчком; поиск
- * можно повторить своим названием. «Создать контрагента» сохраняет сразу,
- * «Открыть полную карточку» — обычная форма с теми же данными.
+ * можно повторить своим названием. «Создать контрагента» сохраняет сразу;
+ * карточку созданного — кнопкой в уведомлении, обычной страницей в новой
+ * вкладке. Кнопка «Открыть полную карточку» (форма в окошке) снята по
+ * замечанию Антона 14.10.2026.
  *
  * Данные — pmk_partner_from_letter / pmk_partner_suggest /
- * pmk_partner_create_from_letter / pmk_partner_full_card
+ * pmk_partner_create_from_letter
  * (models/mail_partner_card.py).
  */
 import { Component, useState } from "@odoo/owl";
@@ -27,7 +29,6 @@ export class PmkNewPartnerDialog extends Component {
 
     setup() {
         this.orm = this.env.services.orm;
-        this.action = this.env.services.action;
         this.notification = this.env.services.notification;
         const data = this.props.data;
         this.state = useState({
@@ -58,6 +59,16 @@ export class PmkNewPartnerDialog extends Component {
     get addressLine() {
         const company = this.state.company;
         return company.pmk_legal_address || [company.city, company.street].filter(Boolean).join(", ");
+    }
+
+    /** Выбранная организация уже есть в базе — новый контрагент не нужен,
+     *  отправителя добавляем к ней контактом. */
+    get existingId() {
+        return this.state.company.existing_id || false;
+    }
+
+    openExisting() {
+        window.open(`/odoo/res.partner/${this.existingId}`, "_blank", "noopener");
     }
 
     get innLine() {
@@ -136,29 +147,28 @@ export class PmkNewPartnerDialog extends Component {
         try {
             const result = await this.orm.call(
                 "mail.client.message", "pmk_partner_create_from_letter", this.payload());
+            let message;
+            if (result.created) {
+                message = _t("Контрагент создан: %s", result.name);
+            } else if (result.contact_added) {
+                message = _t("К контрагенту %(company)s добавлен контакт %(person)s",
+                    { company: result.name, person: result.contact_added });
+            } else {
+                message = _t("Контрагент %s уже есть, этот адрес у него уже записан", result.name);
+            }
             this.notification.add(
-                result.created
-                    ? _t("Контрагент создан: %s", result.name)
-                    : _t("Такой ИНН уже есть: %s — новый не создавали", result.name),
-                { type: result.created ? "success" : "info" }
+                message,
+                {
+                    type: result.created ? "success" : "info",
+                    buttons: [{
+                        name: _t("Открыть карточку"),
+                        primary: true,
+                        onClick: () => window.open(`/odoo/res.partner/${result.id}`, "_blank", "noopener"),
+                    }],
+                }
             );
             this.props.close();
             this.props.onDone?.(result.id);
-        } finally {
-            this.state.busy = false;
-        }
-    }
-
-    async openFull() {
-        if (this.state.busy || !this.validate()) {
-            return;
-        }
-        this.state.busy = true;
-        try {
-            const action = await this.orm.call(
-                "mail.client.message", "pmk_partner_full_card", this.payload());
-            this.props.close();
-            await this.action.doAction(action, { onClose: () => this.props.onDone?.() });
         } finally {
             this.state.busy = false;
         }
