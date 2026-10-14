@@ -77,6 +77,7 @@ class TestSheetNest(TransactionCase):
         job.part_ids[0].nest_label = "ЗК-12"
         job.nest_label_all = "ЛР"
         job.part_ids[1].nest_microjoint = True
+        self.env["ir.config_parameter"].sudo().set_param("pmk_sheet_nest.font_strokes_json", '{"proba": 1}')
         run = self.env["pmk.sheet.nest.run"].create({
             "laser_job_id": job.id, "params_json": json.dumps(job._nest_params())})
         wd = os.path.join(run._workroot(), "t%d" % run.id)
@@ -94,6 +95,9 @@ class TestSheetNest(TransactionCase):
             self.assertEqual(inp["sheet"], {"W": 1250, "L": 2500})
             self.assertTrue(inp["compare"])
             self.assertTrue(inp["vent_nesting_lib"].endswith(os.path.join("pmk_vent_nest", "lib")))
+            self.assertEqual(inp["font"], "in/font.json", "таблица шрифта — копией в папку прогона")
+            with open(os.path.join(wd, "in", "font.json"), encoding="utf-8") as f:
+                self.assertEqual(f.read(), '{"proba": 1}')
         finally:
             import shutil
             shutil.rmtree(wd, ignore_errors=True)
@@ -135,7 +139,8 @@ class TestSheetNest(TransactionCase):
         self.assertEqual(plan.state, "done", plan.error)
         self.assertEqual(job.nest_status_kind, "done", job.nest_status)
         res = json.loads(job.nest_summary_json)
-        self.assertEqual([r["strategy"] for r in res["strategies"]], ["short", "safe", "safe0", "hill"])
+        self.assertEqual([r.get("name") or r.get("strategy") for r in res["strategies"]],
+                         ["short", "safe", "safe0", "hill"])
         self.assertGreater(plan.sheets, 0)
         self.assertFalse(job.nest_can_build, "порядок резки не выбран")
         job.nest_strategy = "safe"
