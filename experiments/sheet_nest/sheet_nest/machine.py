@@ -16,36 +16,60 @@
 гравировки в профиле нет.
 """
 import json, os, numbers
+from .errors import SheetNestError
+
+
+class MachineError(SheetNestError):
+    """Плохой профиль станка. Профиль — настройка станка (в Odoo — поле станка, его правит администратор, а не
+    инженер раскроя): в контракте sheet_nest.job/1 — kind «config», user=false."""
+    kind = "config"
+
+    def __init__(self, message):
+        super().__init__(message, flag="--machine")
+
+
+def _show(v):
+    """Значение для текста ошибки — без питоновского repr: пусто, число, «строка», список, объект."""
+    if v is None:
+        return "пусто"
+    if isinstance(v, bool):
+        return "true" if v else "false"
+    if isinstance(v, numbers.Real):
+        return "%g" % v
+    if isinstance(v, str):
+        return "«%s»" % v[:40]
+    return {dict: "объект", list: "список"}.get(type(v), type(v).__name__)
 
 
 def _num(v, name, where, zero_ok=False):
     if isinstance(v, bool) or not isinstance(v, numbers.Real) or v != v or v < 0 or (v == 0 and not zero_ok) or v == float("inf"):
-        raise ValueError("%s: %s — нужно число %s, а не %r" % (where, name, "≥ 0" if zero_ok else "> 0", v))
+        raise MachineError("%s: %s — нужно число %s, а не %s" % (where, name, "не меньше 0" if zero_ok else "больше 0", _show(v)))
     return float(v)
 
 
 def load(src):
-    """Профиль станка: путь к JSON или словарь → проверенный словарь (ошибка — ValueError с понятным текстом)."""
+    """Профиль станка: путь к JSON или словарь → проверенный словарь (ошибка — MachineError с понятным текстом)."""
     if isinstance(src, dict):
-        p, where, name = dict(src), "профиль станка", "станок"
+        p, name = dict(src), "станок"
+        where = "профиль станка «%s»" % p["name"] if isinstance(p.get("name"), str) and p["name"].strip() else "профиль станка"
     else:
         where, name = "профиль станка %s" % src, os.path.splitext(os.path.basename(str(src)))[0]
         try:
             with open(src, encoding="utf-8") as f:
                 p = json.load(f)
         except OSError as e:
-            raise ValueError("%s: не открывается (%s)" % (where, e.strerror or e))
+            raise MachineError("%s: не открывается (%s)" % (where, e.strerror or e))
         except ValueError as e:
-            raise ValueError("%s: не JSON (%s)" % (where, e))
+            raise MachineError("%s: не JSON%s" % (where, " (строка %d, знак %d)" % (e.lineno, e.colno) if hasattr(e, "lineno") else ""))
     if not isinstance(p, dict):
-        raise ValueError("%s: нужен объект {…}, а не %s" % (where, type(p).__name__))
+        raise MachineError("%s: нужен объект {…}, а не %s" % (where, _show(p)))
     _num(p.get("travel_mm_s"), "travel_mm_s", where)
     cut = p.get("cut")
     if not isinstance(cut, list) or not cut:
-        raise ValueError("%s: нужен cut — список [{t, mm_s, pierce_s}] по толщинам" % where)
+        raise MachineError("%s: нужен cut — список [{t, mm_s, pierce_s}] по толщинам" % where)
     for r in cut:
         if not isinstance(r, dict):
-            raise ValueError("%s: строка cut %r — нужен объект {t, mm_s, pierce_s}" % (where, r))
+            raise MachineError("%s: строка cut %s — нужен объект {t, mm_s, pierce_s}" % (where, _show(r)))
         _num(r.get("t"), "cut.t", where)
         _num(r.get("mm_s"), "cut.mm_s (t=%s)" % r.get("t"), where)
         if "pierce_s" in r:
@@ -55,7 +79,7 @@ def load(src):
     if p.get("mark_mm_s") is not None:
         _num(p["mark_mm_s"], "mark_mm_s", where)
     if not isinstance(p.get("return_to_zero", False), bool):
-        raise ValueError("%s: return_to_zero — true или false" % where)
+        raise MachineError("%s: return_to_zero — true или false" % where)
     p.setdefault("name", name)
     return p
 

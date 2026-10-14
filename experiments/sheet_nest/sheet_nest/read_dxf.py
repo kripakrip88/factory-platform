@@ -47,10 +47,11 @@
 - Направление: внешний — против часовой (площадь > 0), внутренние замкнутые — по часовой. Part.shapes: внутренние
   (в порядке файла), внешний — ПОСЛЕДНИМ (outer=1, layer=1). Деталь сдвигается так, что минимум габарита внешнего
   контура (с учётом дуг) = (0, 0).
-- Имя детали — имя файла без расширения и без количества, без символов &<>"'; при нескольких деталях — « #k»
-  (порядок — по левому краю, затем по низу габарита). Количество: аргумент qty; иначе из имени файла
+- Имя детали — аргумент name (как есть, без символов &<>"'; имя файла тогда не разбирается), иначе имя файла без
+  расширения и без количества, без символов &<>"'; при нескольких деталях — « #k» (порядок — по левому краю, затем по
+  низу габарита). Количество: аргумент qty; иначе — при заданном name 1 с предупреждением, без name — из имени файла
   (`…_12шт`, `… 12 шт`, `… x12` / `… х12`, `…(12)`; размер «1500 х 3000» — не количество); иначе 1
-  с предупреждением. Количество файла — каждой его детали.
+  с предупреждением (QTY_MISSING). Количество файла — каждой его детали.
 - Предупреждения файла (пропуски, приближения, единицы) пишутся в warnings каждой детали этого файла.
 """
 import codecs
@@ -62,9 +63,10 @@ from collections import defaultdict
 import numpy as np
 
 from sheet_nest.libpath import vn
+from sheet_nest.errors import SheetNestError
 
 __all__ = ["parts_from_dxf", "DxfError", "ENGRAVE_LAYERS", "ENGRAVE_SUBSTRINGS", "is_engrave_layer",
-           "qty_from_filename", "NODE_TOL", "CURVE_TOL"]
+           "qty_from_filename", "NODE_TOL", "CURVE_TOL", "QTY_MISSING"]
 
 NODE_TOL = 0.01          # мм: концы рёбер ближе — один узел
 CURVE_TOL = 0.01         # мм: допустимое отклонение ломаной от сплайна/эллипса
@@ -85,8 +87,12 @@ ENGRAVE_LAYERS = ["ГРАВИРОВКА", "GRAV", "ENGRAVE", "MARK", "МАРКИ
 ENGRAVE_SUBSTRINGS = ("грав", "engrav")
 
 
-class DxfError(Exception):
+class DxfError(SheetNestError):
     """Ошибка чтения DXF. Текст — по-русски, для человека; координаты — в единицах чертежа."""
+    kind = "input"
+
+
+QTY_MISSING = "количество не указано (ни аргументом, ни в имени файла) — 1 шт."
 
 
 # =====================================================================================  слой, количество
@@ -516,13 +522,29 @@ _UNITS = {1: (25.4, "дюймы"), 2: (304.8, "футы"), 4: (1.0, None), 5: (1
           14: (100.0, "дециметры")}
 
 
+def _show(v, n=30):
+    """Значение из файла — в текст ошибки. Строки файла читаются как latin-1 (байт в знак), поэтому кириллица в
+    испорченном числе выглядела бы «Ð°Ð±Ð²»: показать её в UTF-8, иначе в cp1251 (как строки DXF без UTF-8)."""
+    s = str(v).strip()
+    try:
+        b = s.encode("latin-1")
+    except UnicodeEncodeError:
+        return s[:n]
+    for enc in ("utf-8", "cp1251"):
+        try:
+            return b.decode(enc)[:n]
+        except UnicodeDecodeError:
+            pass
+    return s[:n]
+
+
 def _num(v, et, code):
     try:
         x = float(v.strip())
     except (ValueError, AttributeError):
-        raise DxfError("%s: код %d — не число «%s»; файл DXF повреждён" % (et, code, str(v).strip()[:30]))
+        raise DxfError("%s: код %d — не число «%s»; файл DXF повреждён" % (et, code, _show(v)))
     if not math.isfinite(x):
-        raise DxfError("%s: код %d — недопустимое число «%s»" % (et, code, v.strip()))
+        raise DxfError("%s: код %d — недопустимое число «%s»" % (et, code, _show(v)))
     return x
 
 
@@ -1559,33 +1581,35 @@ def _shape(ct, dx, dy, outer=False):
     return base
 
 
-def parts_from_dxf(data, filename, qty=None, engrave_layers=None):
+def parts_from_dxf(data, filename, qty=None, engrave_layers=None, name=None):
     """DXF (байты) → [Part]. Part = {"name", "qty", "shapes", "src", "warnings"} (см. DESIGN.md).
     data — содержимое файла; filename — имя (для имени детали и количества); qty — количество (иначе из имени
-    файла, иначе 1); engrave_layers — свой список слоёв гравировки (точные имена без учёта регистра).
+    файла, иначе 1); engrave_layers — свой список слоёв гравировки (точные имена без учёта регистра); name — имя
+    детали: задано — имя файла не разбирается вовсе (ни имя, ни количество; ERP.md, п. 2).
     Ошибки — DxfError (по-русски)."""
     try:
-        return _parts(data, filename, qty, engrave_layers)
+        return _parts(data, filename, qty, engrave_layers, name)
     except DxfError:
         raise
     except (ArithmeticError, ValueError, np.linalg.LinAlgError) as ex:
         # страховка: испорченные числа, которые не поймали проверки выше, — тоже DxfError, а не чужое исключение
-        raise DxfError("DXF не прочитан: числа в файле испорчены (%s: %s)" % (type(ex).__name__, ex))
+        # текст — человеку; само исключение (по-английски) — в цепочке, для трассировки
+        raise DxfError("DXF не прочитан: числа в файле испорчены") from ex
 
 
-def _parts(data, filename, qty, engrave_layers):
+def _parts(data, filename, qty, engrave_layers, name=None):
     rd = _Reader(data, engrave_layers)
     rd.walk_all()
     cts = _contours(rd)
     groups = _partition(rd, cts)
-    q_name, base = qty_from_filename(filename)
+    q_name, base = (None, name) if name is not None else qty_from_filename(filename)
     warnings = rd.summary()
     if qty is None:
         if q_name:
             qty = q_name
         else:
             qty = 1
-            warnings.append("количество не указано (ни аргументом, ни в имени файла) — 1 шт.")
+            warnings.append(QTY_MISSING)
     else:
         try:
             qf = float(qty)

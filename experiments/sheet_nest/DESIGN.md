@@ -58,10 +58,13 @@
 | `bridge.py` | мост: группы соседних круглых деталей, общий контур, группа как одна деталь для маршрута | я |
 | `machine.py` | время станка по профилю (заготовка, профилей пока нет) | я |
 | `write_lxds.py` | → .lxds | я |
-| `verify.py`, `render.py`, `cli.py` | проверки, картинка, командная строка | я |
+| `verify.py`, `render.py`, `cli.py` | проверки, картинка, командная строка (`run` — и для Python: входы `{path, name, qty, key}`, прогресс) | я |
+| `errors.py` | `SheetNestError(ValueError)` — ошибки пользователя (наследники: `DxfError`, `LxdsError`, `LabelError`, `FontError`, `MachineError`), `kind` для контракта, `input` — номер входа | я |
+| `job.py` | контракт `sheet_nest.job/1` для Odoo: папка прогона, `input.json` → `run` → `result.json` / `error.json` (ERP.md) | я |
 
 ### read_dxf.py — договорённость о гравировке
-`parts_from_dxf(data: bytes, filename: str, qty=None, engrave_layers=None) -> [Part]`, ошибка — `DxfError` (по-русски).
+`parts_from_dxf(data: bytes, filename: str, qty=None, engrave_layers=None, name=None) -> [Part]`, ошибка — `DxfError` (по-русски,
+наследник `SheetNestError`). `name` задан — имя файла не разбирается вовсе (ни имя, ни количество).
 - Слой гравировки — по имени слоя (код 8), без учёта регистра: «ГРАВИРОВКА», «Гравировка», «GRAV», «ENGRAVE»,
   «MARK», «МАРКИРОВКА», а также имя, содержащее «грав»/«engrav». Остальные слои — рез. Список переопределяется.
 - Сущности: LINE, ARC, CIRCLE, LWPOLYLINE (bulge), POLYLINE+VERTEX (R12, bulge), SPLINE (приближение дугами/

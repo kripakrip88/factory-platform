@@ -8,19 +8,46 @@
           app (версия CypCut), plates (размеры листов программы), bridges (вставок мостов CypCut — без ссылки на деталь;
           количество деталей всё равно из Amount — у CypCut это заказ, детали моста в него входят), warnings
 """
-import io, zipfile, math
+import io, zipfile, math, struct, zlib
 import xml.etree.ElementTree as ET
 from .libpath import vn
 from . import geom as G
+from .errors import SheetNestError
 
 BAD_NAME = str.maketrans({c: "" for c in "&<>\"'"})
 
 
-class LxdsError(Exception):
-    pass
+class LxdsError(SheetNestError):
+    """Плохая программа CypCut (не .lxds, повреждена, нет деталей) — текст для человека."""
+    kind = "input"
 
 
 def parts_from_lxds(data, filename="программа.lxds"):
+    """Программа CypCut (байты) → (детали, info). Плохой файл — LxdsError с текстом для человека (и там, где разбор
+    упал на испорченных данных глубже первой проверки: не KeyError/AttributeError из середины разбора)."""
+    try:
+        return _parts_from_lxds(data, filename)
+    except LxdsError:
+        raise
+    except (zipfile.BadZipFile, KeyError, ET.ParseError, ValueError, AttributeError, TypeError, IndexError, struct.error,
+            zlib.error, EOFError) as e:
+        # текст — человеку (без питоновских исключений по-английски); само исключение — в цепочке (трассировка)
+        raise LxdsError("%s: не программа CypCut или файл повреждён%s" % (filename, _why(e))) from e
+
+
+def _why(e):
+    """Чем программа плоха — по-русски, коротко: не zip-архив, нет части архива; прочее — без подробностей."""
+    if isinstance(e, zipfile.BadZipFile):
+        return " (не zip-архив)"
+    if isinstance(e, KeyError) and e.args and isinstance(e.args[0], str) and "no item named" in e.args[0]:
+        part = e.args[0].split("named", 1)[1].split(" in the archive")[0].strip(" '\"")
+        return " (в архиве нет %s)" % part
+    if isinstance(e, ET.ParseError):
+        return " (испорчен XML внутри архива)"
+    return ""
+
+
+def _parts_from_lxds(data, filename):
     SR = vn.spec_rebuild
     try:
         zf = zipfile.ZipFile(io.BytesIO(data))
@@ -30,7 +57,7 @@ def parts_from_lxds(data, filename="программа.lxds"):
         parts_x = X("Nest2D/Parts/content.xml")
         blocks = {b.get("Name"): b for b in X("Blocks/content.xml")}
     except (zipfile.BadZipFile, KeyError, ET.ParseError, ValueError) as e:
-        raise LxdsError("%s: не программа CypCut или повреждена (%s)" % (filename, e))
+        raise LxdsError("%s: не программа CypCut или файл повреждён%s" % (filename, _why(e))) from e
     info = dict(technical=zf.read("Technical/content.xml") if "Technical/content.xml" in zf.namelist() else None,
                 app=None, groups=[], plates=[], warnings=[])
     try:

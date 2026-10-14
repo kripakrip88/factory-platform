@@ -10,6 +10,7 @@
 """
 import math, collections
 from . import geom as G
+from .errors import SheetNestError
 
 RASTER_MAX_ITEMS = 250      # растровый v1 на 700 шайбах считал > 20 мин (без бюджета времени) — пропускать большие партии
 
@@ -43,16 +44,21 @@ def group_sheets(sheets):
     return out
 
 
+def check_fit(parts, W, L, edge):
+    """Понятный отказ до раскроя: какая деталь не помещается на лист и почему (SheetNestError)."""
+    for p in parts:
+        x0, y0, x1, y1 = part_box(p)
+        w, h = x1 - x0, y1 - y0
+        if not ((w <= W - 2 * edge + 1e-6 and h <= L - 2 * edge + 1e-6) or (h <= W - 2 * edge + 1e-6 and w <= L - 2 * edge + 1e-6)):
+            raise SheetNestError("деталь «%s» %.1f×%.1f мм не помещается на лист %g×%g с отступом от края %g мм"
+                                 % (p["name"], w, h, W, L, edge), input=p.get("input"))
+
+
 def plan(parts, W, L, gap, edge, methods=("rect", "raster")):
     """parts: [Part] → dict(layouts=[{"W","L","amount","placed"}], sheets, method, lower_bound, optimal, tried)."""
     tried = []
     best = None
-    for p in parts:                                    # понятный отказ до раскроя: какая деталь и почему
-        x0, y0, x1, y1 = part_box(p)
-        w, h = x1 - x0, y1 - y0
-        if not ((w <= W - 2 * edge + 1e-6 and h <= L - 2 * edge + 1e-6) or (h <= W - 2 * edge + 1e-6 and w <= L - 2 * edge + 1e-6)):
-            raise ValueError("деталь «%s» %.1f×%.1f мм не помещается на лист %g×%g с отступом от края %g мм"
-                             % (p["name"], w, h, W, L, edge))
+    check_fit(parts, W, L, edge)
     if "rect" in methods:
         from .pack_rect import pack_rect
         items = []

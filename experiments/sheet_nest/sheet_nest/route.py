@@ -94,7 +94,8 @@ def options(strategy=None):
         return o
     name = strategy or DEFAULT
     if name not in STRATEGIES:
-        raise ValueError("стратегия «%s»: есть %s" % (name, ", ".join(STRATEGIES)))
+        from .errors import SheetNestError
+        raise SheetNestError("стратегия «%s»: есть %s" % (name, ", ".join(STRATEGIES)))
     return dict(STRATEGIES[name], name=name)
 
 

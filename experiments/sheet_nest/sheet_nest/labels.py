@@ -13,10 +13,12 @@
 ни таблица штрихов из него в репозиторий НЕ кладутся (решение Антона 13.10 — таблица на сервер отдельно, .gitignore).
 Источник — GOST.FON (архив Антона fonts-GOST.zip, есть в КОМПАСе) или таблица штрихов .json, выгруженная из него:
     python3 -m sheet_nest.labels export GOST.FON gost_type_a_strokes.json
-Путь: аргумент (--font), переменная окружения SHEET_NEST_FONT, иначе первый найденный из DEFAULT_FONTS.
+Путь: аргумент font_path (командная строка — --font), переменная окружения SHEET_NEST_FONT, иначе первый найденный из
+DEFAULT_FONTS. Нет шрифта или файл не тот — FontError (наследник LabelError; в контракте sheet_nest.job/1 — kind «config»).
 """
 import os, math, struct, functools
 from . import geom as G
+from .errors import SheetNestError
 
 DEFAULT_FONTS = [os.path.expanduser("~/Downloads/vent_nesting/labels/gost_type_a_strokes.json"),
                  os.path.expanduser("~/Downloads/vent_nesting/labels/GOST.FON")]
@@ -32,15 +34,20 @@ CAP = 52            # высота прописных и цифр в едини�
 EXTRA = (20.0, 12.0, 6.0, 0.0)   # мм запаса вокруг подписи сверх отступа — по убыванию: «самое большое свободное место»
 
 
-class LabelError(ValueError):
-    pass
+class LabelError(SheetNestError):
+    """Подпись не задать: чужое имя детали, знака нет в шрифте, пустой текст, высоты."""
+
+
+class FontError(LabelError):
+    """Нет таблицы шрифта или файл не тот — дело администратора (контракт sheet_nest.job/1: kind «config»)."""
+    kind = "config"
 
 
 # ============================================================================================ шрифт
 def _fnt_resources(b):
     ne = struct.unpack_from("<I", b, 0x3C)[0]
     if b[ne:ne + 2] != b"NE":
-        raise LabelError("файл шрифта не FON (нет заголовка NE)")
+        raise FontError("файл шрифта не FON (нет заголовка NE)")
     rt = ne + struct.unpack_from("<H", b, ne + 0x24)[0]
     shift = struct.unpack_from("<H", b, rt)[0]
     p, out = rt + 2, []
@@ -64,14 +71,23 @@ def load_font(path=None):
     {"width", "strokes": [[(u, v), …]]}}}. Таблица символов векторного FNT 2.0 — с 0x75 (без dfReserved);
     байт −128 — подъём пера, затем пары dx, dy."""
     path = path or default_font()
+    try:
+        return _load_font(path)
+    except LabelError:
+        raise
+    except (OSError, ValueError, KeyError, AttributeError, TypeError, IndexError, struct.error) as e:
+        raise FontError("шрифт %s не прочитан (%s: %s) — нужен GOST.FON или таблица штрихов .json" % (path, type(e).__name__, e))
+
+
+def _load_font(path):
     if not os.path.exists(path):
-        raise LabelError("нет файла шрифта %s (GOST.FON — «GOST type A (plotter)» или таблица штрихов .json; путь — --font "
-                         "или SHEET_NEST_FONT)" % path)
+        raise FontError("нет файла шрифта %s (GOST.FON — «GOST type A (plotter)» или таблица штрихов .json; путь — "
+                        "переменная SHEET_NEST_FONT)" % path, flag="--font")
     if path.lower().endswith(".json"):
         import json
         d = json.load(open(path, encoding="utf-8"))
         if d.get("format") != "sheet_nest.strokes/1":
-            raise LabelError("%s — не таблица штрихов sheet_nest (выгрузить: python3 -m sheet_nest.labels export GOST.FON …)" % path)
+            raise FontError("%s — не таблица штрихов sheet_nest (выгрузить: python3 -m sheet_nest.labels export GOST.FON …)" % path)
         return dict(face=d["face"], ascent=d["ascent"],
                     glyphs={int(k): dict(width=g["width"], strokes=[[tuple(p) for p in st] for st in g["strokes"]])
                             for k, g in d["glyphs"].items()})
@@ -115,7 +131,7 @@ def load_font(path=None):
                 strokes.append(cur)
             glyphs[first + i] = dict(width=w, strokes=strokes)
         return dict(face=face, ascent=ascent, glyphs=glyphs)
-    raise LabelError("в %s нет векторного шрифта" % path)
+    raise FontError("в %s нет векторного шрифта" % path)
 
 
 def text_strokes(text, H, font, shear=0.0):
@@ -415,18 +431,48 @@ def place_label(part, text, H=15.0, H_min=10.0, margin=3.0, gap=1.0, font_path=N
     return None, "подпись «%s» не помещается даже высотой %g мм с отступом %g мм" % (text, H_min, margin)
 
 
-def apply_labels(parts, texts, H=15.0, H_min=10.0, margin=3.0, gap=1.0, font_path=None):
-    """texts: {имя детали (или файла без расширения) | "*": текст}; своё имя важнее «*». Подписи вставляются в детали
-    перед внешним контуром (он остаётся последним). Вернуть отчёт [(имя, текст, высота | None, причина)]."""
+H_MAX = 200.0       # мм: выше — заведомо ошибка ввода (высоты перебираются шагом 1 мм от H до H_min)
+MARGIN_MAX = 50.0   # мм: отступ подписи от отверстий и края
+GAP_MAX = 10.0      # мм: разрыв штрихов
+
+
+def check_opts(H, H_min, margin, gap):
+    """Высота, наименьшая высота, отступ, разрыв — числа в своих пределах; иначе LabelError с текстом (без этого
+    отрицательный отступ ронял растр, нулевая высота давала «подпись пустая», огромная — долгий перебор высот)."""
+    def num(v, what, lo, hi, lo_ok, flag):
+        try:
+            x = float(v)
+        except (TypeError, ValueError):
+            x = None
+        if isinstance(v, bool) or x is None or not math.isfinite(x) or x < lo or (x == lo and not lo_ok) or x > hi:
+            raise LabelError("%s подписи %s — нужно число %s %g и не больше %g мм" % (
+                what, "пусто" if v is None else v, "не меньше" if lo_ok else "больше", lo, hi), flag=flag)
+        return x
+    H = num(H, "высота", 0.0, H_MAX, False, "--label-height")
+    H_min = num(H_min, "наименьшая высота", 0.0, H_MAX, False, "--label-min")
     if H_min > H:
-        raise LabelError("наименьшая высота подписи %g больше высоты %g" % (H_min, H))
-    key = lambda p: (p["name"], os.path.splitext(p.get("src") or "")[0])
-    unknown = [k for k in texts if k != "*" and not any(k in key(p) for p in parts)]
+        raise LabelError("наименьшая высота подписи %g больше высоты %g" % (H_min, H), flag="--label-min")
+    return H, H_min, num(margin, "отступ", 0.0, MARGIN_MAX, True, "--label-margin"), num(gap, "разрыв штрихов", 0.0, GAP_MAX, True, None)
+
+
+def _aliases(p):
+    """По каким именам деталь находят подписи: p["aliases"] (cli.load_parts: у входа-словаря — заданное имя, у пути —
+    имя детали и имя файла без расширения), иначе имя детали и имя файла без расширения."""
+    return p.get("aliases") or (p["name"], os.path.splitext(p.get("src") or "")[0])
+
+
+def apply_labels(parts, texts, H=15.0, H_min=10.0, margin=3.0, gap=1.0, font_path=None):
+    """texts: {имя детали (или файла без расширения; у входа-словаря — заданное имя) | "*": текст}; своё имя важнее
+    «*». Подписи вставляются в детали перед внешним контуром (он остаётся последним). Вернуть отчёт
+    [(имя, текст, высота | None, причина)]."""
+    H, H_min, margin, gap = check_opts(H, H_min, margin, gap)
+    unknown = [k for k in texts if k != "*" and not any(k in _aliases(p) for p in parts)]
     if unknown:
-        raise LabelError("подпись для %s: нет такой детали (есть: %s)" % (", ".join(unknown), ", ".join(p["name"] for p in parts)))
+        have = list(dict.fromkeys(_aliases(p)[0] for p in parts))
+        raise LabelError("подпись для %s: нет такой детали (есть: %s)" % (", ".join(unknown), ", ".join(have)), flag="--label")
     rep = []
     for p in parts:
-        text = next((texts[k] for k in key(p) if k in texts), texts.get("*"))
+        text = next((texts[k] for k in _aliases(p) if k in texts), texts.get("*"))
         if not text:
             continue
         shapes, info = place_label(p, text, H, H_min, margin, gap, font_path)
