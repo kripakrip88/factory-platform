@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+  <t t-name="pmk_sheet_nest.StrategyPick">
+    <t t-set="v" t-value="view"/>
+    <div class="pmk-sn-sum" t-if="!v.empty">
+      <table class="pmk-sn-table" t-att-class="{'pmk-sn-table--ro': props.readonly}">
+        <thead>
+          <tr>
+            <th/>
+            <th t-foreach="v.cols" t-as="c" t-key="c.key"
+                t-att-class="{'pmk-sn-chosen': c.chosen, 'pmk-sn-pick': !props.readonly}"
+                t-att-title="props.readonly ? '' : 'Выбрать: ' + c.label"
+                t-on-click="() => this.pick(c)">
+              <t t-esc="c.label"/>
+              <span t-if="c.untested" class="pmk-sn-untested" t-att-title="c.untested">не проверен</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <t t-foreach="v.rows" t-as="row" t-key="row_index">
+            <tr>
+              <th>
+                <t t-esc="row.label"/>
+                <a t-if="row.label === 'опасные переходы'" href="#" class="pmk-sn-more"
+                   t-on-click.prevent="toggleDetails" t-esc="state.details ? 'свернуть' : 'по классам'"/>
+              </th>
+              <td t-foreach="row.cells" t-as="cell" t-key="cell.key"
+                  t-att-class="{'pmk-sn-best': cell.best, 'pmk-sn-chosen': cell.key === props.record.data[props.name],
+                                'pmk-sn-pick': !props.readonly}"
+                  t-on-click="() => this.pick({key: cell.key})" t-esc="cell.text"/>
+            </tr>
+            <t t-if="row.label === 'опасные переходы' and state.details">
+              <tr t-foreach="v.details" t-as="d" t-key="d_index" class="pmk-sn-sub">
+                <th t-esc="d.label"/>
+                <td t-foreach="d.cells" t-as="cell" t-key="cell.key"
+                    t-att-class="{'pmk-sn-best': cell.best, 'pmk-sn-chosen': cell.key === props.record.data[props.name]}"
+                    t-esc="cell.text"/>
+              </tr>
+            </t>
+          </t>
+        </tbody>
+      </table>
+      <div class="pmk-sn-decision" t-if="v.decision" t-esc="v.decision"/>
+      <div class="pmk-sn-muted" t-elif="!props.readonly">Порядок резки не выбран — щёлкните столбец.</div>
+      <div t-foreach="v.notes" t-as="n" t-key="n_index" class="pmk-sn-warn" t-esc="n"/>
+    </div>
+  </t>
+</templates>

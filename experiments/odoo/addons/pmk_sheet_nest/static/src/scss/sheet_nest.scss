@@ -1,0 +1,176 @@
+// Вкладка «Раскрой листа» задания лазеру (pmk_sheet_nest). Цвета — переменные темы
+// (--pmk-*): тёмная тема подхватывает их сама. Подсветки — бледные (лайм только
+// приглушённый, 11.10).
+.pmk-sn-params {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  align-items: flex-end;
+}
+
+.pmk-sn-param {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  > label { color: var(--pmk-text-muted, #8a8d96); font-size: 12px; margin: 0; }
+  .o_field_widget { width: 5.5rem; }
+  &--wide .o_field_widget { width: 16rem; }
+}
+
+.pmk-sn-size {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pmk-sn-modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  margin-top: 12px;
+}
+
+.pmk-sn-mode {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  > label { margin: 0; }
+  .o_field_float, .o_field_integer { width: 4rem; }
+}
+
+.pmk-sn-source {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+
+  > label { margin: 0; color: var(--pmk-text-muted, #8a8d96); }
+}
+
+.pmk-sn-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 14px;
+}
+
+.pmk-sn-status {
+  margin: 10px 0 4px;
+
+  &--error { color: var(--bs-danger, #c0392b); }
+}
+
+.pmk-sn-muted {
+  color: var(--pmk-text-muted, #8a8d96);
+}
+
+.pmk-sn-h {
+  font-size: 15px;
+  margin: 18px 0 8px;
+}
+
+// Поле-виджет ядро ставит в строку с соседями — блоком на всю ширину.
+.o_field_widget.o_field_pmk_sheet_nest_strategy {
+  display: block;
+  width: 100%;
+}
+
+.pmk-sn-table {
+  border-collapse: collapse;
+  min-width: 640px;
+
+  th, td {
+    padding: 5px 12px;
+    border-bottom: 1px solid var(--pmk-border, #e3e4e8);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  thead th {
+    color: var(--pmk-text-muted, #8a8d96);
+    font-weight: 500;
+    vertical-align: bottom;
+    min-width: 110px;
+  }
+
+  tbody th {
+    text-align: left;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  td.pmk-sn-best { background: rgba(110, 130, 0, 0.12); font-weight: 600; }
+
+  .pmk-sn-pick { cursor: pointer; }
+  td.pmk-sn-pick:hover, thead th.pmk-sn-pick:hover { background: rgba(22, 25, 28, 0.06); }
+
+  // Выбранный столбец — рамкой по бокам каждой ячейки.
+  .pmk-sn-chosen {
+    box-shadow: inset 2px 0 0 var(--pmk-text-strong, #16191c), inset -2px 0 0 var(--pmk-text-strong, #16191c);
+  }
+
+  thead th.pmk-sn-chosen {
+    color: var(--pmk-text-strong, #16191c);
+    font-weight: 700;
+    box-shadow: inset 2px 2px 0 var(--pmk-text-strong, #16191c), inset -2px 0 0 var(--pmk-text-strong, #16191c);
+  }
+
+  tr.pmk-sn-sub th, tr.pmk-sn-sub td {
+    font-size: 12px;
+    color: var(--pmk-text-muted, #8a8d96);
+  }
+
+  tr.pmk-sn-sub th { padding-left: 24px; }
+}
+
+.pmk-sn-more {
+  margin-left: 8px;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.pmk-sn-untested {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  color: #8a6100;
+}
+
+.pmk-sn-decision {
+  margin-top: 8px;
+  font-weight: 600;
+}
+
+.pmk-sn-warn {
+  margin-top: 4px;
+  font-size: 13px;
+  color: #8a6100;
+}
+
+.pmk-sn-warnings {
+  display: block;
+  margin-top: 8px;
+  white-space: pre-line;
+  font-size: 13px;
+  color: var(--pmk-text-muted, #8a8d96);
+}
+
+.pmk-sn-program { font-weight: 600; }
+
+.pmk-sn-png img {
+  max-width: 100%;
+  height: auto;
+  margin-top: 14px;
+  border: 1px solid var(--pmk-border, #e3e4e8);
+  border-radius: 10px;
+}
+
+body.o_nexus_dark {
+  .pmk-sn-warn, .pmk-sn-untested { color: #e0b44a; }
+  .pmk-sn-table td.pmk-sn-pick:hover, .pmk-sn-table thead th.pmk-sn-pick:hover {
+    background: rgba(255, 255, 255, 0.07);
+  }
+}

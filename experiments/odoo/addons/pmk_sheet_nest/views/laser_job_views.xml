@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Вкладка «Раскрой листа» в задании лазеру — после «Детали и чертежи»
+    (договорились с Антоном 15.10.2026, прототип в чате). Путь:
+    «Рассчитать раскрой» → щелчок по столбцу сводки (порядок резки) →
+    «Собрать программу» → «Принять в задание» (Файл раскроя + разбор pmk_laser).
+    Картинки и программа ложатся во вкладку «Файлы» (тема, шаг 65).
+    active в XML — грабли Odoo 19 (выключенный вид не проверяется).
+  -->
+  <record id="view_laser_job_form_sheet_nest" model="ir.ui.view">
+    <field name="name">pmk.laser.job.form.sheet.nest</field>
+    <field name="model">pmk.laser.job</field>
+    <field name="inherit_id" ref="pmk_laser.view_laser_job_form"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//page[@name='parts']//field[@name='drawing_name']" position="after">
+        <field name="nest_label" optional="hide"/>
+        <field name="nest_microjoint" optional="hide"/>
+      </xpath>
+      <xpath expr="//page[@name='parts']" position="after">
+        <page string="Раскрой листа" name="sheet_nest">
+          <field name="nest_busy" invisible="1"/>
+          <field name="nest_status_kind" invisible="1"/>
+          <field name="nest_can_build" invisible="1"/>
+          <field name="nest_can_accept" invisible="1"/>
+          <div class="pmk-sn">
+            <div class="pmk-sn-params">
+              <div class="pmk-sn-param">
+                <label for="nest_sheet_w" string="Лист, мм"/>
+                <div class="pmk-sn-size">
+                  <field name="nest_sheet_w" nolabel="1" readonly="nest_busy"/>
+                  <span>×</span>
+                  <field name="nest_sheet_l" nolabel="1" readonly="nest_busy"/>
+                </div>
+              </div>
+              <div class="pmk-sn-param">
+                <label for="nest_gap"/>
+                <field name="nest_gap" nolabel="1" readonly="nest_busy"/>
+              </div>
+              <div class="pmk-sn-param">
+                <label for="nest_edge"/>
+                <field name="nest_edge" nolabel="1" readonly="nest_busy"/>
+              </div>
+              <div class="pmk-sn-param">
+                <label for="nest_small_mm"/>
+                <field name="nest_small_mm" nolabel="1" readonly="nest_busy"/>
+              </div>
+              <div class="pmk-sn-param pmk-sn-param--wide">
+                <label for="nest_label_all"/>
+                <field name="nest_label_all" nolabel="1" readonly="nest_busy"
+                       placeholder="например, номер заказа"/>
+              </div>
+            </div>
+            <div class="pmk-sn-modes">
+              <div class="pmk-sn-mode">
+                <field name="nest_coedge" nolabel="1" widget="boolean_toggle" readonly="nest_busy"/>
+                <label for="nest_coedge"/>
+              </div>
+              <div class="pmk-sn-mode">
+                <field name="nest_bridge" nolabel="1" widget="boolean_toggle" readonly="nest_busy"/>
+                <label for="nest_bridge"/>
+                <span class="pmk-sn-muted">на станке не проверен</span>
+              </div>
+              <div class="pmk-sn-mode" invisible="not nest_bridge">
+                <label for="nest_bridge_width" string="перемычка, мм"/>
+                <field name="nest_bridge_width" nolabel="1" readonly="nest_busy"/>
+                <label for="nest_bridge_group" string="в связке"/>
+                <field name="nest_bridge_group" nolabel="1" readonly="nest_busy"/>
+              </div>
+            </div>
+            <div class="pmk-sn-source">
+              <label for="nest_source_file"/>
+              <field name="nest_source_file" filename="nest_source_name" nolabel="1" readonly="nest_busy"/>
+              <field name="nest_source_name" invisible="1"/>
+            </div>
+            <div class="pmk-sn-actions">
+              <button name="action_nest_plan" type="object" class="btn-primary" icon="fa-th-large"
+                      string="Рассчитать раскрой" invisible="nest_busy"/>
+              <button name="action_nest_stop" type="object" class="btn-secondary" icon="fa-stop"
+                      string="Остановить" invisible="not nest_busy"/>
+            </div>
+
+            <div class="pmk-sn-status pmk-sn-status--error" invisible="nest_status_kind != 'error'">
+              <i class="fa fa-exclamation-triangle me-1"/>
+              <field name="nest_status" nolabel="1"/>
+            </div>
+            <div class="pmk-sn-status" invisible="nest_status_kind in ('none', 'error')">
+              <i class="fa fa-spinner fa-spin me-1" invisible="nest_status_kind != 'busy'"/>
+              <i class="fa fa-exclamation-triangle me-1 text-warning" invisible="nest_status_kind != 'stale'"/>
+              <field name="nest_status" nolabel="1"/>
+            </div>
+            <div class="pmk-sn-status pmk-sn-muted" invisible="nest_status_kind != 'none'">
+              Раскрой раскладывает детали с чертежами .dxf (вкладка «Детали и чертежи») на лист
+              и сравнивает четыре порядка резки. Считается в фоне; можно уйти с экрана — придёт
+              уведомление.
+            </div>
+
+            <div invisible="not nest_summary_json">
+              <h3 class="pmk-sn-h">Порядок резки: щёлкните столбец</h3>
+              <field name="nest_summary_json" invisible="1"/>
+              <field name="nest_strategy" widget="pmk_sheet_nest_strategy" nolabel="1"
+                     readonly="nest_busy"/>
+              <div class="pmk-sn-actions">
+                <button name="action_nest_build" type="object" class="btn-primary" icon="fa-cogs"
+                        string="Собрать программу" invisible="not nest_can_build"/>
+                <button name="action_nest_accept" type="object" class="btn-primary" icon="fa-check"
+                        string="Принять в задание" invisible="not nest_can_accept"
+                        confirm="Программа станет «Файлом раскроя» задания, листы уйдут в «Очередь листов». Принять?"/>
+                <field name="nest_program" nolabel="1" class="pmk-sn-program" invisible="not nest_program"/>
+              </div>
+              <div class="pmk-sn-warn" invisible="not nest_can_accept">
+                <i class="fa fa-exclamation-triangle me-1"/>
+                Автосортировку в CypCut не запускать — она затрёт порядок резки.
+              </div>
+              <field name="nest_warnings" nolabel="1" class="pmk-sn-warnings" invisible="not nest_warnings"/>
+            </div>
+
+            <field name="nest_png_order" widget="image" nolabel="1" readonly="1"
+                   class="pmk-sn-png" invisible="not nest_png_order"/>
+            <field name="nest_png_layouts" widget="image" nolabel="1" readonly="1"
+                   class="pmk-sn-png" invisible="not nest_png_layouts or nest_png_order"/>
+          </div>
+        </page>
+      </xpath>
+    </field>
+  </record>
+</odoo>
