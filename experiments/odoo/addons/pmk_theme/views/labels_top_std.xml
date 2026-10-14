@@ -18,7 +18,7 @@
     <field name="active" eval="True"/>
     <field name="arch" type="xml">
       <xpath expr="/form" position="attributes">
-        <attribute name="class" add="pmk-labels-top-groups" separator=" "/>
+        <attribute name="class" add="pmk-labels-top-groups pmk-lt-wide-partner" separator=" "/>
       </xpath>
     </field>
   </record>
@@ -44,7 +44,7 @@
     <field name="active" eval="True"/>
     <field name="arch" type="xml">
       <xpath expr="/form" position="attributes">
-        <attribute name="class" add="pmk-labels-top-groups" separator=" "/>
+        <attribute name="class" add="pmk-labels-top-groups pmk-lt-wide-partner" separator=" "/>
       </xpath>
     </field>
   </record>

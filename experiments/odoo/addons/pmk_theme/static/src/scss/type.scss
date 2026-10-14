@@ -247,3 +247,9 @@ body {
     }
   }
 }
+
+// Сделка, счёт: клиент / контакт — на всю половину формы (в своей группе он
+// один, в одной колонке из двух выглядел узким).
+.o_form_view.pmk-labels-top-groups.pmk-lt-wide-partner .o_inner_group.grid > .o_pmk_row:has(.o_field_widget[name="partner_id"]) {
+  grid-column: 1 / -1;
+}
