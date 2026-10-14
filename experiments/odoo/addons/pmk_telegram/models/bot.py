@@ -26,6 +26,7 @@
 import base64
 import html
 import logging
+import re
 import secrets
 from datetime import timedelta
 
@@ -140,6 +141,42 @@ class PmkTelegramBot(models.AbstractModel):
         thread = (icp.get_param(PARAM_THREAD % kind)
                   or icp.get_param(PARAM_THREAD % "main"))
         return bool(api_.send(chat_id, text, reply_markup, thread_id=thread))
+
+    # Подпись к файлу у Телеграма — до 1024 знаков (видимых, без тегов).
+    CAPTION_MAX = 1000
+
+    @api.model
+    def pmk_send_group_files(self, text, files, reply_markup=None, kind="main"):
+        """Сообщение с файлами в группу: первый файл — с текстом и кнопками,
+        остальные — следом ответами на него (так они держатся вместе).
+
+        files — [(имя, байты)]. Длинный текст или сбой файла — текст отдельным
+        сообщением, а файлы следом: уведомление не теряется из-за вложения.
+        """
+        if not files:
+            return self.pmk_send_group(text, reply_markup, kind=kind)
+        icp = self.env["ir.config_parameter"].sudo()
+        chat_id = icp.get_param(PARAM_GROUP)
+        api_ = self._pmk_api()
+        if not chat_id or not api_:
+            return False
+        thread = (icp.get_param(PARAM_THREAD % kind)
+                  or icp.get_param(PARAM_THREAD % "main"))
+        visible = len(re.sub(r"<[^>]+>", "", text or ""))
+        first = None
+        if visible <= self.CAPTION_MAX:
+            first = api_.send_document(chat_id, files[0], text, reply_markup, thread_id=thread)
+        if not first:
+            first = api_.send(chat_id, text, reply_markup, thread_id=thread)
+            if not first:
+                return False
+            rest = files
+        else:
+            rest = files[1:]
+        for doc in rest:
+            api_.send_document(chat_id, doc, thread_id=thread,
+                               reply_to=first.get("message_id"))
+        return True
 
     def _pmk_set_group(self, chat_id, title):
         icp = self.env["ir.config_parameter"].sudo()

@@ -15,6 +15,7 @@ from odoo import api, fields, models
 
 from ..tools import match
 from ..tools.message import payment_text
+from ..tools.moysklad_print import MoySkladPrint, PrintError
 
 _logger = logging.getLogger(__name__)
 
@@ -173,11 +174,38 @@ class PmkBankPayment(models.Model):
                 row.append({"text": "👤 Контрагент", "url": f"{base}/odoo/contacts/{self.partner_id.id}"})
         return text, ({"inline_keyboard": [row]} if row else None)
 
+    def _pmk_invoice_pdfs(self):
+        """PDF счетов этого поступления из МоегоСклада: [(имя, байты)].
+
+        Первым — основной счёт, дальше остальные из той же платёжки (решение
+        Антона 14.10.2026: прикреплять все). Счёт без id МоегоСклада, нет
+        ключа, МойСклад не ответил — просто без файла: уведомление о деньгах
+        важнее вложения.
+        """
+        self.ensure_one()
+        orders = (self.sale_order_id | self.sale_order_ids)
+        if not orders or "pmk_ms_id" not in orders._fields:
+            return []
+        token = self.env["ir.config_parameter"].sudo().get_param("pmk_moysklad.token")
+        if not token:
+            return []
+        printer = MoySkladPrint(token, self.env["ir.config_parameter"].sudo().get_param(
+            "pmk_bank.ms_template") or "Счет №")
+        files = []
+        for order in orders:
+            if not order.pmk_ms_id:
+                continue
+            try:
+                files.append(("Счёт %s.pdf" % order.name, printer.invoice_pdf(order.pmk_ms_id)))
+            except PrintError as exc:
+                _logger.warning("Поступление %s: счёт %s без PDF — %s", self.id, order.name, exc)
+        return files
+
     def pmk_notify(self, test=False):
         bot = self.env["pmk.telegram.bot"].sudo()
         for pay in self:
             text, markup = pay._pmk_message(test=test)
-            ok = bot.pmk_send_group(text, markup, kind="money")
+            ok = bot.pmk_send_group_files(text, pay._pmk_invoice_pdfs(), markup, kind="money")
             if test:
                 continue
             pay.write({"state": "notified" if ok else "failed",

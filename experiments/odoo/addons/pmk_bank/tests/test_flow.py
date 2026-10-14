@@ -49,8 +49,13 @@ class TestFlow(TransactionCase):
     def setUp(self):
         super().setUp()
         self.sent = []
-        p = patch.object(type(self.env["pmk.telegram.bot"]), "pmk_send_group",
-                         lambda _s, text, markup=None, kind="main": self.sent.append((text, markup, kind)) or True)
+        self.files = []
+
+        def send(_s, text, files, markup=None, kind="main"):
+            self.files.append(files)
+            self.sent.append((text, markup, kind))
+            return True
+        p = patch.object(type(self.env["pmk.telegram.bot"]), "pmk_send_group_files", send)
         p.start()
         self.addCleanup(p.stop)
 
@@ -134,3 +139,15 @@ class TestFlow(TransactionCase):
         text = self.sent[-1][0]
         self.assertIn("Счета <b>01183, 00733, 00832</b>", text)
         self.assertIn("Оплачены полностью", text)
+
+    def test_invoice_pdfs_attached_in_order(self):
+        pdfs = [("Счёт 01183.pdf", b"%PDF-1"), ("Счёт 00733.pdf", b"%PDF-2")]
+        with patch.object(type(self.env["pmk.bank.payment"]), "_pmk_invoice_pdfs", lambda _s: pdfs):
+            self._sync([])
+            self._sync([op("h", 11500, "2502075437", "ОПЛАТА ПО СЧЕТУ 01183")])
+        self.assertEqual(self.files[-1], pdfs)
+
+    def test_no_moysklad_no_files(self):
+        self._sync([])
+        pay = self._sync([op("i", 11500, "2502075437", "ОПЛАТА ПО СЧЕТУ 01183")])
+        self.assertEqual(pay._pmk_invoice_pdfs(), [])     # в тестовой базе нет МоегоСклада
