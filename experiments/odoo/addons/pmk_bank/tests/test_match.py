@@ -5,6 +5,7 @@ from datetime import date
 from odoo.tests import BaseCase, tagged
 
 from ..tools import match
+from ..tools import message
 
 
 @tagged("post_install", "-at_install")
@@ -44,3 +45,19 @@ class TestMatch(BaseCase):
     def test_money(self):
         self.assertEqual(match.money(11500), "11\u00a0500\u00a0₽")
         self.assertEqual(match.money(29509.6), "29\u00a0509,60\u00a0₽")
+
+    def test_what_for_live_purposes(self):
+        cases = {
+            "ОПЛАТА ПО СЧЕТУ 01183 ОТ 09.10.2026 ЗА СНЕГОЗАДЕРЖАТЕЛЬ НА СУММУ 11500, В Т.Ч. НДС": "снегозадержатель",
+            "Оплата по счету № 01166 от 07.10.2026 за грнутый швеллер 28*85*28*2 - 40800-00, в т.ч. НДС":
+                "грнутый швеллер 28*85*28*2",
+            "Оплата по счету № 01177 от 08.10.2026 за ТМЦ 29509-60 руб. В т.ч. НДС 22%": "ТМЦ",
+            "Оплата счета № 01113 от 24.09.2026 г. за лазерную резку. В том числе НДС": "лазерную резку",
+            "МСП Оплата 70% поставки по счету№01155 от 06.10.2026": "",
+        }
+        for purpose, expected in cases.items():
+            self.assertEqual(message.what_for(purpose), expected, purpose)
+
+    def test_org_short(self):
+        self.assertEqual(message.org_short("ИП Бутов Игорь Евгеньевич"), "ИП Бутов")
+        self.assertEqual(message.org_short("ООО «Ромашка»"), "ООО «Ромашка»")

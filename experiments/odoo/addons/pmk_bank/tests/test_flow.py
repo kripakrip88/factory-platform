@@ -5,6 +5,7 @@ from unittest.mock import patch
 from odoo.tests import TransactionCase, tagged
 
 from ..models import bank_account
+from ..tools import message
 
 
 def op(oid, amount, inn, purpose, day="2026-10-13", name="ООО Клиент"):
@@ -73,7 +74,10 @@ class TestFlow(TransactionCase):
         text, markup, kind = self.sent[-1]
         self.assertEqual(kind, "money")
         self.assertIn("01183", text)
-        self.assertIn("оплачен полностью", text)
+        self.assertIn("Оплачен полностью", text)
+        self.assertIn("🏦 на %s" % message.org_short(self.org.name), text)
+        self.assertIn("📦 снегозадержатель", text)
+        self.assertNotIn("8163", text)
         self.assertIn("Открыть счёт", markup["inline_keyboard"][0][0]["text"])
 
     def test_own_transfer_not_sent(self):

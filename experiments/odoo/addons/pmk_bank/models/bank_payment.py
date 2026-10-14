@@ -130,7 +130,7 @@ class PmkBankPayment(models.Model):
             "purpose": self.purpose,
             "date": self.executed or datetime.now().date(),
             "org": self.account_id.org_id.name,
-            "account_tail": (self.account_id.number or "")[-4:],
+            "doc_number": self.doc_number,
             "invoice": invoice,
             "partner_known": bool(self.partner_id),
         }, test=test)
