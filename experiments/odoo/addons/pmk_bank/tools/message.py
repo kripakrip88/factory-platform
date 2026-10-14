@@ -66,13 +66,23 @@ def payment_text(p, test=False):
     lines.append("🏦 на %s" % _esc(org_short(p.get("org"))))
     lines.append("")
     inv = p.get("invoice")
-    if inv:
+    if inv and inv.get("names"):
+        # Одна платёжка за несколько счетов — оплата против их общей суммы.
+        lines.append("🧾 Счета <b>%s</b>" % _esc(", ".join(inv["names"])))
+        if inv.get("missing"):
+            lines.append("➕ не найдены в Odoo: %s" % _esc(", ".join(inv["missing"])))
+    elif inv:
         when = " от %s" % inv["date"].strftime("%d.%m") if inv.get("date") else ""
         lines.append("🧾 Счёт <b>%s</b>%s" % (_esc(inv["name"]), when))
+        if inv.get("others"):
+            lines.append("➕ в платеже ещё счета: %s" % _esc(", ".join(inv["others"])))
+    if inv:
+        many = bool(inv.get("names"))
         total, paid = inv["total"] or 0, inv["paid"] or 0
         if total and paid >= total - 0.005:
-            lines.append("✅ Оплачен полностью" if paid <= total + 0.005
-                         else "✅ Оплачен, переплата %s" % _esc(money(paid - total)))
+            lines.append(("✅ Оплачены полностью" if many else "✅ Оплачен полностью")
+                         if paid <= total + 0.005
+                         else "✅ Оплачен%s, переплата %s" % ("ы" if many else "", _esc(money(paid - total))))
         elif total:
             pct = paid * 100 / total
             lines.append("🟡 Оплачено %d%% из %s" % (round(pct), _esc(money(total))))

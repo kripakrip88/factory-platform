@@ -45,6 +45,9 @@ class PmkBankPayment(models.Model):
     doc_number = fields.Char("Номер платёжки")
     partner_id = fields.Many2one("res.partner", "Контрагент")
     sale_order_id = fields.Many2one("sale.order", "Счёт покупателю")
+    # Одна платёжка за несколько счетов («по счету №00683, №733, №832»): все
+    # найденные счета, первый — sale_order_id.
+    sale_order_ids = fields.Many2many("sale.order", string="Счета в платеже")
     state = fields.Selection(STATES, "Состояние", default="new", required=True)
     notified_at = fields.Datetime("Отправлено")
     note = fields.Char("Заметка")
@@ -55,19 +58,19 @@ class PmkBankPayment(models.Model):
     # ── из банка ─────────────────────────────────────────────────────────
 
     @api.model
-    def _pmk_create_from_modulbank(self, account, op, baseline=False):
-        executed = (op.get("executed") or op.get("created") or "")[:10]
+    def _pmk_create_from_op(self, account, op, baseline=False):
+        """op — операция в общем виде (tools/modulbank._norm, tools/tochka)."""
         pay = self.create({
             "account_id": account.id,
-            "ext_id": op.get("id"),
-            "executed": executed or False,
+            "ext_id": op["id"],
+            "executed": op.get("executed") or False,
             "amount": op.get("amount") or 0.0,
             "currency": op.get("currency"),
-            "payer_name": op.get("contragentName"),
-            "payer_inn": op.get("contragentInn"),
-            "purpose": op.get("paymentPurpose"),
-            "doc_number": op.get("docNumber"),
-            "raw": json.dumps(op, ensure_ascii=False),
+            "payer_name": op.get("payer_name"),
+            "payer_inn": op.get("payer_inn"),
+            "purpose": op.get("purpose"),
+            "doc_number": op.get("doc_number"),
+            "raw": json.dumps(op.get("raw") or op, ensure_ascii=False),
             "state": "baseline" if baseline else "new",
         })
         pay._pmk_match()
@@ -85,16 +88,26 @@ class PmkBankPayment(models.Model):
             partner = Partner.search(
                 [("vat", "=", pay.payer_inn), ("parent_id", "=", False)], limit=1
             ) if pay.payer_inn else Partner
-            order = pay._pmk_find_order()
+            orders = pay._pmk_find_orders()
+            order = orders[:1]
             pay.write({"partner_id": (order.partner_id.commercial_partner_id or partner).id,
-                       "sale_order_id": order.id})
+                       "sale_order_id": order.id, "sale_order_ids": [(6, 0, orders.ids)]})
 
     def _pmk_find_order(self):
-        """Счёт покупателю по номеру из назначения, ИНН и сумме (или пусто)."""
+        return self._pmk_find_orders()[:1]
+
+    def _pmk_find_orders(self):
+        """Счета покупателю из назначения: по одному на номер (ИНН, сумма, дата).
+
+        Один номер — выбор по ИНН, потом по сумме платежа. Несколько номеров —
+        каждый номер отдельно по ИНН и дате (сумма платежа к одному счёту
+        тут не относится), порядок — как в назначении.
+        """
         self.ensure_one()
         numbers = match.invoice_numbers(self.purpose)
+        Order = self.env["sale.order"]
         if not numbers or not self.payer_inn:
-            return self.env["sale.order"]
+            return Order
         self.env.cr.execute("""
             SELECT so.id, ltrim(so.name, '0'), so.amount_total, so.date_order::date,
                    cp.vat, so.pmk_org_id
@@ -106,23 +119,39 @@ class PmkBankPayment(models.Model):
         rows = self.env.cr.fetchall()
         org = self.account_id.org_id.id
         same_org = [r for r in rows if r[5] == org]
-        candidates = [{"id": r[0], "amount": float(r[2] or 0), "date": r[3], "inn": r[4]}
-                      for r in (same_org or rows)]
-        best = match.choose_invoice(candidates, self.payer_inn, self.amount,
-                                    match.invoice_date(self.purpose))
-        return self.env["sale.order"].browse(best["id"]) if best else self.env["sale.order"]
+        pool = same_org or rows
+        inv_date = match.invoice_date(self.purpose)
+        found = Order
+        for number in numbers:
+            candidates = [{"id": r[0], "amount": float(r[2] or 0), "date": r[3], "inn": r[4]}
+                          for r in pool if r[1] == number]
+            # Сумма платежа подсказывает только когда счёт один.
+            amount = self.amount if len(numbers) == 1 else -1
+            best = match.choose_invoice(candidates, self.payer_inn, amount, inv_date)
+            if best:
+                found |= Order.browse(best["id"])
+        return found
 
     # ── уведомление ──────────────────────────────────────────────────────
 
     def _pmk_message(self, test=False):
         self.ensure_one()
         order = self.sale_order_id
+        orders = self.sale_order_ids or order
         invoice = None
-        if order:
+        if len(orders) > 1:
+            # Платёж за несколько счетов: сравниваем с их общей суммой.
+            missing = [n for n in match.invoice_numbers(self.purpose)
+                       if n not in {match.norm_number(o.name) for o in orders}]
+            invoice = {"names": orders.mapped("name"), "total": sum(orders.mapped("amount_total")),
+                       "paid": self.amount, "missing": missing}
+        elif order:
             paid = sum(self.search([("sale_order_id", "=", order.id),
                                     ("state", "!=", "internal")]).mapped("amount"))
+            others = [n for n in match.invoice_numbers(self.purpose)
+                      if n != match.norm_number(order.name)]
             invoice = {"name": order.name, "date": order.date_order and order.date_order.date(),
-                       "total": order.amount_total, "paid": paid}
+                       "total": order.amount_total, "paid": paid, "others": others}
         text = payment_text({
             "amount": self.amount,
             "payer": self.partner_id.name or self.payer_name or "плательщик не указан",

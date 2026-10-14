@@ -9,9 +9,9 @@ from ..tools import message
 
 
 def op(oid, amount, inn, purpose, day="2026-10-13", name="ООО Клиент"):
-    return {"id": oid, "amount": amount, "currency": "RUR", "contragentInn": inn,
-            "contragentName": name, "paymentPurpose": purpose, "docNumber": "1",
-            "executed": day + "T00:00:00", "status": "Received"}
+    """Операция в общем виде — так их отдают оба клиента банка."""
+    return {"id": oid, "amount": amount, "currency": "RUR", "payer_inn": inn,
+            "payer_name": name, "purpose": purpose, "doc_number": "1", "executed": day}
 
 
 class FakeBank:
@@ -105,3 +105,32 @@ class TestFlow(TransactionCase):
         with patch.object(bank_account.PmkBankAccount, "_pmk_client", boom):
             self.account.pmk_sync()
         self.assertIn("нет связи", self.account.last_error)
+
+    def test_multi_invoice_payment_mentions_others(self):
+        self._sync([])
+        self._sync([op("f", 11500, "2502075437", "Оплата по счету №01183, №733, №832 без НДС")])
+        self.assertIn("ещё счета: 733, 832", self.sent[-1][0])
+
+    def test_own_token_param(self):
+        self.env["ir.config_parameter"].sudo().set_param("pmk_bank.tochka.astakhov.token", "jwt-a")
+        acc = self.env["pmk.bank.account"].create({"org_id": self.org.id, "bank": "tochka",
+            "number": "40802810000000000001", "token_param": "pmk_bank.tochka.astakhov.token"})
+        self.assertEqual(type(acc._pmk_client()).__name__, "Tochka")
+        self.assertEqual(acc._pmk_client().token, "jwt-a")
+
+    def test_payment_for_several_invoices_vs_their_total(self):
+        def mk(name, price):
+            o = self.env["sale.order"].create({"partner_id": self.client.id, "name": name,
+                                               "pmk_org_id": self.org.id})
+            self.env["sale.order.line"].create({
+                "order_id": o.id, "name": "Изделие", "product_uom_qty": 1, "price_unit": price,
+                "product_id": self.env["product.product"].create({"name": "Изд " + name}).id,
+                "tax_ids": [(5, 0, 0)]})
+            return o
+        a, b = mk("00733", 1000), mk("00832", 2500)
+        self._sync([])
+        pay = self._sync([op("g", 15000, "2502075437", "Оплата по счету №01183, №733, №832 без НДС")])
+        self.assertEqual(pay.sale_order_ids, self.order | a | b)
+        text = self.sent[-1][0]
+        self.assertIn("Счета <b>01183, 00733, 00832</b>", text)
+        self.assertIn("Оплачены полностью", text)

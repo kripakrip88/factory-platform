@@ -29,14 +29,32 @@ def norm_number(number):
     return (number or "").strip().lstrip("0")
 
 
+# Продолжение списка после первого номера: «по счету №00683, №733, №832»,
+# «по сч. 1200 и 1201». Только сразу за номером — дальше уже не номера счетов.
+_MORE_RE = re.compile(r"\s*(?:,|;|\bи\b)\s*(?:№|N)?\s*(\d{2,7})(?![\d.,]*\s*(?:руб|р\.|%|шт|кг|мм|см|п\.?\s*м|м\b|т\b|тн\b|л\b))",
+                      re.IGNORECASE)
+
+
 def invoice_numbers(purpose):
     """Номера счетов из назначения платежа, по порядку, без повторов."""
+    text = purpose or ""
     seen, out = set(), []
-    for m in _INVOICE_RE.finditer(purpose or ""):
-        n = norm_number(m.group(1))
+
+    def add(raw):
+        n = norm_number(raw)
         if n and n not in seen:
             seen.add(n)
             out.append(n)
+
+    for m in _INVOICE_RE.finditer(text):
+        add(m.group(1))
+        pos = m.end()
+        while True:
+            more = _MORE_RE.match(text, pos)
+            if not more:
+                break
+            add(more.group(1))
+            pos = more.end()
     return out
 
 

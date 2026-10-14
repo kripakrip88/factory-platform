@@ -19,6 +19,8 @@ class TestMatch(BaseCase):
             "ОПЛАТА ПО СЧ 987 ОТ 24.08.2026Г. ЗА ДОБОРНЫЙ ЭЛ.": ["987"],
             "Оплата счета № 01113 от 24.09.2026 г. за лазерную резку": ["1113"],
             "Оплата по сч. 1200 и сч.1201": ["1200", "1201"],
+            "Оплата по счету №00683, №733, №832 без НДС": ["683", "733", "832"],
+            "по счету 555, 12 шт": ["555"],
             # ловушки: «расчёт» содержит «счёт», сумма без «счёт» — не номер
             "Оплата по расчету 555 за металл": [],
             "Перевод между счетами. Без НДС": [],
@@ -61,3 +63,23 @@ class TestMatch(BaseCase):
     def test_org_short(self):
         self.assertEqual(message.org_short("ИП Бутов Игорь Евгеньевич"), "ИП Бутов")
         self.assertEqual(message.org_short("ООО «Ромашка»"), "ООО «Ромашка»")
+
+    def test_tochka_statement_only_booked_credit(self):
+        from unittest.mock import patch
+        from ..tools import tochka
+        st = {"Statement": [{"status": "Ready", "Transaction": [
+            {"transactionId": "t1", "creditDebitIndicator": "Credit", "status": "Booked",
+             "documentProcessDate": "2026-10-02", "Amount": {"amount": 22000.0, "currency": "RUB"},
+             "DebtorParty": {"inn": "2700000000", "name": "ООО Клиент"},
+             "description": "Оплата по счету №01128", "documentNumber": "5"},
+            {"transactionId": "t2", "creditDebitIndicator": "Debit", "status": "Booked",
+             "Amount": {"amount": 100.0}},
+            {"transactionId": "t3", "creditDebitIndicator": "Credit", "status": "Pending",
+             "Amount": {"amount": 50.0}},
+        ]}]}
+        calls = iter([{"Statement": {"statementId": "s1"}}, st])
+        with patch.object(tochka.Tochka, "_req", lambda *_a, **_k: next(calls)):
+            ops = tochka.Tochka("jwt").incoming("acc/bic", "2026-10-01")
+        self.assertEqual([o["id"] for o in ops], ["t1"])
+        self.assertEqual(ops[0]["payer_inn"], "2700000000")
+        self.assertEqual(ops[0]["purpose"], "Оплата по счету №01128")
