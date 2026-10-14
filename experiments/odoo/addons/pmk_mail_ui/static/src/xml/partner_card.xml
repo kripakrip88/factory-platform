@@ -121,8 +121,10 @@
               <i class="fa fa-address-card-o me-1" aria-hidden="true"/>Открыть контрагента
             </button>
             <button t-elif="card.email" type="button" class="btn btn-sm btn-light"
+                    t-att-disabled="state.busy"
+                    title="Реквизиты и контакт — из письма, вложений и справочника по ИНН; карточка откроется заполненной, сохраните после проверки"
                     t-on-click="() => this.createPartner()">
-              <i class="fa fa-plus me-1" aria-hidden="true"/>Создать контрагента
+              <i class="fa me-1" aria-hidden="true" t-att-class="state.busy ? 'fa-circle-o-notch fa-spin' : 'fa-plus'"/>Создать контрагента
             </button>
           </div>
         </div>

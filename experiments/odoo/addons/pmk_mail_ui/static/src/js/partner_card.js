@@ -157,21 +157,36 @@ export class PmkPartnerCard extends Component {
         ]);
     }
 
-    createPartner() {
-        const card = this.state.card;
-        return this.action.doAction(
-            {
-                type: "ir.actions.act_window",
-                res_model: "res.partner",
-                views: [[false, "form"]],
-                target: "new",
-                context: {
-                    default_email: card.email,
-                    default_name: card.sender || card.email,
-                },
-            },
-            { onClose: () => this.load(this.props.messageId) }
-        );
+    /**
+     * «Создать контрагента» (14.10.2026): реквизиты и контакт из письма и его
+     * вложений правилами (models/mail_partner_card.py, tools/requisites.py),
+     * по ИНН — справочник. Окно карточки заполнено, но не сохранено:
+     * сохраняет человек, проверив. Что и откуда взято — уведомлением.
+     */
+    async createPartner() {
+        if (this.state.busy) {
+            return;
+        }
+        this.state.busy = true;
+        try {
+            const result = await this.orm.call("mail.client.message", "pmk_partner_from_letter", [
+                this.props.messageId,
+            ]);
+            if (result.found.length) {
+                this.notification.add(result.found.join(" · "), {
+                    title: _t("Найдено в письме"),
+                    type: "info",
+                });
+            }
+            for (const warning of result.warnings) {
+                this.notification.add(warning, { type: "warning", sticky: true });
+            }
+            await this.action.doAction(result.action, {
+                onClose: () => this.load(this.props.messageId),
+            });
+        } finally {
+            this.state.busy = false;
+        }
     }
 
     async createLead() {

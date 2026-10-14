@@ -15,9 +15,14 @@
   клиента инженеру и есть главный случай пересылки на заводе.
 - Г7 Автосохранение — в композере (composer.js), только в Odoo; в
   «Черновики» ящика — при закрытии (mail_client_compose.save_draft).
+- Подпись — у каждого своя (Антон, 14.10.2026): нет общей подписи у ящика —
+  подпись пользователя из его профиля («Мой профиль → Подпись»).
 """
 
 import logging
+import re
+
+from markupsafe import Markup
 
 from odoo import api, fields, models
 from odoo.exceptions import UserError
@@ -34,6 +39,33 @@ class MailClientAccount(models.Model):
         "Имя отправителя",
         help="Как письма из Odoo подписаны у получателя: «Имя <адрес>». "
              "Пусто — имя пользователя, который отправляет.")
+
+
+class MailClientSignature(models.Model):
+    _inherit = "mail.client.signature"
+
+    @api.model
+    def _default_for(self, account, mode="new"):
+        signature = super()._default_for(account, mode)
+        if signature:
+            return signature
+        # У ящика есть общая подпись, но не для ответов — так и задумано,
+        # подпись пользователя её не подменяет.
+        if self.search_count([("account_id", "=", account.id), ("is_default", "=", True)]):
+            return None
+        body = self.env.user.signature or ""
+        if not re.sub(r"<[^>]+>|&nbsp;|\s", "", str(body)):
+            return None
+        # Запись в памяти, в базу не пишется: подпись живёт в профиле.
+        return self.new({"name": self.env.user.name, "account_id": account.id,
+                         "body_html": body, "use_on_reply": True})
+
+    def _as_block(self):
+        self.ensure_one()
+        if isinstance(self.id, int):
+            return super()._as_block()
+        return Markup('<div class="o_mail_client_signature" data-signature-id="user">'
+                      '<p><br/></p>%s</div>') % Markup(self.body_html or "")
 
 
 class MailClientMessage(models.Model):

@@ -147,3 +147,24 @@ class TestReplyRules(TransactionCase):
             self.assertEqual(calls, [])
             self.Compose.save_draft(draft.id, {"subject": "Закрыли"})
             self.assertEqual(calls, [draft.id])
+
+    # Подпись пользователя (14.10.2026) ------------------------------------
+    def test_user_signature_when_mailbox_has_none(self):
+        self.env.user.signature = "<p>С уважением,<br/>Тест Тестов<br/>тел. +7 900 000-00-00</p>"
+        payload = self.Compose.start(self.account.id, "new")
+        self.assertIn("Тест Тестов", payload["body_html"])
+        reply = self.Compose.start(self.account.id, "reply", self.theirs.id)
+        body = reply["body_html"]
+        self.assertLess(body.index("Тест Тестов"), body.index("blockquote"))
+
+    def test_mailbox_signature_wins_and_reply_skip_is_kept(self):
+        self.env.user.signature = "<p>Тест Тестов</p>"
+        self.env["mail.client.signature"].create({
+            "name": "Общая", "account_id": self.account.id, "is_default": True,
+            "use_on_reply": False, "body_html": "<p>Отдел продаж</p>"})
+        new = self.Compose.start(self.account.id, "new")["body_html"]
+        self.assertIn("Отдел продаж", new)
+        self.assertNotIn("Тест Тестов", new)
+        reply = self.Compose.start(self.account.id, "reply", self.theirs.id)["body_html"]
+        self.assertNotIn("Тест Тестов", reply)
+        self.assertNotIn("Отдел продаж", reply)
