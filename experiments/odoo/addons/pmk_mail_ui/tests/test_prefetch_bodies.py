@@ -77,7 +77,8 @@ class TestPrefetchBodies(TransactionCase):
         with patch.object(Account, '_open_connection', return_value=connection), \
                 patch.object(Account, '_try_lock_mailbox', return_value=True), \
                 patch.object(Account, '_unlock_mailbox', return_value=None), \
-                patch.object(type(self.env.cr), 'commit', lambda cr: None):
+                patch.object(self.env.cr, 'commit', lambda: None), \
+                patch.object(self.env.cr, 'rollback', lambda: None):
             done = self.account._prefetch_bodies(**kw)
         return done, connection
 
