@@ -200,10 +200,10 @@
   // Число узкое — «рабочих дней» сразу за ним, а не посреди рамки.
   > .o_field_widget.o_pmk_lead_days,
   > .o_field_widget.o_pmk_lead_days input {
-    flex: 0 0 3em;
-    width: 3em !important;
+    flex: 0 0 2.4em;
+    width: 2.4em !important;
     min-width: 0 !important;
-    max-width: 3em !important;
+    max-width: 2.4em !important;
   }
 
   > span {
@@ -225,10 +225,12 @@
     align-items: stretch;
   }
 
+  // Высота — ровно две строки слева: (подпись 16 + 3 + поле 26) × 2 + зазор
+  // 10, минус своя подпись (16 + 3).
   .o_field_text,
   .o_field_text textarea {
     width: 100% !important;
-    height: 100% !important;
+    height: 81px !important;
     min-height: 0;
     resize: none;
   }
