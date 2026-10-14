@@ -38,11 +38,18 @@
         <attribute name="nolabel">1</attribute>
         <attribute name="placeholder">100% предоплата</attribute>
       </xpath>
+      <!-- Доставка — одно поле адреса (Антон 14.10.2026): пусто — самовывоз,
+           заполнено — доставка (признак ставит onchange адреса, pmk_orders).
+           Переключатель самовывоз/доставка в шапке не показывается. -->
       <xpath expr="//field[@name='pmk_delivery']" position="attributes">
         <attribute name="nolabel">1</attribute>
+        <attribute name="invisible">1</attribute>
       </xpath>
       <xpath expr="//field[@name='pmk_delivery_address']" position="attributes">
         <attribute name="nolabel">1</attribute>
+        <attribute name="invisible">0</attribute>
+        <attribute name="widget">text</attribute>
+        <attribute name="placeholder">Пусто — самовывоз. Иначе — адрес доставки: город, улица, объект</attribute>
       </xpath>
 
       <!-- Срок изготовления одной строкой «20 рабочих дней» (Антон 14.10.2026):

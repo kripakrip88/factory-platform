@@ -337,6 +337,13 @@ class SaleOrder(models.Model):
             else:
                 order.pmk_delivery_text = False
 
+    # «Самовывоз» отдельно не выбирается (Антон 14.10.2026): адрес в «Условиях
+    # доставки» есть — доставка, пусто — самовывоз (печать — «Самовывоз»).
+    @api.onchange("pmk_delivery_address")
+    def _onchange_pmk_delivery_address(self):
+        for order in self:
+            order.pmk_delivery = "delivery" if (order.pmk_delivery_address or "").strip() else "pickup"
+
     @api.onchange("pmk_delivery")
     def _onchange_pmk_delivery(self):
         """Доставка — адрес доставки клиента одной строкой, если пусто."""

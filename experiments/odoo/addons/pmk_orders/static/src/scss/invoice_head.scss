@@ -87,7 +87,8 @@
   // «Условиям доставки» (Антон 14.10.2026: «освободится больше места»).
   &[name="pmk_f_lead"],
   &[name="pmk_f_payment"] { grid-column: 1 / 7; }
-  &[name="pmk_f_delivery"] { grid-column: 7 / 13; }
+  // Доставка — на высоту двух строк (срок + условия оплаты).
+  &[name="pmk_f_delivery"] { grid-column: 7 / 13; grid-row: span 2; }
 
   > label,
   > .pmk-inv-label > label,
@@ -196,12 +197,13 @@
 
   // Число дней — узкое поле; тема даёт полям ввода свою ширину — и рамка
   // заходила под «рабочих дней».
+  // Число узкое — «рабочих дней» сразу за ним, а не посреди рамки.
   > .o_field_widget.o_pmk_lead_days,
   > .o_field_widget.o_pmk_lead_days input {
-    flex: 0 0 4.5em;
-    width: 4.5em !important;
+    flex: 0 0 3em;
+    width: 3em !important;
     min-width: 0 !important;
-    max-width: 4.5em !important;
+    max-width: 3em !important;
   }
 
   > span {
@@ -216,7 +218,22 @@
   }
 }
 
-// Доставка: «Самовывоз · Доставка» и адрес рядом.
+// Доставка: одно многострочное поле адреса на всю высоту блока.
+.pmk-inv-f[name="pmk_f_delivery"] {
+  > .pmk-inv-delivery {
+    flex: 1 1 auto;
+    align-items: stretch;
+  }
+
+  .o_field_text,
+  .o_field_text textarea {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0;
+    resize: none;
+  }
+}
+
 .pmk-inv-delivery {
   display: flex;
   align-items: center;
