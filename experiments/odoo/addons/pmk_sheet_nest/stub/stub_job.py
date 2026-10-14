@@ -36,6 +36,7 @@ def _error(workdir, inp, kind, message, user=True):
 
 
 def _png(path, text):
+    """Шрифт Pillow по умолчанию без кириллицы — надпись латиницей."""
     try:
         from PIL import Image, ImageDraw
     except ImportError:
@@ -110,7 +111,7 @@ def main(workdir):
         })
     files = {"lxds": None, "png_layouts": None, "png_order": None, "report": None}
     os.makedirs(os.path.join(workdir, "out"), exist_ok=True)
-    if _png(os.path.join(workdir, "out", "layouts.png"), "ЗАГЛУШКА: %d листов — картинка раскладок появится с движком" % sheets):
+    if _png(os.path.join(workdir, "out", "layouts.png"), "STUB: %d sheets - real layout picture comes with the sheet_nest engine" % sheets):
         files["png_layouts"] = "out/layouts.png"
     warnings = ["Заглушка движка: числа выдуманы, раскрой не настоящий — подключим sheet_nest."]
     kind = inp.get("kind")
