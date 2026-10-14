@@ -269,11 +269,14 @@ class TestStepZ9Invoice(Z2Common):
             snapshot.with_user(self.manager).write({"pmk_lead_days": 5})
 
     def test_delivery_address_onchange(self):
-        self.client.write({"city": "Хабаровск", "street": "ул. Тестовая, 5"})
+        """С 14.10.2026 переключателя «Самовывоз / Доставка» в шапке нет: адрес в
+        «Условиях доставки» есть — доставка, пусто — самовывоз."""
         deal, spec, invoice = self._draft()
         with Form(invoice.with_user(self.manager)) as form:
-            form.pmk_delivery = "delivery"
-            self.assertIn("Хабаровск", form.pmk_delivery_address or "")
+            form.pmk_delivery_address = "Хабаровск, ул. Тестовая, 5"
+            self.assertEqual(form.pmk_delivery, "delivery")
+            form.pmk_delivery_address = ""
+            self.assertEqual(form.pmk_delivery, "pickup")
 
     # ─── Согласование ───────────────────────────────────────────────────
     def test_approval_flow(self):
