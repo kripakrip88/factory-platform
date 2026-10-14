@@ -8,18 +8,15 @@
  * Все три входа — кнопка «Лид» над письмом, «Лид» у строки списка и кнопка
  * карточки справа — зовут openLeadDialog. Создаёт по-прежнему
  * action_pmk_create_lead (поправленное — overrides); лид уже есть —
- * открываем его. Лид и контрагент открываются обычной страницей в новой
- * вкладке: формы в окошке Антон назвал «недоразумением».
+ * открываем его. Лид и контрагент открываются обычной страницей в этом же
+ * окне с возвратом на письмо (mail_return.js).
  */
 import { Component, useState } from "@odoo/owl";
 import { Dialog } from "@web/core/dialog/dialog";
 import { _t } from "@web/core/l10n/translation";
 
+import { openFromMail } from "./mail_return";
 import { PmkNewPartnerDialog } from "./partner_dialog";
-
-export function openInTab(model, id) {
-    window.open(`/odoo/${model}/${id}`, "_blank", "noopener");
-}
 
 /**
  * Открыть окно лида для письма. onDone(result) — после создания: значок
@@ -40,7 +37,7 @@ export async function openLeadDialog(env, messageId, { onDone } = {}) {
             buttons: [{
                 name: _t("Открыть лид"),
                 primary: true,
-                onClick: () => openInTab("crm.lead", draft.existing.id),
+                onClick: () => openFromMail(env, "crm.lead", draft.existing.id, messageId),
             }],
         });
         return;
@@ -138,7 +135,7 @@ export class PmkNewLeadDialog extends Component {
                     buttons: leadId ? [{
                         name: _t("Открыть лид"),
                         primary: true,
-                        onClick: () => openInTab("crm.lead", leadId),
+                        onClick: () => openFromMail(this.env, "crm.lead", leadId, this.props.messageId),
                     }] : [],
                 }
             );

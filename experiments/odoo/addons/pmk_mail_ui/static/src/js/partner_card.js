@@ -23,7 +23,8 @@ import { patch } from "@web/core/utils/patch";
 import { SelectCreateDialog } from "@web/views/view_dialogs/select_create_dialog";
 
 import { MailClientInbox } from "@mail_client/mail_client_action";
-import { openInTab, openLeadDialog } from "./lead_dialog";
+import { openLeadDialog } from "./lead_dialog";
+import { openFromMail } from "./mail_return";
 import { PmkNewPartnerDialog } from "./partner_dialog";
 
 const PREF = "pmk_mail.partner_card";
@@ -122,7 +123,7 @@ export class PmkPartnerCard extends Component {
 
     /** Сделка, лид, счёт — обычной страницей в новой вкладке, как контрагент. */
     openRecord(resModel, resId) {
-        openInTab(resModel, resId);
+        openFromMail(this.env, resModel, resId, this.props.messageId);
     }
 
     /**
@@ -131,7 +132,7 @@ export class PmkPartnerCard extends Component {
      * Почта с открытым письмом остаётся как была.
      */
     openPartner(partnerId) {
-        openInTab("res.partner", partnerId);
+        openFromMail(this.env, "res.partner", partnerId, this.props.messageId);
     }
 
     openList(resModel, name, domain) {

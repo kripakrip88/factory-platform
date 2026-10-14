@@ -1031,6 +1031,7 @@ class MailClientAccount(models.Model):
             return {'accounts': []}
 
         counts = self.env['mail.client.folder']._unread_by_folder(accounts.folder_ids.ids)
+        day_counts = self.env['mail.client.folder']._unread_day_by_folder(accounts.folder_ids.ids)
         payload = []
         for account in accounts:
             folders = account.folder_ids.filtered(lambda f: f.subscribed).sorted(
@@ -1055,6 +1056,9 @@ class MailClientAccount(models.Model):
                     'role': folder.role,
                     'parent_id': folder.parent_id.id or False,
                     'unread': counts.get(folder.id, 0),
+                    # ПРАВКА ПМК (15.10.2026): непрочитанные за сутки — для
+                    # полосы значков.
+                    'unread_day': day_counts.get(folder.id, 0),
                     # ПРАВКА ПМК (шаг 18): тихая папка — счётчик серым
                     # текстом и не в итоге свёрнутого ящика («Спам 3374»
                     # кричал громче «Входящих»).

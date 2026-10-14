@@ -465,7 +465,7 @@ class MailClientMessage(models.Model):
     def pmk_partner_create_from_letter(self, message_id, company, contact=None, bank=None):
         """«Создать контрагента» в окне: карточка организации, контакт и
         счёт. ИНН уже есть в базе — не дублируем, отдаём существующую."""
-        self._checked(message_id, "read")
+        message = self._checked(message_id, "read")
         Partner = self.env["res.partner"]
         Partner.check_access("create")
         inn = (company or {}).get("vat") or ""
@@ -476,10 +476,23 @@ class MailClientMessage(models.Model):
                 partner = existing.commercial_partner_id
                 added = self._pmk_add_contact(partner, contact)
                 return {"id": partner.id, "name": partner.display_name, "created": False,
-                        "contact_added": added.name if added else False}
+                        "contact_added": added.name if added else False,
+                        "lead_linked": message._pmk_link_lead_partner(partner)}
         partner = Partner.create(self._pmk_partner_values(company, contact, bank))
         return {"id": partner.id, "name": partner.display_name, "created": True,
-                "contact_added": False}
+                "contact_added": False, "lead_linked": message._pmk_link_lead_partner(partner)}
+
+    def _pmk_link_lead_partner(self, partner):
+        """Лид письма (или его переписки) без компании — получает этого
+        контрагента (15.10.2026: лид Жидковой создали раньше, чем добавили
+        её к «Альфамобилю», и компания в лиде осталась пустой). Лид с уже
+        выбранной компанией не трогаем. -> имя лида или False."""
+        self.ensure_one()
+        lead = self._pmk_find_lead()
+        if not lead or lead.partner_id or not lead.has_access("write"):
+            return False
+        lead.partner_id = partner.id
+        return lead.display_name
 
     @api.model
     def _pmk_add_contact(self, company, contact):

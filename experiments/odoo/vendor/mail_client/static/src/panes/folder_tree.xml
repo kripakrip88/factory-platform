@@ -130,7 +130,10 @@
         </button>
     </t>
 
-    <!-- ПРАВКА ПМК (шаг 41, А8): узкая полоса значков — «Все входящие» и
+    <!-- ПРАВКА ПМК (15.10.2026): число — непрочитанные во «Входящих» за
+         сутки (railBadge), открытая папка — кружок вокруг значка
+         (mail_client.scss), без лайма.
+         ПРАВКА ПМК (шаг 41, А8): узкая полоса значков — «Все входящие» и
          служебные папки ящиков (у открытой не служебной — она тоже). Число —
          только у не тихих папок, до 99, дальше «99+». Ящики разделены чертой;
          имя папки и ящик — в подсказке. -->
@@ -141,8 +144,8 @@
                 t-att-title="unifiedTitle" t-att-aria-label="unifiedTitle"
                 t-on-click="() => props.onSelectUnified()">
             <i class="fa fa-fw fa-envelope-o" aria-hidden="true"/>
-            <span t-if="totalInboxUnread" class="badge rounded-pill text-bg-primary o_mail_client_rail_badge"
-                  t-esc="railCount(totalInboxUnread)"/>
+            <span t-if="railInboxUnread" class="badge rounded-pill text-bg-primary o_mail_client_rail_badge"
+                  t-esc="railCount(railInboxUnread)"/>
         </button>
         <t t-foreach="props.accounts" t-as="account" t-key="account.id">
             <div class="o_mail_client_rail_sep" t-if="props.accounts.length > 1" aria-hidden="true"/>
@@ -154,9 +157,9 @@
                     t-att-aria-current="isActive(folder.id) ? 'true' : false"
                     t-on-click="() => props.onSelectFolder(folder.id)">
                 <i class="fa fa-fw" t-att-class="iconFor(folder.role)" aria-hidden="true"/>
-                <span t-if="folder.unread and !folder.quiet"
+                <span t-if="railBadge(folder)"
                       class="badge rounded-pill text-bg-primary o_mail_client_rail_badge"
-                      t-esc="railCount(folder.unread)"/>
+                      t-esc="railCount(railBadge(folder))"/>
             </button>
         </t>
     </t>

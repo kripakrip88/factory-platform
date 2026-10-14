@@ -3093,3 +3093,9 @@ msgstr "Ответить: %s…"
 #: code:addons/mail_client/static/src/panes/reading_pane.js:0
 msgid "Reply…"
 msgstr "Ответить…"
+
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/mail_client_action.xml:0
+msgid "Clear search"
+msgstr "Стереть поиск"

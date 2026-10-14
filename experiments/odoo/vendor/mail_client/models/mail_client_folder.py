@@ -149,6 +149,18 @@ class MailClientFolder(models.Model):
         ])
 
     @api.model
+    def _unread_day_by_folder(self, folder_ids):
+        """ПРАВКА ПМК (15.10.2026): непрочитанные за последние сутки — число
+        на полосе значков (общее «99+» всегда зашкаливало)."""
+        if not folder_ids:
+            return {}
+        since = fields.Datetime.now() - timedelta(days=1)
+        groups = self.env['mail.client.message']._read_group(
+            [('folder_id', 'in', folder_ids), ('flag_seen', '=', False), ('date', '>=', since)],
+            ['folder_id'], ['__count'],
+        )
+        return {folder.id: count for folder, count in groups}
+
     def _unread_by_folder(self, folder_ids):
         if not folder_ids:
             return {}

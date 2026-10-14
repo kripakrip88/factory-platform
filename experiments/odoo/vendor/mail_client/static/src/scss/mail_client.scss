@@ -1253,17 +1253,65 @@
     position: relative;
     display: flex;
     justify-content: center;
-    padding: .55rem 0 !important;
+    padding: .15rem 0 !important;
     font-size: 1.05rem;
 }
 
 .o_mail_client_rail_badge {
     position: absolute;
-    top: .15rem;
-    right: .2rem;
+    top: .1rem;
+    right: .3rem;
     padding: .15em .4em;
     font-size: .625rem;
     line-height: 1.1;
+}
+
+// ПРАВКА ПМК (15.10.2026): открытая папка на полосе — аккуратный кружок
+// вокруг значка цветом текста на 12 % (светлая и тёмная тема сами), без
+// лаймовой заливки и полоски слева. Вес правила выше темы (forms_nexus.scss,
+// dark.scss красят .o_mail_client_folder.active).
+.o_mail_client_folders.o_mail_client_rail .o_mail_client_rail_item {
+    background: transparent !important;
+    box-shadow: none !important;
+    border: 0 !important;
+    font-weight: 400;
+
+    > .fa {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.25rem;
+        height: 2.25rem;
+        border-radius: 50%;
+        line-height: 1;
+    }
+
+    &:hover > .fa {
+        background-color: color-mix(in srgb, currentColor 7%, transparent);
+    }
+
+    &.active > .fa {
+        background-color: color-mix(in srgb, currentColor 13%, transparent);
+    }
+}
+
+// Поле поиска с × внутри (mail_client_action.xml).
+.o_mail_client_search_box {
+    min-width: 0;
+
+    .form-control {
+        padding-right: 1.75rem;
+    }
+}
+
+.o_mail_client_search_clear {
+    position: absolute;
+    top: 50%;
+    right: .25rem;
+    transform: translateY(-50%);
+    padding: 0 .35rem !important;
+    color: var(--pmk-label, #6c757d);
+    text-decoration: none;
 }
 
 .o_mail_client_rail_sep {

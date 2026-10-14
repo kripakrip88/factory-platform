@@ -995,6 +995,14 @@ export class MailClientInbox extends Component {
         this.debouncedSearch();
     }
 
+    /** ПРАВКА ПМК (15.10.2026): × в поле поиска — как Esc. */
+    clearSearch() {
+        this.debouncedSearch.cancel();
+        this.state.searchInput = "";
+        this.applySearch();
+        this.searchRef?.el?.focus();
+    }
+
     /** Enter — искать сразу; Esc — очистить поиск (и не дальше: иначе Esc
      *  ещё и вернул бы из письма к списку). */
     onSearchKeydown(ev) {

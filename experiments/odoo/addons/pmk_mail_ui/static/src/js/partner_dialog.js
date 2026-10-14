@@ -5,8 +5,8 @@
  * вместо полной карточки контрагента с пустыми полями. Нет ИНН в письме —
  * похожие организации из справочника по названию, выбор щелчком; поиск
  * можно повторить своим названием. «Создать контрагента» сохраняет сразу;
- * карточку созданного — кнопкой в уведомлении, обычной страницей в новой
- * вкладке. Кнопка «Открыть полную карточку» (форма в окошке) снята по
+ * карточку созданного — кнопкой в уведомлении, обычной страницей в этом
+ * же окне с возвратом на письмо (mail_return.js). Кнопка «Открыть полную карточку» (форма в окошке) снята по
  * замечанию Антона 14.10.2026.
  *
  * Данные — pmk_partner_from_letter / pmk_partner_suggest /
@@ -16,6 +16,8 @@
 import { Component, useState } from "@odoo/owl";
 import { Dialog } from "@web/core/dialog/dialog";
 import { _t } from "@web/core/l10n/translation";
+
+import { openFromMail } from "./mail_return";
 
 export class PmkNewPartnerDialog extends Component {
     static template = "pmk_mail_ui.NewPartnerDialog";
@@ -68,7 +70,8 @@ export class PmkNewPartnerDialog extends Component {
     }
 
     openExisting() {
-        window.open(`/odoo/res.partner/${this.existingId}`, "_blank", "noopener");
+        this.props.close();
+        openFromMail(this.env, "res.partner", this.existingId, this.props.messageId);
     }
 
     get innLine() {
@@ -156,6 +159,9 @@ export class PmkNewPartnerDialog extends Component {
             } else {
                 message = _t("Контрагент %s уже есть, этот адрес у него уже записан", result.name);
             }
+            if (result.lead_linked) {
+                message += " · " + _t("лид «%s» привязан к нему", result.lead_linked);
+            }
             this.notification.add(
                 message,
                 {
@@ -163,7 +169,7 @@ export class PmkNewPartnerDialog extends Component {
                     buttons: [{
                         name: _t("Открыть карточку"),
                         primary: true,
-                        onClick: () => window.open(`/odoo/res.partner/${result.id}`, "_blank", "noopener"),
+                        onClick: () => openFromMail(this.env, "res.partner", result.id, this.props.messageId),
                     }],
                 }
             );

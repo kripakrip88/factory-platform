@@ -34,7 +34,8 @@ import { MailClientInbox } from "@mail_client/mail_client_action";
 import { MessageList } from "@mail_client/panes/message_list";
 import { ReadingPane } from "@mail_client/panes/reading_pane";
 import "@pmk_mail_ui/js/reading_pane_lead";
-import { openInTab, openLeadDialog } from "./lead_dialog";
+import { openLeadDialog } from "./lead_dialog";
+import { openFromMail } from "./mail_return";
 
 /** Фильтр «С лидом»: имя — как на сервере (mail_client_step41.py, LEAD_FILTER). */
 export const LEAD_FILTER = { id: "pmk_lead", label: "С лидом", icon: "fa-handshake-o" };
@@ -156,13 +157,13 @@ patch(MailClientInbox.prototype, {
         }
     },
 
-    /** Лид — обычной страницей в новой вкладке (14.10.2026: формы в окошке
-     *  Антон назвал «недоразумением»); почта с открытым письмом на месте. */
+    /** Лид — обычной страницей в этом же окне; «Почта» в строке пути
+     *  возвращает на то же письмо (mail_return.js). */
     pmkOpenLead(lead) {
         if (!lead) {
             return;
         }
-        openInTab("crm.lead", lead.id);
+        openFromMail(this.env, "crm.lead", lead.id, this.state.selectedMessageId);
     },
 });
 

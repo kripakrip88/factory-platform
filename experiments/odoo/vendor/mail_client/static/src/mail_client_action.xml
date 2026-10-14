@@ -38,13 +38,23 @@
                     <!-- ПРАВКА ПМК (шаг 18, Г11): ищем и по получателю.
                          ПРАВКА ПМК (шаг 41, А7): по мере ввода, во всех
                          папках, кроме Спама и Корзины; «/» — сюда. -->
-                    <input type="text" class="form-control form-control-sm"
-                           t-ref="search"
-                           placeholder="Search subject, sender, recipient or preview…"
-                           aria-keyshortcuts="/"
-                           t-att-value="state.searchInput"
-                           t-on-input="(ev) => this.onSearchInput(ev.target.value)"
-                           t-on-keydown="(ev) => this.onSearchKeydown(ev)"/>
+                    <!-- ПРАВКА ПМК (15.10.2026): × внутри поля — стереть поиск
+                         одним щелчком (то же, что Esc). -->
+                    <div class="o_mail_client_search_box flex-grow-1 position-relative">
+                        <input type="text" class="form-control form-control-sm"
+                               t-ref="search"
+                               placeholder="Search subject, sender, recipient or preview…"
+                               aria-keyshortcuts="/"
+                               t-att-value="state.searchInput"
+                               t-on-input="(ev) => this.onSearchInput(ev.target.value)"
+                               t-on-keydown="(ev) => this.onSearchKeydown(ev)"/>
+                        <button t-if="state.searchInput or state.search" type="button"
+                                class="o_mail_client_search_clear btn btn-link"
+                                title="Clear search" aria-label="Clear search"
+                                t-on-click="() => this.clearSearch()">
+                            <i class="fa fa-times" aria-hidden="true"/>
+                        </button>
+                    </div>
                     <button class="btn btn-light btn-sm flex-shrink-0"
                             t-if="state.search and state.activeFolderId"
                             t-att-disabled="state.searchingServer"

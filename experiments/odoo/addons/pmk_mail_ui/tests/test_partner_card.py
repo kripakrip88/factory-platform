@@ -234,3 +234,21 @@ class TestPartnerFromLetter(TransactionCase):
         again = Message.pmk_partner_create_from_letter(self.letter.id, company, contact, bank)
         self.assertFalse(again["created"])
         self.assertEqual(again["id"], partner.id)
+
+    def test_lead_without_company_gets_partner_from_letter(self):
+        made = self.letter.action_pmk_create_lead()
+        lead = self.env["crm.lead"].browse(made["action"]["res_id"])
+        lead.partner_id = False
+        company = self.env["res.partner"].create(
+            {"name": "ООО «Новый клиент»", "is_company": True, "vat": self.inn})
+        result = self._run()
+        added = self.Message.pmk_partner_create_from_letter(
+            self.letter.id, result["company"], result["contact"], {})
+        self.assertEqual(added["lead_linked"], lead.display_name)
+        self.assertEqual(lead.partner_id, company)
+        other = self.env["res.partner"].create({"name": "ООО «Другой»", "is_company": True})
+        lead.partner_id = other
+        again = self.Message.pmk_partner_create_from_letter(
+            self.letter.id, result["company"], result["contact"], {})
+        self.assertFalse(again["lead_linked"])
+        self.assertEqual(lead.partner_id, other)

@@ -28,11 +28,17 @@ import { patch } from "@web/core/utils/patch";
 
 import { MailClientInbox } from "@mail_client/mail_client_action";
 import { hasFolder, openParams, pickFolder } from "@pmk_mail_ui/js/step53_open_rules";
+import { takeMailReturn } from "@pmk_mail_ui/js/mail_return";
 
 patch(MailClientInbox.prototype, {
     setup() {
         super.setup();
         this.pmkOpen = openParams(this.props.action?.params);
+        // Вернулись по строке пути из лида, контрагента, сделки
+        // (mail_return.js) — то же письмо.
+        if (!this.pmkOpen.messageId) {
+            this.pmkOpen.messageId = takeMailReturn();
+        }
         onMounted(() => {
             const open = this.pmkOpen;
             if (!open.messageId) {

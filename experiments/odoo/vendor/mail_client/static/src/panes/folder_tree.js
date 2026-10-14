@@ -115,6 +115,26 @@ export class FolderTree extends Component {
         return ROLE_ICONS[role] || ROLE_ICONS.other;
     }
 
+    /**
+     * ПРАВКА ПМК (15.10.2026): число на полосе значков — непрочитанные во
+     * «Входящих» за сутки (unread_day); подпапки (Авито, Рассылки, Чеки) и
+     * прочие папки на полосе без числа: общее «99+» зашкаливало всегда.
+     */
+    get railInboxUnread() {
+        return this.props.accounts.reduce(
+            (total, account) =>
+                total +
+                account.folders
+                    .filter((folder) => folder.role === "inbox")
+                    .reduce((sum, folder) => sum + (folder.unread_day || 0), 0),
+            0
+        );
+    }
+
+    railBadge(folder) {
+        return folder.role === "inbox" ? folder.unread_day || 0 : 0;
+    }
+
     /** Unread across every inbox, shown on the unified entry. */
     get totalInboxUnread() {
         return this.props.accounts.reduce(
