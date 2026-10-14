@@ -6,7 +6,10 @@
          MessageCard в o_mail_client_conv_card, свёрнутое — строка
          o_mail_client_conv_row, середина длинной переписки — кнопка
          o_mail_client_conv_more («ещё N писем»). Наше письмо — is-ours
-         (бледная подложка, токен mc-ours-bg в mail_client.scss) и плашка «мы». -->
+         (бледная подложка, токен mc-ours-bg в mail_client.scss) и плашка «мы».
+         ПРАВКА ПМК (редизайн почты, шаг 5, 14.10.2026): у открытого письма
+         своих «Ответить / Переслать» нет — они в строке действий над
+         перепиской (reading_pane.xml); у прочих развёрнутых — значками. -->
     <t t-name="mail_client.Conversation">
         <div class="o_mail_client_conv">
             <t t-foreach="layout" t-as="entry" t-key="entry.key">
@@ -26,7 +29,7 @@
                                  getScroller="props.getScroller"
                                  ours="!!entry.item.is_outgoing"
                                  canReply="!entry.item.is_outgoing"
-                                 onReply="(mode) => this.reply(mode, entry.item)"
+                                 onReply="entry.item.id === props.detail.id ? undefined : ((mode) => this.reply(mode, entry.item))"
                                  onCollapse="() => this.collapse(entry.item)"
                                  onAllowImages="() => this.allowImages(entry.item)"
                                  onDownloadAttachment="props.onDownloadAttachment"/>

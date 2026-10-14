@@ -25,6 +25,13 @@
  */
 
 export const SERVICE_ROLES = ["inbox", "drafts", "sent", "spam", "trash"];
+/**
+ * ПРАВКА ПМК (редизайн почты, шаг 4, 14.10.2026): порядок верхнего уровня —
+ * рабочие папки сверху, мусорные внизу: Входящие (с подпапками-сортировщиками
+ * mail.ru — «Авито…», «Рассылки», «Чеки»), Отправленные, Черновики, свои
+ * папки, архив, Спам, Корзина. Внутри одной ступени — порядок сервера.
+ */
+const ROOT_RANK = { inbox: 0, sent: 1, drafts: 2, other: 3, archive: 4, spam: 5, trash: 6 };
 const HIDEABLE_ROLES = ["other", "archive"];
 
 export function isServiceFolder(folder) {
@@ -87,15 +94,31 @@ export function layoutFolders(folders, { nest = true, hideEmpty = true } = {}) {
             walk(kid, depth + 1, folder.name);
         }
     };
-    for (const folder of roots) {
+    const rank = (folder) => (nest ? ROOT_RANK[folder.role] ?? 3 : 0);
+    const ordered = roots.map((folder, index) => ({ folder, index }))
+        .sort((a, b) => rank(a.folder) - rank(b.folder) || a.index - b.index)
+        .map((entry) => entry.folder);
+    for (const folder of ordered) {
         walk(folder, 0, "");
     }
     return { main, more };
 }
 
-/** Узкая полоса значков: служебные папки ящика, в порядке сервера. */
+/**
+ * Узкая полоса значков: Входящие, Отправленные, Черновики, непустые
+ * подпапки Входящих (ПРАВКА ПМК, редизайн, шаг 4: «папки иконками в
+ * свёрнутом режиме» — сортировщики mail.ru тоже), Спам, Корзина.
+ */
 export function railFolders(folders) {
-    return (folders || []).filter(isServiceFolder);
+    const list = folders || [];
+    const inbox = list.find((folder) => folder.role === "inbox");
+    const kids = inbox
+        ? list.filter((folder) => folder.parent_id === inbox.id && !isServiceFolder(folder)
+            && !isEmptyFolder(folder))
+        : [];
+    const service = (roles) => list.filter((folder) => roles.includes(folder.role));
+    return [...service(["inbox"]), ...service(["sent"]), ...service(["drafts"]), ...kids,
+        ...service(["spam"]), ...service(["trash"])];
 }
 
 /** Число на значке полосы: до 99, дальше «99+». */

@@ -255,9 +255,15 @@ export class Conversation extends Component {
     }
 
     get layout() {
+        // ПРАВКА ПМК (редизайн почты, шаг 5, 14.10.2026): плотнее — от 4 писем
+        // видно самое новое, открытое и самое первое (заявку), прочее —
+        // «ещё N» (по умолчанию правила — от 6 писем и два новых).
         return conversationLayout(conversationItems(this.props.detail, this.props.thread), {
             expanded: Object.keys(this.state.expanded).map(Number),
             shown: Object.keys(this.state.shown).map(Number),
+            threshold: 3,
+            head: 1,
+            tail: 1,
         });
     }
 

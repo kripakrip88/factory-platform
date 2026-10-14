@@ -117,11 +117,13 @@
             <!-- ПРАВКА ПМК (шаг 18): у тихой папки (Спам, Корзина,
                  рассылки) число серым текстом, без плашки: оно не
                  зовёт читать. -->
-            <span t-if="folder.unread and folder.quiet"
+            <!-- ПРАВКА ПМК (редизайн, шаг 4): у Спама и Корзины числа нет
+                 совсем — 3377 в Спаме только отвлекало. -->
+            <span t-if="folder.unread and folder.quiet and !['spam', 'trash'].includes(folder.role)"
                   class="o_mail_client_count_quiet ms-2">
                 <t t-esc="folder.unread"/>
             </span>
-            <span t-elif="folder.unread"
+            <span t-elif="folder.unread and !['spam', 'trash'].includes(folder.role)"
                   class="badge rounded-pill text-bg-primary ms-2">
                 <t t-esc="folder.unread"/>
             </span>
