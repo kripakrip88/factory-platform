@@ -14,3 +14,4 @@ from . import test_step_z10
 from . import test_step_z13
 from . import test_request_note_table
 from . import test_spec_title_kind
+from . import test_request_bars

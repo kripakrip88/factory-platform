@@ -152,6 +152,22 @@
   <!-- Стрелка состава и число деталей — в ячейке «Изделие». .stop: щелчок по
        стрелке не открывает окно изделия; по числу — открывает, как раньше
        по ячейке. -->
+  <!-- «Развернуть все спецификации» (15.10.2026): стрелка в шапке колонки
+       «Изделие» списка изделий (виджет pmk_product_name есть только там) —
+       раскрыть составы всех изделий / свернуть все (pmkToggleAll). -->
+  <t t-inherit="web.ListRenderer" t-inherit-mode="extension">
+    <xpath expr="//th[@t-att-data-name='column.name']/t[@t-if]" position="before">
+      <button t-if="column.widget === 'pmk_product_name' and props.list.records.length" type="button"
+              class="pmk-row-chev pmk-head-chev"
+              t-att-aria-expanded="pmkAllOpen ? 'true' : 'false'"
+              t-att-title="pmkAllOpen ? 'Свернуть составы всех изделий' : 'Развернуть составы всех изделий'"
+              t-att-aria-label="pmkAllOpen ? 'Свернуть все' : 'Развернуть все'"
+              t-on-click.stop.prevent="() => this.pmkToggleAll()">
+        <i class="fa fa-fw" t-att-class="pmkAllOpen ? 'fa-angle-double-down' : 'fa-angle-double-right'"/>
+      </button>
+    </xpath>
+  </t>
+
   <t t-name="pmk_calc.ProductRecordRow" t-inherit="web.ListRenderer.RecordRow" t-inherit-mode="primary">
     <xpath expr="//td[hasclass('o_data_cell')][@t-att-name='column.name']/t[@t-if='!isInvisible']" position="before">
       <button t-if="column.name === 'name'" type="button" class="pmk-row-chev"

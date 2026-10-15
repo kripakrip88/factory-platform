@@ -69,6 +69,7 @@ _pmk_find_seller моста — рейтинг, базовый уровень о
 ПИСЕМ НЕТ: черновики не отправляются, подписчиков не добавляем, лента —
 заметками (_message_log). Отправка поставщику — штатной кнопкой снабженца.
 """
+import json
 import math
 
 from markupsafe import Markup, escape
@@ -182,6 +183,22 @@ class MetalSpecRequest(models.Model):
                 if priced:
                     row["priced_qty"] += qty
                     row["priced_cost"] += (line.cost_fact_total or 0.0) * count
+                    if mode == "linear" and line.price_unit and not row.get("price_m"):
+                        row["price_m"] = line.price_unit
+
+        # Прокат — целыми хлыстами из раскроя сортамента (Антон 15.10.2026:
+        # «продают целыми»): количество — метры купленных хлыстов, вес —
+        # «взято» раскроя, цена — за метр по прайсу. Без раскроя — как раньше.
+        bars = self._pmk_cut_bars()
+        for row in acc.values():
+            if row["mode"] != "linear" or row["pending"]:
+                continue
+            cut = bars.get(row["position"].id)
+            if not cut:
+                continue
+            row.update(qty=cut["meters"], kg=cut["kg"], bars=cut["bars"], unplaced_m=cut["unplaced_m"])
+            if row.get("price_m"):
+                row["priced_qty"], row["priced_cost"] = 1.0, row["price_m"]
 
         rows = []
         for row in acc.values():
@@ -217,6 +234,38 @@ class MetalSpecRequest(models.Model):
             rows.append(row)
         rows.sort(key=lambda r: (MODE_ORDER.get(r["mode"], 9), r["name"] or ""))
         return rows, notes
+
+    def _pmk_cut_bars(self):
+        """{профиль: {"bars": {длина мм: штук}, "meters", "kg", "unplaced_m"}}
+        по последнему рассчитанному раскрою сортамента расчёта. Связь мягкая:
+        нет pmk_cut (поля cut_plan_ids) — пусто, заявка как раньше."""
+        self.ensure_one()
+        if "cut_plan_ids" not in self._fields:
+            return {}
+        plan = self.cut_plan_ids.filtered("result_ids").sorted("id")[-1:]
+        out = {}
+        for result in plan.result_ids:
+            try:
+                res = json.loads(result.result_json or "{}")
+            except ValueError:
+                continue
+            counts = {}
+            for pattern in res.get("patterns", []):
+                length = int(round(pattern.get("stock_length") or 0))
+                if length:
+                    counts[length] = counts.get(length, 0) + int(pattern.get("count") or 1)
+            if not counts:
+                continue
+            unplaced_mm = sum((u.get("length") or 0) * (u.get("qty") or 0) for u in res.get("unplaced", []))
+            mass = result.profile_id.mass_per_meter or 0.0
+            meters = sum(length * count for length, count in counts.items()) / 1000.0
+            out[result.profile_id.id] = {
+                "bars": counts,
+                "meters": round(meters + unplaced_mm / 1000.0, 2),
+                "kg": (result.weight_total or 0.0) + unplaced_mm / 1000.0 * mass,
+                "unplaced_m": unplaced_mm / 1000.0,
+            }
+        return out
 
     @api.model
     def _pmk_fact_group(self, line, size, facts):
@@ -267,6 +316,16 @@ class MetalSpecRequest(models.Model):
             # в плашке технического расчёта и в его ленте.
             return text
         text = "%s — %s" % (row["name"], qty)
+        if row["mode"] == "linear" and row.get("bars"):
+            parts = ["%s %s по %s м" % (count, _plural(count, "хлыст", "хлыста", "хлыстов"),
+                                        _num(length / 1000.0, 2))
+                     for length, count in sorted(row["bars"].items(), reverse=True)]
+            text += ": " + " + ".join(parts)
+            if row.get("unplaced_m"):
+                text += " + %s м деталей длиннее хлыста" % _num(row["unplaced_m"], 2)
+            if weight:
+                text += ", %s" % weight
+            return text
         bar = row["seller"].pmk_bar_length_mm if row["seller"] else 0.0
         if row["mode"] == "linear" and bar:
             bars = math.ceil(row["qty"] * 1000.0 / bar - 1e-6)

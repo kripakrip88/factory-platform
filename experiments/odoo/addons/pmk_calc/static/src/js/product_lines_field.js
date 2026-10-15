@@ -301,13 +301,18 @@ export class ProductLinesRenderer extends ListRenderer {
      * строка, открытая щелчком по цене или количеству. Строка за окном
      * изделия остаётся только для чтения — признак гасится до открытия окна.
      */
-    isInlineEditable(_record) {
-        return this.pmkInline;
+    isInlineEditable(record) {
+        // Новое изделие — строкой в таблице (Антон 15.10.2026: «Добавить
+        // изделие» без окна): название и количество правятся на месте.
+        return this.pmkInline || Boolean(record?.isNew);
     }
 
     /** В строке на правке поля ввода — только у цены и количества. */
     isCellReadonly(column, record) {
-        if (this.pmkInline && record.isInEdition && !this.pmkIsInline(column)) {
+        if (record.isNew && column.name === "name") {
+            return false;
+        }
+        if ((this.pmkInline || record.isNew) && record.isInEdition && !this.pmkIsInline(column)) {
             return true;
         }
         return super.isCellReadonly(column, record);
@@ -492,11 +497,39 @@ export class ProductLinesRenderer extends ListRenderer {
         if (record.id in this.pmk.open) {
             return !!this.pmk.open[record.id];
         }
+        if (record.isNew) {
+            return true;
+        }
         if (this.props.list.records.length === 1) {
             this.pmkAutoOpen.add(record.id);
             return true;
         }
         return this.pmkAutoOpen.has(record.id);
+    }
+
+    /** Все изделия раскрыты — для стрелки в шапке «Изделие» (15.10.2026). */
+    get pmkAllOpen() {
+        const records = this.props.list.records;
+        return records.length > 0 && records.every((record) => this.isOpen(record));
+    }
+
+    /**
+     * «Развернуть все спецификации» (Антон 15.10.2026) — стрелка в шапке
+     * колонки «Изделие»: раскрыть составы всех изделий или свернуть все.
+     */
+    async pmkToggleAll() {
+        const open = !this.pmkAllOpen;
+        if (!open && this.pmk.editing) {
+            for (const record of this.props.list.records) {
+                for (const section of SECTIONS) {
+                    await record.data[section.field]?.leaveEditMode();
+                }
+            }
+            this.pmk.editing = null;
+        }
+        for (const record of this.props.list.records) {
+            this.pmk.open[record.id] = open;
+        }
     }
 
     async toggleComposition(record) {
@@ -686,6 +719,25 @@ export class ProductLinesRenderer extends ListRenderer {
 
 export class ProductLinesField extends X2ManyField {
     static components = { ...X2ManyField.components, ListRenderer: ProductLinesRenderer };
+
+    /**
+     * «Добавить изделие» — новой строкой в конце таблицы, а не окном
+     * (Антон 15.10.2026: «нам обязательно открывать новое окно?» — «делаем»).
+     * Название и количество — в строке, состав раскрывается под ней (isOpen:
+     * у новой строки выбора ещё нет — раскрыта). Окно изделия остаётся по
+     * щелчку на строку — его потом отдадим под вид «как в Excel».
+     */
+    async onAdd(params = {}) {
+        const result = await super.onAdd({ ...params, editable: "bottom" });
+        // Курсор — в название новой строки (первой правимой ячейкой ядро
+        // считает галочку «Перенести»).
+        requestAnimationFrame(() => {
+            const input = document.querySelector(
+                ".o_field_pmk_product_lines tr.o_selected_row td[name='name'] input");
+            input?.focus();
+        });
+        return result;
+    }
 }
 
 registry.category("fields").add("pmk_product_lines", {

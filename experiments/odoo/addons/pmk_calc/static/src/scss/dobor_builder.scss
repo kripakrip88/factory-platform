@@ -982,6 +982,12 @@ body.o_nexus_dark {
   }
 }
 
+// Стрелка «развернуть все» в шапке «Изделие» — над стрелками строк.
+.o_field_pmk_product_lines thead th[data-name="name"] .pmk-head-chev {
+  margin: 0 4px 0 -4px;
+  vertical-align: middle;
+}
+
 // Сколько деталей — бледно после названия изделия: состав свёрнут, а число
 // видно (раньше его показывала строка «Состав: 22 детали»).
 .pmk-row-count {
