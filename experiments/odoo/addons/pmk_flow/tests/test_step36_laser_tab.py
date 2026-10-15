@@ -48,7 +48,7 @@ class TestLaserTabStep36(TransactionCase):
         self.assertIn(key, nodes)
         self.assertIn("pmk.metal.spec,%s" % self.spec.id, nodes, "Задание ведёт к расчёту.")
         # Переделка 15.10.2026: задание лазеру стало раскроем (детали нескольких заказов).
-        self.assertEqual(nodes[key]["kind"], "Раскрой лазера")
+        self.assertEqual(nodes[key]["kind"], "Программа раскроя")
         # Чертежей нет — «рез не разобран» серым.
         self.assertEqual((nodes[key]["state"], nodes[key]["color"]), ("рез не разобран", "grey"))
 

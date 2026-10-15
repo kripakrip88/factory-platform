@@ -412,7 +412,8 @@ class LaserTaskPart(models.Model):
         return hashlib.sha1(base64.b64decode(self.drawing or b"")).hexdigest()
 
     # ------------------------------------------------------------ в раскрой
-    def _check_for_nest(self):
+    def _check_for_nest(self, mixed=False):
+        """mixed — раскрой-документ: толщины любые (программы по толщинам сами)."""
         if not self:
             raise UserError(_("Отметьте детали для раскроя."))
         thick = {round(p.thickness_mm or 0.0, 3) for p in self}
@@ -420,7 +421,13 @@ class LaserTaskPart(models.Model):
         if 0.0 in thick:
             raise UserError(_("У деталей не указана толщина: %s — впишите её в задании.")
                             % ", ".join(self.filtered(lambda p: not p.thickness_mm).mapped("name")))
-        if len(thick) > 1 or len(kinds) > 1:
+        no_sheet = self.filtered(lambda p: not p.sheet_id)
+        if no_sheet:
+            raise UserError(_("Нет листа в справочнике для: %s — заведите лист этой толщины и вида "
+                              "(Калькуляторы → справочник листа).")
+                            % ", ".join("%s (%s мм %s)" % (p.name, _mm(p.thickness_mm), (p.sheet_type or "").lower())
+                                        for p in no_sheet))
+        if not mixed and (len(thick) > 1 or len(kinds) > 1):
             raise UserError(_("Раскрой бывает одной толщины и одного вида листа, а отмечено: %s.")
                             % ", ".join(sorted({"%s мм %s" % (_mm(p.thickness_mm), (p.sheet_type or "").lower())
                                                 for p in self})))
@@ -432,52 +439,17 @@ class LaserTaskPart(models.Model):
         if done == self:
             raise UserError(_("Эти детали уже разложены целиком."))
 
-    def action_create_nest(self):
-        """«Создать раскрой» — из отмеченных деталей одной толщины (хоть из разных заказов)."""
-        self._check_for_nest()
-        parts = self.filtered(lambda p: p.qty_left > 0)
-        Job = self.env["pmk.laser.job"]
-        sheet = Job._sheet_for(parts[0].thickness_mm, parts[0].sheet_type or DEFAULT_SHEET_TYPE)
-        machine = self.env["pmk.laser.machine"]._for_thickness(parts[0].thickness_mm)
-        tasks = parts.task_id
-        job = Job.create({
-            "machine_id": machine.id,
-            "sheet_id": sheet.id,
-            "spec_id": tasks.spec_id.id if len(tasks.spec_id) == 1 else False,
-            "partner_id": tasks.partner_id.id if len(tasks.partner_id) == 1 else False,
-        })
-        job._add_task_parts(parts)
-        return {"type": "ir.actions.act_window", "res_model": "pmk.laser.job", "res_id": job.id,
-                "views": [[False, "form"]], "target": "current"}
-
-    def action_add_to_nest(self):
-        """«Добавить в раскрой» — окно выбора открытого раскроя той же толщины."""
-        self._check_for_nest()
-        return {
-            "type": "ir.actions.act_window", "res_model": "pmk.laser.add.to.nest", "view_mode": "form",
-            "target": "new", "name": _("Добавить в раскрой"),
-            "context": {"default_part_ids": self.ids,
-                        "default_thickness_mm": self[0].thickness_mm,
-                        "default_sheet_type": self[0].sheet_type or DEFAULT_SHEET_TYPE},
-        }
-
-
 class LaserAddToNest(models.TransientModel):
     _name = "pmk.laser.add.to.nest"
     _description = "Добавить детали в раскрой"
 
     part_ids = fields.Many2many("pmk.laser.task.part", string="Детали")
-    thickness_mm = fields.Float("Толщина, мм")
-    sheet_type = fields.Char("Вид листа")
-    job_id = fields.Many2one(
-        "pmk.laser.job", "Раскрой", required=True,
-        domain="[('thickness_mm', '>=', thickness_mm - 0.001), ('thickness_mm', '<=', thickness_mm + 0.001),"
-               " ('sheet_type', '=ilike', sheet_type), ('sheet_count', '=', 0)]",
-        help="Открытые раскрои той же толщины и вида листа, у которых ещё нет листов (программа не принята).")
+    nest_id = fields.Many2one("pmk.laser.nest", "Раскрой", required=True, domain="[('state', '=', 'draft')]",
+                              help="Раскрои, у которых программы ещё не приняты.")
 
     def action_apply(self):
         self.ensure_one()
-        self.part_ids._check_for_nest()
-        self.job_id._add_task_parts(self.part_ids.filtered(lambda p: p.qty_left > 0))
-        return {"type": "ir.actions.act_window", "res_model": "pmk.laser.job", "res_id": self.job_id.id,
+        self.part_ids._check_for_nest(mixed=True)
+        self.nest_id._add_task_parts(self.part_ids)
+        return {"type": "ir.actions.act_window", "res_model": "pmk.laser.nest", "res_id": self.nest_id.id,
                 "views": [[False, "form"]], "target": "current"}

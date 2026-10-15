@@ -27,12 +27,15 @@ feature/sheet-nest-lib; правки lib/ — только там. Обмен �
         "security/ir.model.access.csv",
         "data/cron.xml",
         "views/laser_job_views.xml",
+        "views/laser_nest_views.xml",
     ],
     "assets": {
         "web.assets_backend": [
             "pmk_sheet_nest/static/src/scss/sheet_nest.scss",
             "pmk_sheet_nest/static/src/js/strategy_pick.js",
             "pmk_sheet_nest/static/src/xml/strategy_pick.xml",
+            "pmk_sheet_nest/static/src/js/nest_programs.js",
+            "pmk_sheet_nest/static/src/xml/nest_programs.xml",
         ],
     },
     "installable": True,

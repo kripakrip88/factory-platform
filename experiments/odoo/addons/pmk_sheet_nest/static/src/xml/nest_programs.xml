@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+  <t t-name="pmk_sheet_nest.NestPrograms">
+    <div class="pmk-snp">
+      <div t-if="state.error" class="pmk-snp__error" t-esc="state.error"/>
+      <div t-if="!programs.length" class="pmk-sn-muted">Программ пока нет — «Добавить детали».</div>
+      <div t-foreach="programs" t-as="p" t-key="p.id" class="pmk-snp__card">
+        <div class="pmk-snp__head">
+          <div>
+            <div class="pmk-snp__title"><t t-esc="p.sheet"/></div>
+            <div class="pmk-sn-muted">
+              <t t-esc="p.title"/> · <t t-esc="p.machine"/>
+              <t t-if="p.d.parts_text"> · <t t-esc="p.d.parts_text"/></t>
+            </div>
+          </div>
+          <div class="pmk-snp__btns">
+            <button t-if="!p.d.nest_busy and !p.d.sheet_count" class="btn btn-secondary btn-sm"
+                    t-att-disabled="state.busyIds[p.id]" t-on-click="() => this.run(p, 'action_nest_plan')">
+              <i class="fa fa-th-large me-1" title="Рассчитать"/>Рассчитать
+            </button>
+            <button t-if="p.d.nest_can_build" class="btn btn-primary btn-sm"
+                    t-att-disabled="state.busyIds[p.id]" t-on-click="() => this.run(p, 'action_nest_build')">
+              <i class="fa fa-cogs me-1" title="Собрать"/>Собрать программу
+            </button>
+            <button t-if="p.d.nest_can_accept" class="btn btn-primary btn-sm"
+                    t-att-disabled="state.busyIds[p.id]" t-on-click="() => this.run(p, 'action_nest_accept')">
+              <i class="fa fa-check me-1" title="Принять"/>Принять в очередь
+            </button>
+            <button t-if="p.d.nest_busy" class="btn btn-secondary btn-sm" t-on-click="() => this.run(p, 'action_nest_stop')">
+              <i class="fa fa-stop me-1" title="Остановить"/>Остановить
+            </button>
+            <button class="btn btn-link btn-sm" t-on-click="() => this.open(p)">Открыть</button>
+          </div>
+        </div>
+        <div class="pmk-sn-status" t-att-class="{'pmk-sn-status--error': p.d.nest_status_kind === 'error'}">
+          <i t-if="p.d.nest_busy" class="fa fa-spinner fa-spin me-1" title="Считается"/>
+          <t t-if="p.d.sheet_count"><t t-esc="p.d.nest_state_text"/> · <t t-esc="p.d.nest_program or ''"/></t>
+          <t t-else="" t-esc="p.d.nest_status"/>
+        </div>
+        <table t-if="!p.view.empty" class="pmk-sn-table pmk-snp__table">
+          <thead>
+            <tr>
+              <th/>
+              <th t-foreach="p.view.cols" t-as="c" t-key="c.key"
+                  t-att-class="{'pmk-sn-chosen': c.chosen, 'pmk-sn-pick': !p.d.sheet_count}"
+                  t-on-click="() => this.pick(p, c)">
+                <t t-esc="c.label"/>
+                <span class="pmk-sn-untested" t-esc="c.untested ? 'не проверен' : ' '"/>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr t-foreach="p.view.rows" t-as="row" t-key="row_index">
+              <th t-esc="row.label"/>
+              <td t-foreach="row.cells" t-as="cell" t-key="cell.key"
+                  t-att-class="{'pmk-sn-best': cell.best, 'pmk-sn-chosen': cell.key === p.d.nest_strategy, 'pmk-sn-pick': !p.d.sheet_count}"
+                  t-on-click="() => this.pick(p, {key: cell.key})" t-esc="cell.text"/>
+            </tr>
+          </tbody>
+        </table>
+        <div t-if="p.view.decision" class="pmk-sn-decision" t-esc="p.view.decision"/>
+        <div t-elif="!p.view.empty and !p.d.sheet_count" class="pmk-sn-muted">Порядок резки не выбран — щёлкните столбец.</div>
+        <div t-foreach="p.view.notes" t-as="n" t-key="n_index" class="pmk-sn-warn" t-esc="n"/>
+      </div>
+    </div>
+  </t>
+</templates>

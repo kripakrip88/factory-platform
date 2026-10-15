@@ -27,8 +27,11 @@
   <menuitem id="menu_pmk_laser_parts_to_nest" name="Детали к раскрою"
             parent="menu_pmk_laser" action="action_laser_parts_to_nest" sequence="9"/>
 
-  <menuitem id="menu_pmk_laser_job" name="Раскрои"
-            parent="menu_pmk_laser" action="action_laser_job" sequence="10"/>
+  <menuitem id="menu_pmk_laser_nest" name="Раскрои"
+            parent="menu_pmk_laser" action="action_laser_nest" sequence="10"/>
+
+  <menuitem id="menu_pmk_laser_job" name="Программы раскроя"
+            parent="menu_pmk_laser" action="action_laser_job" sequence="11"/>
 
   <menuitem id="menu_pmk_laser_measure" name="Замеры"
             parent="menu_pmk_laser" action="action_laser_measure" sequence="20"/>

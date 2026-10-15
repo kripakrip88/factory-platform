@@ -103,6 +103,7 @@ MD5), с Thickness="1.5" и «чёрной сталью» — на 2, 3 и 10 м
         "views/laser_machine_views.xml",
         "views/laser_job_views.xml",
         "views/laser_task_views.xml",
+        "views/laser_nest_views.xml",
         "views/laser_measure_views.xml",
         "views/laser_norm_views.xml",
         "views/laser_offcut_views.xml",

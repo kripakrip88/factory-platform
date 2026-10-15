@@ -64,7 +64,8 @@ _STAGES = {
     # Лазер (переделка 15.10.2026): задание на резку по заказу → раскрой. Раскрой —
     # шагом правее: в нём детали нескольких заказов.
     'pmk.laser.task': (4, 'Задание на резку'),
-    'pmk.laser.job': (4.5, 'Раскрой лазера'),
+    'pmk.laser.nest': (4.5, 'Раскрой лазера'),
+    'pmk.laser.job': (4.6, 'Программа раскроя'),
     # Доборка — изготовление гнутых планок по сделке, работа цеха рядом с
     # раскроем и лазером (разбор UX, шаг 35: поле «Сделка» у доборки,
     # счётчик «Доборки» на сделке — pmk_deal, dobor_link.py). Вторая строка
@@ -260,6 +261,10 @@ class PmkFlowBuilder(models.AbstractModel):
             if record.has_unplaced:
                 return 'есть неразмещённые', 'red'
             return 'отход %s%%' % _num(record.waste_ratio, 1), 'blue'
+
+        if model == 'pmk.laser.nest':
+            color = {'done': 'green', 'work': 'blue', 'queue': 'blue'}.get(record.state, 'grey')
+            return (record.thickness_text or dict(record._fields['state'].selection).get(record.state, '')), color
 
         if model == 'pmk.laser.task':
             label = dict(record._fields['state'].selection).get(record.state, '')
@@ -680,11 +685,17 @@ class PmkFlowBuilder(models.AbstractModel):
         elif model == 'pmk.laser.task':
             linked.append(self._optional_rel(record, 'spec_id', hidden))
             linked.append(self._optional_rel(record, 'sale_order_id', hidden))
-            linked.append(record.job_ids)
+            linked.append(_field(record, 'nest_ids') or record.job_ids)
+        elif model == 'pmk.laser.nest':
+            linked.append(record.task_ids)
+            linked.append(record.program_ids)
         elif model == 'pmk.laser.job':
             linked.append(self._optional_rel(record, 'spec_id', hidden))
             linked.append(self._optional_rel(record, 'sale_order_id', hidden))
-            linked.append(_field(record, 'task_ids') or self.env['pmk.laser.task'])
+            if _field(record, 'nest_id'):
+                linked.append(self._optional_rel(record, 'nest_id', hidden))
+            else:
+                linked.append(_field(record, 'task_ids') or self.env['pmk.laser.task'])
 
         seen, out = set(), []
         for rs in linked:

@@ -8,6 +8,7 @@ from . import labels
 from . import machine
 from . import job
 from . import task
+from . import nest
 from . import measure
 from . import norm
 from . import offcut

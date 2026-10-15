@@ -241,3 +241,24 @@ class TestSheetNest(TransactionCase):
         self.assertIn("sheet_nest", names)
         self.assertEqual(names[names.index("parts") + 1], "sheet_nest")
         self.assertTrue(arch.xpath("//field[@name='nest_strategy'][@widget='pmk_sheet_nest_strategy']"))
+
+    def test_nest_document_plan_all(self):
+        """Раскрой-документ: «Рассчитать все» — прогон на каждую программу по толщине."""
+        Sheet = self.env["pmk.metal.sheet"]
+        if not Sheet.search([("sheet_type", "=", "Гладкий"), ("thickness_mm", "=", 3)], limit=1):
+            Sheet.create({"sheet_type": "Гладкий", "thickness_mm": 3, "gost": "ГОСТ", "mass_per_sqm": 23.55})
+        if not Sheet.search([("sheet_type", "=", "Гладкий"), ("thickness_mm", "=", 1.5)], limit=1):
+            Sheet.create({"sheet_type": "Гладкий", "thickness_mm": 1.5, "gost": "ГОСТ", "mass_per_sqm": 11.78})
+        task = self.env["pmk.laser.task"].create({"note": "проба"})
+        for name, t in (("пл1", 1.5), ("пл2", 3)):
+            self.env["pmk.laser.task.part"].create({"task_id": task.id, "name": name, "thickness_mm": t,
+                                                    "qty": 4, "drawing": base64.b64encode(DXF)})
+        nest = self.env["pmk.laser.nest"].browse(task.action_nest_all()["res_id"])
+        self.assertEqual(len(nest.program_ids), 2)
+        with mock.patch.object(type(self.env["pmk.sheet.nest.run"]), "_start", autospec=True) as start:
+            nest.action_nest_plan_all()
+        self.assertEqual(start.call_count, 2)
+        self.assertEqual(len(nest.program_ids.nest_run_ids), 2)
+        view = self.env["pmk.laser.nest"].get_views([(False, "form")])["views"]["form"]["arch"]
+        self.assertIn('widget="pmk_sheet_nest_programs"', view)
+

@@ -7,7 +7,7 @@
     <field name="arch" type="xml">
       <!-- Список заданий: слева что режем, справа деньги. Премия в списке не
            украшение — это то, ради чего участок вообще заводят в систему. -->
-      <list string="Раскрои">
+      <list string="Программы раскроя">
         <!-- Разбор UX, шаг 24: номер «ЛР-00001» не обрезается; премия без
              копеек, как деньги в остальных списках (точная — в задании). -->
         <field name="name" width="105px"/>
@@ -79,7 +79,7 @@
            «Лист» со значением той же ширины, что соседние поля; «Ширина
            реза» и «Обрезок от» (с шага 36 — на вкладке «Обрезки») в рамке
            поля. -->
-      <form string="Раскрой" class="pmk-doc-form o_pmk_header_up pmk-labels-top-groups">
+      <form string="Программа раскроя" class="pmk-doc-form o_pmk_header_up pmk-labels-top-groups">
         <header>
           <!-- Залитая — только пока файл не разобран: это следующий шаг
                (разбор UX, шаг 27; одна залитая кнопка на экран). После
@@ -124,6 +124,9 @@
             <!-- Переделка 15.10.2026: детали раскроя — из заданий на резку, хоть нескольких
                  заказов; строкой под номером видно, чьи они (в группу «Задание» не кладём —
                  в ней пять строк, шаг 36). -->
+            <div class="pmk-job-tasks text-muted" invisible="not nest_id">
+              Раскрой: <field name="nest_id" nolabel="1" class="d-inline" readonly="1"/>
+            </div>
             <div class="pmk-job-tasks text-muted" invisible="not task_ids">
               Заказы: <field name="task_text" nolabel="1" class="d-inline"/>
               <field name="task_ids" invisible="1"/>
@@ -528,7 +531,7 @@
   </record>
 
   <record id="action_laser_job" model="ir.actions.act_window">
-    <field name="name">Раскрои</field>
+    <field name="name">Программы раскроя</field>
     <field name="res_model">pmk.laser.job</field>
     <field name="view_mode">list,form</field>
     <field name="search_view_id" ref="view_laser_job_search"/>

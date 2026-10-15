@@ -39,6 +39,7 @@ _LANE_OF = {
     'project.project': 'make',
     'pmk.laser.job': 'make',
     'pmk.laser.task': 'make',
+    'pmk.laser.nest': 'make',
     'mrp.production': 'make',
     'stock.picking': 'ship',
     'account.move': 'ship',

@@ -24,11 +24,19 @@
       <field name="padding">5</field>
       <field name="company_id" eval="False"/>
     </record>
+    <!-- Раскрой — документ с программами по толщинам (15.10.2026) — РС-. -->
+    <record id="seq_laser_nest" model="ir.sequence">
+      <field name="name">Раскрой (лазер)</field>
+      <field name="code">pmk.laser.nest</field>
+      <field name="prefix">РС-</field>
+      <field name="padding">5</field>
+      <field name="company_id" eval="False"/>
+    </record>
   </data>
-  <!-- Раскрой (бывшее «задание лазеру») — РС-. Счётчик noupdate, поэтому префикс
+  <!-- Программа раскроя (бывшее «задание лазеру») вне документа раскроя — ПР-. Счётчик noupdate, поэтому префикс
        меняется вызовом при каждом обновлении, номер не сбрасывается. -->
   <function model="ir.sequence" name="write">
     <value eval="[ref('pmk_laser.seq_laser_job')]"/>
-    <value eval="{'prefix': 'РС-', 'name': 'Раскрой (лазер)'}"/>
+    <value eval="{'prefix': 'ПР-', 'name': 'Программа раскроя'}"/>
   </function>
 </odoo>

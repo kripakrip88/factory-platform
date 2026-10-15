@@ -73,13 +73,20 @@ class TestLaserTasks(TransactionCase):
         self.assertEqual(part.size_text, "100 × 60")
         self.assertEqual(task.thickness_text, "10 мм")
 
+    def _nest(self, parts):
+        action = parts.action_create_nest()
+        self.assertEqual(action["res_model"], "pmk.laser.nest")
+        return self.env["pmk.laser.nest"].browse(action["res_id"])
+
     def test_nest_from_two_orders(self):
         a = self._task(("пл1", 2, 20), ("косынка", 2, 40), ("пл2", 10, 4))
         b = self._task(("пл1", 2, 6))
         parts = (a.part_ids | b.part_ids).filtered(lambda p: p.thickness_mm == 2)
-        action = parts.action_create_nest()
-        job = self.env["pmk.laser.job"].browse(action["res_id"])
-        self.assertTrue(job.name.startswith("РС-"))
+        nest = self._nest(parts)
+        self.assertTrue(nest.name.startswith("РС-"))
+        job = nest.program_ids
+        self.assertEqual(len(job), 1)
+        self.assertEqual(job.name, "%s · 2 мм" % nest.name)
         self.assertAlmostEqual(job.thickness_mm, 2.0)
         self.assertEqual(job.task_ids, a | b, "в раскрое детали двух заказов")
         names = sorted(job.part_ids.mapped("name"))
@@ -89,10 +96,27 @@ class TestLaserTasks(TransactionCase):
         self.assertEqual(a.part_ids.filtered(lambda p: p.name == "пл2").qty_left, 4, "10 мм — не тронута")
         self.assertEqual(a.state, "nest")
         self.assertIn(job, a.job_ids)
+        self.assertEqual(nest.task_ids, a | b)
+
+    def test_one_nest_many_thicknesses(self):
+        """Один раскрой — программа на каждую толщину (как цвета у зонтов)."""
+        a = self._task(("пл1", 2, 20), ("пл2", 10, 4), ("пл3", 10, 2))
+        nest = self._nest(a.part_ids)
+        self.assertEqual(sorted(round(t, 1) for t in nest.program_ids.mapped("thickness_mm")), [2.0, 10.0])
+        ten = nest.program_ids.filtered(lambda p: p.thickness_mm == 10)
+        self.assertEqual(len(ten.part_ids), 2)
+        self.assertEqual(nest.thickness_text, "2 мм, 10 мм")
+        self.assertEqual(nest.state, "draft")
+        b = self._task(("косынка", 10, 8))
+        b.part_ids.with_context(pmk_target_nest=nest.id).action_create_nest()
+        self.assertEqual(len(ten.part_ids), 3, "добавили в тот же раскрой — в программу своей толщины")
+        c = self._task(("лоток", 2, 5))
+        self.assertEqual(c.action_nest_all()["res_model"], "pmk.laser.nest")
+        self.assertEqual(c.part_ids.qty_left, 0)
 
     def test_nest_checks(self):
-        a = self._task(("пл1", 2, 20), ("пл2", 10, 4))
-        with self.assertRaisesRegex(UserError, "одной толщины"):
+        a = self._task(("пл1", 2, 20), ("пл2", 3.7, 4))
+        with self.assertRaisesRegex(UserError, "Нет листа в справочнике"):
             a.part_ids.action_create_nest()
         a.part_ids[0].drawing = False
         with self.assertRaisesRegex(UserError, "Нет чертежа"):
@@ -100,7 +124,8 @@ class TestLaserTasks(TransactionCase):
 
     def test_partial_qty_and_add_to_nest(self):
         a = self._task(("лоток", 2, 269))
-        job = self.env["pmk.laser.job"].browse(a.part_ids.action_create_nest()["res_id"])
+        nest = self._nest(a.part_ids)
+        job = nest.program_ids
         line = job.part_ids
         line.qty = 100
         self.assertEqual(a.part_ids.qty_left, 169, "остаток — снова в «Детали к раскрою»")
@@ -108,7 +133,7 @@ class TestLaserTasks(TransactionCase):
             line.qty = 300
         b = self._task(("шайба", 2, 16))
         wiz = self.env["pmk.laser.add.to.nest"].with_context(
-            **b.part_ids.action_add_to_nest()["context"]).create({"job_id": job.id})
+            **b.part_ids.action_add_to_nest()["context"]).create({"nest_id": nest.id})
         wiz.action_apply()
         self.assertEqual(len(job.part_ids), 2)
         self.assertEqual(job.task_ids, a | b)
@@ -145,12 +170,12 @@ class TestLaserTasks(TransactionCase):
     def test_job_line_parse_drawing_fixed(self):
         """«Разобрать» в строке раскроя падала: звала несуществующий drawing.read_drawing."""
         a = self._task(("пл1", 2, 5))
-        job = self.env["pmk.laser.job"].browse(a.part_ids.action_create_nest()["res_id"])
+        job = self._nest(a.part_ids).program_ids
         job.part_ids.write({"cut_length_mm": 0})
         job.part_ids.action_parse_drawing()
         self.assertGreater(job.part_ids.cut_length_mm, 0)
 
     def test_menus(self):
         names = self.env.ref("pmk_laser.menu_pmk_laser").child_id.mapped("name")
-        for n in ("Задания на резку", "Детали к раскрою", "Раскрои", "Очередь листов"):
+        for n in ("Задания на резку", "Детали к раскрою", "Раскрои", "Программы раскроя", "Очередь листов"):
             self.assertIn(n, names)

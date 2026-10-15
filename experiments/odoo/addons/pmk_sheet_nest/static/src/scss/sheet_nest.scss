@@ -179,3 +179,32 @@ body.o_nexus_dark {
     background: rgba(255, 255, 255, 0.07);
   }
 }
+
+// Раскрой-документ: блоки программ по толщинам (js/nest_programs.js) — как цвета у раскроя зонтов.
+.o_field_widget.o_field_pmk_sheet_nest_programs { display: block; width: 100%; }
+
+.pmk-snp {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.pmk-snp__card {
+  border: 1px solid var(--pmk-border, #e3e4e8);
+  border-radius: 12px;
+  padding: 12px 16px;
+  background: var(--pmk-surface, #fff);
+}
+
+.pmk-snp__head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px 16px;
+}
+
+.pmk-snp__title { font-weight: 600; font-size: 15px; }
+.pmk-snp__btns { display: flex; flex-wrap: wrap; gap: 6px; }
+.pmk-snp__table { margin-top: 8px; }
+.pmk-snp__error { color: var(--bs-danger, #c0392b); white-space: pre-line; }

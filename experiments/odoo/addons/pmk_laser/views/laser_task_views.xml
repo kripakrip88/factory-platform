@@ -34,15 +34,18 @@
     <field name="arch" type="xml">
       <form string="Задание на резку" class="pmk-doc-form o_pmk_header_up pmk-labels-top-groups">
         <header>
-          <button name="action_parts_to_nest" type="object" string="Детали к раскрою" class="btn-primary"
-                  icon="fa-th-large" invisible="not part_ids"/>
+          <button name="action_nest_all" type="object" string="Разложить" class="btn-primary"
+                  icon="fa-th-large" invisible="not part_ids or state != 'new'"
+                  title="Все неразложенные детали задания — в новый раскрой (программы по толщинам сами)"/>
+          <button name="action_parts_to_nest" type="object" string="Детали к раскрою"
+                  icon="fa-list" invisible="not part_ids"/>
           <field name="state" widget="statusbar"/>
         </header>
         <sheet>
           <div class="oe_button_box" name="button_box">
             <button name="action_open_jobs" type="object" class="oe_stat_button" icon="fa-scissors"
                     invisible="not job_count">
-              <field name="job_count" widget="statinfo" string="Раскрои"/>
+              <field name="job_count" widget="statinfo" string="Программ"/>
             </button>
           </div>
           <div class="pmk-doc-top" name="pmk_doc_top">
@@ -136,8 +139,8 @@
     <field name="arch" type="xml">
       <list string="Детали к раскрою" create="0" expand="1" default_order="thickness_mm, task_id, id">
         <header>
-          <button name="action_create_nest" type="object" string="Создать раскрой" class="btn-primary"/>
-          <button name="action_add_to_nest" type="object" string="Добавить в раскрой"/>
+          <button name="action_create_nest" type="object" string="В раскрой" class="btn-primary"/>
+          <button name="action_add_to_nest" type="object" string="Добавить в открытый раскрой"/>
         </header>
         <field name="preview_svg" widget="pmk_svg" string="Эскиз" optional="show"/>
         <field name="name"/>
@@ -180,8 +183,8 @@
     <field name="context">{'search_default_left': 1, 'search_default_group_thickness': 1}</field>
     <field name="help" type="html">
       <p class="o_view_nocontent_smiling_face">Всё разложено</p>
-      <p>Здесь — детали заданий на резку, которые ещё не в раскрое. Отметьте детали одной толщины
-         (хоть из разных заказов) → «Создать раскрой» или «Добавить в раскрой».</p>
+      <p>Здесь — детали заданий на резку, которые ещё не в раскрое. Отметьте детали (хоть разных
+         толщин и заказов) → «В раскрой»: программы по толщинам разложатся сами.</p>
     </field>
   </record>
 
@@ -190,10 +193,8 @@
     <field name="model">pmk.laser.add.to.nest</field>
     <field name="arch" type="xml">
       <form string="Добавить в раскрой">
-        <field name="thickness_mm" invisible="1"/>
-        <field name="sheet_type" invisible="1"/>
         <group>
-          <field name="job_id" options="{'no_create': True}"/>
+          <field name="nest_id" options="{'no_create': True}"/>
           <field name="part_ids" widget="many2many_tags" readonly="1"/>
         </group>
         <footer>

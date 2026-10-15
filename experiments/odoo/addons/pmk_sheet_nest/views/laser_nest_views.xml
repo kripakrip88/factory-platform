@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!-- Раскрой-документ (pmk_laser, pmk.laser.nest): блоки программ по толщинам со сводкой и
+       кнопками, кнопки на все толщины в шапке (15.10.2026). active в XML — грабли Odoo 19. -->
+  <record id="view_laser_nest_form_sheet_nest" model="ir.ui.view">
+    <field name="name">pmk.laser.nest.form.sheet.nest</field>
+    <field name="model">pmk.laser.nest</field>
+    <field name="inherit_id" ref="pmk_laser.view_laser_nest_form"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//header/button[@name='action_add_parts']" position="after">
+        <field name="nest_busy" invisible="1"/>
+        <field name="nest_can_build_any" invisible="1"/>
+        <field name="nest_can_accept_any" invisible="1"/>
+        <button name="action_nest_plan_all" type="object" string="Рассчитать все" class="btn-primary"
+                icon="fa-th-large" invisible="state != 'draft' or nest_busy or not program_count"/>
+        <button name="action_nest_build_all" type="object" string="Собрать все программы" class="btn-primary"
+                icon="fa-cogs" invisible="not nest_can_build_any or nest_busy"/>
+        <button name="action_nest_accept_all" type="object" string="Принять все" class="btn-primary"
+                icon="fa-check" invisible="not nest_can_accept_any or nest_busy"
+                confirm="Программы станут «Файлом раскроя» своих программ, листы уйдут в «Очередь листов». Автосортировку в CypCut не запускать. Принять?"/>
+      </xpath>
+      <xpath expr="//field[@name='program_ids']" position="replace">
+        <field name="program_ids" nolabel="1" widget="pmk_sheet_nest_programs" readonly="1"/>
+      </xpath>
+    </field>
+  </record>
+</odoo>
