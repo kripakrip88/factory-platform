@@ -286,6 +286,5 @@ class TestSheetNest(TransactionCase):
         finally:
             import shutil
             shutil.rmtree(wd, ignore_errors=True)
-        self.assertEqual(names[0], "Проба 3 кВт", "станок программы первым")
-        self.assertIn("Проба 2", names)
+        self.assertEqual(names, ["Проба 3 кВт"], "время — только станка программы (его выбирает инженер)")
 

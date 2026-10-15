@@ -51,6 +51,8 @@ class LaserMachineProfile(models.Model):
             machine.nest_profile_info = " · ".join(bits)
 
     def _nest_profile(self):
+        if not self:
+            return None
         self.ensure_one()
         raw = self.sudo().nest_profile_json
         if not raw:
