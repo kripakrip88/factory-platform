@@ -46,6 +46,10 @@ class CloudFile(models.Model):
     mtime = fields.Datetime("Изменён в Облаке")
     first_seen = fields.Datetime("Замечен", default=fields.Datetime.now)
     notified = fields.Boolean("Сообщено в группу")
+    # Найден, но в группу ещё не ушёл (Телеграм отказал — 15.10 «TOPIC_CLOSED»):
+    # следующая проверка пошлёт снова.
+    pending = fields.Boolean("Ждёт отправки", index=True)
+    change = fields.Char("Что случилось")
 
     _path_uniq = models.Constraint("unique(path)", "Файл с этим путём уже записан.")
 
@@ -95,14 +99,15 @@ class CloudFile(models.Model):
     def _recent_files(self, dav, root, today, exclude=()):
         """Корень папки, папки дат за RECENT_DAYS дней и папки без даты (кроме exclude) —
         с вложенными. Старые папки дат и исключённые — только ночным обходом."""
-        files = []
+        files, scanned = [], []
         for item in dav.list(root):
             if not item["dir"]:
                 files.append(item)
             elif is_recent(item["name"], today, RECENT_DAYS) or (
                     folder_date(item["name"]) is None and item["name"].strip().lower() not in exclude):
                 files.extend(dav.walk(item["path"]))
-        return files
+                scanned.append(item["path"])
+        return files, scanned
 
     @api.model
     def _walk_step(self, dav, walk, deadline):
@@ -149,11 +154,11 @@ class CloudFile(models.Model):
         notes = []
         try:
             if baseline_done:
-                files = self._wanted(self._recent_files(dav, cfg["root"], fields.Date.context_today(self),
-                                                        cfg["exclude"]), cfg)
-                fresh = self._remember(files, notify=True, detect_moves=True)
-                if fresh:
-                    self._notify(cfg["root"], fresh)
+                found, scanned = self._recent_files(dav, cfg["root"], fields.Date.context_today(self),
+                                                    cfg["exclude"])
+                files = self._wanted(found, cfg)
+                fresh = self._remember(files, notify=True, moves_within=[cfg["root"]] + scanned,
+                                       root=cfg["root"])
                 notes.append("свежие папки: %d файлов, новых %d" % (len(files), len(fresh)))
             if walk:
                 walk["runs"] += 1
@@ -161,8 +166,6 @@ class CloudFile(models.Model):
                 files = self._wanted(found, cfg)
                 notify = walk["kind"] == "full"
                 fresh = self._remember(files, notify=notify)
-                if notify and fresh:
-                    self._notify(cfg["root"], fresh)
                 walk["files"] += len(files)
                 walk["new"] += len(fresh)
                 if walk["queue"]:
@@ -183,11 +186,19 @@ class CloudFile(models.Model):
         except WebDavError as e:
             _logger.warning("облако: %s", e)
             notes.append("ошибка: %s" % e)
+        sent = self._send_pending(cfg["root"])
+        if sent is False:
+            notes.append("Телеграм не принял сообщение — пошлю следующей проверкой")
         self._status("%s — %s" % (now_txt, "; ".join(notes) or "нечего проверять"))
 
     @api.model
-    def _remember(self, files, notify=True, detect_moves=False):
-        """Записать увиденное; вернуть [(файл, «новый»|«обновлён»)] для сообщения."""
+    def _remember(self, files, notify=True, moves_within=None, root=None):
+        """Записать увиденное; вернуть [(файл, «новый»|«обновлён»)]. notify — пометить к отправке.
+
+        moves_within — папки, которые эта проверка обошла целиком: перенос узнаём, только
+        если прежний путь лежит в них и его больше нет. Прежний путь вне обойдённого (копия
+        из «Архива» в папку даты) — файл новый: копия тоже новость для цеха (15.10: копия
+        «Шаблоны для УК БСМ Сваи» «увела» запись оригинала и не пришла)."""
         known = {r.path: r for r in self.search([("path", "in", [f["path"] for f in files])])}
         fresh = []
         for f in sorted(files, key=lambda x: x["path"]):
@@ -196,19 +207,21 @@ class CloudFile(models.Model):
             if rec:
                 changed = rec.size != f["size"] or (f["mtime"] and rec.mtime != f["mtime"])
                 if changed:
-                    rec.write(dict(vals, notified=notify))
+                    rec.write(dict(vals, pending=notify, change="обновлён"))
                     if notify:
                         fresh.append((f, "обновлён"))
                 continue
-            # Перенос узнаём только в свежих папках: при обходе частями прежний путь мог ещё
-            # не попасть в очередь — копия файла в другой папке «увела» бы его запись.
-            moved = self.search([("name", "=", f["name"]), ("size", "=", f["size"]),
-                                 ("mtime", "=", f["mtime"]), ("path", "not in", [x["path"] for x in files])],
-                                limit=1) if (detect_moves and f["mtime"]) else self.browse()
+            moved = self.browse()
+            if moves_within and f["mtime"]:
+                here = {x["path"] for x in files}
+                moved = self.search([("name", "=", f["name"]), ("size", "=", f["size"]),
+                                     ("mtime", "=", f["mtime"]), ("path", "not in", list(here))]).filtered(
+                    lambda r: any(r.path.startswith(p + "/") and (p != root or r.path.count("/") == root.count("/") + 1)
+                                  for p in moves_within))[:1]
             if moved:
                 moved.path = f["path"]  # перенесли или переименовали папку — не новый
                 continue
-            self.create(dict(vals, path=f["path"], name=f["name"], notified=notify))
+            self.create(dict(vals, path=f["path"], name=f["name"], pending=notify, change="новый"))
             if notify:
                 fresh.append((f, "новый"))
         return fresh
@@ -241,16 +254,22 @@ class CloudFile(models.Model):
 
     @api.model
     def _notify(self, root, fresh):
-        """В общую группу (без темы); своя тема — параметр pmk_telegram.thread.cloud."""
-        icp = self.env["ir.config_parameter"].sudo()
-        bot = self.env["pmk.telegram.bot"].sudo()
-        chat = icp.get_param("pmk_telegram.group_chat_id")
-        api_ = bot._pmk_api()
-        if not chat or not api_:
-            _logger.info("облако: группа Телеграма не подключена — %d файлов без сообщения", len(fresh))
+        """В группу, в тему вида «cloud» (/connect облако), нет её — в основную тему бота
+        (тема «Общая» в группе закрыта — 15.10 TOPIC_CLOSED). True — Телеграм принял."""
+        return bool(self.env["pmk.telegram.bot"].sudo().pmk_send_group(
+            self._message(root, fresh), kind="cloud"))
+
+    @api.model
+    def _send_pending(self, root):
+        """Отправить всё, что ждёт; None — нечего, True/False — принял ли Телеграм."""
+        recs = self.search([("pending", "=", True)], order="path")
+        if not recs:
+            return None
+        fresh = [({"path": r.path, "name": r.name, "size": r.size}, r.change or "новый") for r in recs]
+        if not self._notify(root, fresh):
             return False
-        return bool(api_.send(chat, self._message(root, fresh),
-                              thread_id=icp.get_param("pmk_telegram.thread.cloud") or None))
+        recs.write({"pending": False, "notified": True})
+        return True
 
     # ------------------------------------------------------------ проверка из настроек
     @api.model

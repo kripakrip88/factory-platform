@@ -149,6 +149,31 @@ class TestCloud(TransactionCase):
                          ["давнее.lxds", "лист.dxf", "опора.lxds", "план.dxf", "старое.zx"],
                          "сбой папки не выбросил её файлы из точки отсчёта")
 
+    def test_telegram_refused_is_resent(self):
+        """Телеграм отказал (тема закрыта) — файл не считается отправленным, уйдёт следующей проверкой."""
+        self.Cloud._cron_scan()
+        self.tree["/ПРОИЗВОДСТВО/09.10.26"].append(("заказ.dxf", 2048))
+        with mock.patch.object(type(self.Cloud), "_notify", lambda s, root, fresh: False):
+            self.Cloud._cron_scan()
+        rec = self.Cloud.search([("name", "=", "заказ.dxf")])
+        self.assertTrue(rec.pending)
+        self.assertIn("не принял", self.env["ir.config_parameter"].sudo().get_param("pmk_cloud.last_status"))
+        self.Cloud._cron_scan()
+        self.assertEqual(len(self.sent), 1)
+        self.assertIn("заказ.dxf", self.sent[0])
+        self.assertFalse(rec.pending)
+        self.assertTrue(rec.notified)
+
+    def test_copy_from_archive_is_new(self):
+        """Копия файла из «Архива» в папку даты — новый файл, запись оригинала не трогаем."""
+        self.Cloud._cron_scan()
+        self.tree["/ПРОИЗВОДСТВО/09.10.26"].append(("давнее.lxds", 500))
+        self.Cloud._cron_scan()
+        self.assertEqual(len(self.sent), 1)
+        self.assertIn("давнее.lxds", self.sent[0])
+        self.assertEqual(sorted(self.Cloud.search([("name", "=", "давнее.lxds")]).mapped("path")),
+                         ["/ПРОИЗВОДСТВО/09.10.26/давнее.lxds", "/ПРОИЗВОДСТВО/Архив/2025/давнее.lxds"])
+
     def test_error_goes_to_status_not_crash(self):
         self.env["ir.config_parameter"].sudo().set_param("pmk_cloud.root", "/НЕТ")
         self.Cloud._cron_scan()
