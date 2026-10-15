@@ -48,7 +48,9 @@
                     <t t-esc="row.number"/>
                   </td>
                   <td colspan="4" t-att-class="{ sel: isSel(row_index, 'name') }">
-                    <input class="o_pmk_butik__in o_pmk_butik__in--product" t-att-value="val(row, 'name')"
+                    <!-- Наименование — textarea: длинное название переносится, строка
+                         растёт (Антон 16.10). Enter в ней — переход ниже, как везде. -->
+                    <textarea rows="1" class="o_pmk_butik__in o_pmk_butik__in--product o_pmk_butik__ta" t-att-value="val(row, 'name')"
                            t-att-data-index="row_index" data-col="name" t-att-readonly="!state.data.can_write"
                            placeholder="Изделие: название, шифр, покрытие"
                            t-on-focus="() => this.onFocus(row_index, 'name')"
@@ -72,10 +74,18 @@
                   <t t-foreach="['pos', 'name', 'width', 'length_mm', 'qty']" t-as="col" t-key="col">
                     <td t-if="col === 'width' and !row.is_sheet" class="o_pmk_butik__ro"/>
                     <td t-else="" t-att-class="{ sel: isSel(row_index, col), n: isNum(col), 'o_pmk_butik__namecell': col === 'name' }">
-                      <input class="o_pmk_butik__in" t-att-class="{ n: isNum(col) }"
+                      <textarea t-if="col === 'name'" rows="1" class="o_pmk_butik__in o_pmk_butik__ta"
+                             t-att-value="val(row, col)" t-att-data-index="row_index" data-col="name"
+                             t-att-readonly="!state.data.can_write"
+                             placeholder="Уголок 63х4 · или коротко: д1 шв10 1200мм 10шт 09г"
+                             t-on-focus="() => this.onFocus(row_index, col)"
+                             t-on-input="(ev) => this.onInput(row, row_index, col, ev)"
+                             t-on-change="(ev) => this.commit(row, col, ev)"
+                             t-on-keydown="(ev) => this.onKeydown(row_index, col, ev)"
+                             t-on-paste="(ev) => this.onPaste(row_index, ev)"/>
+                      <input t-else="" class="o_pmk_butik__in" t-att-class="{ n: isNum(col) }"
                              t-att-value="val(row, col)" t-att-data-index="row_index" t-att-data-col="col"
                              t-att-readonly="!state.data.can_write"
-                             t-att-placeholder="col === 'name' ? 'Уголок 63х4 · или коротко: д1 шв10 1200мм 10шт 09г' : ''"
                              t-on-focus="() => this.onFocus(row_index, col)"
                              t-on-input="(ev) => this.onInput(row, row_index, col, ev)"
                              t-on-change="(ev) => this.commit(row, col, ev)"

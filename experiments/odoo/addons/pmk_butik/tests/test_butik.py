@@ -152,6 +152,12 @@ class TestButik(TransactionCase):
         lanes = self.env["pmk.flow.builder"].get_flow_lanes("crm.lead", lead.id)
         self.assertTrue(lanes["lanes"])
 
+    def test_save_button(self):
+        spec = self.env["pmk.butik.spec"].create({"subject": "Тест"})
+        action = spec.action_butik_save()
+        self.assertEqual(action["tag"], "display_notification")
+        self.assertIn(spec.name, action["params"]["message"])
+
     def test_link_deal(self):
         lead = self.env["crm.lead"].create({"name": "Сделка бутика", "type": "opportunity"})
         spec = self.env["pmk.butik.spec"].create({"lead_id": lead.id})

@@ -228,3 +228,13 @@
 .o_form_view.pmk-butik-form .o_form_sheet_bg { overflow: visible; }
 
 .o_pmk_butik__nowrap { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+// Наименование — textarea по высоте текста (js autosize): перенос длинного названия.
+textarea.o_pmk_butik__ta {
+  min-height: 29px;
+  line-height: 20px;
+  resize: none;
+  overflow: hidden;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

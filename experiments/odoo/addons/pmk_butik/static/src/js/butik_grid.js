@@ -13,7 +13,7 @@
  *
  * Сервисы — env.services (грабля шага 31), ответ после закрытия формы не пишем.
  */
-import { Component, onPatched, status, useEffect, useRef, useState } from "@odoo/owl";
+import { Component, onMounted, onPatched, status, useEffect, useRef, useState } from "@odoo/owl";
 import { _t } from "@web/core/l10n/translation";
 import { registry } from "@web/core/registry";
 import { standardWidgetProps } from "@web/views/widgets/standard_widget_props";
@@ -53,7 +53,9 @@ export class PmkButikGrid extends Component {
             },
             () => [this.props.record.resId]
         );
+        onMounted(() => this.autosize());
         onPatched(() => {
+            this.autosize();
             this.applyFocus();
             this.root.el?.querySelector(".o_pmk_butik__sitem--active")?.scrollIntoView({ block: "nearest" });
         });
@@ -185,7 +187,7 @@ export class PmkButikGrid extends Component {
             return;
         }
         const input = this.root.el.querySelector(
-            `input[data-index="${target.index}"][data-col="${target.col}"]`);
+            `[data-index="${target.index}"][data-col="${target.col}"]`);
         if (input) {
             this.pendingFocus = null;
             input.focus();
@@ -198,8 +200,20 @@ export class PmkButikGrid extends Component {
     }
 
     // ─── правка ─────────────────────────────────────────────────────────
+    // Высота наименования по тексту: длинное — в несколько строк.
+    autosize(el = null) {
+        const list = el ? [el] : this.root.el?.querySelectorAll("textarea.o_pmk_butik__ta") || [];
+        for (const area of list) {
+            area.style.height = "auto";
+            area.style.height = `${area.scrollHeight}px`;
+        }
+    }
+
     onInput(row, index, col, ev) {
         this.drafts[`${row.id}:${col}`] = ev.target.value;
+        if (ev.target.tagName === "TEXTAREA") {
+            this.autosize(ev.target);
+        }
         if (col === "name" && row.kind !== "product") {
             this.onNameInput(index, ev);
         }
@@ -339,7 +353,7 @@ export class PmkButikGrid extends Component {
 
     async choose(index, item, ev) {
         ev.preventDefault();
-        const input = this.root.el.querySelector(`input[data-index="${index}"][data-col="name"]`);
+        const input = this.root.el.querySelector(`[data-index="${index}"][data-col="name"]`);
         const row = this.rows[index];
         if (input && input.value !== row.name) {
             await this.call("butik_save_row", [row.id, { name: input.value }]);

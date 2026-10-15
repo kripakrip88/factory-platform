@@ -26,6 +26,15 @@
            рамкой с карточкой веса (pmk-doc-top / pmk-kpi темы, как у расчёта
            металлопроката), ниже вкладки «Спецификация» и «Связи». -->
       <form string="Бутик" class="pmk-doc-form pmk-labels-top pmk-butik-form">
+        <!-- «Сохранить» всегда на виду (Антон 16.10: «нет кнопок сохранения
+             документа»). Ячейки таблицы и так уходят на сервер сразу, но форма
+             из-за этого не становится «изменённой», и штатная кнопка ядра не
+             появлялась. Кнопка объекта сначала записывает форму (шапку, новый
+             расчёт), потом сообщает «Расчёт сохранён». -->
+        <header>
+          <button name="action_butik_save" type="object" string="Сохранить" class="btn-primary"
+                  data-hotkey="s"/>
+        </header>
         <sheet>
           <div class="pmk-doc-top" name="pmk_doc_top">
             <div class="oe_title pmk-spec-title">

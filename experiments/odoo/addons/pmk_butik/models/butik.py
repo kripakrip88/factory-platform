@@ -78,6 +78,15 @@ class ButikSpec(models.Model):
         self.ensure_one()
         return self.line_ids.sorted(lambda l: (l.sequence, l.id))
 
+    def action_butik_save(self):
+        """Кнопка «Сохранить»: запись формы делает сам клиент перед вызовом."""
+        self.ensure_one()
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {"message": _("Расчёт %s сохранён") % self.name, "type": "success", "sticky": False},
+        }
+
     def butik_rows(self):
         self.ensure_one()
         self.check_access("read")
