@@ -34,9 +34,17 @@ patch(StatusBarField.prototype, {
     },
 
     pmkTone(item) {
-        const code = this.pmkOrderCodes && this.pmkOrderCodes[item.value];
-        if (code) {
-            return TONE[code] || "grey";
+        const codes = this.pmkOrderCodes;
+        if (codes && this.props.record.data[this.props.name]) {
+            if (codes[item.value]) {
+                return TONE[codes[item.value]] || "grey";
+            }
+            // Этап планировщика без смысла («Разобрать: прошлые месяцы») — серый, как плашка
+            // в таблице; доски без смыслов этапов («Доработка») — тоном пути.
+            const own = this.props.record.data[this.props.name].id;
+            if (codes[own] || Object.keys(codes).some((id) => this.getAllItems().some((i) => i.value === Number(id)))) {
+                return "grey";
+            }
         }
         return super.pmkTone(...arguments);
     },
