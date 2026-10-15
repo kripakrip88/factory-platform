@@ -69,6 +69,21 @@ def parse_file_name(file_name):
     return name or stem, thickness, qty
 
 
+def thumbnail_svg(svg):
+    """Эскиз в строку таблицы. Отрисовщик ezdxf даёт чёрный лист в натуральную величину
+    («810mm») с белыми линиями толщиной в доли пикселя — в ячейке он невидим. Здесь:
+    без чёрного фона, размер ячейки, тёмная линия постоянной толщины."""
+    if not svg:
+        return svg
+    svg = re.sub(r"<\?xml[^>]*>\s*", "", svg)
+    svg = re.sub(r'<rect fill="#000000"[^>]*/>', "", svg, count=1)
+    svg = re.sub(r'(<svg[^>]*?)\swidth="[^"]*"\s+height="[^"]*"', r'\1 width="72" height="48" '
+                 r'preserveAspectRatio="xMidYMid meet"', svg, count=1)
+    svg = re.sub(r"stroke:\s*#[0-9a-fA-F]{6}", "stroke: currentColor", svg)  # и в тёмной теме
+    svg = re.sub(r"stroke-width:\s*[\d.]+;", "stroke-width: 1.2px; vector-effect: non-scaling-stroke;", svg)
+    return svg
+
+
 def drawing_metrics(data_b64, file_name):
     """Разобрать DXF: рез, проколы, габарит детали, эскиз. Ошибка — UserError с именем."""
     from ..tools import drawing  # разбор DXF, Odoo ему не нужен
@@ -88,7 +103,7 @@ def drawing_metrics(data_b64, file_name):
         "pierce_count": metrics.pierce_count,
         "part_width_mm": metrics.part_width_mm or metrics.width_mm,
         "part_height_mm": metrics.part_height_mm or metrics.height_mm,
-        "preview_svg": svg,
+        "preview_svg": thumbnail_svg(svg),
     }
 
 
@@ -296,6 +311,10 @@ class LaserTaskPart(models.Model):
                                 help="Из имени файла «пл1 10мм 20шт» или вручную. Раскрой — одной толщины.")
     sheet_type = fields.Char("Вид листа", default=DEFAULT_SHEET_TYPE,
                              help="Гладкий, рифлёный… — вместе с толщиной выбирает лист справочника.")
+    # Лист справочника по толщине и виду — группа «Деталей к раскрою» («Лист гладкий 2 мм»,
+    # по порядку справочника; группа по числу толщины подписывалась бы «2.0»). Раскрой —
+    # одного листа. Нет такого листа в справочнике — группа «не указан».
+    sheet_id = fields.Many2one("pmk.metal.sheet", "Лист", compute="_compute_sheet", store=True, index=True)
     qty = fields.Integer("Штук", required=True, default=1)
     drawing = fields.Binary("Чертёж (.dxf)", attachment=True)
     drawing_name = fields.Char("Имя чертежа")
@@ -316,6 +335,16 @@ class LaserTaskPart(models.Model):
     size_text = fields.Char("Габарит", compute="_compute_nest_text")
 
     _qty_positive = models.Constraint("CHECK(qty > 0)", "Штук должно быть больше нуля.")
+
+    @api.depends("thickness_mm", "sheet_type")
+    def _compute_sheet(self):
+        Sheet = self.env["pmk.metal.sheet"]
+        for part in self:
+            t = part.thickness_mm
+            part.sheet_id = t and Sheet.search([
+                ("sheet_type", "=ilike", (part.sheet_type or DEFAULT_SHEET_TYPE).strip()),
+                ("thickness_mm", ">=", t - THICKNESS_TOLERANCE_MM),
+                ("thickness_mm", "<=", t + THICKNESS_TOLERANCE_MM)], limit=1)
 
     @api.depends("qty", "line_ids.qty", "line_ids.qty_cut", "line_ids.mass_kg", "line_ids.mass_cut_kg")
     def _compute_nest(self):

@@ -134,7 +134,7 @@
     <field name="model">pmk.laser.task.part</field>
     <field name="priority">20</field>
     <field name="arch" type="xml">
-      <list string="Детали к раскрою" create="0" default_order="thickness_mm, task_id, id">
+      <list string="Детали к раскрою" create="0" expand="1" default_order="thickness_mm, task_id, id">
         <header>
           <button name="action_create_nest" type="object" string="Создать раскрой" class="btn-primary"/>
           <button name="action_add_to_nest" type="object" string="Добавить в раскрой"/>
@@ -143,8 +143,8 @@
         <field name="name"/>
         <field name="task_id" string="Задание"/>
         <field name="partner_id" string="Заказчик"/>
-        <field name="thickness_mm" options="{'hide_trailing_zeros': True}"/>
-        <field name="sheet_type" optional="show"/>
+        <field name="thickness_mm" options="{'hide_trailing_zeros': True}" optional="hide"/>
+        <field name="sheet_type" optional="hide"/>
         <field name="qty" string="Штук"/>
         <field name="qty_left" string="Осталось" sum="Осталось"/>
         <field name="size_text" optional="show"/>
@@ -164,7 +164,7 @@
         <filter name="left" string="Не разложено" domain="[('qty_left', '>', 0)]"/>
         <filter name="no_drawing" string="Без чертежа" domain="[('drawing', '=', False)]"/>
         <group>
-          <filter name="group_thickness" string="Толщина" context="{'group_by': 'thickness_mm'}"/>
+          <filter name="group_thickness" string="Лист" context="{'group_by': 'sheet_id'}"/>
           <filter name="group_task" string="Задание" context="{'group_by': 'task_id'}"/>
         </group>
       </search>

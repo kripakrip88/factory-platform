@@ -474,13 +474,26 @@ def _iter_drawable(msp) -> Iterable:
 _SUPPORTED = {"LINE", "CIRCLE", "ARC", "LWPOLYLINE", "POLYLINE", "SPLINE", "ELLIPSE"}
 
 
+def _read_doc(source: str):
+    """Открыть DXF; не по стандарту (нет служебных подклассов, как у «простых» писателей
+    DXF) — режимом восстановления ezdxf, как «Восстановить» в AutoCAD (15.10.2026: такой
+    чертёж раскрой листа читал, а разбор детали — нет)."""
+    try:
+        return ezdxf.readfile(source)
+    except ezdxf.DXFError:
+        from ezdxf import recover
+
+        doc, _auditor = recover.readfile(source)
+        return doc
+
+
 def analyze(source: str, rules: Optional[CleanupRules] = None) -> DrawingMetrics:
     """Посчитать метрики чертежа: рез, проколы, габарит, число деталей."""
     rules = rules or CleanupRules()
     started = time.perf_counter()
     metrics = DrawingMetrics(source=source)
 
-    doc = ezdxf.readfile(source)
+    doc = _read_doc(source)
     msp = doc.modelspace()
 
     insunits = doc.header.get("$INSUNITS", 0)
@@ -700,7 +713,7 @@ def render_svg(source: str, rules: Optional[CleanupRules] = None,
     from ezdxf.addons.drawing import svg as svg_backend
 
     rules = rules or CleanupRules()
-    doc = ezdxf.readfile(source)
+    doc = _read_doc(source)
     msp = doc.modelspace()
 
     keep = _drawable_for_preview(doc, msp, rules)
