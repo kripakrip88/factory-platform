@@ -3741,3 +3741,19 @@ $pmk-tab-r: 10px !default;
   border-radius: 18px;
   background: #fff;
 }
+
+// ═══ Шаг 70: перетаскивание карточек канбана без задержки (15.10.2026) ═══
+// Антон 15.10: «при перетягивании сделки очень плохая анимация — карточка как будто
+// прилипла к своей колонке и сопротивляется переносу». Чужая тема ставит карточке
+// transition: all .22s (theme_nexus, nx-card-hover) — анимировалось и положение,
+// которое ядро меняет за курсором при перетаскивании: карточка догоняла мышь с
+// опозданием. Плавными оставлены только тень, рамка и фон наведения.
+.o_kanban_renderer .o_kanban_record {
+  transition-property: box-shadow, border-color, background-color !important;
+  transition-duration: .15s !important;
+}
+
+.o_kanban_renderer .o_kanban_record.o_dragged,
+.o_kanban_renderer .o_kanban_record.o_dragged * {
+  transition: none !important;
+}

@@ -983,9 +983,19 @@ body.o_nexus_dark {
 }
 
 // Стрелка «развернуть все» в шапке «Изделие» — над стрелками строк.
-.o_field_pmk_product_lines thead th[data-name="name"] .pmk-head-chev {
-  margin: 0 4px 0 -4px;
-  vertical-align: middle;
+// Сбоку от подписи, а не над ней (Антон 15.10: «стоит над надписью, растягивает
+// строку»): кнопка — в отступе ячейки слева, высоту шапки не меняет.
+.o_field_pmk_product_lines thead th[data-name="name"] {
+  position: relative;
+  padding-left: 26px !important;
+
+  > .pmk-head-chev {
+    position: absolute;
+    left: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    margin: 0;
+  }
 }
 
 // Сколько деталей — бледно после названия изделия: состав свёрнут, а число
