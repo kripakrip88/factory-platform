@@ -15,3 +15,6 @@ access_pmk_laser_offcut_user,pmk.laser.offcut.user,model_pmk_laser_offcut,base.g
 access_pmk_laser_offcut_mgr,pmk.laser.offcut.mgr,model_pmk_laser_offcut,base.group_system,1,1,1,1
 access_pmk_laser_norm_user,pmk.laser.norm.user,model_pmk_laser_norm,base.group_user,1,1,1,0
 access_pmk_laser_norm_mgr,pmk.laser.norm.mgr,model_pmk_laser_norm,base.group_system,1,1,1,1
+access_pmk_laser_task_user,pmk.laser.task.user,model_pmk_laser_task,base.group_user,1,1,1,1
+access_pmk_laser_task_part_user,pmk.laser.task.part.user,model_pmk_laser_task_part,base.group_user,1,1,1,1
+access_pmk_laser_add_to_nest_user,pmk.laser.add.to.nest.user,model_pmk_laser_add_to_nest,base.group_user,1,1,1,1

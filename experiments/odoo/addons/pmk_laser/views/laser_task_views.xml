@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Задание на резку по заказу (ЗР) и «Детали к раскрою» — переделка 15.10.2026
+    (models/task.py). Раскрой (РС) — views/laser_job_views.xml.
+  -->
+  <record id="view_laser_task_list" model="ir.ui.view">
+    <field name="name">pmk.laser.task.list</field>
+    <field name="model">pmk.laser.task</field>
+    <field name="arch" type="xml">
+      <list string="Задания на резку">
+        <field name="name" width="105px"/>
+        <field name="date" width="80px"/>
+        <field name="partner_id"/>
+        <field name="spec_id" optional="show"/>
+        <field name="thickness_text" string="Толщины" optional="show"/>
+        <field name="qty_total" sum="Шт"/>
+        <field name="qty_cut" sum="Порезано, шт"/>
+        <field name="mass_kg" sum="Вес, кг" optional="show"/>
+        <field name="sheets_cut" optional="show"/>
+        <field name="sheets_total" optional="show"/>
+        <field name="progress_pct" widget="progressbar" width="120px"/>
+        <field name="state" widget="badge"
+               decoration-muted="state == 'new'" decoration-info="state in ('nest', 'work')"
+               decoration-success="state == 'done'"/>
+        <field name="date_due" optional="show"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="view_laser_task_form" model="ir.ui.view">
+    <field name="name">pmk.laser.task.form</field>
+    <field name="model">pmk.laser.task</field>
+    <field name="arch" type="xml">
+      <form string="Задание на резку" class="pmk-doc-form o_pmk_header_up pmk-labels-top-groups">
+        <header>
+          <button name="action_parts_to_nest" type="object" string="Детали к раскрою" class="btn-primary"
+                  icon="fa-th-large" invisible="not part_ids"/>
+          <field name="state" widget="statusbar"/>
+        </header>
+        <sheet>
+          <div class="oe_button_box" name="button_box">
+            <button name="action_open_jobs" type="object" class="oe_stat_button" icon="fa-scissors"
+                    invisible="not job_count">
+              <field name="job_count" widget="statinfo" string="Раскрои"/>
+            </button>
+          </div>
+          <div class="pmk-doc-top" name="pmk_doc_top">
+            <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
+            <div class="pmk-task-progress" invisible="not qty_total">
+              <field name="progress_text" nolabel="1" class="pmk-task-progress__text"/>
+              <field name="progress_pct" widget="progressbar" nolabel="1"/>
+            </div>
+            <group>
+              <group>
+                <field name="spec_id" string="Расчёт" options="{'no_create': True}"/>
+                <field name="partner_id"/>
+                <field name="sale_order_id" options="{'no_create': True}" invisible="not sale_order_id"/>
+                <field name="note" placeholder="Примечание…"/>
+              </group>
+              <group>
+                <field name="date"/>
+                <field name="date_due"/>
+                <field name="thickness_text" string="Толщины" invisible="not thickness_text"/>
+              </group>
+            </group>
+          </div>
+          <notebook>
+            <page string="Детали и чертежи" name="parts">
+              <field name="part_ids" widget="pmk_laser_parts_upload">
+                <list editable="bottom">
+                  <field name="preview_svg" widget="pmk_svg" string="Эскиз" optional="show"/>
+                  <field name="name"/>
+                  <field name="thickness_mm" options="{'hide_trailing_zeros': True}"/>
+                  <field name="sheet_type" optional="hide"/>
+                  <field name="qty"/>
+                  <field name="drawing" filename="drawing_name" widget="binary"/>
+                  <field name="drawing_name" column_invisible="True"/>
+                  <field name="size_text" optional="show"/>
+                  <field name="cut_length_mm" options="{'hide_trailing_zeros': True}" optional="hide"/>
+                  <field name="pierce_count" optional="hide"/>
+                  <field name="qty_nested" string="В раскрое"/>
+                  <field name="qty_cut" string="Порезано"/>
+                  <field name="nest_text" string="Раскрои" optional="show"/>
+                  <field name="drawing_error" optional="show" decoration-danger="drawing_error"/>
+                  <button name="action_parse_drawing" type="object" string="Разобрать"
+                          icon="fa-magic" invisible="not drawing"/>
+                  <button name="action_view_drawing" type="object" string="Посмотреть"
+                          icon="fa-eye" invisible="not drawing"/>
+                </list>
+              </field>
+            </page>
+          </notebook>
+        </sheet>
+      </form>
+    </field>
+  </record>
+
+  <record id="view_laser_task_search" model="ir.ui.view">
+    <field name="name">pmk.laser.task.search</field>
+    <field name="model">pmk.laser.task</field>
+    <field name="arch" type="xml">
+      <search string="Задания на резку">
+        <field name="name"/>
+        <field name="partner_id"/>
+        <field name="spec_id"/>
+        <filter name="open" string="Не порезано" domain="[('state', '!=', 'done')]"/>
+        <separator/>
+        <filter name="archived" string="Архив" domain="[('active', '=', False)]"/>
+        <group>
+          <filter name="group_partner" string="Заказчик" context="{'group_by': 'partner_id'}"/>
+          <filter name="group_state" string="Состояние" context="{'group_by': 'state'}"/>
+        </group>
+      </search>
+    </field>
+  </record>
+
+  <record id="action_laser_task" model="ir.actions.act_window">
+    <field name="name">Задания на резку</field>
+    <field name="res_model">pmk.laser.task</field>
+    <field name="view_mode">list,form</field>
+    <field name="search_view_id" ref="view_laser_task_search"/>
+    <field name="context">{'search_default_open': 1}</field>
+    <field name="help" type="html">
+      <p class="o_view_nocontent_smiling_face">Первое задание на резку</p>
+      <p>Задание — что заказ просит порезать: детали любой толщины с чертежами .dxf. Перетащите
+         чертежи пачкой («пл1 10мм 20шт.dxf»), затем «Детали к раскрою».</p>
+    </field>
+  </record>
+
+  <!-- «Детали к раскрою»: неразложенные детали всех заданий, по толщинам. -->
+  <record id="view_laser_parts_to_nest_list" model="ir.ui.view">
+    <field name="name">pmk.laser.task.part.to.nest.list</field>
+    <field name="model">pmk.laser.task.part</field>
+    <field name="priority">20</field>
+    <field name="arch" type="xml">
+      <list string="Детали к раскрою" create="0" default_order="thickness_mm, task_id, id">
+        <header>
+          <button name="action_create_nest" type="object" string="Создать раскрой" class="btn-primary"/>
+          <button name="action_add_to_nest" type="object" string="Добавить в раскрой"/>
+        </header>
+        <field name="preview_svg" widget="pmk_svg" string="Эскиз" optional="show"/>
+        <field name="name"/>
+        <field name="task_id" string="Задание"/>
+        <field name="partner_id" string="Заказчик"/>
+        <field name="thickness_mm" options="{'hide_trailing_zeros': True}"/>
+        <field name="sheet_type" optional="show"/>
+        <field name="qty" string="Штук"/>
+        <field name="qty_left" string="Осталось" sum="Осталось"/>
+        <field name="size_text" optional="show"/>
+        <field name="drawing_name" string="Чертёж"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="view_laser_parts_to_nest_search" model="ir.ui.view">
+    <field name="name">pmk.laser.task.part.to.nest.search</field>
+    <field name="model">pmk.laser.task.part</field>
+    <field name="arch" type="xml">
+      <search string="Детали к раскрою">
+        <field name="name"/>
+        <field name="task_id"/>
+        <field name="partner_id"/>
+        <filter name="left" string="Не разложено" domain="[('qty_left', '>', 0)]"/>
+        <filter name="no_drawing" string="Без чертежа" domain="[('drawing', '=', False)]"/>
+        <group>
+          <filter name="group_thickness" string="Толщина" context="{'group_by': 'thickness_mm'}"/>
+          <filter name="group_task" string="Задание" context="{'group_by': 'task_id'}"/>
+        </group>
+      </search>
+    </field>
+  </record>
+
+  <record id="action_laser_parts_to_nest" model="ir.actions.act_window">
+    <field name="name">Детали к раскрою</field>
+    <field name="res_model">pmk.laser.task.part</field>
+    <field name="view_mode">list</field>
+    <field name="view_id" ref="view_laser_parts_to_nest_list"/>
+    <field name="search_view_id" ref="view_laser_parts_to_nest_search"/>
+    <field name="context">{'search_default_left': 1, 'search_default_group_thickness': 1}</field>
+    <field name="help" type="html">
+      <p class="o_view_nocontent_smiling_face">Всё разложено</p>
+      <p>Здесь — детали заданий на резку, которые ещё не в раскрое. Отметьте детали одной толщины
+         (хоть из разных заказов) → «Создать раскрой» или «Добавить в раскрой».</p>
+    </field>
+  </record>
+
+  <record id="view_laser_add_to_nest_form" model="ir.ui.view">
+    <field name="name">pmk.laser.add.to.nest.form</field>
+    <field name="model">pmk.laser.add.to.nest</field>
+    <field name="arch" type="xml">
+      <form string="Добавить в раскрой">
+        <field name="thickness_mm" invisible="1"/>
+        <field name="sheet_type" invisible="1"/>
+        <group>
+          <field name="job_id" options="{'no_create': True}"/>
+          <field name="part_ids" widget="many2many_tags" readonly="1"/>
+        </group>
+        <footer>
+          <button name="action_apply" type="object" string="Добавить" class="btn-primary"/>
+          <button special="cancel" string="Отмена"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+</odoo>

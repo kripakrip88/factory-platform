@@ -16,5 +16,19 @@
       <field name="padding">5</field>
       <field name="company_id" eval="False"/>
     </record>
+    <!-- Переделка 15.10.2026: задание на резку по заказу — ЗР-. -->
+    <record id="seq_laser_task" model="ir.sequence">
+      <field name="name">Задание на резку (по заказу)</field>
+      <field name="code">pmk.laser.task</field>
+      <field name="prefix">ЗР-</field>
+      <field name="padding">5</field>
+      <field name="company_id" eval="False"/>
+    </record>
   </data>
+  <!-- Раскрой (бывшее «задание лазеру») — РС-. Счётчик noupdate, поэтому префикс
+       меняется вызовом при каждом обновлении, номер не сбрасывается. -->
+  <function model="ir.sequence" name="write">
+    <value eval="[ref('pmk_laser.seq_laser_job')]"/>
+    <value eval="{'prefix': 'РС-', 'name': 'Раскрой (лазер)'}"/>
+  </function>
 </odoo>

@@ -7,6 +7,7 @@ from . import timing
 from . import labels
 from . import machine
 from . import job
+from . import task
 from . import measure
 from . import norm
 from . import offcut

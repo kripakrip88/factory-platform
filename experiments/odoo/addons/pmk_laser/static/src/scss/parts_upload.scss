@@ -1,0 +1,87 @@
+// Задание на резку: поле перетаскивания чертежей и окно «Загружено N файлов»
+// (static/src/js/parts_upload.js). Цвета — переменными темы, подсветки бледные.
+.pmk-pu__zone {
+  display: block;
+  margin: 0 0 10px;
+  padding: 14px 16px;
+  border: 1.5px dashed var(--pmk-border-strong, #cfcabd);
+  border-radius: 12px;
+  text-align: center;
+  color: var(--pmk-text-muted, #8a8d96);
+  cursor: pointer;
+  transition: background-color 0.15s;
+
+  &:hover, &.pmk-pu__zone--over { background: rgba(110, 130, 0, 0.08); }
+  &.pmk-pu__zone--busy { opacity: 0.7; cursor: progress; }
+}
+
+.pmk-pu__hint {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+}
+
+.pmk-pu__note {
+  margin: -4px 0 10px;
+  font-size: 13px;
+  color: var(--pmk-text-muted, #8a8d96);
+}
+
+.pmk-pud__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+
+  th { color: var(--pmk-text-muted, #8a8d96); font-weight: 500; padding: 4px 6px; }
+  td { padding: 4px 6px; border-top: 1px solid var(--pmk-border, #e3e4e8); vertical-align: middle; }
+}
+
+.pmk-pud__file { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--pmk-text-muted, #8a8d96); }
+.pmk-pud__num { width: 80px; }
+.pmk-pud__warn { background: #faeeda !important; }
+.pmk-pud__skip td { color: var(--pmk-text-muted, #8a8d96); }
+
+.pmk-pud__pill {
+  display: inline-block;
+  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+
+  &--ok { background: #eaf3de; color: #27500a; }
+  &--warn { background: #faeeda; color: #633806; }
+  &--grey { background: #f1efe8; color: #444441; }
+}
+
+.pmk-pud__seg {
+  display: inline-flex;
+  margin-top: 4px;
+  border: 1px solid var(--pmk-border, #e3e4e8);
+  border-radius: 8px;
+  overflow: hidden;
+
+  button {
+    border: 0;
+    border-left: 1px solid var(--pmk-border, #e3e4e8);
+    background: transparent;
+    font-size: 12px;
+    padding: 2px 8px;
+
+    &:first-child { border-left: 0; }
+    &.active { background: #faeeda; color: #633806; }
+  }
+}
+
+.pmk-pud__error { margin-top: 8px; color: var(--bs-danger, #c0392b); }
+
+.pmk-task-progress {
+  margin: 4px 0 10px;
+  max-width: 640px;
+
+  .pmk-task-progress__text { display: block; margin-bottom: 4px; }
+}
+
+body.o_nexus_dark {
+  .pmk-pu__zone:hover, .pmk-pu__zone--over { background: rgba(255, 255, 255, 0.05); }
+  .pmk-pud__warn { background: rgba(224, 180, 74, 0.18) !important; }
+}

@@ -7,7 +7,7 @@
     <field name="arch" type="xml">
       <!-- Список заданий: слева что режем, справа деньги. Премия в списке не
            украшение — это то, ради чего участок вообще заводят в систему. -->
-      <list string="Задания на резку">
+      <list string="Раскрои">
         <!-- Разбор UX, шаг 24: номер «ЛР-00001» не обрезается; премия без
              копеек, как деньги в остальных списках (точная — в задании). -->
         <field name="name" width="105px"/>
@@ -79,7 +79,7 @@
            «Лист» со значением той же ширины, что соседние поля; «Ширина
            реза» и «Обрезок от» (с шага 36 — на вкладке «Обрезки») в рамке
            поля. -->
-      <form string="Задание на резку" class="pmk-doc-form o_pmk_header_up pmk-labels-top-groups">
+      <form string="Раскрой" class="pmk-doc-form o_pmk_header_up pmk-labels-top-groups">
         <header>
           <!-- Залитая — только пока файл не разобран: это следующий шаг
                (разбор UX, шаг 27; одна залитая кнопка на экран). После
@@ -205,6 +205,10 @@
                 <field name="date"/>
                 <!-- Расчёт рядом с заказом: заказов в базе пока нет, режут по
                      расчёту, и по этой ссылке задание видно на схеме связей. -->
+                <!-- Переделка 15.10.2026: детали раскроя — из заданий на резку, хоть
+                     нескольких заказов; здесь видно, чьи они. -->
+                <field name="task_ids" string="Задания на резку" widget="many2many_tags" readonly="1"
+                       invisible="not task_ids"/>
                 <field name="spec_id" string="Расчёт" options="{'no_create': True}"/>
                 <field name="partner_id"/>
                 <!-- Без «Создать…»: счёт покупателю рождается кнопкой «Счёт» в
@@ -352,6 +356,8 @@
                 <list editable="bottom">
                   <field name="preview_svg" widget="pmk_svg" string="Эскиз" optional="show"/>
                   <field name="name"/>
+                  <field name="task_id" string="Задание" optional="show" readonly="1"/>
+                  <field name="task_part_id" column_invisible="True"/>
                   <field name="qty"/>
                   <field name="qty_used" optional="show"/>
                   <field name="drawing" filename="drawing_name" widget="binary"/>
@@ -519,14 +525,15 @@
   </record>
 
   <record id="action_laser_job" model="ir.actions.act_window">
-    <field name="name">Задания на резку</field>
+    <field name="name">Раскрои</field>
     <field name="res_model">pmk.laser.job</field>
     <field name="view_mode">list,form</field>
     <field name="search_view_id" ref="view_laser_job_search"/>
     <field name="help" type="html">
-      <p class="o_view_nocontent_smiling_face">Первое задание на резку</p>
-      <p>Приложите управляющий файл CypCut (.lxds) и нажмите «Разобрать файл»:
-         состав, листы и использование придут из него, толщина — из имени файла.</p>
+      <p class="o_view_nocontent_smiling_face">Первый раскрой</p>
+      <p>Раскрой собирают из деталей заданий на резку: «Детали к раскрою» → отметить детали
+         одной толщины (хоть из разных заказов) → «Создать раскрой». Готовую программу CypCut
+         (.lxds) можно приложить и сразу — «Разобрать файл».</p>
     </field>
   </record>
 

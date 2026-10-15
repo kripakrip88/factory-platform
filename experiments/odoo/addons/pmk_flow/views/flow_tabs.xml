@@ -57,6 +57,22 @@
         </field>
     </record>
 
+    <!-- Задание на резку по заказу (переделка лазера, 15.10.2026) — «Связи» так же. -->
+    <record id="view_laser_task_form_pmk_flow" model="ir.ui.view">
+        <field name="name">pmk.laser.task.form.pmk.flow</field>
+        <field name="model">pmk.laser.task</field>
+        <field name="inherit_id" ref="pmk_laser.view_laser_task_form"/>
+        <field name="priority">99</field>
+        <field name="active" eval="True"/>
+        <field name="arch" type="xml">
+            <xpath expr="/form/sheet/notebook" position="inside">
+                <page string="Связи" name="pmk_flow">
+                    <widget name="pmk_flow_map"/>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
     <record id="view_crm_lead_form_pmk_flow" model="ir.ui.view">
         <field name="name">crm.lead.form.pmk.flow</field>
         <field name="model">crm.lead</field>

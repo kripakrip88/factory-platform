@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+  <t t-name="pmk_laser.PartsUploadField">
+    <div class="pmk-pu">
+      <label t-if="canUpload" class="pmk-pu__zone" t-att-class="{'pmk-pu__zone--over': upload.over, 'pmk-pu__zone--busy': upload.busy}"
+             t-on-dragover="onDragOver" t-on-dragleave="onDragLeave" t-on-drop="onDrop">
+        <i class="fa fa-upload me-2" title="Загрузить"/>
+        <t t-if="upload.busy">Читаю файлы…</t>
+        <t t-else="">Перетащите сюда чертежи .dxf — файлы или папку изделия · <u>выбрать файлы</u></t>
+        <span class="pmk-pu__hint">Имя файла «пл1 10мм 20шт.dxf» → деталь пл1, 10 мм, 20 шт</span>
+        <input type="file" multiple="multiple" accept=".dxf,.DXF" class="d-none" t-on-change="onPick"/>
+      </label>
+      <div t-if="upload.note" class="pmk-pu__note" t-esc="upload.note"/>
+      <t t-call="web.X2ManyField"/>
+    </div>
+  </t>
+
+  <t t-name="pmk_laser.PartsUploadDialog">
+    <Dialog title="'Загружено файлов: ' + state.rows.length" size="'xl'">
+      <div class="pmk-pud">
+        <table class="pmk-pud__table">
+          <thead>
+            <tr><th>Файл</th><th>Деталь</th><th class="text-end">Толщина, мм</th><th class="text-end">Шт</th><th>Что будет</th></tr>
+          </thead>
+          <tbody>
+            <tr t-foreach="state.rows" t-as="r" t-key="r_index" t-att-class="{'pmk-pud__skip': r.skip}">
+              <td class="pmk-pud__file" t-att-title="r.file" t-esc="r.file"/>
+              <t t-if="r.skip">
+                <td colspan="3" class="text-muted">—</td>
+                <td><span class="pmk-pud__pill pmk-pud__pill--grey" t-esc="r.reason"/></td>
+              </t>
+              <t t-else="">
+                <td><input class="o_input" t-model="r.name" t-att-disabled="r.action === 'replace' or r.action === 'skip'"/></td>
+                <td><input class="o_input text-end pmk-pud__num" t-att-value="fmtThick(r.thickness)"
+                           t-on-change="(ev) => r.thickness = ev.target.value"
+                           t-att-class="{'pmk-pud__warn': !r.thickness}"/></td>
+                <td><input class="o_input text-end pmk-pud__num" type="number" min="1" t-model="r.qty"
+                           t-att-class="{'pmk-pud__warn': r.qty_missing}"/></td>
+                <td>
+                  <t t-if="r.conflict === 'name'">
+                    <span class="pmk-pud__pill pmk-pud__pill--warn" t-esc="r.reason"/>
+                    <div class="pmk-pud__seg">
+                      <button type="button" t-att-class="{'active': r.decided and r.action === 'new'}" t-on-click="() => this.setAction(r, 'new')">новой строкой «<t t-esc="r.alt_name"/>»</button>
+                      <button type="button" t-att-class="{'active': r.decided and r.action === 'replace'}" t-on-click="() => this.setAction(r, 'replace')">заменить чертёж</button>
+                      <button type="button" t-att-class="{'active': r.decided and r.action === 'skip'}" t-on-click="() => this.setAction(r, 'skip')">пропустить</button>
+                    </div>
+                  </t>
+                  <t t-elif="r.conflict === 'same'">
+                    <span class="pmk-pud__pill pmk-pud__pill--grey" t-esc="r.reason"/>
+                    <div class="pmk-pud__seg">
+                      <button type="button" t-att-class="{'active': r.action === 'skip'}" t-on-click="() => this.setAction(r, 'skip')">пропустить</button>
+                      <button type="button" t-att-class="{'active': r.action === 'new'}" t-on-click="() => this.setAction(r, 'new')">всё равно добавить</button>
+                    </div>
+                  </t>
+                  <t t-else="">
+                    <span class="pmk-pud__pill pmk-pud__pill--ok">новая деталь</span>
+                    <span t-if="r.qty_missing" class="pmk-pud__pill pmk-pud__pill--warn ms-1">шт не указано — поправьте</span>
+                    <span t-if="!r.thickness" class="pmk-pud__pill pmk-pud__pill--warn ms-1">толщина не указана</span>
+                  </t>
+                </td>
+              </t>
+            </tr>
+          </tbody>
+        </table>
+        <div t-if="state.error" class="pmk-pud__error" t-esc="state.error"/>
+      </div>
+      <t t-set-slot="footer">
+        <button class="btn btn-primary" t-att-disabled="state.busy" t-on-click="apply">
+          <t t-if="state.busy">Добавляю…</t><t t-else="">Добавить</t>
+        </button>
+        <button class="btn btn-secondary" t-on-click="props.close">Отмена</button>
+      </t>
+    </Dialog>
+  </t>
+</templates>

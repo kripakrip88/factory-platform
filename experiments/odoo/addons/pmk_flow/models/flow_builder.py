@@ -61,7 +61,10 @@ _STAGES = {
     # 08.10.2026): выставляется сам из расчёта при «КП отправлено».
     'sale.order': (3, 'Счёт покупателю'),
     'pmk.cut.plan': (4, 'Раскрой'),
-    'pmk.laser.job': (4, 'Лазер'),
+    # Лазер (переделка 15.10.2026): задание на резку по заказу → раскрой. Раскрой —
+    # шагом правее: в нём детали нескольких заказов.
+    'pmk.laser.task': (4, 'Задание на резку'),
+    'pmk.laser.job': (4.5, 'Раскрой лазера'),
     # Доборка — изготовление гнутых планок по сделке, работа цеха рядом с
     # раскроем и лазером (разбор UX, шаг 35: поле «Сделка» у доборки,
     # счётчик «Доборки» на сделке — pmk_deal, dobor_link.py). Вторая строка
@@ -257,6 +260,13 @@ class PmkFlowBuilder(models.AbstractModel):
             if record.has_unplaced:
                 return 'есть неразмещённые', 'red'
             return 'отход %s%%' % _num(record.waste_ratio, 1), 'blue'
+
+        if model == 'pmk.laser.task':
+            label = dict(record._fields['state'].selection).get(record.state, '')
+            color = {'done': 'green', 'work': 'blue', 'nest': 'blue'}.get(record.state, 'grey')
+            if record.qty_total:
+                label = '%s · %d%%' % (label, round(record.progress_pct))
+            return label, color
 
         if model == 'pmk.laser.job':
             # Сломанный баланс важнее любого норматива: он значит, что
@@ -644,7 +654,10 @@ class PmkFlowBuilder(models.AbstractModel):
                     hidden))
             # Раскрой сортамента ссылается на расчёт полем «Расчёт» (spec_id).
             linked.append(self._referrers('pmk.cut.plan', 'spec_id', record.id, hidden))
-            # Задание лазеру ссылается на расчёт с 27.09.2026 (pmk_laser, spec_id).
+            # Лазер: задание на резку по заказу ссылается на расчёт (15.10.2026);
+            # раскрой — через задание (в нём детали нескольких заказов). Старая прямая
+            # ссылка раскроя на расчёт — тоже, пока она есть.
+            linked.append(self._referrers('pmk.laser.task', 'spec_id', record.id, hidden))
             linked.append(self._referrers('pmk.laser.job', 'spec_id', record.id, hidden))
             # Шаг З-4 (pmk_tech): технический расчёт — к своему счёту (не через
             # pmk_spec_id: счёт выставлен из расчёта КП) и к своим «Заявкам на
@@ -664,9 +677,14 @@ class PmkFlowBuilder(models.AbstractModel):
                 linked.append(self._optional_rel(record, 'spec_id', hidden))
             else:
                 linked.append(self._optional_rel(record, 'opportunity_id', hidden))
+        elif model == 'pmk.laser.task':
+            linked.append(self._optional_rel(record, 'spec_id', hidden))
+            linked.append(self._optional_rel(record, 'sale_order_id', hidden))
+            linked.append(record.job_ids)
         elif model == 'pmk.laser.job':
             linked.append(self._optional_rel(record, 'spec_id', hidden))
             linked.append(self._optional_rel(record, 'sale_order_id', hidden))
+            linked.append(_field(record, 'task_ids') or self.env['pmk.laser.task'])
 
         seen, out = set(), []
         for rs in linked:

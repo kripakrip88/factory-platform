@@ -29,6 +29,7 @@ mrp тому, кто заведёт на этом же центре рабоче
 рабочему центру, и ни одна цифра не переедет в чужие поля.
 """
 
+from odoo.exceptions import UserError
 from odoo import api, fields, models
 from odoo.fields import Domain
 
@@ -172,6 +173,17 @@ class LaserMachine(models.Model):
             return []
         short = self.search([])._short_labels()
         return [machine_id for machine_id, label in short.items() if match(label)]
+
+    @api.model
+    def _for_thickness(self, thickness_mm):
+        """Станок для нового раскроя: тянет толщину, из подходящих — с меньшим
+        пределом (тонкий лист — на младший станок). Технолог сменит в раскрое."""
+        machines = self.search([])
+        fit = machines.filtered(lambda m: not m.max_thickness_mm or m.max_thickness_mm >= thickness_mm)
+        fit = fit.sorted(lambda m: m.max_thickness_mm or 1e9)
+        if not (fit or machines):
+            raise UserError("Нет ни одного станка — заведите его в «Лазерная резка → Настройка → Станки».")
+        return (fit or machines)[:1]
 
     _load_positive = models.Constraint(
         "CHECK(load_min >= 0 AND unload_min >= 0)",

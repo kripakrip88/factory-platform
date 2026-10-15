@@ -11,7 +11,7 @@
     # другой заказ, пока не известно, сколько в нём было метров реза, проколов
     # и какая толщина.
     "name": "ПМК: лазерная резка",
-    "version": "19.0.0.1.2",
+    "version": "19.0.0.2.0",
     "summary": "Файлы раскроя CypCut, замер резки, норматив по замерам, премия операторам",
     "description": """
 Что модуль делает.
@@ -102,6 +102,7 @@ MD5), с Thickness="1.5" и «чёрной сталью» — на 2, 3 и 10 м
         "data/ir_sequence.xml",
         "views/laser_machine_views.xml",
         "views/laser_job_views.xml",
+        "views/laser_task_views.xml",
         "views/laser_measure_views.xml",
         "views/laser_norm_views.xml",
         "views/laser_offcut_views.xml",
@@ -122,6 +123,9 @@ MD5), с Thickness="1.5" и «чёрной сталью» — на 2, 3 и 10 м
     "assets": {
         "web.assets_backend": [
             "pmk_laser/static/src/scss/laser_job.scss",
+            "pmk_laser/static/src/scss/parts_upload.scss",
+            "pmk_laser/static/src/js/parts_upload.js",
+            "pmk_laser/static/src/xml/parts_upload.xml",
         ],
     },
     "installable": True,

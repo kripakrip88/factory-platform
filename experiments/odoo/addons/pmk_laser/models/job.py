@@ -64,7 +64,7 @@ THICKNESS_TOLERANCE_MM = 0.001
 
 class LaserJob(models.Model):
     _name = "pmk.laser.job"
-    _description = "Задание на лазерную резку"
+    _description = "Раскрой (лазер)"
     _inherit = ["mail.thread"]
     _order = "date desc, id desc"
     # Архив (Антон 12.10.2026: демо-данные «просто всё убрать в архив»): снятый документ
@@ -172,6 +172,13 @@ class LaserJob(models.Model):
              "дороже металла.")
 
     part_ids = fields.One2many("pmk.laser.job.part", "job_id", "Детали", copy=True)
+    # Переделка 15.10.2026: раскрой собирается из деталей заданий на резку (ЗР) —
+    # хоть нескольких заказов сразу. Ссылки — через строки деталей.
+    task_ids = fields.Many2many("pmk.laser.task", string="Задания на резку", compute="_compute_task_ids")
+    task_count = fields.Integer("Заданий", compute="_compute_task_ids")
+    task_text = fields.Char("Заказы", compute="_compute_task_ids",
+                            help="Задания на резку и заказчики, чьи детали в этом раскрое.")
+    nest_state_text = fields.Char("Состояние раскроя", compute="_compute_nest_state_text")
     sheet_ids = fields.One2many("pmk.laser.job.sheet", "job_id", "Листы", copy=False)
     operator_ids = fields.One2many("pmk.laser.job.operator", "job_id", "Операторы", copy=True)
     offcut_ids = fields.One2many("pmk.laser.offcut", "job_id", "Обрезки", copy=False)
@@ -373,6 +380,30 @@ class LaserJob(models.Model):
     # ==================================================================
     # Вычисления
     # ==================================================================
+
+    @api.depends("part_ids.task_part_id.task_id")
+    def _compute_task_ids(self):
+        for job in self:
+            tasks = job.part_ids.task_part_id.task_id
+            job.task_ids = tasks
+            job.task_count = len(tasks)
+            job.task_text = ", ".join(
+                "%s%s" % (t.name, " · %s" % t.partner_id.display_name if t.partner_id else "") for t in tasks
+            ) or False
+
+    @api.depends("sheet_count", "sheet_ids.cut_state", "file")
+    def _compute_nest_state_text(self):
+        for job in self:
+            sheets = job.sheet_ids
+            done = len(sheets.filtered(lambda s: s.cut_state == "done"))
+            if not sheets:
+                job.nest_state_text = "раскладывается"
+            elif done >= len(sheets):
+                job.nest_state_text = "порезан"
+            elif done or sheets.filtered(lambda s: s.cut_state == "running"):
+                job.nest_state_text = "режется %d/%d" % (done, len(sheets))
+            else:
+                job.nest_state_text = "в очереди · %d лист." % len(sheets)
 
     @api.depends("sheet_ids.area_m2", "sheet_ids.useful_area_m2",
                  "sheet_ids.mass_kg", "sheet_ids.useful_mass_kg")
@@ -734,6 +765,40 @@ class LaserJob(models.Model):
                 handle.write(base64.b64decode(self.file))
             return lxds.read_layout(path)
 
+    @api.model
+    def _sheet_for(self, thickness_mm, sheet_type):
+        """Лист справочника по толщине и виду — для нового раскроя из деталей заданий."""
+        return self.new({"file_name": "%gмм" % thickness_mm})._sheet_from_reference(thickness_mm, sheet_type)
+
+    def _add_task_parts(self, parts):
+        """Детали заданий → строки раскроя: остаток каждой детали целиком (поправить можно
+        в строке). Имя в раскрое — имя детали; совпало с другой строкой (одинаковые «пл1» у
+        двух заказов) — с номером задания: имя детали — имя в программе CypCut."""
+        self.ensure_one()
+        taken = {(p.name or "").strip().lower() for p in self.part_ids}
+        commands = []
+        for part in parts:
+            if part.qty_left <= 0:
+                continue
+            name = part.name.strip()
+            if name.lower() in taken:
+                name = "%s (%s)" % (name, part.task_id.name)
+            n = 2
+            base = name
+            while name.lower() in taken:
+                name = "%s %d" % (base, n)
+                n += 1
+            taken.add(name.lower())
+            commands.append(fields.Command.create({
+                "task_part_id": part.id, "name": name, "qty": part.qty_left,
+                "drawing": part.drawing, "drawing_name": part.drawing_name,
+                "cut_length_mm": part.cut_length_mm, "pierce_count": part.pierce_count,
+                "preview_svg": part.preview_svg,
+            }))
+        if commands:
+            self.write({"part_ids": commands})
+        return True
+
     def _sheet_from_reference(self, thickness_mm, sheet_type):
         """Найти лист в справочнике pmk_calc по толщине и виду."""
         self.ensure_one()
@@ -843,6 +908,7 @@ class LaserJob(models.Model):
                 "cut_length_mm": part.cut_length_mm,
                 "pierce_count": part.pierce_count,
                 "preview_svg": part.preview_svg,
+                "task_part_id": part.task_part_id.id,
             }
             for part in self.part_ids
         }
@@ -986,10 +1052,14 @@ class LaserJobPart(models.Model):
     """
 
     _name = "pmk.laser.job.part"
-    _description = "Деталь задания на резку"
+    _description = "Деталь раскроя"
     _order = "job_id, id"
 
-    job_id = fields.Many2one("pmk.laser.job", "Задание", required=True, ondelete="cascade", index=True)
+    job_id = fields.Many2one("pmk.laser.job", "Раскрой", required=True, ondelete="cascade", index=True)
+    # Деталь задания на резку (ЗР), из которой взята строка. Пусто — строка пришла из
+    # программы CypCut, которой нет в заданиях (раскрой «со стороны»).
+    task_part_id = fields.Many2one("pmk.laser.task.part", "Деталь задания", index=True, ondelete="restrict")
+    task_id = fields.Many2one(related="task_part_id.task_id", store=True, string="Задание на резку")
     name = fields.Char("Деталь", required=True)
     qty = fields.Integer("Заявлено", required=True, default=1)
     qty_used = fields.Integer(
@@ -1015,11 +1085,55 @@ class LaserJobPart(models.Model):
     cut_length_total_m = fields.Float("Рез всего, м", compute="_compute_totals", store=True, digits=(12, 2))
     pierces_total = fields.Integer("Проколов всего", compute="_compute_totals", store=True)
 
+    # Прогресс заказа (ЗР): порезано штук и килограммов этой строки. Какая деталь на
+    # каком листе, разбор файла не знает — штуки растут долей отрезанных листов
+    # раскроя, вес — доля полезного веса раскроя по штукам × габарит детали.
+    qty_cut = fields.Integer("Порезано", compute="_compute_cut", store=True)
+    mass_kg = fields.Float("Вес, кг", compute="_compute_cut", store=True, digits=(12, 2))
+    mass_cut_kg = fields.Float("Порезано, кг", compute="_compute_cut", store=True, digits=(12, 2))
+
     @api.depends("qty", "cut_length_mm", "pierce_count")
     def _compute_totals(self):
         for part in self:
             part.cut_length_total_m = part.qty * part.cut_length_mm / 1000.0
             part.pierces_total = part.qty * part.pierce_count
+
+    def _weight_key(self):
+        tp = self.task_part_id
+        area = (tp.part_width_mm * tp.part_height_mm) if tp and tp.part_width_mm and tp.part_height_mm else 0.0
+        return (self.qty_used or self.qty) * (area or 1.0)
+
+    @api.depends("qty", "qty_used", "job_id.useful_mass_kg", "job_id.sheet_ids.cut_state",
+                 "job_id.part_ids.qty", "job_id.part_ids.qty_used",
+                 "task_part_id.part_width_mm", "task_part_id.part_height_mm")
+    def _compute_cut(self):
+        for part in self:
+            job = part.job_id
+            sheets = job.sheet_ids
+            done = len(sheets.filtered(lambda s: s.cut_state == "done"))
+            share_cut = done / len(sheets) if sheets else 0.0
+            pieces = part.qty_used or part.qty
+            part.qty_cut = pieces if sheets and done >= len(sheets) else int(pieces * share_cut)
+            total = sum(p._weight_key() for p in job.part_ids) or 0.0
+            part.mass_kg = job.useful_mass_kg * part._weight_key() / total if total else 0.0
+            part.mass_cut_kg = part.mass_kg * share_cut
+
+    def _sync_from_task_part(self):
+        """Чертёж, имя-толщину детали задания поменяли — строка раскроя следом
+        (пока программа не принята: у принятой листы уже в очереди)."""
+        for line in self.filtered(lambda l: l.task_part_id and not l.job_id.sheet_ids):
+            tp = line.task_part_id
+            line.write({"drawing": tp.drawing, "drawing_name": tp.drawing_name,
+                        "cut_length_mm": tp.cut_length_mm, "pierce_count": tp.pierce_count,
+                        "preview_svg": tp.preview_svg})
+
+    @api.constrains("task_part_id", "job_id")
+    def _check_task_thickness(self):
+        for line in self.filtered("task_part_id"):
+            t = line.task_part_id.thickness_mm
+            if line.job_id.thickness_mm and t and abs(t - line.job_id.thickness_mm) > THICKNESS_TOLERANCE_MM:
+                raise UserError(_("«%(n)s» — %(t)g мм, а раскрой %(r)s — %(j)g мм: раскрой одной толщины.") % {
+                    "n": line.name, "t": t, "r": line.job_id.name, "j": line.job_id.thickness_mm})
 
     def action_parse_drawing(self):
         """Прочитать чертёж: длина реза, число замкнутых контуров, эскиз.
@@ -1028,21 +1142,15 @@ class LaserJobPart(models.Model):
         единственная точка вызова. Ожидаемый ответ: объект с полями
         cut_length_mm, pierces, preview_svg.
         """
-        from ..tools import drawing  # разбор DXF, Odoo ему не нужен
+        # 15.10.2026: здесь звался drawing.read_drawing, которого в tools/drawing.py нет —
+        # «Разобрать» падала. Разбор — общий с деталью задания (task.drawing_metrics).
+        from .task import drawing_metrics
 
         for part in self:
             if not part.drawing:
                 raise UserError(_("У детали «%s» не приложен чертёж") % part.name)
-            with tempfile.TemporaryDirectory() as folder:
-                path = os.path.join(folder, part.drawing_name or "part.dxf")
-                with open(path, "wb") as handle:
-                    handle.write(base64.b64decode(part.drawing))
-                parsed = drawing.read_drawing(path)
-            part.write({
-                "cut_length_mm": parsed.cut_length_mm,
-                "pierce_count": parsed.pierces,
-                "preview_svg": parsed.preview_svg,
-            })
+            vals = drawing_metrics(part.drawing, part.drawing_name or part.name + ".dxf")
+            part.write({k: vals[k] for k in ("cut_length_mm", "pierce_count", "preview_svg")})
         return True
 
     def action_view_drawing(self):
@@ -1056,8 +1164,13 @@ class LaserJobPart(models.Model):
         скачивается в той же строке.
         """
         self.ensure_one()
-        if not self.drawing:
-            raise UserError(_("У детали «%s» не приложен чертёж") % self.name)
+        return self._pmk_view_drawing_of(self)
+
+    @api.model
+    def _pmk_view_drawing_of(self, record):
+        """Окно просмотра DXF для чертежа записи (строки раскроя или детали задания)."""
+        if not record.drawing:
+            raise UserError(_("У детали «%s» не приложен чертёж") % record.name)
         if not self._pmk_drawing_ready():
             return {
                 "type": "ir.actions.client",
@@ -1074,22 +1187,22 @@ class LaserJobPart(models.Model):
         # явно, иначе ir.attachment прячет вложения полей. Права на него
         # проверит окно (pmk.drawing.attachment_preview) — по детали.
         attachment = self.env["ir.attachment"].sudo().search([
-            ("res_model", "=", self._name),
-            ("res_id", "=", self.id),
+            ("res_model", "=", record._name),
+            ("res_id", "=", record.id),
             ("res_field", "=", "drawing"),
         ], limit=1)
         if not attachment:
-            raise UserError(_("Чертёж детали «%s» не найден — приложите его заново.") % self.name)
+            raise UserError(_("Чертёж детали «%s» не найден — приложите его заново.") % record.name)
         return {
             "type": "ir.actions.client",
             "tag": "pmk_drawing.view",
             "params": {
                 "attachment_id": attachment.id,
-                "name": self.drawing_name or attachment.name or "",
+                "name": record.drawing_name or attachment.name or "",
                 # Вложение поля называется «drawing» — скачиваем под именем
                 # чертежа.
                 "download_url": "/web/content/%s/%d/drawing?download=true&filename_field=drawing_name"
-                                % (self._name, self.id),
+                                % (record._name, record.id),
             },
         }
 
@@ -1107,7 +1220,7 @@ class LaserJobSheet(models.Model):
     """
 
     _name = "pmk.laser.job.sheet"
-    _description = "Лист задания на резку"
+    _description = "Лист раскроя"
     _order = "job_id, number"
     _rec_name = "number"
 
@@ -1288,7 +1401,7 @@ class LaserJobOperator(models.Model):
     """
 
     _name = "pmk.laser.job.operator"
-    _description = "Оператор в задании на резку"
+    _description = "Оператор раскроя"
     _order = "job_id, sequence, id"
     _rec_name = "employee_id"
 
