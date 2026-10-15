@@ -282,7 +282,7 @@ class TestStep25SpecLists(TransactionCase):
         arch = self._arch("form")
         columns = {f.get("name"): f for f in arch.xpath("//field[@name='product_ids']/list/field")}
         self.assertEqual(columns["weight_fact_total"].get("optional"), "hide")
-        self.assertEqual(columns["weight_fact_total"].get("string"), "Купить, кг")
+        self.assertEqual(columns["weight_fact_total"].get("string"), "Купить")
         self.assertEqual(columns["cost_fact_total"].get("optional"), "hide")
         self.assertEqual(columns["cost_fact_total"].get("string"), "Закупка")
         count = columns["no_price_count"]

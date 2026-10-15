@@ -446,7 +446,7 @@
              ценой — просто число, без плашки (spec_cost.scss). -->
         <!-- Разбор UX, шаг 25: «Купить, кг» — сколько металла купить на все
              изделия строки (с отходом) — в меню колонок, рядом с весом. -->
-        <field name="weight_fact_total" string="Купить, кг" digits="[12,1]"
+        <field name="weight_fact_total" string="Купить" digits="[12,1]"
                sum="Купить, кг" readonly="1" optional="hide"/>
         <!-- «Без цены» — число позиций без цены закупки в изделии: красным,
              когда больше нуля, ноль — серым (сигнал «в городе нет», ничего не
@@ -464,10 +464,12 @@
                decoration-warning="no_price_count &gt; 0"/>
         <!-- width: штатная ширина денежной колонки — 105 px, и «9 500 000,00 ₽»
              обрезалось до «9 500 000,…» (ночной осмотр 29.09, расчёт, п. 3). -->
+        <!-- Без «руб» в ячейках (Антон 15.10.2026: «цена без руб, и так
+             понятно, что рубли»): колонки уже. -->
         <field name="price_customer_unit" string="Цена за шт" widget="monetary"
-               width="130px"/>
+               options="{'no_symbol': True}" width="130px"/>
         <field name="price_customer_total" string="Сумма" widget="monetary"
-               sum="Цена клиенту" readonly="1" width="130px"/>
+               options="{'no_symbol': True}" sum="Цена клиенту" readonly="1" width="130px"/>
         <!-- «Закупка» — металл на все изделия строки, с отходом — в меню
              колонок, рядом с «Суммой»: цена клиенту против металла. -->
         <field name="cost_fact_total" string="Закупка" widget="monetary"

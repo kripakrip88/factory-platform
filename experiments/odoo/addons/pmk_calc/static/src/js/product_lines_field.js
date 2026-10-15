@@ -49,6 +49,7 @@ import { useState } from "@odoo/owl";
 import { ListRenderer } from "@web/views/list/list_renderer";
 import { Field } from "@web/views/fields/field";
 import { X2ManyField, x2ManyField } from "@web/views/fields/x2many/x2many_field";
+import { charField } from "@web/views/fields/char/char_field";
 
 // Разделы состава. Цвет метки у каждого свой — глаз находит нужный блок
 // раньше, чем прочитает заголовок. Цвет не единственный признак: есть подпись
@@ -690,4 +691,19 @@ export class ProductLinesField extends X2ManyField {
 registry.category("fields").add("pmk_product_lines", {
     ...x2ManyField,
     component: ProductLinesField,
+});
+
+/**
+ * «Изделие» в списке изделий расчёта (Антон 15.10.2026: «название изделия не
+ * влазит в строку, может сделаем перенос? очень много столбцов на мелком
+ * экране»). Название переносится (scss/dobor_builder.scss), а колонка не
+ * ужимается меньше 200 px: на узком экране Odoo поджимает все текстовые
+ * колонки поровну до их минимума (у Char — 80 px, column_width_hook.js), и
+ * название сжималось до 80–96 px. Сверху предела нет — на широком экране
+ * колонка забирает свободное место, как раньше. Ширина, заданная человеком
+ * (pmk_list_prefs), главнее.
+ */
+registry.category("fields").add("pmk_product_name", {
+    ...charField,
+    listViewWidth: [200],
 });

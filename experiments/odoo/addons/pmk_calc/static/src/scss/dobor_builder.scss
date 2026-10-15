@@ -951,6 +951,37 @@ body.o_nexus_dark {
   }
 }
 
+// Название изделия переносится (Антон 15.10.2026: «название изделия не
+// влазит в строку, может сделаем перенос?»). Ядро держит текст ячейки в одну
+// строку с «…». Вторая строка — под текстом, а не под стрелкой: отступ
+// слева на ширину стрелки и обратный отступ первой строки. Ширина колонки —
+// pmk_product_name (product_lines_field.js). Только список изделий расчёта:
+// .pmk-rows есть и у доборки, и у раскроя.
+.o_field_pmk_product_lines .o_list_table > tbody > tr.o_data_row > td.o_data_cell[name="name"] {
+  white-space: normal !important;
+  overflow-wrap: break-word;
+  text-overflow: clip !important;
+  padding-left: 26px !important;
+  text-indent: -18px;
+  line-height: 1.35;
+
+  > .pmk-row-chev,
+  > .pmk-row-count {
+    text-indent: 0;
+  }
+
+  // У колонки свой виджет (pmk_product_name) — ядро кладёт название в
+  // блок поля, а не текстом в ячейку: блок встал бы отдельной строкой под
+  // стрелкой и снова резал текст. Делаем его строчным, как текст.
+  > .o_field_widget,
+  > .o_field_widget > span {
+    display: inline !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+  }
+}
+
 // Сколько деталей — бледно после названия изделия: состав свёрнут, а число
 // видно (раньше его показывала строка «Состав: 22 детали»).
 .pmk-row-count {

@@ -276,13 +276,18 @@
                     </list>
                   </field>
                   <field name="sequence" widget="handle"/>
-                  <field name="name"/>
-                  <field name="qty"/>
+                  <!-- Название переносится, колонка не уже 200 px (15.10.2026,
+                       product_lines_field.js, pmk_product_name). -->
+                  <field name="name" widget="pmk_product_name"/>
+                  <!-- Подписи колонок без единиц (Антон 15.10.2026: «количество —
+                       шт можно убрать», «вес без кг»): колонки уже, на узком
+                       экране влезает больше. Единицы — в подсказке поля. -->
+                  <field name="qty" string="Количество"/>
                   <!-- Вес с одним знаком (разбор UX, шаг 24), как карточка
                        веса над таблицей: «15 210,2», а не «15 210,184». Итог
                        внизу берёт те же знаки (pmk_theme, list_table_rules.js). -->
-                  <field name="weight_one" readonly="1" digits="[12,1]"/>
-                  <field name="weight_total" readonly="1" digits="[12,1]" sum="Итого, кг"/>
+                  <field name="weight_one" string="Вес" readonly="1" digits="[12,1]"/>
+                  <field name="weight_total" string="Вес всего" readonly="1" digits="[12,1]" sum="Итого, кг"/>
                   <field name="note" optional="hide"/>
                   <!-- Своя подпись вместо штатного «Добавить строку»: строка
                        документа здесь — изделие, так и называем. -->
