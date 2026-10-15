@@ -102,3 +102,90 @@ class MetalSpecLinear(models.Model):
             spec.metal_linear_html = Markup(note + rows_table(
                 rows, with_source=False,
                 empty="Раскрой %s ещё не посчитан — «Разложить прокат»." % plan.name))
+
+
+class MetalSpecLinearOverview(models.Model):
+    """Прокат во вкладке «Металл» одной таблицей со схемой (15.10.2026,
+    pmk_calc/models/spec_metal_view.py): строка — типоразмер раскроя,
+    раскрывается в отрезки по изделиям; «Схема» — хлысты блоками
+    «200 мм × 8» (Антон: сто полосок по 100 мм на 12 м нечитабельны)."""
+    _inherit = "pmk.metal.spec"
+
+    def _pmk_linear_parts(self):
+        """{профиль: (чистый вес, [отрезки])} по линейным строкам расчёта."""
+        parts = {}
+        products = self.product_ids.sorted(lambda p: (p.sequence, p.id))
+        for product in products:
+            for line in product.line_linear_ids.sorted(lambda l: (l.sequence, l.id)):
+                if not line.profile_id:
+                    continue
+                net, rows = parts.setdefault(line.profile_id.id, (0.0, []))
+                qty = (line.qty or 0) * (product.qty or 0)
+                rows.append({"id": line.id, "name": line.detail_name or "Отрезок",
+                             "product": product.name or "", "length": line.length_mm or 0.0,
+                             "qty": qty})
+                parts[line.profile_id.id] = (net + (line.weight_total or 0.0) * (product.qty or 0), rows)
+        return parts
+
+    def pmk_metal_overview(self):
+        data = super().pmk_metal_overview()
+        plan = self.cut_plan_ids.filtered("result_ids").sorted("id")[-1:]
+        parts = self._pmk_linear_parts()
+        bars = []
+        for result in plan.result_ids:
+            net, rows = parts.get(result.profile_id.id, (0.0, []))
+            unplaced = max(0.0, net - (result.weight_parts or 0.0))
+            bars.append({
+                "id": result.id,
+                "material": result.profile_id.display_name,
+                "bars": result.bars_used,
+                "stock_m": (result.stock_mm or 0.0) / 1000.0,
+                "parts_m": (result.parts_mm or 0.0) / 1000.0,
+                "buy_kg": (result.weight_total or 0.0) + unplaced,
+                "leftovers": result.leftovers_text or "",
+                "unplaced": result.unplaced_text or "",
+                "parts": rows,
+            })
+        loose = [dict(row, material=self.env["pmk.metal.profile"].browse(pid).display_name)
+                 for pid, (_net, rows) in parts.items()
+                 if pid not in plan.result_ids.profile_id.ids for row in rows]
+        data["bars"] = {
+            "plan": plan.name or "",
+            "plan_id": plan.id or False,
+            "has_linear": bool(parts),
+            "rows": bars,
+            "loose": loose,
+        }
+        return data
+
+    def pmk_metal_bar_scheme(self, result_id):
+        """Схемы раскроя типоразмера: одинаковые отрезки подряд — одним блоком."""
+        self.ensure_one()
+        self.check_access("read")
+        result = self.cut_plan_ids.result_ids.filtered(lambda r: r.id == result_id)
+        if not result:
+            raise UserError(_("Раскрой изменился — нажмите «Разложить прокат»."))
+        res = json.loads(result.result_json or "{}")
+        min_useful = result.plan_id.min_useful_mm or 0.0
+        patterns = []
+        for pattern in res.get("patterns", []):
+            blocks = []
+            for piece in pattern.get("pieces", []):
+                if blocks and abs(blocks[-1]["length"] - piece) < 0.05:
+                    blocks[-1]["qty"] += 1
+                else:
+                    blocks.append({"length": piece, "qty": 1})
+            leftover = pattern.get("leftover") or 0.0
+            patterns.append({
+                "count": pattern.get("count") or 1,
+                "stock": pattern.get("stock_length") or 0.0,
+                "blocks": blocks,
+                "leftover": leftover,
+                "useful": leftover >= min_useful,
+            })
+        return {
+            "title": "%s · %s" % (result.profile_id.display_name, result.plan_id.name),
+            "plan_id": result.plan_id.id,
+            "patterns": patterns,
+            "unplaced": result.unplaced_text or "",
+        }

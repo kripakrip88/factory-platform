@@ -105,8 +105,28 @@
       </xpath>
       <!-- «Металл»: разделы по категориям и итог «что купить». Прокат (pmk_cut) и вентзонты
            (pmk_vent_nest) встают перед итогом (якорь pmk_metal_total). -->
+      <!-- Лист и прокат — одной таблицей с раскрытием и «Схемой» (15.10.2026, Антон:
+           «почему листы по раскладке и детали — две разные таблицы?»). Виджет
+           pmk_metal_overview (js/metal_overview.js); прежние таблицы раскладки
+           спрятаны, а не удалены: на них опираются xpath модулей (pmk_tech —
+           «Листов по факту») и счётчики формы. Кнопки — в виджете. -->
       <xpath expr="//page[@name='layout']/*[1]" position="before">
-        <h3 class="pmk-metal-h">Лист — металлоизделия</h3>
+        <widget name="pmk_metal_overview"/>
+      </xpath>
+      <xpath expr="//page[@name='layout']/div[1]" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//page[@name='layout']/div[hasclass('pmk-layout-caption')][1]" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//page[@name='layout']/div[hasclass('pmk-layout-caption')][2]" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//page[@name='layout']/field[@name='layout_group_ids']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//page[@name='layout']/field[@name='sheet_line_ids']" position="attributes">
+        <attribute name="invisible">1</attribute>
       </xpath>
       <xpath expr="//page[@name='layout']" position="inside">
         <div name="pmk_metal_dobor" invisible="not cat_dobor">

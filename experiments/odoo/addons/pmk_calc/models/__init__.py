@@ -18,5 +18,7 @@ from . import calc_price
 from . import spec_categories
 from . import spec_move
 from . import spec_metal
+# Вкладка «Металл» одной таблицей со схемой (15.10.2026).
+from . import spec_metal_view
 # Последним: представление базы по колонкам справочников (см. файл).
 from . import metal_pending_report

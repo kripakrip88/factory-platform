@@ -587,6 +587,9 @@ def plan_group(sheet_w, sheet_l, parts, kerf_mm=DEFAULT_KERF_MM,
         return result
 
     _total, own, packed, weights = best
+    # Для схемы во вкладке «Металл» (group_drawings): какая укладка выбрана
+    # и сколько у деталей своих полных листов.
+    result_packed, result_own = packed, dict(own)
     shares = _shares(packed["sheets"], weights)
     patterns = _bin_patterns(packed["bins"], order)
     for key, count in list(own.items()) + list(own_exact.items()):
@@ -613,6 +616,9 @@ def plan_group(sheet_w, sheet_l, parts, kerf_mm=DEFAULT_KERF_MM,
         "patterns": _sorted_patterns(patterns, order),
         "axis": packed["axis"],
         "rule": packed["rule"],
+        "packed": result_packed,
+        "own": result_own,
+        "own_exact": own_exact,
     })
     return result
 
@@ -634,3 +640,114 @@ def group_scheme_text(patterns, labels, limit=3):
     if more > 0:
         parts.append("ещё %s %s" % (more, _plural_ru(more, "вариант", "варианта", "вариантов")))
     return "; ".join(parts)
+
+
+# ─── Схема листа для вкладки «Металл» (15.10.2026) ─────────────────────────
+#
+# Антон 15.10: «хочется видеть, как детали вкладываются — менеджер оценит,
+# насколько неудобные размеры листа может скинуть заказчик». Расчёт листов не
+# меняется: здесь только КООРДИНАТЫ той же раскладки — одиночная деталь по
+# схеме fit_sheet (ряды / ряды + полоса), совместная — по укладке pack_group,
+# которую выбрал plan_group. x и w — поперёк листа (ширина), y и l — вдоль.
+
+def single_placements(sheet_w, sheet_l, part_a, part_b, kerf_mm=DEFAULT_KERF_MM,
+                      edge_mm=DEFAULT_EDGE_MM, tolerance_mm=DEFAULT_TOLERANCE_MM):
+    """Полный лист одной заготовки a×b — [(x, y, w, l)] по схеме fit_sheet."""
+    if part_a <= 0 or part_b <= 0 or sheet_w <= 0 or sheet_l <= 0:
+        return []
+    args = (kerf_mm, edge_mm, tolerance_mm)
+    usable_w = sheet_w - 2 * edge_mm
+    usable_l = sheet_l - 2 * edge_mm
+
+    def grid(x0, y0, across, along, w, l):
+        return [(x0 + i * (w + kerf_mm), y0 + j * (l + kerf_mm), w, l)
+                for i in range(across) for j in range(along)]
+
+    candidates = []
+    for first, second, turn in ((part_a, part_b, ""), (part_b, part_a, ", поворот")):
+        across = _fit_axis(sheet_w, first, *args)
+        along = _fit_axis(sheet_l, second, *args)
+        candidates.append((across * along, "%d×%d%s" % (across, along, turn),
+                           grid(edge_mm, edge_mm, across, along, first, second)))
+    for first, second, turn in ((part_a, part_b, ""), (part_b, part_a, ", поворот")):
+        rows = _fit_in_line(usable_w, first, kerf_mm, tolerance_mm)
+        if rows:
+            rest = usable_w - (rows * (first + kerf_mm) - kerf_mm) - kerf_mm
+            along = _fit_in_line(usable_l, second, kerf_mm, tolerance_mm)
+            extra_across = _fit_in_line(rest, second, kerf_mm, tolerance_mm)
+            extra_along = _fit_in_line(usable_l, first, kerf_mm, tolerance_mm)
+            if extra_across * extra_along:
+                x0 = edge_mm + rows * (first + kerf_mm)
+                candidates.append((
+                    rows * along + extra_across * extra_along,
+                    "%d рядами + %d полосой%s" % (rows * along, extra_across * extra_along, turn),
+                    grid(edge_mm, edge_mm, rows, along, first, second)
+                    + grid(x0, edge_mm, extra_across, extra_along, second, first)))
+        cols = _fit_in_line(usable_l, second, kerf_mm, tolerance_mm)
+        if cols:
+            rest = usable_l - (cols * (second + kerf_mm) - kerf_mm) - kerf_mm
+            across = _fit_in_line(usable_w, first, kerf_mm, tolerance_mm)
+            extra_along = _fit_in_line(rest, first, kerf_mm, tolerance_mm)
+            extra_across = _fit_in_line(usable_w, second, kerf_mm, tolerance_mm)
+            if extra_along * extra_across:
+                y0 = edge_mm + cols * (second + kerf_mm)
+                candidates.append((
+                    cols * across + extra_along * extra_across,
+                    "%d рядами + %d полосой%s" % (cols * across, extra_along * extra_across, turn),
+                    grid(edge_mm, edge_mm, across, cols, first, second)
+                    + grid(edge_mm, y0, extra_across, extra_along, second, first)))
+    best = max(candidates, key=lambda c: (c[0], c[1]))
+    return best[2]
+
+
+def group_drawings(sheet_w, sheet_l, parts, kerf_mm=DEFAULT_KERF_MM,
+                   edge_mm=DEFAULT_EDGE_MM, tolerance_mm=DEFAULT_TOLERANCE_MM,
+                   joint=True, max_sheets=12):
+    """Листы группы для схемы: [{"count": листов, "rects": [(key, x, y, w, l)]}].
+
+    Та же раскладка, что plan_group (число листов совпадает с «Листов»);
+    одинаковые листы — одной схемой с числом. max_sheets — сколько разных
+    листов рисовать (остальные — без схемы, их число в "more").
+    """
+    kwargs = {"kerf_mm": kerf_mm, "edge_mm": edge_mm, "tolerance_mm": tolerance_mm}
+    plan = plan_group(sheet_w, sheet_l, parts, joint=joint, **kwargs)
+    sizes = {key: (float(a or 0.0), float(b or 0.0), int(qty or 0)) for key, a, b, qty in parts}
+    sheets = []          # [(signature, rects)]
+
+    def own_sheets(key, full_count, rest):
+        a, b, _qty = sizes[key]
+        spots = single_placements(sheet_w, sheet_l, a, b, **kwargs)
+        for count in [len(spots)] * full_count + ([rest] if rest else []):
+            sheets.append([(key,) + spot for spot in spots[:count]])
+
+    if plan["mode"] == "joint":
+        for key, full in plan.get("own", {}).items():
+            own_sheets(key, full, 0)
+        for key, count in plan.get("own_exact", {}).items():
+            own_sheets(key, count, 0)
+        by_number = {}
+        for number, key, x, y, w, l in iter_placements(sheet_w, sheet_l, plan["packed"],
+                                                       kerf_mm=kerf_mm, edge_mm=edge_mm):
+            by_number.setdefault(number, []).append((key, x, y, w, l))
+        sheets.extend(by_number[number] for number in sorted(by_number))
+    else:
+        for key, (_a, _b, qty) in sizes.items():
+            line = plan["lines"].get(key) or {}
+            per = line.get("per_sheet") or 0
+            if not per or not line.get("sheets"):
+                continue
+            full, rest = divmod(qty, per)
+            own_sheets(key, full, rest)
+
+    drawings, index = [], {}
+    for rects in sheets:
+        signature = tuple(sorted((key, round(x, 1), round(y, 1), round(w, 1), round(l, 1))
+                                 for key, x, y, w, l in rects))
+        if signature in index:
+            drawings[index[signature]]["count"] += 1
+            continue
+        index[signature] = len(drawings)
+        drawings.append({"count": 1, "rects": rects})
+    drawings.sort(key=lambda d: -d["count"])
+    return {"sheets": plan["sheets"], "drawings": drawings[:max_sheets],
+            "more": sum(d["count"] for d in drawings[max_sheets:])}

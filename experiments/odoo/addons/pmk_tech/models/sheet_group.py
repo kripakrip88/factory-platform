@@ -111,3 +111,46 @@ class MetalSpecSheetFact(models.Model):
                 "%(draft)s) — сверьте с CypCut.",
                 group=group.display_name, fact=group.pmk_sheets_fact, draft=group.sheets))
         return tail
+
+
+class MetalSpecSheetGroupTechBuy(models.Model):
+    """«Купить» и «Металл к закупке» технического расчёта — по «Листов по
+    факту» инженера, если вписано (15.10.2026; доля — pmk_bridge,
+    _compute_pmk_layout_share). У расчёта КП — черновик."""
+    _inherit = "pmk.metal.spec.sheet.group"
+
+    def _pmk_sheets_buy(self):
+        self.ensure_one()
+        if self.spec_id.pmk_kind == "tech" and self.pmk_sheets_fact:
+            return self.pmk_sheets_fact
+        return super()._pmk_sheets_buy()
+
+
+class MetalSpecLineTechBuy(models.Model):
+    _inherit = "pmk.metal.spec.line"
+
+    @api.depends("layout_group_id.pmk_sheets_fact", "spec_id.pmk_kind")
+    def _compute_pmk_layout_share(self):
+        return super()._compute_pmk_layout_share()
+
+
+class MetalSpecSheetGroupTechOverview(models.Model):
+    """«Листов по факту» во вкладке «Металл» одной таблицей (15.10.2026)."""
+    _inherit = "pmk.metal.spec.sheet.group"
+
+    def _pmk_overview_row(self):
+        row = super()._pmk_overview_row()
+        row["fact"] = self.pmk_sheets_fact or 0
+        return row
+
+
+class MetalSpecTechOverview(models.Model):
+    _inherit = "pmk.metal.spec"
+
+    def pmk_metal_set_sheets_fact(self, group_id, value):
+        self.ensure_one()
+        self.check_access("write")
+        group = self.layout_group_ids.filtered(lambda g: g.id == group_id)
+        if group:
+            group.pmk_sheets_fact = max(0, int(value or 0))
+        return True

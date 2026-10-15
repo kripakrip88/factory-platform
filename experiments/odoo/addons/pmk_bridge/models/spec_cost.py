@@ -1194,8 +1194,36 @@ class MetalSpecLineCost(models.Model):
                 # отхода у них нет.
                 line.utilization_pct = 100.0
 
+    # Лист — целыми листами черновой раскладки (Антон 15.10.2026: «почему лист
+    # в «Купить» по чистому весу?»; решение 10.10 — закупка = весь материал под
+    # заказ). Доля группы: чистый вес её деталей / листы × вес листа; деталь
+    # делит свой вес и цену на долю — сумма по группе = купленные листы.
+    # Технический расчёт — «Листов по факту» инженера (pmk_tech,
+    # _pmk_sheets_buy). Раскладки нет — 0: прежний расчёт по использованию.
+    pmk_layout_share = fields.Float(
+        "Доля в деталях по раскладке", compute="_compute_pmk_layout_share", store=True,
+        digits=(12, 6),
+        help="Сколько от купленных по раскладке листов уходит в детали группы. "
+             "0 — раскладки нет, закупка по чистому весу и использованию.")
+
+    @api.depends("calc_mode", "layout_group_id.sheets", "layout_group_id.sheet_size",
+                 "layout_group_id.sheet_id.mass_per_sqm",
+                 "layout_group_id.line_ids.weight_total",
+                 "layout_group_id.line_ids.product_id.qty")
+    def _compute_pmk_layout_share(self):
+        shares = {}
+        for group in self.layout_group_id:
+            buy = group._pmk_sheets_buy() * group._pmk_sheet_kg()
+            net = sum((line.weight_total or 0.0) * (line.product_id.qty or 0)
+                      for line in group.line_ids)
+            shares[group.id] = min(1.0, net / buy) if buy > 0 and net > 0 else 0.0
+        for line in self:
+            line.pmk_layout_share = (shares.get(line.layout_group_id.id, 0.0)
+                                     if line.calc_mode == "sheet" else 0.0)
+
     @api.depends("price_unit", "price_kg", "price_state", "utilization_pct",
-                 "weight_one", "weight_total", "length_mm", "qty", "calc_mode")
+                 "weight_one", "weight_total", "length_mm", "qty", "calc_mode",
+                 "pmk_layout_share")
     def _compute_cost(self):
         for line in self:
             clean_one = 0.0
@@ -1210,6 +1238,8 @@ class MetalSpecLineCost(models.Model):
                     clean_one = line.price_kg * line.weight_one
 
             share = (line.utilization_pct or 100.0) / 100.0
+            if line.calc_mode == "sheet" and line.pmk_layout_share:
+                share = line.pmk_layout_share
             qty = line.qty or 0
             fact_one = (clean_one / share) if share else 0.0
             weight_fact = (line.weight_one / share) if share else 0.0

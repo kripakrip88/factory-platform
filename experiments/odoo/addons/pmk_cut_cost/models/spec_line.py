@@ -78,11 +78,15 @@ class MetalSpecProductCutCost(models.Model):
 
     pmk_buy_net = fields.Boolean(
         "Купить — чистым весом", compute="_compute_pmk_buy_net",
-        help="В изделии есть прокат, а раскроя сортамента у расчёта нет: «Купить» — чистый "
-             "вес отрезков, не целые хлысты. Нажмите «Разложить прокат» во вкладке «Металл».")
+        help="Прокат не раскладывали (раскрой сортамента) или лист не раскладывали: «Купить» — "
+             "чистый вес, не целые хлысты и листы. Вкладка «Металл» — «Разложить прокат», "
+             "«Разложить листы».")
 
-    @api.depends("line_linear_ids.pmk_cut_share", "line_linear_ids.profile_id")
+    @api.depends("line_linear_ids.pmk_cut_share", "line_linear_ids.profile_id",
+                 "line_sheet_ids.pmk_layout_share")
     def _compute_pmk_buy_net(self):
+        # Лист — тоже (15.10.2026): деталь без раскладки куплена «чистым весом».
         for product in self:
             linear = product.line_linear_ids.filtered("profile_id")
-            product.pmk_buy_net = bool(linear) and any(not line.pmk_cut_share for line in linear)
+            product.pmk_buy_net = (any(not line.pmk_cut_share for line in linear)
+                                   or any(not line.pmk_layout_share for line in product.line_sheet_ids))

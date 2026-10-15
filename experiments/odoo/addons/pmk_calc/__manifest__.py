@@ -91,6 +91,10 @@
             "pmk_calc/static/src/js/vent_hood_lines.js",
             "pmk_calc/static/src/xml/vent_hood_lines.xml",
             "pmk_calc/static/src/scss/vent_hood.scss",
+            # 15.10.2026: вкладка «Металл» одной таблицей с раскрытием и схемой.
+            "pmk_calc/static/src/js/metal_overview.js",
+            "pmk_calc/static/src/xml/metal_overview.xml",
+            "pmk_calc/static/src/scss/metal_overview.scss",
         ],
     },
     "post_init_hook": "post_init_hook",

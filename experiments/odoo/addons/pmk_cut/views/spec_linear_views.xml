@@ -8,7 +8,9 @@
     <field name="active" eval="True"/>
     <field name="arch" type="xml">
       <xpath expr="//div[@name='pmk_metal_dobor']" position="before">
-        <div name="pmk_metal_linear" invisible="not cat_metal">
+        <!-- С 15.10.2026 прокат — в таблице вкладки (виджет pmk_metal_overview,
+             pmk_calc): этот раздел спрятан; поле cut_plan_ids нужно виджету. -->
+        <div name="pmk_metal_linear" invisible="1">
           <h3 class="pmk-metal-h">Прокат — металлоизделия</h3>
           <div class="pmk-cat-head">
             <button name="action_pmk_cut_linear" type="object" class="btn-secondary" icon="fa-scissors"

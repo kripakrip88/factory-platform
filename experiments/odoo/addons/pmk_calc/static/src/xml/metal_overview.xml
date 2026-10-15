@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Вкладка «Металл» одной таблицей с раскрытием и схемой (15.10.2026) — js/metal_overview.js. -->
+<templates xml:space="preserve">
+
+  <t t-name="pmk_calc.MetalOverview">
+    <div class="o_pmk_mo">
+      <p t-if="!specId" class="o_pmk_mo__muted">Металл посчитается после сохранения расчёта.</p>
+      <p t-elif="state.loading and !state.data" class="o_pmk_mo__muted">Загружаю…</p>
+      <t t-elif="state.data">
+        <t t-set="data" t-value="state.data"/>
+        <div class="o_pmk_mo__bar">
+          <button t-if="data.sheet_lines and data.can_write" type="button" class="btn btn-secondary btn-sm"
+                  t-att-disabled="state.busy" t-on-click="() => this.layoutSheets()"
+                  title="Сколько листов купить: детали одного листа раскладываются вместе. Верхняя оценка — технолог в CypCut уложит плотнее">
+            <i class="fa fa-th-large me-1" aria-hidden="true"/>Разложить листы
+          </button>
+          <button t-if="showBars and data.can_write" type="button" class="btn btn-secondary btn-sm"
+                  t-att-disabled="state.busy" t-on-click="() => this.layoutBars()"
+                  title="Линейные детали — в раскрой сортамента, по хлыстам из прайса">
+            <i class="fa fa-scissors me-1" aria-hidden="true"/>Разложить прокат
+          </button>
+          <span t-if="data.stale" class="o_pmk_mo__stale" role="status" t-esc="data.stale_text"/>
+        </div>
+
+        <!-- Лист -->
+        <t t-if="data.sheet_lines">
+          <div class="o_pmk_mo__h">Лист</div>
+          <table class="o_pmk_mo__table">
+            <thead><tr>
+              <th class="o_pmk_mo__c-mat">Материал</th>
+              <th>Купить</th>
+              <th class="o_pmk_mo__n">Использование</th>
+              <th class="o_pmk_mo__n">Купить, кг</th>
+              <th class="o_pmk_mo__c-act"/>
+            </tr></thead>
+            <tbody>
+              <t t-foreach="sheets" t-as="row" t-key="'s' + row.id">
+                <tr class="o_pmk_mo__grp" t-on-click="() => this.toggle('s' + row.id)">
+                  <td>
+                    <i class="fa fa-fw o_pmk_mo__chev" t-att-class="isOpen('s' + row.id) ? 'fa-angle-down' : 'fa-angle-right'" aria-hidden="true"/>
+                    <t t-esc="row.material"/> <span class="o_pmk_mo__dim">· <t t-esc="row.size"/></span>
+                  </td>
+                  <td>
+                    <t t-esc="sheetsLabel(row)"/>
+                    <span t-if="isTech" class="o_pmk_mo__fact" t-on-click.stop="() => {}">
+                      по факту
+                      <input type="number" min="0" class="o_pmk_mo__fact-input" t-att-value="row.fact || ''"
+                             t-att-placeholder="row.sheets" t-att-disabled="!data.can_write or state.busy"
+                             title="Листов по факту из CypCut — «Купить» и заявка возьмут это число вместо черновика"
+                             t-on-change="(ev) => this.setFact(row, ev)"/>
+                    </span>
+                  </td>
+                  <td class="o_pmk_mo__n"><span class="o_pmk_mo__use" t-att-class="useClass(row)" t-esc="row.use_label"/></td>
+                  <td class="o_pmk_mo__n" t-esc="kg(row.buy_kg)"/>
+                  <td class="o_pmk_mo__c-act">
+                    <button type="button" class="btn btn-link btn-sm" t-on-click.stop="() => this.sheetScheme(row)">
+                      <i class="fa fa-eye me-1" aria-hidden="true"/>Схема
+                    </button>
+                  </td>
+                </tr>
+                <t t-if="isOpen('s' + row.id)">
+                  <tr t-foreach="row.parts" t-as="part" t-key="part.id" class="o_pmk_mo__sub">
+                    <td class="o_pmk_mo__indent"><t t-esc="part.name"/> <span class="o_pmk_mo__dim" t-esc="part.size"/></td>
+                    <td class="o_pmk_mo__dim" t-esc="part.product"/>
+                    <td class="o_pmk_mo__n"><t t-esc="part.qty"/> шт</td>
+                    <td class="o_pmk_mo__n o_pmk_mo__dim" t-esc="kg(part.net_kg)" title="Чистый вес деталей"/>
+                    <td class="o_pmk_mo__c-act">
+                      <select class="o_pmk_mo__size" t-att-disabled="!data.can_write or state.busy"
+                              title="Из какого листа режем эту деталь — после смены «Разложить листы»"
+                              t-on-change="(ev) => this.setSheetSize(part, ev)">
+                        <t t-foreach="data.sheet_sizes" t-as="size" t-key="size[0]">
+                          <option t-att-value="size[0]" t-att-selected="size[0] === part.sheet_size" t-esc="size[1]"/>
+                        </t>
+                      </select>
+                    </td>
+                  </tr>
+                </t>
+              </t>
+              <t t-if="data.loose.length">
+                <tr class="o_pmk_mo__grp" t-on-click="() => this.toggle('sloose')">
+                  <td>
+                    <i class="fa fa-fw o_pmk_mo__chev" t-att-class="isOpen('sloose') ? 'fa-angle-down' : 'fa-angle-right'" aria-hidden="true"/>
+                    Не разложено
+                  </td>
+                  <td class="o_pmk_mo__dim" colspan="2"><t t-esc="data.loose.length"/> дет. — «Разложить листы»</td>
+                  <td class="o_pmk_mo__n o_pmk_mo__dim">чистый вес</td>
+                  <td/>
+                </tr>
+                <t t-if="isOpen('sloose')">
+                  <tr t-foreach="data.loose" t-as="part" t-key="'l' + part.id" class="o_pmk_mo__sub">
+                    <td class="o_pmk_mo__indent"><t t-esc="part.name"/> <span class="o_pmk_mo__dim" t-esc="part.size"/></td>
+                    <td class="o_pmk_mo__dim" t-esc="part.product"/>
+                    <td class="o_pmk_mo__n"><t t-esc="part.qty"/> шт</td>
+                    <td class="o_pmk_mo__n o_pmk_mo__dim" t-esc="kg(part.net_kg)"/>
+                    <td/>
+                  </tr>
+                </t>
+              </t>
+            </tbody>
+          </table>
+        </t>
+
+        <!-- Прокат -->
+        <t t-if="showBars">
+          <div class="o_pmk_mo__h">Прокат
+            <span t-if="data.bars.plan" class="o_pmk_mo__dim">· по раскрою <t t-esc="data.bars.plan"/></span>
+          </div>
+          <table class="o_pmk_mo__table">
+            <thead><tr>
+              <th class="o_pmk_mo__c-mat">Материал</th>
+              <th>Купить</th>
+              <th class="o_pmk_mo__n">В деталях</th>
+              <th class="o_pmk_mo__n">Купить, кг</th>
+              <th class="o_pmk_mo__c-act"/>
+            </tr></thead>
+            <tbody>
+              <t t-foreach="bars" t-as="row" t-key="'b' + row.id">
+                <tr class="o_pmk_mo__grp" t-on-click="() => this.toggle('b' + row.id)">
+                  <td>
+                    <i class="fa fa-fw o_pmk_mo__chev" t-att-class="isOpen('b' + row.id) ? 'fa-angle-down' : 'fa-angle-right'" aria-hidden="true"/>
+                    <t t-esc="row.material"/>
+                  </td>
+                  <td>
+                    <t t-esc="barsLabel(row)"/>
+                    <div t-if="row.unplaced" class="o_pmk_mo__warn">не размещено: <t t-esc="row.unplaced"/></div>
+                  </td>
+                  <td class="o_pmk_mo__n"><t t-esc="m(row.parts_m)"/> м</td>
+                  <td class="o_pmk_mo__n" t-esc="kg(row.buy_kg)"/>
+                  <td class="o_pmk_mo__c-act">
+                    <button t-if="row.bars" type="button" class="btn btn-link btn-sm" t-on-click.stop="() => this.barScheme(row)">
+                      <i class="fa fa-eye me-1" aria-hidden="true"/>Схема
+                    </button>
+                  </td>
+                </tr>
+                <t t-if="isOpen('b' + row.id)">
+                  <tr t-foreach="row.parts" t-as="part" t-key="part.id" class="o_pmk_mo__sub">
+                    <td class="o_pmk_mo__indent"><t t-esc="part.name"/> <span class="o_pmk_mo__dim"><t t-esc="mm(part.length)"/> мм</span></td>
+                    <td class="o_pmk_mo__dim" t-esc="part.product"/>
+                    <td class="o_pmk_mo__n"><t t-esc="part.qty"/> шт</td>
+                    <td/>
+                    <td/>
+                  </tr>
+                </t>
+              </t>
+              <t t-if="data.bars.loose.length">
+                <tr class="o_pmk_mo__grp" t-on-click="() => this.toggle('bloose')">
+                  <td>
+                    <i class="fa fa-fw o_pmk_mo__chev" t-att-class="isOpen('bloose') ? 'fa-angle-down' : 'fa-angle-right'" aria-hidden="true"/>
+                    Не разложено
+                  </td>
+                  <td class="o_pmk_mo__dim" colspan="2"><t t-esc="data.bars.loose.length"/> отр. — «Разложить прокат»</td>
+                  <td class="o_pmk_mo__n o_pmk_mo__dim">чистый вес</td>
+                  <td/>
+                </tr>
+                <t t-if="isOpen('bloose')">
+                  <tr t-foreach="data.bars.loose" t-as="part" t-key="'bl' + part.id" class="o_pmk_mo__sub">
+                    <td class="o_pmk_mo__indent"><t t-esc="part.material"/> · <t t-esc="part.name"/> <span class="o_pmk_mo__dim"><t t-esc="mm(part.length)"/> мм</span></td>
+                    <td class="o_pmk_mo__dim" t-esc="part.product"/>
+                    <td class="o_pmk_mo__n"><t t-esc="part.qty"/> шт</td>
+                    <td/>
+                    <td/>
+                  </tr>
+                </t>
+              </t>
+            </tbody>
+          </table>
+        </t>
+
+        <div t-if="sheets.length or bars.length" class="o_pmk_mo__total">
+          Купить лист и прокат: <b t-esc="kg(totalBuy)"/> кг
+        </div>
+      </t>
+    </div>
+  </t>
+
+  <t t-name="pmk_calc.MetalSchemeDialog">
+    <Dialog size="'xl'" title="title" contentClass="'o_pmk_mscheme'">
+      <t t-if="props.kind === 'sheet'">
+        <t t-set="d" t-value="props.data"/>
+        <p t-if="!d.drawings.length" class="o_pmk_mo__muted">Деталей с размером в группе нет — рисовать нечего.</p>
+        <div t-foreach="d.drawings" t-as="drawing" t-key="drawing_index" class="o_pmk_mscheme__item">
+          <div class="o_pmk_mscheme__head" t-esc="sheetCountLabel(drawing.count)"/>
+          <svg class="o_pmk_mscheme__sheet" t-att-viewBox="sheetView()" preserveAspectRatio="xMinYMin meet">
+            <rect x="0" y="0" t-att-width="d.length" t-att-height="d.width" class="o_pmk_mscheme__plate"/>
+            <rect t-foreach="drawing.rects" t-as="rect" t-key="rect_index"
+                  t-att-x="rect[2]" t-att-y="rect[1]" t-att-width="rect[4]" t-att-height="rect[3]"
+                  t-att-class="'o_pmk_mscheme__part ' + tone(rect[0])">
+              <title t-esc="partOf(rect[0]).name + ' ' + partOf(rect[0]).size"/>
+            </rect>
+          </svg>
+          <div class="o_pmk_mscheme__legend">
+            <span t-foreach="legend(drawing)" t-as="item" t-key="item.key" class="o_pmk_mscheme__chip">
+              <i t-att-class="'o_pmk_mscheme__swatch ' + tone(item.key)"/>
+              <t t-esc="item.part.name"/> <t t-esc="item.part.size"/> — <t t-esc="item.qty"/> шт
+              <span class="o_pmk_mo__dim" t-if="item.part.product">· <t t-esc="item.part.product"/></span>
+            </span>
+          </div>
+        </div>
+        <p t-if="d.more" class="o_pmk_mo__muted">И ещё <t t-esc="d.more"/> лист(ов) — схемы не показаны.</p>
+      </t>
+      <t t-else="">
+        <t t-set="d" t-value="props.data"/>
+        <div t-foreach="d.patterns" t-as="pattern" t-key="pattern_index" class="o_pmk_mscheme__item">
+          <div class="o_pmk_mscheme__head">
+            Хлыст <t t-esc="pattern.stock / 1000"/> м <t t-esc="barCountLabel(pattern.count)"/>
+          </div>
+          <div class="o_pmk_mscheme__bar">
+            <div t-foreach="pattern.blocks" t-as="block" t-key="block_index" class="o_pmk_mscheme__block"
+                 t-att-style="'width:' + barPct(pattern, block.length * block.qty)" t-att-title="blockLabel(block)">
+              <span t-esc="blockLabel(block)"/>
+            </div>
+            <div t-if="pattern.leftover > 0" class="o_pmk_mscheme__rest"
+                 t-att-class="pattern.useful ? '' : 'o_pmk_mscheme__rest--scrap'"
+                 t-att-style="'width:' + barPct(pattern, pattern.leftover)" t-att-title="leftoverLabel(pattern)">
+              <span t-esc="leftoverLabel(pattern)"/>
+            </div>
+          </div>
+        </div>
+        <p t-if="d.unplaced" class="o_pmk_mo__warn">Не размещено: <t t-esc="d.unplaced"/></p>
+      </t>
+      <t t-set-slot="footer">
+        <button t-if="props.openPlan" type="button" class="btn btn-secondary"
+                t-on-click="() => { props.openPlan(); props.close(); }">Открыть раскрой</button>
+        <button type="button" class="btn btn-primary" t-on-click="() => this.props.close()">Закрыть</button>
+      </t>
+    </Dialog>
+  </t>
+
+</templates>

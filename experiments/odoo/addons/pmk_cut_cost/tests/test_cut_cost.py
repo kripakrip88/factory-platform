@@ -76,3 +76,30 @@ class TestCutCost(TransactionCase):
                                msg="раскрой сброшен — снова чистый вес")
         plan.action_compute()
         self.assertAlmostEqual(self.spec.total_weight_fact, before, places=2)
+
+
+@tagged("post_install", "-at_install")
+class TestSheetBuyAndBars(TransactionCase):
+    """Лист — целыми листами раскладки; прокат во вкладке «Металл» и его схема."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.env = cls.env(context=dict(cls.env.context, tracking_disable=True))
+        cls.sheet = cls.env["pmk.metal.sheet"].create({
+            "sheet_type": "Гладкий (тест закупки листа)", "thickness_mm": 10.0,
+            "gost": "ГОСТ тест", "mass_per_sqm": 78.5})
+        cls.spec = cls.env["pmk.metal.spec"].create({
+            "product_ids": [Command.create({
+                "name": "Опора (лист)", "qty": 2,
+                "line_ids": [Command.create({"calc_mode": "sheet", "sheet_id": cls.sheet.id,
+                                             "detail_name": "Пластина", "a_mm": 300.0,
+                                             "b_mm": 200.0, "qty": 8})]})]})
+
+    def test_sheet_buy_is_whole_sheets(self):
+        product = self.spec.product_ids
+        self.assertTrue(product.pmk_buy_net, "без раскладки — чистый вес")
+        self.spec.action_draft_layout()
+        self.assertAlmostEqual(self.spec.total_weight_fact, 1.5 * 6.0 * 78.5, places=1,
+                               msg="Купить = целый лист 1500×6000")
+        self.assertFalse(product.pmk_buy_net)
