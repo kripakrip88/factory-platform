@@ -1,4 +1,4 @@
-import { Component, onMounted, onWillStart, useExternalListener, useRef, useState } from "@odoo/owl";
+import { Component, onMounted, onWillDestroy, onWillStart, useExternalListener, useRef, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { browser } from "@web/core/browser/browser";
@@ -164,9 +164,15 @@ export class MailClientInbox extends Component {
             resizing: null,
         });
 
-        this.busService.subscribe("mail_client.sync", (payload) =>
-            this.onSyncNotification(payload)
-        );
+        // ПРАВКА ПМК (15.10.2026): подписка на шину — на время жизни окна.
+        // Шина — сервис, он живёт всю сессию, а окно почты закрывают и
+        // открывают снова. Без отписки каждый заход оставлял обработчик, и
+        // синхронизация ящика (крон, 10 мин) после ухода из почты звала
+        // закрытое окно: orm уже уничтоженного компонента бросал «Component
+        // is destroyed» (UncaughtPromiseError на боевом).
+        const onSync = (payload) => this.onSyncNotification(payload);
+        this.busService.subscribe("mail_client.sync", onSync);
+        onWillDestroy(() => this.busService.unsubscribe("mail_client.sync", onSync));
 
         // ПРАВКА ПМК (шаг 41, А7): поиск по мере ввода — после паузы.
         this.debouncedSearch = useDebounced(() => this.applySearch(), SEARCH_DELAY_MS);
