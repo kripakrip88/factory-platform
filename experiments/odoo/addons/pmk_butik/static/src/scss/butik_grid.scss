@@ -1,0 +1,156 @@
+// Бутик — таблица как в Excel (15.10.2026), js/butik_grid.js.
+.o_pmk_butik {
+  --bt-card: #fff;
+  --bt-ink: #1f2328;
+  --bt-border: #e3ded3;
+  --bt-grid: #ece8df;
+  --bt-head: #faf8f4;
+  --bt-prod: #f4f1ea;
+  --bt-muted: #6b7079;
+  --bt-sel: #16191c;
+  --bt-ok: #3f5a12;
+  --bt-bad: #9b2c22;
+
+  margin: 8px 0 12px;
+}
+
+.o_pmk_butik__muted { color: var(--bt-muted); }
+
+.o_pmk_butik__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.o_pmk_butik__hint { margin-left: 8px; font-size: 12px; color: var(--bt-muted); }
+
+.o_pmk_butik__wrap {
+  border: 1px solid var(--bt-border);
+  border-radius: 10px;
+  overflow: auto;
+  max-height: 70vh;
+  background: var(--bt-card);
+}
+
+.o_pmk_butik__table {
+  width: 100%;
+  min-width: 860px;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 13px;
+
+  th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: 6px 8px;
+    background: var(--bt-head);
+    border-bottom: 1px solid var(--bt-border);
+    border-right: 1px solid var(--bt-grid);
+    font-weight: 500;
+    font-size: 12px;
+    color: var(--bt-muted);
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  td {
+    position: relative;
+    padding: 0;
+    height: 30px;
+    border-bottom: 1px solid var(--bt-grid);
+    border-right: 1px solid var(--bt-grid);
+    vertical-align: top;
+  }
+
+  .n { text-align: right; }
+  td.sel { box-shadow: inset 0 0 0 2px var(--bt-sel); }
+}
+
+.o_pmk_butik__in {
+  display: block;
+  width: 100%;
+  height: 29px;
+  padding: 4px 8px;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--bt-ink);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+
+  &.n { text-align: right; }
+  &::placeholder { color: #b0b4ba; }
+}
+
+.o_pmk_butik__product td { background: var(--bt-prod); }
+.o_pmk_butik__in--product { font-weight: 600; }
+.o_pmk_butik__num { padding: 6px 8px !important; font-weight: 600; text-align: center !important; }
+.o_pmk_butik__muted-cell { padding: 6px 8px !important; font-size: 12px; color: var(--bt-muted); }
+.o_pmk_butik__ro { padding: 6px 8px !important; color: var(--bt-muted); font-variant-numeric: tabular-nums; }
+
+.o_pmk_butik__rec {
+  padding: 0 8px 4px;
+  font-size: 11px;
+  color: var(--bt-ok);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  &.o_pmk_butik__rec--bad { color: var(--bt-bad); }
+}
+
+.o_pmk_butik__suggest {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  z-index: 5;
+  max-height: 260px;
+  overflow: auto;
+  background: var(--bt-card);
+  border: 1px solid var(--bt-border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.o_pmk_butik__sitem {
+  display: flex;
+  gap: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+
+  &:hover { background: var(--bt-head); }
+}
+
+.o_pmk_butik__skind {
+  flex: none;
+  min-width: 56px;
+  font-size: 11px;
+  color: var(--bt-muted);
+}
+
+.o_pmk_butik__total {
+  margin-top: 8px;
+  text-align: right;
+  color: var(--bt-muted);
+
+  b { color: var(--bt-ink); font-weight: 600; }
+}
+
+@media screen {
+  body.o_nexus_dark .o_pmk_butik {
+    --bt-card: #272a30;
+    --bt-ink: #e4e1da;
+    --bt-border: #3d414a;
+    --bt-grid: #343840;
+    --bt-head: #2e3138;
+    --bt-prod: #2e3138;
+    --bt-muted: #a3a6ad;
+    --bt-sel: #d4e57a;
+    --bt-ok: #c3d877;
+    --bt-bad: #f3a19e;
+  }
+}

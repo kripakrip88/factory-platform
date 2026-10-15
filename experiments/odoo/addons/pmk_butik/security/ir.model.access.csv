@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_pmk_butik_spec_user,pmk.butik.spec user,model_pmk_butik_spec,base.group_user,1,1,1,1
+access_pmk_butik_line_user,pmk.butik.line user,model_pmk_butik_line,base.group_user,1,1,1,1

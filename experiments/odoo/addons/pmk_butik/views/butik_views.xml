@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <!-- Бутик (15.10.2026): отдельный калькулятор — спецификация таблицей, как в Excel
+       Бутова. Основной поток (расчёт металлопроката, сделка) не меняется. -->
+  <record id="view_butik_spec_list" model="ir.ui.view">
+    <field name="name">pmk.butik.spec.list</field>
+    <field name="model">pmk.butik.spec</field>
+    <field name="arch" type="xml">
+      <list string="Бутик">
+        <field name="name" width="105px"/>
+        <field name="date" width="100px"/>
+        <field name="subject"/>
+        <field name="partner_id"/>
+        <field name="lead_id"/>
+        <field name="product_count" width="80px"/>
+        <field name="weight_kg" sum="Металл, кг" width="110px"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="view_butik_spec_form" model="ir.ui.view">
+    <field name="name">pmk.butik.spec.form</field>
+    <field name="model">pmk.butik.spec</field>
+    <field name="arch" type="xml">
+      <form string="Бутик">
+        <sheet>
+          <div class="oe_title">
+            <h1><field name="name" readonly="1"/></h1>
+          </div>
+          <group>
+            <group>
+              <field name="subject" placeholder="Заказчик, спец./счёт №"/>
+              <field name="partner_id"/>
+            </group>
+            <group>
+              <field name="date"/>
+              <field name="lead_id" options="{'no_create': True}"/>
+            </group>
+          </group>
+          <field name="line_ids" invisible="1"/>
+          <widget name="pmk_butik_grid"/>
+          <field name="note" placeholder="Примечание" nolabel="1"/>
+        </sheet>
+        <chatter/>
+      </form>
+    </field>
+  </record>
+
+  <record id="view_butik_spec_search" model="ir.ui.view">
+    <field name="name">pmk.butik.spec.search</field>
+    <field name="model">pmk.butik.spec</field>
+    <field name="arch" type="xml">
+      <search>
+        <field name="name"/>
+        <field name="subject"/>
+        <field name="partner_id"/>
+        <field name="lead_id"/>
+        <field name="line_ids" string="Наименование" filter_domain="[('line_ids.name', 'ilike', self)]"/>
+      </search>
+    </field>
+  </record>
+
+  <record id="action_butik_spec" model="ir.actions.act_window">
+    <field name="name">Бутик</field>
+    <field name="res_model">pmk.butik.spec</field>
+    <field name="view_mode">list,form</field>
+    <field name="help" type="html">
+      <p class="o_view_nocontent_smiling_face">Новая спецификация «Бутик»</p>
+      <p>Таблица как в Excel: изделие, под ним детали — № поз., наименование, длина, на 1 шт,
+        марка. Вес считается сам, наименование находится по справочнику.</p>
+    </field>
+  </record>
+
+  <menuitem id="menu_pmk_butik" name="Бутик" parent="pmk_calc.menu_pmk_calc"
+            action="action_butik_spec" sequence="35"/>
+</odoo>
