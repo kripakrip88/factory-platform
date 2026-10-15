@@ -44,10 +44,13 @@ INPUT_KEYS = ("contract", "kind", "run_id", "engine_lib", "vent_nesting_lib", "t
               "thickness", "strategy", "compare", "coedge", "bridge", "small_mm", "microjoints", "labels", "label_opts",
               "font", "machines", "time_limit_s")
 RESULT_KEYS = ("contract", "kind", "run_id", "engine", "ok", "requested", "applied", "files", "summary", "strategies",
-               "layouts", "checks", "warnings", "labels", "bridge", "parts", "timing")
-SUMMARY_KEYS = ("sheets", "lower_bound", "optimal", "method", "cut_m", "mark_m", "idle_m", "return_m", "pierces", "mass_kg")
+               "machines", "layouts", "checks", "warnings", "labels", "bridge", "parts", "timing")
+SUMMARY_KEYS = ("sheets", "lower_bound", "optimal", "method", "cut_m", "mark_m", "idle_m", "return_m", "pierces", "mass_kg",
+                "machine_s", "machine_detail")
 STRATEGY_KEYS = ("name", "title", "sheets", "cut_m", "idle_m", "return_m", "pierces", "bridges", "danger", "strip", "ret",
-                 "warnings", "machine_s", "error")
+                 "warnings", "machine_s", "machine_detail", "error")
+MACHINE_KEYS = ("name", "preliminary", "source", "updated", "note", "k_total", "thicknesses")    # result.json → machines[]
+DETAIL_KEYS = ("cut_s", "pierce_s", "mark_s", "travel_s", "lift_s", "k", "total_s", "why")      # machine_detail{станок}
 DANGER_KEYS = ("tongues", "small", "parts", "holes", "holes_s", "near", "short", "mj")
 LAYOUT_KEYS = ("index", "amount", "parts", "W", "L", "util_pct", "cut_m", "mark_m", "pierces", "mass_kg")
 ERROR_KEYS = ("kind", "user", "message", "trace", "run_id", "input")
@@ -417,8 +420,12 @@ def make_result(job, res, parts, t0):
         files={k: ("out/" + v) if v else None for k, v in res["files"].items()},
         summary=dict(sheets=res["sheets"], lower_bound=res["lower_bound"], optimal=bool(res["optimal"]), method=res["method"],
                      cut_m=rk["cut_m"], mark_m=rk["mark_m"], idle_m=res["idle_m"], return_m=round(rk["ret"]["m"], 2),
-                     pierces=rk["pierces"], mass_kg=res["mass_kg"]),
+                     pierces=rk["pierces"], mass_kg=res["mass_kg"],
+                     # время станков выбранной стратегии (= её строке сводки): {станок: с | null}, {станок: разбор}
+                     machine_s=dict(rk.get("machine_s") or {}), machine_detail=dict(rk.get("machine_detail") or {})),
         strategies=strategies,
+        # профили станков (эхо machine.info): предварительный ли (в сводке «≈»), откуда, когда, поправка, толщины
+        machines=[{k: m.get(k) for k in MACHINE_KEYS} for m in res.get("machines") or []],
         layouts=[{k: l[k] for k in LAYOUT_KEYS} for l in res["layouts"]],
         checks=[dict(name=n, status=_status(v), detail=d) for n, v, d in res["checks"]],
         warnings=list(res["warnings"]), labels=res["labels"], bridge=res.get("bridge"),
