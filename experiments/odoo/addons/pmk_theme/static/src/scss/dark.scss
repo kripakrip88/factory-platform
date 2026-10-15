@@ -461,7 +461,8 @@ $pmk-dark-alerts: (
 
   @each $tone, $t in $pmk-dark-tones {
     body.o_nexus_dark .o_form_view .o_statusbar_status > .btn.o_pmk_stage_toggle[data-pmk-tone="#{$tone}"]:not(.d-none) {
-      background: nth($t, 1) !important;
+      background: linear-gradient(90deg, nth($t, 2) var(--pmk-stage-progress, 0%),
+                  nth($t, 1) var(--pmk-stage-progress, 0%)) !important;
       border-color: nth($t, 2) !important;
     }
 

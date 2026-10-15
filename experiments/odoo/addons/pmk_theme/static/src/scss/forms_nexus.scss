@@ -1136,9 +1136,12 @@ $pmk-stage-tones: (
 );
 
 @each $tone, $pair in $pmk-stage-tones {
+  // Заливка-прогресс (15.10.2026): пройденная доля пути — тоном рамки, остаток — фоном
+  // тона; --pmk-stage-progress ставит js (pmkProgress). Вне пути — 0 %, без заливки.
   .o_form_view .o_statusbar_status > .btn.o_pmk_stage_toggle[data-pmk-tone="#{$tone}"]:not(.d-none) {
     border-color: nth($pair, 2) !important;
-    background: nth($pair, 1) !important;
+    background: linear-gradient(90deg, nth($pair, 2) var(--pmk-stage-progress, 0%),
+                nth($pair, 1) var(--pmk-stage-progress, 0%)) !important;
   }
 
   .o-dropdown--menu .dropdown-item.o_pmk_stage_item.active.o_pmk_tone_#{$tone} {

@@ -140,6 +140,19 @@ patch(StatusBarField.prototype, {
     },
 
     // Тон кнопки — по текущей стадии. Шаблон кладёт его в data-pmk-tone.
+    /** Доля пройденного пути, % — заливка кнопки (15.10.2026, вместо делений-чёрточек:
+     *  Антон — «уберём чёрные дефисы, внутри кнопки градиент прогресс бар»). Вне пути
+     *  («Пауза», «Проиграно») — 0: кнопка своим тоном без заливки. */
+    get pmkProgress() {
+        const items = this.getAllItems();
+        const current = items.find((item) => item.isSelected);
+        if (!current || !this.pmkOnPath(current)) {
+            return 0;
+        }
+        const path = items.filter((item) => this.pmkOnPath(item));
+        return path.length ? Math.round((100 * (path.indexOf(current) + 1)) / path.length) : 0;
+    },
+
     get pmkCurrentTone() {
         const current = this.getAllItems().find((item) => item.isSelected);
         return current ? this.pmkTone(current) : "grey";
@@ -212,9 +225,10 @@ patch(StatusBarField.prototype, {
         if (!current) {
             return super.getCurrentLabel(...arguments);
         }
+        // Деления-чёрточки сменила заливка кнопки (pmkProgress) — 15.10.2026.
         let steps = "";
         const path = items.filter((item) => this.pmkOnPath(item));
-        if (this.pmkOnPath(current) && path.length > 1 && path.length <= MAX_STEPS) {
+        if (false && this.pmkOnPath(current) && path.length > 1 && path.length <= MAX_STEPS) {
             const done = path.indexOf(current) + 1;
             steps = path
                 .map((_, index) =>

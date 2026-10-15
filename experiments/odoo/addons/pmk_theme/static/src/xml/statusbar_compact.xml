@@ -24,6 +24,7 @@
       <attribute name="t-att-disabled"/>
       <attribute name="class" add="o_pmk_stage_toggle" separator=" "/>
       <attribute name="t-att-data-pmk-tone">pmkCurrentTone</attribute>
+      <attribute name="t-att-style">'--pmk-stage-progress: ' + pmkProgress + '%'</attribute>
     </xpath>
   </t>
 
@@ -32,6 +33,7 @@
       <attribute name="t-att-disabled"/>
       <attribute name="class" add="o_pmk_stage_toggle" separator=" "/>
       <attribute name="t-att-data-pmk-tone">pmkCurrentTone</attribute>
+      <attribute name="t-att-style">'--pmk-stage-progress: ' + pmkProgress + '%'</attribute>
     </xpath>
   </t>
 
@@ -40,6 +42,7 @@
       <attribute name="t-att-disabled"/>
       <attribute name="class" add="o_pmk_stage_toggle" separator=" "/>
       <attribute name="t-att-data-pmk-tone">pmkCurrentTone</attribute>
+      <attribute name="t-att-style">'--pmk-stage-progress: ' + pmkProgress + '%'</attribute>
     </xpath>
   </t>
 
@@ -48,6 +51,7 @@
       <attribute name="t-att-disabled"/>
       <attribute name="class" add="o_pmk_stage_toggle" separator=" "/>
       <attribute name="t-att-data-pmk-tone">pmkCurrentTone</attribute>
+      <attribute name="t-att-style">'--pmk-stage-progress: ' + pmkProgress + '%'</attribute>
     </xpath>
   </t>
 
