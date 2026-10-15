@@ -9,3 +9,4 @@ from . import test_step35_dobor_node
 from . import test_step36_laser_tab
 # Задача 247: проект на «Связях» — конечный узел.
 from . import test_project_hub
+from . import test_cut_plan_tab

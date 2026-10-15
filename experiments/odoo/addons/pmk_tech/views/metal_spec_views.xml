@@ -67,6 +67,12 @@
         </div>
       </xpath>
 
+      <!-- Вид документа в заголовке (Антон 15.10.2026: «нет, что это — Расчёт КП
+           СМ-00045 от …, непонятно, расчёт менеджера или тех. расчёт инженера»). -->
+      <xpath expr="//div[hasclass('oe_title')]/h1/field[@name='name']" position="before">
+        <span class="pmk-spec-title__kind" invisible="not id or pmk_kind == 'tech'">Расчёт КП</span>
+        <span class="pmk-spec-title__kind" invisible="not id or pmk_kind != 'tech'">Технический расчёт</span>
+      </xpath>
       <xpath expr="//div[hasclass('oe_title')]" position="after">
         <div class="text-muted mb-2 d-flex flex-wrap align-items-baseline column-gap-1" name="pmk_tech_ref" invisible="pmk_kind != 'tech'">
           Технический расчёт<span class="d-inline-flex align-items-baseline column-gap-1" invisible="not pmk_tech_order_id"> к

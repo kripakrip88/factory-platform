@@ -13,3 +13,4 @@ from . import test_step_z10
 # Шаг З-13: совместная раскладка в заявке, «Листов по факту».
 from . import test_step_z13
 from . import test_request_note_table
+from . import test_spec_title_kind
