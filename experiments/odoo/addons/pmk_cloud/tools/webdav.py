@@ -70,10 +70,10 @@ def is_recent(name, today, days):
 
 class WebDav:
     # Облако бывает медленным: первый обход «ПРОИЗВОДСТВА» (85+ папок) 15.10 упал на ReadTimeout
-    # одной папки при 30 с. Ждём ответа до минуты и повторяем сетевой сбой дважды.
+    # одной папки при 30 с. Ждём ответа до 40 с и повторяем сетевой сбой дважды (худший запрос ~2 мин).
     RETRY_PAUSES = (3, 10)
 
-    def __init__(self, login, password, base_url=BASE_URL, timeout=(15, 60), session=None, sleep=None):
+    def __init__(self, login, password, base_url=BASE_URL, timeout=(15, 40), session=None, sleep=None):
         import requests
         import time
         self.base = base_url.rstrip("/")

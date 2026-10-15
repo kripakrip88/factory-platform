@@ -98,6 +98,37 @@ class TestCloud(TransactionCase):
         self.assertIn("опора.lxds", self.sent[0])
         self.assertIn("обновлён", self.sent[0])
 
+    def test_baseline_in_parts(self):
+        """Обход частями: за запуск — сколько успеется; сбой папки — она в очередь, найденное не теряется."""
+        clock = {"t": 0.0}
+
+        def tick():
+            clock["t"] += 50.0  # каждая сверка срока — +50 с: за запуск (90 с) одна папка
+            return clock["t"]
+
+        fail = {"path": "/ПРОИЗВОДСТВО/09.10.26/СИБЭМУ", "left": 1}
+        list_ = self.dav.list
+
+        def flaky(path):
+            if path == fail["path"] and fail["left"]:
+                fail["left"] -= 1
+                raise WebDavError("Облако недоступно: ReadTimeout")
+            return list_(path)
+
+        self.dav.list = flaky
+        icp = self.env["ir.config_parameter"].sudo()
+        with mock.patch("odoo.addons.pmk_cloud.models.cloud_file.time.monotonic", side_effect=tick):
+            runs = 0
+            while icp.get_param("pmk_cloud.baseline_root") != "/ПРОИЗВОДСТВО" and runs < 10:
+                self.Cloud._cron_scan()
+                runs += 1
+        self.assertGreater(runs, 3, "обход растянулся на несколько запусков")
+        self.assertEqual(self.sent, [], "точка отсчёта — без сообщений")
+        self.assertFalse(icp.get_param("pmk_cloud.walk"), "очередь обхода закрыта")
+        self.assertEqual(sorted(self.Cloud.search([]).mapped("name")),
+                         ["лист.dxf", "опора.lxds", "план.dxf", "старое.zx"],
+                         "сбой папки не выбросил её файлы из точки отсчёта")
+
     def test_error_goes_to_status_not_crash(self):
         self.env["ir.config_parameter"].sudo().set_param("pmk_cloud.root", "/НЕТ")
         self.Cloud._cron_scan()

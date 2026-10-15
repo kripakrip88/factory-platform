@@ -7,7 +7,9 @@
 — не новый файл. Тот же путь с другим размером или временем — «обновлён».
 """
 import html
+import json
 import logging
+import time
 from collections import OrderedDict
 from odoo import api, fields, models
 
@@ -64,11 +66,29 @@ class CloudFile(models.Model):
         self.env["ir.config_parameter"].sudo().set_param(P + "last_status", text)
 
     # ------------------------------------------------------------ обход
+    # Полный обход «ПРОИЗВОДСТВА» у Облака дольше 4 минут, а задание крона Odoo снимается
+    # на limit_time_real (15.10: два запуска подряд убиты посреди обхода). Поэтому обход —
+    # частями: за запуск папок сколько успеется за WALK_BUDGET_S, очередь папок — в параметре
+    # pmk_cloud.walk, следующий запуск продолжает. Худший запрос с повторами ~2 мин —
+    # запас до 240 с остаётся.
+    WALK_BUDGET_S = 90
+
     @api.model
-    def _collect(self, dav, root, full, today):
-        """Файлы для сверки: вся папка (full) или корень + свежие папки дат."""
-        if full:
-            return dav.walk(root)
+    def _walk_state(self):
+        raw = self.env["ir.config_parameter"].sudo().get_param(P + "walk")
+        try:
+            return json.loads(raw) if raw else None
+        except ValueError:
+            return None
+
+    @api.model
+    def _walk_save(self, walk):
+        self.env["ir.config_parameter"].sudo().set_param(
+            P + "walk", json.dumps(walk, ensure_ascii=False) if walk else False)
+
+    @api.model
+    def _recent_files(self, dav, root, today):
+        """Корень папки и папки дат за RECENT_DAYS дней — с вложенными."""
         files = []
         for item in dav.list(root):
             if not item["dir"]:
@@ -78,32 +98,87 @@ class CloudFile(models.Model):
         return files
 
     @api.model
+    def _walk_step(self, dav, walk, deadline):
+        """Пройти очередь папок до срока → (файлы, ошибка). Ошибка — папка обратно в очередь,
+        а уже найденное этим запуском всё равно запоминается (иначе пройденные папки выпали бы
+        из точки отсчёта и их файлы потом пришли бы как новые)."""
+        files = []
+        queue = walk["queue"]
+        while queue and time.monotonic() < deadline:
+            path, depth = queue.pop()
+            try:
+                items = dav.list(path)
+            except WebDavError as e:
+                queue.append([path, depth])
+                return files, e
+            for item in items:
+                if item["dir"]:
+                    if depth < 6:
+                        queue.append([item["path"], depth + 1])
+                else:
+                    files.append(item)
+        return files, None
+
+    def _wanted(self, files, cfg):
+        return [f for f in files if "." in f["name"]
+                and "." + f["name"].rsplit(".", 1)[-1].lower() in cfg["exts"]]
+
+    @api.model
     def _cron_scan(self, full=False):
         cfg = self._cfg()
         if not cfg["password"] or cfg["root"] == "/":
             return  # не подключено — молчим
         icp = self.env["ir.config_parameter"].sudo()
-        baseline = icp.get_param(P + "baseline_root") != cfg["root"]
-        today = fields.Date.context_today(self)
+        now_txt = fields.Datetime.now().strftime("%d.%m %H:%M")
+        baseline_done = icp.get_param(P + "baseline_root") == cfg["root"]
+        walk = self._walk_state()
+        if walk and walk.get("root") != cfg["root"]:
+            walk = None  # папку сменили — прежний обход не нужен
+        if not walk and (not baseline_done or full):
+            walk = {"root": cfg["root"], "kind": "full" if baseline_done else "baseline",
+                    "queue": [[cfg["root"], 0]], "files": 0, "new": 0, "runs": 0}
+        deadline = time.monotonic() + self.WALK_BUDGET_S
+        dav = self._dav(cfg)
+        notes = []
         try:
-            files = self._collect(self._dav(cfg), cfg["root"], full or baseline, today)
+            if baseline_done:
+                files = self._wanted(self._recent_files(dav, cfg["root"], fields.Date.context_today(self)), cfg)
+                fresh = self._remember(files, notify=True, detect_moves=True)
+                if fresh:
+                    self._notify(cfg["root"], fresh)
+                notes.append("свежие папки: %d файлов, новых %d" % (len(files), len(fresh)))
+            if walk:
+                walk["runs"] += 1
+                found, error = self._walk_step(dav, walk, deadline)
+                files = self._wanted(found, cfg)
+                notify = walk["kind"] == "full"
+                fresh = self._remember(files, notify=notify)
+                if notify and fresh:
+                    self._notify(cfg["root"], fresh)
+                walk["files"] += len(files)
+                walk["new"] += len(fresh)
+                if walk["queue"]:
+                    self._walk_save(walk)
+                    notes.append("%s: идёт, найдено %d файлов, папок в очереди %d" % (
+                        "первый обход" if walk["kind"] == "baseline" else "ночной обход",
+                        walk["files"], len(walk["queue"])))
+                if error:
+                    raise error
+                if not walk["queue"]:
+                    self._walk_save(None)
+                    if walk["kind"] == "baseline":
+                        icp.set_param(P + "baseline_root", cfg["root"])
+                        notes.append("первый обход готов за %d запусков: %d файлов запомнено, в группу "
+                                     "не слали — дальше только новые" % (walk["runs"], walk["files"]))
+                    else:
+                        notes.append("ночной обход: %d файлов, новых %d" % (walk["files"], walk["new"]))
         except WebDavError as e:
             _logger.warning("облако: %s", e)
-            self._status("Ошибка %s: %s" % (fields.Datetime.now().strftime("%d.%m %H:%M"), e))
-            return
-        files = [f for f in files if "." + f["name"].rsplit(".", 1)[-1].lower() in cfg["exts"]
-                 and "." in f["name"]]
-        fresh = self._remember(files, notify=not baseline)
-        if baseline:
-            icp.set_param(P + "baseline_root", cfg["root"])
-        elif fresh:
-            self._notify(cfg["root"], fresh)
-        self._status("Проверено %s: %s файлов, новых %d%s" % (
-            fields.Datetime.now().strftime("%d.%m %H:%M"), len(files), len(fresh),
-            " (точка отсчёта — в группу не слали)" if baseline else ""))
+            notes.append("ошибка: %s" % e)
+        self._status("%s — %s" % (now_txt, "; ".join(notes) or "нечего проверять"))
 
     @api.model
-    def _remember(self, files, notify=True):
+    def _remember(self, files, notify=True, detect_moves=False):
         """Записать увиденное; вернуть [(файл, «новый»|«обновлён»)] для сообщения."""
         known = {r.path: r for r in self.search([("path", "in", [f["path"] for f in files])])}
         fresh = []
@@ -117,9 +192,11 @@ class CloudFile(models.Model):
                     if notify:
                         fresh.append((f, "обновлён"))
                 continue
+            # Перенос узнаём только в свежих папках: при обходе частями прежний путь мог ещё
+            # не попасть в очередь — копия файла в другой папке «увела» бы его запись.
             moved = self.search([("name", "=", f["name"]), ("size", "=", f["size"]),
                                  ("mtime", "=", f["mtime"]), ("path", "not in", [x["path"] for x in files])],
-                                limit=1) if f["mtime"] else self.browse()
+                                limit=1) if (detect_moves and f["mtime"]) else self.browse()
             if moved:
                 moved.path = f["path"]  # перенесли или переименовали папку — не новый
                 continue
