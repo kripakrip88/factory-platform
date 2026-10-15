@@ -13,6 +13,10 @@
           <block title="Облако Mail.ru → Телеграм" name="pmk_cloud_block">
             <setting string="Подключение" help="Новые файлы папки (с вложенными) — сообщением в группу Телеграма. Только чтение списка файлов.">
               <div class="row mt8">
+                <label for="pmk_cloud_enabled" class="col-lg-4 o_light_label"/>
+                <field name="pmk_cloud_enabled"/>
+              </div>
+              <div class="row">
                 <label for="pmk_cloud_login" class="col-lg-4 o_light_label"/>
                 <field name="pmk_cloud_login"/>
               </div>

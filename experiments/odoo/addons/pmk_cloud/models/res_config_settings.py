@@ -19,6 +19,8 @@ class ResConfigSettings(models.TransientModel):
     pmk_cloud_exclude = fields.Char("Только ночью", config_parameter="pmk_cloud.exclude", default="Архив",
                                     help="Папки первого уровня через запятую, которые раз в 5 минут не смотрим "
                                          "(большие). Их новые файлы придут после ночного обхода.")
+    pmk_cloud_enabled = fields.Boolean("Уведомлять о новых файлах", compute="_compute_pmk_cloud_enabled",
+                                       inverse="_inverse_pmk_cloud_enabled", readonly=False)
     pmk_cloud_status = fields.Char("Последняя проверка", compute="_compute_pmk_cloud_status")
 
     def _compute_pmk_cloud_status(self):
@@ -31,3 +33,13 @@ class ResConfigSettings(models.TransientModel):
         ok, text = self.env["pmk.cloud.file"].sudo()._check_connection()
         return {"type": "ir.actions.client", "tag": "display_notification", "params": {
             "type": "success" if ok else "danger", "title": "Облако Mail.ru", "message": text, "sticky": True}}
+
+    def _compute_pmk_cloud_enabled(self):
+        paused = self.env["ir.config_parameter"].sudo().get_param("pmk_cloud.paused")
+        for rec in self:
+            rec.pmk_cloud_enabled = not paused
+
+    def _inverse_pmk_cloud_enabled(self):
+        for rec in self:
+            self.env["ir.config_parameter"].sudo().set_param("pmk_cloud.paused", False if rec.pmk_cloud_enabled else "1")
+

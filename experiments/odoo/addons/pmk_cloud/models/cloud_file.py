@@ -140,6 +140,10 @@ class CloudFile(models.Model):
         cfg = self._cfg()
         if not cfg["password"] or cfg["root"] == "/":
             return  # не подключено — молчим
+        # «Уведомлять о новых файлах» снята (Антон 15.10.2026: «пока отключим») — галочка в
+        # настройках, а не выключенное задание крона: обновление модуля включило бы его снова.
+        if self.env["ir.config_parameter"].sudo().get_param(P + "paused"):
+            return
         icp = self.env["ir.config_parameter"].sudo()
         now_txt = fields.Datetime.now().strftime("%d.%m %H:%M")
         baseline_done = icp.get_param(P + "baseline_root") == cfg["root"]

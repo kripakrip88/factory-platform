@@ -179,6 +179,15 @@ class TestCloud(TransactionCase):
         self.Cloud._cron_scan()
         self.assertIn("нет папки", self.env["ir.config_parameter"].sudo().get_param("pmk_cloud.last_status"))
 
+    def test_paused_is_quiet(self):
+        self.Cloud._cron_scan()
+        self.env["ir.config_parameter"].sudo().set_param("pmk_cloud.paused", "1")
+        self.tree["/ПРОИЗВОДСТВО/09.10.26"].append(("новое.dxf", 10))
+        self.dav.listed = []
+        self.Cloud._cron_scan()
+        self.assertEqual(self.dav.listed, [], "уведомления выключены — Облако не трогаем")
+        self.assertEqual(self.sent, [])
+
     def test_not_configured_is_quiet(self):
         self.env["ir.config_parameter"].sudo().set_param("pmk_cloud.password", False)
         self.Cloud._cron_scan()
