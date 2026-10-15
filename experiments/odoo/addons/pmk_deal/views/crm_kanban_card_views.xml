@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <!--
+    Карточка канбана воронки (15.10.2026, прототип принят Антоном: «вроде
+    нравится, давай делать»). Заменяет карточку целиком — последней
+    (priority 99), поэтому деньги (crm_lead_money_views.xml) и номер СД
+    (step48_deal_head.xml) здесь собраны заново:
+      • сверху мелко — номер СД и сколько сделка висит;
+      • название, под ним клиент (контрагент — без имени человека);
+      • чипы: вес · цена · маржа (в минус — красным) · «без цены» (жёлтым);
+        у сделки без расчёта — штатный доход (узел o_kanban_card_crm_lead_revenue:
+        на нём прогнозный канбан);
+      • внизу — «ответить до …» (просрочено — красным, сегодня/завтра —
+        жёлтым), «висит N дн» у зависших, звёзды — только если важность
+        поставлена, менеджер. Значок задач (часы) убран: задачи на заводе не
+        ведутся.
+    Оформление — static/src/scss/pipeline_kanban.scss, раздел «Карточка».
+  -->
+  <record id="view_crm_lead_kanban_card" model="ir.ui.view">
+    <field name="name">crm.lead.kanban.pmk.card</field>
+    <field name="model">crm.lead</field>
+    <field name="inherit_id" ref="crm.crm_case_kanban_view_leads"/>
+    <field name="priority">99</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//kanban" position="inside">
+        <field name="pmk_chip_margin_bad"/>
+        <field name="pmk_no_price_count"/>
+        <field name="pmk_deadline_level"/>
+        <field name="is_rotting"/>
+        <field name="rotting_days"/>
+        <field name="won_status"/>
+        <field name="active"/>
+      </xpath>
+      <xpath expr="//t[@t-name='card']" position="replace">
+        <t t-name="card">
+          <widget name="web_ribbon" id="lost_ribbon" title="Проиграна" bg_color="text-bg-danger" invisible="won_status != 'lost'"/>
+          <widget name="web_ribbon" id="archived_ribbon" title="В архиве" bg_color="text-bg-danger" invisible="active or won_status in ['lost', 'won']"/>
+          <div class="pmk-kc-top">
+            <field name="pmk_number" class="pmk-kc-number"/>
+            <field name="pmk_card_age" class="pmk-kc-age"/>
+          </div>
+          <field name="name" class="pmk-kc-title"/>
+          <field name="pmk_client_id" invisible="not partner_id" class="pmk-kc-client"
+                 options="{'no_open': True}"/>
+          <field name="partner_name" invisible="partner_id or not partner_name" class="pmk-kc-client"/>
+          <field name="contact_name" invisible="partner_id or partner_name" class="pmk-kc-client"/>
+          <div class="o_kanban_card_crm_lead_revenue" invisible="pmk_spec_id">
+            <t t-if="record.expected_revenue.raw_value">
+              <field name="expected_revenue" widget="monetary" options="{'currency_field': 'company_currency'}"
+                     class="pmk-kc-chip"/>
+            </t>
+          </div>
+          <div class="pmk-deal-card" invisible="not pmk_spec_id">
+            <field name="pmk_chip_weight" class="pmk-kc-chip"/>
+            <field name="pmk_chip_price" class="pmk-kc-chip"/>
+            <field name="pmk_chip_margin" class="pmk-kc-chip" invisible="not pmk_chip_margin or pmk_chip_margin_bad"/>
+            <field name="pmk_chip_margin" class="pmk-kc-chip pmk-kc-chip--bad" invisible="not pmk_chip_margin_bad"/>
+            <field name="pmk_no_price_label" class="pmk-kc-chip pmk-kc-chip--warn" invisible="not pmk_no_price_label"/>
+          </div>
+          <footer class="pt-1">
+            <div class="d-flex align-items-center gap-1 flex-wrap">
+              <span t-if="record.pmk_deadline_label.raw_value" class="pmk-kc-due"
+                    t-attf-class="pmk-kc-due--{{ record.pmk_deadline_level.raw_value }}">
+                <field name="pmk_deadline_label"/>
+              </span>
+              <span class="badge rounded-pill o_mail_resource_rotting_bg pmk-kc-rot" invisible="not is_rotting"
+                    t-att-title="'Зависла: ' + record.rotting_days.value + ' дн в стадии — дольше срока стадии'">висит <t t-esc="record.rotting_days.value"/> дн</span>
+            </div>
+            <div class="ms-auto d-flex align-items-center">
+              <field name="priority" widget="priority" invisible="priority == '0'" class="me-1"/>
+              <field name="user_id" widget="many2one_avatar_user" domain="[('share', '=', False)]"/>
+            </div>
+          </footer>
+        </t>
+      </xpath>
+    </field>
+  </record>
+</odoo>

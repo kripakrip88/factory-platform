@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Страница входа ПМК (15.10.2026, прототип v2 принят: «велком пейдж устраивает»).
+    Антон: «указать, что это внутренняя система для планирования заказов; мы завод
+    металлоконструкций, работаем по всему ДВ; если нужны изделия — ссылка на основной
+    сайт». Вместо заготовки сайта Odoo («Your Logo», «About us», «Powered by Odoo») —
+    тёмная фирменная панель слева и форма справа.
+
+    Раскладка — для всех страниц входа (вход, сброс пароля, «вы вошли»): заголовок
+    «Вход для сотрудников» — только в самой форме входа (pmk_login_form ниже).
+    Приоритет 40 — после «Сайта» (website.login_layout, 20): тот подменяет вызов
+    раскладки на website.layout (шапка и подвал сайта), мы — на свою без них.
+    Модули «Сайт», «Регистрация» и «Ключи доступа» в зависимостях не нужны: xpath
+    только по узлам web, чужие кнопки (Passkey, «Reset Password») гасятся стилем.
+  -->
+  <template id="pmk_login_layout" inherit_id="web.login_layout" priority="40" name="ПМК: страница входа">
+    <xpath expr="t[@t-call]" position="replace">
+      <t t-call="web.frontend_layout">
+        <t t-set="html_data" t-value="{'style': 'height: 100%;'}"/>
+        <t t-set="body_classname" t-value="'pmk-login-body'"/>
+        <t t-set="no_header" t-value="True"/>
+        <t t-set="no_footer" t-value="True"/>
+        <style>
+          .pmk-login-body { background: #f4f1ea; }
+          .pmk-login { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+            font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif; }
+          .pmk-login__brand { background: #16191c; color: #e8eadf; padding: 48px 56px 36px; display: flex;
+            flex-direction: column; }
+          .pmk-login__logo { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 20px; }
+          .pmk-login__logo img { width: 40px; height: 40px; border-radius: 10px; background: #fff; padding: 4px; }
+          .pmk-login__tag { margin-top: 56px; align-self: flex-start; font-size: 11px; letter-spacing: .08em;
+            color: #a3a89a; border: 1px solid #2b3036; border-radius: 12px; padding: 3px 12px; }
+          .pmk-login__big { margin-top: 14px; font-size: 34px; line-height: 1.2; font-weight: 700; max-width: 18em; }
+          .pmk-login__big span { color: #c8f000; }
+          .pmk-login__sub { margin-top: 16px; font-size: 15px; color: #b8bcae; line-height: 1.65; max-width: 34em; }
+          .pmk-login__dv { margin-top: 18px; display: flex; flex-wrap: wrap; gap: 6px; }
+          .pmk-login__dv span { font-size: 13px; color: #c9ccc0; border: 1px solid #2b3036; border-radius: 10px;
+            padding: 2px 10px; }
+          .pmk-login__site { margin-top: auto; padding-top: 22px; border-top: 1px solid #2b3036; font-size: 14px;
+            color: #b8bcae; }
+          .pmk-login__site a { color: #e8eadf; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+          .pmk-login__main { display: flex; align-items: center; justify-content: center; padding: 40px 24px;
+            background: #fff; }
+          .pmk-login__box { width: 100%; max-width: 380px; }
+          .pmk-login__title { margin: 0 0 4px; font-size: 26px; font-weight: 700; color: #16191c; }
+          .pmk-login__hint { margin: 0 0 22px; color: #6b7079; font-size: 14px; }
+          .pmk-login__note { margin-top: 22px; font-size: 13px; color: #8a8f96; line-height: 1.5; }
+          .pmk-login__note a { color: inherit; text-decoration: underline; }
+          .pmk-login .oe_login_form, .pmk-login form { max-width: none; margin: 0; padding: 0; }
+          .pmk-login .form-label { color: #59636e; font-size: 14px; }
+          .pmk-login .form-control { border-radius: 10px; padding: 10px 12px; font-size: 15px; border-color: #d6d1c6; }
+          .pmk-login .form-control:focus { border-color: #16191c; box-shadow: none; }
+          .pmk-login .input-group .form-control { border-radius: 10px 0 0 10px; }
+          .pmk-login .o_show_password { border-radius: 0 10px 10px 0; border-color: #d6d1c6 !important; }
+          .pmk-login .oe_login_buttons .btn-primary { border: 0; border-radius: 10px; padding: 11px; font-size: 15px;
+            font-weight: 600; background: #16191c; color: #e8eadf; }
+          .pmk-login .oe_login_buttons .btn-primary:hover { background: #2b3036; }
+          .pmk-login__forgot { font-size: 13px; color: #6b7079; text-decoration: underline; }
+          /* Чужие кнопки входа: Passkey («Ключи доступа»), «или», OAuth, «Reset Password»
+             регистрации — вместо него своя ссылка «Забыли пароль?». */
+          .pmk-login .o_auth_oauth_providers, .pmk-login .passkey_login_link,
+          .pmk-login .oe_login_buttons em, .pmk-login .oe_login_buttons .list-group,
+          .pmk-login label[for='password'] + a.btn-link,
+          .pmk-login .o_caps_lock_warning > .d-flex > a.btn-link { display: none !important; }
+          .o_database_list, .o_brand_promotion { display: none !important; }
+          @media (max-width: 860px) {
+            .pmk-login { grid-template-columns: minmax(0, 1fr); }
+            .pmk-login__brand { padding: 22px 20px; }
+            .pmk-login__tag, .pmk-login__dv, .pmk-login__sub + .pmk-login__sub { display: none; }
+            .pmk-login__big { margin-top: 12px; font-size: 22px; }
+            .pmk-login__sub { font-size: 13px; }
+            .pmk-login__site { margin-top: 14px; padding-top: 12px; font-size: 13px; }
+            .pmk-login__main { align-items: flex-start; padding: 28px 16px; }
+          }
+        </style>
+        <div class="pmk-login">
+          <aside class="pmk-login__brand">
+            <div class="pmk-login__logo">
+              <img src="/pmk_theme/static/src/img/favicon.png" alt=""/>
+              ПМК Парк
+            </div>
+            <span class="pmk-login__tag">ВНУТРЕННЯЯ СИСТЕМА</span>
+            <div class="pmk-login__big">Планирование заказов<br/><span>завода металлоконструкций</span></div>
+            <div class="pmk-login__sub">Заявки клиентов, расчёты и КП, закупка металла, раскрой и задания в цех — в одном
+              месте для сотрудников ПМК Парк.</div>
+            <div class="pmk-login__sub">Производим металлоконструкции и работаем по всему Дальнему Востоку.</div>
+            <div class="pmk-login__dv">
+              <span>Хабаровск</span><span>Владивосток</span><span>Комсомольск-на-Амуре</span>
+              <span>Благовещенск</span><span>Сахалин</span><span>Якутия</span>
+            </div>
+            <div class="pmk-login__site">Нужны изделия или расчёт заказа? Это не витрина — перейдите на сайт завода:
+              <a href="https://pmkpark.ru">pmkpark.ru</a></div>
+          </aside>
+          <main class="pmk-login__main">
+            <div class="pmk-login__box">
+              <t t-out="0"/>
+            </div>
+          </main>
+        </div>
+      </t>
+    </xpath>
+  </template>
+
+  <!-- Форма входа: заголовок, подписи по-русски, своя «Забыли пароль?», внизу — для
+       клиентов и поставщиков ссылка на сайт. Кнопки OAuth/Passkey (web.login_oauth)
+       убраны: вход у нас только паролем. -->
+  <template id="pmk_login_form" inherit_id="web.login" priority="40" name="ПМК: форма входа">
+    <xpath expr="//form" position="before">
+      <h1 class="pmk-login__title">Вход для сотрудников</h1>
+      <p class="pmk-login__hint">Почта и пароль, которые выдал администратор.</p>
+    </xpath>
+    <xpath expr="//label[@for='login']" position="replace">
+      <label for="login" class="form-label d-flex justify-content-between">Эл. почта</label>
+    </xpath>
+    <xpath expr="//input[@name='login']" position="attributes">
+      <attribute name="placeholder">name@pmkpark.ru</attribute>
+    </xpath>
+    <xpath expr="//label[@for='password']" position="replace">
+      <label for="password" class="form-label">Пароль</label>
+      <a t-if="reset_password_enabled" class="pmk-login__forgot" tabindex="1"
+         t-attf-href="/web/reset_password?{{ keep_query() }}">Забыли пароль?</a>
+    </xpath>
+    <xpath expr="//input[@name='password']" position="attributes">
+      <attribute name="placeholder">••••••••</attribute>
+    </xpath>
+    <xpath expr="//div[hasclass('oe_login_buttons')]/button[@type='submit']" position="replace">
+      <button type="submit" class="btn btn-primary">Войти</button>
+    </xpath>
+    <xpath expr="//t[@t-call='web.login_oauth']" position="replace"/>
+    <xpath expr="//form" position="after">
+      <p class="pmk-login__note">Клиентам и поставщикам: заказ, КП и контакты — на
+        <a href="https://pmkpark.ru">pmkpark.ru</a>.</p>
+    </xpath>
+  </template>
+</odoo>

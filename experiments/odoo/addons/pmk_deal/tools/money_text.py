@@ -147,3 +147,39 @@ def kpi_margin(price, margin_pct, incomplete=False):
         return "—"
     text = pct(margin_pct, 1)
     return "≤" + NBSP + text if incomplete else text
+
+
+# ─── Карточка канбана воронки (15.10.2026, прототип принят Антоном) ────────
+#
+# Под названием сделки — чипы: вес, цена, маржа, «без цены»; внизу — «ответить
+# до» и сколько сделка висит. Чистые функции — тест без базы.
+
+def chip_price(price):
+    """«9,6 млн ₽» или «цена не назначена»."""
+    return rub_short(price) if price else "цена не назначена"
+
+
+def chip_margin(price, margin_pct):
+    """«маржа 64 %» — только при назначенной цене."""
+    return ("маржа " + pct(margin_pct, 0)) if price else ""
+
+
+def age_label(days):
+    """Сколько сделка висит: 0 → «сегодня», 1 → «1 дн.», 18 → «18 дн.»."""
+    days = max(int(days or 0), 0)
+    return "сегодня" if not days else "%d%sдн." % (days, NBSP)
+
+
+def deadline_label(deadline, today):
+    """(«ответить до 16.10», уровень): over — просрочено, today — сегодня,
+    soon — завтра, ok — позже; нет срока — ("", "")."""
+    if not deadline:
+        return "", ""
+    delta = (deadline - today).days
+    if delta < 0:
+        return "просрочено с %s" % deadline.strftime("%d.%m"), "over"
+    if delta == 0:
+        return "ответить сегодня", "today"
+    if delta == 1:
+        return "ответить завтра", "soon"
+    return "ответить до %s" % deadline.strftime("%d.%m"), "ok"

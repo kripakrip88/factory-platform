@@ -114,6 +114,14 @@ export class PmkKanbanHeader extends CrmKanbanHeader {
         }
         return this.pmkStageColors[this.group.value] || 0;
     }
+
+    /** Где этап в воронке, %: номер колонки среди развёрнутых / их число
+     * (свёрнутые — «Проиграно» — не в счёт). 0 — колонка свёрнута. */
+    get pmkStageProgress() {
+        const groups = (this.props.list.groups || []).filter((group) => !group.isFolded);
+        const index = groups.findIndex((group) => group.id === this.group.id);
+        return index < 0 || !groups.length ? 0 : Math.round(((index + 1) / groups.length) * 100);
+    }
 }
 
 patch(CrmKanbanRenderer, {

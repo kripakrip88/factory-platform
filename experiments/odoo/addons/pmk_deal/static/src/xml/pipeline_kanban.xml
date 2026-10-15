@@ -23,9 +23,18 @@
        всегда (ядро прятало его, когда в виде есть полоска задач; вне
        воронки — как у ядра). -->
   <t t-name="pmk_deal.KanbanHeader" t-inherit="mail.RottingKanbanHeader" t-inherit-mode="primary">
-    <xpath expr="//div[hasclass('o_kanban_header_title')]" position="before">
-      <div t-if="pmkStageColor" class="pmk-stage-strip"
-           t-attf-class="o_colorlist_item_color_{{ pmkStageColor }}"/>
+    <!-- 15.10.2026 (прототип канбана принят): вместо полосы по верхнему
+         краю — точка цвета этапа перед названием и тонкая полоска «где этап
+         в воронке» под шапкой (pmkStageProgress, js/pipeline_kanban.js). -->
+    <xpath expr="//div[hasclass('o_kanban_header_title')]" position="inside">
+      <span t-if="pmkStageColor" class="pmk-stage-dot order-first"
+            t-attf-class="o_colorlist_item_color_{{ pmkStageColor }}" aria-hidden="true"/>
+    </xpath>
+    <xpath expr="//div[hasclass('o_kanban_header_title')]" position="after">
+      <div t-if="pmkStageColor and pmkStageProgress" class="pmk-stage-bar" aria-hidden="true">
+        <i t-attf-class="o_colorlist_item_color_{{ pmkStageColor }}"
+           t-att-style="'width:' + pmkStageProgress + '%'"/>
+      </div>
     </xpath>
     <xpath expr="//span[@t-if='!progressBar and !props.list.model.useSampleModel']" position="attributes">
       <attribute name="t-if">(env.pmkPipeline or !progressBar) and !props.list.model.useSampleModel</attribute>

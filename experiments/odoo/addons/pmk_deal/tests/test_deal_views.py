@@ -246,9 +246,12 @@ class TestDealViews(TransactionCase):
         header = by_name["pmk_deal.KanbanHeader"]
         self.assertEqual(header.get("t-inherit"), "mail.RottingKanbanHeader")
         self.assertEqual(header.get("t-inherit-mode"), "primary")
-        strip = header.find(".//div[@class='pmk-stage-strip']")
-        self.assertIsNotNone(strip)
-        self.assertIn("o_colorlist_item_color_", strip.get("t-attf-class"))
+        # 15.10.2026: вместо полосы по верхнему краю — точка цвета этапа и
+        # полоска «где этап в воронке» (прототип канбана принят).
+        dot = header.find(".//span[@class='pmk-stage-dot order-first']")
+        self.assertIsNotNone(dot)
+        self.assertIn("o_colorlist_item_color_", dot.get("t-attf-class"))
+        self.assertIsNotNone(header.find(".//div[@class='pmk-stage-bar']"))
         count = header.find("xpath[@position='attributes']/attribute[@name='t-if']")
         self.assertIn("env.pmkPipeline or !progressBar", count.text,
                       "«(N)» всегда — только в воронке.")
@@ -361,3 +364,34 @@ class TestSpecFormDeal(TransactionCase):
         self.assertIn("pmk-field--wide", blocks[0].get("class"),
                       "Во всю ширину: в половине название сделки обрезалось.")
         self.assertEqual(blocks[1].get("name"), "pmk_f_partner")
+
+
+@tagged("post_install", "-at_install")
+class TestKanbanCardRules(TransactionCase):
+    """Подписи карточки канбана воронки (15.10.2026) — чистые функции."""
+
+    def test_labels(self):
+        from datetime import date
+        from ..tools import money_text as mt
+        today = date(2026, 10, 15)
+        self.assertEqual(mt.deadline_label(date(2026, 10, 14), today)[1], "over")
+        self.assertEqual(mt.deadline_label(date(2026, 10, 15), today), ("ответить сегодня", "today"))
+        self.assertEqual(mt.deadline_label(date(2026, 10, 16), today), ("ответить завтра", "soon"))
+        self.assertEqual(mt.deadline_label(date(2026, 10, 20), today), ("ответить до 20.10", "ok"))
+        self.assertEqual(mt.deadline_label(False, today), ("", ""))
+        self.assertEqual(mt.age_label(0), "сегодня")
+        self.assertIn("18", mt.age_label(18))
+        self.assertEqual(mt.chip_price(0), "цена не назначена")
+        self.assertEqual(mt.chip_margin(0, 50), "")
+
+    def test_card_layout(self):
+        from lxml import etree
+        arch = etree.fromstring(self.env["crm.lead"].get_view(
+            self.env.ref("crm.crm_case_kanban_view_leads").id, "kanban")["arch"])
+        card = arch.find(".//t[@t-name='card']")
+        self.assertIsNotNone(card.find(".//div[@class='pmk-kc-top']"))
+        self.assertIsNone(card.find(".//field[@name='activity_ids']"), "часы задач убраны")
+        priority = card.find(".//field[@name='priority']")
+        self.assertEqual(priority.get("invisible"), "priority == '0'", "звёзды — только если важность поставлена")
+        bad = card.xpath(".//field[@name='pmk_chip_margin'][contains(@class, 'pmk-kc-chip--bad')]")
+        self.assertEqual(len(bad), 1, "маржа в минус — красным")

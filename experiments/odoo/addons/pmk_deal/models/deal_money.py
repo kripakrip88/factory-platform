@@ -299,3 +299,43 @@ class CrmLeadMoney(models.Model):
 
         fields_info["expected_revenue"] = revenue
         return fields_info
+
+
+class CrmLeadKanbanCard(models.Model):
+    """Карточка канбана воронки (15.10.2026, прототип принят Антоном: «вроде
+    нравится, давай делать»). Подписи — tools/money_text.py; не хранятся:
+    окно в расчёт и в календарь, а не копия."""
+    _inherit = "crm.lead"
+
+    pmk_chip_weight = fields.Char("Вес на карточке", compute="_compute_pmk_card_chips")
+    pmk_chip_price = fields.Char("Цена на карточке", compute="_compute_pmk_card_chips")
+    pmk_chip_margin = fields.Char("Маржа на карточке", compute="_compute_pmk_card_chips")
+    pmk_chip_margin_bad = fields.Boolean("Маржа в минус", compute="_compute_pmk_card_chips")
+    pmk_card_age = fields.Char("Висит", compute="_compute_pmk_card_dates")
+    pmk_deadline_label = fields.Char("Срок ответа на карточке", compute="_compute_pmk_card_dates")
+    pmk_deadline_level = fields.Char("Срок ответа: уровень", compute="_compute_pmk_card_dates")
+
+    @api.depends("pmk_spec_id.total_weight", "pmk_spec_id.price_customer_total", "pmk_spec_id.margin_pct")
+    def _compute_pmk_card_chips(self):
+        for lead in self:
+            spec = lead.pmk_spec_id
+            if not spec:
+                lead.pmk_chip_weight = lead.pmk_chip_price = lead.pmk_chip_margin = False
+                lead.pmk_chip_margin_bad = False
+                continue
+            price = spec.price_customer_total
+            lead.pmk_chip_weight = money_text.weight(spec.total_weight)
+            lead.pmk_chip_price = money_text.chip_price(price)
+            lead.pmk_chip_margin = money_text.chip_margin(price, spec.margin_pct) or False
+            lead.pmk_chip_margin_bad = bool(price) and (spec.margin_pct or 0.0) < 0
+
+    @api.depends("pmk_received", "create_date", "date_deadline")
+    def _compute_pmk_card_dates(self):
+        today = fields.Date.context_today(self)
+        for lead in self:
+            start = lead.pmk_received or lead.create_date
+            start_day = fields.Date.context_today(lead, start) if start else today
+            lead.pmk_card_age = money_text.age_label((today - start_day).days)
+            label, level = money_text.deadline_label(lead.date_deadline, today)
+            lead.pmk_deadline_label = label or False
+            lead.pmk_deadline_level = level or False
