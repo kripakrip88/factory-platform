@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <!-- «Купить» серым, если прокат изделия ещё не раскладывали: там чистый вес
+       отрезков, а не хлысты (15.10.2026). -->
+  <record id="view_metal_spec_form_cut_cost" model="ir.ui.view">
+    <field name="name">pmk.metal.spec.form.cut.cost</field>
+    <field name="model">pmk.metal.spec</field>
+    <field name="inherit_id" ref="pmk_bridge.view_metal_spec_form_cost"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='product_ids']/list/field[@name='weight_fact_total']" position="attributes">
+        <attribute name="decoration-muted">pmk_buy_net</attribute>
+      </xpath>
+      <xpath expr="//field[@name='product_ids']/list/field[@name='weight_fact_total']" position="after">
+        <field name="pmk_buy_net" column_invisible="1"/>
+      </xpath>
+    </field>
+  </record>
+</odoo>
