@@ -270,9 +270,9 @@ $pmk-mtones: #cfe3d8, #d7dcf3, #f3dccb, #e6d6ef, #d5ebee, #efe6c4, #f1d3dc, #dfe
 
 @media screen {
   body.o_nexus_dark .o_pmk_mo {
-    --mo-card: #1e2025;
+    --mo-card: #272a30;
     --mo-ink: #e3e5e8;
-    --mo-border: #33363d;
+    --mo-border: #3d414a;
     --mo-sub: rgba(255, 255, 255, 0.03);
     --mo-muted: #a3a8b0;
     --mo-faint: #80858d;
@@ -288,8 +288,8 @@ $pmk-mtones: #cfe3d8, #d7dcf3, #f3dccb, #e6d6ef, #d5ebee, #efe6c4, #f1d3dc, #dfe
   body.o_nexus_dark .o_pmk_mscheme {
     --ms-plate: #2a2d33;
     --ms-plate-line: #555a63;
-    --ms-part-line: #1e2025;
-    --ms-rest: #33363d;
+    --ms-part-line: #272a30;
+    --ms-rest: #3d414a;
     --ms-scrap: rgba(226, 75, 74, 0.3);
 
     .o_pmk_mscheme__rest { color: #c9ccd2; }

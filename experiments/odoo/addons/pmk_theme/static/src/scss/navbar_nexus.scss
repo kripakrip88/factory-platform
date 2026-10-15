@@ -836,7 +836,7 @@ $pmk-search-capsule: ".input-group:has(> .o_searchview + .o_searchview_dropdown_
   // приглушённым лаймом словаря dark.scss (--pmk-accent), а не ярким #C8F000.
   body.o_nexus_dark #{$pmk-search-capsule} {
     border-color: rgba(255, 255, 255, 0.12);
-    background: var(--pmk-surface-3, #2a2c33);
+    background: var(--pmk-surface-3, #343840);
 
     &:has(> .o_searchview:focus-within) {
       border-color: var(--pmk-accent, #d4e57a);
@@ -981,7 +981,7 @@ i.pmk_vi {
   // и рядом с приподнятой капсулой она «проваливалась» в панель.
   body.o_nexus_dark nav.o_cp_switch_buttons {
     border-color: rgba(255, 255, 255, 0.12);
-    background: var(--pmk-surface-3, #2a2c33);
+    background: var(--pmk-surface-3, #343840);
 
     > .o_switch_view {
       background: transparent !important;
@@ -1016,8 +1016,8 @@ i.pmk_vi {
   // бледного лайма, как у кнопок широкого экрана (#EEF5C8 на #3D451E, 9,0).
   // Светлую тему не трогаем: серые пункты и лаймовый выбранный читаются.
   body.o_nexus_dark .o_bottom_sheet .o_cp_switch_buttons .o-dropdown-item {
-    --btn-bg: var(--pmk-surface-3, #2a2c33);
-    --btn-border-color: var(--pmk-border-strong, #464a52);
+    --btn-bg: var(--pmk-surface-3, #343840);
+    --btn-border-color: var(--pmk-border-strong, #535863);
     --btn-active-bg: var(--pmk-fill, #3d451e);
     --btn-active-border-color: var(--pmk-fill, #3d451e);
     --btn-active-color: #eef5c8;

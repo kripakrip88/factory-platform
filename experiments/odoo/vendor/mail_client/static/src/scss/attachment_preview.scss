@@ -391,22 +391,22 @@
 // --- Тёмная тема (pmk_theme: класс o_nexus_dark на body) -----------------
 // Как в mail_client.scss шага 41: раздел шага 40 в pmk_theme/dark.scss
 // закрыт проверкой test_step40_source (один блок до конца файла), поэтому
-// пара новых токенов — здесь. Тона — словаря тёмной темы: рамки #33363d,
-// подложка папки #25272d, приглушённый текст #a3a29f, жёлтый и красный —
+// пара новых токенов — здесь. Тона — словаря тёмной темы: рамки #3d414a,
+// подложка папки #2e3138, приглушённый текст #9d9c98, жёлтый и красный —
 // светлые тона плашек тёмной темы (текст на фоне окна 7–12:1). Имя файла —
 // цветом текста, а не приглушённым цветом ссылок (.btn-link в dark.scss).
 // Только на экране: печать из тёмной темы светлая.
 @media screen {
     body.o_nexus_dark .o_mail_client_archive {
-        --mc-archive-border: #33363d;
+        --mc-archive-border: #3d414a;
         --mc-archive-hover: rgba(255, 255, 255, .06);
-        --mc-archive-dir-bg: #25272d;
-        --mc-archive-muted: #a3a29f;
+        --mc-archive-dir-bg: #2e3138;
+        --mc-archive-muted: #9d9c98;
         --mc-archive-warn: #efe0aa;
         --mc-archive-refused: #f3d2cd;
     }
 
     body.o_nexus_dark .o_mail_client_archive .o_mail_client_archive_name.btn-link {
-        color: #f4f1ea !important;
+        color: #e4e1da !important;
     }
 }

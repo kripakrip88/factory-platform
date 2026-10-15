@@ -231,15 +231,15 @@
 }
 
 // --- тёмная тема (pmk_theme: класс o_nexus_dark на body) -------------------
-// Тона словаря тёмной темы (pmk_theme/dark.scss, раздел 0): рамки #33363d,
-// приглушённый текст #a3a29f, подложка панели #1e2025, жёлтая оговорка —
+// Тона словаря тёмной темы (pmk_theme/dark.scss, раздел 0): рамки #3d414a,
+// приглушённый текст #9d9c98, подложка панели #272a30, жёлтая оговорка —
 // фон и текст плашки «yellow» ($pmk-dark-tones). Лист остаётся белым.
 // Только на экране: печать из тёмной темы светлая.
 @media screen {
     body.o_nexus_dark .o_pmk_dxf {
-        --pmk-dxf-border: #33363d;
-        --pmk-dxf-muted: #a3a29f;
-        --pmk-dxf-panel: #1e2025;
+        --pmk-dxf-border: #3d414a;
+        --pmk-dxf-muted: #9d9c98;
+        --pmk-dxf-panel: #272a30;
         --pmk-dxf-note-bg: #473f30;
         --pmk-dxf-note-ink: #efe0aa;
     }
@@ -249,6 +249,6 @@
     }
 
     body.o_nexus_dark .o_pmk_dxf_swatch {
-        box-shadow: 0 0 0 2px #fff, 0 0 0 3px #464a52;
+        box-shadow: 0 0 0 2px #fff, 0 0 0 3px #535863;
     }
 }

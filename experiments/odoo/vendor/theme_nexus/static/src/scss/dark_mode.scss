@@ -1,4 +1,8 @@
 // =============================================================
+// ПРАВКА ПМК (15.10.2026, шаг 70): тёмный режим — на своих переменных мягкой
+// палитры ($nx-dk*, variables.scss), а не на «графитах» светлой темы: Антон
+// «тёмная тема слишком тёмная, режет глаз». Значения — словарь pmk_theme/dark.scss.
+// =============================================================
 // NEXUS — Dark Mode
 // Toggled via body.o_nexus_dark (see js/dark_mode.js).
 // The application sidebar is already dark by default, so this
@@ -6,24 +10,24 @@
 // =============================================================
 
 body.o_nexus_dark {
-    background: $nx-charcoal !important;
+    background: $nx-dk !important;
 
     .o_content,
     .o_action_manager {
-        background: $nx-charcoal !important;
+        background: $nx-dk !important;
     }
 
     // Переменные ядра для шапки — в тёмном режиме обратно на светлый текст.
     // Задаём именно переменные, а не color: ядро читает их и для пунктов
     // разделов, и для названия записи, одного объявления хватает на оба.
     .o_main_navbar {
-        --NavBar-brand-color: #{$nx-text-on-dark};
+        --NavBar-brand-color: #{$nx-dk-ink};
         --NavBar-entry-backgroundColor: transparent;
     }
 
     .o_main_navbar,
     .o_control_panel {
-        background: $nx-charcoal-2 !important;
+        background: $nx-dk-2 !important;
         border-color: rgba(255, 255, 255, 0.08) !important;
     }
 
@@ -31,7 +35,7 @@ body.o_nexus_dark {
     .o_menu_sections .dropdown-toggle,
     .o_menu_sections .o_nav_entry,
     .o_breadcrumb .o_breadcrumb_item:last-child {
-        color: $nx-text-on-dark !important;
+        color: $nx-dk-ink !important;
     }
 
     .o_breadcrumb .o_breadcrumb_item {
@@ -39,9 +43,9 @@ body.o_nexus_dark {
     }
 
     .o_searchview {
-        background: $nx-charcoal-soft !important;
+        background: $nx-dk-soft !important;
         border-color: rgba(255, 255, 255, 0.1) !important;
-        color: $nx-text-on-dark;
+        color: $nx-dk-ink;
     }
 
     .o_form_sheet,
@@ -49,13 +53,13 @@ body.o_nexus_dark {
     .o_kanban_record,
     .modal-content,
     .o_kanban_quick_create {
-        background: $nx-charcoal-soft !important;
+        background: $nx-dk-soft !important;
         border-color: rgba(255, 255, 255, 0.08) !important;
-        color: $nx-text-on-dark;
+        color: $nx-dk-ink;
     }
 
     .o_list_table thead {
-        background: $nx-charcoal-2 !important;
+        background: $nx-dk-2 !important;
 
         th { color: $nx-text-muted-dark !important; }
     }
@@ -68,9 +72,9 @@ body.o_nexus_dark {
 
     .form-control,
     .o_input {
-        background: $nx-charcoal-2 !important;
+        background: $nx-dk-2 !important;
         border-color: rgba(255, 255, 255, 0.12) !important;
-        color: $nx-text-on-dark !important;
+        color: $nx-dk-ink !important;
     }
 
     .o_notebook .nav-tabs .nav-link {
@@ -84,7 +88,7 @@ body.o_nexus_dark {
     // подпись, и значение КАЖДОГО поля формы — лаймом вспыхивала любая
     // ячейка под мышью.
 
-    ::selection { background: rgba(200, 240, 0, 0.30); color: $nx-text-on-dark; }
+    ::selection { background: rgba(200, 240, 0, 0.30); color: $nx-dk-ink; }
 
     // ПРАВКА ПМК (29.09.2026, тёмная тема, этап 1): снят глобальный лайм для
     // ссылок (a, .text-action, .btn-link, ссылки полей формы). Пункт
@@ -100,7 +104,7 @@ body.o_nexus_dark {
     .o_form_button_create {
         background: $nx-accent-dark !important;
         border-color: $nx-accent-dark !important;
-        color: $nx-charcoal !important;
+        color: $nx-dk !important;
         box-shadow: none;
     }
 
@@ -127,7 +131,7 @@ body.o_nexus_dark {
     .o_menu_systray .badge,
     .o_loading_indicator {
         background-color: $nx-accent-dark !important;
-        color: $nx-charcoal !important;
+        color: $nx-dk !important;
     }
 
     .o_searchview .o_searchview_facet {
@@ -138,7 +142,7 @@ body.o_nexus_dark {
     // .o_form_statusbar белый с !important; ядро: .o_notebook .nav { white }).
     // Лаймовая подпись активной вкладки на белом не читалась бы.
     .o_form_statusbar {
-        background: $nx-charcoal-2 !important;
+        background: $nx-dk-2 !important;
         border-bottom-color: rgba(255, 255, 255, 0.08) !important;
     }
 
@@ -178,14 +182,14 @@ body.o_nexus_dark {
             width: 15px;
             height: 15px;
             border-radius: 50%;
-            background: $nx-text-on-dark;
+            background: $nx-dk-ink;
             transition: $nx-transition;
         }
 
         &.o_nexus_switch_on {
             background: $nx-accent-dark;
 
-            &::after { left: 17px; background: $nx-charcoal; }
+            &::after { left: 17px; background: $nx-dk; }
         }
     }
 }

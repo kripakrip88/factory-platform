@@ -1396,7 +1396,7 @@ $pmk-badge-ink: (
 // остаются светлыми, а ядро держит подпись группы чёрной (text-black с
 // !important) — на тёмной подложке её было бы не прочесть.
 body.o_nexus_dark .o_list_renderer {
-  --ListRenderer-thead-bg-color: #1e2025;
+  --ListRenderer-thead-bg-color: #272a30;
 }
 
 // ─── 6. Таблицы одного вида (разбор UX, шаг 24, 01.10.2026) ────────────────

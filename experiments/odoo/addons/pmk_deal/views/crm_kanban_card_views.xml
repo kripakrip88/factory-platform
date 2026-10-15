@@ -37,7 +37,7 @@
           <widget name="web_ribbon" id="lost_ribbon" title="Проиграна" bg_color="text-bg-danger" invisible="won_status != 'lost'"/>
           <widget name="web_ribbon" id="archived_ribbon" title="В архиве" bg_color="text-bg-danger" invisible="active or won_status in ['lost', 'won']"/>
           <div class="pmk-kc-top">
-            <field name="pmk_number" class="pmk-kc-number"/>
+            <field name="pmk_number" class="pmk-kc-number" invisible="not pmk_number"/>
             <field name="pmk_card_age" class="pmk-kc-age"/>
           </div>
           <field name="name" class="pmk-kc-title"/>
@@ -45,6 +45,9 @@
                  options="{'no_open': True}"/>
           <field name="partner_name" invisible="partner_id or not partner_name" class="pmk-kc-client"/>
           <field name="contact_name" invisible="partner_id or partner_name" class="pmk-kc-client"/>
+          <!-- Теги — штатный узел: тема прячет его всем, кроме группы «Убранное
+               (показать)» (pmk_theme, hidden_nodes.py, шаг 53) — правило бьёт по нему. -->
+          <field name="tag_ids" widget="many2many_tags" options="{'color_field': 'color'}"/>
           <div class="o_kanban_card_crm_lead_revenue" invisible="pmk_spec_id">
             <t t-if="record.expected_revenue.raw_value">
               <field name="expected_revenue" widget="monetary" options="{'currency_field': 'company_currency'}"

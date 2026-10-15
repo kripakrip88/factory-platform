@@ -294,11 +294,11 @@ class TestDealHeadViewsStep48(TransactionCase):
 
     def test_kanban_number_small(self):
         arch = self._arch("kanban", "crm.crm_case_kanban_view_leads")
-        number = arch.find(".//footer//field[@name='pmk_number']")
+        # 15.10.2026: номер — сверху карточки мелким серым (новая карточка канбана,
+        # crm_kanban_card_views.xml), рядом — сколько сделка висит.
+        number = arch.find(".//div[@class='pmk-kc-top']/field[@name='pmk_number']")
         self.assertIsNotNone(number)
-        classes = (number.get("class") or "").split()
-        self.assertIn("small", classes)
-        self.assertIn("text-muted", classes)
+        self.assertIn("pmk-kc-number", (number.get("class") or "").split())
         self.assertEqual(number.get("invisible"), "not pmk_number")
 
     def test_search_by_number(self):

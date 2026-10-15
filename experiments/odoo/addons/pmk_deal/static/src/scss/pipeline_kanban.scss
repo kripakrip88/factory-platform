@@ -21,7 +21,9 @@ $pmk-pipe-radius: 10px;
   // Сверху — небольшой отступ от панели над видом, по бокам — воздух у
   // крайних колонок. Снизу 0: колонка тянется до низа, как у ядра.
   --Kanban-padding: 8px 12px 0;
-  --KanbanGroup-background: #{$pmk-pipe-column-light};
+  // 15.10.2026, вариант А (Антон): подложки колонок нет — карточки на фоне
+  // страницы, колонки разделяет воздух (бежевая рамка «выглядела дёшево»).
+  --KanbanGroup-background: transparent;
 }
 
 .o_kanban_view.o_opportunity_kanban .o_kanban_renderer.o_kanban_grouped .o_kanban_group {
@@ -81,7 +83,7 @@ $pmk-pipe-radius: 10px;
 // поверхность темы на фоне страницы (--pmk-bg).
 @media screen {
   body.o_nexus_dark .o_kanban_view.o_opportunity_kanban .o_kanban_renderer.o_kanban_grouped .o_kanban_group {
-    background-color: var(--pmk-surface, #1e2025);
+    background-color: transparent;
   }
 }
 
@@ -95,28 +97,55 @@ $pmk-pipe-radius: 10px;
 }
 
 
-// ─── Шапка колонки и карточка (15.10.2026, прототип принят Антоном) ────────
-// Точка цвета этапа перед названием, под шапкой — тонкая полоска «где этап в
-// воронке». Разметка — xml/pipeline_kanban.xml (шапка), views/
-// crm_kanban_card_views.xml (карточка).
-.o_kanban_view.o_opportunity_kanban .o_kanban_header .pmk-stage-dot {
-  display: inline-block;
-  flex: none;
-  width: 9px;
-  height: 9px;
-  margin-right: 8px;
-  border-radius: 50%;
-  align-self: center;
-}
+// ─── Шапка колонки и карточка (15.10.2026, вариант А, Антон) ──────────────
+// Шапка — одна строка: название, число сделок серым, сумма справа, «+»; под
+// ней волосяная линия, по которой цветом этапа — «где этап в воронке».
+// Разметка ядра не меняется: заголовок раскрыт в сетку шапки (display:
+// contents), шестерёнка и «+» — в своих колонках, сумма (o_kanban_counter) —
+// в той же строке. Точка этапа не показывается.
+.o_kanban_view.o_opportunity_kanban .o_kanban_header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  column-gap: 6px;
+  padding-bottom: 10px !important;
 
-.o_kanban_view.o_opportunity_kanban .o_kanban_header .pmk-stage-bar {
-  height: 3px;
-  margin: 4px 0 2px;
-  border-radius: 2px;
-  background: rgba(0, 0, 0, 0.08);
-  overflow: hidden;
+  > .o_kanban_header_title { display: contents; }
+  .o_column_title {
+    grid-column: 1;
+    grid-row: 1;
+    align-items: baseline;
+    font-size: 15px !important;
+    font-weight: 600 !important;
 
-  > i { display: block; height: 100%; border-radius: 2px; }
+    > span:last-child { font-size: 12px; font-weight: 400; color: #8a8f96; }
+  }
+  > .o_kanban_counter {
+    grid-column: 2;
+    grid-row: 1;
+    font-size: 12px;
+    color: #444441;
+    font-variant-numeric: tabular-nums;
+
+    > .ms-auto { display: none; }
+    b { font-weight: 500; }
+  }
+  .o_group_config { grid-column: 3; grid-row: 1; }
+  .o_kanban_quick_add { grid-column: 4; grid-row: 1; }
+  .pmk-stage-dot { display: none; }
+
+  .pmk-stage-bar {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    position: relative;
+    height: 2px;
+    margin-top: 8px;
+    border-radius: 0;
+    background: #ddd7ca;
+    overflow: visible;
+
+    > i { display: block; height: 2px; border-radius: 2px; }
+  }
 }
 
 // Пустая колонка — приглашение, а не серое поле.
@@ -195,7 +224,8 @@ $pmk-pipe-radius: 10px;
 
 @media screen {
   body.o_nexus_dark .o_kanban_view.o_opportunity_kanban {
-    .o_kanban_header .pmk-stage-bar { background: rgba(255, 255, 255, 0.1); }
+    .o_kanban_header .pmk-stage-bar { background: rgba(255, 255, 255, 0.12); }
+    .o_kanban_header > .o_kanban_counter { color: #c9ccd2; }
 
     .o_kanban_group:not(.o_column_folded):not(:has(.o_kanban_record))::after {
       border-color: rgba(255, 255, 255, 0.18);
