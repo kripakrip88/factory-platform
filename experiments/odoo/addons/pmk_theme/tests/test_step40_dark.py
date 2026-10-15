@@ -476,11 +476,11 @@ class TestDarkPairsStep40(TransactionCase):
         html:has(…)."""
         rules = _rules(self._backend_css())
         html = rules["html:has(> body.o_nexus_dark)"]
-        self.assertEqual(html["background-color"], "#16171b")
+        self.assertEqual(html["background-color"], "#1f2227")
         self.assertEqual(html["color-scheme"], "dark")
         if _nexus_installed(self.env):
             body = rules.get("body.o_nexus_dark", {})
-            self.assertEqual(body.get("background", "").lower(), "#16171b !important")
+            self.assertEqual(body.get("background", "").lower(), "#1f2227 !important")
 
     def test_outweigh_main_bundle(self):
         """Тёмная пара сильнее правила ядра или темы из основного бандла."""
@@ -660,21 +660,22 @@ class TestDarkPairsStep40(TransactionCase):
                 self.assertLess(_contrast(ink2, bg), 2)
         # Свёрнутая колонка: ядро гасит подпись opacity-50 — цвет самый светлый.
         folded = screen[DARK + ".o_kanban_view .o_kanban_group.o_column_folded .o_column_title"]
-        self.assertEqual(folded["color"], "var(--pmk-ink)")
+        self.assertEqual(folded["color"], "#ffffff")
         for under in (_hex(tokens["--pmk-bg"]), _hex(tokens["--pmk-surface"])):
             with self.subTest(folded_on=under):
-                self.assertGreaterEqual(_contrast(_blend(ink, under, 0.5), under), 4.5)
-        # Счётчики в шапке и «Загрузка»: светлая заливка под тёмной цифрой.
-        for selector in (DARK + ".o_main_navbar .o_menu_systray .badge",
-                         DARK + ".o-main-components-container .o_loading_indicator"):
-            with self.subTest(selector=selector):
-                decls = screen[selector]
-                self.assertEqual(decls["background-color"], "var(--pmk-ink) !important")
-                self.assertGreaterEqual(_contrast(ink, _hex(decls["color"])), 4.5)
+                self.assertGreaterEqual(_contrast(_blend("#ffffff", under, 0.5), under), 4.5)
+        # Счётчики в шапке: светлая заливка под тёмной цифрой.
+        badge = screen[DARK + ".o_main_navbar .o_menu_systray .badge"]
+        self.assertEqual(badge["background-color"], "var(--pmk-ink) !important")
+        self.assertGreaterEqual(_contrast(ink, _hex(badge["color"])), 4.5)
+        # «Загрузка» с шага 70 — спокойная поверхность, не белая плашка.
+        loading = screen[DARK + ".o-main-components-container .o_loading_indicator"]
+        self.assertEqual(loading["background-color"], "var(--pmk-surface-3) !important")
+        self.assertGreaterEqual(_contrast(ink2, _hex(tokens["--pmk-surface-3"])), 4.5)
         track = _hex(screen[DARK + ".o_column_progress.bg-300"]["--background-color"])
         self.assertLess(_lum(track), 0.05, "дорожка полосы — тёмная")
         self.assertEqual(screen[DARK + ".o_column_progress .progress-bar.border-white"]["border-color"],
-                         "#16171b !important")
+                         "#1f2227 !important")
 
     def test_step40_source(self):
         """Раздел «Шаг 40» — в dark.scss одним блоком @media screen, без

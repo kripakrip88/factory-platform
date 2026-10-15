@@ -252,8 +252,8 @@ class TestStep52Flat(TransactionCase):
             self.assertGreater(_specificity(DARK + BAR), _specificity(DARK + vendor))
         # словарь тёмной темы задаёт переменные, на которых стоят светлые правила
         dark = _read(DARK_SCSS)
-        self.assertIn("--pmk-surface: #1e2025;", dark)
-        self.assertIn("--pmk-border: #33363d;", dark)
+        self.assertIn("--pmk-surface: #272a30;", dark)
+        self.assertIn("--pmk-border: #3d414a;", dark)
 
     # ─── Договор с ядром и чужой темой ─────────────────────────────────
     def test_core_contract(self):

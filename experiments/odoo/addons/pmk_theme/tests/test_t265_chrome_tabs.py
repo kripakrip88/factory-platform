@@ -87,4 +87,4 @@ class TestT265ChromeTabs(TransactionCase):
         css = _compile(_section(_read(DARK_SCSS)))
         self.assertIn("body.o_nexus_dark", css)
         self.assertIn("rgba(255, 255, 255, 0.07)", css)
-        self.assertIn("--pmk-tab-fill: var(--pmk-surface-2, #25272d)", css)
+        self.assertIn("--pmk-tab-fill: var(--pmk-surface-2, #2e3138)", css)
