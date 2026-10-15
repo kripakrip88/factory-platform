@@ -16,6 +16,9 @@ class ResConfigSettings(models.TransientModel):
                                       "папки корня.")
     pmk_cloud_exts = fields.Char("Какие файлы", config_parameter="pmk_cloud.exts", default="dxf,lxds,zx",
                                  help="Расширения через запятую — остальные (.emf CypCut и т.п.) в группу не идут.")
+    pmk_cloud_exclude = fields.Char("Только ночью", config_parameter="pmk_cloud.exclude", default="Архив",
+                                    help="Папки первого уровня через запятую, которые раз в 5 минут не смотрим "
+                                         "(большие). Их новые файлы придут после ночного обхода.")
     pmk_cloud_status = fields.Char("Последняя проверка", compute="_compute_pmk_cloud_status")
 
     def _compute_pmk_cloud_status(self):
