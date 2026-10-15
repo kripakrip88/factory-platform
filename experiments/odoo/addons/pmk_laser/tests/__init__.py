@@ -14,3 +14,5 @@ from . import test_step36_laser
 # Разбор UX, шаг 46: «Посмотреть» чертёж детали окном DXF (pmk_drawing —
 # мягко; с ним: -i pmk_laser,pmk_drawing).
 from . import test_step46_drawing
+# Переделка 15.10.2026: задание на резку по заказу, раскрой нескольких заказов.
+from . import test_laser_tasks
