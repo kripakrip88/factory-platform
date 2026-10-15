@@ -16,6 +16,9 @@ from odoo.exceptions import UserError
 
 from odoo.addons.pmk_calc.models.spec_metal import rows_table
 
+from .cut_plan import PRICE_BAR_PRIORITY
+from .cutting import bar_name
+
 
 def _m(mm):
     """Миллиметры → метры словом: 12000 → «12», 318269 → «318,3»."""
@@ -104,6 +107,11 @@ class MetalSpecLinear(models.Model):
                 empty="Раскрой %s ещё не посчитан — «Разложить прокат»." % plan.name))
 
 
+# Длины хлыста на выбор во вкладке «Металл» (Антон 15.10.2026: «длину хлыста
+# нельзя менять? может быть 6, 12, 9 метров, арматура 11,7»).
+BAR_LENGTHS = [6000, 9000, 11700, 12000]
+
+
 class MetalSpecLinearOverview(models.Model):
     """Прокат во вкладке «Металл» одной таблицей со схемой (15.10.2026,
     pmk_calc/models/spec_metal_view.py): строка — типоразмер раскроя,
@@ -135,8 +143,12 @@ class MetalSpecLinearOverview(models.Model):
         for result in plan.result_ids:
             net, rows = parts.get(result.profile_id.id, (0.0, []))
             unplaced = max(0.0, net - (result.weight_parts or 0.0))
+            stocks = plan.stock_ids.filtered(lambda st, pr=result.profile_id: st.profile_id == pr)
             bars.append({
                 "id": result.id,
+                "profile_id": result.profile_id.id,
+                "lengths": sorted({round(st.length_mm) for st in stocks if not st.qty}),
+                "own_stock": len(stocks.filtered("qty")),
                 "material": result.profile_id.display_name,
                 "bars": result.bars_used,
                 "stock_m": (result.stock_mm or 0.0) / 1000.0,
@@ -150,6 +162,7 @@ class MetalSpecLinearOverview(models.Model):
                  for pid, (_net, rows) in parts.items()
                  if pid not in plan.result_ids.profile_id.ids for row in rows]
         data["bars"] = {
+            "bar_lengths": BAR_LENGTHS,
             "plan": plan.name or "",
             "plan_id": plan.id or False,
             "has_linear": bool(parts),
@@ -189,3 +202,27 @@ class MetalSpecLinearOverview(models.Model):
             "patterns": patterns,
             "unplaced": result.unplaced_text or "",
         }
+
+    def pmk_metal_set_bar_lengths(self, profile_id, lengths):
+        """Какими хлыстами докупать типоразмер: отмеченные длины — заготовки
+        «сколько нужно» последнего раскроя (вместо прежних докупаемых, в том
+        числе «из прайса»); свои заготовки и обрезки (с количеством) — как
+        были. Раскрой пересчитывается сразу."""
+        self.ensure_one()
+        self.check_access("write")
+        lengths = sorted({int(length) for length in lengths or [] if int(length) in BAR_LENGTHS})
+        if not lengths:
+            raise UserError(_("Отметьте хотя бы одну длину хлыста."))
+        plan = self.cut_plan_ids.filtered("result_ids").sorted("id")[-1:] or self._pmk_cut_plan()
+        if not plan:
+            raise UserError(_("Прокат ещё не раскладывали — нажмите «Разложить прокат»."))
+        profile = self.env["pmk.metal.profile"].browse(profile_id).exists()
+        if not profile:
+            raise UserError(_("Типоразмер не найден."))
+        plan.stock_ids.filtered(lambda st: st.profile_id == profile and not st.qty).unlink()
+        self.env["pmk.cut.stock"].create([{
+            "plan_id": plan.id, "profile_id": profile.id, "length_mm": float(length), "qty": 0,
+            "priority": PRICE_BAR_PRIORITY, "name": "%s (докупка)" % bar_name(length),
+        } for length in lengths])
+        plan.action_compute()
+        return True

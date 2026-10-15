@@ -4,6 +4,7 @@
 
 .o_pmk_mo {
   --mo-card: #fff;
+  --mo-ink: #1f2328;
   --mo-border: #e3ded3;
   --mo-sub: #faf8f4;
   --mo-muted: #6b7079;
@@ -73,7 +74,7 @@
   tbody tr:last-child td { border-bottom: 0; }
 
   .o_pmk_mo__c-mat { width: 38%; }
-  .o_pmk_mo__c-act { width: 150px; text-align: right; }
+  .o_pmk_mo__c-act { width: 175px; text-align: right; }
 }
 
 .o_pmk_mo__n {
@@ -118,9 +119,60 @@
   font-size: 12px;
 }
 
-.o_pmk_mo__fact-input { width: 4.5em; padding: 0 4px; }
+// Длины хлыста в раскрытой строке проката — переключатели-плашки.
+.o_pmk_mo__lengths-row td { padding-top: 7px !important; padding-bottom: 7px !important; }
+.o_pmk_mo__lengths-label { margin-right: 8px; color: var(--mo-muted); }
+.o_pmk_mo__length {
+  margin-right: 6px;
+  padding: 1px 10px;
+  border: 1px solid var(--mo-border);
+  border-radius: 12px;
+  background: var(--mo-card);
+  color: var(--mo-ink);
+  font-size: 12px;
+  cursor: pointer;
 
-.o_pmk_mo__size { max-width: 140px; font-size: 12px; }
+  &:hover:not(:disabled) { border-color: var(--mo-muted); }
+  &.o_pmk_mo__length--on { background: var(--mo-ok); border-color: var(--mo-ok-ink); color: var(--mo-ok-ink); font-weight: 500; }
+  &:disabled { cursor: default; opacity: 0.6; }
+}
+
+.o_pmk_mo__fact { margin-bottom: 0; cursor: default; }
+.o_pmk_mo__fact-input {
+  width: 4.5em;
+  padding: 1px 6px;
+  border: 1px solid var(--mo-border);
+  border-radius: 8px;
+  background: var(--mo-card);
+  color: var(--mo-ink);
+}
+
+// Деталь в раскрытой строке: название и размер — раздельно (было «2100×500»).
+.o_pmk_mo__pname { font-weight: 500; color: var(--mo-ink); }
+.o_pmk_mo__psize { margin-left: 10px; color: var(--mo-muted); white-space: nowrap; }
+
+// Габарит детали — выпадашка в стиле полей темы, не системная.
+.o_pmk_mo__size {
+  appearance: none;
+  -webkit-appearance: none;
+  width: auto;
+  min-width: 150px;
+  padding: 3px 26px 3px 10px;
+  border: 1px solid var(--mo-border);
+  border-radius: 8px;
+  background-color: var(--mo-card);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%238a8f96' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 9px center;
+  color: var(--mo-ink);
+  font-size: 12px;
+  line-height: 1.4;
+  cursor: pointer;
+
+  &:hover:not(:disabled) { border-color: var(--mo-muted); }
+  &:focus { outline: none; border-color: var(--mo-muted); }
+  &:disabled { cursor: default; opacity: 0.6; }
+}
 
 .o_pmk_mo__total {
   align-self: flex-end;
@@ -214,6 +266,7 @@ $pmk-mtones: #cfe3d8, #d7dcf3, #f3dccb, #e6d6ef, #d5ebee, #efe6c4, #f1d3dc, #dfe
 @media screen {
   body.o_nexus_dark .o_pmk_mo {
     --mo-card: #1e2025;
+    --mo-ink: #e3e5e8;
     --mo-border: #33363d;
     --mo-sub: rgba(255, 255, 255, 0.03);
     --mo-muted: #a3a8b0;

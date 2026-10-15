@@ -78,14 +78,32 @@ def _orderings(available):
     """
     from itertools import groupby
 
+    groups = [list(group) for _priority, group in groupby(available, key=lambda s: s["priority"])]
     variants = []
     for reverse in (False, True):
         ordered = []
-        for _priority, group in groupby(available, key=lambda s: s["priority"]):
+        for group in groups:
             chunk = sorted(group, key=lambda s: (s["length"], s["index"]), reverse=reverse)
             ordered.extend(chunk)
         if ordered not in variants:
             variants.append(ordered)
+    # 15.10.2026 (выбор длин хлыста во вкладке «Металл»: 6 / 9 / 11,7 / 12 м):
+    # «короткие первыми» и «длинные первыми» никогда не ставят первой СРЕДНЮЮ
+    # длину — 8 отрезков по 3500 из 6 / 11,7 / 12 м резались по 12 м (36 м)
+    # вместо 11,7 (35,1 м). Поэтому ещё: каждая заготовка группы — первой,
+    # остальные за ней по возрастанию и по убыванию.
+    for index, group in enumerate(groups):
+        if len(group) < 2:
+            continue
+        for head in group:
+            rest = [s for s in group if s is not head]
+            for reverse in (False, True):
+                middle = [head] + sorted(rest, key=lambda s: (s["length"], s["index"]), reverse=reverse)
+                ordered = [s for g in groups[:index] for s in sorted(g, key=lambda s: (s["length"], s["index"]))]
+                ordered += middle
+                ordered += [s for g in groups[index + 1:] for s in sorted(g, key=lambda s: (s["length"], s["index"]))]
+                if ordered not in variants:
+                    variants.append(ordered)
     return variants
 
 

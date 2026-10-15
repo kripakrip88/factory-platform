@@ -87,3 +87,14 @@ class TestCutting(BaseCase):
                        parts, kerf=3, min_useful=500)
         self.assertEqual(res["unplaced"], [])
         self.assertEqual(res["total_parts"], 1450 * 200 + 850 * 200 + 2300 * 100)
+
+
+class TestCuttingMiddleLength(BaseCase):
+    """Средняя длина хлыста тоже пробуется первой (15.10.2026, выбор длин
+    6 / 9 / 11,7 / 12 м во вкладке «Металл»)."""
+
+    def test_middle_length_wins(self):
+        stocks = [{"length": length, "qty": None, "priority": 100} for length in (6000, 11700, 12000)]
+        result = cut_plan(stocks, [{"length": 3500, "qty": 8}], kerf=3, min_useful=500)
+        self.assertEqual(result["bars_used"], 3)
+        self.assertEqual(result["total_stock"], 35100.0, "3 × 11,7 м, а не 3 × 12 м")

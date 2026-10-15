@@ -194,6 +194,9 @@ export class PmkMetalOverview extends Component {
     }
 
     sheetsLabel(row) {
+        if (!row.sheets) {
+            return _t("не разложено");
+        }
         const n = row.sheets_buy;
         return `${n} ${plural(n, "лист", "листа", "листов")}`;
     }
@@ -218,7 +221,7 @@ export class PmkMetalOverview extends Component {
     }
 
     useClass(row) {
-        return row.use_level === "bad" ? "o_pmk_mo_use--bad" : row.use_level === "low" ? "o_pmk_mo_use--low" : "";
+        return row.use_level === "bad" ? "o_pmk_mo__use--bad" : row.use_level === "low" ? "o_pmk_mo__use--low" : "";
     }
 
     // ── действия ─────────────────────────────────────────────────────────
@@ -256,6 +259,22 @@ export class PmkMetalOverview extends Component {
 
     setSheetSize(part, ev) {
         return this.run("pmk_metal_set_sheet_size", [part.id, ev.target.value]);
+    }
+
+    /** Длины хлыста для докупки (6 / 9 / 11,7 / 12 м): отмеченные — в
+     * раскрой, пересчёт сразу. Хотя бы одна длина остаётся отмеченной. */
+    toggleLength(row, length) {
+        const current = new Set(row.lengths || []);
+        if (current.has(length)) {
+            if (current.size === 1) {
+                this.notification.add(_t("Нужна хотя бы одна длина хлыста."), { type: "warning" });
+                return;
+            }
+            current.delete(length);
+        } else {
+            current.add(length);
+        }
+        return this.run("pmk_metal_set_bar_lengths", [row.profile_id, [...current]]);
     }
 
     setFact(row, ev) {

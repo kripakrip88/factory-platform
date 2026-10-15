@@ -90,3 +90,32 @@ class TestMetalOverview(TransactionCase):
         self.assertEqual(page[0].tag, "widget")
         self.assertEqual(page[0].get("name"), "pmk_metal_overview")
         self.assertEqual(page.xpath("./field[@name='sheet_line_ids']")[0].get("invisible"), "1")
+
+
+@tagged("post_install", "-at_install")
+class TestCompactScheme(TransactionCase):
+    """Неполный лист на схеме — у торца, во всю ширину: остаток листа целым
+    куском (Антон 15.10: «раскладка почему идёт по длине, а не по ширине?»)."""
+
+    def test_partial_sheet_uses_little_length(self):
+        result = sheeting.group_drawings(1500, 6000, [(2, 100, 500, 16), (3, 100, 200, 16)])
+        rects = result["drawings"][0]["rects"]
+        self.assertLessEqual(max(y + l for _k, _x, y, _w, l in rects), 1000.0)
+        single = sheeting.compact_placements(1500, 6000, 300, 200, 16)
+        self.assertEqual(len(single), 16)
+        self.assertLessEqual(max(y + l for _x, y, _w, l in single), 1000.0)
+
+    def test_set_size_relayouts(self):
+        sheet = self.env["pmk.metal.sheet"].create({
+            "sheet_type": "Гладкий (тест габарита)", "thickness_mm": 4.0,
+            "gost": "ГОСТ тест", "mass_per_sqm": 31.4})
+        spec = self.env["pmk.metal.spec"].create({"product_ids": [Command.create({
+            "name": "Опора", "qty": 16, "line_ids": [Command.create({
+                "calc_mode": "sheet", "sheet_id": sheet.id, "detail_name": "2",
+                "a_mm": 100.0, "b_mm": 500.0, "qty": 1})]})]})
+        spec.action_draft_layout()
+        line = spec.sheet_line_ids
+        spec.pmk_metal_set_sheet_size(line.id, "1500x3000")
+        group = spec.layout_group_ids
+        self.assertEqual(group.sheet_size, "1500x3000")
+        self.assertEqual(group.sheets, 1, "после смены габарита раскладка пересчитана сама")

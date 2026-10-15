@@ -700,6 +700,60 @@ def single_placements(sheet_w, sheet_l, part_a, part_b, kerf_mm=DEFAULT_KERF_MM,
     return best[2]
 
 
+def _single_candidates(sheet_w, sheet_l, part_a, part_b, **kwargs):
+    """Все схемы одиночной детали — для неполного листа (compact_placements)."""
+    spots = []
+    for first, second in ((part_a, part_b), (part_b, part_a)):
+        full = single_placements(sheet_w, sheet_l, first, second, **kwargs)
+        if full:
+            spots.append(full)
+    return spots
+
+
+def _used_length(rects):
+    return max((y + l for _key, _x, y, _w, l in rects), default=0.0)
+
+
+def compact_placements(sheet_w, sheet_l, part_a, part_b, count, **kwargs):
+    """Неполный лист: count деталей так, чтобы занять как можно меньше длины
+    листа — заполняя ширину. Остаток — целый прямоугольник во всю ширину,
+    его можно отрезать и пустить в дело (Антон 15.10: «раскладка почему идёт
+    по длине, а не по ширине?»)."""
+    best = None
+    for spots in _single_candidates(sheet_w, sheet_l, part_a, part_b, **kwargs):
+        if len(spots) < count:
+            continue
+        chosen = sorted(spots, key=lambda s: (round(s[1], 3), round(s[0], 3)))[:count]
+        used = max(y + l for _x, y, _w, l in chosen)
+        if best is None or used < best[0]:
+            best = (used, chosen)
+    return best[1] if best else single_placements(sheet_w, sheet_l, part_a, part_b, **kwargs)[:count]
+
+
+def compact_pack(sheet_w, sheet_l, parts, kerf_mm=DEFAULT_KERF_MM,
+                 edge_mm=DEFAULT_EDGE_MM, tolerance_mm=DEFAULT_TOLERANCE_MM):
+    """Как pack_group (то же число листов), но из равных по листам укладок —
+    та, что меньше занимает длину последнего листа: остаток во всю ширину."""
+    usable_w = sheet_w - 2 * edge_mm
+    usable_l = sheet_l - 2 * edge_mm
+    if usable_w <= 0 or usable_l <= 0:
+        return None
+    best = None
+    for axis in ("L", "W"):
+        stack, run = (usable_w, usable_l) if axis == "L" else (usable_l, usable_w)
+        for rule in ("low", "high"):
+            bins = _pack_shelves(stack, run, parts, rule, kerf_mm, tolerance_mm)
+            if bins is None:
+                continue
+            packed = {"sheets": len(bins), "axis": axis, "rule": rule, "bins": bins}
+            last = [(key, x, y, w, l) for number, key, x, y, w, l in iter_placements(
+                sheet_w, sheet_l, packed, kerf_mm=kerf_mm, edge_mm=edge_mm) if number == len(bins)]
+            score = (len(bins), _used_length(last))
+            if best is None or score < best[0]:
+                best = (score, packed)
+    return best[1] if best else None
+
+
 def group_drawings(sheet_w, sheet_l, parts, kerf_mm=DEFAULT_KERF_MM,
                    edge_mm=DEFAULT_EDGE_MM, tolerance_mm=DEFAULT_TOLERANCE_MM,
                    joint=True, max_sheets=12):
@@ -717,16 +771,29 @@ def group_drawings(sheet_w, sheet_l, parts, kerf_mm=DEFAULT_KERF_MM,
     def own_sheets(key, full_count, rest):
         a, b, _qty = sizes[key]
         spots = single_placements(sheet_w, sheet_l, a, b, **kwargs)
-        for count in [len(spots)] * full_count + ([rest] if rest else []):
-            sheets.append([(key,) + spot for spot in spots[:count]])
+        for _index in range(full_count):
+            sheets.append([(key,) + spot for spot in spots])
+        if rest:
+            sheets.append([(key,) + spot for spot in compact_placements(sheet_w, sheet_l, a, b, rest, **kwargs)])
 
     if plan["mode"] == "joint":
         for key, full in plan.get("own", {}).items():
             own_sheets(key, full, 0)
         for key, count in plan.get("own_exact", {}).items():
             own_sheets(key, count, 0)
+        # Те же детали укладки — заново, из равных по листам вариантов
+        # компактнейший по длине (число листов то же).
+        counts = {}
+        for shelves in plan["packed"]["bins"]:
+            for _height, items in shelves:
+                for key, count, _h, _l in items:
+                    counts[key] = counts.get(key, 0) + count
+        packed = compact_pack(sheet_w, sheet_l, [(key, sizes[key][0], sizes[key][1], count)
+                                                 for key, count in counts.items()], **kwargs)
+        if not packed or packed["sheets"] != plan["packed"]["sheets"]:
+            packed = plan["packed"]
         by_number = {}
-        for number, key, x, y, w, l in iter_placements(sheet_w, sheet_l, plan["packed"],
+        for number, key, x, y, w, l in iter_placements(sheet_w, sheet_l, packed,
                                                        kerf_mm=kerf_mm, edge_mm=edge_mm):
             by_number.setdefault(number, []).append((key, x, y, w, l))
         sheets.extend(by_number[number] for number in sorted(by_number))

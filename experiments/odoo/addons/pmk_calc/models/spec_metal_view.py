@@ -138,6 +138,10 @@ class MetalSpecOverview(models.Model):
         if size not in SIZE_LABELS:
             raise UserError(_("Нет такого габарита листа."))
         line = self.sheet_line_ids.filtered(lambda l: l.id == line_id)
-        if line:
+        if line and line.layout_sheet_size != size:
             line.layout_sheet_size = size
+            # Смена габарита гасит черновую раскладку — раскладываем сразу
+            # (Антон 15.10: «0 листов — как получилось?»). «Листов по факту»
+            # технолога раскладка не трогает (pmk_tech).
+            self.action_draft_layout()
         return True

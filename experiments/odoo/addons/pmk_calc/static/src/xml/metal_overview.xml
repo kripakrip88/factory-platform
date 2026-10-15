@@ -38,17 +38,17 @@
                 <tr class="o_pmk_mo__grp" t-on-click="() => this.toggle('s' + row.id)">
                   <td>
                     <i class="fa fa-fw o_pmk_mo__chev" t-att-class="isOpen('s' + row.id) ? 'fa-angle-down' : 'fa-angle-right'" aria-hidden="true"/>
-                    <t t-esc="row.material"/> <span class="o_pmk_mo__dim">· <t t-esc="row.size"/></span>
+                    <t t-esc="row.material"/> <span class="o_pmk_mo__dim">· <t t-esc="row.size"/> мм</span>
                   </td>
                   <td>
                     <t t-esc="sheetsLabel(row)"/>
-                    <span t-if="isTech" class="o_pmk_mo__fact" t-on-click.stop="() => {}">
-                      по факту
+                    <label t-if="isTech" class="o_pmk_mo__fact" t-on-click.stop="() => {}"
+                           title="Технический расчёт: сколько листов вышло в CypCut у технолога. Вписано — «Купить» и «Заявка на металл» берут это число вместо черновой раскладки. Пусто — черновик.">
+                      в CypCut:
                       <input type="number" min="0" class="o_pmk_mo__fact-input" t-att-value="row.fact || ''"
-                             t-att-placeholder="row.sheets" t-att-disabled="!data.can_write or state.busy"
-                             title="Листов по факту из CypCut — «Купить» и заявка возьмут это число вместо черновика"
+                             placeholder="—" t-att-disabled="!data.can_write or state.busy"
                              t-on-change="(ev) => this.setFact(row, ev)"/>
-                    </span>
+                    </label>
                   </td>
                   <td class="o_pmk_mo__n"><span class="o_pmk_mo__use" t-att-class="useClass(row)" t-esc="row.use_label"/></td>
                   <td class="o_pmk_mo__n" t-esc="kg(row.buy_kg)"/>
@@ -60,16 +60,19 @@
                 </tr>
                 <t t-if="isOpen('s' + row.id)">
                   <tr t-foreach="row.parts" t-as="part" t-key="part.id" class="o_pmk_mo__sub">
-                    <td class="o_pmk_mo__indent"><t t-esc="part.name"/> <span class="o_pmk_mo__dim" t-esc="part.size"/></td>
+                    <td class="o_pmk_mo__indent">
+                      <span class="o_pmk_mo__pname" t-esc="part.name"/>
+                      <span class="o_pmk_mo__psize"><t t-esc="part.size"/> мм</span>
+                    </td>
                     <td class="o_pmk_mo__dim" t-esc="part.product"/>
                     <td class="o_pmk_mo__n"><t t-esc="part.qty"/> шт</td>
                     <td class="o_pmk_mo__n o_pmk_mo__dim" t-esc="kg(part.net_kg)" title="Чистый вес деталей"/>
                     <td class="o_pmk_mo__c-act">
                       <select class="o_pmk_mo__size" t-att-disabled="!data.can_write or state.busy"
-                              title="Из какого листа режем эту деталь — после смены «Разложить листы»"
+                              title="Из какого листа режем эту деталь. После смены — «Разложить листы»"
                               t-on-change="(ev) => this.setSheetSize(part, ev)">
                         <t t-foreach="data.sheet_sizes" t-as="size" t-key="size[0]">
-                          <option t-att-value="size[0]" t-att-selected="size[0] === part.sheet_size" t-esc="size[1]"/>
+                          <option t-att-value="size[0]" t-att-selected="size[0] === part.sheet_size" t-esc="size[1] + ' мм'"/>
                         </t>
                       </select>
                     </td>
@@ -88,7 +91,10 @@
                 </tr>
                 <t t-if="isOpen('sloose')">
                   <tr t-foreach="data.loose" t-as="part" t-key="'l' + part.id" class="o_pmk_mo__sub">
-                    <td class="o_pmk_mo__indent"><t t-esc="part.name"/> <span class="o_pmk_mo__dim" t-esc="part.size"/></td>
+                    <td class="o_pmk_mo__indent">
+                      <span class="o_pmk_mo__pname" t-esc="part.name"/>
+                      <span class="o_pmk_mo__psize"><t t-esc="part.size"/> мм</span>
+                    </td>
                     <td class="o_pmk_mo__dim" t-esc="part.product"/>
                     <td class="o_pmk_mo__n"><t t-esc="part.qty"/> шт</td>
                     <td class="o_pmk_mo__n o_pmk_mo__dim" t-esc="kg(part.net_kg)"/>
@@ -114,10 +120,10 @@
               <th class="o_pmk_mo__c-act"/>
             </tr></thead>
             <tbody>
-              <t t-foreach="bars" t-as="row" t-key="'b' + row.id">
-                <tr class="o_pmk_mo__grp" t-on-click="() => this.toggle('b' + row.id)">
+              <t t-foreach="bars" t-as="row" t-key="'b' + row.profile_id">
+                <tr class="o_pmk_mo__grp" t-on-click="() => this.toggle('b' + row.profile_id)">
                   <td>
-                    <i class="fa fa-fw o_pmk_mo__chev" t-att-class="isOpen('b' + row.id) ? 'fa-angle-down' : 'fa-angle-right'" aria-hidden="true"/>
+                    <i class="fa fa-fw o_pmk_mo__chev" t-att-class="isOpen('b' + row.profile_id) ? 'fa-angle-down' : 'fa-angle-right'" aria-hidden="true"/>
                     <t t-esc="row.material"/>
                   </td>
                   <td>
@@ -132,9 +138,26 @@
                     </button>
                   </td>
                 </tr>
-                <t t-if="isOpen('b' + row.id)">
+                <t t-if="isOpen('b' + row.profile_id)">
+                  <tr class="o_pmk_mo__sub o_pmk_mo__lengths-row">
+                    <td colspan="5" class="o_pmk_mo__indent">
+                      <span class="o_pmk_mo__lengths-label">Хлысты докупать:</span>
+                      <t t-foreach="data.bars.bar_lengths" t-as="length" t-key="length">
+                        <button type="button" class="o_pmk_mo__length"
+                                t-att-class="{ 'o_pmk_mo__length--on': row.lengths.includes(length) }"
+                                t-att-aria-pressed="row.lengths.includes(length) ? 'true' : 'false'"
+                                t-att-disabled="!data.can_write or state.busy"
+                                t-on-click.stop="() => this.toggleLength(row, length)"
+                                t-esc="m(length / 1000) + ' м'"/>
+                      </t>
+                      <span t-if="row.own_stock" class="o_pmk_mo__dim">· свои заготовки в раскрое: <t t-esc="row.own_stock"/></span>
+                    </td>
+                  </tr>
                   <tr t-foreach="row.parts" t-as="part" t-key="part.id" class="o_pmk_mo__sub">
-                    <td class="o_pmk_mo__indent"><t t-esc="part.name"/> <span class="o_pmk_mo__dim"><t t-esc="mm(part.length)"/> мм</span></td>
+                    <td class="o_pmk_mo__indent">
+                      <span class="o_pmk_mo__pname" t-esc="part.name"/>
+                      <span class="o_pmk_mo__psize"><t t-esc="mm(part.length)"/> мм</span>
+                    </td>
                     <td class="o_pmk_mo__dim" t-esc="part.product"/>
                     <td class="o_pmk_mo__n"><t t-esc="part.qty"/> шт</td>
                     <td/>
@@ -154,7 +177,10 @@
                 </tr>
                 <t t-if="isOpen('bloose')">
                   <tr t-foreach="data.bars.loose" t-as="part" t-key="'bl' + part.id" class="o_pmk_mo__sub">
-                    <td class="o_pmk_mo__indent"><t t-esc="part.material"/> · <t t-esc="part.name"/> <span class="o_pmk_mo__dim"><t t-esc="mm(part.length)"/> мм</span></td>
+                    <td class="o_pmk_mo__indent">
+                      <span class="o_pmk_mo__pname"><t t-esc="part.material"/> · <t t-esc="part.name"/></span>
+                      <span class="o_pmk_mo__psize"><t t-esc="mm(part.length)"/> мм</span>
+                    </td>
                     <td class="o_pmk_mo__dim" t-esc="part.product"/>
                     <td class="o_pmk_mo__n"><t t-esc="part.qty"/> шт</td>
                     <td/>
@@ -191,7 +217,7 @@
           <div class="o_pmk_mscheme__legend">
             <span t-foreach="legend(drawing)" t-as="item" t-key="item.key" class="o_pmk_mscheme__chip">
               <i t-att-class="'o_pmk_mscheme__swatch ' + tone(item.key)"/>
-              <t t-esc="item.part.name"/> <t t-esc="item.part.size"/> — <t t-esc="item.qty"/> шт
+              <b t-esc="item.part.name"/> · <t t-esc="item.part.size"/> мм — <t t-esc="item.qty"/> шт
               <span class="o_pmk_mo__dim" t-if="item.part.product">· <t t-esc="item.part.product"/></span>
             </span>
           </div>
