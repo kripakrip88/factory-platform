@@ -1127,6 +1127,11 @@ class LaserJobPart(models.Model):
                         "cut_length_mm": tp.cut_length_mm, "pierce_count": tp.pierce_count,
                         "preview_svg": tp.preview_svg})
 
+    @api.constrains("qty", "task_part_id")
+    def _check_task_qty(self):
+        """В раскроях не больше штук, чем в задании (строку раскроя правят вручную)."""
+        self.task_part_id._check_nested()
+
     @api.constrains("task_part_id", "job_id")
     def _check_task_thickness(self):
         for line in self.filtered("task_part_id"):

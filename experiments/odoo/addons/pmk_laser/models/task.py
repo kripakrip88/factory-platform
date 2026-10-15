@@ -337,7 +337,7 @@ class LaserTaskPart(models.Model):
             part.size_text = ("%s × %s" % (_mm(round(part.part_width_mm)), _mm(round(part.part_height_mm)))
                               if part.part_width_mm and part.part_height_mm else False)
 
-    @api.constrains("qty", "line_ids")
+    @api.constrains("qty")
     def _check_nested(self):
         for part in self:
             if part.qty_nested > part.qty:

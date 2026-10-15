@@ -121,6 +121,13 @@
           -->
           <div class="pmk-doc-top" name="pmk_doc_top">
             <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
+            <!-- Переделка 15.10.2026: детали раскроя — из заданий на резку, хоть нескольких
+                 заказов; строкой под номером видно, чьи они (в группу «Задание» не кладём —
+                 в ней пять строк, шаг 36). -->
+            <div class="pmk-job-tasks text-muted" invisible="not task_ids">
+              Заказы: <field name="task_text" nolabel="1" class="d-inline"/>
+              <field name="task_ids" invisible="1"/>
+            </div>
 
             <!--
               Сигналы задания — одной строкой коротких плашек (разбор UX, шаг 27).
@@ -205,10 +212,6 @@
                 <field name="date"/>
                 <!-- Расчёт рядом с заказом: заказов в базе пока нет, режут по
                      расчёту, и по этой ссылке задание видно на схеме связей. -->
-                <!-- Переделка 15.10.2026: детали раскроя — из заданий на резку, хоть
-                     нескольких заказов; здесь видно, чьи они. -->
-                <field name="task_ids" string="Задания на резку" widget="many2many_tags" readonly="1"
-                       invisible="not task_ids"/>
                 <field name="spec_id" string="Расчёт" options="{'no_create': True}"/>
                 <field name="partner_id"/>
                 <!-- Без «Создать…»: счёт покупателю рождается кнопкой «Счёт» в
