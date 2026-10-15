@@ -210,6 +210,8 @@ patch(StatusBarField.prototype, {
             item.pmkPassed && "o_pmk_stage_passed",
             item.isFolded && "o_pmk_stage_folded",
             item.isSelected && `o_pmk_tone_${this.pmkTone(item)}`,
+            // Цветная точка у каждого статуса тоном этапа (Антон 15.10.2026).
+            `o_pmk_dot_${this.pmkTone(item)}`,
         ]
             .filter(Boolean)
             .join(" ");

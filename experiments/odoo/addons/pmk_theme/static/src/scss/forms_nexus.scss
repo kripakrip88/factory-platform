@@ -1083,12 +1083,15 @@ body.o_nexus_dark {
     background: #f3f2ef !important;
   }
 
+  // Цветная точка у каждого статуса (15.10.2026) — тоном этапа ($pmk-stage-dots ниже);
+  // пройденные — той же точкой, текст серее.
+  &::before {
+    content: "\f111";
+    font-size: 8px;
+  }
+
   &.o_pmk_stage_passed {
     color: #6b7078 !important;
-
-    &::before {
-      content: "\f00c";
-    }
   }
 
   &.o_pmk_stage_folded {
@@ -1111,8 +1114,7 @@ body.o_nexus_dark {
 
     &::before {
       content: "\f111";
-      color: #14141a;
-      font-size: 7px;
+      font-size: 10px;
     }
   }
 }
@@ -1134,6 +1136,19 @@ $pmk-stage-tones: (
   green: (#e4f3e3, #b5dbb2),
   violet: (#ece8f8, #c9beeb),
 );
+
+// Точка статуса в списке стадий — насыщеннее фона кнопки, но не ярко (лайм приглушённый).
+$pmk-stage-dots: (
+  grey: #a8a294, red: #d9614c, orange: #e08a3c, yellow: #d9a521, cyan: #3fb3c2,
+  purple: #9b6fd1, almond: #c4a27a, teal: #3ea58a, blue: #5b8fe0, raspberry: #d1588a,
+  green: #5cb357, violet: #8a74d6,
+);
+
+@each $tone, $dot in $pmk-stage-dots {
+  .o-dropdown--menu .dropdown-item.o_pmk_stage_item.o_pmk_dot_#{$tone}::before {
+    color: $dot !important;
+  }
+}
 
 @each $tone, $pair in $pmk-stage-tones {
   // Заливка-прогресс (15.10.2026): пройденная доля пути — тоном рамки, остаток — фоном
