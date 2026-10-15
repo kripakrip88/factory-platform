@@ -123,6 +123,8 @@ class PmkFlowLanes(models.AbstractModel):
                 specs.append((nid, record))
                 if _field(record, 'pmk_kind') != 'tech':
                     order_cols['Расчёт КП'].append(nid)
+            elif model == 'pmk.butik.spec':
+                order_cols['Расчёт КП'].append(nid)
             elif model == 'sale.order':
                 order_cols['Счёт'].append(nid)
             elif model in _CALC_MODELS:

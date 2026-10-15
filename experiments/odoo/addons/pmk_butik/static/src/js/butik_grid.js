@@ -37,7 +37,7 @@ export class PmkButikGrid extends Component {
         this.root = useRef("root");
         this.state = useState({
             data: null, loading: true, sel: { row: 0, col: "name" }, busy: false,
-            suggest: null, suggestRow: null,
+            suggest: null, suggestRow: null, suggestIdx: -1, savedAt: "",
         });
         this.pendingFocus = null;
         this.suggestTimer = null;
@@ -45,13 +45,23 @@ export class PmkButikGrid extends Component {
         // input.value из шаблона (сравнивает с живым значением поля), и без
         // черновика текст стирался, как только появлялись подсказки.
         this.drafts = {};
+        // Свёрнутые изделия — только вид, на сервере не храним.
+        this.collapsed = useState(new Set());
         useEffect(
             (resId) => {
                 this.load(resId);
             },
             () => [this.props.record.resId]
         );
-        onPatched(() => this.applyFocus());
+        onPatched(() => {
+            this.applyFocus();
+            this.root.el?.querySelector(".o_pmk_butik__sitem--active")?.scrollIntoView({ block: "nearest" });
+        });
+    }
+
+    async start() {
+        // Новый расчёт: таблице нужен номер записи — сохраняем шапку сами.
+        await this.props.record.save();
     }
 
     alive() {
@@ -75,6 +85,9 @@ export class PmkButikGrid extends Component {
             const data = await this.orm.call("pmk.butik.spec", method, [[this.specId], ...args]);
             if (this.alive() && data) {
                 this.state.data = data;
+                // «Сохранено в 14:32»: ячейка уходит на сервер сразу, отдельной
+                // кнопки «Сохранить» у таблицы нет (Антон 16.10 спрашивал, где она).
+                this.state.savedAt = new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
             }
         } finally {
             if (this.alive()) {
@@ -121,6 +134,38 @@ export class PmkButikGrid extends Component {
 
     total(row) {
         return fmt(row.qty_total, 2);
+    }
+
+    isCollapsed(productId) {
+        return Boolean(productId) && this.collapsed.has(productId);
+    }
+
+    childCount(productId) {
+        return this.rows.filter((r) => r.parent === productId && r.name).length;
+    }
+
+    get allOpen() {
+        return this.collapsed.size === 0;
+    }
+
+    toggle(productId) {
+        if (this.collapsed.has(productId)) {
+            this.collapsed.delete(productId);
+        } else {
+            this.collapsed.add(productId);
+        }
+    }
+
+    toggleAll() {
+        if (this.allOpen) {
+            for (const row of this.rows) {
+                if (row.kind === "product") {
+                    this.collapsed.add(row.id);
+                }
+            }
+        } else {
+            this.collapsed.clear();
+        }
     }
 
     isSel(index, col) {
@@ -177,13 +222,39 @@ export class PmkButikGrid extends Component {
 
     async onKeydown(index, col, ev) {
         const row = this.rows[index];
+        const suggestOpen = this.state.suggest && this.state.suggestRow === index;
+        if ((ev.ctrlKey || ev.metaKey) && ev.key === "Enter") {
+            // Новое изделие с клавиатуры (Антон 16.10).
+            ev.preventDefault();
+            ev.stopPropagation();
+            await this.commit(row, col, ev);
+            this.closeSuggest();
+            await this.addProduct();
+            return;
+        }
+        if (suggestOpen && (ev.key === "ArrowDown" || ev.key === "ArrowUp")) {
+            // Стрелки ходят по подсказкам, Enter берёт выделенную (Антон 16.10).
+            ev.preventDefault();
+            const count = this.state.suggest.length;
+            const step = ev.key === "ArrowDown" ? 1 : -1;
+            // Положения: -1 (свой текст, ничего не выделено), 0…count-1 — по кругу.
+            const pos = (this.state.suggestIdx + 1 + step + count + 1) % (count + 1);
+            this.state.suggestIdx = pos - 1;
+            return;
+        }
+        if (suggestOpen && ev.key === "Enter" && this.state.suggestIdx >= 0) {
+            ev.preventDefault();
+            await this.choose(index, this.state.suggest[this.state.suggestIdx], ev);
+            return;
+        }
         if (ev.key === "Enter" || ev.key === "ArrowDown" || ev.key === "ArrowUp") {
-            if (this.state.suggest && ev.key !== "Enter") {
-                return;
-            }
             ev.preventDefault();
             await this.commit(row, col, ev);
-            let next = index + (ev.key === "ArrowUp" ? -1 : 1);
+            const dir = ev.key === "ArrowUp" ? -1 : 1;
+            let next = index + dir;
+            while (next > 0 && next < this.rows.length && this.isCollapsed(this.rows[next].parent)) {
+                next += dir;
+            }
             if (next < 0) {
                 next = 0;
             }
@@ -254,13 +325,16 @@ export class PmkButikGrid extends Component {
             if (this.alive()) {
                 this.state.suggest = items.length ? items : null;
                 this.state.suggestRow = index;
+                this.state.suggestIdx = -1;
             }
         }, 250);
     }
 
     closeSuggest() {
+        clearTimeout(this.suggestTimer);
         this.state.suggest = null;
         this.state.suggestRow = null;
+        this.state.suggestIdx = -1;
     }
 
     async choose(index, item, ev) {

@@ -126,6 +126,32 @@ class TestButik(TransactionCase):
         spec.butik_set_position(detail["id"], "sheet:%d" % self.sheet.id)
         self.assertEqual(spec.butik_rows()["rows"][1]["width"], 85.0)
 
+    def test_product_row_weight(self):
+        """Строка изделия несёт вес своих деталей: на одно изделие и всего."""
+        spec = self.env["pmk.butik.spec"].create({"subject": "Тест"})
+        product, detail = spec.butik_rows()["rows"]
+        spec.butik_save_row(product["id"], {"product_qty": "3"})
+        rows = spec.butik_save_row(detail["id"], {"name": "Уголок 63х4", "length_mm": "1000", "qty": "2"})["rows"]
+        head = rows[0]
+        self.assertEqual(rows[1]["parent"], head["id"])
+        self.assertAlmostEqual(head["weight_total"], rows[1]["weight_total"], places=3)
+        self.assertAlmostEqual(head["weight_one"], rows[1]["weight_total"] / 3, places=3)
+        data = spec.butik_rows()
+        self.assertAlmostEqual(data["weight_kg"], rows[1]["weight_total"], places=1, msg="без двойного счёта")
+        self.assertAlmostEqual(spec.weight_t, spec.weight_kg / 1000, places=3)
+
+    def test_flow_graph(self):
+        """«Связи»: расчёт «Бутик» на схеме своей сделки."""
+        lead = self.env["crm.lead"].create({"name": "Сделка бутика (связи)", "type": "opportunity"})
+        spec = self.env["pmk.butik.spec"].create({"lead_id": lead.id})
+        graph = self.env["pmk.flow.builder"].get_flow_graph("pmk.butik.spec", spec.id)
+        ids = {n["id"] for n in graph["nodes"]}
+        self.assertIn("crm.lead,%d" % lead.id, ids)
+        graph = self.env["pmk.flow.builder"].get_flow_graph("crm.lead", lead.id)
+        self.assertIn("pmk.butik.spec,%d" % spec.id, {n["id"] for n in graph["nodes"]})
+        lanes = self.env["pmk.flow.builder"].get_flow_lanes("crm.lead", lead.id)
+        self.assertTrue(lanes["lanes"])
+
     def test_link_deal(self):
         lead = self.env["crm.lead"].create({"name": "Сделка бутика", "type": "opportunity"})
         spec = self.env["pmk.butik.spec"].create({"lead_id": lead.id})

@@ -57,6 +57,9 @@ _STAGES = {
     'res.partner': (0.5, 'Клиент'),
     'crm.lead': (1, 'Сделка'),
     'pmk.metal.spec': (2, 'Расчёт'),
+    # «Бутик» (pmk_butik, 16.10.2026) — отдельный расчёт Бутова на той же сделке.
+    # Модуля может не быть — get_flow_graph и _referrers проверяют модель в env.
+    'pmk.butik.spec': (2, 'Бутик'),
     # Заказ клиента — по-заводски «Счёт покупателю» (шаги 58 и З-2,
     # 08.10.2026): выставляется сам из расчёта при «КП отправлено».
     'sale.order': (3, 'Счёт покупателю'),
@@ -634,6 +637,7 @@ class PmkFlowBuilder(models.AbstractModel):
             linked.append(partner.commercial_partner_id if partner else partner)
             # Расчёты металлопроката висят на сделке (модуль pmk_deal).
             linked.append(self._optional_rel(record, 'spec_ids', hidden))
+            linked.append(self._referrers('pmk.butik.spec', 'lead_id', record.id, hidden))
             # Доборки — тоже (pmk_deal, шаг 35): счётчик «Доборки» над формой
             # и схема на вкладке «Связи» говорят одно и то же.
             # Разбор схемы 12.10.2026: у сделки — только то, что не висит на
@@ -649,6 +653,11 @@ class PmkFlowBuilder(models.AbstractModel):
             # что появились без счёта.
             linked.append(_without(self._referrers('project.task', 'pmk_deal_id', record.id, hidden),
                                    'pmk_sale_order_id'))
+        elif model == 'pmk.butik.spec':
+            linked.append(self._optional_rel(record, 'lead_id', hidden))
+            partner = self._optional_rel(record, 'partner_id', hidden)
+            if not _field(record, 'lead_id'):
+                linked.append(partner.commercial_partner_id if partner else partner)
         elif model == 'pmk.metal.spec':
             linked.append(self._optional_rel(record, 'opportunity_id', hidden))
             # Счёт покупателю из расчёта (pmk_orders, шаг З-2) — только

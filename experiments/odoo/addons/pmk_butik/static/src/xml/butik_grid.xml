@@ -3,19 +3,28 @@
 <templates xml:space="preserve">
   <t t-name="pmk_butik.Grid">
     <div class="o_pmk_butik" t-ref="root">
-      <p t-if="!specId" class="o_pmk_butik__muted">Сохраните расчёт — появится таблица.</p>
+      <div t-if="!specId" class="o_pmk_butik__start">
+        <button type="button" class="btn btn-primary" t-on-click="() => this.start()">
+          <i class="fa fa-table me-1" aria-hidden="true"/>Начать спецификацию</button>
+        <span class="o_pmk_butik__muted">расчёт сохранится, и откроется таблица</span>
+      </div>
       <p t-elif="state.loading or !state.data" class="o_pmk_butik__muted">Загружаю…</p>
       <t t-else="">
         <div class="o_pmk_butik__bar">
           <button type="button" class="btn btn-secondary btn-sm" t-att-disabled="state.busy" t-on-click="() => this.addRow()">
             <i class="fa fa-plus me-1" aria-hidden="true"/>Строка</button>
-          <button type="button" class="btn btn-secondary btn-sm" t-att-disabled="state.busy" t-on-click="() => this.addProduct()">
+          <button type="button" class="btn btn-secondary btn-sm" t-att-disabled="state.busy" t-on-click="() => this.addProduct()" title="Ctrl+Enter (на Mac — Cmd+Enter)">
             <i class="fa fa-cube me-1" aria-hidden="true"/>Изделие</button>
           <button type="button" class="btn btn-secondary btn-sm" t-att-disabled="state.busy" t-on-click="() => this.duplicate()">
             <i class="fa fa-clone me-1" aria-hidden="true"/>Копия строки</button>
           <button type="button" class="btn btn-link btn-sm text-muted" t-att-disabled="state.busy" t-on-click="() => this.remove()">
             <i class="fa fa-trash-o me-1" aria-hidden="true"/>Удалить строку</button>
-          <span class="o_pmk_butik__hint">Enter, ↑↓, Tab · Ctrl+D — значение сверху · Ctrl+V — блок из Excel или столбик коротких строк</span>
+          <span class="o_pmk_butik__saved" t-att-class="{ 'o_pmk_butik__saved--busy': state.busy }">
+            <t t-if="state.busy">Сохраняю…</t>
+            <t t-elif="state.savedAt"><i class="fa fa-check me-1" aria-hidden="true"/>Сохранено в <t t-esc="state.savedAt"/></t>
+            <t t-else=""><i class="fa fa-check me-1" aria-hidden="true"/>Каждая ячейка сохраняется сама</t>
+          </span>
+          <span class="o_pmk_butik__hint">Enter, ↑↓, Tab · Ctrl+Enter — новое изделие · Ctrl+D — значение сверху · Ctrl+V — блок из Excel или столбик строк</span>
         </div>
         <div class="o_pmk_butik__wrap">
           <table class="o_pmk_butik__table">
@@ -24,13 +33,20 @@
               <col style="width:76px"/><col style="width:96px"/><col style="width:90px"/><col style="width:110px"/>
             </colgroup>
             <thead><tr>
-              <th>№ поз.</th><th>Наименование</th><th class="n" title="Для листовых деталей: «Лист 10х60» заполнит сам">Ширина, мм</th><th class="n">Длина, мм</th><th class="n">На 1 шт</th>
+              <th class="o_pmk_butik__th-pos"><button type="button" class="o_pmk_butik__chev" t-att-class="{ 'o_pmk_butik__chev--open': allOpen }"
+                  t-att-title="allOpen ? 'Свернуть все изделия' : 'Развернуть все изделия'"
+                  t-on-click="() => this.toggleAll()"/>№ поз.</th><th>Наименование</th><th class="n" title="Для листовых деталей: «Лист 10х60» заполнит сам">Ширина, мм</th><th class="n">Длина, мм</th><th class="n">На 1 шт</th>
               <th class="n">Всего</th><th>Марка</th><th class="n">Вес 1, кг</th><th class="n">Вес всего, кг</th>
             </tr></thead>
             <tbody>
               <t t-foreach="rows" t-as="row" t-key="row.id">
                 <tr t-if="row.kind === 'product'" class="o_pmk_butik__product">
-                  <td class="n o_pmk_butik__num" t-esc="row.number"/>
+                  <td class="n o_pmk_butik__num">
+                    <button type="button" class="o_pmk_butik__chev" t-att-class="{ 'o_pmk_butik__chev--open': !isCollapsed(row.id) }"
+                            t-att-title="isCollapsed(row.id) ? 'Развернуть' : 'Свернуть'"
+                            t-on-click="() => this.toggle(row.id)"/>
+                    <t t-esc="row.number"/>
+                  </td>
                   <td colspan="4" t-att-class="{ sel: isSel(row_index, 'name') }">
                     <input class="o_pmk_butik__in o_pmk_butik__in--product" t-att-value="val(row, 'name')"
                            t-att-data-index="row_index" data-col="name" t-att-readonly="!state.data.can_write"
@@ -48,9 +64,11 @@
                            t-on-change="(ev) => this.commit(row, 'product_qty', ev)"
                            t-on-keydown="(ev) => this.onKeydown(row_index, 'product_qty', ev)"/>
                   </td>
-                  <td colspan="3" class="o_pmk_butik__muted-cell">изделий, шт</td>
+                  <td class="o_pmk_butik__muted-cell o_pmk_butik__nowrap">изд., шт<t t-if="isCollapsed(row.id) and childCount(row.id)"> · <t t-esc="childCount(row.id)"/> дет.</t></td>
+                  <td class="n o_pmk_butik__ro o_pmk_butik__pw" title="Вес одного изделия" t-esc="kg(row.weight_one)"/>
+                  <td class="n o_pmk_butik__ro o_pmk_butik__pw" title="Вес изделий всего" t-esc="kg(row.weight_total)"/>
                 </tr>
-                <tr t-else="" class="o_pmk_butik__detail" t-att-class="{ 'o_pmk_butik__detail--bad': row.match_state === 'none' }">
+                <tr t-elif="!isCollapsed(row.parent)" class="o_pmk_butik__detail" t-att-class="{ 'o_pmk_butik__detail--bad': row.match_state === 'none' }">
                   <t t-foreach="['pos', 'name', 'width', 'length_mm', 'qty']" t-as="col" t-key="col">
                     <td t-if="col === 'width' and !row.is_sheet" class="o_pmk_butik__ro"/>
                     <td t-else="" t-att-class="{ sel: isSel(row_index, col), n: isNum(col), 'o_pmk_butik__namecell': col === 'name' }">
@@ -67,6 +85,7 @@
                            t-att-class="{ 'o_pmk_butik__rec--bad': row.match_state === 'none' }" t-esc="row.label"/>
                       <div t-if="col === 'name' and state.suggest and state.suggestRow === row_index" class="o_pmk_butik__suggest">
                         <div t-foreach="state.suggest" t-as="item" t-key="item.key" class="o_pmk_butik__sitem"
+                             t-att-class="{ 'o_pmk_butik__sitem--active': item_index === state.suggestIdx }"
                              t-on-mousedown="(ev) => this.choose(row_index, item, ev)">
                           <span class="o_pmk_butik__skind" t-esc="item.kind"/>
                           <span t-esc="item.label"/>

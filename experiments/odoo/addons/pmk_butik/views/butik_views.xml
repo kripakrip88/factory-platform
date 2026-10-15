@@ -22,24 +22,62 @@
     <field name="name">pmk.butik.spec.form</field>
     <field name="model">pmk.butik.spec</field>
     <field name="arch" type="xml">
-      <form string="Бутик">
+      <!-- Как документы системы (Антон 16.10: «рамки как у нас в системе»): шапка одной
+           рамкой с карточкой веса (pmk-doc-top / pmk-kpi темы, как у расчёта
+           металлопроката), ниже вкладки «Спецификация» и «Связи». -->
+      <form string="Бутик" class="pmk-doc-form pmk-labels-top pmk-butik-form">
         <sheet>
-          <div class="oe_title">
-            <h1><field name="name" readonly="1"/></h1>
+          <div class="pmk-doc-top" name="pmk_doc_top">
+            <div class="oe_title pmk-spec-title">
+              <h1>
+                <span class="pmk-spec-title__new" invisible="id">Новый расчёт «Бутик»</span>
+                <field name="name" readonly="1" invisible="not id"/>
+                <span class="pmk-spec-title__from">от</span>
+                <field name="date" widget="pmk_long_date" class="pmk-spec-title__date"/>
+              </h1>
+            </div>
+            <div class="pmk-doc-head">
+              <div class="pmk-doc-head__fields">
+                <!-- Имена блоков — как у расчёта металлопроката: порядок и ширину
+                     задаёт тема (pmk_theme, type.scss): Сделка → Клиент → «Заказ»
+                     во всю ширину (как «Предмет КП»). -->
+                <div class="pmk-field" name="pmk_f_deal">
+                  <label for="lead_id"/>
+                  <field name="lead_id" nolabel="1" options="{'no_create': True}"/>
+                </div>
+                <div class="pmk-field" name="pmk_f_partner">
+                  <label for="partner_id"/>
+                  <field name="partner_id" nolabel="1"/>
+                </div>
+                <div class="pmk-field pmk-field--wide" name="pmk_f_note">
+                  <label for="subject"/>
+                  <field name="subject" nolabel="1" placeholder="Заказчик, спец./счёт №"/>
+                </div>
+              </div>
+              <div class="pmk-kpi">
+                <div class="pmk-kpi__card">
+                  <div class="pmk-kpi__label">Общий вес, т</div>
+                  <div class="pmk-kpi__value"><field name="weight_t" digits="[12,3]"/></div>
+                  <div class="pmk-kpi__sub"><field name="weight_kg" digits="[12,1]"/> кг</div>
+                </div>
+                <div class="pmk-kpi__note">
+                  <span>Изделий:</span><field name="product_count"/>
+                  <span class="pmk-kpi__dot">·</span>
+                  <span>Деталей:</span><field name="detail_count"/>
+                </div>
+              </div>
+            </div>
           </div>
-          <group>
-            <group>
-              <field name="subject" placeholder="Заказчик, спец./счёт №"/>
-              <field name="partner_id"/>
-            </group>
-            <group>
-              <field name="date"/>
-              <field name="lead_id" options="{'no_create': True}"/>
-            </group>
-          </group>
-          <field name="line_ids" invisible="1"/>
-          <widget name="pmk_butik_grid"/>
-          <field name="note" placeholder="Примечание" nolabel="1"/>
+          <notebook>
+            <page string="Спецификация" name="butik">
+              <field name="line_ids" invisible="1"/>
+              <widget name="pmk_butik_grid"/>
+              <field name="note" placeholder="Примечание" nolabel="1"/>
+            </page>
+            <page string="Связи" name="pmk_flow">
+              <widget name="pmk_flow_map"/>
+            </page>
+          </notebook>
         </sheet>
         <chatter/>
       </form>

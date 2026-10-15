@@ -42,14 +42,18 @@ class ButikSpec(models.Model):
     note = fields.Text("Примечание")
     line_ids = fields.One2many("pmk.butik.line", "spec_id", "Строки", copy=True)
     product_count = fields.Integer("Изделий", compute="_compute_totals")
+    detail_count = fields.Integer("Деталей", compute="_compute_totals")
     weight_kg = fields.Float("Металл, кг", compute="_compute_totals", digits=(12, 1))
+    weight_t = fields.Float("Общий вес, т", compute="_compute_totals", digits=(12, 3))
 
-    @api.depends("line_ids.kind", "line_ids.weight_total")
+    @api.depends("line_ids.kind", "line_ids.name", "line_ids.weight_total")
     def _compute_totals(self):
         for spec in self:
             lines = spec.line_ids
             spec.product_count = len(lines.filtered(lambda l: l.kind == "product"))
+            spec.detail_count = len(lines.filtered(lambda l: l.kind == "detail" and l.name))
             spec.weight_kg = sum(lines.mapped("weight_total"))
+            spec.weight_t = spec.weight_kg / 1000.0
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -77,16 +81,26 @@ class ButikSpec(models.Model):
     def butik_rows(self):
         self.ensure_one()
         self.check_access("read")
-        rows, products, number = [], 0, 0
+        rows, products, number, head = [], 0, 0, None
         for line in self._butik_ordered():
+            row = line._butik_row(number + 1 if line.kind == "product" else number)
             if line.kind == "product":
                 products += 1
                 number = products
-            rows.append(line._butik_row(number))
+                head = row
+                row.update(weight_total=0.0, weight_one=0.0)
+            else:
+                # Строка изделия несёт вес своих деталей (Антон 16.10: «изделие в
+                # строке не показывает вес итого»): всего и на одно изделие.
+                row["parent"] = head["id"] if head else False
+                if head:
+                    head["weight_total"] = round(head["weight_total"] + row["weight_total"], 3)
+                    head["weight_one"] = round(head["weight_total"] / (head["product_qty"] or 1), 3)
+            rows.append(row)
         return {
             "rows": rows,
             "products": products,
-            "weight_kg": _r1(sum(r["weight_total"] for r in rows)),
+            "weight_kg": _r1(sum(r["weight_total"] for r in rows if r["kind"] != "product")),
             "can_write": self.has_access("write"),
         }
 

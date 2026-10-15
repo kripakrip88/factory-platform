@@ -27,11 +27,12 @@
 
 .o_pmk_butik__hint { margin-left: 8px; font-size: 12px; color: var(--bt-muted); }
 
+// Без своей прокрутки (было overflow: auto + max-height 70vh): шапка прилипает к
+// верху страницы при её прокрутке, а не только внутри таблицы (Антон 16.10: «чтоб
+// не вспоминать названия столбцов»). Скругление углов — у крайних ячеек.
 .o_pmk_butik__wrap {
   border: 1px solid var(--bt-border);
   border-radius: 10px;
-  overflow: auto;
-  max-height: 70vh;
   background: var(--bt-card);
 }
 
@@ -55,6 +56,16 @@
     color: var(--bt-muted);
     text-align: left;
     white-space: nowrap;
+    box-shadow: 0 1px 0 var(--bt-border);
+
+    &:first-child { border-top-left-radius: 10px; }
+    &:last-child { border-top-right-radius: 10px; border-right: 0; }
+  }
+
+  tbody tr:last-child td {
+    border-bottom: 0;
+    &:first-child { border-bottom-left-radius: 10px; }
+    &:last-child { border-bottom-right-radius: 10px; }
   }
 
   td {
@@ -126,7 +137,8 @@
   padding: 6px 10px;
   cursor: pointer;
 
-  &:hover { background: var(--bt-head); }
+  &:hover, &.o_pmk_butik__sitem--active { background: var(--bt-head); }
+  &.o_pmk_butik__sitem--active { box-shadow: inset 3px 0 0 var(--bt-sel); }
 }
 
 .o_pmk_butik__skind {
@@ -159,3 +171,60 @@
     --bt-bad-bg: #3a2a2c;
   }
 }
+
+// ─── 16.10: свернуть/развернуть, вес изделия, «Сохранено», липкая шапка ───────
+.o_pmk_butik__chev {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin-right: 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  vertical-align: -3px;
+  cursor: pointer;
+
+  &::before {
+    content: "";
+    display: block;
+    width: 6px;
+    height: 6px;
+    margin: 4px auto 0;
+    border-right: 1.5px solid var(--bt-muted);
+    border-bottom: 1.5px solid var(--bt-muted);
+    transform: rotate(-45deg);
+    transition: transform 0.15s ease-out;
+  }
+
+  &.o_pmk_butik__chev--open::before { transform: rotate(45deg); margin-top: 2px; }
+  &:hover::before { border-color: var(--bt-ink); }
+}
+
+.o_pmk_butik__th-pos { padding-left: 6px !important; }
+.o_pmk_butik__num { text-align: left !important; white-space: nowrap; }
+.o_pmk_butik__product .o_pmk_butik__pw { color: var(--bt-ink); font-weight: 600; }
+
+.o_pmk_butik__start {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 0;
+}
+
+.o_pmk_butik__saved {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--bt-ok);
+  white-space: nowrap;
+
+  &.o_pmk_butik__saved--busy { color: var(--bt-muted); }
+}
+
+.o_pmk_butik__hint { flex-basis: 100%; margin-left: 0; }
+
+// Липкая шапка таблицы при прокрутке страницы: штатный .o_form_sheet_bg — блок со
+// своей прокруткой (overflow: auto), который сам не прокручивается, и прилипание
+// цеплялось за него. Только на форме «Бутика».
+.o_form_view.pmk-butik-form .o_form_sheet_bg { overflow: visible; }
+
+.o_pmk_butik__nowrap { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

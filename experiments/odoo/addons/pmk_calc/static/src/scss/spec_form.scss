@@ -6,7 +6,9 @@
 // обрезается никогда: строка переносится целиком по словам, а не режет номер
 // троеточием.
 
-.o_form_view.pmk-spec-form .oe_title.pmk-spec-title {
+// «Бутик» (pmk_butik, 16.10.2026) — тот же заголовок «БТ-00005 от …».
+.o_form_view.pmk-spec-form .oe_title.pmk-spec-title,
+.o_form_view.pmk-butik-form .oe_title.pmk-spec-title {
   // Ядро ограничивает заголовок 75 % ширины листа (form_controller.scss);
   // «СМ-00024 от 27 сентября 2026 г.» туда помещается, но запас нужен
   // «Новому расчёту от …» на узком экране.
