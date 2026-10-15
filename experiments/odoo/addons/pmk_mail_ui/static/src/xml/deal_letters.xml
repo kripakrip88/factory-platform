@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Вкладка «Письма» в сделке (15.10.2026) — js/deal_letters.js. -->
+<templates xml:space="preserve">
+
+  <t t-name="pmk_mail_ui.DealLettersRow">
+    <div class="o_pmk_letters__row" role="button" tabindex="0"
+         t-att-class="{ 'o_pmk_letters__row--active': row.id === state.selectedId,
+                        'o_pmk_letters__row--other': candidate and otherLead(row) }"
+         t-on-click="() => this.select(row.id)"
+         t-on-keydown="(ev) => this.onRowKey(ev, row)">
+      <div class="o_pmk_letters__line">
+        <span class="o_pmk_letters__who" t-att-class="{ 'o_pmk_letters__who--out': row.is_outgoing }" t-esc="who(row)"/>
+        <i t-if="row.has_attachment" class="fa fa-paperclip o_pmk_letters__clip" title="Есть вложения" aria-label="Есть вложения"/>
+        <span class="o_pmk_letters__date" t-esc="when(row.date)"/>
+      </div>
+      <div class="o_pmk_letters__subject" t-esc="row.subject"/>
+      <div t-if="row.preview" class="o_pmk_letters__preview" t-esc="row.preview"/>
+      <div t-if="!candidate and !row.direct" class="o_pmk_letters__tag">по переписке</div>
+      <div t-if="candidate" class="o_pmk_letters__actions">
+        <span t-if="otherLead(row)" class="o_pmk_letters__tag">в сделке <t t-esc="leadLabel(otherLead(row))"/></span>
+        <span t-elif="row.reason === 'domain'" class="o_pmk_letters__tag">по домену</span>
+        <button t-if="state.data.can_write" type="button" class="btn btn-sm btn-secondary o_pmk_letters__link"
+                t-att-disabled="state.busy === row.id"
+                t-on-click.stop="() => this.link(row)">
+          <t t-if="otherLead(row)">Перепривязать</t><t t-else="">Привязать</t>
+        </button>
+      </div>
+    </div>
+  </t>
+
+  <t t-name="pmk_mail_ui.DealLetters">
+    <div class="o_pmk_letters">
+      <p t-if="!leadId" class="o_pmk_letters__empty text-muted mb-0">Письма появятся после сохранения сделки</p>
+      <p t-elif="state.loading and !state.data" class="o_pmk_letters__empty text-muted mb-0">Загружаю письма…</p>
+      <p t-elif="state.data.no_access" class="o_pmk_letters__empty text-muted mb-0">Почта вам не открыта — письма сделки не видны</p>
+      <t t-else="">
+        <div class="o_pmk_letters__list">
+          <div class="o_pmk_letters__head">
+            Письма сделки<span t-if="letters.length" class="o_pmk_letters__count" t-esc="letters.length"/>
+          </div>
+          <p t-if="!letters.length" class="o_pmk_letters__note">Пока не привязано ни одного письма — привяжите письмо клиента ниже или кнопкой «Привязать к сделке» в почте.</p>
+          <t t-foreach="letters" t-as="row" t-key="row.id">
+            <t t-call="pmk_mail_ui.DealLettersRow"><t t-set="candidate" t-value="false"/></t>
+          </t>
+
+          <div class="o_pmk_letters__head o_pmk_letters__head--more">
+            Ещё письма клиента — не привязаны<span t-if="candidates.length" class="o_pmk_letters__count" t-esc="candidates.length"/>
+          </div>
+          <p t-if="keysHint" class="o_pmk_letters__note" t-esc="keysHint"/>
+          <p t-elif="!state.data.mails.length" class="o_pmk_letters__note">У сделки и клиента нет адреса почты — искать письма не по чему.</p>
+          <p t-if="keysHint and !candidates.length" class="o_pmk_letters__note">Других писем не нашлось.</p>
+          <t t-foreach="candidates" t-as="row" t-key="row.id">
+            <t t-call="pmk_mail_ui.DealLettersRow"><t t-set="candidate" t-value="true"/></t>
+          </t>
+          <button t-if="state.data.older or state.data.show_all" type="button"
+                  class="btn btn-link btn-sm o_pmk_letters__all" t-on-click="() => this.toggleShowAll()">
+            <t t-if="state.showAll">Только за 3 месяца</t><t t-else="">Показать за всё время</t>
+          </button>
+        </div>
+
+        <div class="o_pmk_letters__reader" t-ref="reader">
+          <p t-if="!state.selectedId" class="o_pmk_letters__empty text-muted mb-0">Выберите письмо слева</p>
+          <p t-elif="state.detailLoading and !state.detail" class="o_pmk_letters__empty text-muted mb-0">Загружаю письмо…</p>
+          <t t-elif="state.detail">
+            <t t-set="detail" t-value="state.detail"/>
+            <div class="o_pmk_letters__bar">
+              <button type="button" class="btn btn-sm btn-primary" t-on-click="() => this.openInMail(true)">
+                <i class="fa fa-reply me-1" aria-hidden="true"/>Ответить
+              </button>
+              <button type="button" class="btn btn-sm btn-secondary" t-on-click="() => this.openInMail(false)">
+                <i class="fa fa-envelope-o me-1" aria-hidden="true"/>Открыть в почте
+              </button>
+              <button type="button" class="btn btn-sm btn-secondary" t-on-click="() => this.openWindow()">
+                <i class="fa fa-external-link me-1" aria-hidden="true"/>В отдельном окне
+              </button>
+              <t t-set="row" t-value="selectedRow"/>
+              <button t-if="row and selectedLinked and row.direct and state.data.can_write" type="button"
+                      class="btn btn-sm btn-link text-muted ms-auto" t-on-click="() => this.unlink(row)">Отвязать</button>
+              <button t-elif="row and !selectedLinked and state.data.can_write" type="button"
+                      class="btn btn-sm btn-secondary ms-auto" t-att-disabled="state.busy === row.id"
+                      t-on-click="() => this.link(row)">
+                <t t-if="otherLead(row)">Перепривязать</t><t t-else="">Привязать к сделке</t>
+              </button>
+            </div>
+            <h3 class="o_pmk_letters__title" t-esc="detail.subject"/>
+            <div class="o_pmk_letters__meta">
+              <span>От:</span><b t-esc="detail.email_from"/>
+              <span>Кому:</span><span t-esc="detail.email_to"/>
+              <t t-if="detail.email_cc"><span>Копия:</span><span t-esc="detail.email_cc"/></t>
+              <span>Дата:</span><span t-esc="when(detail.date)"/>
+            </div>
+            <div t-if="detail.attachments and detail.attachments.length" class="o_pmk_letters__files">
+              <span t-foreach="detail.attachments" t-as="file" t-key="file.id" class="o_pmk_letters__file">
+                <button type="button" class="o_pmk_letters__file_open" t-att-title="'Посмотреть ' + file.name"
+                        t-on-click="() => this.preview(file)">
+                  <i class="fa fa-paperclip" aria-hidden="true"/>
+                  <span class="o_pmk_letters__file_name" t-esc="file.name"/>
+                  <small t-if="file.size" t-esc="size(file.size)"/>
+                </button>
+                <button type="button" class="o_pmk_letters__file_get" t-att-title="'Скачать ' + file.name"
+                        t-att-aria-label="'Скачать ' + file.name" t-att-disabled="state.busy === 'a' + file.id"
+                        t-on-click="() => this.download(file)">
+                  <i class="fa fa-download" aria-hidden="true"/>
+                </button>
+              </span>
+            </div>
+            <div class="o_pmk_letters__frame_wrap">
+              <iframe t-if="detail.body" class="o_mail_client_frame o_pmk_letters__frame w-100" t-ref="frame"
+                      t-att-sandbox="sandbox" t-att-srcdoc="detail.body" title="Текст письма"/>
+              <p t-else="" class="o_pmk_letters__empty text-muted mb-0">Текста нет или он не загрузился с почты.</p>
+            </div>
+          </t>
+        </div>
+      </t>
+    </div>
+  </t>
+
+</templates>

@@ -96,6 +96,12 @@ patch(MailClientInbox.prototype, {
             this.notification.add(_t("Письмо не открылось — оно в списке папки."), {
                 type: "warning",
             });
+            return;
+        }
+        if (this.pmkOpen?.reply && this.state.selectedMessageId === messageId) {
+            // Один раз: вернулись в почту по строке пути — без ответа.
+            this.pmkOpen.reply = false;
+            await this.compose("reply", messageId);
         }
     },
 });

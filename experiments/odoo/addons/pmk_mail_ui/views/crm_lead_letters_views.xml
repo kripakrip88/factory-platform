@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <!--
+    Вкладка «Письма» в сделке — первой, перед «Заметками» (15.10.2026,
+    прототип принят Антоном). Содержимое — виджет pmk_deal_letters
+    (static/src/js/deal_letters.js). У лида — тоже: лид из письма той же
+    записью становится сделкой.
+  -->
+  <record id="crm_lead_view_form_pmk_letters" model="ir.ui.view">
+    <field name="name">crm.lead.form.pmk.letters</field>
+    <field name="model">crm.lead</field>
+    <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//page[@name='internal_notes']" position="before">
+        <page string="Письма" name="pmk_letters">
+          <widget name="pmk_deal_letters"/>
+        </page>
+      </xpath>
+    </field>
+  </record>
+</odoo>

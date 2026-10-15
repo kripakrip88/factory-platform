@@ -18,3 +18,5 @@ from . import mail_client_reply
 from . import mail_partner_card
 # Окно «Новый лид из письма» (14.10.2026).
 from . import mail_lead_draft
+# Вкладка «Письма» в сделке (15.10.2026).
+from . import crm_lead_letters

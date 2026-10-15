@@ -31,9 +31,12 @@ const ACCOUNTS = [
 
 t("параметры действия: адрес без регистра, номер письма числом", () => {
     assert.deepEqual(openParams({ pmk_mailbox: " Zakaz@PMKpark.ru ", pmk_message_id: "75" }), {
-        mailbox: "zakaz@pmkpark.ru", messageId: 75, folderId: null, asked: false,
+        mailbox: "zakaz@pmkpark.ru", messageId: 75, reply: false, folderId: null, asked: false,
     });
-    assert.deepEqual(openParams(undefined), { mailbox: "", messageId: 0, folderId: null, asked: false });
+    assert.deepEqual(openParams(undefined), { mailbox: "", messageId: 0, reply: false, folderId: null, asked: false });
+    // «Ответить» из вкладки «Письма» сделки — только вместе с письмом.
+    assert.equal(openParams({ pmk_message_id: 75, pmk_reply: true }).reply, true);
+    assert.equal(openParams({ pmk_reply: true }).reply, false);
     assert.equal(openParams({ pmk_message_id: "мусор" }).messageId, 0);
     assert.equal(openParams({ pmk_message_id: -4 }).messageId, 0);
     assert.equal(normEmail(null), "");

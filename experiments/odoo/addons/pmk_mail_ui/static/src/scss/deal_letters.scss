@@ -1,0 +1,321 @@
+// Вкладка «Письма» в сделке (15.10.2026) — js/deal_letters.js.
+// Плоско на бежевом (шаг 52): белые карточки, рамка r10, подсветка
+// выбранного — бледным лаймом (лайм только приглушённый). Тёмная пара —
+// внизу файла, тона dark.scss темы.
+
+.o_pmk_letters {
+  --pl-card: #fff;
+  --pl-ink: #1f2328;
+  --pl-border: #e3ded3;
+  --pl-muted: #6b7079;
+  --pl-faint: #8a8f96;
+  --pl-hover: #faf8f4;
+  --pl-active: #f3f8dc;
+  --pl-active-border: #c9d98a;
+  --pl-tag: #f1eee7;
+  --pl-other: #9aa0a6;
+
+  display: grid;
+  grid-template-columns: minmax(16rem, 22rem) minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  min-height: 12rem;
+}
+
+.o_pmk_letters__empty {
+  padding: 12px 4px;
+}
+
+.o_pmk_letters__list,
+.o_pmk_letters__reader {
+  background: var(--pl-card);
+  border: 1px solid var(--pl-border);
+  border-radius: 10px;
+}
+
+.o_pmk_letters__list {
+  max-height: 72vh;
+  overflow-y: auto;
+  padding: 6px;
+}
+
+.o_pmk_letters__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 8px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--pl-muted);
+
+  &.o_pmk_letters__head--more {
+    margin-top: 6px;
+    border-top: 1px solid var(--pl-border);
+    padding-top: 12px;
+  }
+}
+
+.o_pmk_letters__count {
+  min-width: 18px;
+  padding: 0 6px;
+  border-radius: 9px;
+  background: var(--pl-tag);
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+  letter-spacing: 0;
+}
+
+.o_pmk_letters__note {
+  margin: 0 8px 8px;
+  font-size: 12px;
+  color: var(--pl-faint);
+}
+
+.o_pmk_letters__row {
+  display: block;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  outline: none;
+
+  &:hover {
+    background: var(--pl-hover);
+  }
+
+  &:focus-visible {
+    border-color: var(--pl-active-border);
+  }
+
+  &.o_pmk_letters__row--active {
+    background: var(--pl-active);
+    border-color: var(--pl-active-border);
+  }
+
+  &.o_pmk_letters__row--other .o_pmk_letters__who,
+  &.o_pmk_letters__row--other .o_pmk_letters__subject,
+  &.o_pmk_letters__row--other .o_pmk_letters__preview {
+    color: var(--pl-other);
+  }
+
+  & + & {
+    margin-top: 2px;
+  }
+}
+
+.o_pmk_letters__line {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+.o_pmk_letters__who {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+
+  &.o_pmk_letters__who--out {
+    font-weight: 500;
+    color: var(--pl-muted);
+  }
+}
+
+.o_pmk_letters__clip {
+  color: var(--pl-faint);
+  font-size: 12px;
+}
+
+.o_pmk_letters__date {
+  flex: none;
+  font-size: 12px;
+  color: var(--pl-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.o_pmk_letters__subject,
+.o_pmk_letters__preview {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.o_pmk_letters__preview {
+  font-size: 12px;
+  color: var(--pl-faint);
+}
+
+.o_pmk_letters__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 6px;
+
+  .o_pmk_letters__tag {
+    margin: 0 auto 0 0;
+  }
+}
+
+.o_pmk_letters__tag {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 1px 8px;
+  border-radius: 9px;
+  background: var(--pl-tag);
+  font-size: 11px;
+  color: var(--pl-muted);
+}
+
+.o_pmk_letters__all {
+  margin: 4px 4px 2px;
+}
+
+.o_pmk_letters__reader {
+  min-width: 0;
+  max-height: 72vh;
+  overflow-y: auto;
+  padding: 12px 16px 16px;
+}
+
+.o_pmk_letters__bar {
+  position: sticky;
+  top: -12px;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: -12px -16px 10px;
+  padding: 10px 16px;
+  background: var(--pl-card);
+  border-bottom: 1px solid var(--pl-border);
+  border-radius: 10px 10px 0 0;
+}
+
+.o_pmk_letters__title {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.o_pmk_letters__meta {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 2px 10px;
+  font-size: 12px;
+  color: var(--pl-muted);
+
+  > * {
+    overflow-wrap: anywhere;
+  }
+
+  b {
+    font-weight: 500;
+    color: var(--pl-ink);
+  }
+}
+
+.o_pmk_letters__files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.o_pmk_letters__file {
+  display: inline-flex;
+  align-items: stretch;
+  max-width: 100%;
+  border: 1px solid var(--pl-border);
+  border-radius: 8px;
+  background: var(--pl-hover);
+  overflow: hidden;
+
+  button {
+    border: 0;
+    background: transparent;
+    color: inherit;
+    padding: 4px 8px;
+    cursor: pointer;
+
+    &:hover {
+      background: var(--pl-tag);
+    }
+  }
+}
+
+.o_pmk_letters__file_open {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+
+  small {
+    color: var(--pl-faint);
+    white-space: nowrap;
+  }
+}
+
+.o_pmk_letters__file_name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 22rem;
+}
+
+.o_pmk_letters__file_get {
+  border-left: 1px solid var(--pl-border) !important;
+  color: var(--pl-muted) !important;
+}
+
+.o_pmk_letters__frame_wrap {
+  margin-top: 12px;
+  border: 1px solid var(--pl-border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff; // письмо рассчитано на белый лист — и в тёмной теме
+
+  .o_pmk_letters__empty {
+    padding: 16px;
+    background: var(--pl-card);
+  }
+}
+
+.o_pmk_letters__frame {
+  display: block;
+  border: 0;
+  min-height: 16rem;
+}
+
+// Узко (окно у края экрана, планшет): список над письмом.
+@media (max-width: 991.98px) {
+  .o_pmk_letters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .o_pmk_letters__list {
+    max-height: 40vh;
+  }
+}
+
+@media screen {
+  body.o_nexus_dark .o_pmk_letters {
+    --pl-card: #1e2025;
+    --pl-ink: #e3e5e8;
+    --pl-border: #33363d;
+    --pl-muted: #a3a8b0;
+    --pl-faint: #80858d;
+    --pl-hover: rgba(255, 255, 255, 0.05);
+    --pl-active: rgba(212, 229, 122, 0.10);
+    --pl-active-border: rgba(212, 229, 122, 0.35);
+    --pl-tag: rgba(255, 255, 255, 0.07);
+    --pl-other: #6b7077;
+  }
+}
