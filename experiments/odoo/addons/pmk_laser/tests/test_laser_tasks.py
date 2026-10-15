@@ -179,3 +179,20 @@ class TestLaserTasks(TransactionCase):
         names = self.env.ref("pmk_laser.menu_pmk_laser").child_id.mapped("name")
         for n in ("Задания на резку", "Детали к раскрою", "Раскрои", "Программы раскроя", "Очередь листов"):
             self.assertIn(n, names)
+
+    def test_machine_choice_air_first(self):
+        """Воздух дешевле кислорода: 3 кВт режет на воздухе до 6 мм, 20 кВт — до 20 мм (Антон 15.10)."""
+        M = self.env["pmk.laser.machine"]
+        M.search([]).write({"active": False})
+        small = M.create({"name": "Лазер 3 кВт", "power_kw": 3, "max_thickness_mm": 20, "air_max_thickness_mm": 6,
+                          "max_width_mm": 1500, "max_length_mm": 3000, "sheet_tolerance_mm": 5})
+        big = M.create({"name": "Лазер 20 кВт", "power_kw": 20, "max_thickness_mm": 60,
+                        "air_max_thickness_mm": 20, "max_width_mm": 2000, "max_length_mm": 12500})
+        self.assertEqual(M._for_thickness(2), small)
+        self.assertEqual(M._for_thickness(6), small)
+        self.assertEqual(M._for_thickness(10), big, "10 мм: 20 кВт на воздухе дешевле, чем 3 кВт кислородом")
+        self.assertEqual(M._for_thickness(40), big)
+        self.assertTrue(small._fits_sheet(1505, 3005))
+        self.assertFalse(small._fits_sheet(1510, 3010))
+        self.assertTrue(big._fits_sheet(2000, 6000))
+

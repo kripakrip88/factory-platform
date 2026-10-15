@@ -38,8 +38,10 @@
             <group string="Станок">
               <field name="power_kw"/>
               <field name="max_thickness_mm"/>
+              <field name="air_max_thickness_mm"/>
               <field name="max_width_mm"/>
               <field name="max_length_mm"/>
+              <field name="sheet_tolerance_mm"/>
               <field name="active" invisible="1"/>
             </group>
             <group string="Стол">

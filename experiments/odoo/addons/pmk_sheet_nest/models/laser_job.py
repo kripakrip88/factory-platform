@@ -191,9 +191,8 @@ class LaserJob(models.Model):
             raise UserError("Укажите размер листа.")
         machine = self.machine_id
         if machine and machine.max_width_mm and machine.max_length_mm:
-            a, b = sorted((self.nest_sheet_w, self.nest_sheet_l))
-            c, d = sorted((machine.max_width_mm, machine.max_length_mm))
-            if a > c or b > d:
+            # С допуском станка: лист 1505×3005 на стол 1500×3000 (15.10.2026).
+            if not machine._fits_sheet(self.nest_sheet_w, self.nest_sheet_l):
                 raise UserError("Лист %d×%d не помещается на стол «%s» (%d×%d)." % (
                     self.nest_sheet_w, self.nest_sheet_l, machine.name, machine.max_width_mm, machine.max_length_mm))
         if not (0.0 <= self.nest_gap <= 50 and 0.0 <= self.nest_edge <= 100):

@@ -77,6 +77,18 @@ class LaserMachine(models.Model):
     max_thickness_mm = fields.Float(
         "Максимальная толщина, мм", digits=(6, 1), aggregator=None,
         help="Рамка для технолога: задание толще этого станок не возьмёт.")
+    # Антон 15.10.2026: «3 кВт до 20 мм, до 6 мм на воздухе; 20 кВт до 60 мм, до 20 мм на
+    # воздухе — воздух приоритет, он дешевле кислорода». Станок новой программы раскроя
+    # выбирается сначала по воздуху (_for_thickness).
+    air_max_thickness_mm = fields.Float(
+        "Воздухом до, мм", digits=(6, 1), aggregator=None,
+        help="До этой толщины станок режет на воздухе — дешевле кислорода. Новая программа раскроя "
+             "берёт станок, который режет её толщину на воздухе.")
+    # «В раскроях иногда листы 1505×3005 — это допустимо для маленького станка» (15.10.2026).
+    sheet_tolerance_mm = fields.Float(
+        "Лист больше стола на, мм", digits=(6, 0), default=0.0, aggregator=None,
+        help="Насколько лист может быть больше стола по каждой стороне: 5 мм — лист 1505×3005 "
+             "проходит на стол 1500×3000.")
     max_width_mm = fields.Float("Стол, ширина мм", digits=(8, 0), aggregator=None)
     max_length_mm = fields.Float("Стол, длина мм", digits=(8, 0), aggregator=None)
     # Разбор UX, шаг 25: габарит стола одной колонкой списка — «1500×6000»,
@@ -122,6 +134,16 @@ class LaserMachine(models.Model):
         short = self._short_labels() if self.env.context.get("pmk_machine_short") else {}
         for machine in self:
             machine.display_name = short.get(machine.id) or machine.name
+
+    def _fits_sheet(self, width_mm, length_mm):
+        """Лист помещается на стол с допуском станка (1505×3005 на 1500×3000 при 5 мм)."""
+        self.ensure_one()
+        if not (self.max_width_mm and self.max_length_mm):
+            return True
+        a, b = sorted((width_mm, length_mm))
+        c, d = sorted((self.max_width_mm, self.max_length_mm))
+        tol = self.sheet_tolerance_mm or 0.0
+        return a <= c + tol and b <= d + tol
 
     def _short_labels(self):
         """{id станка: «6 кВт»} — только у станков с мощностью, которой нет у
@@ -176,11 +198,12 @@ class LaserMachine(models.Model):
 
     @api.model
     def _for_thickness(self, thickness_mm):
-        """Станок для нового раскроя: тянет толщину, из подходящих — с меньшим
-        пределом (тонкий лист — на младший станок). Технолог сменит в раскрое."""
+        """Станок для новой программы раскроя: тянет толщину; сначала те, что режут её на воздухе
+        (дешевле кислорода), из них — младший (меньше мощность). Технолог сменит в программе."""
         machines = self.search([])
         fit = machines.filtered(lambda m: not m.max_thickness_mm or m.max_thickness_mm >= thickness_mm)
-        fit = fit.sorted(lambda m: m.max_thickness_mm or 1e9)
+        fit = fit.sorted(lambda m: (not (m.air_max_thickness_mm and m.air_max_thickness_mm >= thickness_mm),
+                                    m.power_kw or 1e9, m.max_thickness_mm or 1e9))
         if not (fit or machines):
             raise UserError("Нет ни одного станка — заведите его в «Лазерная резка → Настройка → Станки».")
         return (fit or machines)[:1]
