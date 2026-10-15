@@ -50,7 +50,7 @@
                   </td>
                   <td colspan="3" class="o_pmk_butik__muted-cell">изделий, шт</td>
                 </tr>
-                <tr t-else="" class="o_pmk_butik__detail">
+                <tr t-else="" class="o_pmk_butik__detail" t-att-class="{ 'o_pmk_butik__detail--bad': row.match_state === 'none' }">
                   <t t-foreach="['pos', 'name', 'width', 'length_mm', 'qty']" t-as="col" t-key="col">
                     <td t-if="col === 'width' and !row.is_sheet" class="o_pmk_butik__ro"/>
                     <td t-else="" t-att-class="{ sel: isSel(row_index, col), n: isNum(col), 'o_pmk_butik__namecell': col === 'name' }">

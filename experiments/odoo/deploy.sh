@@ -59,10 +59,12 @@ BRANCH="${BRANCH:-feature/experiment-carbon}"
 # pmk_cut_cost добавлен 15.10.2026 — «Купить» и «Металл к закупке» расчёта целыми
 # хлыстами из раскроя сортамента (мостик pmk_cut ↔ pmk_bridge). Первый раз:
 # INSTALL="pmk_cut_cost".
+# pmk_butik добавлен 16.10.2026 — «Бутик» в «Калькуляторах»: спецификация таблицей как
+# в Excel Бутова, короткая запись строкой. Первый раз: INSTALL="pmk_butik".
 # pmk_cloud добавлен 15.10.2026 — новые файлы раскроя в Облаке Mail.ru → группа
 # Телеграма; пароль вписывает Антон (Настройки → Облако Mail.ru). Первый раз:
 # INSTALL="pmk_sheet_nest pmk_cloud".
-OURS="pmk_calc pmk_theme pmk_pdf pmk_cut pmk_mail_ui pmk_partner pmk_purchase pmk_dadata pmk_laser pmk_bridge pmk_deal pmk_deal_sms pmk_flow pmk_drawing pmk_telegram pmk_org pmk_orders pmk_list_prefs pmk_tech pmk_vent_nest pmk_moysklad pmk_bank pmk_sheet_nest pmk_cloud pmk_cut_cost"
+OURS="pmk_calc pmk_theme pmk_pdf pmk_cut pmk_mail_ui pmk_partner pmk_purchase pmk_dadata pmk_laser pmk_bridge pmk_deal pmk_deal_sms pmk_flow pmk_drawing pmk_telegram pmk_org pmk_orders pmk_list_prefs pmk_tech pmk_vent_nest pmk_moysklad pmk_bank pmk_sheet_nest pmk_cloud pmk_cut_cost pmk_butik"
 # pmk_vent_nest — раскрой вентзонтов (12.10.2026). Первый раз: INSTALL="pmk_vent_nest".
 # pmk_moysklad — МойСклад → Odoo (12.10.2026). Первый раз: INSTALL="pmk_moysklad"; затем перенос
 # «за всё время» из shell: env["pmk.moysklad"].sync_all(full=True) (крон до этого молчит).

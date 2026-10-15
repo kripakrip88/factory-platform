@@ -58,6 +58,15 @@ class TestButik(TransactionCase):
         self.assertTrue(row["is_sheet"])
         rows = spec.butik_insert_rows(detail["id"], [{"name": "гф21 60мкм"}])["rows"]
         self.assertEqual(rows[2]["match_state"], "coating")
+        # покрытие — из справочника, расход пересчитан на 60 мкм
+        coat = self.env["pmk.paint.coating"].create({
+            "name": "Грунт ГФ-021 (тест бутика)", "paint_type": "primer", "consumption": 0.1,
+            "base_thickness_um": 20.0})
+        line = spec.line_ids.filtered(lambda l: l.id == rows[2]["id"])
+        spec.butik_set_position(line.id, "coating:%d" % coat.id)
+        self.assertEqual(line.coating_um, 60.0)
+        self.assertIn("→ 0,3 кг/м² при 60 мкм", line._butik_label())
+        self.assertEqual(parse.coating_query("Горячее цинкование"), "Цинкование")
         # вставка в пустую строку занимает её место
         spec2 = self.env["pmk.butik.spec"].create({"subject": "Тест 2"})
         empty = spec2.butik_rows()["rows"][1]

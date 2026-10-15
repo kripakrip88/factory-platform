@@ -201,6 +201,12 @@ class ButikSpec(models.Model):
         if info["kind"] == "sheet" and info["thickness"]:
             for rid, _label in Sheet.name_search("лист %s" % _fmt(info["thickness"]), limit=6):
                 out.append({"key": "sheet:%d" % rid, "label": Sheet.browse(rid).display_name, "kind": "Лист"})
+        if info["kind"] == "coating" or (parse.decode(query) or {}).get("kind") == "coating":
+            Coating = self.env["pmk.paint.coating"]
+            text = (parse.decode(query) or {}).get("name") or query
+            for rid, _label in Coating.name_search(parse.coating_query(text), limit=6):
+                out.append({"key": "coating:%d" % rid, "label": Coating.browse(rid).display_name, "kind": "Покрытие"})
+            return out
         if info["kind"] == "piece":
             for rid, _label in Fastener.name_search(parse.piece_query(query), limit=8):
                 out.append({"key": "fastener:%d" % rid, "label": Fastener.browse(rid).display_name, "kind": "Метиз"})
@@ -220,11 +226,15 @@ class ButikSpec(models.Model):
         if not line:
             raise UserError(_("Строка не найдена — таблица обновится."))
         model, _sep, ident = (key or "").partition(":")
-        vals = {"profile_id": False, "sheet_id": False, "fastener_id": False, "match_state": "manual"}
-        field = {"profile": "profile_id", "sheet": "sheet_id", "fastener": "fastener_id"}.get(model)
+        vals = {"profile_id": False, "sheet_id": False, "fastener_id": False, "coating_id": False,
+                "match_state": "manual"}
+        field = {"profile": "profile_id", "sheet": "sheet_id", "fastener": "fastener_id",
+                 "coating": "coating_id"}.get(model)
         if not field or not ident.isdigit():
             raise UserError(_("Не понял позицию."))
         vals[field] = int(ident)
+        if field == "coating_id":
+            vals.update(match_state="coating", coating_um=parse.coating_um(line.name))
         if field == "sheet_id" and not line.sheet_width_mm:
             info = parse.classify(line.name)
             if info["kind"] == "sheet" and info["width"]:
@@ -274,6 +284,8 @@ class ButikLine(models.Model):
     profile_id = fields.Many2one("pmk.metal.profile", "Прокат", ondelete="set null")
     sheet_id = fields.Many2one("pmk.metal.sheet", "Лист", ondelete="set null")
     fastener_id = fields.Many2one("pmk.metal.fastener", "Метиз", ondelete="set null")
+    coating_id = fields.Many2one("pmk.paint.coating", "Покрытие", ondelete="set null")
+    coating_um = fields.Float("Толщина покрытия, мкм", digits=(8, 1))
     sheet_width_mm = fields.Float("Ширина листовой детали, мм", digits=(12, 1))
     sheet_length_mm = fields.Float("Длина листовой детали из наименования, мм", digits=(12, 1))
     match_state = fields.Selection(MATCH, "Распознано", default="empty")
@@ -302,11 +314,15 @@ class ButikLine(models.Model):
             if line.match_state == "manual" and not force:
                 continue
             info = parse.classify(line.name)
-            vals = {"profile_id": False, "sheet_id": False, "fastener_id": False, "match_state": "none"}
+            vals = {"profile_id": False, "sheet_id": False, "fastener_id": False, "coating_id": False,
+                    "match_state": "none"}
             if info["kind"] == "empty":
                 vals["match_state"] = "empty"
             elif info["kind"] == "coating":
-                vals["match_state"] = "coating"
+                vals.update(coating_id=False, coating_um=parse.coating_um(line.name))
+                found = self.env["pmk.paint.coating"].name_search(parse.coating_query(line.name), limit=1)
+                if found:
+                    vals.update(coating_id=found[0][0], match_state="coating")
             elif info["kind"] == "sheet" and info["thickness"]:
                 found = Sheet.name_search("лист %s" % _fmt(info["thickness"]), limit=1)
                 if found:
@@ -369,11 +385,23 @@ class ButikLine(models.Model):
                                       _fmt(length) if length else "? длина")
         if self.fastener_id:
             return "%s · метиз" % self.fastener_id.display_name
-        if self.match_state == "coating":
-            return _("покрытие — расход по площади посчитаем следующим шагом")
+        if self.coating_id:
+            return self._butik_coating_label()
         if self.match_state == "none":
             return _("нет в справочнике — выберите из подсказки")
         return ""
+
+    def _butik_coating_label(self):
+        """«Грунт ГФ-021 · 0,1 кг/м² при 20 мкм → 0,3 кг/м² при 60 мкм» — расход
+        справочника, пересчитанный на толщину заказчика (Антон 16.10: пригодится для
+        расчёта краски; площадь деталей — следующим шагом)."""
+        coat = self.coating_id
+        text = "%s · %s кг/м² при %s мкм" % (coat.name, _fmt(round(coat.consumption, 3)),
+                                             _fmt(coat.base_thickness_um))
+        if self.coating_um and coat.base_thickness_um and self.coating_um != coat.base_thickness_um:
+            need = coat.consumption * self.coating_um / coat.base_thickness_um
+            text += " → %s кг/м² при %s мкм" % (_fmt(round(need, 3)), _fmt(self.coating_um))
+        return text
 
     def _butik_row(self, product_number):
         self.ensure_one()

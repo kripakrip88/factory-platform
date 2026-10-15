@@ -239,3 +239,29 @@ def decode_for_cell(line):
     expanded = typed and dec["name"].split()[0].lower() != typed[0].lower()
     extra = any(k in dec for k in ("pos", "qty", "length_mm", "grade"))
     return dec if (expanded or extra) else None
+
+
+COAT_CODE_RE = re.compile(r"([А-ЯЁ]{2})-?(\d{2,3})", re.IGNORECASE)
+
+
+def coating_query(name):
+    """Что искать в справочнике покрытий: «Грунт ГФ-021, 60 мкм» → «ГФ-021»;
+    цинкование и порошок — по слову (в справочнике «Цинкование горячее»)."""
+    text = name or ""
+    m = COAT_CODE_RE.search(text)
+    if m:
+        return "%s-%s" % (m.group(1).upper(), m.group(2).zfill(3))
+    low = text.lower()
+    if "цинкован" in low:
+        return "Цинкование"
+    if "цинк" in low:
+        return "цинк"
+    if "порош" in low:
+        return "Порошков"
+    return text.split(",")[0].strip()
+
+
+def coating_um(name):
+    """Толщина плёнки из «…, 60 мкм» → 60.0 (нет — 0)."""
+    m = re.search(r"(\d+(?:[.,]\d+)?)\s*мкм", name or "", re.IGNORECASE)
+    return _num(m.group(1)) if m else 0.0
