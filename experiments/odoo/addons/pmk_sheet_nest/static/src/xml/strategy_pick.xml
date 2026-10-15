@@ -28,7 +28,7 @@
               <td t-foreach="row.cells" t-as="cell" t-key="cell.key"
                   t-att-class="{'pmk-sn-best': cell.best, 'pmk-sn-chosen': cell.key === props.record.data[props.name],
                                 'pmk-sn-pick': !props.readonly}"
-                  t-on-click="() => this.pick({key: cell.key})" t-esc="cell.text"/>
+                  t-on-click="() => this.pick({key: cell.key})" t-att-title="cell.title or ''" t-esc="cell.text"/>
             </tr>
             <t t-if="row.label === 'опасные переходы' and state.details">
               <tr t-foreach="v.details" t-as="d" t-key="d_index" class="pmk-sn-sub">

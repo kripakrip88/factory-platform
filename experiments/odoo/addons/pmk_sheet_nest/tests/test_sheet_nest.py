@@ -262,3 +262,30 @@ class TestSheetNest(TransactionCase):
         view = self.env["pmk.laser.nest"].get_views([(False, "form")])["views"]["form"]["arch"]
         self.assertIn('widget="pmk_sheet_nest_programs"', view)
 
+    def test_machine_profile(self):
+        """Профиль станка: проверка движком при сохранении, в input.json — станок программы первым."""
+        from odoo.exceptions import ValidationError
+        prof = {"name": "Проба 3 кВт", "preliminary": True, "travel_mm_s": 600, "lift_s": 0,
+                "cut": [{"t": 1.5, "mm_s": 466.7, "pierce_s": 0.2}]}
+        other = self.env["pmk.laser.machine"].create({"name": "Станок-проба 2"})
+        other.nest_profile_json = json.dumps(dict(prof, name="Проба 2"))
+        self.machine.nest_profile_json = json.dumps(prof)
+        self.assertIn("предварительный", self.machine.nest_profile_info)
+        with self.assertRaises(ValidationError):
+            self.machine.nest_profile_json = "{не json"
+        if not STUB:
+            with self.assertRaisesRegex(ValidationError, "travel_mm_s"):
+                self.machine.nest_profile_json = json.dumps(dict(prof, travel_mm_s=0))
+        job = self._job()
+        run = self.env["pmk.sheet.nest.run"].create({
+            "laser_job_id": job.id, "params_json": json.dumps(job._nest_params())})
+        wd = os.path.join(run._workroot(), "m%d" % run.id)
+        os.makedirs(os.path.join(wd, "in"), exist_ok=True)
+        try:
+            names = [m["name"] for m in job._nest_input(run, wd)["machines"]]
+        finally:
+            import shutil
+            shutil.rmtree(wd, ignore_errors=True)
+        self.assertEqual(names[0], "Проба 3 кВт", "станок программы первым")
+        self.assertIn("Проба 2", names)
+

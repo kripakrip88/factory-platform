@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!-- Профиль станка для раскроя (models/machine.py) — правит администратор. -->
+  <record id="view_laser_machine_form_sheet_nest" model="ir.ui.view">
+    <field name="name">pmk.laser.machine.form.sheet.nest</field>
+    <field name="model">pmk.laser.machine</field>
+    <field name="inherit_id" ref="pmk_laser.view_laser_machine_form"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//sheet" position="inside">
+        <group string="Профиль для раскроя" name="pmk_nest_profile" groups="base.group_system">
+          <field name="nest_profile_info" invisible="not nest_profile_info"/>
+          <field name="nest_profile_json" widget="text" placeholder='{"name": "…", "travel_mm_s": 600, "cut": [{"t": 2, "mm_s": 300, "pierce_s": 0.5}]}'/>
+        </group>
+      </xpath>
+    </field>
+  </record>
+</odoo>

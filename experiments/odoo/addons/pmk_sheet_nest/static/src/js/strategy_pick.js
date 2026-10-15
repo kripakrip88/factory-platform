@@ -98,12 +98,30 @@ export function summaryView(json, chosen) {
             { better: "min" }),
         row("предупреждений", (r) => (Array.isArray(r.warnings) ? r.warnings.length : r.warnings),
             { better: "min", fmt: (v) => num(v, 0) }),
-        row("станок, мин", (r) => r.machine_s, {
-            fmt: (v) => (v && typeof v === "object" && Object.keys(v).length
-                ? Object.entries(v).map(([m, s]) => `${m}: ${s === null ? "—" : num(s / 60)}`).join(", ")
-                : (typeof v === "number" ? num(v / 60) : "—")),
-        }),
     );
+    // Время на станке — строка на каждый профиль (contract: machine_s {имя: секунды|null},
+    // machine_detail {имя: {cut_s, mark_s, travel_s, pierce_s, lift_s, k, total_s, why}},
+    // res.machines — эхо профилей с preliminary). Предварительный профиль — «≈ N (предварительно)».
+    const prelim = Object.fromEntries((res.machines || []).map((m) => [m.name, Boolean(m.preliminary)]));
+    const names = [...new Set(list.flatMap((r) => Object.keys(r.machine_s || {})))];
+    if (!names.length) {
+        rows.push(row("станок, мин", () => null, { fmt: () => "—" }));
+    }
+    for (const name of names) {
+        const label = `станок ${name.replace(/\s*\(.*\)\s*$/, "")}, мин${prelim[name] ? " (предварительно)" : ""}`;
+        const rr = row(label, (r) => {
+            const sec = (r.machine_s || {})[name];
+            return typeof sec === "number" ? sec / 60 : null;
+        }, { better: "min", fmt: (v) => (typeof v === "number" ? (prelim[name] ? "≈ " : "") + num(v, 0) : "—") });
+        rr.cells.forEach((cell) => {
+            const det = ((byKey[cell.key] || {}).machine_detail || {})[name] || {};
+            const parts = [["рез", det.cut_s], ["гравировка", det.mark_s], ["холостой", det.travel_s],
+                ["врезки", det.pierce_s], ["подъёмы", det.lift_s]].filter(([, x]) => typeof x === "number" && x > 0)
+                .map(([w, x]) => `${w} ${num(x / 60)} мин`);
+            cell.title = det.why || (parts.length ? parts.join(" · ") + (det.k && det.k !== 1 ? ` · ×${num(det.k, 2)}` : "") : "");
+        });
+        rows.push(rr);
+    }
     const pick = cols.find((c) => c.chosen);
     const r = pick && byKey[pick.key];
     let decision = "";
@@ -116,6 +134,9 @@ export function summaryView(json, chosen) {
     const app = res.applied || {};
     if (req.coedge && app.coedge === false) {
         notes.push("Общий рез запрошен, но не применён — детали разложены с зазором.");
+    }
+    if (Object.values(prelim).some(Boolean)) {
+        notes.push("Время на станке предварительное — профиль по программам станка, подъёмы головы не учтены: это нижняя граница.");
     }
     if (req.bridge) {
         notes.push("Мост на станке не проверен.");

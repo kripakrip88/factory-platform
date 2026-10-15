@@ -54,7 +54,7 @@
               <th t-esc="row.label"/>
               <td t-foreach="row.cells" t-as="cell" t-key="cell.key"
                   t-att-class="{'pmk-sn-best': cell.best, 'pmk-sn-chosen': cell.key === p.d.nest_strategy, 'pmk-sn-pick': !p.d.sheet_count}"
-                  t-on-click="() => this.pick(p, {key: cell.key})" t-esc="cell.text"/>
+                  t-on-click="() => this.pick(p, {key: cell.key})" t-att-title="cell.title or ''" t-esc="cell.text"/>
             </tr>
           </tbody>
         </table>

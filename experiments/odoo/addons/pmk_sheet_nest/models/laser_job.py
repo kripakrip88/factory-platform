@@ -265,7 +265,8 @@ class LaserJob(models.Model):
             "microjoints": [p.name.strip() for p in self.part_ids if p.nest_microjoint],
             "labels": labels or None, "label_opts": {"H": 15, "H_min": 10, "margin": 3},
             "font": self._nest_write_font(workdir) if labels else None,
-            "machines": [], "time_limit_s": TIME_LIMIT_S,
+            "machines": self.env["pmk.laser.machine"]._nest_profiles(first=self.machine_id),
+            "time_limit_s": TIME_LIMIT_S,
         }
 
     # ------------------------------------------------------------ кнопки

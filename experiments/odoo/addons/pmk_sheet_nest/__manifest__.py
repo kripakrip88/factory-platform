@@ -28,6 +28,7 @@ feature/sheet-nest-lib; правки lib/ — только там. Обмен �
         "data/cron.xml",
         "views/laser_job_views.xml",
         "views/laser_nest_views.xml",
+        "views/laser_machine_views.xml",
     ],
     "assets": {
         "web.assets_backend": [
