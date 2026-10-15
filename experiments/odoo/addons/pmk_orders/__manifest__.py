@@ -91,6 +91,9 @@
             "pmk_orders/static/src/scss/filter_panel.scss",
             "pmk_orders/static/src/scss/invoice_head.scss",
             "pmk_orders/static/src/js/statusbar_order_stage.js",
+            "pmk_orders/static/src/js/search_panel_stage.js",
+            "pmk_orders/static/src/xml/search_panel_stage.xml",
+            "pmk_orders/static/src/scss/search_panel.scss",
         ],
     },
     # Нумератор счетов «S00001» → «СЧ-00001» — при установке, только пока

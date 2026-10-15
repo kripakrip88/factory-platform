@@ -1,0 +1,11 @@
+// Статус в панели — плашкой как в колонке «Статус» (js/search_panel_stage.js).
+// Плашка не растягивается: число справа остаётся на своём месте.
+.o_search_panel_label_title.pmk-sp-stage {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: calc(100% - 28px);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 18px;
+  padding: 0 8px;
+}

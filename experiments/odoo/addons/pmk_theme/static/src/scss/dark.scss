@@ -480,11 +480,19 @@ $pmk-dark-alerts: (
     $t: map-get($pmk-dark-tones, $tone);
 
     body.o_nexus_dark .o_field_badge > .badge.#{$cls},
-    body.o_nexus_dark .o_field_pmk_stage_badge > .badge.#{$cls} {
+    body.o_nexus_dark .o_field_pmk_stage_badge > .badge.#{$cls},
+    body.o_nexus_dark .o_search_panel .badge.pmk-sp-stage.#{$cls} {
       border-color: nth($t, 2) !important;
       background-color: nth($t, 1) !important;
       color: nth($t, 3) !important;
     }
+  }
+
+  // Панель фильтров и канбан без колонок — карточками (forms_nexus.scss, конец файла).
+  body.o_nexus_dark .o_component_with_search_panel > .o_search_panel,
+  body.o_nexus_dark .o_content > .o_kanban_renderer.o_kanban_ungrouped {
+    background: var(--pmk-surface) !important;
+    border-color: rgba(255, 255, 255, 0.08);
   }
 
   // «Зависла» — тёмная пара красного тона (forms_nexus.scss, после плашек
