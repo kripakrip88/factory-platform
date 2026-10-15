@@ -475,7 +475,8 @@ $pmk-dark-alerts: (
     $t: map-get($pmk-dark-tones, $tone);
 
     body.o_nexus_dark .o_field_badge > .badge.#{$cls},
-    body.o_nexus_dark .o_field_pmk_stage_badge > .badge.#{$cls} {
+    body.o_nexus_dark .o_field_pmk_stage_badge > .badge.#{$cls},
+    body.o_nexus_dark .o_search_panel .badge.pmk-sp-stage.#{$cls} {
       border-color: nth($t, 2) !important;
       background-color: nth($t, 1) !important;
       color: nth($t, 3) !important;

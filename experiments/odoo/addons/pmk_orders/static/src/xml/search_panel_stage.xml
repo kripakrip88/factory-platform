@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <!-- «Заказы в работе»: статус в панели фильтров — плашкой цвета этапа (js/search_panel_stage.js). -->
+    <t t-name="pmk_orders.SearchPanelFiltersGroup" t-inherit="web.SearchPanel.FiltersGroup" t-inherit-mode="extension">
+        <xpath expr="//span[hasclass('o_search_panel_label_title')]" position="attributes">
+            <attribute name="t-att-class">pmkStageClass(section, valueId)</attribute>
+        </xpath>
+    </t>
+</templates>

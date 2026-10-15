@@ -1305,7 +1305,8 @@ $pmk-badge-ink: (
 // .o_field_pmk_stage_badge — стадия в списке сделок (pmk_deal).
 @each $cls, $tone in $pmk-badge-tones {
   .o_field_badge > .badge.#{$cls},
-  .o_field_pmk_stage_badge > .badge.#{$cls} {
+  .o_field_pmk_stage_badge > .badge.#{$cls},
+  .o_search_panel .badge.pmk-sp-stage.#{$cls} {
     border: 1px solid nth(map-get($pmk-stage-tones, $tone), 2) !important;
     background-color: nth(map-get($pmk-stage-tones, $tone), 1) !important;
     color: map-get($pmk-badge-ink, $tone) !important;

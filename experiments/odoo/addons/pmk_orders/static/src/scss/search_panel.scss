@@ -1,0 +1,29 @@
+// Панель фильтров слева — белой карточкой со скруглением, как таблица рядом
+// (Антон 15.10.2026: «колонку фильтров сделать как основную таблицу скругления»).
+// Таблица — theme_nexus lists.scss: белый фон, рамка #eae6dc, радиус 18 px, отступ 4 px.
+// Ядро ставит панели bg-view и h-100 (утилиты Bootstrap с !important) — высоту
+// перебиваем тем же, иначе нижний край карточки уходит под экран на 8 px.
+.o_component_with_search_panel > .o_search_panel {
+  margin: 4px 0 4px 4px;
+  height: calc(100% - 8px) !important;
+  border: 1px solid #eae6dc;
+  border-radius: 18px;
+  background: #fff !important;
+}
+
+// Статус в панели — плашкой как в колонке «Статус» (js/search_panel_stage.js).
+// Плашка не растягивается: число справа остаётся на своём месте.
+.o_search_panel_label_title.pmk-sp-stage {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: calc(100% - 28px);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 18px;
+  padding: 0 8px;
+}
+
+body.o_nexus_dark .o_component_with_search_panel > .o_search_panel {
+  background: var(--pmk-surface) !important;
+  border-color: rgba(255, 255, 255, 0.08);
+}
