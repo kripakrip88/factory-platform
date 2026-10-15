@@ -244,7 +244,8 @@ def _cut_len(l):
 
 def summary_row(pl, rs, name, title, secs, thickness=None, machines=(), warnings=()):
     """Строка сводки стратегии: листы, рез, холостой, возврат, врезки, опасные переходы по классам, время станков
-    (machine_s — {станок: секунды или None}; без профилей — пусто)."""
+    (machine_s — {станок: секунды или None}; machine_detail — {станок: разбор machine.estimate_detail, секунды до
+    0,1}: рез, врезки, гравировка, холостой, подъёмы, поправка k, итог, почему нет; без профилей — пусто)."""
     from . import risk as RK, machine as MC, bridge as BR
     amounts = [l["amount"] for l in pl["layouts"]]
     tot = RK.total([r["risk"] for r in rs], amounts)
@@ -257,10 +258,11 @@ def summary_row(pl, rs, name, title, secs, thickness=None, machines=(), warnings
     # холостой — сумма маршрутов, как res["idle_m"] (summary.idle_m): risk.total уже округлил его до 3 знаков, и второе
     # округление расходилось с итогом на 0,01 м
     idle = sum(r["idle"] * l["amount"] for l, r in zip(pl["layouts"], rs))
-    ms = {}
+    ms, md = {}, {}
     for prof in machines or ():
-        t = MC.estimate(prof, thickness, cut, mark, tot["idle_m"] * 1000, tot["ret"]["m"] * 1000, pierces, moves)
-        ms[prof["name"]] = round(t, 1) if t is not None else None
+        d = MC.estimate_detail(prof, thickness, cut, mark, tot["idle_m"] * 1000, tot["ret"]["m"] * 1000, pierces, moves)
+        ms[prof["name"]] = round(d["total_s"], 1) if d["total_s"] is not None else None
+        md[prof["name"]] = MC.rounded(d)
     # конец листа (risk.end_strip): листов с узкой полосой в конце; худший остаток — полоса, затем самый вытянутый
     strips = [(r.get("strip"), l["amount"]) for l, r in zip(pl["layouts"], rs)]
     worst = max((s for s, a in strips if s), key=lambda s: (s["strip"], s["aspect"]), default=None)
@@ -270,7 +272,7 @@ def summary_row(pl, rs, name, title, secs, thickness=None, machines=(), warnings
                 ret=dict(over_m=tot["ret"]["over_m"], tongues_crossed=tot["ret"]["tongues_crossed"], over=tot["ret"]["over"]),
                 strip=dict(sheets=sum(a for s, a in strips if s and s["strip"]), worst=worst),
                 bridges=BR.stats(pl["layouts"]) if any(l.get("bridges") for l in pl["layouts"]) else None,
-                warnings=list(warnings), route_s=round(secs, 2), machine_s=ms,
+                warnings=list(warnings), route_s=round(secs, 2), machine_s=ms, machine_detail=md,
                 error=None)                             # строка построена (failed_row — нет: общий рез не строится)
 
 
@@ -280,12 +282,14 @@ def failed_row(name, title, why, secs, machines=()):
     return dict(name=name, title=title, error=why, sheets=None, cut_m=None, mark_m=None, idle_m=None, return_m=None, pierces=None,
                 marks=None, danger=None, over_parts_m=None, ret=None, strip=None, bridges=None,
                 warnings=["общий рез с этой стратегией не строится: %s" % why], route_s=round(secs, 2),
-                machine_s={m["name"]: None for m in machines})
+                machine_s={m["name"]: None for m in machines}, machine_detail={m["name"]: None for m in machines})
 
 
-def summary_text(rows):
-    """Сводка по стратегиям текстом: строки — показатели, столбцы — стратегии (не построенная — «—»)."""
+def summary_text(rows, machines=()):
+    """Сводка по стратегиям текстом: строки — показатели, столбцы — стратегии (не построенная — «—»). machines —
+    профили станков: у предварительного (preliminary) строка «станок «Х» (предварительно), мин» и время с «≈»."""
     from . import risk as RK
+    prelim = {m["name"] for m in machines or () if m.get("preliminary")}
 
     def col(f):
         return ["—" if r.get("error") else f(r) for r in rows]
@@ -311,11 +315,33 @@ def summary_text(rows):
     if not names:
         lines.append(("станок, мин", ["—" for r in rows]))
     for nm in names:                                    # строка на каждый станок
-        lines.append(("станок «%s», мин" % nm, ["—" if r["machine_s"].get(nm) is None else "%.1f" % (r["machine_s"][nm] / 60)
-                                                for r in rows]))
+        p = nm in prelim
+        lines.append(("станок «%s»%s, мин" % (nm, " (предварительно)" if p else ""),
+                      ["—" if r["machine_s"].get(nm) is None else "%s%.1f" % ("≈" if p else "", r["machine_s"][nm] / 60)
+                       for r in rows]))
     w0 = max(len(k) for k, v in lines)
     ws = [max(len(v[j]) for k, v in lines) for j in range(len(rows))]
     return "\n".join(k.ljust(w0) + " | " + " | ".join((x.ljust if not k else x.rjust)(w) for x, w in zip(v, ws)) for k, v in lines)
+
+
+def machine_lines(row, machines):
+    """Время станков по строке сводки (выбранная стратегия) — строки лога: итог и составляющие в минутах (уже с
+    поправкой k_total — их сумма равна итогу), у предварительного профиля «≈» и откуда он; времени нет — почему."""
+    from . import machine as MC
+    out = []
+    for m in machines or ():
+        d = (row.get("machine_detail") or {}).get(m["name"])
+        if not d:                                       # строка не построена (общий рез, failed_row)
+            continue
+        if d["total_s"] is None:
+            out.append("время: %s — нет (%s)" % (MC.label(m), d["why"]))
+            continue
+        src = ", ".join(x for x in (m.get("source"), ("обновлён %s" % m["updated"]) if m.get("updated") else None) if x)
+        out.append("время: %s — %s%.1f мин (рез %.1f, врезки %.1f, гравировка %.1f, холостой %.1f, подъёмы %.1f%s)%s" % (
+            MC.label(m), "≈ " if m.get("preliminary") else "", d["total_s"] / 60, d["cut_s"] / 60, d["pierce_s"] / 60,
+            d["mark_s"] / 60, d["travel_s"] / 60, d["lift_s"] / 60, "; всё с поправкой ×%g" % d["k"] if d["k"] != 1 else "",
+            ("; профиль: %s" % src) if m.get("preliminary") and src else ""))
+    return out
 
 
 def bridge_options(bridge):
@@ -353,8 +379,9 @@ def run(inputs, W=1250.0, L=2500.0, gap=2.0, edge=2.0, thickness=None, qty=None,
     strategy — порядок резки (route.STRATEGIES: short | safe | safe0 | hill; по умолчанию short); compare — посчитать
     сводку по всем стратегиям (res["strategies"]); small — «мелкая» деталь, мм (100); microjoints — имена деталей с
     микроперемычками («*» — все); machine — профиль станка (словарь или путь к JSON) или список профилей (станков два —
-    время в сводке по каждому); bridge — мост (кнопка, как общий рез; от стратегии не зависит): None | dict(width=2 мм,
-    group=5 деталей) — соседние круглые детали через зазор соединяются перемычками и режутся одной врезкой (bridge.py).
+    время в сводке по каждому, machine.py; res["machines"] — их эхо, у строк сводки machine_s и machine_detail);
+    bridge — мост (кнопка, как общий рез; от стратегии не зависит): None | dict(width=2 мм, group=5 деталей) —
+    соседние круглые детали через зазор соединяются перемычками и режутся одной врезкой (bridge.py).
     progress — fn(этап, текст), этапы read, pack, route, build, check, render; маршрут — по каждой стратегии
     («маршрут: Безопасный, 2/4»).
     Ошибки пользователя — SheetNestError (DxfError, LxdsError, LabelError — его наследники), текст без флагов командной
@@ -562,7 +589,7 @@ def run(inputs, W=1250.0, L=2500.0, gap=2.0, edge=2.0, thickness=None, qty=None,
         order_ = list(STRATEGIES) + [n for n in by if n not in STRATEGIES]
         rows.sort(key=lambda r: order_.index(r["name"]))
         log("сводка по стратегиям (%s):" % ("общий рез" if pl.get("coedge") else "с зазором"))
-        for line in summary_text(rows).split("\n"):
+        for line in summary_text(rows, machines).split("\n"):
             log("  " + line)
     stamp = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=10))).strftime("%Y-%m-%d_%H%M")
     title = title or os.path.splitext(os.path.basename(_input(inputs[0])[0]))[0]
@@ -582,6 +609,8 @@ def run(inputs, W=1250.0, L=2500.0, gap=2.0, edge=2.0, thickness=None, qty=None,
         log("  %s %-62s %s" % ("✓" if o_ else "⚠" if o_ is None else "✗", n, d))
     main_row = rows[[r["name"] for r in rows].index(o["name"])] if rows else \
         summary_row(pl, rs, o["name"], o["title"], secs, thickness, machines, sorted(set(route_warn)) + rwarn)
+    for line in machine_lines(main_row, machines):
+        log(line)
     lab_ok = sum(1 for n_, tx, h, why in lab_rep if h)
     res = dict(file=fname + ".lxds", ok=ok, sheets=pl["sheets"], lower_bound=pl["lower_bound"], optimal=pl["optimal"],
                method=pl["method"], tried=pl["tried"], idle_m=round(idle / 1000, 2),
@@ -594,7 +623,9 @@ def run(inputs, W=1250.0, L=2500.0, gap=2.0, edge=2.0, thickness=None, qty=None,
                microjoints=[p["name"] for p in parts if p.get("microjoints")],
                risk=dict({c: tot[c] for c in RK.CLASSES}, moves=tot["moves_n"], over_parts_m=tot["over_parts_m"], ret=tot["ret"],
                          cut_m=main_row["cut_m"], mark_m=main_row["mark_m"], pierces=main_row["pierces"], route_s=main_row["route_s"],
-                         machine_s=main_row["machine_s"]),
+                         machine_s=main_row["machine_s"], machine_detail=main_row["machine_detail"]),
+               # профили станков, по которым посчитано время (machine.info): предварительный ли, откуда, поправка, толщины
+               machines=[MC.info(m) for m in machines],
                layouts=[dict(index=k + 1, amount=l["amount"], parts=dict(collections.Counter(parts[q["part"]]["name"] for q in l["placed"])),
                              idle_m=round(l["idle"] / 1000, 3),
                              # то же, что в итогах (res["risk"]), по раскладке: ret_m, ret_over_m — как были; ret —
