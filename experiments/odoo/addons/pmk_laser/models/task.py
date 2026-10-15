@@ -72,14 +72,16 @@ def parse_file_name(file_name):
 def thumbnail_svg(svg):
     """Эскиз в строку таблицы. Отрисовщик ezdxf даёт чёрный лист в натуральную величину
     («810mm») с белыми линиями толщиной в доли пикселя — в ячейке он невидим. Здесь:
-    без чёрного фона, размер ячейки, тёмная линия постоянной толщины."""
+    без чёрного фона, размер ячейки, линия постоянной толщины."""
     if not svg:
         return svg
     svg = re.sub(r"<\?xml[^>]*>\s*", "", svg)
     svg = re.sub(r'<rect fill="#000000"[^>]*/>', "", svg, count=1)
     svg = re.sub(r'(<svg[^>]*?)\swidth="[^"]*"\s+height="[^"]*"', r'\1 width="72" height="48" '
                  r'preserveAspectRatio="xMidYMid meet"', svg, count=1)
-    svg = re.sub(r"stroke:\s*#[0-9a-fA-F]{6}", "stroke: currentColor", svg)  # и в тёмной теме
+    # Белым: виджет эскиза (pmk_calc, .pmk-sketch) инвертирует картинку — линия станет
+    # тёмной, как у эскизов доборки.
+    svg = re.sub(r"stroke:\s*#[0-9a-fA-F]{6}", "stroke: #ffffff", svg)
     svg = re.sub(r"stroke-width:\s*[\d.]+;", "stroke-width: 1.2px; vector-effect: non-scaling-stroke;", svg)
     return svg
 
