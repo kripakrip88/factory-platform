@@ -20,6 +20,9 @@ _logger = logging.getLogger(__name__)
 P = "pmk_cloud."
 DEFAULT_LOGIN = "pmkpark@mail.ru"
 DEFAULT_EXTS = "dxf,lxds,zx"
+# Папки без даты в названии смотрим раз в 5 минут, кроме этих — их только ночью
+# (Антон 15.10.2026: «Архив» — 600+ папок, обход дольше предела задания).
+DEFAULT_EXCLUDE = "Архив"
 RECENT_DAYS = 7
 # Свыше — одно сообщение «и ещё N файлов» вместо простыни (перенесли архив целиком).
 MAX_LINES = 40
@@ -56,6 +59,8 @@ class CloudFile(models.Model):
             "password": icp.get_param(P + "password") or "",
             "root": norm(icp.get_param(P + "root") or ""),
             "exts": {"." + e.strip().lower().lstrip(".") for e in exts.split(",") if e.strip()},
+            "exclude": {e.strip().lower() for e in (icp.get_param(P + "exclude") or DEFAULT_EXCLUDE).split(",")
+                        if e.strip()},
         }
 
     @api.model
@@ -87,13 +92,15 @@ class CloudFile(models.Model):
             P + "walk", json.dumps(walk, ensure_ascii=False) if walk else False)
 
     @api.model
-    def _recent_files(self, dav, root, today):
-        """Корень папки и папки дат за RECENT_DAYS дней — с вложенными."""
+    def _recent_files(self, dav, root, today, exclude=()):
+        """Корень папки, папки дат за RECENT_DAYS дней и папки без даты (кроме exclude) —
+        с вложенными. Старые папки дат и исключённые — только ночным обходом."""
         files = []
         for item in dav.list(root):
             if not item["dir"]:
                 files.append(item)
-            elif is_recent(item["name"], today, RECENT_DAYS):
+            elif is_recent(item["name"], today, RECENT_DAYS) or (
+                    folder_date(item["name"]) is None and item["name"].strip().lower() not in exclude):
                 files.extend(dav.walk(item["path"]))
         return files
 
@@ -142,7 +149,8 @@ class CloudFile(models.Model):
         notes = []
         try:
             if baseline_done:
-                files = self._wanted(self._recent_files(dav, cfg["root"], fields.Date.context_today(self)), cfg)
+                files = self._wanted(self._recent_files(dav, cfg["root"], fields.Date.context_today(self),
+                                                        cfg["exclude"]), cfg)
                 fresh = self._remember(files, notify=True, detect_moves=True)
                 if fresh:
                     self._notify(cfg["root"], fresh)

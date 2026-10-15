@@ -483,6 +483,13 @@ $pmk-dark-alerts: (
     }
   }
 
+  // Панель фильтров и канбан без колонок — карточками (forms_nexus.scss, конец файла).
+  body.o_nexus_dark .o_component_with_search_panel > .o_search_panel,
+  body.o_nexus_dark .o_content > .o_kanban_renderer.o_kanban_ungrouped {
+    background: var(--pmk-surface) !important;
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+
   // «Зависла» — тёмная пара красного тона (forms_nexus.scss, после плашек
   // статусов; шаг 31).
   body.o_nexus_dark .badge.o_mail_resource_rotting_bg {

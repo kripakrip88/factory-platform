@@ -3693,3 +3693,26 @@ $pmk-tab-r: 10px !default;
     max-width: none;
   }
 }
+
+// ═══ Шаг 69: панель фильтров и канбан без колонок — карточками, как таблица (15.10.2026) ═══
+// (Антон 15.10.2026: «колонку фильтров сделать как основную таблицу скругления»,
+// «рамку где отображаются сотрудники — тоже, чтобы всё было единообразно»).
+// Таблица — theme_nexus lists.scss: белый фон, рамка #eae6dc, радиус 18 px,
+// отступ 4 px. Ядро ставит панели bg-view и h-100 (утилиты Bootstrap с
+// !important) — перебиваем тем же, иначе низ карточки уходит под экран на 8 px.
+// Канбан с колонками (этапы) не трогаем: колонки разделены и так.
+.o_component_with_search_panel > .o_search_panel {
+  margin: 4px 0 4px 4px;
+  height: calc(100% - 8px) !important;
+  border: 1px solid #eae6dc;
+  border-radius: 18px;
+  background: #fff !important;
+}
+
+.o_content > .o_kanban_renderer.o_kanban_ungrouped {
+  margin: 4px;
+  min-height: calc(100% - 8px);
+  border: 1px solid #eae6dc;
+  border-radius: 18px;
+  background: #fff;
+}

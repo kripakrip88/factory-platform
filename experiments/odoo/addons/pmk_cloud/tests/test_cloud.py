@@ -37,7 +37,11 @@ class TestCloud(TransactionCase):
         icp.set_param("pmk_cloud.baseline_root", False)
         self.Cloud = self.env["pmk.cloud.file"]
         self.tree = {
-            "/ПРОИЗВОДСТВО": [("09.10.26", None), ("01.06.26", None), ("план.dxf", 10)],
+            "/ПРОИЗВОДСТВО": [("09.10.26", None), ("01.06.26", None), ("план.dxf", 10), ("тест", None),
+                              ("Архив", None)],
+            "/ПРОИЗВОДСТВО/тест": [],
+            "/ПРОИЗВОДСТВО/Архив": [("2025", None)],
+            "/ПРОИЗВОДСТВО/Архив/2025": [("давнее.lxds", 500)],
             "/ПРОИЗВОДСТВО/09.10.26": [("СИБЭМУ", None), ("опора.lxds", 148497), ("опора.lxds.fs.emf", 10)],
             "/ПРОИЗВОДСТВО/09.10.26/СИБЭМУ": [("лист.dxf", 670528)],
             "/ПРОИЗВОДСТВО/01.06.26": [("старое.zx", 2000)],
@@ -58,7 +62,7 @@ class TestCloud(TransactionCase):
         self.Cloud._cron_scan()
         self.assertEqual(self.sent, [], "что уже лежит — не новость")
         self.assertEqual(sorted(self.Cloud.search([]).mapped("name")),
-                         ["лист.dxf", "опора.lxds", "план.dxf", "старое.zx"], ".emf не берём")
+                         ["давнее.lxds", "лист.dxf", "опора.lxds", "план.dxf", "старое.zx"], ".emf не берём")
         self.assertIn("/ПРОИЗВОДСТВО/01.06.26", self.dav.listed, "точка отсчёта — вся папка")
 
     def test_new_files_one_message(self):
@@ -76,6 +80,22 @@ class TestCloud(TransactionCase):
         self.assertIn("косынка.DXF (2 КБ)", msg)
         self.assertIn("гнутьё.zx (3,0 МБ)", msg)
         self.assertNotIn("фото.jpg", msg)
+
+    def test_folder_without_date_checked_often_archive_at_night(self):
+        """Папки без даты («тест», «Типовые детали») — раз в 5 минут; «Архив» — только ночью."""
+        self.Cloud._cron_scan()
+        self.tree["/ПРОИЗВОДСТВО/тест"].append(("проба.lxds", 4096))
+        self.tree["/ПРОИЗВОДСТВО/Архив/2025"].append(("в архив.dxf", 1024))
+        self.dav.listed = []
+        self.Cloud._cron_scan()
+        self.assertIn("/ПРОИЗВОДСТВО/тест", self.dav.listed)
+        self.assertNotIn("/ПРОИЗВОДСТВО/Архив", self.dav.listed)
+        self.assertEqual(len(self.sent), 1)
+        self.assertIn("проба.lxds", self.sent[0])
+        self.assertNotIn("в архив.dxf", self.sent[0])
+        self.Cloud._cron_scan(full=True)
+        self.assertEqual(len(self.sent), 2)
+        self.assertIn("в архив.dxf", self.sent[1])
 
     def test_old_date_folder_caught_by_night_scan(self):
         self.Cloud._cron_scan()
@@ -126,7 +146,7 @@ class TestCloud(TransactionCase):
         self.assertEqual(self.sent, [], "точка отсчёта — без сообщений")
         self.assertFalse(icp.get_param("pmk_cloud.walk"), "очередь обхода закрыта")
         self.assertEqual(sorted(self.Cloud.search([]).mapped("name")),
-                         ["лист.dxf", "опора.lxds", "план.dxf", "старое.zx"],
+                         ["давнее.lxds", "лист.dxf", "опора.lxds", "план.dxf", "старое.zx"],
                          "сбой папки не выбросил её файлы из точки отсчёта")
 
     def test_error_goes_to_status_not_crash(self):
