@@ -5,3 +5,4 @@ from . import crm_lead
 from . import session
 from . import bot
 from . import carousel
+from . import outbox

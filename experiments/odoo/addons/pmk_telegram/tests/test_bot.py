@@ -30,6 +30,9 @@ class FakeApi:
 
     def send_document(self, chat_id, document, caption=None, reply_markup=None,
                       thread_id=None, reply_to=None):
+        self.network_down = self.down
+        if self.down:
+            return None
         self.docs = getattr(self, "docs", []) + [(chat_id, document, caption, reply_markup, thread_id, reply_to)]
         if getattr(self, "fail_docs", False):
             return None
@@ -40,7 +43,14 @@ class FakeApi:
         return {"message_id": message_id, "photo": [{"file_id": "fid-e%d" % len(self.edits),
                                                      "file_size": 10}]}
 
+    network_down = False
+    down = False          # имитация обрыва связи
+    refuse = False        # имитация отказа Телеграма
+
     def send(self, chat_id, text, reply_markup=None, thread_id=None):
+        self.network_down = self.down
+        if self.down or self.refuse:
+            return None
         self.sent.append((chat_id, text, reply_markup))
         self.threads = getattr(self, "threads", []) + [thread_id]
         return {"message_id": len(self.sent)}
@@ -513,3 +523,49 @@ class TestTelegramGroupFiles(TestTelegramGroup):
     def test_no_files_plain_message(self):
         self.bot.pmk_send_group_files("💰", [])
         self.assertEqual(self.api.sent[-1][1], "💰")
+
+
+@tagged("post_install", "-at_install")
+class TestTelegramOutbox(TestTelegramGroup):
+    """Нет связи с Телеграмом — сообщение ждёт в очереди и досылается по порядку."""
+
+    def setUp(self):
+        super().setUp()
+        self._added()
+        self.Outbox = self.env["pmk.telegram.outbox"]
+
+    def test_network_down_queued_then_flushed_in_order(self):
+        self.api.down = True
+        self.assertTrue(self.bot.pmk_send_group("💰 первое"))
+        self.assertTrue(self.bot.pmk_send_group_files("💰 второе", [("a.pdf", b"%PDF")]))
+        pending = self.Outbox.search([("state", "=", "pending")])
+        self.assertEqual(pending.mapped("text"), ["💰 первое", "💰 второе"])
+        self.Outbox._cron_flush()                      # связи всё ещё нет
+        self.assertEqual(len(self.Outbox.search([("state", "=", "pending")])), 2)
+        self.api.down = False
+        self.Outbox._cron_flush()
+        self.assertFalse(self.Outbox.search([("state", "=", "pending")]))
+        self.assertEqual(self.api.sent[-1][1], "💰 первое")
+        self.assertEqual(self.api.docs[-1][2], "💰 второе")
+
+    def test_new_message_waits_behind_queue(self):
+        self.api.down = True
+        self.bot.pmk_send_group("старое")
+        self.api.down = False
+        self.bot.pmk_send_group("новое")               # связь есть, но очередь не пуста
+        self.assertEqual(self.Outbox.search([("state", "=", "pending")]).mapped("text"),
+                         ["старое", "новое"])
+
+    def test_refusal_not_queued(self):
+        self.api.refuse = True
+        self.assertFalse(self.bot.pmk_send_group("отказ"))
+        self.assertFalse(self.Outbox.search([]))
+
+    def test_expired_after_a_day(self):
+        self.api.down = True
+        self.bot.pmk_send_group("давно")
+        rec = self.Outbox.search([("state", "=", "pending")])
+        self.env.cr.execute("UPDATE pmk_telegram_outbox SET create_date = now() - interval '25 hours' WHERE id = %s", [rec.id])
+        rec.invalidate_recordset()
+        self.Outbox._cron_flush()
+        self.assertEqual(rec.state, "dead")
