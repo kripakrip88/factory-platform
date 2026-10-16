@@ -24,7 +24,7 @@
             <t t-elif="state.savedAt"><i class="fa fa-check me-1" aria-hidden="true"/>Сохранено в <t t-esc="state.savedAt"/></t>
             <t t-else=""><i class="fa fa-check me-1" aria-hidden="true"/>Каждая ячейка сохраняется сама</t>
           </span>
-          <span class="o_pmk_butik__hint">Enter, ↑↓, Tab · Ctrl+Enter — новое изделие · Ctrl+D — значение сверху · Ctrl+V — блок из Excel или столбик строк</span>
+          <span class="o_pmk_butik__hint">Enter, ↑↓ ←→, Tab · Ctrl+Enter — новое изделие · Ctrl+D — значение сверху · Ctrl+V — блок из Excel или столбик строк</span>
         </div>
         <div class="o_pmk_butik__wrap">
           <table class="o_pmk_butik__table">
@@ -77,7 +77,7 @@
                       <textarea t-if="col === 'name'" rows="1" class="o_pmk_butik__in o_pmk_butik__ta"
                              t-att-value="val(row, col)" t-att-data-index="row_index" data-col="name"
                              t-att-readonly="!state.data.can_write"
-                             placeholder="Уголок 63х4 · или коротко: д1 шв10 1200мм 10шт 09г"
+                             placeholder="Уголок 63х4 · коротко: д1 шв10 1200мм 10шт 09г · лист: т1 10мм 100х100мм 10шт"
                              t-on-focus="() => this.onFocus(row_index, col)"
                              t-on-input="(ev) => this.onInput(row, row_index, col, ev)"
                              t-on-change="(ev) => this.commit(row, col, ev)"

@@ -124,7 +124,7 @@ def decode(line):
     tokens = _tokens(line or "")
     if not tokens:
         return None
-    out, words, base, kind, sizes, series = {}, [], None, None, [], ""
+    out, words, base, kind, sizes, series, mm = {}, [], None, None, [], "", []
     lowered = [t.lower() for t in tokens]
     # Первое слово «д1», «пл2», «поз5» — позиция, если дальше ещё что-то есть.
     first = POS_RE.match(lowered[0])
@@ -152,8 +152,8 @@ def decode(line):
             out["qty"] = float(m.group(1))
             continue
         m = LEN_RE.match(low)
-        if m and not low.startswith("l=") or (m and low.startswith("l=")):
-            out["length_mm"] = _num(m.group(1))
+        if m:
+            mm.append(_num(m.group(1)))  # длина проката или толщина листа — решаем в конце
             continue
         dims = _dims(low)
         if dims:
@@ -193,6 +193,14 @@ def decode(line):
         out["kind"] = "coating"
         return out
     out.pop("mkm", None)
+    # Лист строкой (Антон 16.10): «т1 10мм 100х100мм 10шт» — № детали (не всегда),
+    # толщина отдельным «Nмм», размер детали «AхB», количество. Слово «лист» не нужно.
+    if kind in (None, "sheet") and len(sizes) == 2 and mm:
+        out.update(name="%s %s" % (base or "Лист", _g(mm[0])), width=sizes[0], length_mm=sizes[1],
+                   kind="sheet")
+        return out
+    if mm:
+        out["length_mm"] = mm[0]
     if base is None and not out:
         return None
     if kind == "sheet":

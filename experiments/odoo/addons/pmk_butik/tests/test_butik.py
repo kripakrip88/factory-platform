@@ -49,6 +49,24 @@ class TestButik(TransactionCase):
         for plain in ("Уголок 63х4", "Лист 10х60", "Болт М10х40"):
             self.assertIsNone(parse.decode_for_cell(plain), plain)
 
+    def test_sheet_line(self):
+        """Лист строкой (Антон 16.10): «т1 10мм 100х100мм 10шт», номер не всегда."""
+        dec = parse.decode_for_cell("т1 10мм 100х100мм 10шт")
+        self.assertEqual((dec["pos"], dec["name"], dec["width"], dec["length_mm"], dec["qty"]),
+                         ("Т1", "Лист 10", 100.0, 100.0, 10.0))
+        dec = parse.decode_for_cell("4 мм 250х1200 6 шт с255")
+        self.assertEqual((dec["name"], dec["width"], dec["length_mm"], dec["qty"], dec["grade"]),
+                         ("Лист 4", 250.0, 1200.0, 6.0, "С255"))
+        self.assertNotIn("pos", dec)
+        # прокат с длиной в мм — по-прежнему длина
+        self.assertEqual(parse.decode_for_cell("уг63х4 1500мм 4шт")["length_mm"], 1500.0)
+        spec = self.env["pmk.butik.spec"].create({"subject": "Тест"})
+        detail = spec.butik_rows()["rows"][1]
+        row = spec.butik_save_row(detail["id"], {"name": "т1 10мм 100х100мм 10шт"})["rows"][1]
+        self.assertEqual((row["pos"], row["width"], row["length_mm"], row["qty"]), ("Т1", 100.0, 100.0, 10.0))
+        self.assertTrue(row["is_sheet"])
+        self.assertGreater(row["weight_one"], 0)
+
     def test_short_line_fills_columns(self):
         spec = self.env["pmk.butik.spec"].create({"subject": "Тест"})
         detail = spec.butik_rows()["rows"][1]

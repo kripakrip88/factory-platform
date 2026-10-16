@@ -61,6 +61,19 @@ export class PmkButikGrid extends Component {
         });
     }
 
+    /**
+     * Карточка «Общий вес» и счётчики шапки — вычисляемые поля формы: строки
+     * таблицы пишутся мимо формы, и шапка показывала 0 (Антон 16.10). Перечитать
+     * запись, только если в шапке нет несохранённых правок — их не затираем.
+     */
+    async refreshHead() {
+        const record = this.props.record;
+        if (!record.resId || (await record.isDirty()) || !this.alive()) {
+            return;
+        }
+        await record.model.mutex.exec(() => record._load());
+    }
+
     async start() {
         // Новый расчёт: таблице нужен номер записи — сохраняем шапку сами.
         await this.props.record.save();
@@ -90,6 +103,7 @@ export class PmkButikGrid extends Component {
                 // «Сохранено в 14:32»: ячейка уходит на сервер сразу, отдельной
                 // кнопки «Сохранить» у таблицы нет (Антон 16.10 спрашивал, где она).
                 this.state.savedAt = new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+                await this.refreshHead();
             }
         } finally {
             if (this.alive()) {
@@ -136,6 +150,14 @@ export class PmkButikGrid extends Component {
 
     total(row) {
         return fmt(row.qty_total, 2);
+    }
+
+    /** Ячейки строки слева направо — для ← →. «Ширина» — только у листа. */
+    colsOf(row) {
+        if (row.kind === "product") {
+            return ["name", "product_qty"];
+        }
+        return ["pos", "name", ...(row.is_sheet ? ["width"] : []), "length_mm", "qty", "grade"];
     }
 
     isCollapsed(productId) {
@@ -244,6 +266,32 @@ export class PmkButikGrid extends Component {
             await this.commit(row, col, ev);
             this.closeSuggest();
             await this.addProduct();
+            return;
+        }
+        if ((ev.key === "ArrowLeft" || ev.key === "ArrowRight") && !ev.shiftKey && !ev.altKey
+                && !ev.ctrlKey && !ev.metaKey) {
+            // ← → как в Excel (Антон 16.10): у края текста — в соседнюю ячейку,
+            // внутри текста — курсор по буквам, как обычно.
+            const el = ev.target;
+            const len = el.value.length;
+            const all = el.selectionStart === 0 && el.selectionEnd === len;
+            const left = ev.key === "ArrowLeft";
+            const edge = left ? el.selectionStart === 0 && el.selectionEnd === 0
+                : el.selectionStart === len && el.selectionEnd === len;
+            if (!edge && !all) {
+                return;
+            }
+            const cols = this.colsOf(row);
+            const next = cols[cols.indexOf(col) + (left ? -1 : 1)];
+            if (!next) {
+                return;
+            }
+            ev.preventDefault();
+            await this.commit(row, col, ev);
+            this.closeSuggest();
+            const fresh = this.rows[index];
+            this.focusCell(index, fresh && this.colsOf(fresh).includes(next) ? next
+                : this.colsOf(fresh || row)[Math.max(0, cols.indexOf(col) + (left ? -1 : 1))]);
             return;
         }
         if (suggestOpen && (ev.key === "ArrowDown" || ev.key === "ArrowUp")) {
