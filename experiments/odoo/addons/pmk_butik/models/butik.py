@@ -11,6 +11,8 @@
 — поиском справочника метизов. Выбор из подсказки — «вручную»: дальше правка
 наименования позицию не переопределяет, пока его не сотрут.
 """
+import re
+
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
@@ -132,12 +134,18 @@ class ButikSpec(models.Model):
                 clean[key] = _to_float(clean[key])
         if "width" in clean:
             clean["sheet_width_mm"] = _to_float(clean.pop("width"))
+        line = self.line_ids.filtered(lambda l: l.id == row_id) if row_id else False
+        if row_id and not line:
+            raise UserError(_("Строка не найдена — таблица обновится."))
         if clean.get("name"):
-            clean.update(_decoded(clean["name"]))
-        if row_id:
-            line = self.line_ids.filtered(lambda l: l.id == row_id)
-            if not line:
-                raise UserError(_("Строка не найдена — таблица обновится."))
+            if line and line.kind == "product":
+                # Название изделия — как написано (короткую запись деталей не
+                # применять), кроме пасхалки (Антон 16.10).
+                if _EASTER_RE.match(clean["name"]):
+                    clean["name"] = "Сам ты лох"
+            else:
+                clean.update(_decoded(clean["name"]))
+        if line:
             line.write(clean)
         else:
             self._butik_insert([dict({"kind": "detail"}, **clean)], (vals or {}).get("after_id"))
@@ -264,6 +272,11 @@ class ButikSpec(models.Model):
                 vals["sheet_width_mm"] = info["width"]
         line.with_context(pmk_butik_keep=True).write(vals)
         return self.butik_rows()
+
+
+# Пасхалка (Антон 16.10): изделие «бутик лох» → «Сам ты лох». Регистр, «ё» и
+# лишние пробелы не важны.
+_EASTER_RE = re.compile(r"^\s*бутик\s+лох\s*[!.)]*\s*$", re.IGNORECASE)
 
 
 def _decoded(name):

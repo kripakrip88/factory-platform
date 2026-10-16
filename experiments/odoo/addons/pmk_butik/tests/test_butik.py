@@ -184,6 +184,19 @@ class TestButik(TransactionCase):
         self.assertEqual(action["tag"], "display_notification")
         self.assertIn(spec.name, action["params"]["message"])
 
+    def test_easter_egg(self):
+        spec = self.env["pmk.butik.spec"].create({"subject": "Тест"})
+        product = spec.butik_rows()["rows"][0]
+        rows = spec.butik_save_row(product["id"], {"name": "  Бутик   ЛОХ! "})["rows"]
+        self.assertEqual(rows[0]["name"], "Сам ты лох")
+        # название изделия не расшифровывается как деталь
+        rows = spec.butik_save_row(product["id"], {"name": "Ограждение ОЛ-1 10шт"})["rows"]
+        self.assertEqual((rows[0]["name"], rows[0]["product_qty"]), ("Ограждение ОЛ-1 10шт", 1))
+        # у детали — не пасхалка
+        detail = rows[1]
+        rows = spec.butik_save_row(detail["id"], {"name": "бутик лох"})["rows"]
+        self.assertEqual(rows[1]["name"], "бутик лох")
+
     def test_link_deal(self):
         lead = self.env["crm.lead"].create({"name": "Сделка бутика", "type": "opportunity"})
         spec = self.env["pmk.butik.spec"].create({"lead_id": lead.id})
