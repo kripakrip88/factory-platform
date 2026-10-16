@@ -19,16 +19,30 @@ MAX_FILE_BYTES = 20 * 1024 * 1024
 
 
 class TelegramApi:
+    """base — адрес Bot API. По умолчанию api.telegram.org; запасной путь
+    (ретранслятор на Cloudflare Worker или своём сервере) задаётся системным
+    параметром pmk_telegram.api_base, без правки кода.
 
-    def __init__(self, token):
+    network_down — последний вызов не дошёл до Телеграма (сеть, таймаут), в
+    отличие от отказа самого Телеграма: по нему очередь решает, повторять ли.
+    """
+
+    def __init__(self, token, base=None):
         self.token = token
+        self.base = (base or API).rstrip("/")
+        self.network_down = False
 
     def call(self, method, **params):
+        self.network_down = False
         try:
             resp = requests.post(
-                f"{API}/bot{self.token}/{method}", json=params, timeout=TIMEOUT)
+                f"{self.base}/bot{self.token}/{method}", json=params, timeout=TIMEOUT)
             data = resp.json()
-        except Exception:  # noqa: BLE001 — сеть или не-JSON
+        except (requests.ConnectionError, requests.Timeout):
+            self.network_down = True
+            _logger.warning("Телеграм: %s — нет связи с %s", method, self.base)
+            return None
+        except Exception:  # noqa: BLE001 — не-JSON
             _logger.exception("Телеграм: %s не выполнен", method)
             return None
         if not data.get("ok"):
@@ -44,10 +58,15 @@ class TelegramApi:
         """
         data = {k: (json.dumps(v, ensure_ascii=False) if isinstance(v, (dict, list)) else v)
                 for k, v in params.items() if v is not None}
+        self.network_down = False
         try:
-            resp = requests.post(f"{API}/bot{self.token}/{method}", data=data,
+            resp = requests.post(f"{self.base}/bot{self.token}/{method}", data=data,
                                  files=files, timeout=60)
             res = resp.json()
+        except (requests.ConnectionError, requests.Timeout):
+            self.network_down = True
+            _logger.warning("Телеграм: %s — нет связи с %s", method, self.base)
+            return None
         except Exception:  # noqa: BLE001
             _logger.exception("Телеграм: %s не выполнен", method)
             return None
@@ -132,7 +151,7 @@ class TelegramApi:
             return None
         try:
             resp = requests.get(
-                f"{API}/file/bot{self.token}/{info['file_path']}", timeout=60)
+                f"{self.base}/file/bot{self.token}/{info['file_path']}", timeout=60)
             resp.raise_for_status()
         except Exception:  # noqa: BLE001
             _logger.exception("Телеграм: файл %s не скачан", file_id)

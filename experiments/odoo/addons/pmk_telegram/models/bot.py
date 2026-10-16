@@ -88,8 +88,11 @@ class PmkTelegramBot(models.AbstractModel):
     # ── связь с Телеграмом ────────────────────────────────────────────────
 
     def _pmk_api(self):
-        token = self.env["ir.config_parameter"].sudo().get_param(PARAM_TOKEN)
-        return TelegramApi(token) if token else None
+        icp = self.env["ir.config_parameter"].sudo()
+        token = icp.get_param(PARAM_TOKEN)
+        # pmk_telegram.api_base — запасной путь до Телеграма (ретранслятор),
+        # если прямой с сервера недоступен. Пусто — api.telegram.org.
+        return TelegramApi(token, icp.get_param("pmk_telegram.api_base")) if token else None
 
     @api.model
     def pmk_setup_webhook(self):
@@ -132,16 +135,11 @@ class PmkTelegramBot(models.AbstractModel):
         """Сообщение в подключённую группу, в тему этого вида уведомлений.
 
         Своей темы у вида нет — в тему «main», нет и её — в «Общую».
-        False — группы нет или сообщение не дошло.
+        Нет связи с Телеграмом — сообщение ложится в очередь
+        (pmk.telegram.outbox) и досылается позже; это тоже True.
+        False — группы нет или Телеграм отказал.
         """
-        icp = self.env["ir.config_parameter"].sudo()
-        chat_id = icp.get_param(PARAM_GROUP)
-        api_ = self._pmk_api()
-        if not chat_id or not api_:
-            return False
-        thread = (icp.get_param(PARAM_THREAD % kind)
-                  or icp.get_param(PARAM_THREAD % "main"))
-        return bool(api_.send(chat_id, text, reply_markup, thread_id=thread))
+        return self.pmk_send_group_files(text, [], reply_markup, kind=kind)
 
     # Подпись к файлу у Телеграма — до 1024 знаков (видимых, без тегов).
     CAPTION_MAX = 1000
@@ -153,31 +151,49 @@ class PmkTelegramBot(models.AbstractModel):
 
         files — [(имя, байты)]. Длинный текст или сбой файла — текст отдельным
         сообщением, а файлы следом: уведомление не теряется из-за вложения.
+        Нет связи — в очередь; пока очередь не пуста, новое встаёт за ней.
         """
-        if not files:
-            return self.pmk_send_group(text, reply_markup, kind=kind)
+        Outbox = self.env["pmk.telegram.outbox"].sudo()
+        if not self.env["ir.config_parameter"].sudo().get_param(PARAM_GROUP):
+            return False
+        if Outbox.pmk_pending():
+            Outbox.pmk_enqueue(text, files, reply_markup, kind)
+            return True
+        ok, network_down = self._pmk_group_deliver(text, files, reply_markup, kind)
+        if not ok and network_down:
+            Outbox.pmk_enqueue(text, files, reply_markup, kind)
+            return True
+        return ok
+
+    def _pmk_group_deliver(self, text, files, reply_markup, kind):
+        """Отправить сейчас. → (дошло, нет_связи)."""
         icp = self.env["ir.config_parameter"].sudo()
         chat_id = icp.get_param(PARAM_GROUP)
         api_ = self._pmk_api()
         if not chat_id or not api_:
-            return False
+            return False, False
         thread = (icp.get_param(PARAM_THREAD % kind)
                   or icp.get_param(PARAM_THREAD % "main"))
+        if not files:
+            res = api_.send(chat_id, text, reply_markup, thread_id=thread)
+            return bool(res), getattr(api_, "network_down", False)
         visible = len(re.sub(r"<[^>]+>", "", text or ""))
         first = None
         if visible <= self.CAPTION_MAX:
             first = api_.send_document(chat_id, files[0], text, reply_markup, thread_id=thread)
+            if not first and getattr(api_, "network_down", False):
+                return False, True
         if not first:
             first = api_.send(chat_id, text, reply_markup, thread_id=thread)
             if not first:
-                return False
+                return False, getattr(api_, "network_down", False)
             rest = files
         else:
             rest = files[1:]
         for doc in rest:
             api_.send_document(chat_id, doc, thread_id=thread,
                                reply_to=first.get("message_id"))
-        return True
+        return True, False
 
     def _pmk_set_group(self, chat_id, title):
         icp = self.env["ir.config_parameter"].sudo()

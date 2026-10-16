@@ -43,6 +43,15 @@ services:
     image: odoo-ru:19.0-20261006
     container_name: odoo-app
     restart: unless-stopped
+    # Бот в Телеграме (pmk_telegram) и уведомления о деньгах (pmk_bank): с
+    # 16.10.2026 ~02:20 до адреса, который отдаёт DNS (149.154.166.110), с
+    # VPS нет маршрута («No route to host»), а 149.154.167.220 — тоже
+    # официальный адрес Bot API — доступен. Временно закрепляем рабочий.
+    # Убрать, когда Бегет починит маршрут (проверка: из контейнера
+    # curl https://api.telegram.org без этой строки). Полная страховка —
+    # очередь и перебор адресов в pmk_telegram.
+    extra_hosts:
+      - "api.telegram.org:149.154.167.220"
     depends_on:
       db:
         condition: service_healthy
