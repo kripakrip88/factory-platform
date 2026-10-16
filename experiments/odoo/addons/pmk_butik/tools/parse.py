@@ -128,12 +128,20 @@ def decode(line):
     lowered = [t.lower() for t in tokens]
     # Первое слово «д1», «пл2», «поз5» — позиция, если дальше ещё что-то есть.
     first = POS_RE.match(lowered[0])
-    if (first and len(tokens) > 1 and first.group(1) not in PROFILE_ABBR and first.group(1) not in PIECE_ABBR
+    # «кр3 шв10 …»: первое слово похоже на сокращение (круг), но дальше есть своё —
+    # значит, первое — номер детали.
+    def _is_abbr(low):
+        m = ABBR_RE.match(low)
+        return bool(m) and (m.group(1) in PROFILE_ABBR or m.group(1) in SHEET_ABBR or m.group(1) in PIECE_ABBR)
+    later_abbr = any(_is_abbr(low) for low in lowered[1:])
+    if (first and len(tokens) > 1
+            and (later_abbr or (first.group(1) not in PROFILE_ABBR and first.group(1) not in PIECE_ABBR))
             and lowered[0] not in COATINGS and lowered[0] not in GRADES):
         out["pos"] = first.group(1).capitalize() + first.group(2)
-        if first.group(1) in ("пл", "п", "лист", "л"):
+        if first.group(1) in ("пл", "п", "лист", "л") and not later_abbr:
             base, kind = SHEET_ABBR[first.group(1)], "sheet"
         tokens, lowered = tokens[1:], lowered[1:]
+    first_word = tokens[0] if tokens and "pos" not in out else None
     for token, low in zip(tokens, lowered):
         if low in COATINGS:
             out["coating"] = COATINGS[low]
@@ -195,7 +203,13 @@ def decode(line):
     out.pop("mkm", None)
     # Лист строкой (Антон 16.10): «т1 10мм 100х100мм 10шт» — № детали (не всегда),
     # толщина отдельным «Nмм», размер детали «AхB», количество. Слово «лист» не нужно.
-    if kind in (None, "sheet") and len(sizes) == 2 and mm:
+    sheet_line = kind in (None, "sheet") and len(sizes) == 2 and mm
+    # Номер детали без цифры («тт 10мм 100х100мм 10шт», Антон 16.10): первое слово
+    # строки, которое не сокращение, не марка и не размер, — № поз.
+    if (kind is not None or sheet_line) and "pos" not in out and words and words[0] == first_word:
+        token = words.pop(0)
+        out["pos"] = token[:1].upper() + token[1:]
+    if sheet_line:
         out.update(name="%s %s" % (base or "Лист", _g(mm[0])), width=sizes[0], length_mm=sizes[1],
                    kind="sheet")
         return out

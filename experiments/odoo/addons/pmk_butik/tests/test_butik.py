@@ -58,6 +58,14 @@ class TestButik(TransactionCase):
         self.assertEqual((dec["name"], dec["width"], dec["length_mm"], dec["qty"], dec["grade"]),
                          ("Лист 4", 250.0, 1200.0, 6.0, "С255"))
         self.assertNotIn("pos", dec)
+        # номер без цифры — тоже номер (на боевом «тт» терялся, 16.10)
+        dec = parse.decode_for_cell("тт 10мм 100х100мм 10шт")
+        self.assertEqual((dec["pos"], dec["name"], dec["qty"]), ("Тт", "Лист 10", 10.0))
+        self.assertEqual(parse.decode_for_cell("кр3 шв10 600мм 2шт")["pos"], "Кр3")
+        self.assertEqual(parse.decode_for_cell("а шв10 600мм 2шт")["pos"], "А")
+        dec = parse.decode_for_cell("пл2 шв10 600мм")
+        self.assertEqual((dec["pos"], dec["name"]), ("Пл2", "Швеллер 10"), "номер «пл2» — не лист")
+        self.assertEqual(parse.decode_for_cell("кр20 1000мм 2шт")["name"], "Круг 20")
         # прокат с длиной в мм — по-прежнему длина
         self.assertEqual(parse.decode_for_cell("уг63х4 1500мм 4шт")["length_mm"], 1500.0)
         spec = self.env["pmk.butik.spec"].create({"subject": "Тест"})
