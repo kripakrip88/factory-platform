@@ -149,4 +149,9 @@ docker compose exec -T db psql -U odoo -d odoo -tAc \
 # вместо двух — около пяти секунд с каждого деплоя на пустом месте
 # (замер 21.09.2026: 86 загрузок реестра в логе, по 2,15-2,82 с каждая).
 docker compose start odoo >/dev/null 2>&1
+# Расчётчик раскроя (16.10.2026) держит worker.py в памяти — перезапуск, чтобы взял новый
+# код. Не поднят (описание контейнеров стенда старое) — пропуск: Odoo считает у себя.
+if [ -n "$(docker compose ps -q nest-worker 2>/dev/null)" ]; then
+  docker compose restart nest-worker >/dev/null 2>&1 && echo "→ расчётчик перезапущен"
+fi
 echo "→ готово"

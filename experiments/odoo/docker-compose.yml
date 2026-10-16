@@ -93,6 +93,26 @@ services:
     mem_limit: 2.5g
     cpus: 2.0
 
+  # Расчётчик раскроя (16.10.2026, Антон: «вынести расчёт в отдельный контейнер — можно
+  # сделать»). Раньше раскрой вентзонтов шёл внутри odoo-app: перебор свеса занимал ядро у
+  # пользователей, а несколько процессов грозили нехваткой памяти и падением Odoo. Теперь —
+  # свои 3 ядра и 3 ГБ; Odoo кладёт задание в общую папку данных и забирает результат
+  # (pmk_vent_nest/worker.py — обмен файлами, базы не трогает). Расчётчик остановлен —
+  # Odoo через 2 минуты считает у себя, как раньше. Замер 16.10 (копия, ВЗ-00006):
+  # 6 раскладок в 3 потока — 335 с против ~19 мин подряд; память ~210 МБ на процесс.
+  nest-worker:
+    image: odoo-ru:19.0-20261006
+    container_name: odoo-nest-worker
+    restart: unless-stopped
+    entrypoint: ["python3", "/mnt/third-party/pmk_vent_nest/worker.py", "/var/lib/odoo/vent_nest"]
+    environment:
+      NEST_PROCS: "3"
+    volumes:
+      - odoo_data:/var/lib/odoo
+      - ${EXTRA_ADDONS:-/opt/experiments/odoo/addons-extra}:/mnt/third-party:ro
+    mem_limit: 3g
+    cpus: 3.0
+
 volumes:
   odoo_db_data:
   odoo_data:
