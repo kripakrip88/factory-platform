@@ -40,6 +40,7 @@ from . import risk as RK
 
 D = math.dist
 LEAD_FREE = 10.0            # мм свободно под подвод внешнего контура
+LEAD_CLEAR = 0.5            # мм: точка подвода ближе к кромке соседней детали — подвод «по её кромке» (lead_room)
 MAX_CAND = 16               # точек врезки внешнего контура на деталь (больше — по секторам вокруг центра)
 EXACT_N = 14                # до стольких внутренних элементов — точный путь от головки для каждой пары (голова, врезка)
 CROSS_PENALTY = 2000.0      # мм штрафа за переход над вырезанным (язычок прорези) — чтобы такой путь выбирался последним
@@ -594,6 +595,86 @@ def lead_free(outer_started, W, L, polys, limit=20.0, step=0.05, skip=None):
             if bx[0] <= pt[0] <= bx[2] and bx[1] <= pt[1] <= bx[3] and G.inside(pt, P):
                 return i * step
     return limit
+
+
+def _ray(outer_started):
+    """Начало реза внешнего контура и наружная нормаль (как в lead_free)."""
+    if outer_started.get("_lead") is not None:
+        return outer_started["_lead"]
+    if outer_started["kind"] == "Circle":
+        cx, cy = outer_started["c"]; a = outer_started["a0"]
+        return (cx + outer_started["r"] * math.cos(a), cy + outer_started["r"] * math.sin(a)), (math.cos(a), math.sin(a))
+    V = outer_started["verts"]
+    (x1, y1), (x2, y2) = V[0][:2], V[1][:2]
+    Lg = math.hypot(x2 - x1, y2 - y1)
+    sg = 1 if G.poly_area(V) > 0 else -1
+    return (x1, y1), (sg * (y2 - y1) / Lg, -sg * (x2 - x1) / Lg)
+
+
+def _boundary_dist(pts, P, box):
+    """Расстояние точек pts (N×2) до кромки многоугольника P (точки или geom.Poly — объединение окружностей и
+    прямоугольников моста; для точек снаружи — до ближайшей части); рёбра — только у габарита box точек."""
+    import numpy as np
+    if type(P) is G.Poly:
+        d = np.full(len(pts), np.inf)
+        for q in P.parts:
+            if q[0] == "c":
+                d = np.minimum(d, np.abs(np.hypot(pts[:, 0] - q[1], pts[:, 1] - q[2]) - q[3]))
+            else:
+                d = np.minimum(d, _boundary_dist(pts, q[1], box))
+        return d
+    A = np.asarray(P, float)
+    if len(A) < 2:
+        return np.full(len(pts), np.inf)
+    B = np.roll(A, -1, axis=0)
+    k = ((np.minimum(A[:, 0], B[:, 0]) <= box[2]) & (np.maximum(A[:, 0], B[:, 0]) >= box[0]) &
+         (np.minimum(A[:, 1], B[:, 1]) <= box[3]) & (np.maximum(A[:, 1], B[:, 1]) >= box[1]))
+    if not k.any():
+        return np.full(len(pts), np.inf)
+    A, B = A[k], B[k]
+    d = B - A
+    L2 = (d * d).sum(1)
+    L2[L2 == 0] = 1.0
+    t = np.clip(((pts[:, None, :] - A[None]) * d[None]).sum(2) / L2[None], 0, 1)
+    q = A[None] + t[..., None] * d[None]
+    return np.sqrt(((pts[:, None, :] - q) ** 2).sum(2)).min(1)
+
+
+def lead_room(outer_started, W, L, polys, limit=20.0, step=0.05, skip=None, clear=LEAD_CLEAR):
+    """Место под подвод внешнего контура (16.10.2026): (свободно, свободно с отступом), мм до limit.
+    Первое — как было (lead_free): до края листа или до точки внутри соседа. Второе — ещё и до точки ближе clear к кромке
+    соседа: луч по кромке соседа (у одинаковых деталей стопкой — луч от угла идёт по продолжению кромки, а это кромка
+    соседа) «свободен» по первому правилу, а точка врезки ложится на контур соседа (разбор 16.10: 36 из 55 стоек
+    добивки). Соседи, к кромке которых ближе clear уже начало луча (свой общий контур моста), — только по первому
+    правилу. Маршрут выбирает точку врезки по первому (как было: запрет «по кромке» в выборе — опаснее по переходам,
+    см. DESIGN.md), проверка программы (verify) считает такие подводы по второму."""
+    free = lead_free(outer_started, W, L, polys, limit, step, skip)
+    (x1, y1), (nx, ny) = _ray(outer_started)
+    if outer_started.get("_lead") is not None:
+        skip = None
+    ex, ey = x1 + nx * limit, y1 + ny * limit
+    lo_x, hi_x, lo_y, hi_y = min(x1, ex) - clear, max(x1, ex) + clear, min(y1, ey) - clear, max(y1, ey) + clear
+    if hasattr(polys, "query"):
+        near = [q for q in polys.query(lo_x, lo_y, hi_x, hi_y) if q is not skip]
+    else:
+        near = [(P, bx) for P, bx in polys if not (bx[2] < lo_x or bx[0] > hi_x or bx[3] < lo_y or bx[1] > hi_y)]
+    if clear <= 0 or not near:
+        return free, free
+    import numpy as np
+    n = int(round(free / step))
+    t = np.arange(1, n + 1) * step
+    pts = np.column_stack([x1 + nx * t, y1 + ny * t])
+    box = (min(x1, pts[:, 0].min()) - clear, min(y1, pts[:, 1].min()) - clear, max(x1, pts[:, 0].max()) + clear,
+           max(y1, pts[:, 1].max()) + clear)
+    st = np.array([[x1, y1]])
+    strict = free
+    for P, bx in near:
+        if _boundary_dist(st, P, box)[0] < clear:      # начало луча у его кромки — свой контур (мост) или сосед вплотную
+            continue
+        hit = np.nonzero(_boundary_dist(pts, P, box) < clear)[0]
+        if len(hit):
+            strict = min(strict, float((hit[0] + 1) * step))
+    return free, strict
 
 
 def _grid(polys):

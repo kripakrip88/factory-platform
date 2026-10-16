@@ -42,7 +42,9 @@
 - Детали: внешний контур — замкнутый контур слоя реза, не лежащий внутри другого замкнутого контура реза; всё прочее
   относится к наименьшему внешнему контуру, который его содержит (проверка точкой на кривой). Контур реза внутри
   отверстия остаётся внутренним резом этой детали (предупреждение). Незамкнутая цепочка реза вне деталей — разрыв
-  внешнего контура (DxfError с координатами концов). Прочее вне деталей — DxfError (число и координата).
+  внешнего контура (DxfError с координатами концов); с heal_gap_mm > 0 разрыв не больше стольких мм на прямой самого
+  контура (продолжает крайний прямой участок, наезжает на него или идёт по краю габарита) закрывается прямой, с
+  предупреждением (16.10.2026, geom.heal_open). Прочее вне деталей — DxfError (число и координата).
   Выход элемента за габарит внешнего контура или вершина одной детали внутри другой — DxfError (контуры пересекаются).
 - Направление: внешний — против часовой (площадь > 0), внутренние замкнутые — по часовой. Part.shapes: внутренние
   (в порядке файла), внешний — ПОСЛЕДНИМ (outer=1, layer=1). Деталь сдвигается так, что минимум габарита внешнего
@@ -1438,8 +1440,34 @@ def _within(inner, outer, tol=NODE_TOL):
     return a[0] >= b[0] - tol and a[1] >= b[1] - tol and a[2] <= b[2] + tol and a[3] <= b[3] + tol
 
 
-def _partition(rd, cts):
-    """Контуры → [(внешний, [внутренние])]; проверки замкнутости и принадлежности."""
+def _heal(rd, cts, heal_gap):
+    """Разрыв внешнего контура (16.10.2026): незамкнутая цепочка реза вне всех замкнутых контуров, концы не дальше
+    heal_gap мм и на прямой самого контура (geom.heal_open) — закрыть прямой, с предупреждением. Цепочки — от больших к
+    малым: внешний закрывается первым, и прорези внутри него (язычок с концами рядом) уже внутри замкнутого — не трогаются."""
+    from sheet_nest import geom as G
+    closed = [c for c in cts if c.cls == 1 and c.closed]
+    cands = sorted((c for c in cts if c.cls == 1 and not c.closed and c.kind == "poly" and len(c.verts) >= 3),
+                   key=lambda c: (-(c.bbox[2] - c.bbox[0]) * (c.bbox[3] - c.bbox[1]), c.q))
+    repl, stuck = {}, []                                # stuck — габариты больших цепочек, которые закрыть нельзя
+    for c in cands:
+        if any(o.contains(c.sample) for o in closed) or any(_within(c, s) for s in stuck):
+            continue                                    # внутри детали (или внутри незакрытого внешнего) — это прорезь
+        v, g = G.heal_open(c.verts, heal_gap)
+        if v is None:
+            stuck.append(c)
+            continue
+        h = _Ct("poly", 1, c.q, closed=True, verts=v)
+        repl[id(c)] = h
+        closed.append(h)
+        rd.note("внешний контур не замкнут, разрыв %s мм на кромке — закрыт прямой (проверьте чертёж)" % _fmt(g))
+    return [repl.get(id(c), c) for c in cts] if repl else cts
+
+
+def _partition(rd, cts, heal_gap=0.0):
+    """Контуры → [(внешний, [внутренние])]; проверки замкнутости и принадлежности. heal_gap — закрывать прямой разрыв
+    внешнего контура до стольких мм (_heal; 0 — нет)."""
+    if heal_gap and cts:
+        cts = _heal(rd, cts, heal_gap)
     closed_cut = [c for c in cts if c.cls == 1 and c.closed]
     if not cts:
         raise DxfError("в DXF нет контуров для резки (LINE, ARC, CIRCLE, LWPOLYLINE, POLYLINE, SPLINE, ELLIPSE)")
@@ -1581,14 +1609,15 @@ def _shape(ct, dx, dy, outer=False):
     return base
 
 
-def parts_from_dxf(data, filename, qty=None, engrave_layers=None, name=None):
+def parts_from_dxf(data, filename, qty=None, engrave_layers=None, name=None, heal_gap_mm=0.0):
     """DXF (байты) → [Part]. Part = {"name", "qty", "shapes", "src", "warnings"} (см. DESIGN.md).
     data — содержимое файла; filename — имя (для имени детали и количества); qty — количество (иначе из имени
     файла, иначе 1); engrave_layers — свой список слоёв гравировки (точные имена без учёта регистра); name — имя
-    детали: задано — имя файла не разбирается вовсе (ни имя, ни количество; ERP.md, п. 2).
+    детали: задано — имя файла не разбирается вовсе (ни имя, ни количество; ERP.md, п. 2); heal_gap_mm — закрывать
+    прямой разрыв внешнего контура до стольких мм, если он на прямой самого контура (0 — нет, разрыв — ошибка).
     Ошибки — DxfError (по-русски)."""
     try:
-        return _parts(data, filename, qty, engrave_layers, name)
+        return _parts(data, filename, qty, engrave_layers, name, float(heal_gap_mm or 0.0))
     except DxfError:
         raise
     except (ArithmeticError, ValueError, np.linalg.LinAlgError) as ex:
@@ -1597,11 +1626,11 @@ def parts_from_dxf(data, filename, qty=None, engrave_layers=None, name=None):
         raise DxfError("DXF не прочитан: числа в файле испорчены") from ex
 
 
-def _parts(data, filename, qty, engrave_layers, name=None):
+def _parts(data, filename, qty, engrave_layers, name=None, heal_gap=0.0):
     rd = _Reader(data, engrave_layers)
     rd.walk_all()
     cts = _contours(rd)
-    groups = _partition(rd, cts)
+    groups = _partition(rd, cts, heal_gap)
     q_name, base = (None, name) if name is not None else qty_from_filename(filename)
     warnings = rd.summary()
     if qty is None:

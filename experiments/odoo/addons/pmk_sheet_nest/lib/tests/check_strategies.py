@@ -548,9 +548,11 @@ def samples():
                 import re
                 m_ = re.search(r"наименьшее ([0-9.]+)", v[1])
                 return float(m_.group(1)) if m_ else None
+            # правило выбора точки врезки — «свободно» (lead_free), как было; подвод по кромке соседа (⚠ с 16.10, lead_room)
+            # у разных маршрутов разный — в сравнение не входит (только в текст)
             base_ = lmin(lead["как было"])
-            same = all(v[0] == lead["как было"][0] for v in lead.values()) and (base_ is None or all(
-                lmin(v) is not None and lmin(v) >= min(base_, R.LEAD_FREE) - 1e-9 for v in lead.values()))
+            same = all((lmin(v) is None) == (base_ is None) for v in lead.values()) and (base_ is None or all(
+                lmin(v) >= min(base_, R.LEAD_FREE) - 1e-9 for v in lead.values()))
             check("%s: подвод внешнего контура — правило как было (≥ %g мм или не меньше, чем было)" % (tag, R.LEAD_FREE), same,
                   "; ".join("%s: %s" % (k, v[1]) for k, v in lead.items()))
             print("    (%.0f с)" % (time.time() - t0))

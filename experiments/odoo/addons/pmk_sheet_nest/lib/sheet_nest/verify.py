@@ -7,7 +7,7 @@ import io, math, os, re, tempfile, collections, copy, zipfile, contextlib
 from .libpath import vn
 from . import geom as G
 from .write_lxds import exact_coedge, decompile_free, compile_free, FREE
-from .route import LEAD_FREE, lead_free
+from .route import LEAD_FREE, LEAD_CLEAR, lead_room
 from . import coedge as CE
 
 
@@ -37,12 +37,12 @@ def _rd_ent(s):
     return {"kind": "LwPolyline", "pts": [(x, y) for x, y, b in s["verts"]], "bulge": [b for x, y, b in s["verts"]], "closed": bool(s["flag"] & 1)}
 
 
-def check_safe(raw, parts, layouts, gap, edge, thickness=None):
+def check_safe(raw, parts, layouts, gap, edge, thickness=None, fill_base=None):
     """Как check, но сломанная программа даёт ✗ «проверка не завершилась», а не падение: всё, что успели проверить,
     остаётся в отчёте. Вернуть (rep, отчёт расшифровщика | None, ctx | None)."""
     rep = []
     try:
-        return check(raw, parts, layouts, gap, edge, thickness, rep=rep)
+        return check(raw, parts, layouts, gap, edge, thickness, rep=rep, fill_base=fill_base)
     except Exception as e:
         rep.append(("проверка программы не завершилась — программа повреждена", False, "%s: %s" % (type(e).__name__, e)))
         return rep, None, None
@@ -90,7 +90,9 @@ def _free_inserts(raw):
     return n, (first.get("Handle") if first is not None else "0")
 
 
-def check(raw, parts, layouts, gap, edge, thickness=None, rep=None):
+def check(raw, parts, layouts, gap, edge, thickness=None, rep=None, fill_base=None):
+    """fill_base — листов у деталей заказа без добивки (cli.run, добивка задана): проверка «добивка не добавила листов»;
+    детали добивки (fill: true) — в счёте деталей как заказ + поставлено (их qty — сколько поставлено)."""
     SR, LR, XV, SV = vn.spec_rebuild, vn.lxds_reader, vn.xml_validate, vn.spec_verify
     rep = [] if rep is None else rep
     nfree, rep_h = _free_inserts(raw)                    # мосты: вставки без ссылки — по раскладкам
@@ -143,6 +145,7 @@ def check(raw, parts, layouts, gap, edge, thickness=None, rep=None):
     bridge_cut = 0.0                                    # мосты: общие контуры (аналитически) − окружности их деталей, × листы
     bridged_by = collections.defaultdict(collections.Counter)    # раскладка → детали мостов (расшифровщик их не видит)
     bridge_ok = {}                                      # блок моста → итог проверки (контур, детали) — для подвода
+    lay_names = collections.defaultdict(set)            # раскладка программы → имена деталей на ней (добивка)
     for r, lay in zip(M2["results"], layouts):
         groups = lay.get("groups") or []
         in_g = {i for g in groups for i in g}
@@ -179,6 +182,7 @@ def check(raw, parts, layouts, gap, edge, thickness=None, rep=None):
                 for nm in ok["names"]:
                     cnt[nm] += r["plate_amount"]
                     bridged_by[r["index"]][nm] += 1
+                    lay_names[r["index"]].add(nm)
                 bridge_cut += (ok["length_an"] - ok["circles_len"]) * r["plate_amount"]
                 bridge_ok[ins["block"]] = ok
                 continue
@@ -186,6 +190,7 @@ def check(raw, parts, layouts, gap, edge, thickness=None, rep=None):
                 grp = gby[ins["ref"][1]]
                 for o in grp["objects"]:
                     cnt[pby[o]["name"] if o in pby else "?нет детали %s" % o] += r["plate_amount"]
+                    lay_names[r["index"]].add(pby[o]["name"] if o in pby else None)
                 gstat["групп"] += 1
                 try:
                     ok, why = _check_group(sh, want_g, collections.Counter(pby[o]["name"] for o in grp["objects"] if o in pby),
@@ -202,6 +207,7 @@ def check(raw, parts, layouts, gap, edge, thickness=None, rep=None):
             closed = [s for s in sh if G.is_closed(s) and s["layer"] == 1]
             order_bad += not (closed and sh[-1] is closed[-1] and sh[-1]["outer"] == 1 and G.area(sh[-1]) >= max(G.area(s) for s in closed) - 1e-6)
             cnt[pby[ins["ref"][1]]["name"]] += r["plate_amount"]
+            lay_names[r["index"]].add(pby[ins["ref"][1]]["name"])
         bad_ins += want_pl != got_pl or any(not w["used"] for w in want_g + want_b)
     rep.append(("детали на листах = раскрой (поворот, место, все контуры)", bad_ins == 0, "раскладок с расхождением %d" % bad_ins))
     rep.append(("внешний контур режется последним", order_bad == 0, "нарушений %d" % order_bad))
@@ -219,7 +225,13 @@ def check(raw, parts, layouts, gap, edge, thickness=None, rep=None):
     want_cnt = collections.Counter()
     for p in parts:
         want_cnt[p["name"]] += p["qty"]
-    rep.append(("количество деталей = заказ", cnt == want_cnt, "%d шт" % sum(cnt.values())))
+    fill_names = {p["name"] for p in parts if p.get("fill")}
+    n_fill = sum(p["qty"] for p in parts if p.get("fill"))
+    if fill_names:                                      # добивка: её количество — сколько поставлено
+        rep.append(("количество деталей = заказ + добивка", cnt == want_cnt, "%d шт (заказ %d, добивка %d)" % (
+            sum(cnt.values()), sum(n for nm, n in cnt.items() if nm not in fill_names), sum(n for nm, n in cnt.items() if nm in fill_names))))
+    else:
+        rep.append(("количество деталей = заказ", cnt == want_cnt, "%d шт" % sum(cnt.values())))
 
     r, ctx = LR.build(raw, name="программа", thickness=thickness or 1.0, min_side=300)
     # расшифровщик пакета деталей моста не видит (у вставки нет ссылки) — они добавляются по проверенным мостам
@@ -227,9 +239,15 @@ def check(raw, parts, layouts, gap, edge, thickness=None, rep=None):
     for d in r["layouts"]:
         for nm, n in bridged_by.get(d["index"], {}).items():
             got_lr[nm] += n * d["sheets"]
-    rep.append(("расшифровщик: детали = заказ%s" % (" (+ детали мостов)" if bridged_by else ""), got_lr == want_cnt,
-                "%d шт" % sum(got_lr.values())))
+    rep.append(("расшифровщик: детали = заказ%s%s" % (" + добивка" if fill_names else "", " (+ детали мостов)" if bridged_by else ""),
+                got_lr == want_cnt, "%d шт" % sum(got_lr.values())))
     rep.append(("листов = раскрой", r["sheets"] == sum(l["amount"] for l in layouts), "%d листов, %d раскладок" % (r["sheets"], len(r["layouts"]))))
+    if fill_base is not None:
+        # добивка только дополняет раскладки деталей заказа: листов столько же, на каждой раскладке есть деталь заказа
+        only = [res_["index"] for res_ in M2["results"] if not (lay_names[res_["index"]] - fill_names)]
+        rep.append(("добивка не добавила листов", r["sheets"] == fill_base and not only,
+                    "листов %d, у деталей заказа без добивки — %d; раскладок без деталей заказа %d%s; добивка %d шт" % (
+                        r["sheets"], fill_base, len(only), (" (№%s)" % ", ".join(map(str, only[:5]))) if only else "", n_fill)))
     # холостой ход — по разобранной программе (порядок записей), замкнутая полилиния — от вершины sp: расшифровщик
     # отчётов режет от вершины 0 и в группах общего реза ошибается (разбор 13.10)
     idle_lay = []
@@ -274,10 +292,13 @@ def check(raw, parts, layouts, gap, edge, thickness=None, rep=None):
     # препятствия — край листа и контуры всех деталей раскладки (и деталей групп общего реза) по плану
     lay_by = {l["index"]: l for l in ctx["prog"].layouts}
     lead_min = lead_b = None
+    graze, graze_b = collections.Counter(), 0          # подвод по кромке соседа (lead_room): деталь → вставок × листов
     for d, l, res_ in zip(ctx["lays"], layouts, M2["results"]):
         lay = lay_by[d["index"]]
         grp_blocks = {ins["block"] for ins in res_["inserts"] if ins["ref"][0] == "NestGroup"}
         free_blocks = {ins["block"] for ins in res_["inserts"] if ins["ref"] == FREE}   # мосты (не прошедшие — уже ✗ выше)
+        bname = {ins["block"]: pby[ins["ref"][1]]["name"] for ins in res_["inserts"]
+                 if ins["ref"][0] == "NestPart" and ins["ref"][1] in pby}
         plan_polys = []
         for q in l["placed"]:
             P = G.points(G.transform(parts[q["part"]]["shapes"][-1], q["rot"], (q["dx"], q["dy"])), 0.1)
@@ -287,9 +308,10 @@ def check(raw, parts, layouts, gap, edge, thickness=None, rep=None):
                 continue                   # у групп общего реза врезка — в свободном углу первой детали, подвод CypCut
             if b in bridge_ok:             # мост: врезка — вершина 0 на дуге, подвод по нормали к дуге; препятствия — свой
                 bo = bridge_ok[b]          # общий контур (луч может уйти на деталь своей группы) и чужие детали
-                fr = lead_free(bo["lead_shape"], l["W"], l["L"], [pp for k_, pp in enumerate(plan_polys) if k_ not in bo["members"]]
-                               + [bo["poly"]])
+                fr, fs = lead_room(bo["lead_shape"], l["W"], l["L"], [pp for k_, pp in enumerate(plan_polys) if k_ not in bo["members"]]
+                                   + [bo["poly"]])
                 lead_b = fr if lead_b is None else min(lead_b, fr)
+                graze_b += (fr >= LEAD_FREE - 1e-9 > fs) * l["amount"]
                 continue
             if b in free_blocks:
                 continue
@@ -303,18 +325,27 @@ def check(raw, parts, layouts, gap, edge, thickness=None, rep=None):
             start = G.ends(st)[0]
             own = [pp for pp in plan_polys if not G.inside(start, pp[0]) and min(G.seg_point_dist(start, pp[0][i_ - 1], pp[0][i_]) for i_ in range(len(pp[0]))) <= 0.01]
             others = [pp for pp in plan_polys if pp not in own[:1]]
-            fr = lead_free(st, l["W"], l["L"], others)
+            fr, fs = lead_room(st, l["W"], l["L"], others)
             lead_min = fr if lead_min is None else min(lead_min, fr)
+            if fr >= LEAD_FREE - 1e-9 > fs:             # место есть, но луч — по кромке соседа: врезка на его контуре
+                graze[bname.get(b, "?")] += l["amount"]
     # предупреждение, а не ошибка: на плотной раскладке мелких деталей 10 мм у каждой детали может не найтись —
-    # тогда подвод ставит/укорачивает оператор (у CypCut есть проверка подводов на пересечение)
-    rep.append(("место под подвод внешнего контура ≥ %g мм" % LEAD_FREE, True if (lead_min is None or lead_min >= LEAD_FREE - 1e-9) else None,
-                ("наименьшее %.1f мм (до 20)%s" % (lead_min, "" if lead_min >= LEAD_FREE - 1e-9
-                                                    else " — подвод у таких деталей проверить/укоротить в CypCut"))
+    # тогда подвод ставит/укорачивает оператор (у CypCut есть проверка подводов на пересечение). Подвод по кромке
+    # соседа (точка врезки ближе LEAD_CLEAR к его контуру: у одинаковых деталей стопкой луч от угла идёт по продолжению
+    # кромки) — тоже предупреждение: врезка оставит след на соседе, если он ещё не вырезан
+    ng = sum(graze.values())
+    gtxt = ("; по кромке соседней детали (точка врезки ближе %g мм к её контуру) — %d шт: %s — подвод проверить/укоротить "
+            "в CypCut" % (LEAD_CLEAR, ng, ", ".join("%s %d" % kv for kv in graze.most_common(4)))) if ng else ""
+    rep.append(("место под подвод внешнего контура ≥ %g мм" % LEAD_FREE,
+                True if ((lead_min is None or lead_min >= LEAD_FREE - 1e-9) and not ng) else None,
+                ("наименьшее %.1f мм (до 20)%s%s" % (lead_min, "" if lead_min >= LEAD_FREE - 1e-9
+                                                      else " — подвод у таких деталей проверить/укоротить в CypCut", gtxt))
                 if lead_min is not None else "отдельных деталей нет — у групп общего реза врезка в свободном углу, подвод CypCut"))
     if bridge_ok:
         rep.append(("мосты: место под подвод общего контура ≥ %g мм (по радиусу от точки врезки на дуге)" % LEAD_FREE,
-                    True if lead_b is not None and lead_b >= LEAD_FREE - 1e-9 else None,
-                    ("наименьшее %.1f мм (до 20)" % lead_b) if lead_b is not None else "врезки мостов не найдены в программе"))
+                    True if lead_b is not None and lead_b >= LEAD_FREE - 1e-9 and not graze_b else None,
+                    (("наименьшее %.1f мм (до 20)" % lead_b) + ("; по кромке соседней детали — %d шт" % graze_b if graze_b else ""))
+                    if lead_b is not None else "врезки мостов не найдены в программе"))
     labelled = [p for p in parts if p.get("label")]
     if labelled:
         bad_l = [p["name"] + ": " + why for p in labelled for why in [_check_label(p)] if why]
@@ -332,17 +363,39 @@ def check(raw, parts, layouts, gap, edge, thickness=None, rep=None):
         for nm, n in bridged_by.get(d["index"], {}).items():
             if nm in hby:
                 cnt_[hby[nm]] += n
-        cyp = sum(n * LR.part_areas(prog, h, ctx["eng"])[1] for h, n in cnt_.items())
+        cyp = sum(n * _util_area(prog, h) for h, n in cnt_.items())
         util_c[d["index"]] = round(100 * cyp / ((pl_["x1"] - pl_["x0"]) * (pl_["y1"] - pl_["y0"])), 2)
     util_ok = all(abs(l["util_cypcut"] - util_c[l["index"]]) < 0.01 for l in r["layouts"])
     rep.append(("загрузка в файле = своя по геометрии%s" % (" (+ детали мостов)" if bridged_by else ""), util_ok,
                 ", ".join("%.1f%%" % l["util_cypcut"] for l in r["layouts"])))
+    # «загрузка не сошлась» расшифровщика снимается, если сошлась своя точная (у него дуги — по 16 хорд: сотни деталей
+    # с дугами — добивка шайбами — расходятся больше его 0,05 %; детали мостов он не видит)
     warns = [w for w in r["warnings"] if "от края" not in w and "толщин" not in w and not any(
         w.startswith("раскладка %d: загрузка не сошлась" % k) and abs(util_c[k] - next(l["util_cypcut"] for l in r["layouts"]
                                                                                        if l["index"] == k)) < 0.01
-        for k in bridged_by)]
+        for k in util_c)]
     rep.append(("расшифровщик без предупреждений", not warns, "; ".join(warns)[:300]))
     return rep, r, ctx
+
+
+def _exact_area(sh):
+    """Площадь замкнутого контура расшифровщика — точно (дуги по bulge, окружность — πR²), как Utilization у сборки
+    (spec_rebuild.block_util_area): у расшифровщика дуги — по 16 хорд, и на сотнях деталей с дугами (добивка шайбами,
+    скруглёнными деталями) загрузка расходилась с файлом больше 0,01 % — ложная ✗."""
+    if sh.get("circle"):
+        return math.pi * sh["circle"][2] ** 2
+    B = sh["bulge"]
+    return abs(G.poly_area([(x, y, B[i] if i < len(B) else 0.0) for i, (x, y) in enumerate(sh["pts"])]))
+
+
+def _util_area(prog, h):
+    """Площадь детали для загрузки (как CypCut и LR.part_areas[1]): наибольший замкнутый минус все прочие замкнутые."""
+    ar = [_exact_area(prog.shapes[x]) for x in prog.blocks.get(prog.parts[h]["block"], [])
+          if x in prog.shapes and prog.shapes[x]["closed"]]
+    if not ar:
+        return 0.0
+    m = max(ar)
+    return m - (sum(ar) - m)
 
 
 def _dense(s, step=0.5):

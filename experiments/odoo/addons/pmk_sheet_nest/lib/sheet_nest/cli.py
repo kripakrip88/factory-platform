@@ -4,12 +4,14 @@
     python3 -m sheet_nest.cli ВХОД... [--sheet 1250x2500] [--gap 2] [--edge 2] [--thickness 1.5] [--qty ИМЯ=N] [--out DIR] [--name ИМЯ]
                               [--coedge] [--bridge [--bridge-width 2] [--bridge-group 5]]
                               [--strategy short|safe|safe0|hill] [--compare] [--small 100] [--microjoints ИМЯ|*]
-                              [--machine ПРОФИЛЬ.json ...]
+                              [--machine ПРОФИЛЬ.json ...] [--heal-gap 20] [--fill ИМЯ ... [--fill-max ИМЯ=N]]
 
 ВХОД — .dxf (одна или несколько деталей; гравировка — слой «ГРАВИРОВКА»; количество — из имени «…_12шт.dxf»
 или --qty) и/или .lxds (детали с количеством из программы; раскладки в ней не важны).
 В DIR: <имя>_<дата>.lxds (одна программа на все листы), картинка раскладок .png, отчёт .json.
 Порядок резки — по стратегии (route.STRATEGIES), --compare — сводка по всем стратегиям (текст и отчёт).
+--fill — добивка остатков листа складскими позициями (fill.py; листов не добавляет), --heal-gap — закрыть прямой разрыв
+внешнего контура на прямой самой кромки (geom.heal_open).
 Из Odoo движок вызывается не отсюда, а через sheet_nest/job.py (контракт sheet_nest.job/1, ERP.md).
 """
 import sys, os, json, math, errno, argparse, datetime, collections
@@ -65,7 +67,7 @@ def _oserr(e):
             errno.EISDIR: "это папка"}.get(e.errno, e.strerror or str(e))
 
 
-def _read_input(path, fn, pname, pqty, engrave_layers):
+def _read_input(path, fn, pname, pqty, engrave_layers, heal_gap_mm=0.0):
     """Один вход → (детали, технология CypCut | None, предупреждения программы)."""
     try:
         with open(path, "rb") as f:
@@ -77,7 +79,7 @@ def _read_input(path, fn, pname, pqty, engrave_layers):
             raise SheetNestError("%s: у программы CypCut детали и количества берутся из неё — имя и количество не "
                                  "задаются" % fn)
         from .read_lxds import parts_from_lxds
-        ps, info = parts_from_lxds(data, fn)
+        ps, info = parts_from_lxds(data, fn, heal_gap_mm)
         return ps, info["technical"], info["warnings"]
     if fn.lower().endswith(".dxf"):
         if pname is not None and (not isinstance(pname, str) or not pname.strip()):
@@ -85,7 +87,8 @@ def _read_input(path, fn, pname, pqty, engrave_layers):
         if pqty is not None:
             pqty = _explicit_qty(pqty, pname.strip() if pname is not None else fn)
         from .read_dxf import parts_from_dxf
-        return parts_from_dxf(data, fn, pqty, engrave_layers, name=pname.strip() if pname is not None else None), None, []
+        return parts_from_dxf(data, fn, pqty, engrave_layers, name=pname.strip() if pname is not None else None,
+                              heal_gap_mm=heal_gap_mm), None, []
     raise SheetNestError("%s: нужен .dxf или .lxds" % fn)
 
 
@@ -119,19 +122,25 @@ def _have(parts):
     return ", ".join(dict.fromkeys(part_aliases(p)[0] for p in parts))
 
 
-def load_parts(inputs, qty_over=None, engrave_layers=None):
+def load_parts(inputs, qty_over=None, engrave_layers=None, heal_gap_mm=0.0, fill_names=()):
     """inputs — пути или словари {path, name, qty, key} (см. run). Вернуть (детали, технология CypCut, предупреждения).
     У деталей — ещё input (номер входа), aliases (part_aliases) и key (если задан). Ошибка входа — SheetNestError с
-    номером входа (input) и именем детали или файла в тексте."""
+    номером входа (input) и именем детали или файла в тексте. heal_gap_mm — закрывать прямой разрыв внешнего контура
+    до стольких мм (read_lxds, read_dxf; 0 — нет). fill_names — имена позиций добивки: их количество в заказ не идёт —
+    у входа-словаря с таким именем qty можно не задавать или задать 0, «количество не указано» у них не пишется."""
     from .read_dxf import QTY_MISSING
     parts, technical, warns = [], None, []
+    fill_names = set(fill_names or ())
     for k, item in enumerate(inputs):
         pname = item.get("name") if isinstance(item, dict) else None
         fn = ""
         try:
             path, pname, pqty, key = _input(item)
             fn = os.path.basename(path)
-            ps, tech, w = _read_input(path, fn, pname, pqty, engrave_layers)
+            if (isinstance(pname, str) and pname.strip() in fill_names and pqty is not None and not isinstance(pqty, bool)
+                    and isinstance(pqty, (int, float)) and pqty == 0):
+                pqty = None                             # склад: количество не заказ (Odoo шлёт 0) — читается как 1
+            ps, tech, w = _read_input(path, fn, pname, pqty, engrave_layers, heal_gap_mm)
         except SheetNestError as e:
             _where(e, k, item, fn, pname)
             raise
@@ -173,6 +182,8 @@ def load_parts(inputs, qty_over=None, engrave_layers=None):
             # количество задано явно — «не указано» было бы ложным (ERP.md, п. 2)
             p["warnings"] = [w for w in p.get("warnings", []) if w != QTY_MISSING]
     for p in parts:
+        if fill_names and fill_names & set(part_aliases(p)):
+            p["warnings"] = [w for w in p.get("warnings", []) if w != QTY_MISSING]     # у добивки количество — не заказ
         warns += ["%s: %s" % (p["name"], w) for w in p.get("warnings", [])]
     return parts, technical, warns
 
@@ -188,6 +199,99 @@ def mark_microjoints(parts, names):
             p["microjoints"] = True
     for p in parts:
         p.setdefault("microjoints", False)
+
+
+def heal_option(v):
+    """Разрыв внешнего контура, который можно закрыть прямой, мм: None → 0 (не закрывать); число ≥ 0, иначе
+    SheetNestError."""
+    if v is None:
+        return 0.0
+    try:
+        x = float(v)
+    except (TypeError, ValueError):
+        x = None
+    if isinstance(v, bool) or x is None or not math.isfinite(x) or x < 0:
+        raise SheetNestError("закрывать разрыв внешнего контура до %s мм — нужно число не меньше 0" % _show(v), flag="--heal-gap")
+    return x
+
+
+def fill_options(fill):
+    """Добивка: None | [ИМЯ | {name, max}] → [(имя, max | None)] по порядку; «*», повтор имени, плохой max —
+    SheetNestError (max — целое ≥ 0: столько на все листы, 0 — не ставить)."""
+    out, seen = [], set()
+    for f in fill or ():
+        if isinstance(f, str):
+            f = dict(name=f)
+        if not isinstance(f, dict):
+            raise SheetNestError("добивка: позиция %s — нужно имя детали или {name, max}" % _show(f))
+        extra = sorted(set(f) - {"name", "max"})
+        if extra:
+            raise SheetNestError("добивка: лишние поля %s (есть name — имя детали, max — не больше стольких штук)" % ", ".join(extra))
+        nm, mx = f.get("name"), f.get("max")
+        if not isinstance(nm, str) or not nm.strip():
+            raise SheetNestError("добивка: имя детали %s — нужна непустая строка" % _show(nm), flag="--fill")
+        nm = nm.strip()
+        if nm == "*":
+            raise SheetNestError("добивка «*» нельзя: добивкой идут только названные складские позиции, а не все детали",
+                                 flag="--fill")
+        if nm in seen:
+            raise SheetNestError("добивка: «%s» названа дважды" % nm, flag="--fill")
+        seen.add(nm)
+        if mx is not None:
+            try:
+                q = float(mx)
+            except (TypeError, ValueError):
+                q = None
+            if isinstance(mx, bool) or q is None or not math.isfinite(q) or q < 0 or q != int(q):
+                raise SheetNestError("добивка «%s»: предел %s — нужно целое число не меньше 0" % (nm, _show(mx)), flag="--fill-max")
+            mx = int(q)
+        out.append((nm, mx))
+    return out
+
+
+def split_fill(parts, req):
+    """Детали → (детали заказа, добивка [{part, max, name}]): добивка — детали, названные в req (по part_aliases, как
+    перемычки), в порядке req; name — имя позиции, как в req. У одной позиции из нескольких деталей (DXF из нескольких
+    контуров «#k») — крупные первыми, max — на все её детали вместе, в отчёте — одна строка (fill.fill_plan).
+    Количество детали добивки во входе (у программы CypCut — Amount) в заказ не идёт."""
+    from . import geom as G_
+    if not req:
+        return parts, []
+    taken, fillers = {}, []
+    for nm, mx in req:
+        hit = [p for p in parts if nm in part_aliases(p)]
+        if not hit:
+            raise SheetNestError("добивка «%s»: нет такой детали (есть: %s)" % (nm, _have(parts)), flag="--fill")
+        hit.sort(key=lambda p: -round(G_.area(p["shapes"][-1]), 2))
+        for p in hit:
+            if id(p) in taken:
+                raise SheetNestError("добивка: деталь «%s» названа дважды («%s» и «%s»)" % (p["name"], taken[id(p)], nm), flag="--fill")
+            taken[id(p)] = nm
+            fillers.append(dict(part=p, max=mx, name=nm))
+    order = [p for p in parts if id(p) not in taken]
+    if not order:
+        raise SheetNestError("добивка: все детали названы добивкой — нечего раскладывать (добивка только заполняет остатки "
+                             "листов с деталями заказа)", flag="--fill")
+    return order, fillers
+
+
+def apply_fill(pl, parts, fillers, gap, edge, qty_left, log=print, progress=None):
+    """Добивка в раскладки плана pl деталей заказа parts (fill.fill_plan). Вернуть (детали программы — заказ и добивка с
+    количеством «сколько поставлено», отчёт по позициям). Детали, которых не поставлено ни одной, в программу не идут.
+    progress — fn(текст): ход по раскладкам (этап pack)."""
+    if not fillers:
+        return parts, []
+    from .fill import fill_plan
+    rep, placed = fill_plan(pl["layouts"], parts, fillers, gap, edge, qty_left=qty_left, log=log, progress=progress)
+    n0, keep = len(parts), [j for j, n in enumerate(placed) if n]
+    new = {n0 + j: n0 + k for k, j in enumerate(keep)}
+    for l in pl["layouts"]:
+        for q in l["placed"]:
+            if q.get("fill"):
+                q["part"] = new[q["part"]]
+    out = list(parts) + [dict(fillers[j]["part"], qty=placed[j], fill=True) for j in keep]
+    log("добивка: " + ", ".join("%s %d шт" % (r["name"], r["placed"]) for r in rep))
+    return out, rep
 
 
 def check_params(W, L, gap, edge, thickness=None, small=None):
@@ -372,7 +476,7 @@ def bridge_options(bridge):
 
 def run(inputs, W=1250.0, L=2500.0, gap=2.0, edge=2.0, thickness=None, qty=None, title=None, out=None, methods=("rect", "raster"),
         engrave_layers=None, log=print, coedge=False, labels=None, label_opts=None, strategy=None, compare=False, small=None,
-        microjoints=None, machine=None, bridge=None, progress=None):
+        microjoints=None, machine=None, bridge=None, progress=None, heal_gap_mm=0.0, fill=None):
     """inputs — пути к .dxf / .lxds или словари {path, name, qty, key}: у словаря имя и количество — как заданы, из имени
     файла ничего не берётся (у .lxds их не задают — детали и количества из программы); key — метка вызывающего (Odoo:
     «pmk.laser.job.part,57»), возвращается у деталей (parts[i]["key"]).
@@ -384,6 +488,14 @@ def run(inputs, W=1250.0, L=2500.0, gap=2.0, edge=2.0, thickness=None, qty=None,
     соседние круглые детали через зазор соединяются перемычками и режутся одной врезкой (bridge.py).
     progress — fn(этап, текст), этапы read, pack, route, build, check, render; маршрут — по каждой стратегии
     («маршрут: Безопасный, 2/4»).
+    heal_gap_mm — внешний контур, который не замкнули, закрыть прямой, если разрыв не больше стольких мм и лежит на
+    прямой самого контура (read_lxds, read_dxf; 0 — не закрывать: ошибка, как раньше). fill — добивка остатков листа
+    складскими позициями: [{name, max | None}] (или имена) по порядку — детали входов с этими именами в заказ не идут
+    (их количество во входе не важно: у входа-словаря qty можно не задавать или задать 0), а ставятся в свободное место
+    раскладок деталей заказа (fill.py): листов столько же, сколько без добивки; max — не больше стольких на все листы
+    (у позиции из нескольких контуров — на все её детали). res["fill"] — по позиции на строку [{name, placed, per_layout,
+    max, why}], у деталей программы добивки — fill: true и qty = поставлено; ход — progress("pack", «добивка остатков
+    листа: раскладка k из N»).
     Ошибки пользователя — SheetNestError (DxfError, LxdsError, LabelError — его наследники), текст без флагов командной
     строки. В res — ещё requested / applied (что просили и что вышло: стратегия, общий рез, мост, подписи), files (имена
     записанных файлов), timing; у раскладок — W, L, util_pct, cut_m, mark_m, pierces, mass_kg (на один лист)."""
@@ -398,6 +510,8 @@ def run(inputs, W=1250.0, L=2500.0, gap=2.0, edge=2.0, thickness=None, qty=None,
     from . import bridge as BR
     prog = progress or (lambda stage, text: None)
     check_params(W, L, gap, edge, thickness, small)
+    heal = heal_option(heal_gap_mm)
+    fill_req = fill_options(fill)
     o = options(strategy)
     br = bridge_options(bridge)
     if br and coedge:
@@ -413,15 +527,19 @@ def run(inputs, W=1250.0, L=2500.0, gap=2.0, edge=2.0, thickness=None, qty=None,
         lo_.update({k: v for k, v in (label_opts or {}).items() if k in lo_})
         check_opts(**lo_)                               # до чтения деталей: плохие высоты — отказ сразу
     prog("read", "чтение деталей: файлов %d" % len(inputs))
-    parts, technical, warns = load_parts(inputs, qty, engrave_layers)
-    n_total = sum(p["qty"] for p in parts)
+    parts, technical, warns = load_parts(inputs, qty, engrave_layers, heal, [nm for nm, mx in fill_req])
+    oparts, fillers = split_fill(parts, fill_req)       # детали заказа и добивка (её количество во входе — не заказ)
+    n_total = sum(p["qty"] for p in oparts)
     if n_total > QTY_MAX:
         raise SheetNestError("деталей %d — больше, чем движок раскладывает за один раз (%d): разбейте задание на несколько"
                              % (n_total, QTY_MAX))
     mark_microjoints(parts, microjoints)
     for w in warns:
         log("  ⚠ " + w)
-    log("деталей: %d видов, %d шт" % (len(parts), sum(p["qty"] for p in parts)))
+    log("деталей: %d видов, %d шт" % (len(oparts), n_total))
+    if fillers:
+        log("добивка остатков листа (по порядку): %s" % ", ".join(
+            "%s%s" % (f["part"]["name"], (" до %d шт" % f["max"]) if f["max"] is not None else "") for f in fillers))
     lab_rep = []
     if labels:
         prog("read", "подписи деталей")
@@ -433,23 +551,31 @@ def run(inputs, W=1250.0, L=2500.0, gap=2.0, edge=2.0, thickness=None, qty=None,
             log("  подпись %-30s «%s» %s" % (name, text, ("%g мм" % h) if h else "⚠ " + why))
             if not h:
                 warns.append("%s: %s — деталь без подписи" % (name, why))
-    check_fit(parts, W, L, edge)                        # понятный отказ и для общего реза (его раскрой — без этой проверки)
+    check_fit(oparts, W, L, edge)                       # понятный отказ и для общего реза (его раскрой — без этой проверки)
+    parts = oparts                                      # детали программы: заказ, после добивки — и она (apply_fill)
     pl = None
     cwarn = []                                          # общий рез не применён — причина в предупреждения (ERP.md, п. 4)
     if coedge:
         prog("pack", "раскрой под общий рез, лист %g×%g" % (W, L))
-        pl, why = plan_coedge(parts, W, L, edge)
+        pl, why = plan_coedge(oparts, W, L, edge)
         if pl is None:
             log("  ⚠ общий рез не применён: %s — раскладываю с зазором %g мм" % (why, gap))
             cwarn.append("общий рез не применён: %s — раскладка с зазором %g мм" % (why, gap))
     if pl is None:
         prog("pack", "раскрой, лист %g×%g" % (W, L))
-        pl = plan(parts, W, L, gap, edge, methods)
+        pl = plan(oparts, W, L, gap, edge, methods)
     for t in pl["tried"]:
         log("  раскрой %-40s %s" % (t["method"], ("%d листов, %d раскладок" % (t["sheets"], t["layouts"])) if "sheets" in t
                                     else ("пропущен: " + t["skipped"]) if "skipped" in t else t.get("error")))
     log("раскрой: %s — %d листов %g×%g (нижняя граница %d %s%s)" % (pl["method"], pl["sheets"], W, L, pl["lower_bound"],
                                                                      pl["bound_kind"], ", минимум" if pl["optimal"] else ""))
+    base_sheets = pl["sheets"]                          # листов у деталей заказа — добивка их не меняет (проверка)
+    if fillers:
+        prog("pack", "добивка остатков листа")
+        parts, frep = apply_fill(pl, oparts, fillers, gap, edge, QTY_MAX - n_total, log,
+                                  lambda t: prog("pack", t))
+    else:
+        frep = []
     from .route import CoedgeRouteError
     bwarn = []
     if br:
@@ -514,9 +640,14 @@ def run(inputs, W=1250.0, L=2500.0, gap=2.0, edge=2.0, thickness=None, qty=None,
         log("  ⚠ общий рез не применён: %s — раскладываю с зазором %g мм" % (e, gap))
         cwarn.append("общий рез не применён: %s — раскладка с зазором %g мм" % (e, gap))
         prog("pack", "раскрой с зазором, лист %g×%g" % (W, L))
-        pl = plan(parts, W, L, gap, edge, methods)
+        pl = plan(oparts, W, L, gap, edge, methods)
         log("раскрой: %s — %d листов %g×%g (нижняя граница %d %s%s)" % (pl["method"], pl["sheets"], W, L, pl["lower_bound"],
                                                                          pl["bound_kind"], ", минимум" if pl["optimal"] else ""))
+        base_sheets = pl["sheets"]
+        if fillers:
+            prog("pack", "добивка остатков листа")
+            parts, frep = apply_fill(pl, oparts, fillers, gap, edge, QTY_MAX - n_total, log,
+                                  lambda t: prog("pack", t))
         by = route_plan(pl)
     rs, secs = by[o["name"]]
     for l, r in zip(pl["layouts"], rs):
@@ -603,7 +734,7 @@ def run(inputs, W=1250.0, L=2500.0, gap=2.0, edge=2.0, thickness=None, qty=None,
     prog("build", "сборка программы")
     raw, M = build(parts, pl["layouts"], fname, technical)
     prog("check", "проверка программы")
-    rep, rr, ctx = check(raw, parts, pl["layouts"], gap, edge, thickness)
+    rep, rr, ctx = check(raw, parts, pl["layouts"], gap, edge, thickness, fill_base=base_sheets if fillers else None)
     ok = all(x[1] is not False for x in rep)
     for n, o_, d in rep:
         log("  %s %-62s %s" % ("✓" if o_ else "⚠" if o_ is None else "✗", n, d))
@@ -612,6 +743,9 @@ def run(inputs, W=1250.0, L=2500.0, gap=2.0, edge=2.0, thickness=None, qty=None,
     for line in machine_lines(main_row, machines):
         log(line)
     lab_ok = sum(1 for n_, tx, h, why in lab_rep if h)
+    # добивка: не поставлено ни одной или упёрлась в предел деталей прогона — в предупреждения (прочее — в res["fill"])
+    fill_warn = ["добивка «%s»: %d шт — %s" % (r["name"], r["placed"], r["why"]) for r in frep
+                 if r["why"] and (not r["placed"] or "предел деталей" in r["why"])]
     res = dict(file=fname + ".lxds", ok=ok, sheets=pl["sheets"], lower_bound=pl["lower_bound"], optimal=pl["optimal"],
                method=pl["method"], tried=pl["tried"], idle_m=round(idle / 1000, 2),
                # tongues, parts — как было (маршрут: над вырезанными язычками; заходы в деталь над вырезанной — с зазором,
@@ -641,7 +775,7 @@ def run(inputs, W=1250.0, L=2500.0, gap=2.0, edge=2.0, thickness=None, qty=None,
                              **layout_stats(l, r, parts, thickness))
                         for k, (l, r) in enumerate(zip(pl["layouts"], rs))],
                totals={k: v for k, v in rr["totals"].items()} if rr else {}, checks=[(n, o_, d) for n, o_, d in rep],
-               warnings=warns + cwarn + bwarn + route_warn + rwarn + fwarn, strip=main_row["strip"],
+               warnings=warns + cwarn + bwarn + fill_warn + route_warn + rwarn + fwarn, strip=main_row["strip"],
                labels=[dict(part=n, text=tx, height=h, rot=next((p["label"]["rot"] for p in parts if p["name"] == n and p.get("label")), None),
                             why=why) for n, tx, h, why in lab_rep],
                # что просили и что вышло (ERP.md, п. 4): общий рез мог откатиться на зазор, мост — не найти соседей
@@ -651,7 +785,10 @@ def run(inputs, W=1250.0, L=2500.0, gap=2.0, edge=2.0, thickness=None, qty=None,
                             labels_ok=lab_ok, labels_failed=len(lab_rep) - lab_ok),
                mass_kg=(round(sum(l["W"] * l["L"] * l["amount"] for l in pl["layouts"]) * float(thickness) * DENSITY, 1)
                         if thickness else None),
-               files=dict(lxds=None, png_layouts=None, png_order=None, report=None))
+               files=dict(lxds=None, png_layouts=None, png_order=None, report=None),
+               # добивка остатков листа (fill.py): по позициям — поставлено на все листы, на лист каждой раскладки, предел,
+               # почему меньше; листов без добивки — столько же (base_sheets, проверка «добивка не добавила листов»)
+               fill=frep)
     if rows is not None:
         res["strategies"] = {r["name"]: r for r in rows}
     if br:
@@ -664,11 +801,14 @@ def run(inputs, W=1250.0, L=2500.0, gap=2.0, edge=2.0, thickness=None, qty=None,
         # картинки — после программы и до отчёта: не нарисовались — предупреждение в отчёте, программа остаётся (п. 4)
         prog("render", "картинки раскладок и порядка резки")
         what = (", общий рез" if pl.get("coedge") else "") + ((", мост %g мм: групп %d" % (br["width"], bst["groups"])) if bst and bst["groups"] else "")
+        n_fill = sum(r["placed"] for r in frep)
+        if n_fill:
+            what += ", добивка %d шт" % n_fill
         for key_, png_, draw in (
                 ("png_layouts", fname + ".png", lambda path: render.png_model(
                     raw, path, "%s — %d листов %g×%g%s, «%s»: холостой ход %.0f м, врезок %d" % (
                         title, pl["sheets"], W, L, what, o["title"], idle / 1000, main_row["pierces"]),
-                    moves=[r["risk"]["moves"] for r in rs])),
+                    moves=[r["risk"]["moves"] for r in rs], fill_names={p["name"] for p in parts if p.get("fill")})),
                 ("png_order", fname + "_порядок.png", lambda path: render.png_order(
                     raw, path, "%s — порядок резки «%s»%s: цвет — от первой детали (синий) к последней (красный)" % (
                         title, o["title"], what), strips=[r.get("strip") for r in rs], done_polys=[r.get("done_polys") for r in rs]))):
@@ -718,6 +858,11 @@ def main(argv=None):
     ap.add_argument("--label-min", type=float, default=10.0, help="наименьшая высота, если не помещается (10)")
     ap.add_argument("--label-margin", type=float, default=3.0, help="отступ подписи от отверстий, прорезей и края, мм (3)")
     ap.add_argument("--font", default=None, help="файл шрифта GOST.FON (GOST type A plotter)")
+    ap.add_argument("--heal-gap", type=float, default=0.0, help="внешний контур не замкнут: закрыть прямой разрыв до стольких "
+                                                                "мм на прямой самого контура (0 — не закрывать, ошибка)")
+    ap.add_argument("--fill", action="append", default=[], help="добивка остатков листа: ИМЯ складской позиции (детали входа; "
+                                                                "повторяется — по порядку; в заказ не идёт, листов не добавляет)")
+    ap.add_argument("--fill-max", action="append", default=[], help="ИМЯ=N — добивки не больше N шт на все листы")
     a = ap.parse_args(argv)
     try:
         W, L = (float(x) for x in a.sheet.lower().replace("х", "x").split("x"))
@@ -738,12 +883,23 @@ def main(argv=None):
             if not v.strip() or not k.strip():
                 raise ValueError("--label %r: нужно ИМЯ=ТЕКСТ (или *=ТЕКСТ)" % q)
             labels[k.strip()] = v
+        fmax = {}
+        for q in a.fill_max:
+            k, _, v = q.rpartition("=")
+            try:
+                fmax[k.strip()] = int(v)
+            except ValueError:
+                raise ValueError("--fill-max %r: нужно ИМЯ=N (N — целое число)" % q)
+            if k.strip() not in [f.strip() for f in a.fill]:
+                raise ValueError("--fill-max %s: такой позиции нет среди --fill (%s)" % (k.strip(), ", ".join(a.fill) or "пусто"))
+        fill = [dict(name=f, max=fmax.get(f.strip())) for f in a.fill]
         res, *_ = run(a.inputs, W, L, a.gap, a.edge, a.thickness, qty, a.name, a.out or os.getcwd(), methods, coedge=a.coedge,
                       labels=labels or None, label_opts=dict(H=a.label_height, H_min=a.label_min, margin=a.label_margin,
                                                              font_path=a.font),
                       strategy=a.strategy, compare=a.compare, small=a.small, microjoints=a.microjoints or None,
                       machine=a.machine or None,
-                      bridge=dict(width=a.bridge_width, group=a.bridge_group) if a.bridge else None)
+                      bridge=dict(width=a.bridge_width, group=a.bridge_group) if a.bridge else None,
+                      heal_gap_mm=a.heal_gap, fill=fill or None)
     except ValueError as e:
         # тексты движка — без флагов командной строки (их видит и Odoo); подсказку флагом добавляет командная строка
         flag = getattr(e, "flag", None)

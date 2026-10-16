@@ -9,7 +9,9 @@
    без сводки, те же листы, что у плана; файлы out/ есть; лог — в run.log (его пишет перенаправление, не job.py);
 2) plan и build на образце .lxds (m8_plates), общий рез на синтетике (applied.coedge), мост (и bridge: {} — мост со
    значениями по умолчанию), имена-номера («2») против имён файлов Odoo (in/2.dxf): перемычки и подписи — только по
-   имени; подписи (если есть таблица шрифта), в том числе у DXF из двух контуров по имени Odoo;
+   имени; подписи (если есть таблица шрифта), в том числе у DXF из двух контуров по имени Odoo; добивка остатков листа
+   (fill → result.json fill и parts[].fill, предел max) с закрытием разрыва внешнего контура (heal_gap_mm), без
+   добивки — fill = [], без heal_gap_mm разрыв — ошибка входа с номером входа;
 3) ошибки: битый DXF (имя детали и номер входа, без «Ð°Ð±Ð²») и .lxds (input, без английского), деталь больше листа,
    мост + общий рез, чужое имя у перемычек, отступ подписи < 0, количество 0 и миллион (params, user), не тот contract /
    kind / стратегия / лишнее поле / DXF без qty / повтор имени DXF / предел времени 1e10 (params, не user), подписи без
@@ -168,7 +170,14 @@ def validate_result(r, kind, compare):
     if r["ok"] != all(c["status"] != "fail" for c in r["checks"]):
         bad.append("ok не сходится с checks")
     for p in r["parts"]:
-        keys(p, ("name", "qty", "key"), "parts")
+        keys(p, J.PART_KEYS, "parts")
+        if not isinstance(p.get("fill"), bool):
+            bad.append("parts[].fill не bool")
+    if not isinstance(r["fill"], list):
+        bad.append("fill — не список")
+    else:
+        for f in r["fill"]:
+            keys(f, J.FILL_KEYS, "fill")
     keys(r["timing"], ("total_s", "route_s"), "timing")
     if not isinstance(r["warnings"], list) or not isinstance(r["labels"], list):
         bad.append("warnings/labels — не списки")
@@ -334,6 +343,73 @@ def sample_and_modes(base):
         print("— подписи: нет таблицы шрифта, пропуск")
 
 
+def fill_and_heal(base):
+    """Добивка остатков листа и разрыв внешнего контура (16.10.2026): поля fill и heal_gap_mm во входе, fill и
+    parts[].fill в итоге."""
+    td = os.path.join(base, "_src")
+    a = dxf_plate(os.path.join(td, "fp.dxf"), 1000, 1100, holes=2, slot=False)
+    doc = DW.DxfDoc(version="AC1015", insunits=4)
+    doc.entities.lwpolyline([(10, 0), (70, 0), (70, 1000), (0, 1000), (0, 0)], closed=False)    # разрыв 10 мм на кромке
+    doc.entities.circle((35, 500), 6)
+    st = os.path.join(td, "stand.dxf")
+    open(st, "wb").write(doc.dxf_bytes())
+    inputs = [dict(file="in/1.dxf", name="Плита", qty=3, key="part,1"), dict(file="in/2.dxf", name="Стойка", qty=1, key="stock,9")]
+    wd = workdir(base, "fill", dict(inputs=inputs, fill=[dict(name="Стойка", max=7)], heal_gap_mm=20, kind="build", compare=None,
+                                     strategy="safe"), [(a, "in/1.dxf"), (st, "in/2.dxf")])
+    code, r, err = run_job(wd)
+    bad = validate_result(r, "build", False) if r else ["нет result.json: %s" % err]
+    f = (r or {}).get("fill") or [{}]
+    check("добивка: result.json по контракту, fill — {name, placed, per_layout, max, why}, стоек ≤ 7, ok",
+          not bad and r["ok"] and [x["name"] for x in r["fill"]] == ["Стойка"] and 0 < f[0]["placed"] <= 7 and f[0]["max"] == 7
+          and sum(n * l["amount"] for n, l in zip(f[0]["per_layout"], r["layouts"])) == f[0]["placed"], "; ".join(bad)[:200] or str(f))
+    check("добивка: parts — fill у стойки (qty = поставлено, ключ входа), у плиты — нет; разрыв закрыт — предупреждение",
+          r is not None and [(p["name"], p["qty"], p["key"], p["fill"]) for p in r["parts"]] ==
+          [("Плита", 3, "part,1", False), ("Стойка", f[0].get("placed"), "stock,9", True)] and
+          any("закрыт прямой" in w for w in r["warnings"]) and any(c["name"] == "добивка не добавила листов" and c["status"] == "ok"
+                                                                  for c in r["checks"]), str(r and r["parts"])[:200])
+    wd = workdir(base, "nofill", dict(inputs=inputs[:1], kind="build", compare=None), [(a, "in/1.dxf")])
+    code, r2, err = run_job(wd)
+    check("без добивки: fill = [], parts[].fill = false, листов столько же, сколько с добивкой",
+          r2 is not None and r2["fill"] == [] and all(p["fill"] is False for p in r2["parts"]) and r and
+          r2["summary"]["sheets"] == r["summary"]["sheets"], str(err)[:160])
+    wd = workdir(base, "heal_off", dict(inputs=inputs, fill=[dict(name="Стойка")], kind="build", compare=None),
+                 [(a, "in/1.dxf"), (st, "in/2.dxf")])
+    code, r3, err = run_job(wd)
+    check("разрыв без heal_gap_mm — ошибка входа (input, user) у стойки: input {index 1, key stock,9}",
+          err is not None and err["kind"] == "input" and err["user"] and err["input"] == dict(index=1, key="stock,9")
+          and "не замкнут" in err["message"], json.dumps(err, ensure_ascii=False)[:200] if err else "")
+    # склад: qty у позиции добивки — null или 0 (в заказ не идёт); у детали заказа null — по-прежнему ошибка вызывающего
+    for q in (None, 0):
+        inp = [inputs[0], dict(inputs[1], qty=q)]
+        if q is None:
+            del inp[1]["qty"]
+        wd = workdir(base, "fill_qty_%s" % q, dict(inputs=inp, fill=[dict(name="Стойка")], heal_gap_mm=20, kind="build", compare=None),
+                     [(a, "in/1.dxf"), (st, "in/2.dxf")])
+        code, rq, err = run_job(wd)
+        check("добивка: qty у её DXF %s — принято, стойки стоят, «количество не указано» нет" % ("не задан" if q is None else "0"),
+              rq is not None and rq["ok"] and rq["fill"][0]["placed"] > 0 and not any("количество не указано" in w for w in rq["warnings"]),
+              json.dumps(err, ensure_ascii=False)[:200] if err else "")
+    wd = workdir(base, "order_qty_none", dict(inputs=[dict(inputs[0], qty=None)], kind="build", compare=None), [(a, "in/1.dxf")])
+    code, rq, err = run_job(wd)
+    check("деталь заказа без qty — ошибка вызывающего (params, user=false), как было",
+          err is not None and err["kind"] == "params" and err["user"] is False and "qty" in err["message"], str(err)[:160])
+    # позиция из нескольких контуров: max — на все её детали, в fill — одна строка с именем из входа
+    doc = DW.DxfDoc(version="AC1015", insunits=4)
+    doc.entities.lwpolyline([(0, 0), (60, 0), (60, 600), (0, 600)], closed=True)
+    doc.entities.lwpolyline([(100, 0), (160, 0), (160, 600), (100, 600)], closed=True)
+    doc.entities.circle((130, 300), 6)
+    two = os.path.join(td, "two.dxf")
+    open(two, "wb").write(doc.dxf_bytes())
+    wd = workdir(base, "fill_multi", dict(inputs=[inputs[0], dict(file="in/2.dxf", name="Две", qty=1, key="s,2")], fill=[dict(name="Две", max=5)],
+                                           kind="build", compare=None), [(a, "in/1.dxf"), (two, "in/2.dxf")])
+    code, rm, err = run_job(wd)
+    fp = [p for p in (rm or {}).get("parts", []) if p["fill"]]
+    check("добивка из DXF с двумя контурами: fill — одна строка «Две», поставлено ≤ max 5 = Σ qty её деталей в parts (ключ s,2)",
+          rm is not None and [(f["name"], f["max"]) for f in rm["fill"]] == [("Две", 5)] and 0 < rm["fill"][0]["placed"] <= 5 and
+          sum(p["qty"] for p in fp) == rm["fill"][0]["placed"] and all(p["key"] == "s,2" and p["name"].startswith("Две #") for p in fp),
+          str((rm or {}).get("fill") or err)[:200])
+
+
 # ============================================================================================ 3) ошибки
 def errors(base, files, inputs):
     td = os.path.join(base, "_src")
@@ -372,6 +448,16 @@ def errors(base, files, inputs):
         ("предел времени 1e10", dict(inputs=one, time_limit_s=1e10), [(a, "in/1.dxf")], "params", False, "time_limit_s"),
         ("мост: группа строкой", dict(inputs=one, bridge=dict(width=2, group="abc")), [(a, "in/1.dxf")], "params", True, "«abc»"),
         ("файл входа не читается", dict(inputs=[dict(file="in/1.dxf", name="Пластина", qty=1)]), [(locked, "in/1.dxf")], "config", False, "не читается"),
+        # добивка и разрыв внешнего контура (16.10.2026): имя и пределы — инженеру; форма поля — вызывающему
+        ("добивка: чужое имя", dict(inputs=one, fill=[dict(name="Нет такой")]), [(a, "in/1.dxf")], "params", True, "нет такой детали"),
+        ("добивка «*»", dict(inputs=one, fill=[dict(name="*")]), [(a, "in/1.dxf")], "params", True, "«*» нельзя"),
+        ("добивка: все детали", dict(inputs=one, fill=[dict(name="Пластина")]), [(a, "in/1.dxf")], "params", True, "все детали"),
+        ("добивка: max < 0", dict(inputs=one, fill=[dict(name="Пластина", max=-1)]), [(a, "in/1.dxf")], "params", True, "предел"),
+        ("добивка — не список", dict(inputs=one, fill="Пластина"), [(a, "in/1.dxf")], "params", False, "fill"),
+        ("добивка: лишнее поле", dict(inputs=one, fill=[dict(name="Пластина", qty=2)]), [(a, "in/1.dxf")], "params", False, "fill[0]"),
+        ("добивка: max строкой", dict(inputs=one, fill=[dict(name="Пластина", max="2")]), [(a, "in/1.dxf")], "params", False, "max"),
+        ("разрыв: heal_gap_mm строкой", dict(inputs=one, heal_gap_mm="20"), [(a, "in/1.dxf")], "params", False, "heal_gap_mm"),
+        ("разрыв: heal_gap_mm < 0", dict(inputs=one, heal_gap_mm=-1), [(a, "in/1.dxf")], "params", True, "не меньше 0"),
     ]
     if FONT:
         cases.append(("отступ подписи < 0", dict(inputs=one, labels={"*": "Р1"}, font="in/font.json", label_opts=dict(margin=-3)),
@@ -641,7 +727,8 @@ def engine_api(base, files):
                dict(machine=dict(travel_mm_s=1)), dict(labels={"*": "Х"}, label_opts=dict(font_path="/нет/шрифта.json")),
                dict(labels={"*": "Х"}, label_opts=dict(H=0)), dict(labels={"*": "Х"}, label_opts=dict(margin=-3)),
                dict(labels={"*": "Х"}, label_opts=dict(H=1e6, H_min=1e5)), dict(qty={"a": 0}), dict(bridge=dict(width=2, group="abc")),
-               dict(machine=dict(travel_mm_s=None, cut=[dict(t=2, mm_s=1)]))):
+               dict(machine=dict(travel_mm_s=None, cut=[dict(t=2, mm_s=1)])), dict(fill=["*"]), dict(fill=["нет"]),
+               dict(fill=[dict(name="нет", max=-1)]), dict(heal_gap_mm=-1)):
         try:
             run([a], 1250, 2500, 2, 2, 2.0, log=quiet, **kw)
             texts.append("принято: %s" % kw)
@@ -713,6 +800,7 @@ def main():
             return 1
         files, inputs = r
         sample_and_modes(base)
+        fill_and_heal(base)
         errors(base, files, inputs)
         sigterm_and_timeout(base, files)
         in_process(base, files)

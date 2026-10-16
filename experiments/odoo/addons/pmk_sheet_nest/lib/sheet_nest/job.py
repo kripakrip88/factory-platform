@@ -15,8 +15,8 @@ Odoo кладёт в папку input.json (и входы в in/), запуск�
 Ошибки (error.json, kind):
     input     — плохой DXF или .lxds (DxfError, LxdsError) — user=true, текст показать как есть; какой вход — в
                 error.json → input {index, key} (и имя детали в тексте);
-    params    — ошибка параметров: деталь больше листа, мост вместе с общим резом, неизвестное имя детали, количество
-                (SheetNestError) — user=true; input.json не по контракту (неизвестный contract, kind или стратегия,
+    params    — ошибка параметров: деталь больше листа, мост вместе с общим резом, неизвестное имя детали (перемычки,
+                подписи, добивка), количество, допуск разрыва < 0 (SheetNestError) — user=true; input.json не по контракту (неизвестный contract, kind или стратегия,
                 нет полей, не те типы, повтор имени DXF, нет файла входа) — user=false: ошибка вызывающего;
     config    — нет пакета vent_nesting, нет таблицы шрифта при подписях, плохой профиль станка, файл входа не
                 читается — user=false (текст администратору);
@@ -42,9 +42,9 @@ BAD_TITLE = '/\\:*?"<>|'
 
 INPUT_KEYS = ("contract", "kind", "run_id", "engine_lib", "vent_nesting_lib", "title", "inputs", "sheet", "gap", "edge",
               "thickness", "strategy", "compare", "coedge", "bridge", "small_mm", "microjoints", "labels", "label_opts",
-              "font", "machines", "time_limit_s")
+              "font", "machines", "time_limit_s", "heal_gap_mm", "fill")
 RESULT_KEYS = ("contract", "kind", "run_id", "engine", "ok", "requested", "applied", "files", "summary", "strategies",
-               "machines", "layouts", "checks", "warnings", "labels", "bridge", "parts", "timing")
+               "machines", "layouts", "checks", "warnings", "labels", "bridge", "parts", "fill", "timing")
 SUMMARY_KEYS = ("sheets", "lower_bound", "optimal", "method", "cut_m", "mark_m", "idle_m", "return_m", "pierces", "mass_kg",
                 "machine_s", "machine_detail")
 STRATEGY_KEYS = ("name", "title", "sheets", "cut_m", "idle_m", "return_m", "pierces", "bridges", "danger", "strip", "ret",
@@ -53,6 +53,8 @@ MACHINE_KEYS = ("name", "preliminary", "source", "updated", "note", "k_total", "
 DETAIL_KEYS = ("cut_s", "pierce_s", "mark_s", "travel_s", "lift_s", "k", "total_s", "why")      # machine_detail{станок}
 DANGER_KEYS = ("tongues", "small", "parts", "holes", "holes_s", "near", "short", "mj")
 LAYOUT_KEYS = ("index", "amount", "parts", "W", "L", "util_pct", "cut_m", "mark_m", "pierces", "mass_kg")
+PART_KEYS = ("name", "qty", "key", "fill")                                                     # result.json → parts[]
+FILL_KEYS = ("name", "placed", "per_layout", "max", "why")                                     # result.json → fill[]
 ERROR_KEYS = ("kind", "user", "message", "trace", "run_id", "input")
 STAGES = ("read", "pack", "route", "build", "check", "render")
 
@@ -259,9 +261,12 @@ def read_input(st):
         raise ContractError("input.json: inputs пуст — нет ни одной детали")
     items, names = [], {}
     st.items = [it if isinstance(it, dict) else {} for it in inputs]
+    # позиции добивки: у их DXF qty можно не задавать (склад — не заказ; форму fill проверяет ниже)
+    fill_names = {f["name"].strip() for f in job.get("fill") or () if isinstance(f, dict) and isinstance(f.get("name"), str)} \
+        if isinstance(job.get("fill"), list) else set()
     for k, it in enumerate(inputs):
         try:
-            items.append(_read_item(st, k, it, names))
+            items.append(_read_item(st, k, it, names, fill_names))
         except ContractError as e:
             if e.input is None:
                 e.input = k
@@ -297,6 +302,16 @@ def read_input(st):
     strategy = _is(job.get("strategy"), str, "strategy")
     for k in ("engine_lib", "vent_nesting_lib", "font", "title"):
         _is(job.get(k), str, k)
+    heal = _num(job.get("heal_gap_mm"), "heal_gap_mm", allow_none=True)     # ≥ 0 — проверяет движок (params, user)
+    fill = _is(job.get("fill"), list, "fill") or []
+    for k, f in enumerate(fill):
+        _is(f, dict, "fill[%d]" % k, allow_none=False)
+        extra = sorted(set(f) - {"name", "max"})
+        if extra:
+            raise ContractError("input.json: fill[%d] — неизвестные поля %s (есть name, max)" % (k, ", ".join(extra)))
+        _is(f.get("name"), str, "fill[%d].name" % k, allow_none=False)
+        if f.get("max") is not None and (isinstance(f["max"], bool) or not isinstance(f["max"], int)):
+            raise ContractError("input.json: fill[%d].max — целое число или null, а не %r" % (k, f["max"]))
     return dict(kind=kind, run_id=st.run_id, items=items, W=W, L=L,
                 gap=_num(_dflt(job.get("gap"), 2.0), "gap"), edge=_num(_dflt(job.get("edge"), 2.0), "edge"),
                 thickness=_num(job.get("thickness"), "thickness", allow_none=True),
@@ -304,11 +319,12 @@ def read_input(st):
                 bridge=bridge, small=_num(job.get("small_mm"), "small_mm", allow_none=True), microjoints=micro or None,
                 labels=labels or None, label_opts=label_opts, font=job.get("font"), machines=machines,
                 time_limit_s=limit, title=_title(job.get("title")), vent_nesting_lib=job.get("vent_nesting_lib"),
-                engine_lib=job.get("engine_lib"))
+                engine_lib=job.get("engine_lib"), heal_gap_mm=heal, fill=[dict(name=f["name"], max=f.get("max")) for f in fill] or None)
 
 
-def _read_item(st, k, it, names):
-    """inputs[k] → {path, name?, qty?, key?} для run(). names — имена DXF уже прочитанных входов (повтор — ошибка)."""
+def _read_item(st, k, it, names, fill_names=()):
+    """inputs[k] → {path, name?, qty?, key?} для run(). names — имена DXF уже прочитанных входов (повтор — ошибка);
+    fill_names — имена позиций добивки (у их DXF qty можно не задавать: в заказ не идёт)."""
     _is(it, dict, "inputs[%d]" % k, allow_none=False)
     extra = sorted(set(it) - {"file", "name", "qty", "key"})
     if extra:
@@ -325,10 +341,12 @@ def _read_item(st, k, it, names):
     if low.endswith(".dxf"):
         if not isinstance(it.get("name"), str) or not it["name"].strip():
             raise ContractError("input.json: inputs[%d] (%s) — у DXF нужно name (имя детали)" % (k, f))
-        if "qty" not in it or it["qty"] is None:
-            raise ContractError("input.json: inputs[%d] (%s) — у DXF нужно qty (количество)" % (k, f))
-        _num(it["qty"], "inputs[%d].qty" % k)      # число; целое ≥ 1 — проверяет движок (инженер ввёл 0 — params, user)
         nm = it["name"].strip()
+        if it.get("qty") is None:
+            if nm not in fill_names:
+                raise ContractError("input.json: inputs[%d] (%s) — у DXF нужно qty (количество)" % (k, f))
+        else:                                       # число; целое ≥ 1 — проверяет движок (инженер ввёл 0 — params, user;
+            _num(it["qty"], "inputs[%d].qty" % k)   # у добивки 0 — можно)
         if nm in names:
             # по имени находят перемычки и подписи (microjoints, labels): у двух деталей одно имя — чья галочка, не понять
             raise ContractError("input.json: inputs[%d] (%s) — имя «%s» уже у inputs[%d]: имена DXF должны быть разными "
@@ -429,7 +447,10 @@ def make_result(job, res, parts, t0):
         layouts=[{k: l[k] for k in LAYOUT_KEYS} for l in res["layouts"]],
         checks=[dict(name=n, status=_status(v), detail=d) for n, v, d in res["checks"]],
         warnings=list(res["warnings"]), labels=res["labels"], bridge=res.get("bridge"),
-        parts=[dict(name=p["name"], qty=p["qty"], key=p.get("key")) for p in parts],
+        # деталь добивки (fill: true) — складская позиция в остатках листа, не заказ; её qty — сколько поставлено
+        parts=[dict(name=p["name"], qty=p["qty"], key=p.get("key"), fill=bool(p.get("fill"))) for p in parts],
+        # добивка остатков листа (16.10.2026): [{name, placed, per_layout, max, why}] по порядку из input.json; без неё — []
+        fill=[{k: f.get(k) for k in FILL_KEYS} for f in res.get("fill") or []],
         timing=dict(total_s=round(time.time() - t0, 2), route_s=res["timing"]["route_s"]))
 
 
@@ -464,7 +485,8 @@ def _work(st, t0):
         job["items"], job["W"], job["L"], job["gap"], job["edge"], job["thickness"], None, job["title"],
         os.path.join(st.workdir, "out"), log=_log, coedge=job["coedge"], labels=job["labels"], label_opts=label_opts,
         strategy=job["strategy"], compare=job["compare"], small=job["small"], microjoints=job["microjoints"],
-        machine=job["machines"] or None, bridge=job["bridge"], progress=st.progress)
+        machine=job["machines"] or None, bridge=job["bridge"], progress=st.progress, heal_gap_mm=job["heal_gap_mm"],
+        fill=job["fill"])
     return make_result(job, res, parts, t0)
 
 

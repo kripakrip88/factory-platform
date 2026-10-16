@@ -59,6 +59,8 @@ C_NEAR = (245, 140, 0)        # впритирку к освобождённой
 C_IDLE = (238, 160, 150)      # обычный холостой — тонкий светло-красный
 C_RET = (120, 120, 120)       # возврат в ноль (настройка станка, в программе его нет) — серый пунктир
 C_BRIDGE = (0, 125, 70)       # общий контур моста (детали с перемычками) — тёмно-зелёный, толще
+C_FILL = (0, 120, 160)        # добивка остатков листа (складские позиции) — контуры сине-зелёные
+C_FILL_BG = (205, 236, 242)   # … и бледная заливка детали
 
 
 def _move_style(v):
@@ -84,16 +86,19 @@ def _dashed(dr, a, b, fill, width=1, dash=6.0, gap=4.0):
         t = e + gap
 
 
-def png_model(raw, path, title="", px_per_mm=None, cols=6, moves=None):
+def png_model(raw, path, title="", px_per_mm=None, cols=6, moves=None, fill_names=None):
     """Картинка по разобранной программе (spec_rebuild): холостые переходы — от точки врезки с учётом sp (у групп
     общего реза замкнутый контур режется не от вершины 0 — расшифровщик отчётов этого не знает). moves — по раскладкам
     [(откуда, куда, вектор risk)] в порядке программы (последний — возврат в ноль): опасные переходы своими цветами,
-    возврат — пунктиром; переходы сверяются с программой (не совпали — рисуются как обычные)."""
+    возврат — пунктиром; переходы сверяются с программой (не совпали — рисуются как обычные). fill_names — имена деталей
+    добивки остатков листа: они залиты бледно, контуры — своим цветом (C_FILL), в легенде — «добивка»."""
     from PIL import Image, ImageDraw
     from . import geom as G
-    from .write_lxds import decompile_free, FREE
+    from .write_lxds import decompile_free, FREE, BAD_NAME
     M = decompile_free(raw)                             # вставки мостов (без NestPart) пакет сам не разбирает
     bn = {b["name"]: b for b in M["blocks"]}
+    fills = {n.translate(BAD_NAME) for n in fill_names or ()}
+    fill_h = {p["handle"] for p in M["parts"] if p["name"] in fills}     # NestPart деталей добивки
     plates = {p["handle"]: p for p in M["plates"]}
     res = M["results"]
     Wm = max(plates[r["plate"]]["W"] for r in res); Lm = max(plates[r["plate"]]["L"] for r in res)
@@ -105,11 +110,14 @@ def png_model(raw, path, title="", px_per_mm=None, cols=6, moves=None):
     F, Fb = _font(15), _font(16, True)
     width = cols * (W + pad) + pad
     legend = []                                         # (x, y, цвет, толщина, текст) — с переносом по ширине
-    if moves:
+    if moves or fill_h:
         probe = ImageDraw.Draw(Image.new("RGB", (8, 8)))
         x, y = pad, 0
-        for col, w, txt in ((C_PART, 3, "над освобождённой деталью / язычком"), (C_HOLE, 2, "над отверстием ≥ 10 мм"),
-                            (C_NEAR, 2, "впритирку (< 5 мм)"), (C_IDLE, 1, "холостой"), (C_RET, 1, "возврат в ноль")):
+        items = ((C_PART, 3, "над освобождённой деталью / язычком"), (C_HOLE, 2, "над отверстием ≥ 10 мм"),
+                 (C_NEAR, 2, "впритирку (< 5 мм)"), (C_IDLE, 1, "холостой"), (C_RET, 1, "возврат в ноль")) if moves else ()
+        if fill_h:
+            items += ((C_FILL, 2, "добивка (складские позиции)"),)
+        for col, w, txt in items:
             tw = int(probe.textlength(txt, font=F)) if hasattr(probe, "textlength") else 8 * len(txt)
             if x > pad and x + 40 + tw > width - pad:
                 x, y = pad, y + 22
@@ -123,7 +131,9 @@ def png_model(raw, path, title="", px_per_mm=None, cols=6, moves=None):
         dr.text((pad, 14), title, fill=(0, 0, 0), font=_font(20, True))
     for x, y, col, w, txt in legend:
         y += 50 if title else 8
-        if col == C_RET:
+        if col == C_FILL:
+            dr.rectangle([x, y + 2, x + 34, y + 14], fill=C_FILL_BG, outline=C_FILL, width=2)
+        elif col == C_RET:
             _dashed(dr, (x, y + 8), (x + 34, y + 8), col, 2)
         else:
             dr.line([(x, y + 8), (x + 34, y + 8)], fill=col, width=w)
@@ -137,11 +147,18 @@ def png_model(raw, path, title="", px_per_mm=None, cols=6, moves=None):
         mv = moves[n] if moves and n < len(moves) else None
         pos, idle, ng, nb, k, danger = (0.0, 0.0), 0.0, 0, 0, 0, 0
         segs, shapes = [], []
+        nf = 0
         for ins in r["inserts"]:
             ng += ins["ref"][0] == "NestGroup"
             nb += ins["ref"] == FREE
             blk = bn[ins["block"]]["shapes"]
             bo = max((x for x in blk if G.is_closed(x)), key=G.area, default=None) if ins["ref"] == FREE else None
+            fo = None
+            if ins["ref"][0] == "NestPart" and ins["ref"][1] in fill_h:     # добивка: бледная заливка под контурами
+                nf += 1
+                fo = max((x for x in blk if G.is_closed(x) and x["layer"] == 1), key=G.area, default=None)
+                if fo is not None:
+                    dr.polygon([P(p) for p in G.points(fo, 0.5)], fill=C_FILL_BG)
             for s in blk:
                 a, b = G.ends(s)
                 style = (C_IDLE, 1)
@@ -150,14 +167,15 @@ def png_model(raw, path, title="", px_per_mm=None, cols=6, moves=None):
                     danger += style[0] in (C_PART, C_HOLE)
                 segs.append((P(pos), P(a), style))
                 idle += math.dist(pos, a)
-                shapes.append((s, s is bo))
+                shapes.append((s, s is bo, fo is not None))
                 pos = b
                 k += 1
-        for s, bridge in shapes:
+        for s, bridge, filler in shapes:
             pts = G.points(s, 0.5)
             if G.is_closed(s):
                 pts = pts + pts[:1]
-            col = (40, 90, 210) if s["layer"] == 2 else ((150, 70, 0) if s.get("coedge") else C_BRIDGE if bridge else (20, 20, 20))
+            col = (40, 90, 210) if s["layer"] == 2 else ((150, 70, 0) if s.get("coedge") else C_BRIDGE if bridge else
+                                                          C_FILL if filler else (20, 20, 20))
             dr.line([P(p) for p in pts], fill=col, width=2 if bridge else 1)
             if bridge and s["kind"] == "LwPolyline":    # перемычки (прямые общего контура, по две на мост) — метка
                 V = s["verts"]
@@ -172,8 +190,9 @@ def png_model(raw, path, title="", px_per_mm=None, cols=6, moves=None):
         x, y = P((0, 0)); dr.ellipse([x - 4, y - 4, x + 4, y + 4], fill=(0, 160, 60))
         dr.text((ox, oy - top + 6), "№%d  ×%d лист.  %g×%g" % (r["index"], r["plate_amount"], pl["W"], pl["L"]), fill=(0, 0, 0), font=Fb)
         # подпись — строками (в одну строку с общим резом налезала на соседнюю раскладку: 6 в ряд при 0,2 пикс/мм)
-        dr.text((ox, oy - top + 26), "холостой %.1f м%s%s" % (idle / 1000, ("  · групп общего реза %d" % ng) if ng else "",
-                                                             ("  · мостов %d" % nb) if nb else ""), fill=(60, 60, 60), font=F)
+        dr.text((ox, oy - top + 26), "холостой %.1f м%s%s%s" % (idle / 1000, ("  · групп общего реза %d" % ng) if ng else "",
+                                                               ("  · мостов %d" % nb) if nb else "", ("  · добивка %d" % nf) if nf else ""),
+                fill=(60, 60, 60), font=F)
         if mv:
             dr.text((ox, oy - top + 46), "опасных переходов %d" % danger, fill=C_PART if danger else (60, 60, 60), font=F)
     img.save(path)
