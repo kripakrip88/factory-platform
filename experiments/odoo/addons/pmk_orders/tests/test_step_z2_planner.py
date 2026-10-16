@@ -197,6 +197,10 @@ class TestStepZ2Planner(Z2Common):
         menus = self.env["ir.ui.menu"].with_user(self.manager).load_web_menus(False)
         sales = self.env.ref("pmk_theme.menu_pmk_sales").id
         names = [menus[mid]["name"] for mid in menus[sales]["children"]]
+        # «Главная» продаж (pmk_sales_home, 16.10.2026) — если стоит, первой.
+        if self.env.ref("pmk_sales_home.menu_sales_home", raise_if_not_found=False):
+            self.assertEqual(names[0], "Главная")
+            names = names[1:]
         self.assertEqual(names[:2], ["Воронка сделок", "Заказы в работе"])
         ours = self.env.ref("pmk_orders.menu_orders_sales")
         self.assertEqual(menus[ours.id]["actionID"], action.id)
