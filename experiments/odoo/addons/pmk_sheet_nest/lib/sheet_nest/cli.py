@@ -4,14 +4,14 @@
     python3 -m sheet_nest.cli ВХОД... [--sheet 1250x2500] [--gap 2] [--edge 2] [--thickness 1.5] [--qty ИМЯ=N] [--out DIR] [--name ИМЯ]
                               [--coedge] [--bridge [--bridge-width 2] [--bridge-group 5]]
                               [--strategy short|safe|safe0|hill] [--compare] [--small 100] [--microjoints ИМЯ|*]
-                              [--machine ПРОФИЛЬ.json ...] [--heal-gap 20] [--fill ИМЯ ... [--fill-max ИМЯ=N]]
+                              [--machine ПРОФИЛЬ.json ...] [--heal-gap 20] [--fill ИМЯ ... [--fill-max ИМЯ=N] [--fill-gap]]
 
 ВХОД — .dxf (одна или несколько деталей; гравировка — слой «ГРАВИРОВКА»; количество — из имени «…_12шт.dxf»
 или --qty) и/или .lxds (детали с количеством из программы; раскладки в ней не важны).
 В DIR: <имя>_<дата>.lxds (одна программа на все листы), картинка раскладок .png, отчёт .json.
 Порядок резки — по стратегии (route.STRATEGIES), --compare — сводка по всем стратегиям (текст и отчёт).
---fill — добивка остатков листа складскими позициями (fill.py; листов не добавляет), --heal-gap — закрыть прямой разрыв
-внешнего контура на прямой самой кромки (geom.heal_open).
+--fill — добивка остатков листа складскими позициями (fill.py; листов не добавляет; с --coedge — вплотную, в группах,
+--fill-gap — с зазором), --heal-gap — закрыть прямой разрыв внешнего контура на прямой самой кромки (geom.heal_open).
 Из Odoo движок вызывается не отсюда, а через sheet_nest/job.py (контракт sheet_nest.job/1, ERP.md).
 """
 import sys, os, json, math, errno, argparse, datetime, collections
@@ -275,23 +275,123 @@ def split_fill(parts, req):
     return order, fillers
 
 
-def apply_fill(pl, parts, fillers, gap, edge, qty_left, log=print, progress=None):
+def apply_fill(pl, parts, fillers, gap, edge, qty_left, log=print, progress=None, co=True):
     """Добивка в раскладки плана pl деталей заказа parts (fill.fill_plan). Вернуть (детали программы — заказ и добивка с
     количеством «сколько поставлено», отчёт по позициям). Детали, которых не поставлено ни одной, в программу не идут.
-    progress — fn(текст): ход по раскладкам (этап pack)."""
+    progress — fn(текст): ход по раскладкам (этап pack). co — при общем резе добивка вплотную (fill.co_layout); False —
+    с зазором, как без общего реза (флаг --fill-gap)."""
     if not fillers:
         return parts, []
     from .fill import fill_plan
-    rep, placed = fill_plan(pl["layouts"], parts, fillers, gap, edge, qty_left=qty_left, log=log, progress=progress)
+    co_on = bool(pl.get("coedge")) and co
+    co = {} if co_on else None                          # общий рез: добивка вплотную (fill.co_layout), сведения — в план
+    rep, placed = fill_plan(pl["layouts"], parts, fillers, gap, edge, qty_left=qty_left, log=log, progress=progress,
+                            coedge=co_on, co_stats=co)
     n0, keep = len(parts), [j for j, n in enumerate(placed) if n]
     new = {n0 + j: n0 + k for k, j in enumerate(keep)}
     for l in pl["layouts"]:
         for q in l["placed"]:
             if q.get("fill"):
                 q["part"] = new[q["part"]]
+        fg = l.get("fill_gap")
+        if fg is not None:                              # вариант «добивка с зазором» (сравнение) — те же номера деталей
+            if all(q["part"] in new for q in fg["placed"]):
+                fg["placed"] = [dict(q, part=new[q["part"]]) for q in fg["placed"]]
+            else:                                       # с зазором встала позиция, которой вплотную нет, — без сравнения
+                pl["fill_gap_off"] = True
     out = list(parts) + [dict(fillers[j]["part"], qty=placed[j], fill=True) for j in keep]
     log("добивка: " + ", ".join("%s %d шт" % (r["name"], r["placed"]) for r in rep))
+    if co is not None:
+        pl["fill_coedge"] = fill_coedge_summary(co, rep)
+        log("  " + fill_coedge_text(pl["fill_coedge"]))
     return out, rep
+
+
+def fill_coedge_summary(co, rep):
+    """Сведения о добивке под общий рез (отчёт fill_coedge): по позициям — с зазором было бы и поставлено (вплотную
+    к общему резу + добор), деталей добивки в группах общего реза, касаний с деталями заказа, общих кромок с добивкой (м,
+    на все листы), раскладки, где касаний нет, и почему."""
+    by = co.get("by_name", {})
+    return dict(by_name=[dict(name=r["name"], gap=by.get(r["name"], {}).get("gap", 0), placed=r["placed"],
+                              diff=r["placed"] - by.get(r["name"], {}).get("gap", 0)) for r in rep],
+                in_groups=co.get("members", 0), order_contacts=co.get("order_contacts", 0), shared_m=co.get("shared_m", 0.0),
+                layouts=[dict(index=k, **v) for k, v in sorted(co.get("layouts", {}).items())],
+                gap_only=[k for k, v in sorted(co.get("layouts", {}).items()) if v["order_touch"] is None],
+                no_order_touch=[k for k, v in sorted(co.get("layouts", {}).items()) if v["order_touch"] is False])
+
+
+def fill_coedge_text(fc):
+    """Строка лога: добивка под общий рез."""
+    t = "добивка под общий рез: %s; в группах общего реза %d шт, общих кромок с добивкой %.1f м, касаний с деталями заказа %d" % (
+        ", ".join("%s %d (с зазором %d, %+d)" % (r["name"], r["placed"], r["gap"], r["diff"]) for r in fc["by_name"]),
+        fc["in_groups"], fc["shared_m"], fc["order_contacts"])
+    if fc["no_order_touch"]:
+        t += "; к деталям заказа не вплотную — раскладки №%s" % ", ".join(map(str, fc["no_order_touch"]))
+    if fc["gap_only"]:
+        t += "; с зазором — раскладки №%s" % ", ".join(map(str, fc["gap_only"]))
+    return t
+
+
+def gap_variant(pl, rs, parts, o, strategy, small, thickness, machines):
+    """Вариант «добивка с зазором» для сравнения (--compare при общем резе с добивкой вплотную): у раскладок с fill_gap
+    (fill.fill_plan) — детали заказа, их группы общего реза и добивка с зазором, маршрут выбранной стратегией; у прочих —
+    маршрут основного варианта (rs: раскладка та же). Вернуть (строка сводки summary_row с fill_n — деталей добивки на
+    все листы | None, предупреждения: с зазором опасных переходов меньше — ступенями ключа безопасных)."""
+    import time
+    from . import risk as RK
+    from .route import route_sheet, route_sheet_coedge, CoedgeRouteError
+    t0, gl, gr = time.time(), [], []
+    st = o["name"] if strategy is None or isinstance(strategy, str) else strategy
+
+    def sig(placed, groups):
+        return [(q["part"], q["rot"], q["dx"], q["dy"]) for q in placed], sorted(map(sorted, groups or []))
+    for l, r in zip(pl["layouts"], rs):
+        fg = l.get("fill_gap")
+        if fg is None:
+            gl.append(l); gr.append(r)
+            continue
+        placed = [q for q in l["placed"] if not q.get("fill")] + fg["placed"]
+        if sig(placed, fg["groups"]) == sig(l["placed"], l.get("groups")):     # вплотную не встала — та же раскладка
+            gl.append(l); gr.append(r)
+            continue
+        try:
+            if fg["groups"]:
+                r2 = route_sheet_coedge(placed, fg["groups"], parts, l["W"], l["L"], strategy=st, small=small, cache={})
+            else:
+                r2 = route_sheet(placed, parts, l["W"], l["L"], strategy=st, small=small, cache={})
+        except CoedgeRouteError as e:
+            return None, ["сравнение с добивкой с зазором не построено: %s" % e]
+        gl.append(dict(l, placed=placed, groups=fg["groups"])); gr.append(r2)
+    row = summary_row(dict(pl, layouts=gl), gr, "%s/fill_gap" % o["name"], "%s, добивка с зазором" % o["title"],
+                      time.time() - t0, thickness, machines)
+    row["fill_n"] = sum(sum(1 for q in l["placed"] if q.get("fill")) * l["amount"] for l in gl)
+    tiers = ("tongues", "small", "parts", "holes")
+    mk = tuple(sum(r["risk"][c] * l["amount"] for l, r in zip(pl["layouts"], rs)) for c in tiers)
+    gk = tuple(row["danger"][c] for c in tiers)
+    warn = []
+    if gk < mk:
+        warn.append("добивка вплотную (общий рез): опасных переходов больше, чем с добивкой с зазором («%s»: %s) — у рядов и "
+                    "стопок мелкой добивки с отверстиями цепочка общего реза кончается со стороны вырезанной соседки, и путь к "
+                    "следующей идёт над только что освобождённой; вариант с добивкой с зазором (fill_gap) — в сводке" % (
+                        o["title"], ", ".join("%s %d против %d" % (RK.TITLES[c], a, b) for c, a, b in zip(tiers, mk, gk) if a != b)))
+    return row, warn
+
+
+def gap_variant_summary(row, o):
+    """fill_coedge.gap_variant (отчёт, result.json): вариант «добивка с зазором» той же стратегией — для сравнения."""
+    return dict(strategy=o["name"], fill_n=row["fill_n"], cut_m=row["cut_m"], idle_m=row["idle_m"], return_m=row["return_m"],
+                pierces=row["pierces"], danger=dict(row["danger"]), over_parts_m=row["over_parts_m"],
+                strip_sheets=row["strip"]["sheets"], machine_s=dict(row["machine_s"]), route_s=row["route_s"])
+
+
+def gap_variant_text(mr, gv, fill_n):
+    """Строка лога: добивка вплотную (строка сводки выбранной стратегии mr, fill_n — деталей добивки) против добивки с
+    зазором (gap_variant_summary)."""
+    from . import risk as RK
+    return ("добивка вплотную против добивки с зазором («%s»): добивки %d против %d шт, рез %.2f против %.2f м, холостой %.2f "
+            "против %.2f м; %s" % (mr["title"], fill_n, gv["fill_n"], mr["cut_m"], gv["cut_m"], mr["idle_m"], gv["idle_m"],
+                                   ", ".join("%s %d против %d" % (RK.TITLES[c], mr["danger"][c], gv["danger"][c])
+                                             for c in ("tongues", "small", "parts", "holes"))))
 
 
 def check_params(W, L, gap, edge, thickness=None, small=None):
@@ -476,7 +576,7 @@ def bridge_options(bridge):
 
 def run(inputs, W=1250.0, L=2500.0, gap=2.0, edge=2.0, thickness=None, qty=None, title=None, out=None, methods=("rect", "raster"),
         engrave_layers=None, log=print, coedge=False, labels=None, label_opts=None, strategy=None, compare=False, small=None,
-        microjoints=None, machine=None, bridge=None, progress=None, heal_gap_mm=0.0, fill=None):
+        microjoints=None, machine=None, bridge=None, progress=None, heal_gap_mm=0.0, fill=None, fill_gap=False):
     """inputs — пути к .dxf / .lxds или словари {path, name, qty, key}: у словаря имя и количество — как заданы, из имени
     файла ничего не берётся (у .lxds их не задают — детали и количества из программы); key — метка вызывающего (Odoo:
     «pmk.laser.job.part,57»), возвращается у деталей (parts[i]["key"]).
@@ -495,7 +595,9 @@ def run(inputs, W=1250.0, L=2500.0, gap=2.0, edge=2.0, thickness=None, qty=None,
     раскладок деталей заказа (fill.py): листов столько же, сколько без добивки; max — не больше стольких на все листы
     (у позиции из нескольких контуров — на все её детали). res["fill"] — по позиции на строку [{name, placed, per_layout,
     max, why}], у деталей программы добивки — fill: true и qty = поставлено; ход — progress("pack", «добивка остатков
-    листа: раскладка k из N»).
+    листа: раскладка k из N»). С общим резом добивка-прямоугольник ставится вплотную (fill.co_layout, res["fill_coedge"]);
+    fill_gap — добивка и при общем резе с зазором (общий рез — только у деталей заказа, как до 0.12.0). С compare —
+    ещё и сравнение «добивка с зазором» (тот же раскрой заказа, выбранная стратегия): res["fill_coedge"]["gap_variant"].
     Ошибки пользователя — SheetNestError (DxfError, LxdsError, LabelError — его наследники), текст без флагов командной
     строки. В res — ещё requested / applied (что просили и что вышло: стратегия, общий рез, мост, подписи), files (имена
     записанных файлов), timing; у раскладок — W, L, util_pct, cut_m, mark_m, pierces, mass_kg (на один лист)."""
@@ -573,7 +675,7 @@ def run(inputs, W=1250.0, L=2500.0, gap=2.0, edge=2.0, thickness=None, qty=None,
     if fillers:
         prog("pack", "добивка остатков листа")
         parts, frep = apply_fill(pl, oparts, fillers, gap, edge, QTY_MAX - n_total, log,
-                                  lambda t: prog("pack", t))
+                                  lambda t: prog("pack", t), co=not fill_gap)
     else:
         frep = []
     from .route import CoedgeRouteError
@@ -647,7 +749,7 @@ def run(inputs, W=1250.0, L=2500.0, gap=2.0, edge=2.0, thickness=None, qty=None,
         if fillers:
             prog("pack", "добивка остатков листа")
             parts, frep = apply_fill(pl, oparts, fillers, gap, edge, QTY_MAX - n_total, log,
-                                  lambda t: prog("pack", t))
+                                  lambda t: prog("pack", t), co=not fill_gap)
         by = route_plan(pl)
     rs, secs = by[o["name"]]
     for l, r in zip(pl["layouts"], rs):
@@ -708,6 +810,7 @@ def run(inputs, W=1250.0, L=2500.0, gap=2.0, edge=2.0, thickness=None, qty=None,
     for w in sorted(set(route_warn)) + rwarn + fwarn:
         log("  ⚠ " + w)
     rows = None
+    gwarn = []                                          # сравнение с добивкой с зазором (gap_variant)
     if compare:
         rows = []
         for name, (rs_, secs_) in by.items():
@@ -719,8 +822,19 @@ def run(inputs, W=1250.0, L=2500.0, gap=2.0, edge=2.0, thickness=None, qty=None,
             rows.append(failed_row(name, opt(name)["title"], why, secs_, machines))
         order_ = list(STRATEGIES) + [n for n in by if n not in STRATEGIES]
         rows.sort(key=lambda r: order_.index(r["name"]))
+        gv_row = None
+        if pl.get("fill_coedge") and not pl.get("fill_gap_off") and any(l.get("fill_gap") for l in pl["layouts"]):
+            # сравнение: та же раскладка заказа, добивка с зазором (как --fill-gap), выбранная стратегия — опасные переходы
+            # добивки вплотную видны рядом с вариантом без неё (разбор 16.10: на листе почти из одной добивки — больше)
+            prog("route", "маршрут: %s, добивка с зазором (сравнение)" % o["title"])
+            gv_row, gv_warn = gap_variant(pl, rs, parts, o, strategy, small, thickness, machines)
+            gwarn += gv_warn
+            if gv_row is not None:
+                pl["fill_coedge"]["gap_variant"] = gap_variant_summary(gv_row, o)
+                log("  " + gap_variant_text(next(r for r in rows if r["name"] == o["name"]), pl["fill_coedge"]["gap_variant"],
+                                            sum(r["placed"] for r in frep)))
         log("сводка по стратегиям (%s):" % ("общий рез" if pl.get("coedge") else "с зазором"))
-        for line in summary_text(rows, machines).split("\n"):
+        for line in summary_text(rows + ([gv_row] if gv_row else []), machines).split("\n"):
             log("  " + line)
     stamp = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=10))).strftime("%Y-%m-%d_%H%M")
     title = title or os.path.splitext(os.path.basename(_input(inputs[0])[0]))[0]
@@ -775,7 +889,7 @@ def run(inputs, W=1250.0, L=2500.0, gap=2.0, edge=2.0, thickness=None, qty=None,
                              **layout_stats(l, r, parts, thickness))
                         for k, (l, r) in enumerate(zip(pl["layouts"], rs))],
                totals={k: v for k, v in rr["totals"].items()} if rr else {}, checks=[(n, o_, d) for n, o_, d in rep],
-               warnings=warns + cwarn + bwarn + fill_warn + route_warn + rwarn + fwarn, strip=main_row["strip"],
+               warnings=warns + cwarn + bwarn + fill_warn + route_warn + rwarn + fwarn + gwarn, strip=main_row["strip"],
                labels=[dict(part=n, text=tx, height=h, rot=next((p["label"]["rot"] for p in parts if p["name"] == n and p.get("label")), None),
                             why=why) for n, tx, h, why in lab_rep],
                # что просили и что вышло (ERP.md, п. 4): общий рез мог откатиться на зазор, мост — не найти соседей
@@ -788,7 +902,9 @@ def run(inputs, W=1250.0, L=2500.0, gap=2.0, edge=2.0, thickness=None, qty=None,
                files=dict(lxds=None, png_layouts=None, png_order=None, report=None),
                # добивка остатков листа (fill.py): по позициям — поставлено на все листы, на лист каждой раскладки, предел,
                # почему меньше; листов без добивки — столько же (base_sheets, проверка «добивка не добавила листов»)
-               fill=frep)
+               fill=frep,
+               # общий рез: добивка вплотную (fill.co_layout) — сколько было бы с зазором, в группах, общие кромки
+               fill_coedge=pl.get("fill_coedge"))
     if rows is not None:
         res["strategies"] = {r["name"]: r for r in rows}
     if br:
@@ -808,7 +924,9 @@ def run(inputs, W=1250.0, L=2500.0, gap=2.0, edge=2.0, thickness=None, qty=None,
                 ("png_layouts", fname + ".png", lambda path: render.png_model(
                     raw, path, "%s — %d листов %g×%g%s, «%s»: холостой ход %.0f м, врезок %d" % (
                         title, pl["sheets"], W, L, what, o["title"], idle / 1000, main_row["pierces"]),
-                    moves=[r["risk"]["moves"] for r in rs], fill_names={p["name"] for p in parts if p.get("fill")})),
+                    moves=[r["risk"]["moves"] for r in rs], fill_names={p["name"] for p in parts if p.get("fill")},
+                    fill_polys=[[G.points(G.transform(parts[q["part"]]["shapes"][-1], q["rot"], (q["dx"], q["dy"])), 0.5)
+                                 for q in l["placed"] if q.get("fill")] for l in pl["layouts"]])),
                 ("png_order", fname + "_порядок.png", lambda path: render.png_order(
                     raw, path, "%s — порядок резки «%s»%s: цвет — от первой детали (синий) к последней (красный)" % (
                         title, o["title"], what), strips=[r.get("strip") for r in rs], done_polys=[r.get("done_polys") for r in rs]))):
@@ -863,6 +981,8 @@ def main(argv=None):
     ap.add_argument("--fill", action="append", default=[], help="добивка остатков листа: ИМЯ складской позиции (детали входа; "
                                                                 "повторяется — по порядку; в заказ не идёт, листов не добавляет)")
     ap.add_argument("--fill-max", action="append", default=[], help="ИМЯ=N — добивки не больше N шт на все листы")
+    ap.add_argument("--fill-gap", action="store_true", help="с --coedge: добивку — с зазором (общий рез только у деталей "
+                                                            "заказа); без флага добивка-прямоугольник встаёт вплотную, в группы")
     a = ap.parse_args(argv)
     try:
         W, L = (float(x) for x in a.sheet.lower().replace("х", "x").split("x"))
@@ -899,7 +1019,7 @@ def main(argv=None):
                       strategy=a.strategy, compare=a.compare, small=a.small, microjoints=a.microjoints or None,
                       machine=a.machine or None,
                       bridge=dict(width=a.bridge_width, group=a.bridge_group) if a.bridge else None,
-                      heal_gap_mm=a.heal_gap, fill=fill or None)
+                      heal_gap_mm=a.heal_gap, fill=fill or None, fill_gap=a.fill_gap)
     except ValueError as e:
         # тексты движка — без флагов командной строки (их видит и Odoo); подсказку флагом добавляет командная строка
         flag = getattr(e, "flag", None)

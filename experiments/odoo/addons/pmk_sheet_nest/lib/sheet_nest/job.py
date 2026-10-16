@@ -42,9 +42,9 @@ BAD_TITLE = '/\\:*?"<>|'
 
 INPUT_KEYS = ("contract", "kind", "run_id", "engine_lib", "vent_nesting_lib", "title", "inputs", "sheet", "gap", "edge",
               "thickness", "strategy", "compare", "coedge", "bridge", "small_mm", "microjoints", "labels", "label_opts",
-              "font", "machines", "time_limit_s", "heal_gap_mm", "fill")
+              "font", "machines", "time_limit_s", "heal_gap_mm", "fill", "fill_gap")
 RESULT_KEYS = ("contract", "kind", "run_id", "engine", "ok", "requested", "applied", "files", "summary", "strategies",
-               "machines", "layouts", "checks", "warnings", "labels", "bridge", "parts", "fill", "timing")
+               "machines", "layouts", "checks", "warnings", "labels", "bridge", "parts", "fill", "fill_coedge", "timing")
 SUMMARY_KEYS = ("sheets", "lower_bound", "optimal", "method", "cut_m", "mark_m", "idle_m", "return_m", "pierces", "mass_kg",
                 "machine_s", "machine_detail")
 STRATEGY_KEYS = ("name", "title", "sheets", "cut_m", "idle_m", "return_m", "pierces", "bridges", "danger", "strip", "ret",
@@ -55,6 +55,8 @@ DANGER_KEYS = ("tongues", "small", "parts", "holes", "holes_s", "near", "short",
 LAYOUT_KEYS = ("index", "amount", "parts", "W", "L", "util_pct", "cut_m", "mark_m", "pierces", "mass_kg")
 PART_KEYS = ("name", "qty", "key", "fill")                                                     # result.json → parts[]
 FILL_KEYS = ("name", "placed", "per_layout", "max", "why")                                     # result.json → fill[]
+FILL_CO_KEYS = ("by_name", "in_groups", "order_contacts", "shared_m", "gap_only", "no_order_touch",
+                "gap_variant")                                                                   # → fill_coedge
 ERROR_KEYS = ("kind", "user", "message", "trace", "run_id", "input")
 STAGES = ("read", "pack", "route", "build", "check", "render")
 
@@ -319,7 +321,9 @@ def read_input(st):
                 bridge=bridge, small=_num(job.get("small_mm"), "small_mm", allow_none=True), microjoints=micro or None,
                 labels=labels or None, label_opts=label_opts, font=job.get("font"), machines=machines,
                 time_limit_s=limit, title=_title(job.get("title")), vent_nesting_lib=job.get("vent_nesting_lib"),
-                engine_lib=job.get("engine_lib"), heal_gap_mm=heal, fill=[dict(name=f["name"], max=f.get("max")) for f in fill] or None)
+                engine_lib=job.get("engine_lib"), heal_gap_mm=heal, fill=[dict(name=f["name"], max=f.get("max")) for f in fill] or None,
+                # с общим резом добивка вплотную (0.12.0); true — с зазором, общий рез только у деталей заказа (как прежде)
+                fill_gap=bool(_is(job.get("fill_gap"), bool, "fill_gap")))
 
 
 def _read_item(st, k, it, names, fill_names=()):
@@ -451,6 +455,11 @@ def make_result(job, res, parts, t0):
         parts=[dict(name=p["name"], qty=p["qty"], key=p.get("key"), fill=bool(p.get("fill"))) for p in parts],
         # добивка остатков листа (16.10.2026): [{name, placed, per_layout, max, why}] по порядку из input.json; без неё — []
         fill=[{k: f.get(k) for k in FILL_KEYS} for f in res.get("fill") or []],
+        # общий рез с добивкой (16.10.2026, 0.12.0): добивка вплотную — по позициям с зазором было / поставлено, в группах,
+        # касаний с деталями заказа, общих кромок (м, на все листы), раскладки без касаний; со сводкой (compare) — ещё
+        # gap_variant: тот же раскрой с добивкой с зазором выбранной стратегией (опасные, рез, холостой); без общего реза
+        # или добивки — null
+        fill_coedge=({k: res["fill_coedge"].get(k) for k in FILL_CO_KEYS} if res.get("fill_coedge") else None),
         timing=dict(total_s=round(time.time() - t0, 2), route_s=res["timing"]["route_s"]))
 
 
@@ -486,7 +495,7 @@ def _work(st, t0):
         os.path.join(st.workdir, "out"), log=_log, coedge=job["coedge"], labels=job["labels"], label_opts=label_opts,
         strategy=job["strategy"], compare=job["compare"], small=job["small"], microjoints=job["microjoints"],
         machine=job["machines"] or None, bridge=job["bridge"], progress=st.progress, heal_gap_mm=job["heal_gap_mm"],
-        fill=job["fill"])
+        fill=job["fill"], fill_gap=job["fill_gap"])
     return make_result(job, res, parts, t0)
 
 

@@ -46,6 +46,8 @@ EXACT_N = 14                # до стольких внутренних эле�
 CROSS_PENALTY = 2000.0      # мм штрафа за переход над вырезанным (язычок прорези) — чтобы такой путь выбирался последним
 PART_CROSS_PENALTY = 500.0  # мм штрафа за переход к следующей детали над уже вырезанной деталью
 GROUP_PERM_MAX = 6          # группу общего реза до стольких деталей перебирать всеми порядками (6! = 720)
+GROUP_PERM_WORK = 1500      # … а группу с добивкой — только если (порядков) × (фигур в деталях) не больше (_group_perms)
+UNIT_PERM_MAX = 3           # лист с добивкой в группах общего реза: до стольких единиц резки — все их порядки (безопасные)
 HOLE_STARTS = 16            # углов начала у отверстия-окружности (и исходное)
 ALT_STATES = 3              # безопасные: другой первый элемент детали — от стольких лучших состояний динамики
 LOOK_POOL = 3               # «взгляд вперёд» в группе: путей по детали к каждой точке начала её контура (лучших)
@@ -1159,15 +1161,25 @@ def _hill_pool(C, head, o):
     return ms
 
 
-def _hill_pick(hill, pool, strip_of, pointless):
+def _ret_tie(m):
+    """Лист с добивкой в группах общего реза (16.10): при равных ступенях опасных — меньше объектов под возвратом в ноль
+    (язычки — все вырезанные, как «под ним язычков» в отчёте, затем ступени ret_move: язычки, мелкие, прочие детали): новые
+    порядки единиц там нередко кончаются решётками, и возврат шёл над жалюзи."""
+    r = m["ret"]
+    return (r["tongues_crossed"], r["n_tongues"], r["n_small"], r["n_parts"])
+
+
+def _hill_pick(hill, pool, strip_of, pointless, ret_tie=False):
     """«Горкой»: выбор из кандидатов ступенькой (hill) и, если дан, пула безопасных (pool) — [(счёт measure, номер,
     маршрут, …)]. Сперва — без узкой полосы в конце (strip_of(кандидат) → risk.end_strip), затем ступени опасных (как у
     безопасных), при равных — ступенька, затем холостой. pointless — ступенька на этом листе ничего не даёт (меньше
-    risk.STRIP_MIN деталей или одна единица резки): тогда по ключу безопасных целиком."""
+    risk.STRIP_MIN деталей или одна единица резки): тогда по ключу безопасных целиком. ret_tie — лист с добивкой в
+    группах: при равных ступенях — ещё и меньше объектов под возвратом в ноль (_ret_tie)."""
     def k(c):
         v, src = c
         s = strip_of(v)
-        return (bool(s and s["strip"]), tuple(v[0]["key"][:4]), 0 if pointless else src, v[0]["key"][4], src, v[1])
+        return (bool(s and s["strip"]), tuple(v[0]["key"][:4]), _ret_tie(v[0]) if ret_tie else (), 0 if pointless else src,
+                v[0]["key"][4], src, v[1])
     return min([(v, 0) for v in hill] + [(v, 1) for v in pool or ()], key=k)[0]
 
 
@@ -1669,6 +1681,169 @@ def _ref_points(m):
     return [(v[0], v[1]) for v in m["outer"]["verts"]]
 
 
+def _group_perms(idx, plans):
+    """Перебирать ли все порядки деталей группы: группа до GROUP_PERM_MAX деталей; с добивкой (общий рез, 16.10) — ещё и
+    если перебор недорог: (порядков) × (фигур в деталях) ≤ GROUP_PERM_WORK (группа «решётки + лоток + стойки» — обходами,
+    как большая: 720 порядков с лотком в 114 отверстий — минуты на лист)."""
+    if len(idx) > GROUP_PERM_MAX:
+        return False
+    if not any(plans[i].part.get("fill") for i in idx):
+        return True
+    return math.factorial(len(idx)) * sum(1 + len(plans[i].inner) for i in idx) <= GROUP_PERM_WORK
+
+
+class _Lite:
+    """Деталь для _group_perms без плана маршрута: part, inner."""
+
+    def __init__(self, part):
+        self.part, self.inner = part, part["shapes"][:-1]
+
+
+def group_orders(idx, centers, boxes, nb, pos, perms):
+    """Порядки деталей группы общего реза, которые пробует маршрут: все перестановки (perms) или обходы — соседями по
+    общей кромке от ближней к головке (pos) и от четырёх крайних, ближайший сосед + 2-opt по центрам, змейкой по рядам и
+    по столбцам; повторы — один раз. centers, boxes — по idx; nb — {деталь: соседи по общей кромке}."""
+    if perms:
+        return [list(p_) for p_ in itertools.permutations(idx)]
+    C = dict(zip(idx, centers))
+    B = dict(zip(idx, boxes))
+    orders = [_grow(idx, C, nb, min(idx, key=lambda i: (D(pos, C[i]), i)))] if pos is not None else []
+    orders += extreme_orders(idx, B, C, nb)
+    if pos is not None:
+        rest_, tour, cur = set(idx), [], pos
+        while rest_:
+            i = min(rest_, key=lambda i: (D(cur, C[i]), i)); rest_.remove(i); tour.append(i); cur = C[i]
+        imp = True
+        while imp:
+            imp = False
+            for a_ in range(len(tour) - 1):
+                for b_ in range(a_ + 1, len(tour)):
+                    pa = C[tour[a_ - 1]] if a_ else pos
+                    nx = C[tour[b_ + 1]] if b_ + 1 < len(tour) else None
+                    old_ = D(pa, C[tour[a_]]) + (D(C[tour[b_]], nx) if nx else 0)
+                    new_ = D(pa, C[tour[b_]]) + (D(C[tour[a_]], nx) if nx else 0)
+                    if new_ < old_ - 1e-9:
+                        tour[a_:b_ + 1] = tour[a_:b_ + 1][::-1]; imp = True
+        orders.append(tour)
+    for axis in (0, 1):
+        band = max(1.0, min(B[i][2 + (1 - axis)] - B[i][1 - axis] for i in idx))
+        rows = collections.defaultdict(list)
+        for i in idx:
+            rows[int(C[i][1 - axis] // band)].append(i)
+        o_, flip = [], False
+        for key_ in sorted(rows):
+            o_ += sorted(rows[key_], key=lambda i: C[i][axis], reverse=flip); flip = not flip
+        orders.append(o_)
+    out, seen = [], set()
+    for o_ in orders:
+        if tuple(o_) not in seen:
+            seen.add(tuple(o_)); out.append(o_)
+    return out
+
+
+def _grow(idx, C, nb, start):
+    """Соседями по общей кромке от детали start, каждый раз ближайшая к последней вырезанной (C — центры)."""
+    done, order_m, cur = {start}, [start], C[start]
+    while len(done) < len(idx):
+        cand = [i for i in idx if i not in done and nb[i] & done] or [i for i in idx if i not in done]
+        i = min(cand, key=lambda i: (D(cur, C[i]), i))
+        done.add(i); order_m.append(i); cur = C[i]
+    return order_m
+
+
+def extreme_orders(idx, B, C, nb):
+    """Обходы группы соседями от четырёх крайних деталей (снизу слева, снизу справа, сверху слева, сверху справа) — от
+    положения головки не зависят: их маршрут пробует всегда (group_buildable)."""
+    return [_grow(idx, C, nb, min(idx, key=lambda i: (f(B[i]), i)))
+            for f in ((lambda b: (b[1], b[0])), (lambda b: (b[1], -b[2])), (lambda b: (-b[3], b[0])), (lambda b: (-b[3], -b[2])))]
+
+
+def _fill_orders(idx, plans, split, nb, pos, refs_n=3):
+    """Порядки группы с добивкой (общий рез, 16.10.2026): в стопке деталей с отверстиями цепочка детали кончается на
+    стороне уже вырезанной соседки, и путь к отверстиям следующей идёт над только что освобождённой деталью. Здесь
+    следующая — та, к началу которой (ближайшие начала её внутренних контуров, _ref_points) от возможного конца
+    предыдущей (концы её невырезанных кусков; у первой — свободные углы) путь не идёт над вырезанными деталями группы;
+    из таких — ближайшая; соседи по общей кромке — первыми. Так стопки режутся зигзагом через две колонки, и головка идёт
+    к невырезанному. От четырёх крайних деталей и от ближней к головке; выбор между порядками — ключом стратегии."""
+    from . import coedge as CE
+    segs = {i: CE._segs(split[i]) for i in idx}
+    refs = {i: _ref_points(dict(outer=plans[i].outer, inner=plans[i].inner)) for i in idx}
+
+    def ends_of(i, cut):
+        sv = split[i]
+        n = len(sv)
+        if not cut:                                     # первая — замкнутым контуром из свободного угла
+            other = [s_ for j in idx if j != i for s_ in segs[j]]
+            return [tuple(v[:2]) for v in sv if min((CE._pt_seg(v[:2], *s_) for s_ in other), default=1e9) > CE.TOL]
+        flags = [CE._on(sv[k][:2], sv[(k + 1) % n][:2], sv[k][2], cut) for k in range(n)]
+        if all(flags):
+            return []
+        out = []
+        for r in CE._runs(flags):
+            out += [tuple(sv[r[0]][:2]), tuple(sv[(r[-1] + 1) % n][:2])]
+        return out
+
+    def grow(start):
+        order, cut, freed = [start], list(segs[start]), [plans[start].poly]
+        E = ends_of(start, [])
+        while len(order) < len(idx):
+            rest = [i for i in idx if i not in order]
+            cand = [i for i in rest if nb[i] & set(order)] or rest
+            best = None
+            for i in cand:
+                Ei = ends_of(i, cut)
+                for e in E or [plans[order[-1]].center]:
+                    for r in sorted(refs[i], key=lambda r: D(e, r))[:refs_n]:
+                        k = (not Ei, 1 if _seg_hits(e, r, freed) else 0, D(e, r), i)
+                        if best is None or k < best[0]:
+                            best = (k, i, Ei)
+            _, i, E = best
+            order.append(i); cut += segs[i]; freed.append(plans[i].poly)
+        return order
+    B = {i: plans[i].poly[1] for i in idx}
+    starts = [min(idx, key=lambda i: (f(B[i]), i)) for f in ((lambda b: (b[1], b[0])), (lambda b: (b[1], -b[2])),
+                                                             (lambda b: (-b[3], b[0])), (lambda b: (-b[3], -b[2])))]
+    if pos is not None:
+        starts.insert(0, min(idx, key=lambda i: (D(pos, plans[i].center), i)))
+    out = []
+    for st in dict.fromkeys(starts):
+        o_ = grow(st)
+        if o_ not in out:
+            out.append(o_)
+    return out
+
+
+def group_buildable(parts, placed, idx):
+    """Группу общего реза (размещения idx) можно разрезать хотя бы одним порядком, который маршрут пробует всегда: всеми
+    перестановками или обходами от крайних деталей (extreme_orders); те же отказы, что у coedge.build_group (нет
+    свободного угла у первой детали, деталь целиком на вырезанном) — от головки и путей внутри деталей они не зависят.
+    Добивка под общий рез (fill.co_layout) ставит группы только такие — маршрут не падает в «раскрой с зазором»."""
+    from . import coedge as CE
+    outs = {i: G.transform(parts[placed[i]["part"]]["shapes"][-1], placed[i]["rot"], (placed[i]["dx"], placed[i]["dy"])) for i in idx}
+    if any(o["kind"] != "LwPolyline" for o in outs.values()):
+        return False
+    B, C = {}, {}
+    for i in idx:
+        P = G.points(outs[i], 0.2)                       # как _PartPlan.poly: габарит и центр по точкам
+        B[i] = (min(x for x, y in P), min(y for x, y in P), max(x for x, y in P), max(y for x, y in P))
+        C[i] = ((B[i][0] + B[i][2]) / 2, (B[i][1] + B[i][3]) / 2)
+    nb = {i: set() for i in idx}
+    for a in idx:
+        for b in idx:
+            if a < b and CE.shared_length(outs[a]["verts"], outs[b]["verts"]) > 1e-3:
+                nb[a].add(b); nb[b].add(a)
+    split = dict(zip(idx, CE.split_all([outs[i] for i in idx])))
+    perms = _group_perms(idx, {i: _Lite(parts[placed[i]["part"]]) for i in idx})
+    orders = [list(p_) for p_ in itertools.permutations(idx)] if perms else extreme_orders(idx, B, C, nb)
+    for o_ in orders:
+        try:
+            CE.build_group([dict(outer=outs[i], inner=[]) for i in o_], split=[split[i] for i in o_])
+            return True
+        except ValueError:
+            continue
+    return False
+
+
 def route_sheet_coedge(placed, groups, parts, W, L, head=(0.0, 0.0), strategy=DEFAULT, small=RK.SMALL, cache=None):
     """Лист с группами общего реза. Единицы резки — группы (блок CypCut «CoedgePart») и одиночные детали.
     Порядок единиц — ближайший сосед по центрам + 2-opt. Порядок деталей группы — лучший из кандидатов по ключу
@@ -1687,7 +1862,10 @@ def route_sheet_coedge(placed, groups, parts, W, L, head=(0.0, 0.0), strategy=DE
         plans = [_PartPlan(parts[q["part"]], q["rot"], (q["dx"], q["dy"]), small) for q in placed]
         in_group = {i for g in groups for i in g}
         units = [("group", list(g)) for g in groups] + [("part", [i]) for i in range(len(placed)) if i not in in_group]
-        P = dict(plans=plans, units=units, seq=_unit_order(plans, units, head), allg=_grid([p.poly for p in plans]))
+        P = dict(plans=plans, units=units, seq=_unit_order(plans, units, head), allg=_grid([p.poly for p in plans]),
+                 # добивка в группах общего реза (16.10): группа смотрит и на уход к следующей единице, порядки единиц
+                 # листа до UNIT_PERM_MAX — все (_coedge_pool); листы без неё — как были
+                 fillco=any(plans[i].part.get("fill") for g in groups for i in g))
         if cache is not None:
             cache["prep"], cache["prep_key"] = P, (small, head)
     plans = P["plans"]
@@ -1716,7 +1894,7 @@ def route_sheet_coedge(placed, groups, parts, W, L, head=(0.0, 0.0), strategy=DE
         pointless = len(P["units"]) <= 1 or len(plans) < RK.STRIP_MIN
         bh = min(hp, key=lambda v: (v[0]["key"], v[1]))
         pool = _coedge_pool(P, placed, W, L, head, options("safe"), meas) if _hill_need_pool(bh, strip_of(bh), pointless) else None
-        sel = _hill_pick(hp, pool, strip_of, pointless)
+        sel = _hill_pick(hp, pool, strip_of, pointless, ret_tie=bool(P.get("fillco")))
         ms = [sel]
     elif o["key"] == "short":
         ms = meas(_coedge_run(P, P["seq"], placed, W, L, head, o, "short"))
@@ -1725,7 +1903,10 @@ def route_sheet_coedge(placed, groups, parts, W, L, head=(0.0, 0.0), strategy=DE
     else:
         ms = meas(_coedge_run(P, P["seq"], placed, W, L, head, o, "safe", ret=o["ret"]))
     kk = "key0" if o["ret"] else "key"
-    m, _, r = min(ms, key=lambda v: (v[0][kk], v[1]))
+    if P.get("fillco") and not o["ret"] and o["key"] != "short":   # добивка в группах: при равных ступенях — возврат
+        m, _, r = min(ms, key=lambda v: (tuple(v[0][kk][:4]), _ret_tie(v[0]), v[0][kk][4:], v[1]))
+    else:
+        m, _, r = min(ms, key=lambda v: (v[0][kk], v[1]))
     polys = [p.poly for p in plans]
     shapes = [s for s, i in r["tagged"]]
     idle, p0 = 0.0, head
@@ -1757,6 +1938,10 @@ def _coedge_pool(P, placed, W, L, head, o, meas):
         for s in (s0, s0[::-1]):
             if s not in seqs:
                 seqs.append(s)
+        if P.get("fillco") and len(P["units"]) <= UNIT_PERM_MAX:     # добивка в группах: все порядки единиц
+            for s in itertools.permutations(range(len(P["units"]))):
+                if list(s) not in seqs:
+                    seqs.append(list(s))
         rr = []
         for s in seqs:
             rr += _coedge_run(P, s, placed, W, L, head, o, "safe", ret=True)
@@ -1871,8 +2056,12 @@ def _coedge_run(P, seq_u, placed, W, L, head, o, mode, ret=False):
         sh = best[1]
         return sh, (G.ends(sh[-1])[1] if sh else h)
 
-    for k in seq_u:
+    fillco = P.get("fillco")
+    for ku, k in enumerate(seq_u):
         kind, idx = units[k]
+        # куда головка пойдёт после этой единицы (лист с добивкой в группах): начала деталей следующей единицы
+        exit_pts = [q for i in units[seq_u[ku + 1]][1] for q in _ref_points(dict(outer=plans[i].outer, inner=plans[i].inner))] \
+            if fillco and ku + 1 < len(seq_u) else None
         if kind == "part":
             i = idx[0]
             p = plans[i]
@@ -1972,10 +2161,12 @@ def _coedge_run(P, seq_u, placed, W, L, head, o, mode, ret=False):
                     return (v[RK.TONGUE], v[RK.SMALLP], v[RK.PART], v[RK.HOLE]), D(e, q) + RK.NEAR_COST * v[RK.NEARP]
             try:
                 sh, end = CE.build_group(members, head=h, inner_order=io, look=lookf, ref_points=_ref_points,
-                                         split=[split[i] for i in order_m], final=[head] if last_unit else None)
+                                         split=[split[i] for i in order_m], final=[head] if last_unit else None,
+                                         chain_look=bool(fillco))
             except ValueError:
                 return None                       # такой порядок CypCut не строит (нет свободного угла и т.п.)
             tg = [(s, order_m[s["member"]]) for s in sh]
+            q_ex = min(exit_pts, key=lambda q: D(end, q)) if exit_pts else None     # уход к следующей единице
             if mode == "short":
                 idle_g, p0 = 0.0, h
                 for s in sh:
@@ -1994,9 +2185,15 @@ def _coedge_run(P, seq_u, placed, W, L, head, o, mode, ret=False):
                     p0 = b
                     if last[m] == n_:
                         done_p.append(polys[m])
+                if q_ex is not None:
+                    xp += 1 if D(end, q_ex) > 1.0 and _seg_hits(end, q_ex, done_p) else 0
+                    idle_g += D(end, q_ex)
                 key, key0, key1 = (xt, xp, idle_g), None, None
             else:
                 v, idle_g, _, ex, _ = RK.walk(tg, h, sheet, kinds, {m: ob(m) for m in order_m}, feat)
+                if q_ex is not None:
+                    ve = RK.move(end, q_ex, sheet, (), ex)
+                    v, idle_g = RK.vadd(v, ve), idle_g + D(end, q_ex) + RK.NEAR_COST * ve[RK.NEARP]
                 key, key0, key1 = RK.safe_key(v, idle_g), None, None
                 if last_unit:                     # с возвратом в ноль — над освобождёнными деталями группы
                     rv = RK.ret_move(end, head, sheet, (), ex)
@@ -2004,48 +2201,13 @@ def _coedge_run(P, seq_u, placed, W, L, head, o, mode, ret=False):
                     key1 = RK.safe_key(RK.vadd(v, RK.ret_once(rv)), idle_g + D(end, head))
             return key, sh, end, tuple(order_m), key0, key1
 
-        def grow(start):
-            """Соседями по общей кромке от детали start, каждый раз ближайшая к последней вырезанной."""
-            done, order_m, cur = {start}, [start], plans[start].center
-            while len(done) < len(idx):
-                cand = [i for i in idx if i not in done and nb[i] & done] or [i for i in idx if i not in done]
-                i = min(cand, key=lambda i: (D(cur, plans[i].center), i))
-                done.add(i); order_m.append(i); cur = plans[i].center
-            return order_m
-        orders = []
-        if len(idx) <= GROUP_PERM_MAX:
-            orders = [list(p_) for p_ in itertools.permutations(idx)]
-        else:
-            orders.append(grow(min(idx, key=lambda i: (D(pos, plans[i].center), i))))
-            for f in ((lambda b: (b[1], b[0])), (lambda b: (b[1], -b[2])), (lambda b: (-b[3], b[0])), (lambda b: (-b[3], -b[2]))):
-                orders.append(grow(min(idx, key=lambda i: (f(plans[i].poly[1]), i))))   # от крайних деталей группы
-            rest_, tour, cur = set(idx), [], pos
-            while rest_:
-                i = min(rest_, key=lambda i: (D(cur, plans[i].center), i)); rest_.remove(i); tour.append(i); cur = plans[i].center
-            imp = True
-            while imp:
-                imp = False
-                for a_ in range(len(tour) - 1):
-                    for b_ in range(a_ + 1, len(tour)):
-                        pa = plans[tour[a_ - 1]].center if a_ else pos
-                        nx = plans[tour[b_ + 1]].center if b_ + 1 < len(tour) else None
-                        old_ = D(pa, plans[tour[a_]].center) + (D(plans[tour[b_]].center, nx) if nx else 0)
-                        new_ = D(pa, plans[tour[b_]].center) + (D(plans[tour[a_]].center, nx) if nx else 0)
-                        if new_ < old_ - 1e-9:
-                            tour[a_:b_ + 1] = tour[a_:b_ + 1][::-1]; imp = True
-            orders.append(tour)
-            for axis in (0, 1):
-                band = max(1.0, min(plans[i].poly[1][2 + (1 - axis)] - plans[i].poly[1][1 - axis] for i in idx))
-                rows = collections.defaultdict(list)
-                for i in idx:
-                    rows[int(plans[i].center[1 - axis] // band)].append(i)
-                o_, flip = [], False
-                for key_ in sorted(rows):
-                    o_ += sorted(rows[key_], key=lambda i: plans[i].center[axis], reverse=flip); flip = not flip
-                orders.append(o_)
+        perms = _group_perms(idx, plans)
+        orders = group_orders(idx, [plans[i].center for i in idx], [plans[i].poly[1] for i in idx], nb, pos, perms)
+        if not perms and any(plans[i].part.get("fill") for i in idx):     # добивка в группе: ещё «к невырезанному»
+            orders += [o_ for o_ in _fill_orders(idx, plans, split, nb, pos) if o_ not in orders]
         looks = (False, True) if o["look"] else (False,)
         builds = [(o_, lk) for o_ in orders for lk in looks]
-        if last_unit and len(idx) > GROUP_PERM_MAX:       # конец у нуля: те же обходы в обратную сторону — со «взглядом
+        if last_unit and not perms:                       # конец у нуля: те же обходы в обратную сторону — со «взглядом
             builds += [(o_[::-1], looks[-1]) for o_ in orders]   # вперёд» (он и выбирает конец блока по возврату)
         cands = [c for c in (build(o_, pos, lk) for o_, lk in builds) if c is not None]
         if not cands:

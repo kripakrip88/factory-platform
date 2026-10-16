@@ -19,7 +19,14 @@
    из нескольких контуров — одна строка fill, max на все её детали; qty у позиции добивки — 0 или не задан; дуги у
    добивки: загрузка в файле = своя (точные площади), до края — по точному габариту; поджатие — точный сдвиг до
    касания (= бисекции, скольжение вдоль соседа не держит); ход по раскладкам в progress; подвод по кромке соседа —
-   lead_room и ⚠ проверки программы.
+   lead_room и ⚠ проверки программы;
+4) общий рез с добивкой (16.10, «нужен общий рез в раскрое»): правила касания (_pair_ok: кромкой ≥ 10 мм, угол к углу,
+   щель, наложение, фаска), карманы, group_buildable; столбцы стоек у лотка — группа, общие кромки, проверки программы,
+   сближений нет, добивки не меньше, чем с зазором; узкая полоса — только вплотную; большая группа — сводка, скорость,
+   «Безопасный» и «Горкой»; детерминизм; проверка ловит щель и наложение; решётка с фасками — клиньев нет; много мелкой
+   добивки — группы ≤ CO_GROUP_MAX; сводка — с вариантом «добивка с зазором» (= прогон с fill_gap), предупреждение,
+   когда с зазором опасных меньше; fill_gap — добивка с зазором, как до 0.12.0; ноги торец к торцу — цепочка к
+   следующей, над освобождёнными 0.
 """
 import sys, os, io, math, json, zipfile, hashlib, tempfile, contextlib, re
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -542,6 +549,222 @@ def fill_more(td, order, stock):
           "%d шт за %.1f с" % (rep_[0]["placed"], dt))
 
 
+# ============================================================================================ 4) общий рез: добивка вплотную
+def co_unit():
+    """fill._pair_ok, pockets, route.group_buildable — на прямоугольниках."""
+    import numpy as np
+    from sheet_nest import route as RT
+    def ob(R):
+        s0, s1 = F.CoSheet.rect_edges(R)
+        return s0, s1, np.ones(4, bool), tuple(R)
+    G_, g = 2.02, 2.0
+    A = (0, 0, 100, 50)
+    cases = [("вплотную по кромке 50 мм", (100, 0, 160, 50), 50.0),
+             ("вплотную частью кромки 30 мм (Т-примыкание)", (100, 20, 160, 80), 30.0),
+             ("общий участок 5 мм < 10", (100, 45, 160, 95), None),
+             ("угол к углу (сетка)", (100, 50, 160, 100), 0.0),
+             ("щель 1 мм вдоль кромки", (101, 0, 161, 50), None),
+             ("ступенька 1 мм у точки касания", (100, 1, 160, 51), 49.0),
+             ("наложение 0,5 мм", (99.5, 0, 160, 50), None),
+             ("дальше зазора", (102.5, 0, 160, 50), 0.0)]
+    bad = []
+    for nm, R, want in cases:
+        got = F._pair_ok(R, *ob(A), G_, g)
+        if (got is None) != (want is None) or (want is not None and abs(got - want) > 1e-6):
+            bad.append("%s: %s, ждали %s" % (nm, got, want))
+    # фаска 45° у конца прямой кромки: «вплотную» только прямые вдоль осей, фаска — не ближе зазора
+    V = np.array([(0, 0), (900, 0), (970, 70), (970, 1000), (0, 1000)], float)
+    s0, s1 = V, np.roll(V, -1, axis=0)
+    tm = np.array([True, False, True, True, True])
+    for nm, R, ok in (("к прямой кромке, угол до фаски дальше зазора", (970, 100, 1030, 800), True),
+                      ("к прямой кромке через начало фаски (клин 45°)", (970, 50, 1030, 800), False),
+                      ("угол ровно в начале фаски (до неё 0 < зазора)", (970, 70, 1030, 800), False),
+                      ("снизу по кромке, угол в 3 мм от начала фаски", (100, -60, 897, 0), True)):
+        r = F._pair_ok(R, s0, s1, tm, (0, 0, 970, 1000), G_, g)
+        if (r is not None) != ok:
+            bad.append("%s: %s" % (nm, r))
+    check("fill._pair_ok: вплотную — общей кромкой ≥ 10 мм или углом к углу; щель, наложение, короткий участок, фаска — нет",
+          not bad, "; ".join(bad))
+    sq = lambda x, y, w, h: [(x, y), (x + w, y), (x + w, y + h), (x, y + h)]
+    ring = [sq(0, 0, 100, 20), sq(0, 80, 100, 20), sq(0, 20, 20, 60), sq(80, 20, 20, 60)]
+    u = [sq(0, 0, 100, 20), sq(0, 20, 20, 60), sq(80, 20, 20, 60)]
+    check("fill.pockets: кольцо из четырёх добивок замыкает карман 60×60 (площадь кармана), «П» — нет",
+          abs(F.pockets([], ring, (0, 0, 100, 100)) - 3600) < 200 and F.pockets([], u, (0, 0, 100, 100)) == 0,
+          "%s / %s" % (F.pockets([], ring, (0, 0, 100, 100)), F.pockets([], u, (0, 0, 100, 100))))
+    part = lambda w, h, fill: dict(name="R%gx%g" % (w, h), qty=1, fill=fill, shapes=[poly([(0, 0, 0), (w, 0, 0), (w, h, 0), (0, h, 0)], 1, outer=1)])
+    ps = [part(60, 300, True)]
+    grid = [dict(part=0, rot=0, dx=10 + 60 * c, dy=10 + 300 * r) for r in range(3) for c in range(3)]
+    ps2 = ps + [dict(name="Круг", qty=1, fill=True, shapes=[hole(0, 0, 30)])]
+    check("route.group_buildable: сетка 3×3 добивки (9 деталей — обходами от крайних) строится; с круглой деталью — нет",
+          RT.group_buildable(ps, grid, list(range(9))) and not RT.group_buildable(ps2, grid[:2] + [dict(part=1, rot=0, dx=100, dy=500)], [0, 1, 2]))
+
+
+def co_fill(td):
+    """Столбцы прямоугольников с отверстиями (стойки) у длинной прямоугольной детали заказа (лоток), общий рез."""
+    from sheet_nest import coedge as CE, verify as V
+    tray = dxf_rect(os.path.join(td, "co_tray.dxf"), 2495, 348, [(100 + 200 * k, 174, 10) for k in range(12)])
+    post = dxf_rect(os.path.join(td, "co_post.dxf"), 77.45, 1200, [(38, 60 + 120 * k, 6) for k in range(10)])
+    leg = dxf_rect(os.path.join(td, "co_leg.dxf"), 57.45, 765, [(28, 30, 5), (28, 735, 5)])
+    order = [dict(path=tray, name="Лоток", qty=3)]
+    stock = [dict(path=post, name="Стойка", qty=1), dict(path=leg, name="Нога", qty=1)]
+    t0 = __import__("time").time()
+    res, raw, pl, parts = run(order + stock, 1250, 2500, 2, 2, 1.5, log=quiet, coedge=True, fill=["Стойка", "Нога"], strategy="safe")
+    dt = __import__("time").time() - t0
+    C = check_names(res)
+    l = pl["layouts"][0]
+    fills = [k for k, q in enumerate(l["placed"]) if q.get("fill")]
+    gf = [g for g in l["groups"] if any(k in fills for k in g)]
+    outs = [G.transform(parts[q["part"]]["shapes"][-1], q["rot"], (q["dx"], q["dy"])) for q in l["placed"]]
+    sh = sum(CE.shared_length(outs[a]["verts"], outs[b]["verts"]) for a in range(len(outs)) for b in range(a + 1, len(outs)) if b in fills)
+    want = 2 * 1200 + 2 * 1200 + 2 * 77.45                 # к лотку 2 × 1200, между столбцами 2 × 1200, торцы 2 × 77,45
+    check("общий рез + добивка: стойки сеткой 2×2 вплотную к лотку и друг к другу — одна группа с лотками, общие кромки %.2f м" % (want / 1000),
+          res["ok"] and res["applied"]["coedge"] and len(fills) == 4 and len(gf) == 1 and all(k in gf[0] for k in fills) and
+          abs(sh - want) < 1e-3 and abs(res["fill_coedge"]["shared_m"] * 1000 - want) < 1.0,
+          "%s, общих %.2f мм, %.1f с" % (l["groups"], sh, dt))
+    check("общий рез + добивка: проверки программы — группы, длина реза минус общие кромки, добивка вплотную ✓",
+          C["группы общего реза: детали, контуры по одному разу, цепочки от вырезанного, отверстия раньше контура"][1] is True and
+          C["длина реза = детали × количество − общие кромки"][1] is True and
+          next(c for c in res["checks"] if c[0].startswith("добивка под общий рез"))[1] is True and
+          C["добивка не добавила листов"][1] is True, str([c for c in res["checks"] if c[1] is not True]))
+    # каждая пара «добивка — сосед»: вплотную по кромке ≥ 10 мм (или угол к углу) или не ближе зазора
+    pairs_bad = []
+    for i in fills:
+        for j in range(len(outs)):
+            if j == i:
+                continue
+            A_ = [(x, y) for x, y, b in outs[i]["verts"]]
+            B_ = [(x, y) for x, y, b in outs[j]["verts"]]
+            d = min(min(G.seg_point_dist(p, B_[k - 1], B_[k]) for k in range(len(B_))) for p in A_ + [((A_[k - 1][0] + A_[k][0]) / 2, (A_[k - 1][1] + A_[k][1]) / 2) for k in range(len(A_))])
+            d = min(d, min(G.seg_point_dist(p, A_[k - 1], A_[k]) for k in range(len(A_)) for p in B_))
+            s_ = CE.shared_length(outs[i]["verts"], outs[j]["verts"])
+            if not (d >= 2.0 - 1e-6 or (d < 1e-6 and (s_ >= 10 or s_ < 1e-6))):
+                pairs_bad.append((i, j, round(d, 3), round(s_, 3)))
+    check("добивка под общий рез: сближений 0 < d < зазора нет, касания — кромкой ≥ 10 мм", not pairs_bad, str(pairs_bad[:3]))
+    # без общего реза — то же число (с зазором) и программа другая; деталей добивки не меньше, чем с зазором
+    fc = res["fill_coedge"]
+    check("добивки не меньше, чем с зазором (отчёт fill_coedge: с зазором / поставлено по позициям)",
+          all(r["placed"] >= r["gap"] and r["diff"] == r["placed"] - r["gap"] for r in fc["by_name"]) and fc["in_groups"] == 4, str(fc["by_name"]))
+    # узкая полоса: место под стойку есть только вплотную к лотку (с зазором не помещается) — добор вплотную
+    res2, raw2, pl2, parts2 = run(order + stock[:1], 1126.45, 2500, 2, 2, 1.5, log=quiet, coedge=True, fill=["Стойка"], strategy="safe")
+    res3, *_ = run(order + stock[:1], 1126.45, 2500, 2, 2, 1.5, log=quiet, fill=["Стойка"], strategy="safe")
+    check("полоса 78,45 мм у лотка: с зазором стойка не встаёт (0 шт), вплотную — 2 шт (столбец к лотку), все проверки",
+          res3["fill"][0]["placed"] == 0 and res2["fill"][0]["placed"] == 2 and res2["ok"] and res2["fill_coedge"]["by_name"][0]["diff"] == 2,
+          "%s / %s" % (res3["fill"], res2["fill"]))
+    # большая группа (столбцы из 10–14 деталей): маршрут быстрый, порядки — обходами, все проверки; безопасные и «Горкой»
+    t0 = __import__("time").time()
+    res4, raw4, pl4, parts4 = run([dict(path=tray, name="Лоток", qty=2)] + stock, 1250, 2500, 2, 2, 1.5, log=quiet, coedge=True,
+                                  fill=["Стойка", "Нога"], strategy="safe", compare=True)
+    dt4 = __import__("time").time() - t0
+    big = max((len(g) for l_ in pl4["layouts"] for g in l_.get("groups") or []), default=0)
+    S = res4["strategies"]
+    check("большая группа с добивкой (%d деталей): сводка по 4 стратегиям построена, все проверки, быстрее 60 с" % big,
+          big >= 8 and res4["ok"] and all(S[n]["error"] is None for n in ("short", "safe", "safe0", "hill")) and dt4 < 60,
+          "%.1f с; над мелкими: %s" % (dt4, {n: S[n]["danger"]["small"] for n in S}))
+    tiers = lambda n: tuple(S[n]["danger"][c] for c in ("tongues", "small", "parts", "holes"))
+    check("с добивкой в группах: «Безопасный» по опасным не хуже «Минимум холостого», «Горкой» не хуже «Безопасного» по (полоса, опасные)",
+          tiers("safe") <= tiers("short") and (S["hill"]["strip"]["sheets"],) + tiers("hill") <= (S["safe"]["strip"]["sheets"],) + tiers("safe"),
+          str({n: (S[n]["strip"]["sheets"],) + tiers(n) for n in S}))
+    # сравнение с добивкой с зазором (разбор 16.10): в сводке — вариант fill_gap той же стратегией; он же — прогон с fill_gap
+    from sheet_nest import risk as RK
+    gv = res4["fill_coedge"].get("gap_variant")
+    resg, rawg, plg, partsg = run([dict(path=tray, name="Лоток", qty=2)] + stock, 1250, 2500, 2, 2, 1.5, log=quiet, coedge=True,
+                                  fill=["Стойка", "Нога"], strategy="safe", fill_gap=True)
+    check("сводка с добивкой вплотную: вариант «добивка с зазором» (fill_coedge.gap_variant) — то же, что прогон с fill_gap "
+          "(опасные по классам, рез, холостой, добивка)",
+          gv is not None and gv["strategy"] == "safe" and all(gv["danger"][c] == resg["risk"][c] for c in RK.CLASSES)
+          and abs(gv["cut_m"] - resg["risk"]["cut_m"]) < 0.01 and abs(gv["idle_m"] - resg["idle_m"]) < 0.01
+          and gv["fill_n"] == sum(r["placed"] for r in resg["fill"]),
+          "%s / %s" % (gv and {c: gv["danger"][c] for c in ("small", "parts", "holes")}, {c: resg["risk"][c] for c in ("small", "parts", "holes")}))
+    in_g = [q.get("fill") for l_ in plg["layouts"] for g in l_.get("groups") or [] for q in (l_["placed"][i] for i in g)]
+    check("fill_gap: добивка с общим резом — с зазором (как до 0.12.0): в группах её нет, столько же, сколько «с зазором» в отчёте, "
+          "fill_coedge — нет, все проверки", resg["ok"] and resg["fill_coedge"] is None and not any(in_g) and
+          [r["placed"] for r in resg["fill"]] == [r["gap"] for r in res4["fill_coedge"]["by_name"]],
+          "%s / %s" % ([r["placed"] for r in resg["fill"]], [r["gap"] for r in res4["fill_coedge"]["by_name"]]))
+    mk = tuple(res4["risk"][c] for c in ("tongues", "small", "parts", "holes"))
+    gk = tuple(gv["danger"][c] for c in ("tongues", "small", "parts", "holes")) if gv else None
+    warned = any("опасных переходов больше, чем с добивкой с зазором" in w for w in res4["warnings"])
+    check("предупреждение «опасных больше, чем с добивкой с зазором» — тогда и только тогда, когда так и есть",
+          gv is not None and warned == (gk < mk), "%s против %s, предупреждение %s" % (mk, gk, warned))
+    # детерминизм
+    res5, raw5, *_ = run(order + stock, 1250, 2500, 2, 2, 1.5, log=quiet, coedge=True, fill=["Стойка", "Нога"], strategy="safe")
+    md5 = lambda r: hashlib.md5(zipfile.ZipFile(io.BytesIO(r)).read("Geometry2D/data.bin")).hexdigest()
+    check("общий рез + добивка: повторный прогон — та же программа", md5(raw) == md5(raw5) and res5["fill_coedge"] == res["fill_coedge"])
+    # проверка ловит порчу: добивку сдвинуть на 1 мм от соседа (щель уже зазора) и на фаску
+    lay = dict(pl["layouts"][0], placed=[dict(q) for q in pl["layouts"][0]["placed"]])
+    k = fills[-1]
+    lay["placed"][k]["dx"] += 1.0
+    b_, e_, n_ = V._fill_clearance(parts, lay, 2.0)
+    check("verify: добивка в 1 мм от соседа — нарушение «сближение не у общей кромки»", b_ > 0 and "сближение" in e_, e_)
+    lay2 = dict(pl["layouts"][0], placed=[dict(q) for q in pl["layouts"][0]["placed"]] + [dict(pl["layouts"][0]["placed"][fills[0]])])
+    b_, e_, n_ = V._fill_clearance(parts, lay2, 2.0)
+    check("verify: добивка точно поверх другой (совпали контуры) — нарушение «наложилась»", b_ > 0 and "наложилась" in e_, e_)
+    return order, stock
+
+
+def co_chamfer(td):
+    """Деталь заказа со срезанными углами (как решётка): добивка вплотную только к прямой кромке, не через фаску."""
+    from sheet_nest import verify as V
+    d = DW.DxfDoc(version="AC1015", insunits=4)
+    d.entities.lwpolyline([(70, 0), (930, 0), (1000, 70), (1000, 1056), (930, 1126), (70, 1126), (0, 1056), (0, 70)], closed=True)
+    d.entities.circle((500, 563), 20)
+    gr = os.path.join(td, "co_grate.dxf"); open(gr, "wb").write(d.dxf_bytes())
+    post = dxf_rect(os.path.join(td, "co_post2.dxf"), 77.45, 1200, [(38, 60 + 120 * k, 6) for k in range(10)])
+    leg = dxf_rect(os.path.join(td, "co_leg2.dxf"), 57.45, 765, [(28, 30, 5), (28, 735, 5)])
+    res, raw, pl, parts = run([dict(path=gr, name="Решётка", qty=2), dict(path=post, name="Стойка", qty=1), dict(path=leg, name="Нога", qty=1)],
+                              1250, 2500, 2, 2, 1.5, log=quiet, coedge=True, fill=["Стойка", "Нога"], strategy="safe")
+    l = pl["layouts"][0]
+    outs = [G.transform(parts[q["part"]]["shapes"][-1], q["rot"], (q["dx"], q["dy"])) for q in l["placed"]]
+    fills = [k for k, q in enumerate(l["placed"]) if q.get("fill")]
+    grates = [k for k, q in enumerate(l["placed"]) if not q.get("fill")]
+    wedge = []
+    for i in fills:
+        for j in grates:
+            for E in V._shared_ends(outs[i]["verts"], outs[j]["verts"]):
+                w = V._free_arc(E, [G.points(o, 0.01) and __import__("numpy").asarray(G.points(o, 0.01)) for o in outs],
+                                [G.bbox([o]) for o in outs], 0.5)
+                if 0 < w < 85:
+                    wedge.append((i, j, E, w))
+    C = next(c for c in res["checks"] if c[0].startswith("добивка под общий рез"))
+    check("решётка с фасками: добивка вплотную друг к другу (группы), у решёток — не через фаску: клиньев < 90° нет, все проверки",
+          res["ok"] and C[1] is True and not wedge and sum(r["placed"] for r in res["fill"]) > 0 and res["fill_coedge"]["in_groups"] > 0,
+          "%s; %s; %s" % (res["fill"], C, wedge[:2]))
+
+
+def co_many(td):
+    """Много мелкой добивки-прямоугольников у плиты: группы не больше CO_GROUP_MAX, деталей не меньше, чем с зазором."""
+    import time
+    plate = dxf_rect(os.path.join(td, "co_plate.dxf"), 1000, 2000, [(500, 1000, 50)])
+    small = dxf_rect(os.path.join(td, "co_small.dxf"), 60, 100, [(30, 50, 5)])
+    t0 = time.time()
+    res, raw, pl, parts = run([dict(path=plate, name="Плита", qty=1), dict(path=small, name="М", qty=1)], 1250, 2500, 2, 2, 1.5,
+                              log=quiet, coedge=True, fill=["М"], strategy="safe")
+    dt = time.time() - t0
+    gs = [len(g) for g in pl["layouts"][0].get("groups") or []]
+    fc = res["fill_coedge"]
+    check("мелкая добивка 60×100 у плиты: группы ≤ %d деталей, добивки не меньше, чем с зазором, карманов нет, все проверки, < 60 с"
+          % F.CO_GROUP_MAX, res["ok"] and gs and max(gs) <= F.CO_GROUP_MAX and fc["by_name"][0]["diff"] >= 0 and not fc["gap_only"]
+          and dt < 60, "группы %s, %s, %.1f с" % (gs, fc["by_name"], dt))
+
+
+def co_review(td):
+    """Разбор 16.10 (общий рез с добивкой): сторона цепочки по «взгляду вперёд» у каждой детали группы."""
+    # ноги торец к торцу вдоль лотка: путь по двум отверстиям ноги к любому концу кончается у одного и того же, и цепочка
+    # «от ближнего конца» уводила головку вдоль только что освобождённой ноги к следующей (лист №5 заказа: ×8)
+    tray = dxf_rect(os.path.join(td, "rv_tray.dxf"), 2495, 348, [(40 + 24 * k, 174 + (60 if k % 2 else -60), 4) for k in range(100)])
+    W = 2 + 348 + 57.45 + 2 + 30                       # полоса у лотка: ноги встают только вплотную
+    got = {}
+    for hx in (12.0, 45.45):
+        leg = dxf_rect(os.path.join(td, "rv_leg_%g.dxf" % hx), 57.45, 765, [(hx, 20, 5), (hx, 745, 5)])
+        for st in ("safe", "hill"):
+            res, raw, pl, parts = run([dict(path=tray, name="Лоток", qty=1), dict(path=leg, name="Нога", qty=1)], W, 2500, 2, 2, 1.5,
+                                      log=quiet, coedge=True, fill=["Нога"], strategy=st)
+            got[(hx, st)] = (res["ok"], res["fill"][0]["placed"], len((pl["layouts"][0].get("groups") or [[]])[0]),
+                             res["risk"]["small"], res["risk"]["parts"], round(res["risk"]["over_parts_m"], 3))
+    check("ноги торец к торцу у лотка (общий рез): цепочка каждой ноги кончается со стороны следующей — над освобождёнными 0 "
+          "(отверстия у любого края; «Безопасный» и «Горкой»)",
+          all(v[0] and v[1] == 3 and v[2] == 4 and v[3:] == (0, 0, 0.0) for v in got.values()), str(got))
+
+
 def main():
     with tempfile.TemporaryDirectory() as td:
         heal_unit()
@@ -555,6 +778,11 @@ def main():
         fill_edge(td, order, stock)
         fill_more(td, order, stock)
         cli_flags(td, order, stock)
+        co_unit()
+        co_fill(td)
+        co_chamfer(td)
+        co_many(td)
+        co_review(td)
     print("ВСЁ ВЕРНО" if not fails else "ОШИБКИ: %s" % fails)
     return 1 if fails else 0
 

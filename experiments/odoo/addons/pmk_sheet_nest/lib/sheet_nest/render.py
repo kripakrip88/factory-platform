@@ -86,12 +86,14 @@ def _dashed(dr, a, b, fill, width=1, dash=6.0, gap=4.0):
         t = e + gap
 
 
-def png_model(raw, path, title="", px_per_mm=None, cols=6, moves=None, fill_names=None):
+def png_model(raw, path, title="", px_per_mm=None, cols=6, moves=None, fill_names=None, fill_polys=None):
     """Картинка по разобранной программе (spec_rebuild): холостые переходы — от точки врезки с учётом sp (у групп
     общего реза замкнутый контур режется не от вершины 0 — расшифровщик отчётов этого не знает). moves — по раскладкам
     [(откуда, куда, вектор risk)] в порядке программы (последний — возврат в ноль): опасные переходы своими цветами,
     возврат — пунктиром; переходы сверяются с программой (не совпали — рисуются как обычные). fill_names — имена деталей
-    добивки остатков листа: они залиты бледно, контуры — своим цветом (C_FILL), в легенде — «добивка»."""
+    добивки остатков листа: они залиты бледно, контуры — своим цветом (C_FILL), в легенде — «добивка». fill_polys — по
+    раскладкам контуры деталей добивки по плану (общий рез: добивка в группах — внутри вставки группы, по программе её
+    не отличить) — заливаются так же. Подпись раскладки — строками по ширине листа на картинке (не налезает на соседнюю)."""
     from PIL import Image, ImageDraw
     from . import geom as G
     from .write_lxds import decompile_free, FREE, BAD_NAME
@@ -106,16 +108,39 @@ def png_model(raw, path, title="", px_per_mm=None, cols=6, moves=None, fill_name
     if px_per_mm is None:                               # мало раскладок — крупнее (ширина картинки ~1200 px)
         px_per_mm = max(0.2, min(1.0, 1200.0 / (cols * Wm)))
     W, H = int(Wm * px_per_mm), int(Lm * px_per_mm)
-    pad, top = 24, (78 if moves else 58)                # с опасными переходами — третья строка подписи раскладки
+    pad = 24
     F, Fb = _font(15), _font(16, True)
+    probe = ImageDraw.Draw(Image.new("RGB", (8, 8)))
+    tlen = lambda t: int(probe.textlength(t, font=F)) if hasattr(probe, "textlength") else 8 * len(t)
+    heads = []                                          # подпись раскладки: строки по ширине листа на картинке
+    for n, r in enumerate(res):
+        ng = sum(1 for ins in r["inserts"] if ins["ref"][0] == "NestGroup")
+        nb = sum(1 for ins in r["inserts"] if ins["ref"] == FREE)
+        nf = len(fill_polys[n]) if fill_polys and n < len(fill_polys) and fill_polys[n] else \
+            sum(1 for ins in r["inserts"] if ins["ref"][0] == "NestPart" and ins["ref"][1] in fill_h)
+        idle, pos = 0.0, (0.0, 0.0)
+        for ins in r["inserts"]:
+            for s in bn[ins["block"]]["shapes"]:
+                a, b = G.ends(s)
+                idle += math.dist(pos, a); pos = b
+        items = ["холостой %.1f м" % (idle / 1000)] + (["групп общего реза %d" % ng] if ng else []) + \
+            (["мостов %d" % nb] if nb else []) + (["добивка %d" % nf] if nf else [])
+        lines = [items[0]]
+        for it in items[1:]:
+            if tlen(lines[-1] + "  · " + it) <= max(W, 120):
+                lines[-1] += "  · " + it
+            else:
+                lines.append(it)
+        heads.append(lines)
+    nl = max(len(h) for h in heads) if heads else 1
+    top = 38 + 20 * (nl + (1 if moves else 0))          # строка номера, строки подписи, опасные переходы
     width = cols * (W + pad) + pad
     legend = []                                         # (x, y, цвет, толщина, текст) — с переносом по ширине
-    if moves or fill_h:
-        probe = ImageDraw.Draw(Image.new("RGB", (8, 8)))
+    if moves or fill_h or fill_polys:
         x, y = pad, 0
         items = ((C_PART, 3, "над освобождённой деталью / язычком"), (C_HOLE, 2, "над отверстием ≥ 10 мм"),
                  (C_NEAR, 2, "впритирку (< 5 мм)"), (C_IDLE, 1, "холостой"), (C_RET, 1, "возврат в ноль")) if moves else ()
-        if fill_h:
+        if fill_h or any(fill_polys or ()):
             items += ((C_FILL, 2, "добивка (складские позиции)"),)
         for col, w, txt in items:
             tw = int(probe.textlength(txt, font=F)) if hasattr(probe, "textlength") else 8 * len(txt)
@@ -144,18 +169,16 @@ def png_model(raw, path, title="", px_per_mm=None, cols=6, moves=None, fill_name
         h = pl["L"] * px_per_mm
         P = lambda p: (ox + p[0] * px_per_mm, oy + h - p[1] * px_per_mm)
         dr.rectangle([ox, oy, ox + pl["W"] * px_per_mm, oy + h], outline=(150, 150, 150), fill=(250, 250, 247))
+        for fp in (fill_polys[n] if fill_polys and n < len(fill_polys) else None) or ():
+            dr.polygon([P(p) for p in fp], fill=C_FILL_BG)      # добивка по плану (и в группах общего реза)
         mv = moves[n] if moves and n < len(moves) else None
-        pos, idle, ng, nb, k, danger = (0.0, 0.0), 0.0, 0, 0, 0, 0
+        pos, k, danger = (0.0, 0.0), 0, 0
         segs, shapes = [], []
-        nf = 0
         for ins in r["inserts"]:
-            ng += ins["ref"][0] == "NestGroup"
-            nb += ins["ref"] == FREE
             blk = bn[ins["block"]]["shapes"]
             bo = max((x for x in blk if G.is_closed(x)), key=G.area, default=None) if ins["ref"] == FREE else None
             fo = None
             if ins["ref"][0] == "NestPart" and ins["ref"][1] in fill_h:     # добивка: бледная заливка под контурами
-                nf += 1
                 fo = max((x for x in blk if G.is_closed(x) and x["layer"] == 1), key=G.area, default=None)
                 if fo is not None:
                     dr.polygon([P(p) for p in G.points(fo, 0.5)], fill=C_FILL_BG)
@@ -166,7 +189,6 @@ def png_model(raw, path, title="", px_per_mm=None, cols=6, moves=None, fill_name
                     style = _move_style(mv[k][2])
                     danger += style[0] in (C_PART, C_HOLE)
                 segs.append((P(pos), P(a), style))
-                idle += math.dist(pos, a)
                 shapes.append((s, s is bo, fo is not None))
                 pos = b
                 k += 1
@@ -189,12 +211,12 @@ def png_model(raw, path, title="", px_per_mm=None, cols=6, moves=None, fill_name
             _dashed(dr, P(pos), P(mv[-1][1]), C_RET, 1 if _move_style(mv[-1][2])[0] == C_IDLE else 2)
         x, y = P((0, 0)); dr.ellipse([x - 4, y - 4, x + 4, y + 4], fill=(0, 160, 60))
         dr.text((ox, oy - top + 6), "№%d  ×%d лист.  %g×%g" % (r["index"], r["plate_amount"], pl["W"], pl["L"]), fill=(0, 0, 0), font=Fb)
-        # подпись — строками (в одну строку с общим резом налезала на соседнюю раскладку: 6 в ряд при 0,2 пикс/мм)
-        dr.text((ox, oy - top + 26), "холостой %.1f м%s%s%s" % (idle / 1000, ("  · групп общего реза %d" % ng) if ng else "",
-                                                               ("  · мостов %d" % nb) if nb else "", ("  · добивка %d" % nf) if nf else ""),
-                fill=(60, 60, 60), font=F)
+        # подпись — строками по ширине листа (6 в ряд при 0,2 пикс/мм «холостой … · групп общего реза … · добивка …» в
+        # одну строку налезала на соседнюю раскладку)
+        for m_, line in enumerate(heads[n]):
+            dr.text((ox, oy - top + 26 + 20 * m_), line, fill=(60, 60, 60), font=F)
         if mv:
-            dr.text((ox, oy - top + 46), "опасных переходов %d" % danger, fill=C_PART if danger else (60, 60, 60), font=F)
+            dr.text((ox, oy - top + 26 + 20 * len(heads[n])), "опасных переходов %d" % danger, fill=C_PART if danger else (60, 60, 60), font=F)
     img.save(path)
     return path
 

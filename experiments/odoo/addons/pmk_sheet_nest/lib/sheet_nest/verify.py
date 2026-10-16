@@ -285,6 +285,16 @@ def check(raw, parts, layouts, gap, edge, thickness=None, rep=None, fill_base=No
         bad_u, dmin = _units_apart(M2, bn)
         rep.append(("между группами и деталями нет общих кромок и пересечений (вплотную — допустимо)", bad_u == 0,
                     ("нарушений %d, наименьшее расстояние %.3f мм" % (bad_u, dmin)) if dmin is not None else "группы и детали дальше 1 мм друг от друга"))
+        if any(parts[q["part"]].get("fill") for l in layouts for q in l["placed"]):
+            # добивка под общий рез (fill.co_layout): вплотную — только общей кромкой, иначе не ближе зазора; клинья
+            # остатка у концов общих кромок ≥ 90°; группа с добивкой не замыкает карман остатка — пересчёт по плану
+            badf, exf, nt = 0, "", 0
+            for l in layouts:
+                b_, e_, n_ = _fill_clearance(parts, l, gap)
+                badf += b_; exf = exf or e_; nt += n_ * l["amount"]
+            rep.append(("добивка под общий рез: вплотную — общей кромкой ≥ %g мм, иначе не ближе %g мм; клинья у концов кромок ≥ 90°, "
+                        "карманов нет" % (_co_min(), gap), badf == 0,
+                        exf or "касаний добивки %d (на все листы)" % nt))
     else:
         gaps = [g for g in (vn.lxds_write.gap_min(ctx["prog"], d["index"], LR) for d in ctx["lays"]) if g is not None]
         rep.append(("зазор между деталями ≥ %g мм" % gap, all(g >= gap - 0.01 for g in gaps), ("мин %.3f мм" % min(gaps)) if gaps else "по одной детали"))
@@ -588,6 +598,135 @@ def _plan_clearance(parts, placed, safe=1.0, step=0.5):
                     bad += 1; ex = ex or "сближение %.2f мм не по общей кромке у (%.1f; %.1f)" % (d, x[0], x[1])
                     break
     return bad, ex
+
+
+def _co_min():
+    from .fill import CO_CONTACT_MIN
+    return CO_CONTACT_MIN
+
+
+def _pip_many(P, Q):
+    """Точки P (N×2) внутри многоугольника Q (M×2) — чётность пересечений."""
+    import numpy as np
+    x, y = P[:, 0][:, None], P[:, 1][:, None]
+    x1, y1 = Q[:, 0][None], Q[:, 1][None]
+    x2, y2 = np.roll(Q[:, 0], 1)[None], np.roll(Q[:, 1], 1)[None]
+    hit = (y1 > y) != (y2 > y)
+    xs = x1 + (y - y1) * (x2 - x1) / np.where(y2 != y1, y2 - y1, 1.0)
+    return (np.count_nonzero(hit & (x < xs), axis=1) & 1).astype(bool)
+
+
+def _pt_segs_np(P, Q):
+    import numpy as np
+    a, b = Q, np.roll(Q, -1, axis=0)
+    e = b - a
+    L2 = (e * e).sum(1)
+    out = np.empty(len(P))
+    for k in range(0, len(P), 2000):
+        X = P[k:k + 2000]
+        t = np.clip(((X[:, None, :] - a[None]) * e[None]).sum(2) / np.where(L2 > 0, L2, 1.0)[None], 0, 1)
+        q = a[None] + t[..., None] * e[None]
+        out[k:k + 2000] = np.sqrt(((X[:, None, :] - q) ** 2).sum(2)).min(1)
+    return out
+
+
+def _fill_clearance(parts, lay, gap, step=0.5, end_r=3.0, r=0.5):
+    """Добивка под общий рез на раскладке, по плану и независимо от fill.py (точки контура через step мм): с каждым
+    соседом — наложения нет; сближение 1e-3 < d < зазора — только в end_r мм от точек касания; общая кромка с соседом —
+    0 или ≥ CO_CONTACT_MIN; у концов общих прямых участков клин остатка (свободная дуга окружности радиуса r вокруг
+    конца) — не уже 85°; группа с добивкой не замыкает карман (fill.pockets). Вернуть (нарушений, пример, касаний)."""
+    import numpy as np
+    from .fill import CO_CONTACT_MIN, pockets
+    placed = lay["placed"]
+    outs = [G.transform(parts[q["part"]]["shapes"][-1], q["rot"], (q["dx"], q["dy"])) for q in placed]
+    polys = [np.asarray(G.points(o, 0.01), float) for o in outs]
+    boxes = [G.bbox([o]) for o in outs]
+    fills = [k for k, q in enumerate(placed) if parts[q["part"]].get("fill")]
+    bad, ex, n_touch = 0, "", 0
+    for i in fills:
+        D_ = np.asarray(_dense(outs[i], step), float)
+        for j in range(len(outs)):
+            if j == i or (j in fills and j < i):
+                continue
+            a, b = boxes[i], boxes[j]
+            if a[0] > b[2] + gap or b[0] > a[2] + gap or a[1] > b[3] + gap or b[1] > a[3] + gap:
+                continue
+            Pi = D_[(D_[:, 0] >= b[0] - gap) & (D_[:, 0] <= b[2] + gap) & (D_[:, 1] >= b[1] - gap) & (D_[:, 1] <= b[3] + gap)]
+            Dj = np.asarray(_dense(outs[j], step), float)
+            Pj = Dj[(Dj[:, 0] >= a[0] - gap) & (Dj[:, 0] <= a[2] + gap) & (Dj[:, 1] >= a[1] - gap) & (Dj[:, 1] <= a[3] + gap)]
+            di = _pt_segs_np(Pi, polys[j]) if len(Pi) else np.zeros(0)
+            dj = _pt_segs_np(Pj, polys[i]) if len(Pj) else np.zeros(0)
+            ci = np.array([((a[0] + a[2]) / 2, (a[1] + a[3]) / 2)])     # внутренняя точка (совпавшие контуры — все точки на кромке)
+            same = _pip_many(ci, polys[i])[0] and _pip_many(ci, polys[j])[0]
+            if same or (len(Pi) and (_pip_many(Pi, polys[j]) & (di > 1e-3)).any()) or (len(Pj) and (_pip_many(Pj, polys[i]) & (dj > 1e-3)).any()):
+                bad += 1; ex = ex or "добивка «%s» наложилась на соседа" % parts[placed[i]["part"]]["name"]
+                continue
+            T = np.vstack([Pi[di <= 1e-3], Pj[dj <= 1e-3]]) if (len(Pi) or len(Pj)) else np.zeros((0, 2))
+            for P_, d_ in ((Pi, di), (Pj, dj)):
+                m = (d_ > 1e-3) & (d_ < gap - 0.01)
+                if m.any() and (not len(T) or (np.sqrt(((P_[m][:, None, :] - T[None]) ** 2).sum(2)).min(1) > end_r).any()):
+                    bad += 1; ex = ex or "добивка «%s»: сближение %.2f мм не у общей кромки" % (parts[placed[i]["part"]]["name"], d_[m].min())
+                    break
+            sl = CE.shared_length(outs[i]["verts"], outs[j]["verts"]) if outs[j]["kind"] == "LwPolyline" else 0.0
+            if 1e-3 < sl < CO_CONTACT_MIN - 1e-6:
+                bad += 1; ex = ex or "добивка «%s»: общая кромка %.1f мм — короче %g" % (parts[placed[i]["part"]]["name"], sl, CO_CONTACT_MIN)
+            if sl > 1e-3:
+                n_touch += 1
+                for E in _shared_ends(outs[i]["verts"], outs[j]["verts"]):
+                    w = _free_arc(E, polys, boxes, r)
+                    if 0 < w < 85:
+                        bad += 1; ex = ex or "добивка «%s»: клин остатка %.0f° у (%.1f; %.1f)" % (parts[placed[i]["part"]]["name"], w, E[0], E[1])
+    for g in lay.get("groups") or []:
+        gf = [k for k in g if k in fills]
+        if gf:
+            bx = (min(boxes[k][0] for k in g), min(boxes[k][1] for k in g), max(boxes[k][2] for k in g), max(boxes[k][3] for k in g))
+            if pockets([polys[k] for k in g if k not in gf], [polys[k] for k in gf], bx):
+                bad += 1; ex = ex or "группа с добивкой замыкает карман остатка листа"
+    return bad, ex, n_touch
+
+
+def _shared_ends(A, B, tol=1e-4):
+    """Концы общих прямых участков двух контуров (вершины (x, y, bulge))."""
+    out = []
+    for p, q, b in CE._segs(A):
+        if b:
+            continue
+        L = math.dist(p, q)
+        if L < 1e-9:
+            continue
+        ux, uy = (q[0] - p[0]) / L, (q[1] - p[1]) / L
+        for r_, s_, c in CE._segs(B):
+            if c or abs(-uy * (r_[0] - p[0]) + ux * (r_[1] - p[1])) > tol or abs(-uy * (s_[0] - p[0]) + ux * (s_[1] - p[1])) > tol:
+                continue
+            t1, t2 = sorted(((r_[0] - p[0]) * ux + (r_[1] - p[1]) * uy, (s_[0] - p[0]) * ux + (s_[1] - p[1]) * uy))
+            lo, hi = max(0.0, t1), min(L, t2)
+            if hi - lo > tol:
+                out += [(p[0] + ux * lo, p[1] + uy * lo), (p[0] + ux * hi, p[1] + uy * hi)]
+    return out
+
+
+def _free_arc(E, polys, boxes, r, n=720):
+    """Самая узкая свободная (вне всех деталей) дуга окружности радиуса r вокруг E, градусы (0 — свободного нет): клин
+    остатка у конца общей кромки."""
+    import numpy as np
+    t = (np.arange(n) + 0.37) * 2 * math.pi / n       # не по осям: точки на общей кромке — ни в одной детали
+    C = np.stack([E[0] + r * np.cos(t), E[1] + r * np.sin(t)], 1)
+    occ = np.zeros(n, bool)
+    for P, b in zip(polys, boxes):
+        if b[0] - r <= E[0] <= b[2] + r and b[1] - r <= E[1] <= b[3] + r:
+            occ |= _pip_many(C, P)
+    if occ.all() or not occ.any():
+        return 0.0 if occ.all() else 360.0
+    k = int(np.argmax(occ))                             # от занятой точки — свободные отрезки по кругу
+    runs, run = [], 0
+    for v in np.roll(occ, -k):
+        if v and run:
+            runs.append(run)
+        run = 0 if v else run + 1
+    if run:
+        runs.append(run)
+    runs = [x for x in runs if x > 2]                   # 1–2 точки — точка на самой кромке (шум), не клин
+    return min(runs) * 360.0 / n if runs else 0.0
 
 
 def _midpoint(P):

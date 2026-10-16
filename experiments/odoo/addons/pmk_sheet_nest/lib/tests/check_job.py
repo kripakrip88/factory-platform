@@ -408,6 +408,29 @@ def fill_and_heal(base):
           rm is not None and [(f["name"], f["max"]) for f in rm["fill"]] == [("Две", 5)] and 0 < rm["fill"][0]["placed"] <= 5 and
           sum(p["qty"] for p in fp) == rm["fill"][0]["placed"] and all(p["key"] == "s,2" and p["name"].startswith("Две #") for p in fp),
           str((rm or {}).get("fill") or err)[:200])
+    # общий рез с добивкой (0.12.0): plan — fill_coedge с gap_variant (сравнение «добивка с зазором»); fill_gap — null
+    post = os.path.join(td, "post.dxf")
+    doc = DW.DxfDoc(version="AC1015", insunits=4)
+    doc.entities.lwpolyline([(0, 0), (77.45, 0), (77.45, 1200), (0, 1200)], closed=True)
+    for k in range(5):
+        doc.entities.circle((38, 100 + 250 * k), 6)
+    open(post, "wb").write(doc.dxf_bytes())
+    co_in = [inputs[0], dict(file="in/2.dxf", name="Стойка", qty=1, key="stock,9")]
+    wd = workdir(base, "fill_co", dict(inputs=co_in, fill=[dict(name="Стойка")], coedge=True, strategy="safe"),
+                 [(a, "in/1.dxf"), (post, "in/2.dxf")])
+    code, rc, err = run_job(wd)
+    bad = validate_result(rc, "plan", True) if rc else ["нет result.json: %s" % err]
+    fc = (rc or {}).get("fill_coedge") or {}
+    gv = fc.get("gap_variant") or {}
+    check("общий рез + добивка (plan): fill_coedge — FILL_CO_KEYS, gap_variant — вариант «добивка с зазором» той же стратегией",
+          not bad and set(fc) == set(J.FILL_CO_KEYS) and gv.get("strategy") == "safe" and set(gv.get("danger") or ()) == set(J.DANGER_KEYS)
+          and isinstance(gv.get("cut_m"), float), "; ".join(bad)[:200] or str(fc)[:200])
+    wd = workdir(base, "fill_co_gap", dict(inputs=co_in, fill=[dict(name="Стойка")], coedge=True, strategy="safe", fill_gap=True),
+                 [(a, "in/1.dxf"), (post, "in/2.dxf")])
+    code, rg, err = run_job(wd)
+    check("fill_gap: true — добивка с зазором и при общем резе: fill_coedge = null, стоек столько же, сколько «с зазором» в отчёте",
+          rg is not None and rg["ok"] and rg["fill_coedge"] is None and fc.get("by_name") and
+          rg["fill"][0]["placed"] == fc["by_name"][0]["gap"], str(err or (rg and rg["fill"]))[:200])
 
 
 # ============================================================================================ 3) ошибки
@@ -458,6 +481,7 @@ def errors(base, files, inputs):
         ("добивка: max строкой", dict(inputs=one, fill=[dict(name="Пластина", max="2")]), [(a, "in/1.dxf")], "params", False, "max"),
         ("разрыв: heal_gap_mm строкой", dict(inputs=one, heal_gap_mm="20"), [(a, "in/1.dxf")], "params", False, "heal_gap_mm"),
         ("разрыв: heal_gap_mm < 0", dict(inputs=one, heal_gap_mm=-1), [(a, "in/1.dxf")], "params", True, "не меньше 0"),
+        ("добивка с зазором: fill_gap строкой", dict(inputs=one, fill_gap="да"), [(a, "in/1.dxf")], "params", False, "fill_gap"),
     ]
     if FONT:
         cases.append(("отступ подписи < 0", dict(inputs=one, labels={"*": "Р1"}, font="in/font.json", label_opts=dict(margin=-3)),
