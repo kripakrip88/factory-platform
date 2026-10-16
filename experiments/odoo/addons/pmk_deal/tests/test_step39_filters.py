@@ -62,3 +62,17 @@ class TestDealFiltersStep39(TransactionCase):
         in_work = Lead.search(scope + [("won_status", "=", "pending"), ("active", "=", True)])
         self.assertEqual(open_opportunities, in_work)
         self.assertEqual(in_work, deals[0])
+
+
+@tagged("post_install", "-at_install")
+class TestNoMyFilterByDefault(TransactionCase):
+    """Антон 16.10: Бутов и Голубенко не видели сделок и предложений — разделы
+    открывались с фильтром «мои», а записи на Антоне. Права «все документы» есть."""
+
+    def test_pipeline_and_quotations_open_unfiltered(self):
+        for xmlid, key in (("crm.crm_lead_action_pipeline", "search_default_assigned_to_me"),
+                           ("sale.action_quotations_with_onboarding", "search_default_my_quotation")):
+            with self.subTest(action=xmlid):
+                context = self.env.ref(xmlid).context or ""
+                self.assertNotIn(key, context)
+        self.assertIn("default_type", self.env.ref("crm.crm_lead_action_pipeline").context)

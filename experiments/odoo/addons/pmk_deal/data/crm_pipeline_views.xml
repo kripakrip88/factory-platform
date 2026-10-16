@@ -32,6 +32,16 @@
 
   <record id="crm.crm_lead_action_pipeline" model="ir.actions.act_window">
     <field name="view_mode">kanban,list,form,activity</field>
+    <!-- Без фильтра «Мой конвейер» по умолчанию (Антон 16.10: «Бутов и Голубенко
+         не видят сделки» — у ядра search_default_assigned_to_me, а сделки
+         записаны на Антона). Права «все документы» у них были, мешал фильтр.
+         Свои сделки — фильтром «Мой конвейер» в поиске, как раньше. -->
+    <field name="context">{'default_type': 'opportunity', 'show_user_team_stages': 1}</field>
+  </record>
+
+  <!-- «Коммерческие предложения» (меню «Продажи») — так же без «Мои предложения». -->
+  <record id="sale.action_quotations_with_onboarding" model="ir.actions.act_window">
+    <field name="context">{}</field>
   </record>
 
   <record id="crm.crm_lead_action_pipeline_view_calendar" model="ir.actions.act_window.view">
