@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Главная продаж (16.10.2026), js/sales_home.js. Раскладка — как в принятом прототипе. -->
+<templates xml:space="preserve">
+  <t t-name="pmk_sales_home.Home">
+    <div class="o_action o_pmk_home">
+      <div t-if="state.loading and !state.data" class="o_pmk_home__muted">Загружаю…</div>
+      <t t-else="">
+        <div class="o_pmk_home__hd">
+          <b t-esc="d.hello"/>
+          <span><t t-esc="d.date"/> · Продажи</span>
+          <button type="button" class="btn btn-link btn-sm o_pmk_home__refresh" title="Обновить"
+                  t-on-click="() => this.load()"><i class="fa fa-refresh" aria-hidden="true"/></button>
+        </div>
+
+        <!-- Плитки -->
+        <div class="o_pmk_home__kpi">
+          <div t-if="d.mail" class="o_pmk_home__k" t-on-click="() => this.open('mail')">
+            <div class="l">Новые письма</div><div class="v" t-esc="d.mail.unread"/>
+            <div class="s" t-att-class="{ w: d.mail.unread_no_lead }"><t t-esc="d.mail.unread_no_lead"/> без лида · 7 дн.</div>
+          </div>
+          <t t-if="d.deals">
+            <div class="o_pmk_home__k" t-on-click="() => this.open('leads')">
+              <div class="l">Заявки (лиды)</div><div class="v" t-esc="d.deals.leads"/>
+              <div class="s"><t t-esc="d.deals.leads_today"/> сегодня</div>
+            </div>
+            <div class="o_pmk_home__k" t-on-click="() => this.open('deals')">
+              <div class="l">Сделки в работе</div><div class="v" t-esc="d.deals.open"/>
+              <div class="s" t-esc="d.deals.open_sum"/>
+            </div>
+            <div class="o_pmk_home__k" t-on-click="() => this.open('kp')">
+              <div class="l">КП ждут ответа</div><div class="v" t-esc="d.deals.kp"/>
+              <div class="s" t-att-class="{ w: d.deals.kp_old }"><t t-esc="d.deals.kp_old"/> дольше 3 дн.</div>
+            </div>
+            <div class="o_pmk_home__k" t-on-click="() => this.open('won')">
+              <div class="l">Выиграно, <t t-esc="d.month"/></div><div class="v" t-esc="d.deals.won"/>
+              <div class="s" t-att-class="{ g: d.deals.won }"><t t-esc="d.deals.won_sum"/><t t-if="d.deals.won_margin"> · <t t-esc="d.deals.won_margin"/></t></div>
+            </div>
+          </t>
+          <div t-if="d.payments" class="o_pmk_home__k" t-on-click="() => this.open('payments')">
+            <div class="l">Оплаты за неделю</div><div class="v" t-esc="d.payments.total"/>
+            <div class="s"><t t-esc="d.payments.count"/> поступлений</div>
+          </div>
+        </div>
+
+        <div class="o_pmk_home__grid">
+          <!-- Сделать сегодня -->
+          <div class="o_pmk_home__box">
+            <h4>Сделать сегодня <a t-on-click="() => this.open('deals')">воронка →</a></h4>
+            <div t-if="!d.todo or !d.todo.length" class="o_pmk_home__muted">Срочных дел нет.</div>
+            <div t-foreach="d.todo or []" t-as="item" t-key="item_index" class="o_pmk_home__todo"
+                 t-on-click="() => this.openTodo(item)">
+              <span class="o_pmk_home__tag" t-att-class="'o_pmk_home__tag--' + item.level" t-esc="item.tag"/>
+              <div>
+                <t t-esc="item.title"/><t t-if="item.name">: <b t-esc="item.name"/></t>
+                <div class="m" t-esc="item.sub"/>
+              </div>
+            </div>
+          </div>
+
+          <!-- Воронка -->
+          <div t-if="d.funnel" class="o_pmk_home__box">
+            <h4>Воронка <a t-on-click="() => this.open('deals')">открыть →</a></h4>
+            <div t-foreach="d.funnel" t-as="st" t-key="st.id" class="o_pmk_home__fn"
+                 t-on-click="() => this.open('stage', st.id)">
+              <span><t t-esc="st.name"/> · <t t-esc="st.count"/></span>
+              <div class="o_pmk_home__bartrack">
+                <div class="o_pmk_home__bar" t-att-class="'o_pmk_home__bar--' + st_index + (st.won ? ' o_pmk_home__bar--won' : '')"
+                     t-att-style="'width:' + barWidth(st) + '%'"/>
+              </div>
+              <span class="r" t-esc="st.count ? st.amount : '—'"/>
+            </div>
+            <div class="o_pmk_home__note">
+              <t t-if="d.conversion !== null and d.conversion !== undefined">
+                Выиграно из закрытых за 30 дн.: <b t-esc="d.conversion + ' %'"/>
+              </t>
+              <t t-else="">За 30 дней закрытых сделок нет.</t>
+            </div>
+          </div>
+
+          <!-- Почта -->
+          <div t-if="d.mail" class="o_pmk_home__box">
+            <h4>Почта — последние без лида <a t-on-click="() => this.open('mail')">в почту →</a></h4>
+            <div t-if="!d.mail.items.length" class="o_pmk_home__muted">Все письма за неделю разобраны.</div>
+            <div t-foreach="d.mail.items" t-as="m" t-key="m.id" class="o_pmk_home__ml"
+                 t-on-click="() => this.open('letter', m.id)">
+              <b><t t-esc="m.who"/> · «<t t-esc="m.subject"/>»</b><span t-esc="m.when"/>
+            </div>
+          </div>
+
+          <!-- Заказы в работе -->
+          <div t-if="d.orders" class="o_pmk_home__box">
+            <h4>Заказы в работе · <t t-esc="d.orders.total"/> <a t-on-click="() => this.open('orders')">открыть →</a></h4>
+            <div class="o_pmk_home__st">
+              <div t-foreach="d.orders.stages" t-as="os" t-key="os.code" class="o_pmk_home__p"
+                   t-on-click="() => this.open('order_stage', os.code)">
+                <b t-esc="os.count"/><t t-esc="os.label"/>
+              </div>
+            </div>
+            <div class="o_pmk_home__note">
+              <t t-if="d.orders.burning">Просрочено: <a class="o_pmk_home__danger" t-on-click="() => this.open('overdue')"
+                  t-esc="d.orders.overdue"/> · последний — <a class="o_pmk_home__link" t-on-click="() => this.open('order', d.orders.burning.id)"
+                  t-esc="d.orders.burning.name"/>, срок был <t t-esc="d.orders.burning.due"/></t>
+              <t t-else="">Просроченных заказов нет.</t>
+            </div>
+          </div>
+
+          <!-- Поступления -->
+          <div t-if="d.payments" class="o_pmk_home__box">
+            <h4>Поступления денег, 7 дней <a t-on-click="() => this.open('payments')">все →</a></h4>
+            <div class="o_pmk_home__bars">
+              <div t-foreach="d.payments.days" t-as="day" t-key="day_index" class="o_pmk_home__col" t-att-title="day.text">
+                <div class="o_pmk_home__colbar" t-att-style="'height:' + day.pct + '%'"/>
+                <span t-esc="day.label"/>
+              </div>
+            </div>
+          </div>
+
+          <!-- Менеджеры -->
+          <div t-if="d.managers" class="o_pmk_home__box">
+            <h4>Менеджеры, <t t-esc="d.month"/> <a t-on-click="() => this.open('analytics')">аналитика →</a></h4>
+            <div t-if="!d.managers.length" class="o_pmk_home__muted">Сделок пока нет.</div>
+            <div t-else="" class="o_pmk_home__mg">
+              <b>Менеджер</b><span>в работе</span><span>выиграно</span>
+              <t t-foreach="d.managers" t-as="mg" t-key="mg.id">
+                <div t-esc="mg.name"/><span t-esc="mg.open_text"/><span t-esc="mg.won_text"/>
+              </t>
+            </div>
+          </div>
+        </div>
+      </t>
+    </div>
+  </t>
+</templates>

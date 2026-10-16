@@ -75,6 +75,11 @@ class TestMenusStep38(TransactionCase):
         # Шаг З-2: «Заказы в работе» (pmk_orders) — сразу за «Воронкой».
         if cls.env.ref("pmk_orders.menu_orders_sales", raise_if_not_found=False):
             cls.sales.insert(1, "Заказы в работе")
+        # Главная продаж (pmk_sales_home, 16.10.2026) — первым пунктом: щелчок
+        # по «Продажам» открывает её, а не воронку.
+        cls.home = cls.env.ref("pmk_sales_home.menu_sales_home", raise_if_not_found=False)
+        if cls.home:
+            cls.sales.insert(0, "Главная")
 
     # ─── помощники ──────────────────────────────────────────────────────
     def _installed(self, module):
@@ -105,10 +110,11 @@ class TestMenusStep38(TransactionCase):
                 self.assertEqual(self._items(user, "pmk_theme.menu_pmk_sales"), self.sales)
 
     def test_sales_opens_pipeline(self):
-        """Раздел по-прежнему открывается воронкой (первый пункт)."""
+        """Раздел открывается первым пунктом: воронкой, а с главной продаж — ею."""
         menus = self._menus(self.manager)
-        self.assertEqual(menus[self.env.ref("pmk_theme.menu_pmk_sales").id]["actionID"],
-                         self.env.ref("crm.crm_lead_action_pipeline").id)
+        first = (self.env.ref("pmk_sales_home.action_sales_home") if self.home
+                 else self.env.ref("crm.crm_lead_action_pipeline"))
+        self.assertEqual(menus[self.env.ref("pmk_theme.menu_pmk_sales").id]["actionID"], first.id)
 
     def test_specs_item_opens_calculations(self):
         menus = self._menus(self.manager)
