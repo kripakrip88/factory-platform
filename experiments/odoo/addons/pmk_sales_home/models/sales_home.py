@@ -36,6 +36,16 @@ def short_money(value):
     return money(value).replace(" ₽", "")
 
 
+def plural(n, one, few, many):
+    """1 заявка, 2 заявки, 5 заявок."""
+    n = abs(int(n or 0))
+    if n % 10 == 1 and n % 100 != 11:
+        return one
+    if 2 <= n % 10 <= 4 and not 12 <= n % 100 <= 14:
+        return few
+    return many
+
+
 def day_label(day, today):
     if day == today:
         return "сегодня"
@@ -253,7 +263,8 @@ class PmkSalesHome(models.AbstractModel):
         top = max([d["amount"] for d in days] + [1.0])
         for d in days:
             d["pct"] = round(100 * d["amount"] / top) if d["amount"] else 0
-        return {"total": money(sum(pays.mapped("amount"))), "count": len(pays), "days": days}
+        return {"total": money(sum(pays.mapped("amount"))), "count": len(pays),
+                "count_word": plural(len(pays), "поступление", "поступления", "поступлений"), "days": days}
 
     def _todo(self, today, data):
         """«Сделать сегодня»: просрочено → маржа в минус → без цены → КП молчит → почта."""

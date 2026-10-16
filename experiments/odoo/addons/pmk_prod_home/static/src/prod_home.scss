@@ -1,0 +1,47 @@
+// Главная производства (16.10.2026). Основа — общая с главной продаж (pmk_sales_home,
+// .o_pmk_home__*): плитки, карточки, «Сделать сегодня». Здесь — только своё.
+.o_pmk_prod .o_pmk_home__k .s.r { color: var(--sh-bad); }
+
+.o_pmk_prod__flow {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  .o_pmk_home__p { min-width: 0; }
+}
+
+.o_pmk_prod__late {
+  display: block;
+  font-style: normal;
+  font-size: 11px;
+  color: var(--sh-bad);
+}
+
+.o_pmk_prod__pb {
+  height: 6px;
+  margin: 0 0 4px;
+  background: var(--sh-track);
+  border-radius: 3px;
+  overflow: hidden;
+  div { height: 100%; background: var(--sh-bar-won); }
+}
+
+.o_pmk_prod__week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.o_pmk_prod__day {
+  background: var(--sh-tile);
+  border-radius: 8px;
+  padding: 6px 7px;
+  min-height: 70px;
+  font-size: 11px;
+  b { display: block; font-weight: 600; color: var(--sh-muted); margin-bottom: 2px; }
+  a { display: block; color: var(--sh-ink); cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  a:hover { text-decoration: underline; }
+  em { display: block; font-style: normal; color: var(--sh-muted); }
+  &.o_pmk_prod__today { outline: 1px solid var(--sh-muted); }
+}
+
+.o_pmk_prod__qa { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }

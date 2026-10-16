@@ -38,7 +38,7 @@
           </t>
           <div t-if="d.payments" class="o_pmk_home__k" t-on-click="() => this.open('payments')">
             <div class="l">Оплаты за неделю</div><div class="v" t-esc="d.payments.total"/>
-            <div class="s"><t t-esc="d.payments.count"/> поступлений</div>
+            <div class="s"><t t-esc="d.payments.count"/> <t t-esc="d.payments.count_word"/></div>
           </div>
         </div>
 

@@ -43,7 +43,7 @@ SWITCHES = (PRODUCTION, STOCK, MONEY, REMOVED)
 # Шаг З-2 (08.10.2026): «Счета покупателям» — менеджерам, после «Расчётов и
 # КП» (счёт выставляется сам из расчёта при «КП отправлено»).
 SALES = ["Воронка сделок", "Почта", "Расчёты", "Счета покупателям", "Контрагенты", "Лиды"]
-MORE = ("pmk_theme.menu_pmk_production", "pmk_theme.menu_pmk_stock",
+MORE = ("pmk_theme.menu_pmk_stock",
         "pmk_theme.menu_pmk_money", "pmk_theme.menu_pmk_reports")
 
 # «Раздел → Пункт» в кавычках-ёлочках внутри подсказки.
@@ -146,16 +146,16 @@ class TestMenusStep38(TransactionCase):
         self.assertIn("pmk_theme.menu_pmk_people", self._apps(self.admin),
                       "«Сотрудники» остаются (операторы лазера).")
         if self._installed("pmk_laser"):
-            self.assertIn("pmk_laser.menu_pmk_laser", self._apps(self.admin),
+            laser = self.env.ref("pmk_laser.menu_pmk_laser")
+            # С 16.10.2026 лазер — внутри «Производства» (pmk_prod_home), раздел виден всем.
+            app = "pmk_theme.menu_pmk_production" if laser.parent_id else "pmk_laser.menu_pmk_laser"
+            self.assertIn(app, self._apps(self.admin),
                           "Лазерная резка — наш раздел, не штатное производство.")
 
     def test_section_by_switch(self):
         cases = [
             (STOCK, "pmk_theme.menu_pmk_stock",
              ["Обзор операций", "Приёмки", "Отгрузки", "Остатки", "Номенклатура"]),
-            (PRODUCTION, "pmk_theme.menu_pmk_production",
-             ["Производственные заказы", "Рабочие задания", "Спецификации", "Рабочие центры",
-              "Обслуживание оборудования", "Ремонты"]),
             (MONEY, "pmk_theme.menu_pmk_money",
              ["Реализации", "Счета от поставщиков", "Платежи полученные",
               "Платежи отправленные"]),
@@ -165,6 +165,14 @@ class TestMenusStep38(TransactionCase):
                 self.assertIsNone(self._items(self.admin, app))
                 self._join(self.admin, group)
                 self.assertEqual(self._items(self.admin, app), items)
+        # «Производство» с 16.10.2026 — всем (в нём лазер и калькуляторы, pmk_prod_home);
+        # галочка открывает штатные пункты производства внутри.
+        mrp = ["Производственные заказы", "Рабочие задания", "Спецификации", "Рабочие центры"]
+        before = self._items(self.admin, "pmk_theme.menu_pmk_production") or []
+        self.assertFalse(set(mrp) & set(before))
+        self._join(self.admin, PRODUCTION)
+        after = self._items(self.admin, "pmk_theme.menu_pmk_production")
+        self.assertTrue(set(mrp) <= set(after))
 
     def test_reports_admin_with_money_only(self):
         items = ["Продажи", "Коммерческие предложения", "Счета", "Загрузка рабочих центров"]
@@ -178,9 +186,13 @@ class TestMenusStep38(TransactionCase):
     def test_production_service_items_admin_only(self):
         mrp_user = new_test_user(self.env, login="pmk38_mrp",
                                  groups="base.group_user,mrp.group_mrp_user," + PRODUCTION)
-        self.assertEqual(self._items(mrp_user, "pmk_theme.menu_pmk_production"),
-                         ["Производственные заказы", "Рабочие задания", "Спецификации",
-                          "Рабочие центры"])
+        # С 16.10.2026 «Производство» открыто всем — служебные пункты, как и штатные,
+        # за галочкой «Производство (показать)»: без неё их не видит и администратор.
+        mrp = ["Производственные заказы", "Рабочие задания", "Спецификации", "Рабочие центры",
+               "Обслуживание оборудования", "Ремонты"]
+        items = self._items(mrp_user, "pmk_theme.menu_pmk_production")
+        self.assertEqual([i for i in items if i in mrp], mrp)
+        self.assertFalse(set(mrp) & set(self._items(self.admin, "pmk_theme.menu_pmk_production") or []))
 
     def test_departments_admin_only(self):
         hr_user = new_test_user(self.env, login="pmk38_hr",
@@ -232,7 +244,6 @@ class TestMenusStep38(TransactionCase):
         """Группа на корне, а не на каждом пункте: раздел открывается одной
         галочкой; «Сотрудники», Продажи и Закупки — без группы."""
         expected = {
-            "pmk_theme.menu_pmk_production": PRODUCTION,
             "pmk_theme.menu_pmk_stock": STOCK,
             "pmk_theme.menu_pmk_money": MONEY,
             "pmk_theme.menu_pmk_reports": MONEY,
@@ -240,8 +251,13 @@ class TestMenusStep38(TransactionCase):
         for xmlid, group in expected.items():
             with self.subTest(menu=xmlid):
                 self.assertEqual(self.env.ref(xmlid).group_ids, self.env.ref(group))
+        # «Производство» — всем с 16.10.2026; галочка — на штатных пунктах внутри.
+        for xmlid in ("pmk_theme.menu_pmk_prod_orders", "pmk_theme.menu_pmk_prod_workorders",
+                      "pmk_theme.menu_pmk_prod_bom", "pmk_theme.menu_pmk_prod_workcenters"):
+            with self.subTest(menu=xmlid):
+                self.assertEqual(self.env.ref(xmlid).group_ids, self.env.ref(PRODUCTION))
         for xmlid in ("pmk_theme.menu_pmk_sales", "pmk_theme.menu_pmk_purchase",
-                      "pmk_theme.menu_pmk_people"):
+                      "pmk_theme.menu_pmk_people", "pmk_theme.menu_pmk_production"):
             with self.subTest(menu=xmlid):
                 self.assertFalse(self.env.ref(xmlid).group_ids)
 

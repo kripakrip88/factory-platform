@@ -42,8 +42,12 @@
 
     <!-- ─── Корневые разделы ─────────────────────────────────────────── -->
     <menuitem id="menu_pmk_sales"      name="Продажи"      sequence="10"/>
+    <!-- «Производство» — всем с 16.10.2026 (Антон: лазерная резка, заказы в работе и
+         калькуляторы переезжают сюда, модуль pmk_prod_home). «-группа» снимает прежнюю
+         связь при обновлении (см. шапку). Штатные разделы производства ниже — по-прежнему
+         под галочкой «Производство (показать)». -->
     <menuitem id="menu_pmk_production" name="Производство" sequence="20"
-              groups="pmk_theme.group_pmk_production"/>
+              groups="-pmk_theme.group_pmk_production"/>
     <menuitem id="menu_pmk_purchase"   name="Закупки"      sequence="30"/>
     <menuitem id="menu_pmk_stock"      name="Склад"        sequence="40"
               groups="pmk_theme.group_pmk_stock"/>
@@ -91,19 +95,23 @@
 
     <!-- ─── Производство ─────────────────────────────────────────────── -->
     <menuitem id="menu_pmk_prod_orders" name="Производственные заказы"
-              parent="menu_pmk_production" action="mrp.mrp_production_action" sequence="10"/>
+              parent="menu_pmk_production" action="mrp.mrp_production_action" sequence="10"
+              groups="pmk_theme.group_pmk_production"/>
     <menuitem id="menu_pmk_prod_workorders" name="Рабочие задания"
-              parent="menu_pmk_production" action="mrp.mrp_workorder_todo" sequence="20"/>
+              parent="menu_pmk_production" action="mrp.mrp_workorder_todo" sequence="20"
+              groups="pmk_theme.group_pmk_production"/>
     <menuitem id="menu_pmk_prod_bom" name="Спецификации"
-              parent="menu_pmk_production" action="mrp.mrp_bom_form_action" sequence="30"/>
+              parent="menu_pmk_production" action="mrp.mrp_bom_form_action" sequence="30"
+              groups="pmk_theme.group_pmk_production"/>
     <menuitem id="menu_pmk_prod_workcenters" name="Рабочие центры"
-              parent="menu_pmk_production" action="mrp.mrp_workcenter_action" sequence="40"/>
+              parent="menu_pmk_production" action="mrp.mrp_workcenter_action" sequence="40"
+              groups="pmk_theme.group_pmk_production"/>
     <menuitem id="menu_pmk_prod_maintenance" name="Обслуживание оборудования"
               parent="menu_pmk_production" action="maintenance.hr_equipment_request_action" sequence="50"
-              groups="base.group_system"/>
+              groups="-base.group_system,pmk_theme.group_pmk_production"/>
     <menuitem id="menu_pmk_prod_repairs" name="Ремонты"
               parent="menu_pmk_production" action="repair.action_repair_order_tree" sequence="60"
-              groups="base.group_system"/>
+              groups="-base.group_system,pmk_theme.group_pmk_production"/>
 
     <!-- ─── Закупки ──────────────────────────────────────────────────────
          Шаг 38: Поставщики (10) · Цены поставщиков (20) · Номенклатура (25) ·

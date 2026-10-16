@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Главная производства (16.10.2026), prod_home.js. Раскладка — как в принятом прототипе. -->
+<templates xml:space="preserve">
+  <t t-name="pmk_prod_home.Home">
+    <div class="o_action o_pmk_home o_pmk_prod">
+      <div t-if="state.loading and !state.data" class="o_pmk_home__muted">Загружаю…</div>
+      <t t-else="">
+        <div class="o_pmk_home__hd">
+          <b t-esc="d.hello"/>
+          <span><t t-esc="d.date"/> · Производство</span>
+          <button type="button" class="btn btn-link btn-sm o_pmk_home__refresh" title="Обновить"
+                  t-on-click="() => this.load()"><i class="fa fa-refresh" aria-hidden="true"/></button>
+        </div>
+
+        <!-- Плитки -->
+        <div class="o_pmk_home__kpi">
+          <t t-if="d.orders">
+            <div class="o_pmk_home__k" t-on-click="() => this.open('orders')">
+              <div class="l">Заказы в работе</div><div class="v" t-esc="d.orders.total"/>
+              <div class="s" t-att-class="{ r: d.orders.overdue }"><t t-esc="d.orders.overdue"/> просрочено</div>
+            </div>
+            <div class="o_pmk_home__k" t-on-click="() => this.open('stage', 'drawings')">
+              <div class="l">Ждут чертежей</div><div class="v" t-esc="d.orders.drawings"/>
+              <div class="s" t-att-class="{ w: d.orders.drawings_hot }"><t t-esc="d.orders.drawings_hot"/> <t t-esc="d.orders.hot_word"/></div>
+            </div>
+            <div class="o_pmk_home__k" t-on-click="() => this.open('stage', 'metal')">
+              <div class="l">Ждём металл</div><div class="v" t-esc="d.orders.metal"/>
+              <div class="s"><t t-if="d.metal"><t t-esc="d.metal.count"/> <t t-esc="d.metal.count_word"/> в пути</t></div>
+            </div>
+            <div class="o_pmk_home__k" t-on-click="() => this.open('stage', 'work')">
+              <div class="l">В цеху</div><div class="v" t-esc="d.orders.work"/>
+              <div class="s" t-esc="d.orders.work_weight or 'вес не указан'"/>
+            </div>
+          </t>
+          <div t-if="d.laser" class="o_pmk_home__k" t-on-click="() => this.open('laser')">
+            <div class="l">Лазер: к резке</div><div class="v"><t t-esc="d.laser.sheets"/> л.</div>
+            <div class="s"><t t-esc="d.laser.weight"/> · <t t-esc="d.laser.count"/> <t t-esc="d.laser.count_word"/></div>
+          </div>
+          <div t-if="d.orders" class="o_pmk_home__k" t-on-click="() => this.open('stage', 'ready')">
+            <div class="l">К отгрузке</div><div class="v" t-esc="d.orders.ready"/>
+            <div class="s"><t t-esc="d.orders.ready_week"/> на этой неделе</div>
+          </div>
+        </div>
+
+        <div class="o_pmk_home__grid">
+          <!-- Сделать сегодня -->
+          <div class="o_pmk_home__box">
+            <h4>Сделать сегодня <a t-on-click="() => this.open('orders')">заказы →</a></h4>
+            <div t-if="!d.todo or !d.todo.length" class="o_pmk_home__muted">Срочных дел нет.</div>
+            <div t-foreach="d.todo or []" t-as="item" t-key="item_index" class="o_pmk_home__todo"
+                 t-on-click="() => this.openTodo(item)">
+              <span class="o_pmk_home__tag" t-att-class="'o_pmk_home__tag--' + item.level" t-esc="item.tag"/>
+              <div>
+                <t t-esc="item.title"/><t t-if="item.name">: <b t-esc="item.name"/></t>
+                <div class="m" t-esc="item.sub"/>
+              </div>
+            </div>
+          </div>
+
+          <!-- Заказы по стадиям -->
+          <div t-if="d.orders" class="o_pmk_home__box">
+            <h4>Заказы по стадиям <a t-on-click="() => this.open('orders')">канбан →</a></h4>
+            <div class="o_pmk_prod__flow">
+              <div t-foreach="d.orders.stages" t-as="st" t-key="st.code" class="o_pmk_home__p"
+                   t-on-click="() => this.open('stage', st.code)">
+                <b t-esc="st.count"/><t t-esc="st.label"/>
+                <i t-if="st.overdue" class="o_pmk_prod__late"><t t-esc="st.overdue"/> проср.</i>
+              </div>
+            </div>
+            <div class="o_pmk_home__note">
+              На паузе: <t t-esc="d.orders.pause"/> · отгружено за неделю: <t t-esc="d.orders.shipped_week"/>
+              <t t-if="d.orders.overdue"> · <a class="o_pmk_home__danger" t-on-click="() => this.open('overdue')">все просроченные →</a></t>
+            </div>
+          </div>
+
+          <!-- Лазер -->
+          <div t-if="d.laser" class="o_pmk_home__box">
+            <h4>Лазерный участок <a t-on-click="() => this.open('laser')">задания →</a></h4>
+            <div t-if="!d.laser.rows.length" class="o_pmk_home__muted">Заданий на резку нет.</div>
+            <t t-foreach="d.laser.rows" t-as="row" t-key="row.id">
+              <div class="o_pmk_home__ml" t-on-click="() => this.open('laser_task', row.id)">
+                <b t-esc="row.name"/><span t-esc="row.state"/>
+              </div>
+              <div t-if="row.pct !== null" class="o_pmk_prod__pb"><div t-att-style="'width:' + pctWidth(row) + '%'"/></div>
+            </t>
+          </div>
+
+          <!-- Металл -->
+          <div t-if="d.metal" class="o_pmk_home__box">
+            <h4>Металл — заявки в пути <a t-on-click="() => this.open('metal')">заявки →</a></h4>
+            <div t-if="!d.metal.rows.length" class="o_pmk_home__muted">Все заявки пришли.</div>
+            <div t-foreach="d.metal.rows" t-as="row" t-key="row.id" class="o_pmk_home__ml"
+                 t-on-click="() => this.open('metal_po', row.id)">
+              <b t-esc="row.name"/><span t-att-class="{ o_pmk_home__danger: row.late }" t-esc="row.when"/>
+            </div>
+            <div t-if="d.metal.late" class="o_pmk_home__note">Опаздывает: <b t-esc="d.metal.late"/></div>
+          </div>
+
+          <!-- Отгрузки на неделю -->
+          <div t-if="d.orders" class="o_pmk_home__box">
+            <h4>Сроки на неделю <a t-on-click="() => this.open('orders')">заказы →</a></h4>
+            <div class="o_pmk_prod__week">
+              <div t-foreach="d.orders.week" t-as="day" t-key="day_index" class="o_pmk_prod__day"
+                   t-att-class="{ o_pmk_prod__today: day.today }">
+                <b t-esc="day.label"/>
+                <a t-foreach="day.items" t-as="it" t-key="it.id" t-on-click="() => this.open('order', it.id)" t-esc="it.name"/>
+                <em t-if="day.more">ещё <t t-esc="day.more"/></em>
+              </div>
+            </div>
+          </div>
+
+          <!-- Калькуляторы -->
+          <div t-if="d.calc" class="o_pmk_home__box">
+            <h4>Калькуляторы</h4>
+            <div class="o_pmk_prod__qa">
+              <button type="button" class="btn btn-secondary btn-sm" t-on-click="() => this.open('new_spec')">+ Расчёт</button>
+              <button type="button" class="btn btn-secondary btn-sm" t-on-click="() => this.open('new_dobor')">+ Доборка</button>
+              <button type="button" class="btn btn-secondary btn-sm" t-on-click="() => this.open('new_vent')">+ Вентзонт</button>
+              <button type="button" class="btn btn-secondary btn-sm" t-on-click="() => this.open('new_butik')">+ Бутик</button>
+            </div>
+            <div t-if="d.calc.dobor !== null" class="o_pmk_home__ml" t-on-click="() => this.open('calc_dobor')">
+              <b>Доборки — черновики</b><span t-esc="d.calc.dobor"/></div>
+            <div t-if="d.calc.vent !== null" class="o_pmk_home__ml" t-on-click="() => this.open('calc_vent')">
+              <b>Вентзонты — черновики</b><span t-esc="d.calc.vent"/></div>
+            <div t-if="d.calc.tech !== null" class="o_pmk_home__ml" t-on-click="() => this.open('calc_tech')">
+              <b>Технические расчёты</b><span t-esc="d.calc.tech"/></div>
+          </div>
+        </div>
+      </t>
+    </div>
+  </t>
+</templates>

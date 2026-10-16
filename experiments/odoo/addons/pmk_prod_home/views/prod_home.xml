@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <!-- Главная производства (16.10.2026) и состав «Производства»: Главная · Заказы в работе ·
+       Лазерная резка ▾ · Калькуляторы ▾ · Раскрой · Заявки на металл · … · Справочники ▾.
+       Штатные пункты производства Odoo (10–60) — под галочкой «Производство (показать)».
+
+       ⚠️ Пункты чужих модулей (pmk_calc, pmk_laser, pmk_cut) переставляются здесь записями
+       с их xmlid: обновили один pmk_calc — «Калькуляторы» вернутся наверх до обновления
+       этого модуля. deploy.sh обновляет все модули вместе, в порядке зависимостей — этот
+       последним. Вернуть, как было: удалить модуль pmk_prod_home и обновить pmk_calc,
+       pmk_laser, pmk_cut. -->
+  <record id="action_prod_home" model="ir.actions.client">
+    <field name="name">Главная</field>
+    <field name="tag">pmk_prod_home</field>
+  </record>
+
+  <menuitem id="menu_prod_home" name="Главная" parent="pmk_theme.menu_pmk_production"
+            action="action_prod_home" sequence="1"/>
+  <menuitem id="menu_prod_orders" name="Заказы в работе" parent="pmk_theme.menu_pmk_production"
+            action="pmk_orders.action_orders" sequence="2"
+            groups="sales_team.group_sale_salesman,project.group_project_user"/>
+
+  <record id="pmk_laser.menu_pmk_laser" model="ir.ui.menu">
+    <field name="parent_id" ref="pmk_theme.menu_pmk_production"/>
+    <field name="sequence">3</field>
+  </record>
+  <record id="pmk_calc.menu_pmk_calc" model="ir.ui.menu">
+    <field name="parent_id" ref="pmk_theme.menu_pmk_production"/>
+    <field name="sequence">4</field>
+  </record>
+  <record id="pmk_cut.menu_pmk_cut" model="ir.ui.menu">
+    <field name="name">Раскрой</field>
+    <field name="parent_id" ref="pmk_theme.menu_pmk_production"/>
+    <field name="sequence">5</field>
+  </record>
+  <menuitem id="menu_prod_metal_requests" name="Заявки на металл" parent="pmk_theme.menu_pmk_production"
+            action="pmk_tech.action_metal_requests" sequence="6" groups="purchase.group_purchase_user"/>
+  <record id="pmk_calc.menu_pmk_calc_reference" model="ir.ui.menu">
+    <field name="parent_id" ref="pmk_theme.menu_pmk_production"/>
+    <field name="sequence">95</field>
+  </record>
+</odoo>

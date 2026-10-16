@@ -313,6 +313,10 @@ class TestSheetQueue(LaserStep36Case):
         section = self.env.ref("pmk_laser.menu_pmk_laser")
         queue = self.env.ref("pmk_laser.menu_pmk_laser_queue")
         self.assertEqual(section.child_id.sorted(lambda m: (m.sequence, m.id))[0], queue)
+        if section.parent_id:
+            # С 16.10.2026 раздел — внутри «Производства» (pmk_prod_home): выпадающий
+            # список, своего действия у него нет; первая строка списка — очередь.
+            return
         menus = self.env["ir.ui.menu"].load_web_menus(False)
         self.assertEqual(menus[section.id]["actionID"],
                          self.env.ref("pmk_laser.action_laser_sheet_queue").id)
