@@ -48,6 +48,11 @@ export class PmkSalesHome extends Component {
         return stage.count ? Math.max(stage.pct, 4) : 0;
     }
 
+    /** Столбец поступлений: до 90 px, над ним — сумма дня. */
+    colHeight(day) {
+        return Math.round((day.pct || 0) * 0.9);
+    }
+
     openTodo(item) {
         if (item.kind === "mail") {
             return this.open("mail");

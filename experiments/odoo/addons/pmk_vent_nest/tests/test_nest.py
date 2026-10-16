@@ -5,9 +5,12 @@
 что и боевой запуск (только ждёт процесс на месте). Он же ловит ошибку часового пояса
 пакета 1.0.0 (в контейнере в UTC все программы выходили «не выдавать»).
 """
+import importlib.util
 import json
 import os
 import tempfile
+import time
+from unittest.mock import patch
 
 from odoo.exceptions import UserError
 from odoo.tests import TransactionCase, tagged
@@ -19,6 +22,10 @@ class TestVentNest(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        cls._data()
+
+    @classmethod
+    def _data(cls):
         Sheet = cls.env["pmk.metal.sheet"]
         cls.sheet065 = Sheet.search([("sheet_type", "=", "Оцинкованный"), ("thickness_mm", "=", 0.65)],
                                     limit=1) or Sheet.create({
@@ -151,3 +158,94 @@ class TestVentNest(TransactionCase):
         dxf, _qty, _inp = build._input()
         self.assertEqual(list(dxf.values())[0], order.line_ids._vh_dxf_standard())
         self.assertNotEqual(list(dxf.values())[0], order.line_ids._vh_dxf())
+
+
+@tagged("post_install", "-at_install")
+class TestVentNestWorker(TransactionCase):
+    """Расчётчик в отдельном контейнере (16.10.2026): очередь файлами, запасной путь,
+    свес 150 без повтора, раскладки параллельно."""
+
+    # Подготовка — как у TestVentNest (наследовать класс нельзя: его тесты прошли бы дважды).
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        TestVentNest._data.__func__(cls)
+
+    _order = TestVentNest._order
+    _job = TestVentNest._job
+
+    def _alive_file(self, age_s=0):
+        root = self.env["pmk.vent.nest.job"]._queue_root()
+        os.makedirs(root, exist_ok=True)
+        path = os.path.join(root, ".worker_alive")
+        with open(path, "w"):
+            pass
+        stamp = time.time() - age_s
+        os.utime(path, (stamp, stamp))
+        self.addCleanup(lambda: os.path.exists(path) and os.remove(path))
+        return root
+
+    def test_parallel_same_table(self):
+        """NEST_PROCS=2 — та же таблица свеса, что по очереди; строка 150 — одна на источник."""
+        order = self._order({"width": 500, "length": 1000, "qty": 2})
+        one = self._job(order)
+        one._launch(sync=True)
+        self.assertEqual(one.state, "done", one.error)
+        rows_one = json.loads(one.result_json)["sves"]
+        with patch.dict(os.environ, {"NEST_PROCS": "2"}):
+            two = self._job(order)
+            two._launch(sync=True)
+        self.assertEqual(two.state, "done", two.error)
+        rows_two = json.loads(two.result_json)["sves"]
+        self.assertEqual(rows_one, rows_two)
+        self.assertEqual(sum(1 for r in rows_two if r["sves"] == 150), 2, "склад и бухта — по разу")
+
+    def test_worker_takes_queue(self):
+        """Расчётчик жив — Odoo ставит в очередь и не запускает процесс; результат забирает как раньше."""
+        root = self._alive_file()
+        order = self._order({"width": 500, "length": 1000, "qty": 2})
+        job = self._job(order)
+        with patch.object(type(job), "_spawn", side_effect=AssertionError("в Odoo не запускать")):
+            job._launch()
+        self.assertTrue(os.path.exists(os.path.join(job.workdir, "queued")))
+        self.assertEqual(job.progress, "в очереди расчётчика")
+        spec = importlib.util.spec_from_file_location(
+            "pmk_vent_worker", os.path.join(os.path.dirname(os.path.dirname(__file__)), "worker.py"))
+        worker = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(worker)
+        workdir = worker._next(root)
+        self.assertEqual(workdir, job.workdir)
+        self.assertIsNone(worker._next(root), "взятое второй раз не берётся")
+        worker.run_job(root, workdir, 1)
+        job._poll()
+        self.assertEqual(job.state, "done", job.error)
+        self.assertEqual(order.nest_status_kind, "done")
+
+    def test_worker_gone_runs_here(self):
+        """В очереди, а расчётчик молчит дольше 2 минут — считаем в Odoo."""
+        self._alive_file(age_s=600)
+        order = self._order({"width": 500, "length": 1000})
+        job = self._job(order)
+        wd = tempfile.mkdtemp()
+        with open(os.path.join(wd, "queued"), "w"):
+            pass
+        job.write({"state": "running", "workdir": wd, "started_at": "2099-01-01 00:00:00"})
+        with patch.object(type(job), "_spawn") as spawn:
+            job._poll()
+        spawn.assert_called_once_with(wd)
+        self.assertTrue(os.path.exists(os.path.join(wd, "local")))
+        self.assertFalse(os.path.exists(os.path.join(wd, "queued")))
+
+    def test_worker_silent_is_error(self):
+        order = self._order({"width": 500, "length": 1000})
+        job = self._job(order)
+        wd = tempfile.mkdtemp()
+        for name in ("claimed", "heartbeat"):
+            with open(os.path.join(wd, name), "w"):
+                pass
+        old = time.time() - 600
+        os.utime(os.path.join(wd, "heartbeat"), (old, old))
+        job.write({"state": "running", "workdir": wd, "started_at": "2099-01-01 00:00:00"})
+        job._poll()
+        self.assertEqual(job.state, "error")
+        self.assertIn("прервался", job.error)

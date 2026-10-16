@@ -109,7 +109,8 @@
             <h4>Поступления денег, 7 дней <a t-on-click="() => this.open('payments')">все →</a></h4>
             <div class="o_pmk_home__bars">
               <div t-foreach="d.payments.days" t-as="day" t-key="day_index" class="o_pmk_home__col" t-att-title="day.text">
-                <div class="o_pmk_home__colbar" t-att-style="'height:' + day.pct + '%'"/>
+                <em class="o_pmk_home__colsum" t-esc="day.amount ? day.short : ''"/>
+                <div class="o_pmk_home__colbar" t-att-style="'height:' + colHeight(day) + 'px'"/>
                 <span t-esc="day.label"/>
               </div>
             </div>

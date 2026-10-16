@@ -167,7 +167,7 @@
   &:hover { outline: 1px solid var(--sh-border); }
 }
 
-.o_pmk_home__bars { display: flex; align-items: stretch; gap: 8px; height: 110px; margin-top: 4px; }
+.o_pmk_home__bars { display: flex; align-items: stretch; gap: 8px; height: 130px; margin-top: 4px; }
 .o_pmk_home__col {
   flex: 1;
   display: flex;
@@ -177,6 +177,17 @@
   span { text-align: center; font-size: 11px; color: var(--sh-muted); margin-top: 4px; }
 }
 .o_pmk_home__colbar { background: var(--sh-bar-won); border-radius: 3px 3px 0 0; min-height: 2px; }
+// Сумма дня над столбцом (Антон 16.10: «столбцы зелёные, но сумм нет»).
+.o_pmk_home__colsum {
+  font-style: normal;
+  font-size: 11px;
+  text-align: center;
+  color: var(--sh-ink);
+  white-space: nowrap;
+  margin-bottom: 2px;
+  min-height: 14px;
+  font-variant-numeric: tabular-nums;
+}
 
 .o_pmk_home__mg {
   display: grid;

@@ -248,7 +248,8 @@ class PmkSalesHome(models.AbstractModel):
         for offset in range(7):
             day = start + timedelta(days=offset)
             amount = sum(pays.filtered(lambda p, d=day: p.executed == d).mapped("amount"))
-            days.append({"label": WEEKDAYS_SHORT[day.weekday()], "amount": amount, "text": money(amount)})
+            days.append({"label": "%s %d" % (WEEKDAYS_SHORT[day.weekday()], day.day), "amount": amount,
+                         "text": money(amount), "short": short_money(amount)})
         top = max([d["amount"] for d in days] + [1.0])
         for d in days:
             d["pct"] = round(100 * d["amount"] / top) if d["amount"] else 0

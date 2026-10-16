@@ -13,6 +13,7 @@ import shutil
 import signal
 import subprocess
 import sys
+import time
 from datetime import timedelta
 
 from odoo import api, fields, models
@@ -27,6 +28,20 @@ RUNNER = os.path.join(MODULE_DIR, "runner.py")
 # до ~25 мин. Предел с запасом; дольше — процесс завис.
 TIMEOUT = timedelta(minutes=45)
 NO_PID_GRACE = timedelta(minutes=2)
+# Расчётчик — отдельный контейнер (worker.py, 16.10.2026). Жив — метка свежее 30 с;
+# взятое задание молчит дольше 2 мин — прервалось; в очереди без живого расчётчика
+# дольше 2 мин — считаем здесь, как раньше.
+WORKER_ALIVE = ".worker_alive"
+WORKER_FRESH = timedelta(seconds=30)
+WORKER_STALE = timedelta(minutes=2)
+
+
+def _age(path):
+    """Сколько прошло с последнего обновления файла; нет файла — None."""
+    try:
+        return timedelta(seconds=max(0.0, time.time() - os.path.getmtime(path)))
+    except OSError:
+        return None
 
 
 def _alive(pid):
@@ -95,6 +110,15 @@ class VentNestJob(models.Model):
     def _workroot(self):
         return os.path.join(config["data_dir"], "vent_nest", self.env.cr.dbname)
 
+    @staticmethod
+    def _queue_root():
+        return os.path.join(config["data_dir"], "vent_nest")
+
+    @classmethod
+    def _worker_alive(cls):
+        age = _age(os.path.join(cls._queue_root(), WORKER_ALIVE))
+        return age is not None and age < WORKER_FRESH
+
     def _input(self):
         """input.json и DXF: по одному файлу на «размер + цвет + толщина» (одинаковые строки
         заказа складываются — пакет не принимает один и тот же зонт дважды)."""
@@ -134,7 +158,12 @@ class VentNestJob(models.Model):
             json.dump(inp, f, ensure_ascii=False)
         self.write({"state": "running", "workdir": workdir, "started_at": fields.Datetime.now(),
                     "pid": 0, "progress": "запуск", "error": False})
-        if sync:
+        if not sync and self._worker_alive():
+            # Расчётчик жив — в его очередь; Odoo процесс у себя не запускает.
+            with open(os.path.join(workdir, "queued"), "w") as f:
+                f.write(str(self.id))
+            self.progress = "в очереди расчётчика"
+        elif sync:
             with open(os.path.join(workdir, "run.log"), "wb") as log:
                 subprocess.run([sys.executable, RUNNER, workdir], env=self._env(workdir),
                                stdout=log, stderr=subprocess.STDOUT, timeout=900, check=False)
@@ -194,6 +223,8 @@ class VentNestJob(models.Model):
             return self._finish("error", err.get("message") if err.get("user") else
                                 "Сбой раскроя — передано разработчику.", user_error=bool(err.get("user")))
         now = fields.Datetime.now()
+        if os.path.exists(os.path.join(wd, "queued")) or os.path.exists(os.path.join(wd, "claimed")):
+            return self._poll_worker(wd, now)
         pid_txt = ""
         try:
             with open(os.path.join(wd, "pid")) as f:
@@ -221,6 +252,40 @@ class VentNestJob(models.Model):
                 os.kill(pid, signal.SIGKILL)
             except OSError:
                 pass
+            return self._finish("error", "Расчёт идёт дольше %d мин — остановлен."
+                                % (TIMEOUT.total_seconds() // 60))
+        prog = _read_json(os.path.join(wd, "progress.json")) or {}
+        if prog.get("text") and prog["text"] != self.progress:
+            self.progress = prog["text"]
+
+    def _poll_worker(self, wd, now):
+        """Задание у расчётчика (отдельный контейнер): номера процесса оттуда не проверить —
+        смотрим метки «жив» и «идёт расчёт»."""
+        queued = os.path.join(wd, "queued")
+        if os.path.exists(queued):
+            alive_age = _age(os.path.join(self._queue_root(), WORKER_ALIVE))
+            if alive_age is None or alive_age > WORKER_STALE:
+                # Расчётчик пропал — забираем задание себе (переименование: расчётчик
+                # его уже не возьмёт) и считаем здесь, как до расчётчика.
+                try:
+                    os.rename(queued, os.path.join(wd, "local"))
+                except OSError:
+                    return  # расчётчик успел взять — следующий опрос увидит claimed
+                _logger.warning("раскрой %s: расчётчик не отвечает — считаю в Odoo", self.id)
+                self.progress = "расчётчик недоступен — считаю здесь"
+                self._spawn(wd)
+            return
+        beat = _age(os.path.join(wd, "heartbeat"))
+        if beat is not None and beat > WORKER_STALE:
+            result = _read_json(os.path.join(wd, "result.json"))
+            if result is not None:
+                return self._apply(result)
+            _logger.error("раскрой %s: расчётчик замолчал\n%s", self.id, _log_tail(wd))
+            return self._finish("error", "Расчёт прервался (например, перезапуск сервера). "
+                                         "Запустите ещё раз.")
+        if now - self.started_at > TIMEOUT:
+            with open(os.path.join(wd, "cancel"), "w") as f:
+                f.write("timeout")
             return self._finish("error", "Расчёт идёт дольше %d мин — остановлен."
                                 % (TIMEOUT.total_seconds() // 60))
         prog = _read_json(os.path.join(wd, "progress.json")) or {}
