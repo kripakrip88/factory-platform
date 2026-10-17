@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <!-- «Настройки → Ассистент» (17.10.2026): ключ Anthropic вписывает Антон сам. -->
+  <record id="view_res_config_settings_pmk_ai" model="ir.ui.view">
+    <field name="name">res.config.settings.pmk.ai</field>
+    <field name="model">res.config.settings</field>
+    <field name="inherit_id" ref="base_setup.res_config_settings_view_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//form" position="inside">
+        <app data-string="Ассистент" string="Ассистент" name="pmk_ai" groups="base.group_system">
+          <block title="ИИ-ассистент (Claude)" name="pmk_ai_block">
+            <setting string="Подключение к Anthropic" help="Ключ из console.anthropic.com → API Keys. Хранится в системных параметрах, виден только администратору.">
+              <div class="row mt8">
+                <label for="pmk_ai_api_key" class="col-lg-4 o_light_label"/>
+                <field name="pmk_ai_api_key" password="True" placeholder="sk-ant-…"/>
+              </div>
+              <div class="row">
+                <label for="pmk_ai_model" class="col-lg-4 o_light_label"/>
+                <field name="pmk_ai_model"/>
+              </div>
+              <div class="row">
+                <label for="pmk_ai_api_base" class="col-lg-4 o_light_label"/>
+                <field name="pmk_ai_api_base"/>
+              </div>
+              <div class="row">
+                <label for="pmk_ai_status" class="col-lg-4 o_light_label"/>
+                <field name="pmk_ai_status" readonly="1"/>
+              </div>
+              <button name="action_pmk_ai_check" type="object" string="Проверить связь" icon="fa-plug"
+                      class="btn-secondary mt8"/>
+            </setting>
+          </block>
+        </app>
+      </xpath>
+    </field>
+  </record>
+</odoo>
