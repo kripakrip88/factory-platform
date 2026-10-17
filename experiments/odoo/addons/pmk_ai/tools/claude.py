@@ -70,10 +70,11 @@ def messages(api_key, payload, base=None, retries=1):
 def ping(api_key, model=None, base=None):
     """Проверка связи: короткий вопрос, ответ в одно слово. → текст для человека."""
     data, seconds = messages(api_key, {
-        "model": model or DEFAULT_MODEL, "max_tokens": 16,
+        # Запас: новые модели сначала «думают» — на 16 токенов текста не оставалось (17.10).
+        "model": model or DEFAULT_MODEL, "max_tokens": 400,
         "messages": [{"role": "user", "content": "Ответь одним словом по-русски: связь есть?"}],
     }, base=base)
     text = "".join(b.get("text", "") for b in data.get("content") or [] if b.get("type") == "text").strip()
     usage = data.get("usage") or {}
     return "Связь есть: «%s» · модель %s · %.1f с · токенов %s/%s" % (
-        text, data.get("model"), seconds, usage.get("input_tokens"), usage.get("output_tokens"))
+        text or "ответ получен", data.get("model"), seconds, usage.get("input_tokens"), usage.get("output_tokens"))
