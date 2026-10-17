@@ -298,6 +298,104 @@ def heal_open(verts, gap_max, tol=HEAL_TOL):
     return (R if R is not None and _closing_clear(R) else None), g
 
 
+def _on_line(p, q, r, tol):
+    """r на прямой pq (с допуском tol)."""
+    L = math.dist(p, q)
+    return L > 1e-9 and abs((q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0])) / L <= tol
+
+
+def _t_of(p, q, r):
+    """Место проекции r на pq (0 — p, 1 — q)."""
+    dx, dy = q[0] - p[0], q[1] - p[1]
+    return ((r[0] - p[0]) * dx + (r[1] - p[1]) * dy) / (dx * dx + dy * dy)
+
+
+def simple(P, eps=1e-6):
+    """Замкнутая ломаная P (точки) без самопересечений и касаний несоседних звеньев (сетка — не все пары)."""
+    n = len(P)
+    if n < 3:
+        return False
+    E = [(P[i], P[(i + 1) % n]) for i in range(n)]
+    x0, y0 = min(p[0] for p in P), min(p[1] for p in P)
+    span = max(max(p[0] for p in P) - x0, max(p[1] for p in P) - y0, 1e-9)
+    cs = max(span / max(1, int(math.sqrt(n))), 1e-6)
+    grid = {}
+    for i, (a, b) in enumerate(E):
+        for gx in range(int((min(a[0], b[0]) - x0) / cs), int((max(a[0], b[0]) - x0) / cs) + 1):
+            for gy in range(int((min(a[1], b[1]) - y0) / cs), int((max(a[1], b[1]) - y0) / cs) + 1):
+                grid.setdefault((gx, gy), []).append(i)
+    seen = set()
+    for ids in grid.values():
+        for u in range(len(ids)):
+            for v in range(u + 1, len(ids)):
+                i, j = ids[u], ids[v]
+                if abs(i - j) in (0, 1, n - 1) or (i, j) in seen:
+                    continue
+                seen.add((i, j))
+                if _seg_seg_dist(E[i][0], E[i][1], E[j][0], E[j][1]) < eps:
+                    return False
+    return True
+
+
+def heal_ring(chains, gap_max, tol=HEAL_TOL):
+    """Внешний контур из кусков (17.10.2026, «склейка кусков»): куски по кругу — вершины [(x, y, bulge)], конец i-го
+    куска → начало (i+1)-го через промежуток. Каждый промежуток закрыть — по правилам heal_open: не больше gap_max и на
+    прямой самого контура: продолжает прямой участок у одного из концов (закрыть прямой), идёт по краю габарита контура
+    (прямой) или внахлёст — конец лежит на прямом участке соседа (у зольника 31.10.25 кромка корпуса заходит на 2 мм за
+    угол отбортовки): контур обрезается по этой точке, а заходящий кусочек возвращается отдельным резом (его не
+    теряем: внутри детали он режется, как в программе; на самом контуре — дубль, его отбросит вызывающий). Концы ближе
+    HEAL_ZERO — совпали, без нового участка. Контур после этого простой (прямые и куски не задевают друг друга).
+    Вернуть (вершины замкнутого контура | None, [промежутки, мм], почему нет | None, [кусочки внахлёст (p, q)],
+    [как закрыт каждый промежуток: "zero" | "line" | "trim_end" | "trim_start"]):
+    ("line", i) — i-й промежуток не на прямой контура, ("big", i) — все на прямой, i-й (наибольший) больше gap_max,
+    ("cross", None) — прямые задели бы контур."""
+    n = len(chains)
+    C = [[(float(v[0]), float(v[1]), float(v[2])) for v in c] for c in chains]
+    gaps = [math.dist(C[i][-1][:2], C[(i + 1) % n][0][:2]) for i in range(n)]
+    x0, y0, x1, y1 = bbox([dict(kind="LwPolyline", verts=c, flag=0) for c in C])
+    mode, rest = [None] * n, []
+    for i in range(n):
+        c, nxt = C[i], C[(i + 1) % n]
+        z, a = c[-1][:2], nxt[0][:2]
+        if gaps[i] <= HEAL_ZERO:
+            mode[i] = "zero"
+            continue
+        last = len(c) >= 2 and abs(c[-2][2]) < 1e-12 and _on_line(c[-2][:2], z, a, tol)
+        first = len(nxt) >= 2 and abs(nxt[0][2]) < 1e-12 and _on_line(a, nxt[1][:2], z, tol)
+        if last and _t_of(c[-2][:2], z, a) >= 1 or first and _t_of(a, nxt[1][:2], z) <= 0 or \
+                any(abs(z[k] - e) <= tol and abs(a[k] - e) <= tol for k, e in ((0, x0), (0, x1), (1, y0), (1, y1))):
+            mode[i] = "line"
+        elif last and 0 < _t_of(c[-2][:2], z, a) < 1:             # начало соседа — на последнем участке: обрезать конец
+            mode[i] = "trim_end"
+        elif first and 0 < _t_of(a, nxt[1][:2], z) < 1:           # конец — на первом участке соседа: обрезать его начало
+            mode[i] = "trim_start"
+    bad = [i for i in range(n) if mode[i] is None]
+    if bad:
+        return None, gaps, ("line", bad[0]), [], mode
+    i = max(range(n), key=lambda k: gaps[k])
+    if gaps[i] > max(gap_max, HEAL_ZERO) + 1e-9:
+        return None, gaps, ("big", i), [], mode
+    for i in range(n):
+        c, nxt = C[i], C[(i + 1) % n]
+        z, a = c[-1][:2], nxt[0][:2]
+        if mode[i] == "trim_end":
+            c[-1] = (a[0], a[1], 0.0)
+            rest.append((a, z))
+        elif mode[i] == "trim_start":
+            nxt[0] = (z[0], z[1], nxt[0][2])
+            rest.append((a, z))
+    V = []
+    for i in range(n):
+        c = C[i]
+        if mode[i] == "line":
+            V += c[:-1] + [(c[-1][0], c[-1][1], 0.0)]   # замыкающая прямая — от конца куска к началу следующего
+        else:
+            V += c[:-1]                                 # конец совпал с началом следующего (или обрезан до него)
+    if len(V) < 3 or not simple(points(dict(kind="LwPolyline", verts=V, flag=1), 0.05)):
+        return None, gaps, ("cross", None), [], mode
+    return V, gaps, None, rest, mode
+
+
 def _heal_line(V, a, z, tol):
     """heal_open: замкнутый контур с замыкающей прямой на прямой самого контура или None."""
 

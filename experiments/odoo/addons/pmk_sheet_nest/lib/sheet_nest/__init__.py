@@ -7,4 +7,4 @@
 (job.py ставит переменные окружения до импорта движка)."""
 from .errors import SheetNestError  # noqa: F401
 
-__version__ = "0.12.0"
+__version__ = "0.13.0"
