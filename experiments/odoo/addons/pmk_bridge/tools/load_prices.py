@@ -1289,6 +1289,20 @@ def main():
     for row, kind, detail in refused:
         kinds[kind] += 1
         example.setdefault(kind, (row, detail))
+    dump = os.environ.get("PMK_PRICE_REFUSED")
+    if dump:
+        # Полный список отказов — для пополнения справочника (18.10.2026): в отчёте
+        # по одному примеру на причину, а заводить позиции нужно по всем строкам.
+        import csv as _csv
+        with open(dump, "w", encoding="utf-8", newline="") as f:
+            w = _csv.writer(f)
+            w.writerow(["row", "kind", "name", "section", "profile", "size", "grade",
+                        "length", "weight", "price", "detail"])
+            for row, kind, detail in refused:
+                w.writerow([row.excel_row, kind, price_row_name(row), row.section, row.profile,
+                            row.size, row.grade, row.length, row.weight,
+                            row.gross[0] if row.gross else "", detail])
+        print("  полный список отказов: %s (%s строк)" % (dump, len(refused)))
     print("\n  ПОЧЕМУ ОТБИТО, по видам (строка прайса -> пример):")
     for kind, n in kinds.most_common():
         row, detail = example[kind]
