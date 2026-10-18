@@ -1,0 +1,30 @@
+// Главная закупок (18.10.2026). Основа — общая с главной продаж (pmk_sales_home,
+// .o_pmk_home__*): плитки, карточки, «Сделать сегодня». Здесь — только своё.
+.o_pmk_purch .o_pmk_home__k .s.r { color: var(--sh-bad); }
+.o_pmk_purch__bad { color: var(--sh-bad); }
+
+// Маяк свежести прайса: до 14 дней — свежий, до 30 — пора запросить, дольше — устарел.
+.o_pmk_purch__age--ok { color: var(--sh-ok) !important; font-style: normal; }
+.o_pmk_purch__age--warning { color: var(--sh-warn) !important; font-style: normal; }
+.o_pmk_purch__age--danger { color: var(--sh-bad) !important; font-style: normal; font-weight: 600; }
+.o_pmk_purch__age--none { color: var(--sh-muted) !important; font-style: normal; }
+.o_pmk_purch__cnt { font-style: normal; font-weight: 400; color: var(--sh-muted); }
+
+.o_pmk_purch__flow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  .o_pmk_home__p { min-width: 0; }
+}
+
+.o_pmk_purch__qa { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+
+.o_pmk_purch__cov {
+  margin: 0 0 8px;
+  font-size: 12px;
+  > div:first-child { display: flex; justify-content: space-between; margin-bottom: 3px; }
+  span { color: var(--sh-muted); font-variant-numeric: tabular-nums; }
+  .o_pmk_home__bartrack { height: 8px; }
+}
+
+.o_pmk_purch__static { cursor: default; &:hover b { text-decoration: none; } }

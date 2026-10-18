@@ -21,7 +21,10 @@
       <field name="name">Запрос актуального прайса поставщику</field>
       <field name="model_id" ref="base.model_res_partner"/>
       <field name="subject">Запрос актуального прайс-листа — ПМК Парк, Хабаровск</field>
-      <field name="email_from">{{ user.company_id.email or 'zakaz@pmkpark.ru' }}</field>
+      <!-- Отправитель закреплён (Антон 18.10.2026: «рассылка должна быть с
+           zakaz@pmkpark.ru»). Раньше брался адрес компании, и после внесения
+           реквизитов 27.09 рассылка молча ушла с боевого pmkpark@mail.ru. -->
+      <field name="email_from">zakaz@pmkpark.ru</field>
       <field name="lang">ru_RU</field>
       <field name="auto_delete" eval="False"/>
       <field name="body_html" type="html">

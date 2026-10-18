@@ -162,6 +162,23 @@
             <field name="removal_strategy_id" ref="stock.removal_fifo"/>
         </record>
 
+        <!-- Пополнение справочника 18.10.2026: виды, которые возят поставщики. -->
+        <record id="categ_rolled_svg" model="product.category">
+            <field name="name">Швеллер гнутый</field>
+            <field name="parent_id" ref="categ_rolled"/>
+            <field name="property_cost_method">fifo</field>
+            <field name="property_valuation">real_time</field>
+            <field name="removal_strategy_id" ref="stock.removal_fifo"/>
+        </record>
+
+        <record id="categ_rolled_pls" model="product.category">
+            <field name="name">Полоса</field>
+            <field name="parent_id" ref="categ_rolled"/>
+            <field name="property_cost_method">fifo</field>
+            <field name="property_valuation">real_time</field>
+            <field name="removal_strategy_id" ref="stock.removal_fifo"/>
+        </record>
+
         <!-- ═══ 2. ЛИСТ — 56 карточек, 4 вида ═══════════════════════════
              Отдельная ветвь, а не подкатегория металлопроката: лист меряется
              штуками, а прокат метрами, у листа своя характеристика «Габарит»,

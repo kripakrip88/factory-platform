@@ -22,6 +22,7 @@
     ],
     "assets": {
         "web.assets_backend": [
+            "pmk_sales_home/static/src/home_motion.js",
             "pmk_sales_home/static/src/sales_home.js",
             "pmk_sales_home/static/src/sales_home.xml",
             "pmk_sales_home/static/src/sales_home.scss",

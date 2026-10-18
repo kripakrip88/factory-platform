@@ -17,11 +17,21 @@
   --sh-bar-1: #85b7eb;
   --sh-bar-2: #ef9f27;
   --sh-bar-won: #97c459;
+  --sh-hit: #eef6d6;
+  --sh-warn-bd: #e2bb6b;
+  --sh-bad-bd: #dc9389;
+  --sh-good-bd: #aac77c;
+  --sh-good-bg: #f1f6e6;
 
   padding: 16px 20px 32px;
   overflow: auto;
   color: var(--sh-ink);
 }
+
+// Прокрутка колёсиком (18.10.2026): штатное правило Odoo
+// `html .o_web_client > .o_action_manager > .o_action { overflow: hidden }` сильнее
+// `.o_pmk_home { overflow: auto }` — длинная главная обрезалась без прокрутки.
+html .o_web_client > .o_action_manager > .o_action.o_pmk_home { overflow: auto; }
 
 .o_pmk_home__muted { color: var(--sh-muted); font-size: 13px; }
 
@@ -49,8 +59,9 @@
   border-radius: 12px;
   padding: 10px 14px;
   cursor: pointer;
-  transition: border-color 0.15s ease-out;
+  transition: border-color 0.15s ease-out, transform 0.12s ease-out, background-color 1.2s ease-out;
   &:hover { border-color: var(--sh-muted); }
+  &:active { transform: scale(0.98); }
   .l { font-size: 12px; color: var(--sh-muted); }
   .v { font-size: 22px; font-weight: 600; margin-top: 2px; font-variant-numeric: tabular-nums; }
   .s { font-size: 12px; color: var(--sh-muted); margin-top: 2px; }
@@ -216,5 +227,55 @@
     --sh-bar-1: #4b6583;
     --sh-bar-2: #9a6a2a;
     --sh-bar-won: #6f8f45;
+    --sh-hit: #33421a;
+    --sh-warn-bd: #8a6b2e;
+    --sh-bad-bd: #94524a;
+    --sh-good-bd: #5f7b3c;
+    --sh-good-bg: #2a3322;
   }
 }
+
+// ─── Тихая анимация (18.10.2026, вариант 1) ─────────────────────────────
+// Появление плиток и карточек за 0,25 с с лёгким сдвигом, полосы и столбцы
+// дорастают до своих значений; при «Обновить» изменившаяся плитка на миг
+// подсвечивается (home_motion.js). Никакой заставки: цифры видны сразу.
+$pmk-home-ease: cubic-bezier(0.16, 1, 0.3, 1);
+
+@keyframes o_pmk_home_in { from { opacity: 0; transform: translateY(3px); } }
+@keyframes o_pmk_home_grow_x { from { transform: scaleX(0); } }
+@keyframes o_pmk_home_grow_y { from { transform: scaleY(0); } }
+
+.o_pmk_home__k, .o_pmk_home__box { animation: o_pmk_home_in 0.25s $pmk-home-ease both; }
+@for $i from 2 through 7 {
+  .o_pmk_home__k:nth-child(#{$i}) { animation-delay: #{($i - 1) * 0.03}s; }
+}
+@for $i from 2 through 6 {
+  .o_pmk_home__box:nth-child(#{$i}) { animation-delay: #{0.08 + ($i - 1) * 0.04}s; }
+}
+.o_pmk_home__k.o_pmk_home__k--hit { background-color: var(--sh-hit); transition: none; }
+
+.o_pmk_home__bar {
+  transform-origin: left;
+  animation: o_pmk_home_grow_x 0.35s 0.1s $pmk-home-ease both;
+  transition: width 0.25s $pmk-home-ease;
+}
+.o_pmk_home__colbar {
+  transform-origin: bottom;
+  animation: o_pmk_home_grow_y 0.35s 0.15s $pmk-home-ease both;
+  transition: height 0.25s $pmk-home-ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .o_pmk_home__k, .o_pmk_home__box, .o_pmk_home__bar, .o_pmk_home__colbar { animation: none; }
+  .o_pmk_home__k:active { transform: none; }
+}
+
+// ─── Цвет рамки по состоянию (18.10.2026, вариант B) ───────────────────
+// Рамка и заливка в тон (заливка — по просьбе Антона «усилить», 18.10).
+// Нейтрально, пока всё в порядке; жёлтая — пора действовать, красная —
+// просрочка, зелёная — хорошая новость. Цвет — сигнал, а не украшение:
+// правила в шаблонах главных (t-att-class o_pmk_home__k--warn/bad/good).
+.o_pmk_home__k--warn { border-color: var(--sh-warn-bd); background: var(--sh-warn-bg); .s { color: var(--sh-warn); } &:hover { border-color: var(--sh-warn); } }
+.o_pmk_home__k--bad { border-color: var(--sh-bad-bd); background: var(--sh-bad-bg); .s { color: var(--sh-bad); font-weight: 500; } &:hover { border-color: var(--sh-bad); } }
+.o_pmk_home__k--good { border-color: var(--sh-good-bd); background: var(--sh-good-bg); .s { color: var(--sh-ok); } &:hover { border-color: var(--sh-ok); } }
+

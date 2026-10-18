@@ -6,7 +6,7 @@
 Что ловим:
   • порядок у закупщика и у администратора: Поставщики · Почта · Цены поставщиков ·
     Номенклатура · Рассылка прайсов · Заказы поставщикам · Группы поставки;
-    раздел открывается «Поставщиками»;
+    раздел открывается «Поставщиками» (с 18.10.2026 — «Главной», если стоит pmk_purchase_home);
   • «Поставщики» — список и поиск реестра прайсов, окно так и называется;
     штатный список — «Все поставщики», только с «Убранным»;
   • доводка: в «Поставщиках» все поставщики — реестр и штатный признак.
@@ -78,7 +78,17 @@ class TestPurchaseMenuStep38(TransactionCase):
         # «Заказами поставщикам».
         if self.env.ref("pmk_tech.menu_metal_requests", raise_if_not_found=False):
             items.insert(items.index("Заказы поставщикам"), "Заявки на металл")
+        # 18.10.2026 (pmk_purchase_home, если стоит): «Главная» — первым пунктом.
+        if self._home_action():
+            items.insert(0, "Главная")
         return items
+
+    def _home_action(self):
+        return self.env.ref("pmk_purchase_home.action_purchase_home", raise_if_not_found=False)
+
+    def _section_action(self):
+        """Чем открывается раздел: «Главной», если она стоит, иначе «Поставщиками»."""
+        return self._home_action() or self.env.ref("pmk_purchase.action_price_supplier")
 
     def test_items_and_order(self):
         for user in (self.buyer, self.admin):
@@ -89,8 +99,7 @@ class TestPurchaseMenuStep38(TransactionCase):
         for user in (self.buyer, self.admin):
             with self.subTest(user=user.login):
                 menus = self._menus(user)
-                self.assertEqual(menus[self.section.id]["actionID"],
-                                 self.env.ref("pmk_purchase.action_price_supplier").id)
+                self.assertEqual(menus[self.section.id]["actionID"], self._section_action().id)
 
     def test_suppliers_is_price_registry(self):
         action = self.env.ref("pmk_purchase.action_price_supplier")
@@ -252,15 +261,16 @@ class TestPurchaseMenuStep38(TransactionCase):
             expected.remove("Почта")
         if self.env.ref("pmk_tech.menu_metal_requests", raise_if_not_found=False):
             expected.insert(expected.index("Заказы поставщикам"), "Заявки на металл")
+        if self._home_action():
+            expected.insert(0, "Главная")
         self.assertEqual(self._items(self.admin), expected)
         self.assertEqual(self._item(self.admin, "Все поставщики")["actionID"],
                          self.env.ref("account.res_partner_action_supplier").id)
         self.assertEqual(self._item(self.admin, "Подтверждённые заказы")["actionID"],
                          self.env.ref("purchase.purchase_form_action").id)
-        # Раздел по-прежнему открывается «Поставщиками».
+        # Раздел открывается тем же, что и без «Убранного».
         menus = self._menus(self.admin)
-        self.assertEqual(menus[self.section.id]["actionID"],
-                         self.env.ref("pmk_purchase.action_price_supplier").id)
+        self.assertEqual(menus[self.section.id]["actionID"], self._section_action().id)
 
     def test_empty_help_points_to_live_items(self):
         text = "".join(EMPTY_HELP.values())

@@ -132,3 +132,35 @@ class TestStepZ10Card(Z10Common):
         self.assertEqual(copy.pmk_pending_count, 1)
         self.assertEqual(pending.pmk_pending_spec_count, 2)
 
+
+
+@tagged("post_install", "-at_install")
+class TestCardKeyFromDataFile(Z10Common):
+    """Пополнение справочника 18.10.2026: строка из файла данных pmk_calc получает
+    карточку pmk_bridge.product_<имя строки> — по этому ключу её ищет загрузчик цен."""
+
+    def test_card_key_follows_data_file(self):
+        rec = self.Profile.create({
+            "type_id": self.angle_type.id, "profile_type": self.angle_type.name,
+            "gost": "ГОСТ 8509-93", "size_label": "77x77x7 (тест ключа)", "mass_per_meter": 8.0})
+        self.env["ir.model.data"].create({"module": "pmk_calc", "name": "profile_test_key_77",
+                                          "model": rec._name, "res_id": rec.id})
+        tmpl = rec._pmk_create_product_card()
+        self.assertEqual(self.env.ref("pmk_bridge.product_profile_test_key_77"), tmpl)
+        self.assertEqual(rec.get_external_id()[rec.id], "pmk_calc.profile_test_key_77",
+                         "Свой идентификатор строки не подменяется.")
+
+    def test_cards_for_data_rows(self):
+        rec = self.Profile.create({
+            "type_id": self.angle_type.id, "profile_type": self.angle_type.name,
+            "gost": "ГОСТ 8509-93", "size_label": "78x78x7 (тест файла)", "mass_per_meter": 8.2})
+        self.env["ir.model.data"].create({"module": "pmk_calc", "name": "profile_test_file_78",
+                                          "model": rec._name, "res_id": rec.id})
+        pending = self._new("pmk.metal.profile", {"pmk_pending_name": "Уголок 79×7 (тест)"})
+        self.assertEqual(self.Profile._pmk_cards_create(rec | pending), 1)
+        self.assertTrue(rec.product_tmpl_id, "Строке из файла данных заведена карточка.")
+        self.assertAlmostEqual(rec.product_tmpl_id.product_variant_id.weight, 8.2, places=3)
+        self.assertEqual(self.env.ref("pmk_bridge.product_profile_test_file_78"), rec.product_tmpl_id)
+        self.assertFalse(pending.product_tmpl_id, "Черновик ждёт «Принять».")
+        self.assertEqual(self.Profile._pmk_cards_create(rec | pending), 0,
+                         "Повторный вызов ничего не заводит.")

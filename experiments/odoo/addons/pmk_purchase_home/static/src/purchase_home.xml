@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Главная закупок (18.10.2026), purchase_home.js. Раскладка — как в показанном прототипе. -->
+<templates xml:space="preserve">
+  <t t-name="pmk_purchase_home.Home">
+    <div class="o_action o_pmk_home o_pmk_purch" t-ref="root">
+      <div t-if="state.loading and !state.data" class="o_pmk_home__muted">Загружаю…</div>
+      <t t-else="">
+        <div class="o_pmk_home__hd">
+          <b t-esc="d.hello"/>
+          <span><t t-esc="d.date"/> · Закупки</span>
+          <button type="button" class="btn btn-link btn-sm o_pmk_home__refresh" title="Обновить"
+                  t-on-click="() => this.load()"><i class="fa fa-refresh" t-att-class="{ 'fa-spin': state.loading }" aria-hidden="true"/></button>
+        </div>
+
+        <!-- Плитки -->
+        <div class="o_pmk_home__kpi">
+          <t t-if="d.requests">
+            <div class="o_pmk_home__k" t-att-class="{ 'o_pmk_home__k--warn': d.requests.draft }" t-on-click="() => this.open('requests')">
+              <div class="l">Заявки на металл</div><div class="v" t-esc="d.requests.open"/>
+              <div class="s" t-att-class="{ w: d.requests.draft }" t-esc="d.requests.draft_text"/>
+            </div>
+          </t>
+          <div t-if="d.orders_metal" class="o_pmk_home__k" t-on-click="() => this.open('orders_metal')">
+            <div class="l">Ждём металл</div><div class="v" t-esc="d.orders_metal.count"/>
+            <div class="s">заказов в работе</div>
+          </div>
+          <t t-if="d.requests">
+            <div class="o_pmk_home__k" t-att-class="{ 'o_pmk_home__k--bad': d.requests.late }" t-on-click="() => this.open('stage', 'late')">
+              <div class="l">Поставка опаздывает</div>
+              <div class="v" t-att-class="{ o_pmk_purch__bad: d.requests.late }" t-esc="d.requests.late"/>
+              <div class="s" t-att-class="{ r: d.requests.late }" t-esc="d.requests.late_text"/>
+            </div>
+            <div class="o_pmk_home__k" t-on-click="() => this.open('stage', 'purchase')">
+              <div class="l">В пути</div><div class="v" t-esc="d.requests.way_weight"/>
+              <div class="s"><t t-if="d.requests.way_amount">≈ <t t-esc="d.requests.way_amount"/></t><t t-else="">заказов нет</t></div>
+            </div>
+          </t>
+          <div t-if="d.prices" class="o_pmk_home__k" t-att-class="{ 'o_pmk_home__k--warn': d.prices.latest_level === 'warning', 'o_pmk_home__k--bad': d.prices.latest_level === 'danger' }" t-on-click="() => this.open('prices')">
+            <div class="l">Последний прайс</div><div class="v" t-esc="d.prices.latest_date"/>
+            <div class="s" t-att-class="'o_pmk_purch__age--' + d.prices.latest_level" t-esc="d.prices.latest_age"/>
+          </div>
+          <div t-if="d.coverage and d.coverage.profile_missing !== null" class="o_pmk_home__k" t-on-click="() => this.open('missing')">
+            <div class="l">Без цены</div><div class="v" t-esc="d.coverage.profile_missing"/>
+            <div class="s">позиций проката</div>
+          </div>
+        </div>
+
+        <div class="o_pmk_home__grid">
+          <!-- Сделать сегодня -->
+          <div class="o_pmk_home__box">
+            <h4>Сделать сегодня <a t-on-click="() => this.open('requests')">все заявки →</a></h4>
+            <div t-if="!d.todo or !d.todo.length" class="o_pmk_home__muted">Срочных дел нет.</div>
+            <div t-foreach="d.todo or []" t-as="item" t-key="item_index" class="o_pmk_home__todo"
+                 t-on-click="() => this.openTodo(item)">
+              <span class="o_pmk_home__tag" t-att-class="'o_pmk_home__tag--' + item.level" t-esc="item.tag"/>
+              <div>
+                <t t-esc="item.title"/>
+                <div class="m" t-esc="item.sub"/>
+              </div>
+            </div>
+          </div>
+
+          <!-- Заявки по стадиям -->
+          <div t-if="d.requests" class="o_pmk_home__box">
+            <h4>Заявки по стадиям <a t-on-click="() => this.open('requests')">заявки →</a></h4>
+            <div class="o_pmk_purch__flow">
+              <div t-foreach="d.requests.stages" t-as="st" t-key="st.code" class="o_pmk_home__p"
+                   t-on-click="() => this.open('stage', st.code)">
+                <b t-esc="st.count"/><t t-esc="st.label"/>
+              </div>
+            </div>
+            <div class="o_pmk_home__note">
+              <t t-if="d.requests.lead_days !== null">От заявки до прихода в среднем <b t-esc="d.requests.lead_days"/> дн. · </t>
+              <t t-if="d.requests.month_weight">за 30 дней пришло <b t-esc="d.requests.month_weight"/> на <b t-esc="d.requests.month_amount"/></t>
+              <t t-else="">за 30 дней приходов не было</t>
+            </div>
+            <div class="o_pmk_purch__qa">
+              <button type="button" class="btn btn-secondary btn-sm" t-on-click="() => this.open('requests')">Заявки на металл</button>
+              <button type="button" class="btn btn-secondary btn-sm" t-on-click="() => this.open('suppliers')">Поставщики</button>
+              <button type="button" class="btn btn-secondary btn-sm" t-on-click="() => this.open('prices')">Цены поставщиков</button>
+            </div>
+          </div>
+
+          <!-- Прайсы: маяк свежести -->
+          <div t-if="d.prices" class="o_pmk_home__box">
+            <h4>Прайсы поставщиков <a t-on-click="() => this.open('suppliers')">поставщики →</a></h4>
+            <div t-if="!d.prices.rows.length" class="o_pmk_home__muted">Прайсов нет.</div>
+            <div t-foreach="d.prices.rows" t-as="row" t-key="row.id" class="o_pmk_home__ml"
+                 t-on-click="() => this.open('supplier', row.id)">
+              <b><t t-esc="row.name"/> <i class="o_pmk_purch__cnt">· <t t-esc="row.count"/> цен</i></b>
+              <span>от <t t-esc="row.date"/> · <em t-att-class="'o_pmk_purch__age--' + row.level" t-esc="row.age"/></span>
+            </div>
+            <div class="o_pmk_home__note">
+              С прайсом <b t-esc="d.prices.with_price"/> из <t t-esc="d.prices.total"/> поставщиков реестра<t t-if="d.prices.more">, ещё <t t-esc="d.prices.more"/> в списке</t>.
+              <t t-if="d.prices.mailing">Рассылка запросов: <a class="o_pmk_home__link" t-on-click="() => this.open('mailing')" t-esc="d.prices.mailing.text"/>.</t>
+            </div>
+          </div>
+
+          <!-- Покрытие ценами -->
+          <div t-if="d.coverage" class="o_pmk_home__box">
+            <h4>Покрытие ценами <a t-on-click="() => this.open('missing')">прокат без цены →</a></h4>
+            <div t-foreach="d.coverage.rows" t-as="row" t-key="row.key" class="o_pmk_purch__cov">
+              <div><t t-esc="row.label"/> <span><t t-esc="row.priced"/> из <t t-esc="row.total"/></span></div>
+              <div class="o_pmk_home__bartrack"><div class="o_pmk_home__bar o_pmk_home__bar--won" t-att-style="'width:' + row.pct + '%'"/></div>
+            </div>
+            <div class="o_pmk_home__note">Нет цены — сигнал «в городе нет», не ошибка. Нужно в расчётах за 60 дней и не покрыто никем:</div>
+            <div t-if="!d.coverage.missing.length" class="o_pmk_home__muted">Всё, что считали, покрыто ценами.</div>
+            <div t-foreach="d.coverage.missing" t-as="row" t-key="row_index" class="o_pmk_home__ml o_pmk_purch__static">
+              <b t-esc="row.name"/><span t-esc="row.sub"/>
+            </div>
+          </div>
+        </div>
+      </t>
+    </div>
+  </t>
+</templates>

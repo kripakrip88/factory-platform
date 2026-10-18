@@ -8,6 +8,7 @@
  */
 import { Component, onWillStart, status, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
+import { useHomeMotion } from "@pmk_sales_home/home_motion";
 
 export class PmkProdHome extends Component {
     static template = "pmk_prod_home.Home";
@@ -18,13 +19,16 @@ export class PmkProdHome extends Component {
         this.action = this.env.services.action;
         this.notification = this.env.services.notification;
         this.state = useState({ data: null, loading: true });
+        this.motion = useHomeMotion();
         onWillStart(() => this.load());
     }
 
     async load() {
         this.state.loading = true;
+        const before = this.motion.before();
         const data = await this.orm.call("pmk.prod.home", "get_dashboard", []);
         if (status(this) !== "destroyed") {
+            this.motion.after(before);
             this.state.data = data;
             this.state.loading = false;
         }

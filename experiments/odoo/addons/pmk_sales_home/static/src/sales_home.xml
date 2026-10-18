@@ -2,24 +2,24 @@
 <!-- Главная продаж (16.10.2026), js/sales_home.js. Раскладка — как в принятом прототипе. -->
 <templates xml:space="preserve">
   <t t-name="pmk_sales_home.Home">
-    <div class="o_action o_pmk_home">
+    <div class="o_action o_pmk_home" t-ref="root">
       <div t-if="state.loading and !state.data" class="o_pmk_home__muted">Загружаю…</div>
       <t t-else="">
         <div class="o_pmk_home__hd">
           <b t-esc="d.hello"/>
           <span><t t-esc="d.date"/> · Продажи</span>
           <button type="button" class="btn btn-link btn-sm o_pmk_home__refresh" title="Обновить"
-                  t-on-click="() => this.load()"><i class="fa fa-refresh" aria-hidden="true"/></button>
+                  t-on-click="() => this.load()"><i class="fa fa-refresh" t-att-class="{ 'fa-spin': state.loading }" aria-hidden="true"/></button>
         </div>
 
         <!-- Плитки -->
         <div class="o_pmk_home__kpi">
-          <div t-if="d.mail" class="o_pmk_home__k" t-on-click="() => this.open('mail')">
+          <div t-if="d.mail" class="o_pmk_home__k" t-att-class="{ 'o_pmk_home__k--warn': d.mail.unread_no_lead }" t-on-click="() => this.open('mail')">
             <div class="l">Новые письма</div><div class="v" t-esc="d.mail.unread"/>
             <div class="s" t-att-class="{ w: d.mail.unread_no_lead }"><t t-esc="d.mail.unread_no_lead"/> без лида · 7 дн.</div>
           </div>
           <t t-if="d.deals">
-            <div class="o_pmk_home__k" t-on-click="() => this.open('leads')">
+            <div class="o_pmk_home__k" t-att-class="{ 'o_pmk_home__k--good': d.deals.leads_today }" t-on-click="() => this.open('leads')">
               <div class="l">Заявки (лиды)</div><div class="v" t-esc="d.deals.leads"/>
               <div class="s"><t t-esc="d.deals.leads_today"/> сегодня</div>
             </div>
@@ -27,16 +27,16 @@
               <div class="l">Сделки в работе</div><div class="v" t-esc="d.deals.open"/>
               <div class="s" t-esc="d.deals.open_sum"/>
             </div>
-            <div class="o_pmk_home__k" t-on-click="() => this.open('kp')">
+            <div class="o_pmk_home__k" t-att-class="{ 'o_pmk_home__k--warn': d.deals.kp_old }" t-on-click="() => this.open('kp')">
               <div class="l">КП ждут ответа</div><div class="v" t-esc="d.deals.kp"/>
               <div class="s" t-att-class="{ w: d.deals.kp_old }"><t t-esc="d.deals.kp_old"/> дольше 3 дн.</div>
             </div>
-            <div class="o_pmk_home__k" t-on-click="() => this.open('won')">
+            <div class="o_pmk_home__k" t-att-class="{ 'o_pmk_home__k--good': d.deals.won }" t-on-click="() => this.open('won')">
               <div class="l">Выиграно, <t t-esc="d.month"/></div><div class="v" t-esc="d.deals.won"/>
               <div class="s" t-att-class="{ g: d.deals.won }"><t t-esc="d.deals.won_sum"/><t t-if="d.deals.won_margin"> · <t t-esc="d.deals.won_margin"/></t></div>
             </div>
           </t>
-          <div t-if="d.payments" class="o_pmk_home__k" t-on-click="() => this.open('payments')">
+          <div t-if="d.payments" class="o_pmk_home__k" t-att-class="{ 'o_pmk_home__k--good': d.payments.count }" t-on-click="() => this.open('payments')">
             <div class="l">Оплаты за неделю</div><div class="v" t-esc="d.payments.total"/>
             <div class="s"><t t-esc="d.payments.count"/> <t t-esc="d.payments.count_word"/></div>
           </div>
