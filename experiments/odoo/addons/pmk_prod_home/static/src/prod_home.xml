@@ -15,28 +15,28 @@
         <!-- Плитки -->
         <div class="o_pmk_home__kpi">
           <t t-if="d.orders">
-            <div class="o_pmk_home__k" t-on-click="() => this.open('orders')">
+            <div class="o_pmk_home__k" t-att-class="{ 'o_pmk_home__k--bad': d.orders.overdue }" t-on-click="() => this.open('orders')">
               <div class="l">Заказы в работе</div><div class="v" t-esc="d.orders.total"/>
               <div class="s" t-att-class="{ r: d.orders.overdue }"><t t-esc="d.orders.overdue"/> просрочено</div>
             </div>
-            <div class="o_pmk_home__k" t-on-click="() => this.open('stage', 'drawings')">
+            <div class="o_pmk_home__k" t-att-class="{ 'o_pmk_home__k--warn': d.orders.drawings_hot }" t-on-click="() => this.open('stage', 'drawings')">
               <div class="l">Ждут чертежей</div><div class="v" t-esc="d.orders.drawings"/>
               <div class="s" t-att-class="{ w: d.orders.drawings_hot }"><t t-esc="d.orders.drawings_hot"/> <t t-esc="d.orders.hot_word"/></div>
             </div>
-            <div class="o_pmk_home__k" t-on-click="() => this.open('stage', 'metal')">
+            <div class="o_pmk_home__k" t-att-class="{ 'o_pmk_home__k--warn': d.metal and d.metal.late }" t-on-click="() => this.open('stage', 'metal')">
               <div class="l">Ждём металл</div><div class="v" t-esc="d.orders.metal"/>
-              <div class="s"><t t-if="d.metal"><t t-esc="d.metal.count"/> <t t-esc="d.metal.count_word"/> в пути</t></div>
+              <div class="s"><t t-if="d.metal and d.metal.late">опаздывает: <t t-esc="d.metal.late"/> из <t t-esc="d.metal.count"/></t><t t-elif="d.metal"><t t-esc="d.metal.count"/> <t t-esc="d.metal.count_word"/> в пути</t></div>
             </div>
             <div class="o_pmk_home__k" t-on-click="() => this.open('stage', 'work')">
               <div class="l">В цеху</div><div class="v" t-esc="d.orders.work"/>
               <div class="s" t-esc="d.orders.work_weight or 'вес не указан'"/>
             </div>
           </t>
-          <div t-if="d.laser" class="o_pmk_home__k" t-on-click="() => this.open('laser')">
+          <div t-if="d.laser" class="o_pmk_home__k" t-att-class="{ 'o_pmk_home__k--warn': d.laser.new }" t-on-click="() => this.open('laser')">
             <div class="l">Лазер: к резке</div><div class="v"><t t-esc="d.laser.sheets"/> л.</div>
             <div class="s"><t t-esc="d.laser.weight"/> · <t t-esc="d.laser.count"/> <t t-esc="d.laser.count_word"/></div>
           </div>
-          <div t-if="d.orders" class="o_pmk_home__k" t-on-click="() => this.open('stage', 'ready')">
+          <div t-if="d.orders" class="o_pmk_home__k" t-att-class="{ 'o_pmk_home__k--good': d.orders.ready }" t-on-click="() => this.open('stage', 'ready')">
             <div class="l">К отгрузке</div><div class="v" t-esc="d.orders.ready"/>
             <div class="s"><t t-esc="d.orders.ready_week"/> на этой неделе</div>
           </div>

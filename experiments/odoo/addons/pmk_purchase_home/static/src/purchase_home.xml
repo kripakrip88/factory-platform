@@ -15,7 +15,7 @@
         <!-- Плитки -->
         <div class="o_pmk_home__kpi">
           <t t-if="d.requests">
-            <div class="o_pmk_home__k" t-on-click="() => this.open('requests')">
+            <div class="o_pmk_home__k" t-att-class="{ 'o_pmk_home__k--warn': d.requests.draft }" t-on-click="() => this.open('requests')">
               <div class="l">Заявки на металл</div><div class="v" t-esc="d.requests.open"/>
               <div class="s" t-att-class="{ w: d.requests.draft }" t-esc="d.requests.draft_text"/>
             </div>
@@ -25,7 +25,7 @@
             <div class="s">заказов в работе</div>
           </div>
           <t t-if="d.requests">
-            <div class="o_pmk_home__k" t-on-click="() => this.open('stage', 'late')">
+            <div class="o_pmk_home__k" t-att-class="{ 'o_pmk_home__k--bad': d.requests.late }" t-on-click="() => this.open('stage', 'late')">
               <div class="l">Поставка опаздывает</div>
               <div class="v" t-att-class="{ o_pmk_purch__bad: d.requests.late }" t-esc="d.requests.late"/>
               <div class="s" t-att-class="{ r: d.requests.late }" t-esc="d.requests.late_text"/>
@@ -35,7 +35,7 @@
               <div class="s"><t t-if="d.requests.way_amount">≈ <t t-esc="d.requests.way_amount"/></t><t t-else="">заказов нет</t></div>
             </div>
           </t>
-          <div t-if="d.prices" class="o_pmk_home__k" t-on-click="() => this.open('prices')">
+          <div t-if="d.prices" class="o_pmk_home__k" t-att-class="{ 'o_pmk_home__k--warn': d.prices.latest_level === 'warning', 'o_pmk_home__k--bad': d.prices.latest_level === 'danger' }" t-on-click="() => this.open('prices')">
             <div class="l">Последний прайс</div><div class="v" t-esc="d.prices.latest_date"/>
             <div class="s" t-att-class="'o_pmk_purch__age--' + d.prices.latest_level" t-esc="d.prices.latest_age"/>
           </div>
