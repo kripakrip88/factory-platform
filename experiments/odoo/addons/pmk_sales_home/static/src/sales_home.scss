@@ -21,6 +21,7 @@
   --sh-warn-bd: #e2bb6b;
   --sh-bad-bd: #dc9389;
   --sh-good-bd: #aac77c;
+  --sh-good-bg: #f1f6e6;
 
   padding: 16px 20px 32px;
   overflow: auto;
@@ -230,6 +231,7 @@ html .o_web_client > .o_action_manager > .o_action.o_pmk_home { overflow: auto; 
     --sh-warn-bd: #8a6b2e;
     --sh-bad-bd: #94524a;
     --sh-good-bd: #5f7b3c;
+    --sh-good-bg: #2a3322;
   }
 }
 
@@ -269,10 +271,11 @@ $pmk-home-ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 // ─── Цвет рамки по состоянию (18.10.2026, вариант B) ───────────────────
+// Рамка и заливка в тон (заливка — по просьбе Антона «усилить», 18.10).
 // Нейтрально, пока всё в порядке; жёлтая — пора действовать, красная —
 // просрочка, зелёная — хорошая новость. Цвет — сигнал, а не украшение:
 // правила в шаблонах главных (t-att-class o_pmk_home__k--warn/bad/good).
-.o_pmk_home__k--warn { border-color: var(--sh-warn-bd); .s { color: var(--sh-warn); } &:hover { border-color: var(--sh-warn); } }
-.o_pmk_home__k--bad { border-color: var(--sh-bad-bd); .s { color: var(--sh-bad); font-weight: 500; } &:hover { border-color: var(--sh-bad); } }
-.o_pmk_home__k--good { border-color: var(--sh-good-bd); .s { color: var(--sh-ok); } &:hover { border-color: var(--sh-ok); } }
+.o_pmk_home__k--warn { border-color: var(--sh-warn-bd); background: var(--sh-warn-bg); .s { color: var(--sh-warn); } &:hover { border-color: var(--sh-warn); } }
+.o_pmk_home__k--bad { border-color: var(--sh-bad-bd); background: var(--sh-bad-bg); .s { color: var(--sh-bad); font-weight: 500; } &:hover { border-color: var(--sh-bad); } }
+.o_pmk_home__k--good { border-color: var(--sh-good-bd); background: var(--sh-good-bg); .s { color: var(--sh-ok); } &:hover { border-color: var(--sh-ok); } }
 
