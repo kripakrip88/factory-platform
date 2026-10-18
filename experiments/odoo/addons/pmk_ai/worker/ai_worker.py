@@ -36,6 +36,9 @@ _log.info("фоновый процесс ассистента запущен, б
 print("pmk_ai worker: база %s, потоков %s" % (registry.db_name, WORKER_THREADS), flush=True)
 while True:
     try:
+        # Изменения из других процессов (ключ, лимит, модель в «Настройки → Ассистент»):
+        # без этого фон отвечал бы со старыми настройками из своего кэша.
+        registry = registry.check_signaling()
         with registry.cursor() as cr:
             ids = api.Environment(cr, SUPERUSER_ID, {})["pmk.ai.chat"]._worker_tick(WORKER_THREADS - len(inflight))
         for request_id in ids:

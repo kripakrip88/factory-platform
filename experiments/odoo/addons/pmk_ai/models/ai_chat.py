@@ -507,7 +507,12 @@ class PmkAiChat(models.AbstractModel):
 
     # ─── фоновый процесс (worker/ai_worker.py) ──────────────────────────
     def _worker_alive(self):
-        stamp = self._param("pmk_ai.worker_alive")
+        # Мимо кэша get_param: отметку пишет другой процесс (odoo-ai-worker), и кэш настроек
+        # в процессах Odoo о ней не узнаёт — страница видела старую отметку и через минуту
+        # говорила «не запущен», хотя фон работал (18.10.2026).
+        self.env.cr.execute("SELECT value FROM ir_config_parameter WHERE key = 'pmk_ai.worker_alive'")
+        row = self.env.cr.fetchone()
+        stamp = row and row[0]
         try:
             return bool(stamp) and time.time() - float(stamp) < WORKER_ALIVE_SEC
         except ValueError:
@@ -516,10 +521,12 @@ class PmkAiChat(models.AbstractModel):
     @api.model
     def _worker_tick(self, free):
         """Отметка «жив», зависшие → ошибка, взять до free вопросов → их id (state=running)."""
-        params = self.env["ir.config_parameter"].sudo()
-        last = float(params.get_param("pmk_ai.worker_alive") or 0)
-        if time.time() - last > 15:
-            params.set_param("pmk_ai.worker_alive", "%.0f" % time.time())
+        # Отметка «жив» — прямой записью, без кэша и без сброса кэша у всех процессов.
+        self.env.cr.execute("""
+            INSERT INTO ir_config_parameter (key, value, create_uid, write_uid, create_date, write_date)
+            VALUES ('pmk_ai.worker_alive', %s, 1, 1, now() at time zone 'utc', now() at time zone 'utc')
+            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, write_date = EXCLUDED.write_date
+        """, ("%.0f" % time.time(),))
         Request = self.env["pmk.ai.request"].sudo()
         stuck = Request.search([("state", "=", "running"),
                                 ("started", "<", fields.Datetime.subtract(fields.Datetime.now(), seconds=STUCK_SEC))])
