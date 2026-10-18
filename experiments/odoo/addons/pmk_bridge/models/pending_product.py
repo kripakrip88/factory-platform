@@ -30,7 +30,7 @@
 """
 import logging
 
-from odoo import models
+from odoo import api, models
 
 from . import sku as sku_gen
 
@@ -74,6 +74,39 @@ class MetalPendingProduct(models.AbstractModel):
             if "product_tmpl_id" in rec._fields and not rec.product_tmpl_id:
                 rec._pmk_create_product_card()
         return result
+
+    @api.model
+    def _pmk_cards_for_data_rows(self):
+        """Карточки строкам справочника из файла данных, у которых их нет.
+
+        Пополнение справочника 18.10.2026: новые размеры проката приходят
+        строками CSV модуля pmk_calc, а карточки первых 665 позиций заводил
+        разовый загрузчик (scripts/load_products.py). Вызывается при каждом
+        обновлении моста (data/cards_for_data_rows.xml), повторный вызов
+        ничего не заводит.
+
+        Только прокат: карточке листа нужны характеристики марки и габарита,
+        их ставит загрузчик в строгом порядке («ПОРЯДОК ДЕЙСТВИЙ» в нём).
+        На чистой базе, где карточек ещё нет вовсе, не делаем ничего — там
+        номенклатуру заводит загрузчик целиком.
+        """
+        Profile = self.env["pmk.metal.profile"].sudo().with_context(active_test=False)
+        if not Profile.search_count([("product_tmpl_id", "!=", False)], limit=1):
+            return 0
+        return Profile._pmk_cards_create(Profile.search(
+            [("product_tmpl_id", "=", False), ("pmk_pending", "=", False)]))
+
+    def _pmk_cards_create(self, rows):
+        """Завести карточки строкам из файла данных (pmk_calc.*); черновики и
+        строки с карточкой пропускаются. Возвращает, сколько заведено."""
+        ext = rows.get_external_id()
+        rows = rows.filtered(lambda r: not r.product_tmpl_id and not r.pmk_pending
+                             and (ext.get(r.id) or "").startswith("pmk_calc."))
+        for rec in rows:
+            rec._pmk_create_product_card()
+        if rows:
+            _logger.info("pmk_bridge: заведено карточек по справочнику: %s", len(rows))
+        return len(rows)
 
     # ─── Карточка ───────────────────────────────────────────────────────
     def _pmk_card_sku_and_categ(self):
@@ -141,9 +174,16 @@ class MetalPendingProduct(models.AbstractModel):
         # варианта (load_products.py, «ВЕС ЖИВЁТ НА ВАРИАНТЕ»).
         variant.write({"default_code": code, "weight": self._pmk_card_weight()})
         self.sudo().product_tmpl_id = tmpl
-        key = "%s%s" % (KEY_PREFIX[self._name], self.id)
+        # Ключ — имя внешнего идентификатора строки, если он есть: строка из
+        # файла данных (pmk_calc.profile_полоса_4x40) получает карточку
+        # pmk_bridge.product_profile_полоса_4x40 — по этому правилу её ищет
+        # загрузчик цен (tools/load_prices.py, reference_from_db). Принятая
+        # новая позиция внешнего идентификатора не имеет — ей заводим свой.
+        own = self.get_external_id().get(self.id) or ""
+        key = (own.split(".", 1)[1] if own.startswith("pmk_calc.")
+               else "%s%s" % (KEY_PREFIX[self._name], self.id))
         data = self.env["ir.model.data"].sudo()
-        if not self.get_external_id().get(self.id):
+        if not own:
             data.create({"module": "pmk_calc", "name": key, "model": self._name,
                          "res_id": self.id, "noupdate": True})
         if not data.search_count([("module", "=", "pmk_bridge"), ("name", "=", "product_%s" % key)]):

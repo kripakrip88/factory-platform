@@ -677,7 +677,9 @@ def price_row_name(row):
     if low.startswith("труба б/ш"):
         return "Труба бесшовная %s" % row.size
     if low.startswith("труба вгп"):
-        return "Труба ВГП %s" % row.size
+        # У СПК размер стоит в самом названии («Труба ВГП 32х3.2»), колонка
+        # размера пуста — без этой оговорки размер терялся (8 строк, 18.10.2026).
+        return ("Труба ВГП %s" % row.size) if row.size else p
     if low == "балка":
         return "Двутавр %s" % row.size
     if low.startswith("гнутый швеллер"):

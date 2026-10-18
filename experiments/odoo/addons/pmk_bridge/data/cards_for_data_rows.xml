@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Карточки товара новым строкам справочника проката из файла данных pmk_calc
+     (пополнение справочника 18.10.2026). Не noupdate: вызов при каждом
+     обновлении моста, повторный ничего не заводит. -->
+<odoo>
+    <function model="pmk.metal.profile" name="_pmk_cards_for_data_rows"/>
+</odoo>
