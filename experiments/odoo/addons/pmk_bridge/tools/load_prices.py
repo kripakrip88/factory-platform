@@ -459,6 +459,158 @@ def read_price_xls(path):
     return rows, sections, sorted(set(date_cells))
 
 
+# ═══════════════════════════════════════════════════════════════════════════
+# 3а. ДРУГИЕ ПОСТАВЩИКИ (18.10.2026): строки в том же виде PriceRow
+# ═══════════════════════════════════════════════════════════════════════════
+# Антон 18.10: «поставщики уже отвечали на запрос и скидывали прайсы,
+# проанализируй их и добавь цены». Разбор, сторож массы, марка, габарит листа и
+# запись — общие (prepare / pick_winners / upsert). Читалка поставщика отдаёт
+# PriceRow так, чтобы row_mass() получил массу: прокат — вес метра при длине 1,
+# лист — вес листа; цены — в руб/т с НДС, уровни — в тоннах.
+
+def _cellnum(value):
+    """«84 200», 84200, «84 200,50» → число; «по запросу», пусто → None."""
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    text = str(value).replace("\xa0", "").replace(" ", "").replace(",", ".").strip()
+    return float(text) if re.match(r"^\d+(\.\d+)?$", text) else None
+
+
+def _num_str(value):
+    v = _cellnum(value)
+    if v is None:
+        return ""
+    return ("%.4f" % v).rstrip("0").rstrip(".")
+
+
+def _spaced_size(text):
+    """«Уголок 25 25 3» → «Уголок 25х25х3»; «15ДУ 2.8» → «15х2.8»; «8 У» → «8У»."""
+    t = re.sub(r"(\d)\s*ДУ\b", r"\1", text, flags=re.I)
+    t = re.sub(r"\bакция\b", "", t, flags=re.I)
+    t = re.sub(r"(\d)\s+([А-ЯA-Z])\b", r"\1\2", t)          # «8 У» → «8У»
+    prev = None
+    while prev != t:
+        prev = t
+        t = re.sub(r"(\d(?:[.,]\d+)?)\s+(\d)", r"\1х\2", t)
+    return re.sub(r"\s+", " ", t).strip()
+
+
+def read_price_spk(path):
+    """Прайс СПК «Металлопрокат (оптовый)»: лист List_1, цена руб/т с НДС, 4 уровня.
+
+    Колонки: Наименование | Мерность | Марка | ГОСТ | Вес 1 шт | Вес 1 пм | ЕИ | 4 цены.
+    Раздел — строка с одной первой ячейкой. ЕИ не «Т» (сетка в м²) — пропуск.
+    """
+    import openpyxl
+    book = openpyxl.load_workbook(path, read_only=True, data_only=True)
+    grid = [list(r) for r in book.worksheets[0].iter_rows(values_only=True)]
+    book.close()
+    rows, sections, dates = [], [], []
+    tiers, section = [], ""
+    for r_idx, r in enumerate(grid):
+        r = list(r) + [None] * (12 - len(r))
+        txt = [("" if v is None else str(v).strip()) for v in r]
+        for v in txt:
+            m = re.match(r"^(\d{2})\.(\d{2})\.(\d{4})$", v)
+            if m:
+                dates.append(datetime.date(int(m.group(3)), int(m.group(2)), int(m.group(1))))
+        if txt[7].lower().startswith("до ") and not txt[0]:
+            labels = [re.sub(r"^свыше\s+", "от ", t, flags=re.I) for t in txt[7:11]]
+            tiers = parse_tiers([(7 + i, lab) for i, lab in enumerate(labels)])
+            continue
+        if txt[0] and not any(txt[1:11]):
+            section = txt[0]
+            sections.append(section)
+            continue
+        if not txt[0] or not tiers or txt[0].lower().startswith("наименование"):
+            continue
+        if txt[6].upper() not in ("Т", "ТН"):
+            continue
+        name = re.sub(r"\bОЦ\b", "оцинкованная", txt[0])
+        low = name.lower()
+        if low.startswith("лист"):
+            thick = re.findall(r"(\d+(?:[.,]\d+)?)", name)
+            dims = re.findall(r"(\d+(?:[.,]\d+)?)\s*м", txt[1])
+            if not thick or len(dims) < 2:
+                size = name
+            else:
+                w, l = [int(round(float(d.replace(",", ".")) * 1000)) for d in dims[:2]]
+                size = "%s х %s х %s" % (thick[-1], w, l)
+            rows.append(PriceRow(
+                excel_row=r_idx + 1, section=section, profile="Лист" + (
+                    " х/к" if "х/к" in low else "") + (" износостойкий" if "износ" in low else ""),
+                size=size, grade=txt[2], length="", weight=_num_str(r[4]),
+                tiers=tiers, gross=[_num_str(v) for v in r[7:10]]))
+            continue
+        w_m, w_piece = _cellnum(r[5]), _cellnum(r[4])
+        length_m = _cellnum(re.sub(r"[^\d.,]", "", txt[1]).replace(",", ".")) if re.search(r"\d", txt[1]) else None
+        if w_m:
+            weight, length = _num_str(w_m), "1"
+        elif w_piece and length_m:
+            weight, length = _num_str(w_piece), _num_str(length_m)
+        else:
+            weight, length = "", txt[1]
+        rows.append(PriceRow(
+            excel_row=r_idx + 1, section=section, profile=_spaced_size(name), size="",
+            grade=txt[2], length=length, weight=weight,
+            tiers=tiers, gross=[_num_str(v) for v in r[7:10]]))
+    return rows, sections, sorted(set(dates))
+
+
+METALLCITY_SKIP = ("ВИНТОВЫЕ СВАИ", "СЕТКА СВАРНАЯ")
+
+
+def read_price_metallcity(path):
+    """Прайс МеталлСити (.xls): цены руб/т в шапке, но в строке — цена ШТУКИ и вес штуки.
+
+    Колонки плывут от раздела к разделу; надёжны: 0 вид, 1 марка, 3 размер,
+    6 вес штуки (розница), 7 длина, 10 цена штуки с НДС. руб/т = цена / вес × 1000.
+    Уровня объёма один — «розница».
+    """
+    import xlrd
+    sheet = xlrd.open_workbook(path).sheet_by_index(0)
+    rows, sections, dates = [], [], []
+    section, skip = "", False
+    tier = [Tier(1, 10, "розница (цена штуки / вес)", 0.0, "тн")]
+    for r in range(sheet.nrows):
+        v = sheet.row_values(r) + [""] * 12
+        txt = [str(x).strip() for x in v]
+        for m in re.finditer(r"(\d{2})\.(\d{2})\.(\d{4})", " ".join(txt[:2])):
+            dates.append(datetime.date(int(m.group(3)), int(m.group(2)), int(m.group(1))))
+        if not txt[0] and txt[1] and not any(txt[2:11]):
+            section = txt[1]
+            sections.append(section)
+            skip = section.upper().startswith(METALLCITY_SKIP)
+            continue
+        if txt[0].upper().startswith(METALLCITY_SKIP):
+            skip = True
+        if skip or not txt[0] or txt[0].lower().startswith("сортамент"):
+            continue
+        weight, price = _cellnum(v[6]), _cellnum(v[10])
+        if not weight or not price:
+            continue
+        size = re.sub(r"\s*L\s*=\s*\d+", "", txt[3]).replace("*", "х").replace("№", "").strip()
+        length = _cellnum(txt[7])
+        m = re.search(r"L\s*=\s*(\d+)", txt[3])
+        if not length and m:
+            length = float(m.group(1)) / 1000.0
+        profile = txt[0]
+        if "оцинк" in txt[3].lower():
+            profile += " оцинкованная"
+        is_sheet = profile.lower().startswith("лист")
+        rows.append(PriceRow(
+            excel_row=r + 1, section=section, profile=profile, size=size, grade=txt[1],
+            length="" if is_sheet else (_num_str(length) if length else txt[7]),
+            weight=_num_str(weight), tiers=tier,
+            gross=[_num_str(round(price / weight * 1000.0, 2))]))
+    return rows, sections, sorted(set(dates))
+
+
+READERS = {"metallservice": None, "spk": read_price_spk, "metallcity": read_price_metallcity}
+
+
 def price_row_name(row):
     """Название строки для разборщика: вид часто стоит только в заголовке.
 
@@ -506,6 +658,11 @@ QUALIFIERS = [
     ("пвл", ("просечно",), "просечно-вытяжной"),
     ("бесшов", ("бесш",), "бесшовная труба"),
     ("б/ш", ("бесш",), "бесшовная труба"),
+    # СПК, МеталлСити (18.10.2026): холоднокатаный и износостойкий лист не должны
+    # лечь на горячекатаный гладкий.
+    ("х/к", ("х/к", "холодн"), "холоднокатаный"),
+    ("холоднокат", ("х/к", "холодн"), "холоднокатаный"),
+    ("износост", ("износ",), "износостойкий"),
 ]
 
 
@@ -571,6 +728,10 @@ GRADE_MAP = {
     "09Г2С": "09Г2С", "09Г2С12": "09Г2С", "СТ09Г2С": "09Г2С",
     "10ХСНД": "10ХСНД", "15ХСНД": "15ХСНД", "17Г1С": "17Г1С",
     "СТ20": "Ст20", "40Х": "40Х",
+    # СПК (18.10.2026): «ст3пс5/сп5», «ст3пс/сп» — сп или пс на выбор, как «Ст3сп\пс»;
+    # «09г2с-14/-15» — категория ударной вязкости, марка та же.
+    "СТ3ПС5СП5": "Ст3сп", "СТ3ПССП": "Ст3сп", "СТ3СП5": "Ст3сп", "СТ3ПС5": "Ст3пс",
+    "09Г2С14": "09Г2С", "09Г2С15": "09Г2С",
 }
 
 
@@ -999,7 +1160,8 @@ def read_params():
         tolerance=env_get("PMK_PRICE_TOLERANCE", "10"),
         apply=env_get("PMK_PRICE_APPLY") == "1",
         selftest=env_get("PMK_PRICE_SELFTEST") == "1",
-        match_dir=env_get("PMK_PRICE_MATCH", "/tmp/pmk_price_code"))
+        match_dir=env_get("PMK_PRICE_MATCH", "/tmp/pmk_price_code"),
+        format=env_get("PMK_PRICE_FORMAT", "metallservice"))
 
 
 def main():
@@ -1012,7 +1174,8 @@ def main():
     except ImportError:
         sys.exit("ОТКАЗ: рядом нет match.py (ищу в %s)" % par["match_dir"])
 
-    rows, sections, date_cells = read_price_xls(par["path"])
+    reader = READERS.get(par.get("format") or "metallservice") or read_price_xls
+    rows, sections, date_cells = reader(par["path"])
     if not par["date"]:
         sys.exit(
             "ОТКАЗ: дата прайса не задана. Угадывать нельзя: цены копятся "
