@@ -2,14 +2,14 @@
 <!-- Главная закупок (18.10.2026), purchase_home.js. Раскладка — как в показанном прототипе. -->
 <templates xml:space="preserve">
   <t t-name="pmk_purchase_home.Home">
-    <div class="o_action o_pmk_home o_pmk_purch">
+    <div class="o_action o_pmk_home o_pmk_purch" t-ref="root">
       <div t-if="state.loading and !state.data" class="o_pmk_home__muted">Загружаю…</div>
       <t t-else="">
         <div class="o_pmk_home__hd">
           <b t-esc="d.hello"/>
           <span><t t-esc="d.date"/> · Закупки</span>
           <button type="button" class="btn btn-link btn-sm o_pmk_home__refresh" title="Обновить"
-                  t-on-click="() => this.load()"><i class="fa fa-refresh" aria-hidden="true"/></button>
+                  t-on-click="() => this.load()"><i class="fa fa-refresh" t-att-class="{ 'fa-spin': state.loading }" aria-hidden="true"/></button>
         </div>
 
         <!-- Плитки -->
