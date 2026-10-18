@@ -12,7 +12,7 @@ import re
 
 from odoo import http
 from odoo.exceptions import AccessError, UserError
-from odoo.http import request
+from odoo.http import content_disposition, request
 
 from ..tools.imap_client import ImapError
 
@@ -55,6 +55,8 @@ class MailClientDownload(http.Controller):
         filename = _RE_UNSAFE.sub('_', message.subject or 'message')[:80].strip() or 'message'
         return request.make_response(raw, headers=[
             ('Content-Type', 'message/rfc822'),
-            ('Content-Disposition', 'attachment; filename="%s.eml"' % filename),
+            # Русская тема письма: заголовок HTTP — только латиница, имя кодирует
+            # content_disposition (RFC 5987), как у вложений в preview.py (ПМК, 18.10.2026).
+            ('Content-Disposition', content_disposition(filename + '.eml')),
             ('Content-Length', len(raw)),
         ])
