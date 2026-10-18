@@ -542,7 +542,7 @@ def read_price_spk(path):
                 excel_row=r_idx + 1, section=section, profile="Лист" + (
                     " х/к" if "х/к" in low else "") + (" износостойкий" if "износ" in low else ""),
                 size=size, grade=txt[2], length="", weight=_num_str(r[4]),
-                tiers=tiers, gross=[_num_str(v) for v in r[7:10]]))
+                tiers=tiers, gross=[_num_str(v) for v in r[7:11]]))
             continue
         w_m, w_piece = _cellnum(r[5]), _cellnum(r[4])
         length_m = _cellnum(re.sub(r"[^\d.,]", "", txt[1]).replace(",", ".")) if re.search(r"\d", txt[1]) else None
@@ -555,7 +555,7 @@ def read_price_spk(path):
         rows.append(PriceRow(
             excel_row=r_idx + 1, section=section, profile=_spaced_size(name), size="",
             grade=txt[2], length=length, weight=weight,
-            tiers=tiers, gross=[_num_str(v) for v in r[7:10]]))
+            tiers=tiers, gross=[_num_str(v) for v in r[7:11]]))
     return rows, sections, sorted(set(dates))
 
 
@@ -658,10 +658,10 @@ QUALIFIERS = [
     ("пвл", ("просечно",), "просечно-вытяжной"),
     ("бесшов", ("бесш",), "бесшовная труба"),
     ("б/ш", ("бесш",), "бесшовная труба"),
-    # СПК, МеталлСити (18.10.2026): холоднокатаный и износостойкий лист не должны
-    # лечь на горячекатаный гладкий.
-    ("х/к", ("х/к", "холодн"), "холоднокатаный"),
-    ("холоднокат", ("х/к", "холодн"), "холоднокатаный"),
+    # СПК (18.10.2026): износостойкий лист (NM450, Hardox) — не гладкий.
+    # ⚠️ «х/к» НЕ сторожим: отдельного холоднокатаного листа в справочнике нет,
+    # «Гладкий» 0,5–3 мм и есть х/к — с 21.09 цены Металлсервиса ложились так
+    # (сторож «х/к» 18.10 отбил 42 листа, снят).
     ("износост", ("износ",), "износостойкий"),
 ]
 
@@ -1299,7 +1299,11 @@ def main():
     made = Counter()
     for item, tmpl, variant, product in targets:
         for tier in [t for t in item.row.tiers if t.qty_from is not None]:
-            gross = Money(_num(item.row.gross[tier.column - 4]) or 0.0, book.price_unit)
+            # Цена уровня — по ПОРЯДКУ уровня (Tier.no), а не по колонке: колонки у
+            # поставщиков разные (Металлсервис 4–6, СПК 7–10, МеталлСити — одна).
+            idx = tier.no - 1
+            gross = Money((_num(item.row.gross[idx]) if idx < len(item.row.gross) else None) or 0.0,
+                          book.price_unit)
             if not gross.amount:
                 made["уровень без цены"] += 1
                 continue
