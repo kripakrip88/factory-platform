@@ -23,6 +23,11 @@
   color: var(--sh-ink);
 }
 
+// Прокрутка колёсиком (18.10.2026): штатное правило Odoo
+// `html .o_web_client > .o_action_manager > .o_action { overflow: hidden }` сильнее
+// `.o_pmk_home { overflow: auto }` — длинная главная обрезалась без прокрутки.
+html .o_web_client > .o_action_manager > .o_action.o_pmk_home { overflow: auto; }
+
 .o_pmk_home__muted { color: var(--sh-muted); font-size: 13px; }
 
 .o_pmk_home__hd {

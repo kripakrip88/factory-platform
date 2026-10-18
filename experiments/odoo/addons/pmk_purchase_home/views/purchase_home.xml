@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <!-- Главная закупок (18.10.2026). Первый пункт «Закупок» — щелчок по разделу открывает её. -->
+  <record id="action_purchase_home" model="ir.actions.client">
+    <field name="name">Главная</field>
+    <field name="tag">pmk_purchase_home</field>
+  </record>
+
+  <menuitem id="menu_purchase_home" name="Главная" parent="pmk_theme.menu_pmk_purchase"
+            action="action_purchase_home" sequence="1"/>
+</odoo>
