@@ -85,7 +85,7 @@ from collections import Counter, defaultdict, namedtuple
 # соседей по каталогу такой предохранитель есть, у него не было — приёмка это
 # и поймала: один неверный ключ -d, и прайс ложится в боевую базу.
 # Живая заливка разрешается только осознанно, переменной PMK_LIVE=1.
-REHEARSAL_DBS = ("odoo_rehearsal", "odoo_probe", "odoo_rollback", "odoo_rollback_adopt")
+REHEARSAL_DBS = ("odoo_rehearsal", "odoo_probe", "odoo_rollback", "odoo_rollback_adopt", "odoo_stage")
 _LIVE_OK = os.environ.get("PMK_LIVE") == "1"
 if env.cr.dbname not in REHEARSAL_DBS and not _LIVE_OK:  # noqa: F821
     sys.exit("ОТКАЗ: %r не копия. Цены репетируют на копии; для боевой заливки"
