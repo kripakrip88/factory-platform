@@ -29,6 +29,20 @@
               <button name="action_pmk_ai_check" type="object" string="Проверить связь" icon="fa-plug"
                       class="btn-secondary mt8"/>
             </setting>
+            <setting string="Лимит и расход" help="Расход за месяц виден всем внизу панели ассистента. Лимит исчерпан — новые вопросы не принимаются до следующего месяца.">
+              <div class="row mt8">
+                <label for="pmk_ai_budget" class="col-lg-4 o_light_label"/>
+                <field name="pmk_ai_budget"/>
+              </div>
+              <div class="row">
+                <label for="pmk_ai_price_in" class="col-lg-4 o_light_label"/>
+                <field name="pmk_ai_price_in"/>
+              </div>
+              <div class="row">
+                <label for="pmk_ai_price_out" class="col-lg-4 o_light_label"/>
+                <field name="pmk_ai_price_out"/>
+              </div>
+            </setting>
           </block>
         </app>
       </xpath>

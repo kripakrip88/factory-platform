@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Панель ассистента (18.10.2026), ai_panel.js. Раскладка — как в принятом прототипе. -->
+<templates xml:space="preserve">
+  <t t-name="pmk_ai.Panel">
+    <div class="o_pmk_ai">
+      <button type="button" class="o_pmk_ai__btn" t-att-class="{ 'o_pmk_ai__btn--on': state.open }"
+              title="Ассистент" t-on-click="toggle">✦ <span>Ассистент</span></button>
+      <div t-if="state.open" class="o_pmk_ai__pan" role="dialog" aria-label="Ассистент" t-att-style="'top:' + state.top + 'px'">
+        <div class="o_pmk_ai__hd">
+          <b>Ассистент</b>
+          <button type="button" class="btn btn-link btn-sm" title="Новый разговор" t-on-click="clear"><i class="fa fa-eraser"/></button>
+          <button type="button" class="btn btn-link btn-sm" title="Закрыть" t-on-click="toggle"><i class="fa fa-times"/></button>
+          <div t-if="contextLabel" class="o_pmk_ai__ctx" t-esc="contextLabel"/>
+        </div>
+        <div class="o_pmk_ai__list" t-ref="list" t-on-click="onClickAnswer">
+          <div t-if="!state.items.length" class="o_pmk_ai__hint">
+            Спросите про открытый документ или найдите нужное: «почему маржа минус?», «что по сделке с ДальСтрой?»,
+            «у кого дешевле уголок 63×5?», «какие заказы ждут металл?». Ассистент только читает — ничего не меняет сам.
+          </div>
+          <t t-foreach="state.items" t-as="item" t-key="item_index">
+            <div t-if="item.role === 'user'" class="o_pmk_ai__q" t-esc="item.text"/>
+            <div t-elif="item.error" class="o_pmk_ai__a o_pmk_ai__a--err" t-esc="item.text"/>
+            <div t-else="" class="o_pmk_ai__a">
+              <t t-out="item.html"/>
+              <div t-if="item.seconds" class="o_pmk_ai__src"><t t-esc="item.seconds"/> с</div>
+            </div>
+          </t>
+          <div t-if="state.busy" class="o_pmk_ai__a o_pmk_ai__typing">Думаю… ответ занимает 10–60 секунд</div>
+        </div>
+        <div class="o_pmk_ai__inp">
+          <textarea t-ref="input" rows="2" placeholder="Вопрос… (Enter — отправить)" t-model="state.text"
+                    t-on-keydown="onKey" t-att-disabled="state.busy"/>
+          <button type="button" class="btn btn-primary btn-sm" t-on-click="() => this.send()" t-att-disabled="state.busy">→</button>
+        </div>
+        <div class="o_pmk_ai__foot">
+          <t t-if="state.status and !state.status.configured">Ключ API не задан — «Настройки → Ассистент».</t>
+          <t t-else=""><t t-esc="usageText"/> · только чтение, ничего не меняет сам</t>
+        </div>
+      </div>
+    </div>
+  </t>
+</templates>

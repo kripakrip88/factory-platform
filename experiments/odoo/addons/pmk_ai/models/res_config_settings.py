@@ -15,6 +15,11 @@ class ResConfigSettings(models.TransientModel):
         "Адрес API", config_parameter="pmk_ai.api_base", default=claude.DEFAULT_BASE,
         help="Обычно https://api.anthropic.com. Если связь с сервера плохая — адрес ретранслятора.")
     pmk_ai_status = fields.Char("Последняя проверка", compute="_compute_pmk_ai_status")
+    # Расход (18.10.2026: «пусть сотрудники видят лимиты и расходы»): лимит месяца и цена
+    # токенов модели — для подсчёта в панели; тарифы Anthropic меняются, поэтому настройка.
+    pmk_ai_budget = fields.Float("Лимит в месяц, $", config_parameter="pmk_ai.budget", default=100.0)
+    pmk_ai_price_in = fields.Float("Цена входа, $ за 1 млн токенов", config_parameter="pmk_ai.price_in", default=3.0)
+    pmk_ai_price_out = fields.Float("Цена выхода, $ за 1 млн токенов", config_parameter="pmk_ai.price_out", default=15.0)
 
     def _compute_pmk_ai_status(self):
         status = self.env["ir.config_parameter"].sudo().get_param("pmk_ai.last_status") or "ещё не было"
