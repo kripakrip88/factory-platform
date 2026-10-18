@@ -7,10 +7,20 @@
               title="Ассистент" t-on-click="toggle">✦ <span>Ассистент</span></button>
       <div t-if="state.open" class="o_pmk_ai__pan" role="dialog" aria-label="Ассистент" t-att-style="'top:' + state.top + 'px'">
         <div class="o_pmk_ai__hd">
-          <b>Ассистент</b>
-          <button type="button" class="btn btn-link btn-sm" title="Новый разговор" t-on-click="clear"><i class="fa fa-eraser"/></button>
+          <b t-esc="state.threadName or 'Новый диалог'"/>
+          <button type="button" class="btn btn-link btn-sm" title="Мои диалоги" t-on-click="toggleList"><i class="fa fa-list"/></button>
+          <button type="button" class="btn btn-link btn-sm" title="Новый диалог" t-on-click="newThread"><i class="fa fa-plus"/></button>
           <button type="button" class="btn btn-link btn-sm" title="Закрыть" t-on-click="toggle"><i class="fa fa-times"/></button>
           <div t-if="contextLabel" class="o_pmk_ai__ctx" t-esc="contextLabel"/>
+        </div>
+        <div t-if="state.showList" class="o_pmk_ai__threads">
+          <div t-if="!state.threads.length" class="o_pmk_ai__hint">Диалогов пока нет.</div>
+          <div t-foreach="state.threads" t-as="t" t-key="t.id" class="o_pmk_ai__thread"
+               t-att-class="{ o_pmk_ai__thread_on: t.id === state.threadId }" t-on-click="() => this.openThread(t.id)">
+            <span class="n" t-esc="t.name"/>
+            <span class="m"><t t-esc="t.when"/> · <t t-esc="t.count"/> вопр.</span>
+            <a class="x" title="Убрать из списка" t-on-click.stop="() => this.archiveThread(t)">×</a>
+          </div>
         </div>
         <div class="o_pmk_ai__list" t-ref="list" t-on-click="onClickAnswer">
           <div t-if="!state.items.length" class="o_pmk_ai__hint">
@@ -19,9 +29,10 @@
           </div>
           <t t-foreach="state.items" t-as="item" t-key="item_index">
             <div t-if="item.role === 'user'" class="o_pmk_ai__q" t-esc="item.text"/>
+            <div t-elif="item.pending" class="o_pmk_ai__a o_pmk_ai__typing">Думаю… ответ занимает 10–60 секунд</div>
             <div t-elif="item.error" class="o_pmk_ai__a o_pmk_ai__a--err" t-esc="item.text"/>
             <div t-else="" class="o_pmk_ai__a">
-              <t t-out="item.html"/>
+              <t t-if="item.html" t-out="item.html"/>
               <div class="o_pmk_ai__src">
                 <t t-if="item.seconds"><t t-esc="item.seconds"/> с</t>
                 <span t-if="item.usage" class="o_pmk_ai__rate">
@@ -34,7 +45,7 @@
               </div>
             </div>
           </t>
-          <div t-if="state.busy" class="o_pmk_ai__a o_pmk_ai__typing">Думаю… ответ занимает 10–60 секунд</div>
+
         </div>
         <div class="o_pmk_ai__inp">
           <textarea t-ref="input" rows="2" placeholder="Вопрос… (Enter — отправить)" t-model="state.text"

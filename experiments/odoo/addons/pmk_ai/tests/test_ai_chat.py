@@ -32,11 +32,12 @@ class TestAiChat(TransactionCase):
             res = self.Chat._answer("тест", [], {})
         self.assertEqual(res["answer"], "Привет")
         payload = call.call_args[0][1]
-        self.assertIn("ПМК Парк", payload["system"], "Ядро знаний — в системной подсказке.")
+        self.assertIn("ПМК Парк", payload["system"][0]["text"], "Ядро знаний — в системной подсказке.")
+        self.assertEqual(payload["system"][0]["cache_control"], {"type": "ephemeral"}, "Ядро — с кэшем Anthropic.")
         self.assertEqual({t["name"] for t in payload["tools"]}, {"search_records", "summary", "read_record", "partner_overview", "supplier_prices"})
         usage = self.env["pmk.ai.usage"].search([], limit=1)
         self.assertEqual((usage.input_tokens, usage.output_tokens, usage.calls), (100, 20, 1))
-        self.assertAlmostEqual(usage.cost, (100 * 3 + 20 * 15) / 1e6, places=6)
+        self.assertAlmostEqual(usage.cost, (100 * 2 + 20 * 10) / 1e6, places=6, msg="Цена Sonnet 5.5: 2 / 10 $.")
 
     def test_tool_loop_reads_as_user(self):
         tool = ({"content": [{"type": "tool_use", "id": "t1", "name": "search_records",
@@ -53,8 +54,8 @@ class TestAiChat(TransactionCase):
     def test_screen_context_in_system(self):
         with patch.object(ai_chat.claude, "messages", return_value=_text("ок")) as call:
             self.Chat._answer("что это?", [], {"model": "res.partner", "id": self.partner.id})
-        self.assertIn("Открыт документ", call.call_args[0][1]["system"])
-        self.assertIn("ООО ДальТест (ассистент)", call.call_args[0][1]["system"])
+        self.assertIn("Открыт документ", call.call_args[0][1]["system"][1]["text"])
+        self.assertIn("ООО ДальТест (ассистент)", call.call_args[0][1]["system"][1]["text"])
 
     def test_budget_guard(self):
         self.env["ir.config_parameter"].sudo().set_param("pmk_ai.budget", "0")
@@ -111,29 +112,44 @@ class TestAiChat(TransactionCase):
 
     # ─── очередь и фоновый процесс (правило «не тормозить систему», 18.10) ──
     def test_queue_roundtrip(self):
-        queued = self.Chat.ask("вопрос в очередь", [{"role": "user", "text": "раньше"}], {"title": "СМ-1"})
+        queued = self.Chat.ask("первый вопрос", False, {"title": "СМ-1"})
         self.assertIn("request_id", queued, "Страница только ставит вопрос в очередь.")
+        thread = queued["thread_id"]
         self.assertEqual(self.Chat.poll(queued["request_id"])["state"], "queued")
-        again = self.Chat.ask("второй", [], {})
-        self.assertIn("ещё отвечает", again["error"], "У одного человека — один вопрос за раз.")
+        again = self.Chat.ask("второй в том же", thread, {})
+        self.assertIn("ещё отвечает", again["error"], "В одном диалоге — один вопрос за раз.")
+        parallel = self.Chat.ask("в другом диалоге", False, {})
+        self.assertIn("request_id", parallel, "Другой диалог — параллельно.")
         ids = self.Chat._worker_tick(4)
         self.assertIn(queued["request_id"], ids)
-        self.assertEqual(self.Chat.poll(queued["request_id"])["state"], "running")
-        with patch.object(ai_chat.claude, "messages", return_value=_text("Готово")) as call:
+        with patch.object(ai_chat.claude, "messages", return_value=_text("Ответ один")):
             self.Chat._process_request(queued["request_id"])
-        self.assertEqual(call.call_args[0][1]["messages"][0]["content"], "раньше", "История доехала.")
         done = self.Chat.poll(queued["request_id"])
-        self.assertEqual((done["state"], done["answer"]), ("done", "Готово"))
+        self.assertEqual((done["state"], done["answer"]), ("done", "Ответ один"))
         self.assertEqual(self.env["pmk.ai.usage"].search([], limit=1).screen, "СМ-1")
+        # продолжение диалога: история — с сервера
+        follow = self.Chat.ask("а подробнее?", thread, {})
+        self.Chat._worker_tick(4)
+        with patch.object(ai_chat.claude, "messages", return_value=_text("Подробно")) as call:
+            self.Chat._process_request(follow["request_id"])
+        sent = call.call_args[0][1]["messages"]
+        self.assertEqual([m["content"] for m in sent[:2]], ["первый вопрос", "Ответ один"])
+        msgs = self.Chat.thread_messages(thread)
+        self.assertEqual([i["role"] for i in msgs["items"]], ["user", "assistant", "user", "assistant"])
+        self.assertEqual(msgs["name"], "первый вопрос")
+        self.assertIn(thread, [t["id"] for t in self.Chat.threads()])
+        self.assertTrue(self.Chat.archive_thread(thread))
+        self.assertNotIn(thread, [t["id"] for t in self.Chat.threads()])
 
     def test_poll_only_own(self):
-        queued = self.Chat.ask("мой вопрос", [], {})
+        queued = self.Chat.ask("мой вопрос", False, {})
         other = new_test_user(self.env, login="pmk_ai_other", groups="base.group_user")
         self.assertEqual(self.Chat.with_user(other).poll(queued["request_id"])["state"], "error")
+        self.assertIn("error", self.Chat.with_user(other).thread_messages(queued["thread_id"]))
 
     def test_worker_not_running(self):
         self.env["ir.config_parameter"].sudo().set_param("pmk_ai.worker_alive", "0")
-        self.assertIn("не запущен", self.Chat.ask("тест", [], {})["error"])
+        self.assertIn("не запущен", self.Chat.ask("тест", False, {})["error"])
 
 
     def test_summary_and_stage_filter(self):

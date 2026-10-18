@@ -58,9 +58,13 @@ export class PmkAiPanel extends Component {
     setup() {
         this.orm = this.env.services.orm;
         this.action = this.env.services.action;
-        this.state = useState({ open: false, busy: false, items: [], status: null, text: "", context: null, top: 46 });
+        this.state = useState({
+            open: false, busy: false, items: [], status: null, text: "", context: null, top: 46,
+            threadId: false, threadName: "", threads: [], showList: false,
+        });
         this.input = useRef("input");
         this.list = useRef("list");
+        this.loaded = false;
     }
 
     currentContext() {
@@ -80,18 +84,92 @@ export class PmkAiPanel extends Component {
 
     async toggle() {
         this.state.open = !this.state.open;
-        if (this.state.open) {
-            // Панель — под всей шапкой (у нас она в две строки: разделы и пункты раздела).
-            const nav = document.querySelector(".o_navbar");
-            this.state.top = nav ? Math.round(nav.getBoundingClientRect().bottom) : 46;
-            this.state.context = this.currentContext();
-            this.state.status = await this.orm.call("pmk.ai.chat", "get_status", []);
-            setTimeout(() => this.input.el && this.input.el.focus(), 50);
+        if (!this.state.open) return;
+        // Панель — под всей шапкой (у нас она в две строки: разделы и пункты раздела).
+        const nav = document.querySelector(".o_navbar");
+        this.state.top = nav ? Math.round(nav.getBoundingClientRect().bottom) : 46;
+        this.state.context = this.currentContext();
+        if (!this.loaded) {
+            // Первое открытие во вкладке — последний диалог с сервера (после F5 и в новой вкладке).
+            this.loaded = true;
+            this.state.threads = await this.orm.call("pmk.ai.chat", "threads", []);
+            if (this.state.threads.length) {
+                await this.openThread(this.state.threads[0].id);
+            }
         }
+        if (!this.state.status) {
+            this.state.status = await this.orm.call("pmk.ai.chat", "get_status", []);
+        }
+        setTimeout(() => this.input.el && this.input.el.focus(), 50);
     }
 
     scrollDown() {
         setTimeout(() => { if (this.list.el) this.list.el.scrollTop = this.list.el.scrollHeight; }, 30);
+    }
+
+    toItems(raw) {
+        return raw.map((i) => (i.role === "assistant" && !i.error && !i.pending
+            ? { ...i, html: renderAnswer(i.text) } : i));
+    }
+
+    async openThread(threadId) {
+        const res = await this.orm.call("pmk.ai.chat", "thread_messages", [threadId]);
+        if (res.error) return;
+        this.state.threadId = res.id;
+        this.state.threadName = res.name;
+        this.state.status = res.status;
+        this.state.items = this.toItems(res.items);
+        this.state.showList = false;
+        this.scrollDown();
+        const pending = this.state.items.find((i) => i.pending);
+        if (pending) {
+            this.wait(pending.pending, res.id);
+        }
+    }
+
+    async toggleList() {
+        this.state.showList = !this.state.showList;
+        if (this.state.showList) {
+            this.state.threads = await this.orm.call("pmk.ai.chat", "threads", []);
+        }
+    }
+
+    newThread() {
+        this.state.threadId = false;
+        this.state.threadName = "";
+        this.state.items = [];
+        this.state.showList = false;
+        setTimeout(() => this.input.el && this.input.el.focus(), 50);
+    }
+
+    async archiveThread(thread) {
+        await this.orm.call("pmk.ai.chat", "archive_thread", [thread.id]);
+        this.state.threads = this.state.threads.filter((t) => t.id !== thread.id);
+        if (this.state.threadId === thread.id) this.newThread();
+    }
+
+    /** Ждать ответ вопроса из очереди; ответ кладётся в свой диалог, даже если открыт другой. */
+    async wait(requestId, threadId) {
+        this.state.busy = this.state.threadId === threadId;
+        let res;
+        const until = Date.now() + 4 * 60 * 1000;
+        do {
+            await new Promise((r) => setTimeout(r, 1500));
+            res = await this.orm.call("pmk.ai.chat", "poll", [requestId]);
+        } while ((res.state === "queued" || res.state === "running") && Date.now() < until);
+        if (res.state === "queued" || res.state === "running") {
+            res = { error: "Ответ задерживается — загляните позже: он сохранится в диалоге." };
+        }
+        this.state.status = res.status || this.state.status;
+        if (this.state.threadId !== threadId) return;   // открыт другой диалог — ответ подгрузится при возврате
+        const idx = this.state.items.findIndex((i) => i.pending === requestId);
+        const item = res.error
+            ? { role: "assistant", text: res.error, error: true }
+            : { role: "assistant", text: res.answer, html: renderAnswer(res.answer), seconds: res.seconds,
+                usage: res.usage_id, rated: false };
+        if (idx >= 0) this.state.items.splice(idx, 1, item); else this.state.items.push(item);
+        this.state.busy = false;
+        this.scrollDown();
     }
 
     async send(text) {
@@ -99,39 +177,26 @@ export class PmkAiPanel extends Component {
         if (!question || this.state.busy) return;
         this.state.text = "";
         if (this.input.el) this.input.el.value = "";   // t-model не сбрасывает поле, если вид не менялся
-        const history = this.state.items.filter((i) => !i.error).map((i) => ({ role: i.role, text: i.text }));
-        this.state.items.push({ role: "user", text: question });
-        this.state.busy = true;
         this.state.context = this.currentContext();
+        this.state.items.push({ role: "user", text: question });
         this.scrollDown();
         try {
-            // Вопрос — в очередь, ответ готовит фоновый процесс (правило «не тормозить систему»):
-            // страница не держит процесс Odoo, а раз в 1,5 с спрашивает, готово ли.
-            const queued = await this.orm.call("pmk.ai.chat", "ask", [question, history, this.state.context]);
+            // Вопрос — в очередь диалога, ответ готовит фоновый процесс (правило «не тормозить
+            // систему»): страница не держит процесс Odoo, а раз в 1,5 с спрашивает, готово ли.
+            const queued = await this.orm.call("pmk.ai.chat", "ask", [question, this.state.threadId, this.state.context]);
             this.state.status = queued.status || this.state.status;
-            let res = queued;
-            if (!queued.error) {
-                const until = Date.now() + 4 * 60 * 1000;
-                do {
-                    await new Promise((r) => setTimeout(r, 1500));
-                    res = await this.orm.call("pmk.ai.chat", "poll", [queued.request_id]);
-                } while ((res.state === "queued" || res.state === "running") && Date.now() < until);
-                if (res.state === "queued" || res.state === "running") {
-                    res = { error: "Ответ задерживается — загляните позже или повторите вопрос." };
-                }
-                this.state.status = res.status || this.state.status;
+            if (queued.error) {
+                this.state.items.push({ role: "assistant", text: queued.error, error: true });
+                this.scrollDown();
+                return;
             }
-            if (res.error) {
-                this.state.items.push({ role: "assistant", text: res.error, error: true });
-            } else {
-                this.state.items.push({ role: "assistant", text: res.answer, html: renderAnswer(res.answer),
-                                        seconds: res.seconds, usage: res.usage_id, rated: false });
-            }
+            this.state.threadId = queued.thread_id;
+            this.state.threadName = queued.thread_name;
+            this.state.items.push({ role: "assistant", pending: queued.request_id });
+            await this.wait(queued.request_id, queued.thread_id);
         } catch (e) {
             this.state.items.push({ role: "assistant", text: "Ошибка сервера — повторите.", error: true });
-        } finally {
             this.state.busy = false;
-            this.scrollDown();
         }
     }
 
@@ -161,14 +226,9 @@ export class PmkAiPanel extends Component {
         item.rated = rating;
     }
 
-    clear() {
-        this.state.items = [];
-    }
-
     get contextLabel() {
         const c = this.state.context;
-        if (!c) return "";
-        return c.title ? "видит: " + c.title : "";
+        return c && c.title ? "видит: " + c.title : "";
     }
 
     get usageText() {

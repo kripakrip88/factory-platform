@@ -38,7 +38,16 @@ STUCK_SEC = 300             # вопрос «в работе» дольше — 
 MAX_CALLS = 6               # вызовов API на вопрос; последний — без инструментов, только ответ
 TIME_BUDGET = 170           # секунд на вопрос: limit_time_real у Odoo — 240
 MAX_TOKENS = 2000
-HISTORY = 10                # последних реплик из браузера
+HISTORY = 6                 # последних пар «вопрос–ответ» диалога в историю для модели
+USER_INFLIGHT = 3           # вопросов в работе у одного человека (по разным диалогам)
+# Цены Anthropic, $ за 1 млн токенов: вход, выход, запись в кэш (5 мин), чтение из кэша.
+# Сверено с platform.claude.com/docs/en/about-claude/pricing 18.10.2026. Модель не из
+# таблицы — цены входа/выхода из «Настройки → Ассистент».
+MODEL_PRICES = {
+    "claude-sonnet-5-5": (2.0, 10.0, 2.5, 0.10),
+    "claude-opus-5-5": (4.0, 20.0, 5.0, 0.20),
+    "claude-haiku-5-5": (0.10, 0.50, 0.125, 0.01),
+}
 
 # Что ассистент может искать: ключ → модель, домен, подпись, поля строки, сумма, стадия, дата.
 # Поля строки — суммы, сроки, просрочка: без них выводы «по названиям» (разбор 18.10).
@@ -95,6 +104,20 @@ class PmkAiUsage(models.Model):
     feedback = fields.Text("Замечание")
 
 
+class PmkAiThread(models.Model):
+    _name = "pmk.ai.thread"
+    _description = "Ассистент: диалог"
+    _order = "last_date desc, id desc"
+
+    # Диалоги (Антон 18.10: «нужно чтоб подгружала и можно было вернуться к старому диалогу…
+    # менеджер может весь день вести диалог с ассистентом параллельно по нескольким вопросам»).
+    user_id = fields.Many2one("res.users", "Чей", required=True, index=True, ondelete="cascade")
+    name = fields.Char("Диалог", required=True)
+    last_date = fields.Datetime("Последний вопрос", index=True)
+    active = fields.Boolean(default=True)
+    request_ids = fields.One2many("pmk.ai.request", "thread_id", "Вопросы")
+
+
 class PmkAiRequest(models.Model):
     _name = "pmk.ai.request"
     _description = "Ассистент: вопрос в очереди"
@@ -110,6 +133,7 @@ class PmkAiRequest(models.Model):
     seconds = fields.Float("Секунд", digits=(10, 1))
     started = fields.Datetime("Начат")
     usage_id = fields.Many2one("pmk.ai.usage", "Расход", ondelete="set null")
+    thread_id = fields.Many2one("pmk.ai.thread", "Диалог", index=True, ondelete="cascade")
 
 
 class PmkAiChat(models.AbstractModel):
@@ -139,10 +163,16 @@ class PmkAiChat(models.AbstractModel):
                 "month": months[fields.Date.context_today(self).month - 1],
                 "over": spent >= budget}
 
-    def _cost(self, usage):
-        pin = float(self._param("pmk_ai.price_in", "3") or 3)
-        pout = float(self._param("pmk_ai.price_out", "15") or 15)
-        return (usage.get("input_tokens", 0) * pin + usage.get("output_tokens", 0) * pout) / 1e6
+    def _cost(self, usage, model=None):
+        prices = MODEL_PRICES.get(model or "")
+        if not prices:
+            pin = float(self._param("pmk_ai.price_in", "2") or 2)
+            pout = float(self._param("pmk_ai.price_out", "10") or 10)
+            prices = (pin, pout, pin * 1.25, pin * 0.05)
+        pin, pout, pwrite, pread = prices
+        return (usage.get("input_tokens", 0) * pin + usage.get("output_tokens", 0) * pout
+                + usage.get("cache_creation_input_tokens", 0) * pwrite
+                + usage.get("cache_read_input_tokens", 0) * pread) / 1e6
 
     # ─── системная подсказка ────────────────────────────────────────────
     def _knowledge(self):
@@ -155,6 +185,8 @@ class PmkAiChat(models.AbstractModel):
         return "\n\n".join(parts)
 
     def _system(self, context):
+        """Два блока: постоянный (знания + формат) — с кэшем Anthropic, повтор стоит 5 % цены
+        входа; переменный (дата, кто спрашивает, открытый экран) — без кэша."""
         today = fields.Date.context_today(self)
         screen = ""
         if context and context.get("model") and context.get("id"):
@@ -162,13 +194,14 @@ class PmkAiChat(models.AbstractModel):
             screen = "\n\n## Открыт документ\n" + json.dumps(brief, ensure_ascii=False)
         elif context and context.get("title"):
             screen = "\n\n## Открыт экран\n" + _text(context.get("title"), 120)
-        return (self._knowledge()
-                + "\n\n## Сейчас\nСегодня %s. Спрашивает: %s." % (today.strftime("%d.%m.%Y"), self.env.user.name)
+        static = (self._knowledge()
                 + "\n\n## Формат ответа\nMarkdown: **жирный**, списки «- », таблицы «| … |» (не шире 4 колонок — панель узкая). Ссылку на документ пиши так: "
                   "[СД-0112](rec:crm.lead:12) — модель и id бери из результатов инструментов. "
                   "Инструменты только читают: если нужно что-то создать или изменить — опиши, что "
-                  "нажать человеку. Не выдумывай данных: нет в инструментах — так и скажи."
-                + screen)
+                  "нажать человеку. Не выдумывай данных: нет в инструментах — так и скажи.")
+        now = "## Сейчас\nСегодня %s. Спрашивает: %s." % (today.strftime("%d.%m.%Y"), self.env.user.name) + screen
+        return [{"type": "text", "text": static, "cache_control": {"type": "ephemeral"}},
+                {"type": "text", "text": now}]
 
     # ─── чтение записей (права спросившего) ─────────────────────────────
     def _form_fields(self, Model):
@@ -469,8 +502,9 @@ class PmkAiChat(models.AbstractModel):
 
     # ─── вопрос ─────────────────────────────────────────────────────────
     @api.model
-    def ask(self, question, history=None, context=None):
-        """Поставить вопрос в очередь → {request_id} или {error}. Процесс Odoo не ждёт ответа."""
+    def ask(self, question, thread_id=False, context=None):
+        """Поставить вопрос в очередь диалога → {request_id, thread_id} или {error}.
+        Процесс Odoo ответа не ждёт; история — из сохранённого диалога на сервере."""
         question = (question or "").strip()
         if not question:
             raise UserError(_("Пустой вопрос."))
@@ -483,13 +517,61 @@ class PmkAiChat(models.AbstractModel):
                              "«Настройки → Ассистент»." % (status["spent"], status["budget"]), "status": status}
         if not self._worker_alive():
             return {"error": "Фоновый процесс ассистента не запущен — сообщите администратору.", "status": status}
+        Thread = self.env["pmk.ai.thread"].sudo()
         Request = self.env["pmk.ai.request"].sudo()
-        if Request.search_count([("user_id", "=", self.env.uid), ("state", "in", ("queued", "running"))]):
-            return {"error": "Ассистент ещё отвечает на ваш предыдущий вопрос.", "status": status}
-        req = Request.create({"user_id": self.env.uid, "question": question,
-                              "history": json.dumps((history or [])[-HISTORY:], ensure_ascii=False),
+        thread = Thread.browse(int(thread_id)).exists() if thread_id and not isinstance(thread_id, (dict, list)) else Thread
+        if thread and thread.user_id != self.env.user:
+            thread = Thread
+        busy = Request.search([("user_id", "=", self.env.uid), ("state", "in", ("queued", "running"))])
+        if thread and busy.filtered(lambda r: r.thread_id == thread):
+            return {"error": "В этом диалоге ассистент ещё отвечает — подождите или начните новый диалог.",
+                    "status": status}
+        if len(busy) >= USER_INFLIGHT:
+            return {"error": "У вас уже %d вопроса в работе — дождитесь ответа." % len(busy), "status": status}
+        now = fields.Datetime.now()
+        if not thread:
+            thread = Thread.create({"user_id": self.env.uid, "name": _text(question, 60), "last_date": now})
+        else:
+            thread.last_date = now
+        req = Request.create({"user_id": self.env.uid, "question": question, "thread_id": thread.id,
                               "context_json": json.dumps(context or {}, ensure_ascii=False)})
-        return {"request_id": req.id, "status": status}
+        return {"request_id": req.id, "thread_id": thread.id, "thread_name": thread.name, "status": status}
+
+    @api.model
+    def threads(self):
+        """Мои диалоги — для списка в панели."""
+        out = []
+        for t in self.env["pmk.ai.thread"].sudo().search([("user_id", "=", self.env.uid)], limit=40):
+            when = fields.Datetime.context_timestamp(self, t.last_date) if t.last_date else None
+            out.append({"id": t.id, "name": t.name, "count": len(t.request_ids),
+                        "when": when.strftime("%d.%m %H:%M") if when else ""})
+        return out
+
+    @api.model
+    def thread_messages(self, thread_id):
+        """Реплики диалога по порядку; вопрос в работе — с request_id, чтобы панель дождалась ответа."""
+        thread = self.env["pmk.ai.thread"].sudo().browse(int(thread_id)).exists()
+        if not thread or thread.user_id != self.env.user:
+            return {"error": "Диалог не найден."}
+        items = []
+        for req in thread.request_ids.sorted("id"):
+            items.append({"role": "user", "text": req.question})
+            if req.state == "done":
+                items.append({"role": "assistant", "text": req.answer or "", "seconds": round(req.seconds, 1),
+                              "usage": req.usage_id.id, "rated": req.usage_id.rating or False})
+            elif req.state == "error":
+                items.append({"role": "assistant", "text": req.answer or "Ошибка.", "error": True})
+            else:
+                items.append({"role": "assistant", "pending": req.id})
+        return {"id": thread.id, "name": thread.name, "items": items, "status": self.get_status()}
+
+    @api.model
+    def archive_thread(self, thread_id):
+        thread = self.env["pmk.ai.thread"].sudo().browse(int(thread_id)).exists()
+        if thread and thread.user_id == self.env.user:
+            thread.active = False
+            return True
+        return False
 
     @api.model
     def poll(self, request_id):
@@ -548,10 +630,15 @@ class PmkAiChat(models.AbstractModel):
         if not req or req.state != "running":
             return
         try:
-            history = json.loads(req.history or "[]")
             context = json.loads(req.context_json or "{}")
         except ValueError:
-            history, context = [], {}
+            context = {}
+        # История — из сохранённого диалога: последние HISTORY пар «вопрос–ответ» до этого вопроса.
+        history = []
+        if req.thread_id:
+            before = req.thread_id.request_ids.filtered(lambda r: r.id < req.id and r.state == "done").sorted("id")
+            for prev in before[-HISTORY:]:
+                history += [{"role": "user", "text": prev.question}, {"role": "assistant", "text": prev.answer or ""}]
         chat = self.with_user(req.user_id).with_context(lang=req.user_id.lang or "ru_RU",
                                                          tz=req.user_id.tz or "Asia/Vladivostok")
         try:
@@ -575,14 +662,15 @@ class PmkAiChat(models.AbstractModel):
     def _answer(self, question, history=None, context=None):
         """Сам ответ: Claude + инструменты. Зовёт фоновый процесс, не страница."""
         messages = []
-        for item in (history or [])[-HISTORY:]:
+        for item in (history or [])[-2 * HISTORY:]:
             if item.get("role") in ("user", "assistant") and item.get("text"):
                 messages.append({"role": item["role"], "content": _text(item["text"], 4000)})
         messages.append({"role": "user", "content": question})
         model = self._param("pmk_ai.model") or claude.DEFAULT_MODEL
         payload = {"model": model, "max_tokens": MAX_TOKENS, "system": self._system(context or {}),
                    "tools": self._tools(), "messages": messages}
-        totals = {"input_tokens": 0, "output_tokens": 0}
+        totals = {"input_tokens": 0, "output_tokens": 0, "cache_creation_input_tokens": 0,
+                  "cache_read_input_tokens": 0}
         started, calls, answer, error = time.time(), 0, "", ""
         try:
             while calls < MAX_CALLS:
@@ -612,7 +700,7 @@ class PmkAiChat(models.AbstractModel):
         usage = self.env["pmk.ai.usage"].sudo().create({
             "user_id": self.env.uid, "question": _text(question, 200), "model": model, "calls": calls,
             "input_tokens": totals["input_tokens"], "output_tokens": totals["output_tokens"],
-            "cost": self._cost(totals), "seconds": seconds, "ok": bool(answer) and not error,
+            "cost": self._cost(totals, model), "seconds": seconds, "ok": bool(answer) and not error,
             "answer": error or answer, "screen": _text((context or {}).get("title") or "", 120)})
         result = {"seconds": round(seconds, 1), "usage_id": usage.id}
         if error:

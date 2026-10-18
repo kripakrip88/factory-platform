@@ -131,3 +131,21 @@ body.o_nexus_dark .o_pmk_ai {
   margin-left: 8px;
   a { cursor: pointer; text-decoration: none !important; margin-right: 4px; opacity: 0.6; &:hover { opacity: 1; } }
 }
+.o_pmk_ai__threads {
+  border-bottom: 1px solid var(--ai-bd);
+  max-height: 45%;
+  overflow: auto;
+  padding: 4px 0;
+}
+.o_pmk_ai__thread {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0 8px;
+  padding: 5px 14px;
+  cursor: pointer;
+  .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+  .m { grid-column: 1; font-size: 11px; color: var(--ai-mut); }
+  .x { grid-row: 1 / 3; grid-column: 2; align-self: center; color: var(--ai-mut); opacity: 0; text-decoration: none; }
+  &:hover { background: var(--ai-bg); .x { opacity: 1; } }
+}
+.o_pmk_ai__thread_on { background: var(--ai-lime); }
