@@ -274,7 +274,7 @@ class PriceBook(object):
     """
 
     def __init__(self, path, supplier_id, date, vat_rate=22.0, currency="RUB",
-                 price_unit=RUB_T, mass_tolerance_pct=10.0, supplier_name=""):
+                 price_unit=RUB_T, mass_tolerance_pct=10.0, supplier_name="", own_mass=False):
         self.path = path
         self.supplier_id = int(supplier_id)
         self.supplier_name = supplier_name
@@ -283,6 +283,9 @@ class PriceBook(object):
         self.currency = currency
         self.price_unit = price_unit          # в чём цены в файле по умолчанию
         self.mass_tolerance_pct = float(mass_tolerance_pct)
+        # А ГРУПП (18.10.2026): в прайсе нет ни веса, ни длины — масса единицы из
+        # НАШЕГО справочника. Включается явно; строки с весом всё равно сверяются.
+        self.own_mass = bool(own_mass)
 
     def describe(self):
         return [
@@ -293,6 +296,7 @@ class PriceBook(object):
             ("валюта", self.currency),
             ("единица цены в файле", self.price_unit),
             ("допуск расхождения массы", "%.6g %%" % self.mass_tolerance_pct),
+            ("масса без веса в прайсе", "из справочника" if self.own_mass else "строка отбивается"),
         ]
 
 
@@ -608,7 +612,53 @@ def read_price_metallcity(path):
     return rows, sections, sorted(set(dates))
 
 
-READERS = {"metallservice": None, "spk": read_price_spk, "metallcity": read_price_metallcity}
+TABLE_NAMES = [
+    (r"^угол\b", "Уголок"),
+    (r"^труба\s+э/с", "Труба эл/св"),
+    (r"^профиль замкнутый сварной", "Труба профильная"),
+]
+
+
+def read_price_table(path):
+    """Таблица, разобранная из PDF заранее (scratchpad/prices/*_pdf.py → CSV): section,
+    profile, size, grade, length, weight, tier, price (руб/т с НДС). Один уровень объёма."""
+    import csv as _csv
+    rows, sections, skipped = [], [], []
+    tier = [Tier(1, 0, "розница", 0.0, "тн")]
+    with open(path, encoding="utf-8") as f:
+        for no, rec in enumerate(_csv.DictReader(f), start=2):
+            profile = rec["profile"].strip()
+            # Арматура в справочнике одна на диаметр (ГОСТ 34028), класс не различаем.
+            # Берём А500С — её покупаем; гладкая А240 и 25Г2С при склейке дублей
+            # (большая цена) завысили бы себестоимость.
+            if profile.lower().startswith("арматура") and "А500" not in rec.get("grade", "").upper():
+                skipped.append(no)
+                continue
+            section = rec["section"]
+            if profile.lower().startswith("арматура"):
+                # «Арматура А3 (рифленая)»: А500С рифлёная по ГОСТ 34028, а слово
+                # «рифл» сторож признаков ждёт только у рифлёного листа.
+                section = re.sub(r"\s*\(рифл[^)]*\)", "", section, flags=re.I)
+            for pat, repl in TABLE_NAMES:
+                profile = re.sub(pat, repl, profile, flags=re.I)
+            size = re.sub(r"^d\s*", "", rec["size"].strip(), flags=re.I)
+            if profile.lower().startswith("полоса"):
+                size = re.sub(r"(\d+),0\b", r"\1", size)       # «40,0 х 4» -> «40 х 4»
+            if "х/к" in rec["section"].lower() and "х/к" not in profile.lower():
+                profile += " х/к"
+            if section not in sections:
+                sections.append(section)
+            rows.append(PriceRow(excel_row=no, section=section, profile=profile, size=size,
+                                 grade=rec.get("grade", ""), length=rec.get("length", ""),
+                                 weight=rec.get("weight", ""), tiers=tier, gross=[rec["price"]]))
+    if skipped:
+        print("  читалка: пропущена арматура не А500С (гладкая А240, 25Г2С) — %d строк: %s"
+              % (len(skipped), ", ".join(map(str, skipped))))
+    return rows, sections, []
+
+
+READERS = {"metallservice": None, "spk": read_price_spk, "metallcity": read_price_metallcity,
+           "table": read_price_table}
 
 
 def price_row_name(row):
@@ -732,6 +782,8 @@ GRADE_MAP = {
     # «09г2с-14/-15» — категория ударной вязкости, марка та же.
     "СТ3ПС5СП5": "Ст3сп", "СТ3ПССП": "Ст3сп", "СТ3СП5": "Ст3сп", "СТ3ПС5": "Ст3пс",
     "09Г2С14": "09Г2С", "09Г2С15": "09Г2С",
+    # А ГРУПП (18.10.2026): «Ст3/С255» — С255 по ГОСТ 27772 и есть Ст3сп5.
+    "СТ3С255": "Ст3сп", "С255": "Ст3сп",
 }
 
 
@@ -861,7 +913,6 @@ def prepare(rows, matcher, book):
                     "«%s» — значит и цена в разделе не за тонну, а угадывать "
                     "нельзя" % bad[0].label)
             check_qualifiers(row, item)
-            mass = row_mass(row, is_sheet)
             ours = item.get("mass") or 0.0
             if is_sheet:
                 gab = sheet_gabarit(row.size)
@@ -872,6 +923,13 @@ def prepare(rows, matcher, book):
                 ours = ours * (w * l / 1e6)    # кг/м² -> кг в листе
             else:
                 gab = None
+            if book.own_mass and not (row.weight or "").strip():
+                if not ours:
+                    raise PriceRowError("нет массы ни в прайсе, ни в справочнике",
+                                        "пересчитывать руб/т в руб/ед. не из чего")
+                mass = ours
+            else:
+                mass = row_mass(row, is_sheet)
             dev = check_mass(mass, ours, book.mass_tolerance_pct,
                              "строка отбита, нужен человек")
             gross = Money(_num(row.gross[0]) or 0.0, book.price_unit)
@@ -1185,7 +1243,8 @@ def main():
     book = PriceBook(
         path=par["path"], supplier_id=par["supplier"],
         date=datetime.date(*[int(x) for x in par["date"].split("-")]),
-        vat_rate=par["vat"], mass_tolerance_pct=par["tolerance"])
+        vat_rate=par["vat"], mass_tolerance_pct=par["tolerance"],
+        own_mass=os.environ.get("PMK_PRICE_OWN_MASS") == "1")
 
     env = ODOO
     if env is not None:
