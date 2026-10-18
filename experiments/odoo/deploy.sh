@@ -158,4 +158,10 @@ docker compose start odoo >/dev/null 2>&1
 if [ -n "$(docker compose ps -q nest-worker 2>/dev/null)" ]; then
   docker compose restart nest-worker >/dev/null 2>&1 && echo "→ расчётчик перезапущен"
 fi
+# Фоновый процесс ассистента (18.10.2026): держит код pmk_ai в памяти — перезапуск; первый
+# раз — поднять (сервис описан в docker-compose.yml).
+if grep -q "ai-worker:" docker-compose.yml; then
+  docker compose up -d --no-deps ai-worker >/dev/null 2>&1
+  docker compose restart ai-worker >/dev/null 2>&1 && echo "→ ассистент (фон) перезапущен"
+fi
 echo "→ готово"

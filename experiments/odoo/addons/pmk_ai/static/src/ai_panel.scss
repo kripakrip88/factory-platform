@@ -127,3 +127,7 @@ body.o_nexus_dark .o_pmk_ai {
   th { font-weight: 600; text-align: left; border-bottom: 1px solid var(--ai-bd); padding: 2px 4px; }
   td { border-bottom: 1px solid var(--ai-bd); padding: 2px 4px; }
 }
+.o_pmk_ai__rate {
+  margin-left: 8px;
+  a { cursor: pointer; text-decoration: none !important; margin-right: 4px; opacity: 0.6; &:hover { opacity: 1; } }
+}

@@ -113,6 +113,29 @@ services:
     mem_limit: 3g
     cpus: 3.0
 
+  # Фоновый процесс ассистента (18.10.2026, правило Антона «доработка не должна замедлять
+  # систему»): вопрос к Claude идёт 10–60 с — страница только ставит его в очередь
+  # (pmk.ai.request), отвечает этот контейнер, до 4 вопросов сразу. Тот же образ Odoo:
+  # инструменты читают базу с правами спросившего.
+  ai-worker:
+    image: odoo-ru:19.0-20261006
+    container_name: odoo-ai-worker
+    restart: unless-stopped
+    depends_on:
+      - db
+    entrypoint: ["sh", "-c", "odoo shell -c /etc/odoo/odoo.conf -d odoo --db_host=$$HOST --db_user=$$USER --db_password=$$PASSWORD --no-http < /mnt/third-party/pmk_ai/worker/ai_worker.py"]
+    environment:
+      HOST: db
+      USER: ${ODOO_DB_USER}
+      PASSWORD: ${ODOO_DB_PASSWORD}
+    volumes:
+      - odoo_data:/var/lib/odoo
+      - ./odoo.conf:/etc/odoo/odoo.conf:ro
+      - ${RUODOO_SRC:?не задан RUODOO_SRC}:/mnt/extra-addons:ro
+      - ${EXTRA_ADDONS:-/opt/experiments/odoo/addons-extra}:/mnt/third-party:ro
+    mem_limit: 768m
+    cpus: 1.0
+
 volumes:
   odoo_db_data:
   odoo_data:

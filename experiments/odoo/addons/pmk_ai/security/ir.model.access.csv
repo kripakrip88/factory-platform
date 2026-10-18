@@ -1,3 +1,4 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_pmk_ai_usage_user,pmk.ai.usage user,model_pmk_ai_usage,base.group_user,1,0,0,0
 access_pmk_ai_usage_admin,pmk.ai.usage admin,model_pmk_ai_usage,base.group_system,1,1,1,1
+access_pmk_ai_request_admin,pmk.ai.request admin,model_pmk_ai_request,base.group_system,1,1,1,1

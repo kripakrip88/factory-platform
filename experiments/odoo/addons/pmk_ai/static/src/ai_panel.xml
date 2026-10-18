@@ -22,7 +22,16 @@
             <div t-elif="item.error" class="o_pmk_ai__a o_pmk_ai__a--err" t-esc="item.text"/>
             <div t-else="" class="o_pmk_ai__a">
               <t t-out="item.html"/>
-              <div t-if="item.seconds" class="o_pmk_ai__src"><t t-esc="item.seconds"/> с</div>
+              <div class="o_pmk_ai__src">
+                <t t-if="item.seconds"><t t-esc="item.seconds"/> с</t>
+                <span t-if="item.usage" class="o_pmk_ai__rate">
+                  <t t-if="!item.rated">
+                    <a title="Хороший ответ" t-on-click="() => this.rate(item, 'good')">👍</a>
+                    <a title="Плохой ответ — напишите, что не так" t-on-click="() => this.rate(item, 'bad')">👎</a>
+                  </t>
+                  <t t-else="">спасибо, учтём</t>
+                </span>
+              </div>
             </div>
           </t>
           <div t-if="state.busy" class="o_pmk_ai__a o_pmk_ai__typing">Думаю… ответ занимает 10–60 секунд</div>

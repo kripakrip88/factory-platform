@@ -105,12 +105,27 @@ export class PmkAiPanel extends Component {
         this.state.context = this.currentContext();
         this.scrollDown();
         try {
-            const res = await this.orm.call("pmk.ai.chat", "ask", [question, history, this.state.context]);
-            this.state.status = res.status || this.state.status;
+            // Вопрос — в очередь, ответ готовит фоновый процесс (правило «не тормозить систему»):
+            // страница не держит процесс Odoo, а раз в 1,5 с спрашивает, готово ли.
+            const queued = await this.orm.call("pmk.ai.chat", "ask", [question, history, this.state.context]);
+            this.state.status = queued.status || this.state.status;
+            let res = queued;
+            if (!queued.error) {
+                const until = Date.now() + 4 * 60 * 1000;
+                do {
+                    await new Promise((r) => setTimeout(r, 1500));
+                    res = await this.orm.call("pmk.ai.chat", "poll", [queued.request_id]);
+                } while ((res.state === "queued" || res.state === "running") && Date.now() < until);
+                if (res.state === "queued" || res.state === "running") {
+                    res = { error: "Ответ задерживается — загляните позже или повторите вопрос." };
+                }
+                this.state.status = res.status || this.state.status;
+            }
             if (res.error) {
                 this.state.items.push({ role: "assistant", text: res.error, error: true });
             } else {
-                this.state.items.push({ role: "assistant", text: res.answer, html: renderAnswer(res.answer), seconds: res.seconds });
+                this.state.items.push({ role: "assistant", text: res.answer, html: renderAnswer(res.answer),
+                                        seconds: res.seconds, usage: res.usage_id, rated: false });
             }
         } catch (e) {
             this.state.items.push({ role: "assistant", text: "Ошибка сервера — повторите.", error: true });
@@ -133,6 +148,17 @@ export class PmkAiPanel extends Component {
         ev.preventDefault();
         this.action.doAction({ type: "ir.actions.act_window", res_model: a.dataset.model,
                                res_id: Number(a.dataset.id), views: [[false, "form"]], target: "current" });
+    }
+
+    /** 👍/👎 под ответом; к 👎 — что не так (уходит на разбор, правила — в knowledge/90_remarks.md). */
+    async rate(item, rating) {
+        if (!item.usage || item.rated) return;
+        let note = "";
+        if (rating === "bad") {
+            note = window.prompt("Что не так в ответе? Это попадёт в разбор и обучение ассистента.", "") || "";
+        }
+        await this.orm.call("pmk.ai.chat", "rate", [item.usage, rating, note]);
+        item.rated = rating;
     }
 
     clear() {
