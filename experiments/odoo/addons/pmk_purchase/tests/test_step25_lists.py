@@ -143,6 +143,8 @@ class TestPurchaseListsStep25(TransactionCase):
                 names = [f.get("name") for f in arch.xpath("/list/field")]
                 self.assertEqual(names.index("pmk_bar_length_mm") + 1, names.index("price"),
                                  "Длина хлыста — рядом с ценой.")
+                # Свежие прайсы сверху (Антон 19.10.2026).
+                self.assertTrue(arch.get("default_order", "").startswith("date_start desc"))
                 length = self._one(arch, "pmk_bar_length_mm")
                 self.assertEqual(length.get("optional"), "show")
                 # Список правится в строке: скрытая ячейка скрывала и поле

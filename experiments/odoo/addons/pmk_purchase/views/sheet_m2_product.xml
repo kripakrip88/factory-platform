@@ -56,6 +56,12 @@
     <field name="model">product.supplierinfo</field>
     <field name="inherit_id" ref="pmk_purchase.product_supplierinfo_tree_view2_pmk"/>
     <field name="arch" type="xml">
+      <!-- Сверху — свежие прайсы (Антон 19.10.2026): одна цена на позицию в
+           прайсе, и по датам сразу видно, что действует и как менялась цена.
+           Ядро сортирует по уровню и цене — у нас уровень всегда 1. -->
+      <xpath expr="/list" position="attributes">
+        <attribute name="default_order">date_start desc, partner_id, product_uom_id</attribute>
+      </xpath>
       <xpath expr="//field[@name='min_qty']" position="attributes">
         <attribute name="column_invisible">1</attribute>
       </xpath>
