@@ -569,3 +569,65 @@ class TestTelegramOutbox(TestTelegramGroup):
         rec.invalidate_recordset()
         self.Outbox._cron_flush()
         self.assertEqual(rec.state, "dead")
+
+
+@tagged("post_install", "-at_install")
+class TestTelegramReviewNotice(TestTelegramDevTask):
+    """Карточка доски → «Выложено — проверить» — автору в личку."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.stage_review = cls.env["project.task.type"].create(
+            {"name": "Выложено — проверить", "sequence": 3, "project_ids": [(4, cls.project.id)]})
+        cls.mover = cls.env["res.users"].create({
+            "name": "Кто переносит", "login": "tg_mover",
+            "group_ids": [(4, cls.env.ref("project.group_project_manager").id)]})
+
+    def _task_by_author(self, desc=""):
+        return self.env["project.task"].with_user(self.user).sudo().create({
+            "name": "Кнопка «Печать» не видна", "project_id": self.project.id,
+            "stage_id": self.stage_new.id, "description": desc})
+
+    def test_author_notified_with_what_to_check(self):
+        task = self._task_by_author(
+            "<p><b>Что сделано</b>: правка</p><p><b>Что проверить</b>: открыть расчёт на узком экране</p>"
+            "<p><b>Итог проверки</b>: ещё нет</p>")
+        task.with_user(self.mover).stage_id = self.stage_review
+        chat, text, markup = self.api.sent[-1]
+        self.assertEqual(chat, str(CHAT))
+        self.assertIn("Готово к проверке", text)
+        self.assertIn("открыть расчёт на узком экране", text)
+        self.assertNotIn("ещё нет", text)
+        self.assertIn("Открыть задачу", markup["inline_keyboard"][0][0]["text"])
+
+    def test_author_moving_own_task_not_notified(self):
+        task = self._task_by_author()
+        n = len(self.api.sent)
+        task.with_user(self.user).sudo().stage_id = self.stage_review
+        self.assertEqual(len(self.api.sent), n)
+
+    def test_other_stage_not_notified(self):
+        task = self._task_by_author()
+        n = len(self.api.sent)
+        task.with_user(self.mover).stage_id = self.stage_new.search(
+            [("name", "=", "В работе"), ("project_ids", "in", self.project.id)])
+        self.assertEqual(len(self.api.sent), n)
+
+    def test_author_without_telegram_not_notified(self):
+        task = self._task_by_author()
+        self.user.pmk_telegram_id = False
+        n = len(self.api.sent)
+        task.with_user(self.mover).stage_id = self.stage_review
+        self.assertEqual(len(self.api.sent), n)
+
+    def test_network_down_personal_message_queued(self):
+        task = self._task_by_author()
+        self.api.down = True
+        task.with_user(self.mover).stage_id = self.stage_review
+        rec = self.env["pmk.telegram.outbox"].search([("chat_id", "=", str(CHAT))])
+        self.assertEqual(rec.state, "pending")
+        self.api.down = False
+        self.env["pmk.telegram.outbox"]._cron_flush()
+        self.assertEqual(rec.state, "sent")
+        self.assertIn("Готово к проверке", self.api.sent[-1][1])

@@ -6,3 +6,4 @@ from . import session
 from . import bot
 from . import carousel
 from . import outbox
+from . import project_task

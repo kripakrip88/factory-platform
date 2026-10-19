@@ -35,6 +35,8 @@ class PmkTelegramOutbox(models.Model):
                               ("dead", "Не отправлено")], default="pending", required=True,
                              index=True)
     kind = fields.Char("Вид уведомления", default="main")
+    # Личное сообщение человеку (не в группу): его Telegram ID.
+    chat_id = fields.Char("Кому (личка)")
     text = fields.Text("Текст")
     markup = fields.Text("Кнопки (JSON)")
     file_ids = fields.Many2many("ir.attachment", string="Файлы")
@@ -47,12 +49,12 @@ class PmkTelegramOutbox(models.Model):
         return self.search_count([("state", "=", "pending")]) > 0
 
     @api.model
-    def pmk_enqueue(self, text, files, markup, kind):
+    def pmk_enqueue(self, text, files, markup, kind, chat_id=None):
         files = files or []
         atts = self.env["ir.attachment"].sudo().create([{
             "name": name, "raw": raw, "res_model": self._name} for name, raw in files])
         rec = self.sudo().create({
-            "kind": kind, "text": text, "file_ids": [(6, 0, atts.ids)],
+            "kind": kind, "text": text, "file_ids": [(6, 0, atts.ids)], "chat_id": chat_id or False,
             "markup": json.dumps(markup, ensure_ascii=False) if markup else False,
         })
         atts.write({"res_id": rec.id})
@@ -71,9 +73,12 @@ class PmkTelegramOutbox(models.Model):
             if rec.create_date < now - timedelta(hours=EXPIRE_HOURS):
                 rec.write({"state": "dead", "last_error": "сутки без связи с Телеграмом"})
                 continue
-            ok, network_down = bot._pmk_group_deliver(
-                rec.text, rec._pmk_files(), json.loads(rec.markup) if rec.markup else None,
-                rec.kind)
+            markup = json.loads(rec.markup) if rec.markup else None
+            if rec.chat_id:
+                ok, network_down = bot._pmk_chat_deliver(rec.chat_id, rec.text, markup)
+            else:
+                ok, network_down = bot._pmk_group_deliver(
+                    rec.text, rec._pmk_files(), markup, rec.kind)
             rec.attempts += 1
             if ok:
                 rec.write({"state": "sent", "sent_at": now, "last_error": False})
