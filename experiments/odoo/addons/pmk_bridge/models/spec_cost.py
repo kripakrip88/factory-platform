@@ -871,16 +871,27 @@ class MetalSpecLineCost(models.Model):
                                  "paint_id", "grade_id")
 
     def write(self, vals):
+        """Досчитать цену после записи позиции, марки или цены единицы.
+
+        Та же грабля ядра, что в create: форма шлёт марку ВМЕСТЕ с ценой
+        единицы, посчитанной на экране, и ядро защищает всю вычисляемую
+        группу — источник цены оставался от прежней марки, а цена за кг — от
+        прежней цены (ручная правка цены единицы не меняла стоимость).
+        Досчёт: смена позиции/марки — цена новой (_compute_price_from_supplier,
+        «moved»), правка цены единицы — пересчёт за кг/т по ней.
+        Флаг контекста — от повторного входа: досчёт сам пишет эти поля.
+        """
         res = super().write(vals)
-        if "price_unit" not in vals and any(f in vals for f in self.PMK_PRICE_POSITION_FIELDS):
-            self.write({"price_unit": 0.0})
-            self._compute_price_from_supplier()
+        if self.env.context.get("pmk_price_recompute"):
+            return res
+        if "price_unit" in vals or any(f in vals for f in self.PMK_PRICE_POSITION_FIELDS):
+            self.with_context(pmk_price_recompute=True)._compute_price_from_supplier()
         return res
 
     def _pmk_fill_lost_price(self):
         lost = self.filtered(lambda l: l.price_state == "empty" and l._cost_position())
         if lost:
-            lost._compute_price_from_supplier()
+            lost.with_context(pmk_price_recompute=True)._compute_price_from_supplier()
         return lost
 
     # ─── Откуда цена ──────────────────────────────────────────────────────
@@ -1069,6 +1080,10 @@ class MetalSpecLineCost(models.Model):
         отправленные клиенту. Обновление — только кнопкой «Перечитать цены».
         """
         for line in self:
+            # Прежняя строка прайса — до сброса: по ней видно, что позиция
+            # или марка сменилась (19.10.2026, Антон: «при замене марки стали
+            # в листе цена закупки не меняется» — в редакторе до сохранения).
+            was_source = line.price_source_id
             line._reset_price_fields()
             tmpl = line._cost_product()
 
@@ -1112,7 +1127,14 @@ class MetalSpecLineCost(models.Model):
                        spec_currency.name))
 
             price = seller.price_discounted
-            if not line.price_unit:
+            # Позиция или марка сменилась (другая карточка или вариант) — цена
+            # новой позиции сразу, в том числе в редакторе до сохранения.
+            # Тот же товар у другого поставщика — цена остаётся до «Перечитать
+            # цены», как было: это смена прайса, а не детали.
+            moved = bool(was_source) and (
+                was_source.product_tmpl_id != seller.product_tmpl_id
+                or was_source.product_id != seller.product_id)
+            if not line.price_unit or moved:
                 # Прежняя цена запоминается ровно в тот момент, когда её
                 # заменяют: кнопка обнуляет price_unit, и здесь ещё доступно
                 # то, что стояло до обнуления — через снимок в price_prev_unit

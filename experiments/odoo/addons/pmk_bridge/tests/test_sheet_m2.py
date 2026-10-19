@@ -224,6 +224,31 @@ class TestSheetGrade(TransactionCase):
         line.grade_id = g09
         self.assertEqual(line.price_source_id, self.p_09)
         self.assertAlmostEqual(line.price_unit, 60000.0 / 9, places=2)
-        line.price_unit = 7000.0          # ручная цена — остаётся
+        line.price_unit = 7000.0          # ручная цена — остаётся и считается
         line.qty = 2
         self.assertAlmostEqual(line.price_unit, 7000.0, places=2)
+        self.assertAlmostEqual(line.price_kg, 7000.0 / 78.5, places=2,
+                               msg="Цена за кг — от ручной цены, а не от прежней.")
+
+    def test_grade_change_in_editor_updates_price(self):
+        """Антон 19.10: «при замене марки стали в листе цена закупки не
+        меняется» — в редакторе изделия, до «Сохранить»."""
+        from odoo.tests import Form
+        sheet = self.env["pmk.metal.sheet"].create({
+            "sheet_type": "Гладкий (тест редактора)", "thickness_mm": 10.0, "gost": "ГОСТ тест",
+            "mass_per_sqm": 78.5, "product_tmpl_id": self.tmpl.id})
+        spec = self.env["pmk.metal.spec"].with_context(
+            mail_create_nolog=True, mail_create_nosubscribe=True).create({
+                "product_ids": [Command.create({"name": "рама", "qty": 1, "line_ids": [
+                    Command.create({"calc_mode": "sheet", "sheet_id": sheet.id,
+                                    "a_mm": 500, "b_mm": 500, "qty": 1})]})]})
+        g09 = self.env["pmk.metal.grade"].search([("name", "=", "09Г2С")], limit=1)
+        form = Form(spec.product_ids)
+        with form.line_sheet_ids.edit(0) as row:
+            before = row.cost_fact_total
+            row.grade_id = g09
+            self.assertAlmostEqual(row.price_unit, 60000.0 / 9, places=2,
+                                   msg="Цена марки — сразу, до сохранения.")
+            self.assertGreater(row.cost_fact_total, before)
+        form.save()
+        self.assertEqual(spec.product_ids.line_ids.price_source_id, self.p_09)

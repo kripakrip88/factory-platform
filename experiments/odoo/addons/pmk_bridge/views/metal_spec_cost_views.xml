@@ -485,6 +485,10 @@
       </xpath>
 
       <xpath expr="//field[@name='line_linear_ids']/list" position="inside">
+        <!-- №309: строка прайса, по которой посчитана цена, — в данных строки,
+             чтобы смена марки/позиции в редакторе состава пересчитала цену
+             сразу, до «Сохранить» (без неё сервер не видит прежней строки). -->
+        <field name="price_source_id" column_invisible="1"/>
         <field name="price_state" optional="hide"/>
         <field name="price_unit" optional="hide"/>
         <field name="utilization_pct" optional="hide"/>
@@ -494,6 +498,10 @@
       </xpath>
 
       <xpath expr="//field[@name='line_sheet_ids']/list" position="inside">
+        <!-- №309: строка прайса, по которой посчитана цена, — в данных строки,
+             чтобы смена марки/позиции в редакторе состава пересчитала цену
+             сразу, до «Сохранить» (без неё сервер не видит прежней строки). -->
+        <field name="price_source_id" column_invisible="1"/>
         <field name="price_state" optional="hide"/>
         <field name="price_unit" optional="hide"/>
         <field name="utilization_pct" optional="show"/>
@@ -503,6 +511,10 @@
       </xpath>
 
       <xpath expr="//field[@name='line_fastener_ids']/list" position="inside">
+        <!-- №309: строка прайса, по которой посчитана цена, — в данных строки,
+             чтобы смена марки/позиции в редакторе состава пересчитала цену
+             сразу, до «Сохранить» (без неё сервер не видит прежней строки). -->
+        <field name="price_source_id" column_invisible="1"/>
         <field name="price_state" optional="hide"/>
         <field name="price_unit" optional="hide"/>
         <field name="cost_fact_total" optional="show" sum="Закупка"/>
@@ -510,6 +522,10 @@
       </xpath>
 
       <xpath expr="//field[@name='line_paint_ids']/list" position="inside">
+        <!-- №309: строка прайса, по которой посчитана цена, — в данных строки,
+             чтобы смена марки/позиции в редакторе состава пересчитала цену
+             сразу, до «Сохранить» (без неё сервер не видит прежней строки). -->
+        <field name="price_source_id" column_invisible="1"/>
         <field name="price_state" optional="hide"/>
         <field name="price_unit" optional="hide"/>
         <field name="cost_fact_total" optional="show" sum="Закупка"/>
