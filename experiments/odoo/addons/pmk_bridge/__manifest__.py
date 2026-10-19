@@ -16,7 +16,7 @@
     # 19.0.0.6.0 — печать КП без зашитых «НДС 22%» и «ОГРНИП» (шаг 58):
     # продавца и строку налога отдаёт расчёт (models/print_seller.py),
     # справочник «Наши организации» (pmk_org) их подменяет. Миграции нет.
-    "version": "19.0.0.7.0",
+    "version": "19.0.0.8.0",
     "summary": "Артикулы (default_code) для переноса сортамента pmk_calc в товары",
     "category": "Inventory/Inventory",
     "author": "ПМК Парк",
@@ -61,6 +61,8 @@
     # в режиме init.
     "data": [
         "data/uom_okei.xml",
+        # №309: габариты листа — единицы «Лист WxL» от м².
+        "data/uom_sheet.xml",
         "data/product_category.xml",
         "data/product_attribute.xml",
         # Деньги в расчёте металлопроката: поля цены, итоги, рейтинг

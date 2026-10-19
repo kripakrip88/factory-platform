@@ -15,3 +15,5 @@ from . import test_step_z13
 from . import test_request_note_table
 from . import test_spec_title_kind
 from . import test_request_bars
+# №309: лист в м² — заявка листами габарита.
+from . import test_sheet_m2_request

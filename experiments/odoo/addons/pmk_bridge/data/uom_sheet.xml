@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Габариты листа — единицы-«упаковки» квадратного метра (№309, 19.10.2026).
+
+        Лист учитывается в м², а «Лист 1500×6000» — это 9 м² той же карточки:
+        марка — разновидность листа (вариант), габарит — нет. Цена поставщика
+        хранится в его единице («за лист 1250×2500»), Odoo сам приводит её к м²
+        (product.supplierinfo.price_discounted), закупка и заявка идут листами.
+
+        Единицы общие для всех карточек: лист 1500×6000 — всегда 9 м². На
+        карточку попадают только те, что есть в прайсах (uom_ids), — Антон
+        19.10: «не перехламим ли мы систему лишними данными».
+
+        ОКЕИ 625 «Лист» (ОК 015-94) — для УПД, оба поля, как в uom_okei.xml.
+    -->
+    <data noupdate="0">
+        <record id="uom_sheet_1250x2500" model="uom.uom">
+            <field name="name">Лист 1250×2500</field>
+            <field name="relative_uom_id" ref="uom.product_uom_square_meter"/>
+            <field name="relative_factor">3.125</field>
+            <field name="okei">625</field>
+            <field name="kod">625</field>
+        </record>
+        <record id="uom_sheet_1500x3000" model="uom.uom">
+            <field name="name">Лист 1500×3000</field>
+            <field name="relative_uom_id" ref="uom.product_uom_square_meter"/>
+            <field name="relative_factor">4.5</field>
+            <field name="okei">625</field>
+            <field name="kod">625</field>
+        </record>
+        <record id="uom_sheet_1500x6000" model="uom.uom">
+            <field name="name">Лист 1500×6000</field>
+            <field name="relative_uom_id" ref="uom.product_uom_square_meter"/>
+            <field name="relative_factor">9</field>
+            <field name="okei">625</field>
+            <field name="kod">625</field>
+        </record>
+        <record id="uom_sheet_2000x6000" model="uom.uom">
+            <field name="name">Лист 2000×6000</field>
+            <field name="relative_uom_id" ref="uom.product_uom_square_meter"/>
+            <field name="relative_factor">12</field>
+            <field name="okei">625</field>
+            <field name="kod">625</field>
+        </record>
+        <record id="uom_sheet_1000x4000" model="uom.uom">
+            <field name="name">Лист 1000×4000</field>
+            <field name="relative_uom_id" ref="uom.product_uom_square_meter"/>
+            <field name="relative_factor">4</field>
+            <field name="okei">625</field>
+            <field name="kod">625</field>
+        </record>
+    </data>
+</odoo>

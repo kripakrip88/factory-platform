@@ -96,9 +96,10 @@ class TestStepZ10Card(Z10Common):
                                            "gost": "ГОСТ 19903-2015"})
         sheet.with_user(self.admin).action_pmk_accept()
         card = sheet.product_tmpl_id
-        self.assertEqual(card.uom_id, self.env.ref("uom.product_uom_unit"), "Лист — штуками.")
-        self.assertAlmostEqual(card.product_variant_id.weight, 39.25 * 9.0, places=2,
-                               msg="Масса листа 1500×6000.")
+        # №309: лист — в м², вес единицы — кг/м² (габарит — «упаковка»).
+        self.assertEqual(card.uom_id, self.env.ref("uom.product_uom_square_meter"), "Лист — в м².")
+        self.assertAlmostEqual(card.product_variant_id.weight, 39.25, places=2,
+                               msg="Масса квадратного метра.")
 
         bolt = self._new("pmk.metal.fastener", {"pmk_pending_name": "Болт М20×85 (з10)",
                                                 "weight_kg": 0.25})

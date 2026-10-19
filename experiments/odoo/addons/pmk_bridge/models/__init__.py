@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 from . import sku
+# №309: лист в м², габарит — единица «Лист WxL».
+from . import sheet_uom
 from . import reference_link
 from . import spec_cost
 from . import reference_price

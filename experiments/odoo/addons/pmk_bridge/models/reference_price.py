@@ -49,7 +49,7 @@ class ProductTemplatePmkSeller(models.Model):
         for tmpl in self:
             tmpl.pmk_is_linear = tmpl._origin.id in linear
 
-    def _pmk_find_seller(self, date, supplier=None):
+    def _pmk_find_seller(self, date, supplier=None, uom=None):
         """Строка прайса, по которой считаем себестоимость на дату.
 
         • строка действует на дату (дата начала не позже, окончания не раньше);
@@ -59,6 +59,11 @@ class ProductTemplatePmkSeller(models.Model):
           строке занято номером уровня объёма;
         • уровень объёма — базовый (без минимального количества): на этапе КП
           объём закупки ещё не определён, и обещать оптовую цену рано.
+
+        • лист в м² (№309): строка ГАБАРИТА uom («Лист 1500×3000»); у
+          поставщиков такого нет — любого габарита (вариант «а», Антон 18.10:
+          цена тонны та же, единица приведена к м²). Габарит не задан — как
+          было до №309: 1500×6000, иначе любой.
 
         Пустой набор — цены нет: позиции нет в прайсах (сигнал «в городе
         нет», не ошибка).
@@ -79,6 +84,11 @@ class ProductTemplatePmkSeller(models.Model):
             best_rank = min(sellers.mapped("partner_id.pmk_supplier_rank") or [0])
             sellers = sellers.filtered(
                 lambda s: s.partner_id.pmk_supplier_rank == best_rank)
+
+        if self._pmk_is_sqm():
+            want = uom or self.env["uom.uom"]._pmk_sheet_uom("1500x6000")
+            same = sellers.filtered(lambda s: s.product_uom_id == want)
+            sellers = same or sellers
 
         base = sellers.filtered(lambda s: not s.min_qty)
         return (base or sellers).sorted(lambda s: (s.price_discounted, s.id))[:1]
@@ -131,7 +141,7 @@ class SupplierInfoPmkPrice(models.Model):
             mass = ref._pmk_mass_per_unit(info.product_tmpl_id, variant=info.product_id) if ref else 0.0
             info.pmk_price_ton = spec_text.per_ton(info.price_discounted, mass)
 
-    @api.depends("product_id.product_template_attribute_value_ids")
+    @api.depends("product_id.product_template_attribute_value_ids", "product_uom_id")
     def _compute_pmk_variant_label(self):
         # ⚠️ НЕ _get_combination_name(). Штатное имя варианта выбрасывает
         # характеристики, у которых на карточке одно значение, — а у каждого
@@ -140,4 +150,9 @@ class SupplierInfoPmkPrice(models.Model):
         for info in self:
             values = info.product_id.product_template_attribute_value_ids.sorted(
                 lambda v: (v.attribute_id.sequence, v.attribute_id.id))
-            info.pmk_variant_label = ", ".join(values.mapped("name")) or False
+            names = values.mapped("name")
+            # №309: габарит листа — единица цены «Лист WxL», а не вариант.
+            size = info.product_uom_id._pmk_sheet_size() if info.product_uom_id else ""
+            if size:
+                names.append(size)
+            info.pmk_variant_label = ", ".join(names) or False

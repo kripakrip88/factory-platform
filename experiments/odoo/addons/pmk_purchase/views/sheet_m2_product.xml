@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Лист в м² (№309, 19.10.2026): карточка листа считается в м², габарит —
+    единица-«упаковка» «Лист WxL» (pmk_bridge/data/uom_sheet.xml).
+
+    • «Вес м²» вместо «Вес единицы» — без единицы 23,55 кг читалось как вес
+      листа.
+    • «Габариты» — какие листы есть в прайсах (uom_ids карточки), только чтение:
+      их дописывают загрузчик цен и заявка на металл.
+    • «Ед.» в ценах поставщиков карточки — у листа цены разных габаритов стоят
+      одной колонкой («15 454» за 1500×6000 и «7 834» за 1000×4000), без
+      единицы их не сравнить. У проката (метр) колонки нет.
+    Вернуть — убрать файл из __manifest__.py.
+  -->
+  <record id="view_product_template_form_sheet_m2" model="ir.ui.view">
+    <field name="name">product.template.form.pmk.sheet.m2</field>
+    <field name="model">product.template</field>
+    <field name="inherit_id" ref="pmk_purchase.view_product_template_form_step37"/>
+    <field name="priority">101</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//group[@name='group_standard_price']//label[@for='weight']" position="attributes">
+        <attribute name="invisible" add="pmk_is_sqm" separator="or"/>
+      </xpath>
+      <xpath expr="//group[@name='group_standard_price']//label[@for='weight']" position="after">
+        <label for="weight" string="Вес м²"
+               invisible="not pmk_is_sqm or type != 'consu' or (product_variant_count &gt; 1 and not is_product_variant)"/>
+      </xpath>
+      <xpath expr="//group[@name='group_standard_price']//div[@name='weight']" position="after">
+        <field name="pmk_is_sqm" invisible="1"/>
+        <field name="uom_ids" string="Габариты" widget="many2many_tags" readonly="1"
+               invisible="not pmk_is_sqm"
+               help="Листы, которые есть в прайсах поставщиков. Дописываются сами — загрузкой прайса и заявкой на металл."/>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="product_supplierinfo_tree_view2_sheet_m2" model="ir.ui.view">
+    <field name="name">product.supplierinfo.list.view2.pmk.sheet.m2</field>
+    <field name="model">product.supplierinfo</field>
+    <field name="inherit_id" ref="pmk_purchase.product_supplierinfo_tree_view2_pmk"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='price']" position="before">
+        <field name="product_uom_id" string="Ед." readonly="1" optional="show"
+               column_invisible="not parent.pmk_is_sqm"/>
+      </xpath>
+    </field>
+  </record>
+</odoo>

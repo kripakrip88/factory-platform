@@ -318,6 +318,7 @@
             <button name="action_refresh_prices" type="object"
                     class="btn btn-sm btn-link p-0" string="Перечитать цены"/>
             <field name="price_reread_needed" invisible="1"/>
+            <field name="price_gabarit_any" invisible="1"/>
           </div>
           <field name="price_line_ids" readonly="1">
             <list create="0" delete="0" edit="0">
@@ -330,6 +331,11 @@
                    цены нет (позиции нет в прайсах). «Цена за т» отдельной
                    колонкой не нужна: это «Стало, ₽/т» (шаг 32). -->
               <field name="price_date_used" string="Прайс от" optional="show"/>
+              <!-- №309, вариант «а»: габарита строки нет у поставщиков —
+                   цена с другого листа той же позиции. -->
+              <field name="price_gabarit_note" string="Габарит цены"
+                     decoration-warning="price_gabarit_note != False"
+                     column_invisible="not parent.price_gabarit_any"/>
               <!-- За тонну, а не за единицу учёта (шаг 32): у проката
                    единица — метр, у листа — штука, у краски — кг, и
                    числа в одной колонке были несравнимы. Было → стало —

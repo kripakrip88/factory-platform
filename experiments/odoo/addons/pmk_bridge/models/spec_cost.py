@@ -593,6 +593,15 @@ class MetalSpecCost(models.Model):
         help="Цены в строках — по прежнему поставщику или прежней дате. "
              "Нажмите «Перечитать цены».")
 
+    # №309: колонка «Габарит цены» во вкладке «Цены» — только когда она есть
+    # о чём сказать (у проката и у листа своего габарита она пустая).
+    price_gabarit_any = fields.Boolean(compute="_compute_price_gabarit_any")
+
+    @api.depends("price_line_ids.price_gabarit_note")
+    def _compute_price_gabarit_any(self):
+        for spec in self:
+            spec.price_gabarit_any = any(spec.price_line_ids.mapped("price_gabarit_note"))
+
     @api.depends("price_line_ids.price_unit", "price_line_ids.price_state",
                  "price_line_ids.price_source_id")
     def _compute_price_reread_needed(self):
@@ -885,8 +894,8 @@ class MetalSpecLineCost(models.Model):
     price_unit = fields.Float(
         "Цена за единицу", compute="_compute_price_from_supplier", store=True,
         readonly=False, digits=(16, 4), copy=False,
-        help="С НДС, за единицу учёта позиции: прокат — за метр, лист и "
-             "метиз — за штуку, краска — за килограмм. Можно задать вручную.")
+        help="С НДС, за единицу учёта позиции: прокат — за метр, лист — за "
+             "м², метиз — за штуку, краска — за килограмм. Можно задать вручную.")
     price_kg = fields.Float(
         "Цена за кг", compute="_compute_price_from_supplier", store=True,
         readonly=True, digits=(12, 4))
@@ -920,6 +929,10 @@ class MetalSpecLineCost(models.Model):
     # поставщиком по уголку или по листу.
     price_prev_unit = fields.Float(
         "Цена до пересчёта", readonly=True, digits=(16, 4), copy=False)
+    price_gabarit_note = fields.Char(
+        "Габарит цены", compute="_compute_price_gabarit_note",
+        help="Лист: габарита строки нет в прайсах — цена взята с другого "
+             "габарита той же позиции (за м² та же).")
 
     # ─── Сравнение с другим прайсом (вкладка «Цены») ──────────────────────
     #
@@ -991,9 +1004,8 @@ class MetalSpecLineCost(models.Model):
         вес детали, поэтому «по метрам» и «по весу» совпадают арифметически,
         а не случайно.
 
-        Исключение — лист: он продаётся целым листом, и масса нужна именно
-        листа, а не квадратного метра. Её берём с карточки: там сотни
-        килограммов, и два знака безвредны.
+        Лист (№309, 19.10.2026) — в м²: масса единицы = кг/м² справочника,
+        цена поставщика «за лист WxL» приходит в м² сама.
 
         Правило живёт у справочника (_pmk_mass_per_unit в reference_link.py,
         разбор UX, шаг 25): по нему же считает цену за тонну справочник и
@@ -1164,7 +1176,31 @@ class MetalSpecLineCost(models.Model):
         """
         self.ensure_one()
         date = date or self.spec_id.price_date or fields.Date.context_today(self)
-        return tmpl._pmk_find_seller(date, supplier=self.spec_id.supplier_id) or False
+        return tmpl._pmk_find_seller(date, supplier=self.spec_id.supplier_id,
+                                     uom=self._cost_sheet_uom(tmpl)) or False
+
+    @api.depends("price_source_id", "layout_sheet_size", "calc_mode")
+    def _compute_price_gabarit_note(self):
+        """№309, вариант «а» (Антон 18.10): габарита строки нет у поставщиков —
+        цена взята с другого листа той же позиции, в м² она та же. Пишем, с
+        какого, чтобы снабженец знал: такого листа в городе может не быть."""
+        for line in self:
+            note = False
+            info = line.price_source_id
+            want = line._cost_sheet_uom(line._cost_product()) if info else None
+            if want and info.product_uom_id and info.product_uom_id != want:
+                note = "габарита %s нет у поставщиков — цена с листа %s" % (
+                    want.name.replace("Лист ", ""), info.product_uom_id.name.replace("Лист ", ""))
+            line.price_gabarit_note = note
+
+    def _cost_sheet_uom(self, tmpl):
+        """№309: единица «Лист WxL» габарита строки (из какого листа режем) —
+        цену берём этого габарита. Не лист или карточка в штуках — нет."""
+        self.ensure_one()
+        if (self.calc_mode != "sheet" or not tmpl or not tmpl._pmk_is_sqm()
+                or "layout_sheet_size" not in self._fields):
+            return None
+        return self.env["uom.uom"]._pmk_sheet_uom(self.layout_sheet_size) or None
 
     def _reset_price_fields(self):
         self.ensure_one()

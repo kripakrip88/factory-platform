@@ -43,7 +43,8 @@ PARENT_CATEG = {
 }
 UOM = {
     "pmk.metal.profile": "uom.product_uom_meter",
-    "pmk.metal.sheet": "uom.product_uom_unit",
+    # №309: лист — в м², габарит — единица «Лист WxL» (sheet_uom.py).
+    "pmk.metal.sheet": "uom.product_uom_square_meter",
     "pmk.metal.fastener": "uom.product_uom_unit",
 }
 TRACKING = {
@@ -61,8 +62,6 @@ FALLBACK_SKU = {
     "pmk.metal.sheet": "PND-LST",
     "pmk.metal.fastener": "PND-MTZ",
 }
-# Габарит листа, на который заведены цены (как DEFAULT_SIZE заявки на металл).
-DEFAULT_SHEET_AREA_M2 = 1.5 * 6.0
 
 
 class MetalPendingProduct(models.AbstractModel):
@@ -161,7 +160,8 @@ class MetalPendingProduct(models.AbstractModel):
     def _pmk_card_weight(self):
         self.ensure_one()
         if self._name == "pmk.metal.sheet":
-            return (self.mass_per_sqm or 0.0) * DEFAULT_SHEET_AREA_M2
+            # №309: карточка листа в м² — вес единицы = кг/м².
+            return self.mass_per_sqm or 0.0
         return self._pmk_unit_mass()
 
     def _pmk_create_product_card(self):

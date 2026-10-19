@@ -20,3 +20,4 @@ from . import test_hotfix_new_spec_save
 from . import test_step56_inline_price
 # Шаг З-10: позиция «на разнос» — без карточки, «Принять» заводит карточку.
 from . import test_step_z10_card
+from . import test_sheet_m2

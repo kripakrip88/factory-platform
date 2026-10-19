@@ -228,8 +228,10 @@ class MetalSpecRequest(models.Model):
                 row.update(partner=placeholder, price=0.0)
             row["cost"] = row["price"] * row["qty"]
             # Лист не 1500×6000: цена — наша, не строки прайса (см. выше).
+            # №309: карточка в м², строка в единице «Лист WxL» — ядро само
+            # приводит цену прайса любого габарита, ручная цена не нужна.
             row["manual_price"] = (row["mode"] == "sheet" and row["size"] != DEFAULT_SIZE
-                                   and bool(row["price"]))
+                                   and bool(row["price"]) and not self._pmk_sheet_uom(row))
             row["label"] = self._pmk_row_label(row)
             rows.append(row)
         rows.sort(key=lambda r: (MODE_ORDER.get(r["mode"], 9), r["name"] or ""))
@@ -568,16 +570,30 @@ class MetalSpecRequest(models.Model):
         }
 
     @api.model
+    def _pmk_sheet_uom(self, row):
+        """№309: единица «Лист WxL» строки листа, если карточка в м²; иначе пусто
+        (карточка в штуках — по-старому, единица карточки)."""
+        product = row.get("product")
+        if row.get("mode") != "sheet" or not product or not product.product_tmpl_id._pmk_is_sqm():
+            return self.env["uom.uom"]
+        return self.env["uom.uom"]._pmk_sheet_uom(row.get("size") or DEFAULT_SIZE)
+
+    @api.model
     def _pmk_request_line_vals(self, row):
         product = row["product"]
         if not product and row.get("pending"):
             # Служебный товар «Позиция на разнос» удалён — заводим (шаг З-10).
             product = self.env["purchase.order"]._pmk_pending_product(row["mode"])
+        uom = self._pmk_sheet_uom(dict(row, product=product))
+        if uom:
+            # Лист заказываем листами габарита; единица — на карточку (её
+            # предлагают и закупка, и УПД).
+            product.product_tmpl_id._pmk_add_packaging(uom)
         return {
             "product_id": product.id,
             "name": row["label"],
             "product_qty": row["qty"],
-            "product_uom_id": product.uom_id.id,
+            "product_uom_id": (uom or product.uom_id).id,
             # Явная цена: ядро считает её заданной (technical_price_unit =
             # price_unit при создании) и при создании не трогает. Лист не
             # 1500×6000 после создания помечается ручной ценой (sync).

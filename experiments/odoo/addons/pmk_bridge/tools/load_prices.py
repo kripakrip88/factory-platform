@@ -157,6 +157,18 @@ UNIT_BY_UOM_XMLID = {
     "uom.product_uom_ton": RUB_T,
     "uom.product_uom_square_meter": RUB_M2,
 }
+# №309 (19.10.2026): лист в м², цена поставщика «за лист WxL» — единица-
+# «упаковка» габарита (pmk_bridge/data/uom_sheet.xml). Цена в ней — за штуку
+# листа этого габарита, Odoo сам приводит её к м² карточки.
+SHEET_UOM_XMLID = {
+    "1250x2500": "pmk_bridge.uom_sheet_1250x2500",
+    "1500x3000": "pmk_bridge.uom_sheet_1500x3000",
+    "1500x6000": "pmk_bridge.uom_sheet_1500x6000",
+    "2000x6000": "pmk_bridge.uom_sheet_2000x6000",
+    "1000x4000": "pmk_bridge.uom_sheet_1000x4000",
+}
+for _xmlid in SHEET_UOM_XMLID.values():
+    UNIT_BY_UOM_XMLID[_xmlid] = RUB_PCS
 
 Money = namedtuple("Money", "amount unit")
 
@@ -204,26 +216,28 @@ def to_product_unit(price, unit_to, mass_kg, what):
         "%s: перевод «%s» -> «%s» не описан" % (what, price.unit, unit_to))
 
 
-def unit_of_product(product):
-    """Единица цены, которую ждёт карточка."""
-    xmlid = product.uom_id.get_external_id().get(product.uom_id.id)
+def unit_of_product(product, uom=None):
+    """Единица цены, которую ждёт карточка (или единица цены поставщика uom —
+    у листа «Лист WxL», №309)."""
+    uom = uom or product.uom_id
+    xmlid = uom.get_external_id().get(uom.id)
     unit = UNIT_BY_UOM_XMLID.get(xmlid)
     if not unit:
         raise PriceUnitError(
             "единица «%s» (%s) карточки %s неизвестна загрузчику: не понимая "
-            "единицу, цену класть нельзя" % (product.uom_id.name, xmlid,
+            "единицу, цену класть нельзя" % (uom.name, xmlid,
                                              product.display_name))
     return unit
 
 
-def assert_price_unit(product, price, env=None):
+def assert_price_unit(product, price, env=None, uom=None):
     """ЕДИНСТВЕННАЯ ДВЕРЬ В БАЗУ. Не совпала единица — отказ с объяснением.
 
     Сообщение намеренно длинное. Тот, кто увидит его через полгода, должен
     из одного текста понять: что не так, что бы сделал Odoo без этой проверки
     и как починить. Короткое «unit mismatch» такой задачи не решает.
     """
-    want = unit_of_product(product)
+    want = unit_of_product(product, uom)
     if price.unit == want:
         return
     silent = ""
@@ -803,6 +817,8 @@ GRADE_MAP = {
     "09Г2С14": "09Г2С", "09Г2С15": "09Г2С",
     # А ГРУПП (18.10.2026): «Ст3/С255» — С255 по ГОСТ 27772 и есть Ст3сп5.
     "СТ3С255": "Ст3сп", "С255": "Ст3сп",
+    # №309 (19.10.2026): тонкий лист.
+    "08КП": "08кп",
 }
 
 
@@ -1038,7 +1054,11 @@ def min_qty_in_product_unit(tonnes, mass_kg, unit, digits):
 # ═══════════════════════════════════════════════════════════════════════════
 
 def resolve_target(env, item, sheet_sizes):
-    """Куда ложится цена: шаблон (прокат) или конкретный вариант (лист).
+    """Куда ложится цена: (шаблон, вариант, единица цены).
+
+    №309 (19.10.2026): лист — карточка в м², вариант — МАРКА, габарит —
+    единица цены «Лист WxL». Карточка листа ещё в штуках (не переведена) —
+    старое правило ниже: вариант «марка × габарит».
 
     Прокат — на ШАБЛОН: габарита у него нет, цена метра одна на карточку, а
     вариант сегодня ровно один. Лист — на ВАРИАНТ: единица «штука», и штука
@@ -1055,12 +1075,29 @@ def resolve_target(env, item, sheet_sizes):
         raise PriceRowError("нет карточки под позицию справочника",
                             "pmk_bridge.product_%s" % item.ref_id)
     if not item.is_sheet:
-        return tmpl, env["product.product"].browse()
+        return tmpl, env["product.product"].browse(), None
     grade = map_grade(item.grade)
     if not grade:
         raise PriceRowError(
             "марка листа не заведена характеристикой",
             "«%s» — вариант листа не опознать" % item.grade)
+    sqm = env.ref("uom.product_uom_square_meter", raise_if_not_found=False)
+    if sqm and tmpl.uom_id == sqm:
+        uom = env.ref(SHEET_UOM_XMLID.get(item.gabarit, ""), raise_if_not_found=False) \
+            if item.gabarit in SHEET_UOM_XMLID else None
+        if not uom:
+            raise PriceRowError(
+                "габарит листа не заведён единицей",
+                "%s, а заведены %s" % (item.gabarit, ", ".join(sorted(SHEET_UOM_XMLID))))
+        for variant in tmpl.product_variant_ids:
+            names = set(variant.product_template_attribute_value_ids.mapped(
+                "product_attribute_value_id.name"))
+            if grade in names:
+                return tmpl, variant, uom
+        raise PriceRowError(
+            "варианта марки нет, а создавать его загрузчику цен нельзя",
+            "%s у карточки %s; второй вариант обнуляет артикул шаблона"
+            % (grade, tmpl.default_code or tmpl.name))
     if item.gabarit not in sheet_sizes:
         raise PriceRowError(
             "габарит листа не заведён характеристикой",
@@ -1070,7 +1107,7 @@ def resolve_target(env, item, sheet_sizes):
         names = set(variant.product_template_attribute_value_ids.mapped(
             "product_attribute_value_id.name"))
         if grade in names and item.gabarit in names:
-            return tmpl, variant
+            return tmpl, variant, None
     raise PriceRowError(
         "варианта листа нет, а создавать его загрузчику цен нельзя",
         "(%s, %s) у карточки %s; второй вариант обнуляет артикул шаблона"
@@ -1078,7 +1115,7 @@ def resolve_target(env, item, sheet_sizes):
 
 
 def upsert_supplierinfo(env, book, tmpl, variant, tier, price, min_qty, vendor_name,
-                        bar_length_mm=0.0):
+                        bar_length_mm=0.0, uom=None):
     """Записать цену уровня, НЕ затирая прошлую: ряд копится по date_start.
 
     Ключ ряда — (поставщик, товар, номер уровня). Номер уровня держим в
@@ -1096,6 +1133,9 @@ def upsert_supplierinfo(env, book, tmpl, variant, tier, price, min_qty, vendor_n
               ("product_tmpl_id", "=", tmpl.id),
               ("product_id", "=", variant.id if variant else False),
               ("sequence", "=", tier.no)]
+    if uom:
+        # №309: у листа цены разных габаритов одной марки — разные ряды.
+        domain.append(("product_uom_id", "=", uom.id))
     series = SI.search(domain, order="date_start")
     vals = {
         "partner_id": book.supplier_id,
@@ -1109,7 +1149,7 @@ def upsert_supplierinfo(env, book, tmpl, variant, tier, price, min_qty, vendor_n
         "currency_id": env.company.currency_id.id,
         # Единицу проставляем ЯВНО, хотя Odoo подставил бы её сам: явная
         # запись означает «цена уже в единице товара», и её видно в форме.
-        "product_uom_id": (variant or tmpl).uom_id.id,
+        "product_uom_id": (uom or (variant or tmpl).uom_id).id,
         # Длина хлыста нужна раскрою сортамента: сколько шестиметровых или
         # двенадцатиметровых палок взять под заказ. Раньше её читали ради
         # массы метра и выбрасывали.
@@ -1141,7 +1181,7 @@ def upsert_supplierinfo(env, book, tmpl, variant, tier, price, min_qty, vendor_n
     return rec, ("создано, закрыт прошлый период" if closed else "создано")
 
 
-def verify_written(rec, price):
+def verify_written(rec, price, uom=None):
     """Прочитать записанное глазами Odoo. Тихая подмена единицы всплывёт здесь.
 
     price_discounted — это ровно то число, которое увидит закупка:
@@ -1149,7 +1189,9 @@ def verify_written(rec, price):
     и единица товара разошлись, оно не совпадёт с тем, что мы считали.
     """
     seen = rec.price_discounted
-    if abs(seen - price.amount) > 0.005:
+    product_uom = (rec.product_id or rec.product_tmpl_id).uom_id
+    want = uom._compute_price(price.amount, product_uom) if uom else price.amount
+    if abs(seen - want) > 0.005:
         raise PriceUnitError(
             "записали %s, а Odoo читает %.2f за единицу товара — единица цены "
             "и единица карточки разошлись" % (money_str(price), seen))
@@ -1350,29 +1392,29 @@ def main():
 
     # ── дальше нужна база: цели, единицы, запись
     sizes = set(env["product.attribute"].search(
-        [("name", "=", "Габарит листа")], limit=1).value_ids.mapped("name"))
+        [("name", "=", "Габарит листа")], limit=1).value_ids.mapped("name"))   # только для карточек в штуках
     digits = env["decimal.precision"].precision_get("Product Unit")
     targets, no_target = [], []
     for item in winners:
         try:
-            tmpl, variant = resolve_target(env, item, sizes)
+            tmpl, variant, uom = resolve_target(env, item, sizes)
             product = variant or tmpl.product_variant_ids[:1]
             if not product:
                 raise PriceRowError("у карточки нет ни одного варианта",
                                     tmpl.default_code or tmpl.name)
             # Единица карточки — последнее слово. Совпала ли она с тем, во что
             # мы пересчитали, решает не намерение, а проверка.
-            assert_price_unit(product, item.per_unit, env=env)
-            targets.append((item, tmpl, variant, product))
+            assert_price_unit(product, item.per_unit, env=env, uom=uom)
+            targets.append((item, tmpl, variant, product, uom))
         except (PriceRowError, PriceUnitError) as exc:
             no_target.append((item, str(exc).split("\n")[0]))
 
     head("ЦЕЛИ В БАЗЕ")
-    on_tmpl = len([t for t in targets if not t[2]])
+    on_tmpl = len([t for t in targets if not t[2] and not t[4]])
     on_variant = len(targets) - on_tmpl
     print("  позиций с целью:   %s" % len(targets))
     print("    из них прокат — на ШАБЛОН (габарита нет, цена метра одна): %s" % on_tmpl)
-    print("    из них лист — на ВАРИАНТ (штука габарита X, цена от габарита): %s" % on_variant)
+    print("    из них лист — на ВАРИАНТ марки, цена «за лист WxL»: %s" % on_variant)
     print("  позиций без цели:  %s" % len(no_target))
     reasons = Counter(why[:74] for _i, why in no_target)
     for why, n in reasons.most_common(12):
@@ -1383,13 +1425,13 @@ def main():
 
     if not par["apply"]:
         print("\n  записей вышло бы: %s" % sum(
-            len([t for t in i.row.tiers if t.qty_from is not None]) for i, _, _, _ in targets))
+            len([t for t in i.row.tiers if t.qty_from is not None]) for i, _, _, _, _ in targets))
         print("\n=== КОНЕЦ ===")
         return
 
     head("ЗАПИСЬ")
     made = Counter()
-    for item, tmpl, variant, product in targets:
+    for item, tmpl, variant, product, uom in targets:
         for tier in [t for t in item.row.tiers if t.qty_from is not None]:
             # Цена уровня — по ПОРЯДКУ уровня (Tier.no), а не по колонке: колонки у
             # поставщиков разные (Металлсервис 4–6, СПК 7–10, МеталлСити — одна).
@@ -1407,14 +1449,17 @@ def main():
             # заливка состоялась.
             price = to_product_unit(gross, item.unit,
                                     item.mass, "строка %s" % item.row.excel_row)
-            assert_price_unit(product, price, env=env)   # дверь одна
+            assert_price_unit(product, price, env=env, uom=uom)   # дверь одна
             min_qty = min_qty_in_product_unit(tier.qty_from, item.mass, item.unit, digits)
             bar = item.row.bar if item.row.bar is not None else item.row.length
             length_m = _num(bar) or 0.0
             rec, what = upsert_supplierinfo(env, book, tmpl, variant, tier,
                                             price, min_qty, item.vendor_name,
-                                            bar_length_mm=length_m * 1000.0)
-            verify_written(rec, price)
+                                            bar_length_mm=0.0 if item.is_sheet else length_m * 1000.0,
+                                            uom=uom)
+            verify_written(rec, price, uom)
+            if uom:
+                tmpl._pmk_add_packaging(uom)   # на карточку — только габариты из прайсов
             made[what] += 1
     for what, n in made.most_common():
         print("  %-32s %s" % (what, n))
