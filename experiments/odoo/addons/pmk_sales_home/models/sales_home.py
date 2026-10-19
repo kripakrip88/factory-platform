@@ -16,7 +16,10 @@ MONTHS_NOM = ("январь", "февраль", "март", "апрель", "м�
               "сентябрь", "октябрь", "ноябрь", "декабрь")
 WEEKDAYS = ("понедельник", "вторник", "среда", "четверг", "пятница", "суббота", "воскресенье")
 WEEKDAYS_SHORT = ("пн", "вт", "ср", "чт", "пт", "сб", "вс")
+# 20.10.2026: «КП отправлено» убрана — плитка «Счета ждут оплаты» по стадии
+# «Счёт выставлен» (воронка «сделка → (расчёт) → счёт»). Имя константы прежнее.
 KP_WAIT_DAYS = 3
+WAIT_STAGE = "pmk_deal.stage_invoiced"
 MAIL_DAYS = 7
 TODO_LIMIT = 6
 
@@ -95,7 +98,7 @@ class PmkSalesHome(models.AbstractModel):
         month_start = self._month_start(today)
         won = Lead.search(self._opp_domain() + [
             ("stage_id.is_won", "=", True), ("date_closed", ">=", month_start)])
-        kp_stage = self.env.ref("crm.stage_lead3", raise_if_not_found=False)
+        kp_stage = self.env.ref(WAIT_STAGE, raise_if_not_found=False)
         kp = open_opps.filtered(lambda l: kp_stage and l.stage_id == kp_stage)
         kp_old = kp.filtered(lambda l: self._days_in_stage(l, today) > KP_WAIT_DAYS)
 
@@ -287,8 +290,8 @@ class PmkSalesHome(models.AbstractModel):
         for lead in open_opps.filtered(lambda l: kp_stage_id and l.stage_id.id == kp_stage_id):
             days = self._days_in_stage(lead, today)
             if days > KP_WAIT_DAYS:
-                items.append(self._todo_item(lead, "warning", "КП %d дн." % days, _("Напомнить о КП"),
-                                             _("ответа нет")))
+                items.append(self._todo_item(lead, "warning", "счёт %d дн." % days, _("Напомнить об оплате"),
+                                             _("оплаты нет")))
         seen, unique = set(), []
         for item in items:
             if item["id"] not in seen:
@@ -326,9 +329,9 @@ class PmkSalesHome(models.AbstractModel):
                 domain.append(("date_closed", ">=", self._month_start(today)))
             return self._action(pipeline, domain=domain, name=stage.name, views=["list", "kanban", "form"])
         if key == "kp":
-            stage = self.env.ref("crm.stage_lead3", raise_if_not_found=False)
+            stage = self.env.ref(WAIT_STAGE, raise_if_not_found=False)
             return self._action(pipeline, domain=[("stage_id", "=", stage.id if stage else 0)],
-                                name=_("КП ждут ответа"), views=["list", "kanban", "form"])
+                                name=_("Счета ждут оплаты"), views=["list", "kanban", "form"])
         if key == "won":
             return self._action(pipeline, domain=[("stage_id.is_won", "=", True),
                                                   ("date_closed", ">=", self._month_start(today))],

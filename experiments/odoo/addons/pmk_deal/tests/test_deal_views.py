@@ -102,8 +102,12 @@ class TestDealViews(TransactionCase):
         # (архивной) сделки «Расчёт и КП» скрыта.
         hint = money.find("span[@class='pmk-deal-money__empty']")
         self.assertEqual(hint.get("invisible"), "pmk_spec_id or not active")
+        # 20.10.2026: вместо кнопки «Расчёт и КП» — меню «Создать ▾» / «Печать ▾»
+        # (виджет pmk_deal_doc_menu); кнопка скрыта, не удалена.
         button = arch.find(".//header/button[@name='action_open_specs']")
-        self.assertIn("not active", button.get("invisible"))
+        self.assertTrue(hidden(button))
+        menu = arch.find(".//header/widget[@name='pmk_deal_doc_menu']")
+        self.assertIn("not active", menu.get("invisible"))
         self.assertTrue(hidden(arch.find(".//page[@name='lead']")))
         opp = arch.find(".//group[@name='opportunity_partner']")
         for fname in ("partner_name", "contact_name", "function"):
@@ -144,7 +148,9 @@ class TestDealViews(TransactionCase):
         lead = arch.xpath("//group[@name='lead_partner']")[0]
         visible = [f.get("name") for f in lead.findall("field")
                    if not hidden(f) and f.get("name") != "partner_id"]
-        expected = ["partner_name", "user_id", "pmk_source", "priority", "tag_ids"]
+        # 20.10.2026: обзвон лидов — «Обзвон» и «Следующий звонок» под менеджером.
+        expected = ["partner_name", "user_id", "pmk_call_state", "pmk_next_call",
+                    "pmk_source", "priority", "tag_ids"]
         # Шаг 53: теги — до востребования (pmk_theme, группа «Убранное
         # (показать)»): сервер вырезает узел у того, кого в группе нет.
         removed = self.env.ref("pmk_theme.group_pmk_removed", raise_if_not_found=False)
@@ -344,9 +350,11 @@ class TestDealViews(TransactionCase):
     def test_stage_thresholds_after_install(self):
         """post_init_hook выставил сроки на новой базе, как миграция на боевой."""
         for xmlid, days in (("crm.stage_lead1", 1), ("crm.stage_lead2", 2),
-                            ("crm.stage_lead3", 7), ("crm.stage_lead4", 0)):
+                            ("crm.stage_lead4", 0)):
             with self.subTest(stage=xmlid):
                 self.assertEqual(self.env.ref(xmlid).rotting_threshold_days, days)
+        # «КП отправлено» убрана при установке (воронка 20.10.2026).
+        self.assertFalse(self.env.ref("crm.stage_lead3", raise_if_not_found=False))
 
 
 @tagged("post_install", "-at_install")

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <!--
+    Воронка «сделка → (расчёт) → счёт» (20.10.2026, models/deal_flow.py).
+
+    Шапка сделки: «Создать ▾» и «Печать ▾» (как в МойСкладе, Антон: «давай
+    уходить от отдельных кнопок на создание каждого документа») вместо кнопки
+    «Расчёт и КП». Кнопка скрыта, НЕ удалена — узел нужен xpath'ам других видов;
+    вернуть — снять invisible. Кнопка-счётчик «Расчёты» остаётся.
+  -->
+  <record id="view_crm_lead_form_doc_menu" model="ir.ui.view">
+    <field name="name">crm.lead.form.pmk.doc.menu</field>
+    <field name="model">crm.lead</field>
+    <field name="inherit_id" ref="pmk_deal.view_crm_lead_form_hide_empty_quotations"/>
+    <field name="arch" type="xml">
+      <xpath expr="//header/button[@name='action_open_specs']" position="before">
+        <widget name="pmk_deal_doc_menu" invisible="type == 'lead' or not active"/>
+      </xpath>
+      <xpath expr="//header/button[@name='action_open_specs']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <!--
+    Лиды — список для обзвона (Антон 20.10: «лидов копим для дальнейшего
+    обзвона и повторного контакта»): статус и дата следующего звонка, в этот
+    день — задача «Звонок» ответственному (deal_flow.py, _pmk_plan_call).
+  -->
+  <record id="view_crm_lead_tree_calls" model="ir.ui.view">
+    <field name="name">crm.lead.list.leads.pmk.calls</field>
+    <field name="model">crm.lead</field>
+    <field name="inherit_id" ref="crm.crm_case_tree_view_leads"/>
+    <field name="arch" type="xml">
+      <!-- После «Получен» (тот — сразу за названием, test_list_columns). -->
+      <xpath expr="//field[@name='pmk_received']" position="after">
+        <field name="pmk_call_state" widget="badge" optional="show"
+               decoration-info="pmk_call_state == 'new'"
+               decoration-success="pmk_call_state == 'contacted'"
+               decoration-warning="pmk_call_state == 'recall'"
+               decoration-muted="pmk_call_state == 'refused'"/>
+        <field name="pmk_next_call" optional="show"
+               decoration-danger="pmk_next_call and pmk_next_call &lt; current_date"
+               decoration-bf="pmk_next_call and pmk_next_call == current_date"/>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="view_crm_lead_form_calls" model="ir.ui.view">
+    <field name="name">crm.lead.form.pmk.calls</field>
+    <field name="model">crm.lead</field>
+    <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="(//field[@name='user_id'])[1]" position="after">
+        <field name="pmk_call_state" invisible="type != 'lead'"/>
+        <field name="pmk_next_call" invisible="type != 'lead'"/>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="view_crm_lead_search_calls" model="ir.ui.view">
+    <field name="name">crm.lead.search.leads.pmk.calls</field>
+    <field name="model">crm.lead</field>
+    <field name="inherit_id" ref="crm.view_crm_case_leads_filter"/>
+    <field name="arch" type="xml">
+      <xpath expr="//filter[1]" position="before">
+        <filter name="pmk_to_call" string="К звонку"
+                domain="[('pmk_next_call', '&lt;=', context_today().strftime('%Y-%m-%d')), ('pmk_call_state', '!=', 'refused')]"/>
+        <filter name="pmk_call_new" string="Ещё не звонили" domain="[('pmk_call_state', '=', 'new')]"/>
+        <separator/>
+      </xpath>
+    </field>
+  </record>
+</odoo>

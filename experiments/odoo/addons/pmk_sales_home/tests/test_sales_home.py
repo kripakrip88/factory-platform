@@ -14,7 +14,9 @@ class TestSalesHome(TransactionCase):
     def setUp(self):
         super().setUp()
         self.Home = self.env["pmk.sales.home"]
-        self.kp = self.env.ref("crm.stage_lead3")
+        # 20.10.2026: «КП отправлено» убрана — плитка «Счета ждут оплаты» по
+        # стадии «Счёт выставлен» (ключ данных прежний — kp).
+        self.kp = self.env.ref("pmk_deal.stage_invoiced")
 
     def test_money(self):
         self.assertEqual(money(24_700_000), "24,7 млн ₽")
@@ -28,7 +30,7 @@ class TestSalesHome(TransactionCase):
             "name": "Главная: просроченная", "type": "opportunity",
             "date_deadline": today - timedelta(days=2)})
         quiet = self.env["crm.lead"].create({
-            "name": "Главная: КП молчит", "type": "opportunity", "stage_id": self.kp.id})
+            "name": "Главная: счёт не оплачен", "type": "opportunity", "stage_id": self.kp.id})
         self.env.flush_all()  # date_last_stage_update — вычисляемое: иначе перетрёт правку ниже
         self.env.cr.execute("UPDATE crm_lead SET date_last_stage_update = %s WHERE id = %s",
                             (fields.Datetime.now() - timedelta(days=5), quiet.id))
@@ -39,7 +41,7 @@ class TestSalesHome(TransactionCase):
         self.assertGreaterEqual(data["deals"]["kp_old"], 1)
         todo = {item["id"]: item for item in data["todo"] if item["kind"] == "deal"}
         self.assertEqual(todo[late.id]["tag"], "просрочено")
-        self.assertTrue(todo[quiet.id]["tag"].startswith("КП "))
+        self.assertTrue(todo[quiet.id]["tag"].startswith("счёт "))
         self.assertNotIn("_open_ids", data)
         stage_names = [row["name"] for row in data["funnel"]]
         self.assertIn(self.kp.name, stage_names)

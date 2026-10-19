@@ -75,8 +75,10 @@ class TestKpSentDeal(MailCommon):
         })
 
     def _spec(self, deal, user=None):
+        # pmk_no_doc_stage: здесь проверяем стадию по отправке, а не по
+        # созданию расчёта (deal_flow.py, 20.10.2026).
         return self.env["pmk.metal.spec"].with_user(user or self.user_admin).with_context(
-            mail_create_nolog=True).create({
+            mail_create_nolog=True, pmk_no_doc_stage=True).create({
                 "opportunity_id": deal.id, "partner_id": self.client.id,
                 "contact_id": self.contact.id, "note": "Каркас",
                 "product_ids": [Command.create({
@@ -206,7 +208,8 @@ class TestKpSentDeal(MailCommon):
         self.assertEqual(deal.email_normalized, COMPANY_BOX)
         for partner in (own, self.client):
             with self.subTest(spec_partner=partner.name):
-                spec = self.env["pmk.metal.spec"].with_context(mail_create_nolog=True).create({
+                spec = self.env["pmk.metal.spec"].with_context(
+                    mail_create_nolog=True, pmk_no_doc_stage=True).create({
                     "opportunity_id": deal.id, "partner_id": partner.id,
                     "product_ids": [Command.create({
                         "name": "Каркас", "qty": 1, "price_customer_unit": 1000.0})],

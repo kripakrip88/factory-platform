@@ -28,7 +28,7 @@
               <div class="s" t-esc="d.deals.open_sum"/>
             </div>
             <div class="o_pmk_home__k" t-att-class="{ 'o_pmk_home__k--warn': d.deals.kp_old }" t-on-click="() => this.open('kp')">
-              <div class="l">КП ждут ответа</div><div class="v" t-esc="d.deals.kp"/>
+              <div class="l">Счета ждут оплаты</div><div class="v" t-esc="d.deals.kp"/>
               <div class="s" t-att-class="{ w: d.deals.kp_old }"><t t-esc="d.deals.kp_old"/> дольше 3 дн.</div>
             </div>
             <div class="o_pmk_home__k" t-att-class="{ 'o_pmk_home__k--good': d.deals.won }" t-on-click="() => this.open('won')">

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Воронка «сделка → (расчёт) → счёт» (Антон 20.10.2026): к штатным «Заявка»,
+        «Расчёт» и выигрышной (переименована в «Закрыта», migrations/19.0.1.0.8)
+        добавлены «Счёт выставлен» и «Оплачено / в работе». «КП отправлено»
+        убрана. noupdate: стадии потом правят руками в настройках CRM.
+    -->
+    <data noupdate="1">
+        <record id="stage_invoiced" model="crm.stage">
+            <field name="name">Счёт выставлен</field>
+            <field name="sequence">2</field>
+        </record>
+        <record id="stage_in_work" model="crm.stage">
+            <field name="name">Оплачено / в работе</field>
+            <field name="sequence">3</field>
+        </record>
+    </data>
+</odoo>

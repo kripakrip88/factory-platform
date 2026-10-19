@@ -11,3 +11,5 @@ from . import dobor_link
 from . import deal_number
 # Категории расчёта (12.10.2026): сделка расчёта — в его доборку.
 from . import spec_children
+# 20.10.2026: воронка «сделка → (расчёт) → счёт», меню документов, обзвон лидов.
+from . import deal_flow

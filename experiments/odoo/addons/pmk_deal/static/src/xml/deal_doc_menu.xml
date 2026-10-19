@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="pmk_deal.DealDocMenu">
+        <div class="o_pmk_doc_menu d-inline-flex gap-1">
+            <Dropdown beforeOpen="load">
+                <button type="button" class="btn btn-secondary">
+                    <i class="fa fa-plus me-1"/>Создать<i class="fa fa-caret-down ms-1"/>
+                </button>
+                <t t-set-slot="content">
+                    <t t-foreach="state.create" t-as="item" t-key="item.key">
+                        <DropdownItem onSelected="() => this.run(item)">
+                            <i t-att-class="'fa fa-fw me-2 ' + item.icon"/><t t-esc="item.label"/>
+                        </DropdownItem>
+                    </t>
+                </t>
+            </Dropdown>
+            <Dropdown beforeOpen="load">
+                <button type="button" class="btn btn-secondary">
+                    <i class="fa fa-print me-1"/>Печать<i class="fa fa-caret-down ms-1"/>
+                </button>
+                <t t-set-slot="content">
+                    <t t-foreach="state.print" t-as="item" t-key="item.key">
+                        <DropdownItem onSelected="() => this.run(item)">
+                            <i t-att-class="'fa fa-fw me-2 ' + item.icon"/><t t-esc="item.label"/>
+                        </DropdownItem>
+                    </t>
+                    <div t-if="state.loaded and !state.print.length" class="dropdown-item-text text-muted small">
+                        Печатать пока нечего — сначала расчёт
+                    </div>
+                </t>
+            </Dropdown>
+        </div>
+    </t>
+</templates>

@@ -31,6 +31,9 @@ export function openParams(params) {
         // «Ответить» во вкладке «Письма» сделки (15.10.2026): письмо
         // открывается сразу с ответом под ним.
         reply: Boolean(params?.pmk_reply) && messageId > 0,
+        // «Создать → Письмо» в сделке (20.10.2026, pmk_deal deal_flow.py):
+        // черновик уже заведён сервером — открыть его окно.
+        composeId: Math.max(0, Math.floor(Number(params?.pmk_compose_id) || 0)),
         // Папка письма — её спрашивают у сервера при первой загрузке ящиков.
         folderId: null,
         asked: false,

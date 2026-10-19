@@ -9,7 +9,7 @@
     # цены, CRM его не касается. Поэтому связка «сделка ↔ расчёт» живёт своим
     # модулем: не установлен — обе стороны работают как раньше.
     "name": "ПМК: сделка и расчёт",
-    "version": "19.0.1.0.7",
+    "version": "19.0.1.0.8",
     "summary": "Расчёт металлопроката привязан к сделке CRM",
     "category": "Sales/CRM",
     "author": "ПМК Парк",
@@ -29,6 +29,8 @@
         # Нумератор сделок «СД-» (шаг 48) — первым: номер выдаётся при
         # создании сделки, в том числе записями из файлов ниже.
         "data/ir_sequence.xml",
+        # Воронка «сделка → (расчёт) → счёт» (20.10.2026): новые стадии.
+        "data/crm_stage.xml",
         "views/crm_lead_views.xml",
         "views/crm_lead_money_views.xml",
         "views/metal_spec_views.xml",
@@ -52,6 +54,8 @@
         "views/step48_deal_head.xml",
         # 15.10.2026: карточка канбана воронки — после денег и номера СД (заменяет карточку).
         "views/crm_kanban_card_views.xml",
+        # 20.10.2026: меню документов сделки, обзвон лидов.
+        "views/deal_flow_views.xml",
     ],
     # Стадия в списке сделок плашкой в цвете стадии («оживить таблицы»,
     # 29.09.2026) — свой виджет поверх штатного редактора стадии. Шаг 31 —
@@ -60,6 +64,9 @@
     # сумма «9,5 млн ₽», без полоски задач; колонки раздельно.
     "assets": {
         "web.assets_backend": [
+            # 20.10.2026: меню «Создать ▾» / «Печать ▾» в шапке сделки.
+            "pmk_deal/static/src/js/deal_doc_menu.js",
+            "pmk_deal/static/src/xml/deal_doc_menu.xml",
             "pmk_deal/static/src/js/stage_badge_field.js",
             "pmk_deal/static/src/xml/stage_badge_field.xml",
             "pmk_deal/static/src/scss/deal_money.scss",

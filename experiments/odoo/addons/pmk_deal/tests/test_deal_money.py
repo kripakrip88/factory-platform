@@ -202,10 +202,13 @@ class TestDealMoney(TransactionCase):
         self.assertEqual(action["context"]["default_opportunity_id"], self.lead.id)
 
     def test_button_does_not_move_the_stage(self):
+        """Кнопка стадию не двигает; двигает документ — расчёт ставит «Расчёт»
+        (воронка «сделка → (расчёт) → счёт», 20.10.2026, deal_flow.py)."""
         stage = self.lead.stage_id
         self.lead.action_open_specs()
+        self.assertEqual(self.lead.stage_id, stage, "Кнопка — без перехода.")
         self._spec()
-        self.assertEqual(self.lead.stage_id, stage, "Без автоперехода.")
+        self.assertEqual(self.lead.stage_id, self.env.ref("crm.stage_lead2"))
 
     # ─── клиент на карточке воронки ──────────────────────────────────────
     def test_client_for_person_company_and_private(self):
@@ -298,14 +301,14 @@ class TestFactoryDefaults(TransactionCase):
     def test_stage_thresholds_only_where_empty(self):
         lead1 = self.env.ref("crm.stage_lead1")
         lead2 = self.env.ref("crm.stage_lead2")
-        lead3 = self.env.ref("crm.stage_lead3")
         won = self.env.ref("crm.stage_lead4")
-        (lead1 | lead3 | won).rotting_threshold_days = 0
+        (lead1 | won).rotting_threshold_days = 0
         lead2.rotting_threshold_days = 5  # поменяли руками — не трогаем
         hooks.set_stage_thresholds(self.env)
         self.assertEqual(lead1.rotting_threshold_days, 1)
         self.assertEqual(lead2.rotting_threshold_days, 5)
-        self.assertEqual(lead3.rotting_threshold_days, 7)
+        # «КП отправлено» убрана 20.10.2026 — её срока больше нет.
+        self.assertFalse(self.env.ref("crm.stage_lead3", raise_if_not_found=False))
         self.assertEqual(won.rotting_threshold_days, 0, "Выиграно — без срока.")
 
     def test_lost_reasons_six_factory_ones(self):

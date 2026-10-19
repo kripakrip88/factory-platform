@@ -100,7 +100,9 @@ class TestStepZ9Invoice(Z2Common):
                          ["Секция ограждения ОГ-1", "Ферма Ф-1"])
         self.assertIn("Пробное изделие", invoice.pmk_skip_text or "", "Без цены — сигнал.")
         self.assertIn("Черновик счёта", self._notes(deal))
-        self.assertNotEqual(deal.stage_id, self.stage_kp, "Сделку кнопка «Счёт» не двигает.")
+        # 20.10.2026: стадия — за документом: счёт завели — «Счёт выставлен»
+        # (KP_SENT_STAGE), но сам счёт остаётся черновиком (проверено выше).
+        self.assertEqual(deal.stage_id, self.stage_kp, "Счёт завели — «Счёт выставлен».")
         # Повтор — тот же счёт, открывается формой без «Новое».
         action = spec.with_user(self.manager).action_pmk_invoice()
         self.assertEqual(self._invoices(deal), invoice)

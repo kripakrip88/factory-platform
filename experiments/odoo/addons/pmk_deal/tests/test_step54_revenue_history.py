@@ -89,7 +89,9 @@ class RevenueHistoryMixin:
             if price:
                 products.append(Command.create({
                     "name": "Колонна К-1", "qty": qty, "price_customer_unit": price}))
-            spec = env["pmk.metal.spec"].create({
+            # pmk_no_doc_stage: здесь проверяем историю дохода; смена стадии
+            # расчётом (deal_flow.py, 20.10.2026) легла бы в то же сообщение.
+            spec = env["pmk.metal.spec"].with_context(pmk_no_doc_stage=True).create({
                 "opportunity_id": deal.id if deal else False,
                 "partner_id": self.customer.id,
                 "date": date or fields.Date.today(),
@@ -230,16 +232,16 @@ class TestRevenueHistoryStep54(RevenueHistoryMixin, TransactionCase):
         self.assertFalse(self._tracking_messages(deal))
 
         before = self._revenue_lines(deal)
-        self._save(lambda env: spec.with_env(env).write({"opportunity_id": deal.id}))
+        self._save(lambda env: spec.with_env(env).with_context(pmk_no_doc_stage=True).write({"opportunity_id": deal.id}))
         self._new_line(deal, before, 0.0, 5000.0)
 
         before = self._revenue_lines(deal)
-        self._save(lambda env: spec.with_env(env).write({"opportunity_id": False}))
+        self._save(lambda env: spec.with_env(env).with_context(pmk_no_doc_stage=True).write({"opportunity_id": False}))
         self._new_line(deal, before, 5000.0, 0.0)
 
-        self._save(lambda env: spec.with_env(env).write({"opportunity_id": deal.id}))
+        self._save(lambda env: spec.with_env(env).with_context(pmk_no_doc_stage=True).write({"opportunity_id": deal.id}))
         before, before_other = self._revenue_lines(deal), self._revenue_lines(other)
-        self._save(lambda env: spec.with_env(env).write({"opportunity_id": other.id}))
+        self._save(lambda env: spec.with_env(env).with_context(pmk_no_doc_stage=True).write({"opportunity_id": other.id}))
         self._new_line(deal, before, 5000.0, 0.0)
         self._new_line(other, before_other, 0.0, 5000.0)
 

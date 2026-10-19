@@ -77,6 +77,10 @@ class MetalSpecInvoice(models.Model):
                 total=money_text(self.env, invoice.amount_total, invoice.currency_id))
             lead._pmk_orders_note(text)
             invoice._pmk_note(text)
+            # 20.10.2026: стадия — за документом: счёт завели — «Счёт выставлен».
+            # SKIP: черновик НЕ отмечается «Отправлен» (это делает отправка
+            # клиенту или ручной перенос сделки).
+            lead._pmk_doc_stage("pmk_deal.stage_invoiced")
         elif invoice.state == "draft":
             old = invoice.pmk_spec_id
             invoice._pmk_sync_from_spec(spec)

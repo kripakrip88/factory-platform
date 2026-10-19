@@ -41,6 +41,10 @@ patch(MailClientInbox.prototype, {
         }
         onMounted(() => {
             const open = this.pmkOpen;
+            if (open.composeId) {
+                // Черновик из сделки («Создать → Письмо»): сразу окно письма.
+                this.resumeDraft(open.composeId);
+            }
             if (!open.messageId) {
                 return;
             }

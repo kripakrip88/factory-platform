@@ -246,15 +246,38 @@ class CrmLead(models.Model):
             self._pmk_orders_react(stage=stage, lost=lost)
         return res
 
+    # ─── Меню «Создать» сделки (pmk_deal, deal_flow.py): «Счёт» ─────────
+    def pmk_doc_menu(self):
+        menu = super().pmk_doc_menu()
+        menu["create"].insert(1, {"key": "invoice", "label": _("Счёт"), "icon": "fa-file-text-o",
+                                  "method": "action_pmk_new_invoice"})
+        return menu
+
+    def action_pmk_new_invoice(self):
+        """«Создать → Счёт»: кнопка «Счёт» главного расчёта сделки (черновик
+        счёта покупателю). Без расчёта — подсказка: счёт по типовым изделиям без
+        расчёта — этап 4–5 плана (справочник типовых изделий)."""
+        self.ensure_one()
+        from odoo.addons.pmk_deal.models.deal_money import main_spec
+        from odoo.exceptions import UserError
+        spec = main_spec(self.spec_ids)
+        if not spec:
+            raise UserError(_("Счёт пока собирается из расчёта — сначала «Создать → Расчёт»."))
+        return spec.action_pmk_invoice()
+
     def _pmk_orders_react(self, stage, lost, created=False):
         kp_stage = self.env.ref(KP_SENT_STAGE, raise_if_not_found=False)
+        # 20.10.2026: «Оплачено / в работе» — то, что раньше делала «Выиграно»
+        # (предоплата или гарантийное письмо): счёт подтверждён, заказ в работе.
+        # «Закрыта» (выигрышная) — то же, если её достигли минуя «Оплачено».
+        in_work = self.env.ref("pmk_deal.stage_in_work", raise_if_not_found=False)
         for lead in self:
             if lead.type != "opportunity":
                 continue
             if lost and lead.won_status == "lost":
                 lead._pmk_orders_safely("_pmk_order_lost")
             elif stage and lead.active:
-                if lead.stage_id.is_won:
+                if lead.stage_id.is_won or (in_work and lead.stage_id == in_work):
                     lead._pmk_orders_safely("_pmk_order_won")
                 elif (not created and kp_stage and lead.stage_id == kp_stage
                         and lead.won_status == "pending"):

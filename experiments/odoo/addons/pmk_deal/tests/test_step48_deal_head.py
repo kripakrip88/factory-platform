@@ -219,7 +219,9 @@ class TestDealNumberStep48(TransactionCase):
             source = f.read()
         self.assertIn("number_active_deals", source)
         from odoo.modules.module import get_manifest
-        self.assertEqual(get_manifest("pmk_deal")["version"], "19.0.1.0.7")
+        # Версия модуля растёт дальше (19.0.1.0.8 — воронка 20.10.2026): скрипт
+        # нумерации остаётся в 19.0.1.0.7.
+        self.assertGreaterEqual(get_manifest("pmk_deal")["version"], "19.0.1.0.7")
 
     # ─── Имя и поиск ────────────────────────────────────────────────────
     def test_display_name_unchanged(self):

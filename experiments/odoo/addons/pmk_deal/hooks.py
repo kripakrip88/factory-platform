@@ -22,7 +22,6 @@ from odoo.tools.sql import column_exists
 STAGE_THRESHOLDS = [
     ("crm.stage_lead1", 1),  # Заявка: ответить в тот же день
     ("crm.stage_lead2", 2),  # Расчёт
-    ("crm.stage_lead3", 7),  # КП отправлено: ждём решения клиента
 ]
 
 # Штатные причины проигрыша — архивируются, когда есть заводские.
@@ -53,6 +52,7 @@ def post_init_hook(env):
 
 
 def apply_factory_defaults(env):
+    apply_funnel_stages(env)
     set_stage_thresholds(env)
     archive_stock_lost_reasons(env)
     backfill_source(env)
@@ -203,3 +203,30 @@ def number_active_deals(env):
     ])
     deals._pmk_assign_number()
     return len(deals.filtered("pmk_number"))
+
+
+FUNNEL_STAGES = [("crm.stage_lead1", "Заявка"), ("crm.stage_lead2", "Расчёт"),
+                 ("pmk_deal.stage_invoiced", "Счёт выставлен"),
+                 ("pmk_deal.stage_in_work", "Оплачено / в работе"), ("crm.stage_lead4", "Закрыта")]
+
+
+def apply_funnel_stages(env):
+    """Воронка «сделка → (расчёт) → счёт» (Антон 20.10.2026): порядок и имена
+    стадий, «КП отправлено» убрана — её сделки в «Расчёт». И при установке, и
+    миграцией 19.0.1.0.8: одна логика, тестовая база та же, что боевая."""
+    for seq, (xmlid, name) in enumerate(FUNNEL_STAGES):
+        stage = env.ref(xmlid, raise_if_not_found=False)
+        if stage:
+            # Имя — на обоих языках: интерфейс русский, а база без ru_RU
+            # (тестовая) показывает en_US — там не должно остаться «New/Won».
+            for lang in ("en_US", "ru_RU"):
+                stage.with_context(lang=lang).write({"sequence": seq, "name": name})
+    kp = env.ref("crm.stage_lead3", raise_if_not_found=False)
+    spec_stage = env.ref("crm.stage_lead2", raise_if_not_found=False)
+    if kp and spec_stage:
+        deals = env["crm.lead"].with_context(active_test=False).search([("stage_id", "=", kp.id)])
+        deals.write({"stage_id": spec_stage.id})
+        kp.unlink()
+        return len(deals)
+    return 0
+
