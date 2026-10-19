@@ -444,9 +444,10 @@
                           <field name="a_mm" options="{'hide_trailing_zeros': True}"/>
                           <field name="b_mm" options="{'hide_trailing_zeros': True}"/>
                           <field name="qty"/>
-                          <!-- №309, этап 2: цена листа — по марке строки; пусто — Ст3сп. -->
+                          <!-- №309, этап 2: цена листа — по марке строки; пусто — самая
+                               дешёвая марка из прайсов (Антон 19.10), какая — «Цены». -->
                           <field name="grade_id" string="Марка" options="{'no_create': True}"
-                                 optional="show" placeholder="Ст3сп"/>
+                                 optional="show" placeholder="самая дешёвая"/>
                           <field name="weight_one" readonly="1" digits="[12,1]"/>
                           <field name="weight_total" readonly="1" digits="[12,1]" sum="Итого, кг"/>
                         </list>

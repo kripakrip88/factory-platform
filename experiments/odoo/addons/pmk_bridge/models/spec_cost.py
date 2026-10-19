@@ -929,6 +929,10 @@ class MetalSpecLineCost(models.Model):
     # поставщиком по уголку или по листу.
     price_prev_unit = fields.Float(
         "Цена до пересчёта", readonly=True, digits=(16, 4), copy=False)
+    # №309: марка, по цене которой посчитано (без марки в строке — самая
+    # дешёвая из прайсов); у проката пусто.
+    price_grade_label = fields.Char(
+        "Марка цены", related="price_source_id.pmk_grade_label")
     price_gabarit_note = fields.Char(
         "Габарит цены", compute="_compute_price_gabarit_note",
         help="Лист: габарита строки нет в прайсах — цена взята с другого "

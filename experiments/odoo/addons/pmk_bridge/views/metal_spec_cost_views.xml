@@ -331,6 +331,7 @@
                    цены нет (позиции нет в прайсах). «Цена за т» отдельной
                    колонкой не нужна: это «Стало, ₽/т» (шаг 32). -->
               <field name="price_date_used" string="Прайс от" optional="show"/>
+              <field name="price_grade_label" string="Марка" optional="show"/>
               <!-- №309, вариант «а»: габарита строки нет у поставщиков —
                    цена с другого листа той же позиции. -->
               <field name="price_gabarit_note" string="Габарит цены"

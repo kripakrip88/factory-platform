@@ -65,7 +65,8 @@ class ProductTemplatePmkSeller(models.Model):
           (строка без варианта — на всю карточку — годится любой марке). Нет
           цены марки — цены нет: подставлять Ст3сп вместо 09Г2С нельзя (Антон
           18.10: такой марки в прайсах «не может не быть»). Марка не задана —
-          базовая Ст3сп, если она есть, иначе любая;
+          самая дешёвая из всех марок (Антон 19.10: «в 90% случаев нужен самый
+          дешёвый материал… если требуется, марку меняют в расчёте вручную»);
         • лист в м² (№309): строка ГАБАРИТА uom («Лист 1500×3000»); у
           поставщиков такого нет — любого габарита (вариант «а», Антон 18.10:
           цена тонны та же, единица приведена к м²). Габарит не задан — как
@@ -103,8 +104,8 @@ class ProductTemplatePmkSeller(models.Model):
         return sellers.sorted(lambda s: (s.price_discounted, s.id))[:1]
 
     def _pmk_sellers_of_grade(self, sellers, grade):
-        """Строки прайса марки grade (имя, «09Г2С»). Без марки — базовая Ст3сп,
-        если её цены есть, иначе все (мягко, как габарит 1500×6000)."""
+        """Строки прайса марки grade (имя, «09Г2С»). Без марки — все: дальше
+        выберется самая дешёвая (Антон 19.10)."""
         attr = self.env.ref("pmk_bridge.attr_grade", raise_if_not_found=False)
 
         def grade_of(info):
@@ -113,8 +114,7 @@ class ProductTemplatePmkSeller(models.Model):
             return names[0] if names else None
         if grade:
             return sellers.filtered(lambda s: grade_of(s) in (grade, None))
-        base = sellers.filtered(lambda s: grade_of(s) in ("Ст3сп", None))
-        return base or sellers
+        return sellers
 
 
 class SupplierInfoPmkPrice(models.Model):

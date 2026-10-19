@@ -162,7 +162,12 @@ class TestSheetGrade(TransactionCase):
         T = self.tmpl
         self.assertEqual(T._pmk_find_seller(self.today, grade="09Г2С"), self.p_09)
         self.assertEqual(T._pmk_find_seller(self.today, grade="Ст3сп"), self.p_st3)
-        self.assertEqual(T._pmk_find_seller(self.today), self.p_st3, "Без марки — базовая, хоть 09Г2С и дороже.")
+        self.assertEqual(T._pmk_find_seller(self.today), self.p_st3, "Без марки — самая дешёвая (Ст3сп).")
+        self.p_09.price = 45000.0
+        self.assertEqual(T._pmk_find_seller(self.today), self.p_09,
+                         "Без марки — самая дешёвая, даже если это не Ст3сп (Антон 19.10).")
+        self.assertEqual(T._pmk_find_seller(self.today, grade="Ст3сп"), self.p_st3)
+        self.p_09.price = 60000.0
         self.assertFalse(T._pmk_find_seller(self.today, grade="10ХСНД"),
                          "Марки нет в прайсах — цены нет, Ст3сп не подставляем.")
 
