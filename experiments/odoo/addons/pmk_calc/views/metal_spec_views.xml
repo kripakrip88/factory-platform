@@ -242,6 +242,8 @@
                       <field name="calc_mode"/>
                       <field name="detail_name"/>
                       <field name="sheet_id"/>
+                      <!-- №309, этап 2: марка детали — в редакторе «Состава» (product_lines_field.js). -->
+                      <field name="grade_id" options="{'no_create': True}"/>
                       <field name="pmk_item_note"/>
                       <field name="a_mm"/>
                       <field name="b_mm"/>

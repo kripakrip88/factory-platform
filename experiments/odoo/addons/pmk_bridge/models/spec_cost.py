@@ -846,6 +846,43 @@ class MetalSpecLineCost(models.Model):
     currency_id = fields.Many2one(
         related="spec_id.currency_id", store=True, readonly=True, string="Валюта")
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        """Досчитать цену строке, созданной формой (дефект 08–19.10.2026).
+
+        Цена единицы, источник, состояние и цена за кг/т — одна вычисляемая
+        группа (_compute_price_from_supplier), а цена единицы правится руками
+        (readonly=False). Форма присылает её посчитанной на экране, и ядро,
+        увидев в create одно поле группы, защищает ВСЮ группу — остальные поля
+        остаются по умолчанию: «Позиция не выбрана», без источника, 0 ₽/т,
+        металл строки — ноль. На боевом так легло 59 строк (08–12.10), Антон
+        поймал 19.10: «почему у листа 4мм нет цены». Цену единицы, присланную
+        формой, досчёт не трогает (_compute_price_from_supplier её сохраняет).
+        """
+        lines = super().create(vals_list)
+        lines._pmk_fill_lost_price()
+        return lines
+
+    # Смена позиции или марки — цена новой позиции, а не прежняя цена единицы
+    # (дефект найден 19.10.2026: лист 4 мм → 10 мм оставлял цену 4 мм, и цена
+    # за тонну считалась от чужой цены). Габарит раскладки (layout_sheet_size)
+    # цену не сбрасывает: за м² она почти та же, раскладка пишет его часто.
+    PMK_PRICE_POSITION_FIELDS = ("calc_mode", "profile_id", "sheet_id", "fastener_id",
+                                 "paint_id", "grade_id")
+
+    def write(self, vals):
+        res = super().write(vals)
+        if "price_unit" not in vals and any(f in vals for f in self.PMK_PRICE_POSITION_FIELDS):
+            self.write({"price_unit": 0.0})
+            self._compute_price_from_supplier()
+        return res
+
+    def _pmk_fill_lost_price(self):
+        lost = self.filtered(lambda l: l.price_state == "empty" and l._cost_position())
+        if lost:
+            lost._compute_price_from_supplier()
+        return lost
+
     # ─── Откуда цена ──────────────────────────────────────────────────────
     price_state = fields.Selection(
         [("empty", "Позиция не выбрана"),

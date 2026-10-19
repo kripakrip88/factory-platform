@@ -106,6 +106,9 @@ const SECTIONS = [
                 wide: true,
                 placeholder: "лист 4, оц 0,5, риф 5",
             },
+            // №309, этап 2 (Антон 19.10.2026): в одном заказе бывает лист 3 мм
+            // Ст3 и 09Г2С — марка у детали. Пусто — самая дешёвая из прайсов.
+            { ref: true, name: "grade_id", label: "Марка", placeholder: "дешёвая" },
             { name: "a_mm", label: "A, мм" },
             { name: "b_mm", label: "B, мм" },
             { name: "qty", label: "Кол-во" },
@@ -593,7 +596,9 @@ export class ProductLinesRenderer extends ListRenderer {
             return [relName(d.profile_id), `${num(d.length_mm)} мм`];
         }
         if (d.calc_mode === "sheet") {
-            return [relName(d.sheet_id), `${num(d.a_mm)}×${num(d.b_mm)} мм`];
+            // Марка — только выбранная: пусто значит «самая дешёвая».
+            const grade = d.grade_id ? `, ${relName(d.grade_id)}` : "";
+            return [relName(d.sheet_id) + grade, `${num(d.a_mm)}×${num(d.b_mm)} мм`];
         }
         if (d.calc_mode === "fastener") {
             return [relName(d.fastener_id), ""];
