@@ -165,6 +165,30 @@ class PmkTelegramBot(models.AbstractModel):
             return True
         return ok
 
+    @api.model
+    def pmk_send_user(self, user, text, reply_markup=None):
+        """Личное сообщение человеку, если у него привязан Телеграм.
+
+        Нет связи — в очередь (как и сообщения в группу). False — Телеграм не
+        привязан или Телеграм отказал (например, человек не нажимал Start).
+        """
+        chat_id = user.sudo().pmk_telegram_id
+        if not chat_id:
+            return False
+        ok, network_down = self._pmk_chat_deliver(chat_id, text, reply_markup)
+        if not ok and network_down:
+            self.env["pmk.telegram.outbox"].sudo().pmk_enqueue(
+                text, [], reply_markup, "user", chat_id=chat_id)
+            return True
+        return ok
+
+    def _pmk_chat_deliver(self, chat_id, text, reply_markup):
+        api_ = self._pmk_api()
+        if not api_:
+            return False, False
+        res = api_.send(chat_id, text, reply_markup)
+        return bool(res), getattr(api_, "network_down", False)
+
     def _pmk_group_deliver(self, text, files, reply_markup, kind):
         """Отправить сейчас. → (дошло, нет_связи)."""
         icp = self.env["ir.config_parameter"].sudo()
