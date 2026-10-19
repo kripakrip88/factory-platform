@@ -57,8 +57,9 @@ class ProductTemplatePmkSeller(models.Model):
           рейтингом (меньше — раньше), при равном рейтинге — дешевле.
           Сортировка по контрагенту, а не по строке прайса: поле sequence в
           строке занято номером уровня объёма;
-        • уровень объёма — базовый (без минимального количества): на этапе КП
-          объём закупки ещё не определён, и обещать оптовую цену рано.
+        • уровень объёма — САМЫЙ ДЕШЁВЫЙ (оптовый). Антон 19.10.2026: «нам
+          всегда считают по самой низкой цене, тк мы оптовики, и это скорее
+          общий прайс». Было (до 19.10): базовый, без минимального количества.
 
         • лист в м² (№309): строка ГАБАРИТА uom («Лист 1500×3000»); у
           поставщиков такого нет — любого габарита (вариант «а», Антон 18.10:
@@ -90,8 +91,7 @@ class ProductTemplatePmkSeller(models.Model):
             same = sellers.filtered(lambda s: s.product_uom_id == want)
             sellers = same or sellers
 
-        base = sellers.filtered(lambda s: not s.min_qty)
-        return (base or sellers).sorted(lambda s: (s.price_discounted, s.id))[:1]
+        return sellers.sorted(lambda s: (s.price_discounted, s.id))[:1]
 
 
 class SupplierInfoPmkPrice(models.Model):

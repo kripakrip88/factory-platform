@@ -50,9 +50,10 @@ class TestStep25Prices(TransactionCase):
         # Дешевле, но у поставщика с худшим рейтингом — не берётся.
         Info.create({"partner_id": cls.far.id, "product_tmpl_id": cls.angle_tmpl.id,
                      "price": 900.0, "date_start": cls.old})
-        # Оптовый порог дешевле базового — на этапе КП не берётся.
-        Info.create({"partner_id": cls.metal.id, "product_tmpl_id": cls.angle_tmpl.id,
-                     "price": 950.0, "min_qty": 3.0, "date_start": cls.old})
+        # Оптовый порог дешевле базового — берётся: заводу всегда отпускают по
+        # самой низкой цене (Антон 19.10.2026). 950 ₽/м → 95 000 ₽/т.
+        cls.angle_opt = Info.create({"partner_id": cls.metal.id, "product_tmpl_id": cls.angle_tmpl.id,
+                                     "price": 950.0, "min_qty": 3.0, "date_start": cls.old})
         # Закрытый прайс — на сегодня не действует.
         Info.create({"partner_id": cls.metal.id, "product_tmpl_id": cls.angle_tmpl.id,
                      "price": 500.0, "date_start": cls.old,
@@ -78,8 +79,8 @@ class TestStep25Prices(TransactionCase):
     # ─── Одна дверь к цене ──────────────────────────────────────────────
     def test_find_seller_rules(self):
         seller = self.angle_tmpl._pmk_find_seller(self.today)
-        self.assertEqual(seller, self.angle_line,
-                         "Лучший рейтинг, базовый уровень, действует сегодня.")
+        self.assertEqual(seller, self.angle_opt,
+                         "Лучший рейтинг, самый дешёвый уровень (опт), действует сегодня.")
         self.assertEqual(self.angle_tmpl._pmk_find_seller(self.today, supplier=self.far).price, 900.0,
                          "Заданный поставщик — только его строки.")
         self.assertFalse(self.bare_tmpl._pmk_find_seller(self.today))
@@ -99,7 +100,7 @@ class TestStep25Prices(TransactionCase):
                         "length_mm": 1000.0, "qty": 1})]})],
             })
         line = spec.product_ids.line_ids
-        self.assertEqual(line.price_source_id, self.angle_line,
+        self.assertEqual(line.price_source_id, self.angle_opt,
                          "state=%s supplier=%s currency=%s/%s" % (
                              line.price_state, spec.supplier_id.display_name,
                              spec.currency_id.name, self.angle_line.currency_id.name))
@@ -108,7 +109,7 @@ class TestStep25Prices(TransactionCase):
 
     # ─── Справочник ─────────────────────────────────────────────────────
     def test_reference_price_columns(self):
-        self.assertAlmostEqual(self.angle.pmk_price_ton, 100000.0, places=2)
+        self.assertAlmostEqual(self.angle.pmk_price_ton, 95000.0, places=2)
         self.assertEqual(self.angle.pmk_price_supplier_label, self.metal.display_name)
         self.assertEqual(self.angle.pmk_price_date, self.old)
         self.assertFalse(self.angle.pmk_price_missing)

@@ -8,8 +8,9 @@
 на «Цены 0» смотрит основной агент на копии.
 
 Цены — свои, числа проверяются в уме:
-  • уголок (тест): масса метра 10 кг, 1 000 ₽/м → 100 000 ₽/т; дешевле
-    у поставщика с худшим рейтингом (900) и оптом (950) — не берутся,
+  • уголок (тест): масса метра 10 кг, опт 950 ₽/м → 95 000 ₽/т (самая
+    низкая цена, Антон 19.10.2026; базовая 1 000); дешевле у поставщика с
+    худшим рейтингом (900) — не берётся,
     закрытый прайс (500) — не действует; поставщиков с ценой — два;
   • уголок без прайса — «нет в прайсах»;
   • болт (тест): строка прайса без даты — «Без даты», действует всегда;
@@ -126,9 +127,9 @@ class TestStep37Purchase(TransactionCase):
             "size_label": "100×8", "mass_per_meter": 10.0, "product_tmpl_id": cls.angle_tmpl.id})
         cls.base_line = Info.create({"partner_id": cls.metal.id, "product_tmpl_id": cls.angle_tmpl.id,
                                      "price": 1000.0, "date_start": cls.old})
-        # Оптовый порог дешевле базового — на этапе КП не берётся.
-        Info.create({"partner_id": cls.metal.id, "product_tmpl_id": cls.angle_tmpl.id,
-                     "price": 950.0, "min_qty": 3.0, "date_start": cls.old})
+        # Оптовый порог дешевле базового — берётся (самая низкая цена, Антон 19.10.2026).
+        cls.opt_line = Info.create({"partner_id": cls.metal.id, "product_tmpl_id": cls.angle_tmpl.id,
+                                    "price": 950.0, "min_qty": 3.0, "date_start": cls.old})
         # Дешевле, но у поставщика с худшим рейтингом — не берётся.
         Info.create({"partner_id": cls.far.id, "product_tmpl_id": cls.angle_tmpl.id,
                      "price": 900.0, "date_start": cls.old})
@@ -210,9 +211,9 @@ class TestStep37Purchase(TransactionCase):
     # ─── (2) Номенклатура: цена одной дверью с расчётом ────────────────
     def test_price_columns_one_door(self):
         seller = self.angle_tmpl._pmk_find_seller(self.today)
-        self.assertEqual(seller, self.base_line)
-        self.assertAlmostEqual(self.angle_tmpl.pmk_price_unit, 1000.0, places=2)
-        self.assertAlmostEqual(self.angle_tmpl.pmk_price_ton, 100000.0, places=0)
+        self.assertEqual(seller, self.opt_line)
+        self.assertAlmostEqual(self.angle_tmpl.pmk_price_unit, 950.0, places=2)
+        self.assertAlmostEqual(self.angle_tmpl.pmk_price_ton, 95000.0, places=0)
         self.assertAlmostEqual(self.angle_tmpl.pmk_price_ton, self.angle.pmk_price_ton, places=0,
                                msg="Номенклатура и справочник показывают одну цену.")
         self.assertEqual(self.angle_tmpl.pmk_price_date, self.old)
@@ -220,7 +221,7 @@ class TestStep37Purchase(TransactionCase):
         self.assertFalse(self.angle_tmpl.pmk_price_missing)
         variant = self.angle_tmpl.product_variant_id
         self.assertEqual(variant.pmk_price_supplier_label, self.metal.display_name)
-        self.assertAlmostEqual(variant.pmk_price_unit, 1000.0, places=2)
+        self.assertAlmostEqual(variant.pmk_price_unit, 950.0, places=2)
         # Рейтинг сменился — цена в колонке меняется сразу, как и у расчёта.
         self.far.pmk_supplier_rank = 5
         self.assertEqual(self.angle_tmpl.pmk_price_supplier_label, self.far.display_name)
@@ -310,7 +311,7 @@ class TestStep37Purchase(TransactionCase):
         self.assertAlmostEqual(
             self.angle_tmpl.pmk_price_unit / self.angle_tmpl.pmk_mass_unit * 1000.0,
             self.angle_tmpl.pmk_price_ton, places=0)
-        self.assertAlmostEqual(self.angle_tmpl.pmk_price_ton, 100000.0, places=0)
+        self.assertAlmostEqual(self.angle_tmpl.pmk_price_ton, 95000.0, places=0)
         self.assertIn("правятся там", self.env["product.template"]._fields["pmk_mass_unit"].help,
                       "Подсказка «?» у подписи говорит, где масса правится.")
 
