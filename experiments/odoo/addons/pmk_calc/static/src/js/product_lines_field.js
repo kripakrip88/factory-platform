@@ -108,7 +108,7 @@ const SECTIONS = [
             },
             // №309, этап 2 (Антон 19.10.2026): в одном заказе бывает лист 3 мм
             // Ст3 и 09Г2С — марка у детали. Пусто — самая дешёвая из прайсов.
-            { ref: true, name: "grade_id", label: "Марка", placeholder: "дешёвая" },
+            { ref: true, name: "grade_id", label: "Марка", placeholder: "любая" },
             { name: "a_mm", label: "A, мм" },
             { name: "b_mm", label: "B, мм" },
             { name: "qty", label: "Кол-во" },

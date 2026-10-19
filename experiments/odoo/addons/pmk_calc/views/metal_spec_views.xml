@@ -449,7 +449,7 @@
                           <!-- №309, этап 2: цена листа — по марке строки; пусто — самая
                                дешёвая марка из прайсов (Антон 19.10), какая — «Цены». -->
                           <field name="grade_id" string="Марка" options="{'no_create': True}"
-                                 optional="show" placeholder="самая дешёвая"/>
+                                 optional="show" placeholder="любая"/>
                           <field name="weight_one" readonly="1" digits="[12,1]"/>
                           <field name="weight_total" readonly="1" digits="[12,1]" sum="Итого, кг"/>
                         </list>
