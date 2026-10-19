@@ -306,8 +306,13 @@ class PriceBook(object):
 
 Tier = namedtuple("Tier", "no column label qty_from unit")
 
+# bar — длина хлыста, м, если она не совпадает с length. У СПК вес взят «за 1 п.м.»,
+# и length = "1" — это единица для массы, а не хлыст: настоящая длина стоит в
+# колонке «Мерность» (19.10.2026: 700 цен СПК легли с хлыстом 1 м, и раскрой
+# разложил бы прокат на метровые куски). None — хлыст = length; "" — неизвестен.
 PriceRow = namedtuple(
-    "PriceRow", "excel_row section profile size grade length weight tiers gross")
+    "PriceRow", "excel_row section profile size grade length weight tiers gross bar",
+    defaults=(None,))
 
 # Заголовок раздела: одинокая колонка 0. Виды перечислены явно — в файле есть
 # и реквизиты, и режим работы, и «Скидка от объёма!».
@@ -550,8 +555,10 @@ def read_price_spk(path):
             continue
         w_m, w_piece = _cellnum(r[5]), _cellnum(r[4])
         length_m = _cellnum(re.sub(r"[^\d.,]", "", txt[1]).replace(",", ".")) if re.search(r"\d", txt[1]) else None
+        bar = None
         if w_m:
             weight, length = _num_str(w_m), "1"
+            bar = _spk_bar_m(txt[1])
         elif w_piece and length_m:
             weight, length = _num_str(w_piece), _num_str(length_m)
         else:
@@ -559,8 +566,18 @@ def read_price_spk(path):
         rows.append(PriceRow(
             excel_row=r_idx + 1, section=section, profile=_spaced_size(name), size="",
             grade=txt[2], length=length, weight=weight,
-            tiers=tiers, gross=[_num_str(v) for v in r[7:11]]))
+            tiers=tiers, gross=[_num_str(v) for v in r[7:11]], bar=bar))
     return rows, sections, sorted(set(dates))
+
+
+def _spk_bar_m(text):
+    """«Мерность» СПК → длина хлыста строкой («12м» → "12", «11.7м» → "11.7").
+
+    Только с «м»: голое число у шестигранника — это его размер (12, 14, 19),
+    «немер», «бухта», пусто — длина неизвестна (""), раскрой попросит ввести.
+    """
+    m = re.match(r"^\s*(\d+(?:[.,]\d+)?)\s*м\s*$", text or "", re.I)
+    return m.group(1).replace(",", ".") if m else ""
 
 
 METALLCITY_SKIP = ("ВИНТОВЫЕ СВАИ", "СЕТКА СВАРНАЯ")
@@ -1392,7 +1409,8 @@ def main():
                                     item.mass, "строка %s" % item.row.excel_row)
             assert_price_unit(product, price, env=env)   # дверь одна
             min_qty = min_qty_in_product_unit(tier.qty_from, item.mass, item.unit, digits)
-            length_m = _num(item.row.length) or 0.0
+            bar = item.row.bar if item.row.bar is not None else item.row.length
+            length_m = _num(bar) or 0.0
             rec, what = upsert_supplierinfo(env, book, tmpl, variant, tier,
                                             price, min_qty, item.vendor_name,
                                             bar_length_mm=length_m * 1000.0)
