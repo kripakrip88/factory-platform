@@ -169,9 +169,11 @@ class TestPurchaseListsStep25(TransactionCase):
             with self.subTest(model=model):
                 views = self.env[model].with_user(self.admin).get_views([(False, "form")])
                 arch = etree.fromstring(views["views"]["form"]["arch"])
-                flag = arch.xpath("//field[@name='pmk_is_linear']")
-                self.assertTrue(flag, "Признак в форме %s." % model)
-                self.assertIn(flag[0].get("invisible"), HIDDEN)
+                # №309: и признак «лист в м²» — по нему колонка «Ед.» у цен листа.
+                for name in ("pmk_is_linear", "pmk_is_sqm"):
+                    flag = arch.xpath("//field[@name='%s']" % name)
+                    self.assertTrue(flag, "Признак %s в форме %s." % (name, model))
+                    self.assertIn(flag[0].get("invisible"), HIDDEN)
                 self.assertTrue(arch.xpath("//field[@name='seller_ids']"))
 
     # ─── «Закупки → Цены поставщиков» ───────────────────────────────────

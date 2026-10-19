@@ -28,10 +28,23 @@
                invisible="not pmk_is_sqm or type != 'consu' or (product_variant_count &gt; 1 and not is_product_variant)"/>
       </xpath>
       <xpath expr="//group[@name='group_standard_price']//div[@name='weight']" position="after">
-        <field name="pmk_is_sqm" invisible="1"/>
         <field name="uom_ids" string="Габариты" widget="many2many_tags" readonly="1"
                invisible="not pmk_is_sqm"
                help="Листы, которые есть в прайсах поставщиков. Дописываются сами — загрузкой прайса и заявкой на металл."/>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- Признак — скрытым полем там же, где pmk_is_linear (supplier_price_views.xml):
+       список цен берёт его как parent.pmk_is_sqm, а этот вид — общий у шаблона и
+       варианта (форма варианта строится из него), так что признак есть в обеих. -->
+  <record id="view_product_template_is_sqm" model="ir.ui.view">
+    <field name="name">product.template.form.pmk.is.sqm</field>
+    <field name="model">product.template</field>
+    <field name="inherit_id" ref="purchase.view_product_supplier_inherit"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='seller_ids']" position="before">
+        <field name="pmk_is_sqm" invisible="1"/>
       </xpath>
     </field>
   </record>
@@ -41,7 +54,8 @@
     <field name="model">product.supplierinfo</field>
     <field name="inherit_id" ref="pmk_purchase.product_supplierinfo_tree_view2_pmk"/>
     <field name="arch" type="xml">
-      <xpath expr="//field[@name='price']" position="before">
+      <!-- Перед длиной хлыста: та стоит вплотную к цене (шаг 25), у листа её нет. -->
+      <xpath expr="//field[@name='pmk_bar_length_mm']" position="before">
         <field name="product_uom_id" string="Ед." readonly="1" optional="show"
                column_invisible="not parent.pmk_is_sqm"/>
       </xpath>
