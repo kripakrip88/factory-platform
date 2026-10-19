@@ -120,7 +120,12 @@
             <field name="attribute_id" ref="attr_grade"/>
             <field name="sequence">80</field>
         </record>
-        <!-- №309 (19.10.2026): тонкий лист 08кп. -->
+        <!-- №309 (19.10.2026): тонкий лист 08кп; 08пс — лист х/к (СПК «08пс/сп»). -->
+        <record id="attr_grade_08ps" model="product.attribute.value">
+            <field name="name">08пс</field>
+            <field name="attribute_id" ref="attr_grade"/>
+            <field name="sequence">95</field>
+        </record>
         <record id="attr_grade_08kp" model="product.attribute.value">
             <field name="name">08кп</field>
             <field name="attribute_id" ref="attr_grade"/>

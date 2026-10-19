@@ -444,7 +444,9 @@
                           <field name="a_mm" options="{'hide_trailing_zeros': True}"/>
                           <field name="b_mm" options="{'hide_trailing_zeros': True}"/>
                           <field name="qty"/>
-                          <field name="grade_id" options="{'no_create': True}" optional="hide"/>
+                          <!-- №309, этап 2: цена листа — по марке строки; пусто — Ст3сп. -->
+                          <field name="grade_id" string="Марка" options="{'no_create': True}"
+                                 optional="show" placeholder="Ст3сп"/>
                           <field name="weight_one" readonly="1" digits="[12,1]"/>
                           <field name="weight_total" readonly="1" digits="[12,1]" sum="Итого, кг"/>
                         </list>

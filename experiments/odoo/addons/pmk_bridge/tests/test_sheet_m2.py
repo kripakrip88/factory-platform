@@ -165,3 +165,20 @@ class TestSheetGrade(TransactionCase):
         self.assertEqual(T._pmk_find_seller(self.today), self.p_st3, "Без марки — базовая, хоть 09Г2С и дороже.")
         self.assertFalse(T._pmk_find_seller(self.today, grade="10ХСНД"),
                          "Марки нет в прайсах — цены нет, Ст3сп не подставляем.")
+
+    def test_spec_line_takes_grade_price(self):
+        """Строка расчёта с маркой 09Г2С берёт цену 09Г2С, без марки — Ст3сп."""
+        sheet = self.env["pmk.metal.sheet"].create({
+            "sheet_type": "Гладкий (тест марки)", "thickness_mm": 10.0, "gost": "ГОСТ тест",
+            "mass_per_sqm": 78.5, "product_tmpl_id": self.tmpl.id})
+        g09 = self.env["pmk.metal.grade"].search([("name", "=", "09Г2С")], limit=1)
+        spec = self.env["pmk.metal.spec"].with_context(
+            mail_create_nolog=True, mail_create_nosubscribe=True).create({
+                "product_ids": [Command.create({"name": "рама", "qty": 1, "line_ids": [
+                    Command.create({"calc_mode": "sheet", "sheet_id": sheet.id, "a_mm": 500,
+                                    "b_mm": 500, "qty": 1, "grade_id": g09.id}),
+                    Command.create({"calc_mode": "sheet", "sheet_id": sheet.id, "a_mm": 500,
+                                    "b_mm": 500, "qty": 1, "grade_id": False})]})]})
+        l09, lbase = spec.product_ids.line_ids.sorted("id")
+        self.assertEqual(l09.price_source_id, self.p_09)
+        self.assertEqual(lbase.price_source_id, self.p_st3)
