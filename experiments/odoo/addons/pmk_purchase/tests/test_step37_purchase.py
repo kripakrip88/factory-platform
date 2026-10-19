@@ -30,8 +30,8 @@
     позиции, «Цены N» первой и всегда, «Закуплено» — только при числе;
     вкладка «Склад» — только тем, кому на ней есть что видеть, в том числе
     у позиции без учёта партиями;
-  • «Цены N» — поставщики с ценой; открытый ею список (базовые цены)
-    показывает столько же строк;
+  • «Цены N» — поставщики с ценой; открытый ею список — их цены со всеми
+    порогами (опт, по которому посчитано, в нём есть);
   • «Адрес проверен» / «Адрес не работает» меняют только состояние адреса
     у отмеченных, пачка не меняется наполовину, отказ — по месту (реестр
     прайсов или нет); сменили адрес — состояние «Не проверен»;
@@ -461,8 +461,9 @@ class TestStep37Purchase(TransactionCase):
     def test_prices_button_opens_same_rows(self):
         """«Цены N» — поставщики с ценой на сегодня, а не строки с оптовыми
         порогами (находка проверки: «3» у всех 261 позиции — базовая и два
-        порога одного Металлсервиса). Список, который кнопка открывает, —
-        базовые цены: строк столько же, сколько на кнопке."""
+        порога одного Металлсервиса). Список, который кнопка открывает, — цены
+        этих поставщиков со всеми порогами (19.10.2026: расчёт берёт опт, и
+        строка, по которой посчитано, должна быть в списке)."""
         self.assertEqual(self.angle_tmpl.pmk_price_count, 2,
                          "Металлсервис (базовая и опт) и второй поставщик; закрытый прайс не в счёт.")
         self.assertEqual(self.angle_tmpl.product_variant_id.pmk_price_count, 2)
@@ -471,10 +472,12 @@ class TestStep37Purchase(TransactionCase):
         self.assertTrue(search.xpath("//field[@name='product_tmpl_id']"),
                         "Фасет «Позиция» — поле поиска списка цен.")
         current = self._filter_domain(search, "current")
-        base = self._filter_domain(search, "base_qty")
-        rows = self.env["product.supplierinfo"].search_count(
-            [("product_tmpl_id", "=", self.angle_tmpl.id)] + current + base)
-        self.assertEqual(rows, self.angle_tmpl.pmk_price_count)
+        rows = self.env["product.supplierinfo"].search(
+            [("product_tmpl_id", "=", self.angle_tmpl.id)] + current)
+        self.assertEqual(len(rows.partner_id), self.angle_tmpl.pmk_price_count,
+                         "Поставщиков в списке столько же, сколько на кнопке.")
+        self.assertIn(self.angle_tmpl._pmk_find_seller(self.today), rows,
+                      "Строка, по которой посчитано (опт), — в списке.")
         for record in (self.angle_tmpl, self.angle_tmpl.product_variant_id):
             action = record.with_user(self.admin).action_pmk_open_prices()
             with self.subTest(model=record._name):
@@ -484,8 +487,8 @@ class TestStep37Purchase(TransactionCase):
                 ctx = action["context"]
                 self.assertEqual(ctx["search_default_product_tmpl_id"], self.angle_tmpl.id)
                 self.assertEqual(ctx["search_default_current"], 1)
-                self.assertEqual(ctx["search_default_base_qty"], 1,
-                                 "Базовые цены — по строке на поставщика, опт — снять фасет.")
+                self.assertNotIn("search_default_base_qty", ctx,
+                                 "Опт виден сразу: расчёт берёт самую низкую цену.")
                 self.assertFalse(ctx["visible_product_tmpl_id"],
                                  "Форма строки прайса показывает товар, как в «Ценах поставщиков».")
                 self.assertFalse(action.get("domain"), "Отбор — фасетами, их можно снять.")
