@@ -110,3 +110,58 @@ class TestSheetM2(TransactionCase):
         self.tmpl._pmk_add_packaging(self.u6000)
         self.tmpl._pmk_add_packaging(self.sqm)
         self.assertEqual(self.tmpl.uom_ids, self.u6000)
+
+
+@tagged("post_install", "-at_install")
+class TestSheetGrade(TransactionCase):
+    """Марка — вариант листа, цена — по марке строки (№309, этап 2, 19.10.2026).
+
+    Ловим: вариант марки заводится, не трогая базовый (Ст3сп) и не обнуляя
+    артикул карточки; цена берётся по марке, без марки — базовая; марки нет в
+    прайсах — цены нет (подставлять Ст3сп вместо 09Г2С нельзя).
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        old = fields.Date.context_today(cls.env["res.partner"]) - datetime.timedelta(days=10)
+        cls.today = fields.Date.context_today(cls.env["res.partner"])
+        sqm = cls.env.ref("uom.product_uom_square_meter")
+        cls.u6000 = cls.env["uom.uom"]._pmk_sheet_uom("1500x6000")
+        attr = cls.env.ref("pmk_bridge.attr_grade")
+        st3 = attr.value_ids.filtered(lambda v: v.name == "Ст3сп")
+        cls.tmpl = cls.env["product.template"].create({
+            "name": "Лист 10 мм (тест марки)", "uom_id": sqm.id, "weight": 78.5,
+            "default_code": "LST-T-10"})
+        # Правило одного значения (product_attribute.xml): вариант впитывает Ст3сп.
+        cls.tmpl.attribute_line_ids = [Command.create({"attribute_id": attr.id, "value_ids": [st3.id]})]
+        cls.base = cls.tmpl.product_variant_ids
+        cls.metal = cls.env["res.partner"].create({
+            "name": "Металлсервис (тест марки)", "is_company": True, "pmk_supplier_rank": 10})
+        Info = cls.env["product.supplierinfo"]
+        cls.p_st3 = Info.create({"partner_id": cls.metal.id, "product_tmpl_id": cls.tmpl.id,
+                                 "product_id": cls.base.id, "product_uom_id": cls.u6000.id,
+                                 "price": 50000.0, "date_start": old})
+        cls.v09 = cls.tmpl._pmk_grade_variant("09Г2С", create=True)
+        cls.p_09 = Info.create({"partner_id": cls.metal.id, "product_tmpl_id": cls.tmpl.id,
+                                "product_id": cls.v09.id, "product_uom_id": cls.u6000.id,
+                                "price": 60000.0, "date_start": old})
+
+    def test_variant_created_code_kept(self):
+        self.assertTrue(self.v09)
+        self.assertNotEqual(self.v09, self.base)
+        self.assertTrue(self.base.active, "Базовый вариант жив.")
+        self.assertEqual(self.base.default_code, "LST-T-10")
+        self.assertEqual(self.v09.default_code, "LST-T-10-09G2S")
+        self.assertEqual(self.tmpl.default_code, "LST-T-10", "Артикул карточки не обнулился.")
+        self.assertAlmostEqual(self.v09.weight, 78.5)
+        self.assertEqual(self.tmpl._pmk_grade_variant("09Г2С", create=True), self.v09, "Без дублей.")
+        self.assertFalse(self.tmpl._pmk_grade_variant("10ХСНД"), "Без create не заводит.")
+
+    def test_find_seller_by_grade(self):
+        T = self.tmpl
+        self.assertEqual(T._pmk_find_seller(self.today, grade="09Г2С"), self.p_09)
+        self.assertEqual(T._pmk_find_seller(self.today, grade="Ст3сп"), self.p_st3)
+        self.assertEqual(T._pmk_find_seller(self.today), self.p_st3, "Без марки — базовая, хоть 09Г2С и дороже.")
+        self.assertFalse(T._pmk_find_seller(self.today, grade="10ХСНД"),
+                         "Марки нет в прайсах — цены нет, Ст3сп не подставляем.")

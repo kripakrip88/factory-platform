@@ -360,8 +360,8 @@ class TestStep37Purchase(TransactionCase):
                 }
                 if model == "product.template":
                     # №309: лист в м² — вес квадратного метра (sheet_m2_product.xml).
-                    kinds["лист в м²"] = ({"pmk_is_linear": False, "pmk_mass_ref": False,
-                                          "pmk_is_sqm": True}, ("Вес м²", "weight"), "weight")
+                    kinds["лист в м²"] = ({"pmk_is_linear": False, "pmk_mass_ref": True,
+                                          "pmk_is_sqm": True}, ("Вес м²", "pmk_mass_unit"), "pmk_mass_unit")
                 labels = arch.xpath(general + "//label[@for='weight' or @for='pmk_mass_unit']")
                 fields_ = arch.xpath(general + "//div[@name='weight']/field[@name!='weight_uom_name']")
                 for kind, (flags, label, field) in kinds.items():

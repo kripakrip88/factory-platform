@@ -56,11 +56,14 @@ NO_PRICE = "нет в прайсах"
 # масса метра, метизы — масса штуки, краски — 1 кг (продаются килограммами).
 # Лист сюда не входит: его масса — вес карточки (вес листа), её берёт и
 # расчёт (pmk_bridge, reference_link.py, MetalSheetLink._pmk_mass_per_unit).
-MASS_REFERENCES = ("pmk.metal.profile", "pmk.metal.fastener", "pmk.paint.coating")
+# Лист — тоже, но только карточка в м² (№309): кг/м² справочника. Карточка
+# листа в штуках (до перевода) — вес карточки, как раньше.
+MASS_REFERENCES = ("pmk.metal.profile", "pmk.metal.fastener", "pmk.paint.coating", "pmk.metal.sheet")
 MASS_HELP = ("Масса единицы, по которой расчёт и «Цена, ₽/т» переводят цену в "
              "тонны. Прокат — масса метра, метизы — масса штуки, краска — 1 кг: "
              "берутся из справочника и правятся там, в карточке только "
-             "чтение. Лист и остальное — вес карточки товара.")
+             "чтение. Лист — масса квадратного метра из справочника. "
+             "Остальное — вес карточки товара.")
 
 
 def current_domain(today):
@@ -204,13 +207,15 @@ class ProductTemplate(models.Model):
                     refs[ref.product_tmpl_id.id] = ref
         return refs
 
-    @api.depends("weight")
+    @api.depends("weight", "uom_id")
     def _compute_pmk_mass(self):
         # Справочник — тот же метод, что у расчёта и «Цены, ₽/т»
         # (_pmk_mass_per_unit): своей формулы массы здесь нет.
         refs = self._pmk_mass_references()
         for tmpl in self:
             ref = refs.get(tmpl._origin.id)
+            if ref and ref._name == "pmk.metal.sheet" and not tmpl._pmk_is_sqm():
+                ref = None   # лист в штуках — вес карточки (до №309)
             tmpl.pmk_mass_ref = bool(ref)
             tmpl.pmk_mass_unit = ref._pmk_mass_per_unit(tmpl) if ref else tmpl.weight
 

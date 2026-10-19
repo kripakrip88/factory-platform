@@ -20,12 +20,26 @@
     <field name="priority">101</field>
     <field name="active" eval="True"/>
     <field name="arch" type="xml">
-      <xpath expr="//group[@name='group_standard_price']//label[@for='weight']" position="attributes">
+      <!-- Лист в м² — масса из справочника (pmk_mass_ref), подпись «Вес м²».
+           [2] — подпись «Вес единицы» (первая — «Вес метра», step37_product.xml;
+           по string Odoo выбирать не даёт).
+           Строка видна и у карточки с несколькими марками: кг/м² у марок один,
+           а ядро у такой карточки вес прячет (у шаблона он ноль). -->
+      <xpath expr="(//group[@name='group_standard_price']//label[@for='pmk_mass_unit'])[2]" position="attributes">
         <attribute name="invisible" add="pmk_is_sqm" separator="or"/>
       </xpath>
-      <xpath expr="//group[@name='group_standard_price']//label[@for='weight']" position="after">
-        <label for="weight" string="Вес м²"
-               invisible="not pmk_is_sqm or type != 'consu' or (product_variant_count &gt; 1 and not is_product_variant)"/>
+      <xpath expr="(//group[@name='group_standard_price']//label[@for='pmk_mass_unit'])[2]" position="after">
+        <label for="pmk_mass_unit" string="Вес м²" invisible="not pmk_is_sqm or type != 'consu'"/>
+      </xpath>
+      <!-- Артикул у листа с несколькими марками: ядро его прячет (у шаблона
+           с вариантами он «ничей»), у нас — артикул базового варианта
+           (sheet_uom.py), только чтение: у марок свои, «LST-GL-10-09G2S». -->
+      <xpath expr="//group[@name='group_standard_price']/field[@name='default_code']" position="attributes">
+        <attribute name="invisible">product_variant_count &gt; 1 and not pmk_is_sqm</attribute>
+        <attribute name="readonly">product_variant_count &gt; 1</attribute>
+      </xpath>
+      <xpath expr="//group[@name='group_standard_price']//div[@name='weight']" position="attributes">
+        <attribute name="invisible">type != 'consu' or (product_variant_count &gt; 1 and not is_product_variant and not pmk_is_sqm)</attribute>
       </xpath>
       <xpath expr="//group[@name='group_standard_price']//div[@name='weight']" position="after">
         <field name="uom_ids" string="Габариты" widget="many2many_tags" readonly="1"
@@ -75,6 +89,8 @@
     <field name="arch" type="xml">
       <!-- Перед длиной хлыста: та стоит вплотную к цене (шаг 25), у листа её нет. -->
       <xpath expr="//field[@name='pmk_bar_length_mm']" position="before">
+        <field name="pmk_grade_label" string="Марка" optional="show"
+               column_invisible="not parent.pmk_is_sqm"/>
         <field name="product_uom_id" string="Ед." readonly="1" optional="show"
                column_invisible="not parent.pmk_is_sqm"/>
       </xpath>

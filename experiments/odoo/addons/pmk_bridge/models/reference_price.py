@@ -49,7 +49,7 @@ class ProductTemplatePmkSeller(models.Model):
         for tmpl in self:
             tmpl.pmk_is_linear = tmpl._origin.id in linear
 
-    def _pmk_find_seller(self, date, supplier=None, uom=None):
+    def _pmk_find_seller(self, date, supplier=None, uom=None, grade=None):
         """Строка прайса, по которой считаем себестоимость на дату.
 
         • строка действует на дату (дата начала не позже, окончания не раньше);
@@ -61,6 +61,11 @@ class ProductTemplatePmkSeller(models.Model):
           всегда считают по самой низкой цене, тк мы оптовики, и это скорее
           общий прайс». Было (до 19.10): базовый, без минимального количества.
 
+        • лист в м², МАРКА (№309, этап 2): только цены варианта марки grade
+          (строка без варианта — на всю карточку — годится любой марке). Нет
+          цены марки — цены нет: подставлять Ст3сп вместо 09Г2С нельзя (Антон
+          18.10: такой марки в прайсах «не может не быть»). Марка не задана —
+          базовая Ст3сп, если она есть, иначе любая;
         • лист в м² (№309): строка ГАБАРИТА uom («Лист 1500×3000»); у
           поставщиков такого нет — любого габарита (вариант «а», Антон 18.10:
           цена тонны та же, единица приведена к м²). Габарит не задан — как
@@ -81,7 +86,11 @@ class ProductTemplatePmkSeller(models.Model):
             sellers = sellers.filtered(lambda s: s.partner_id == supplier)
             if not sellers:
                 return empty
-        else:
+        if self._pmk_is_sqm():
+            sellers = self._pmk_sellers_of_grade(sellers, grade)
+            if not sellers:
+                return empty
+        if not supplier:
             best_rank = min(sellers.mapped("partner_id.pmk_supplier_rank") or [0])
             sellers = sellers.filtered(
                 lambda s: s.partner_id.pmk_supplier_rank == best_rank)
@@ -92,6 +101,20 @@ class ProductTemplatePmkSeller(models.Model):
             sellers = same or sellers
 
         return sellers.sorted(lambda s: (s.price_discounted, s.id))[:1]
+
+    def _pmk_sellers_of_grade(self, sellers, grade):
+        """Строки прайса марки grade (имя, «09Г2С»). Без марки — базовая Ст3сп,
+        если её цены есть, иначе все (мягко, как габарит 1500×6000)."""
+        attr = self.env.ref("pmk_bridge.attr_grade", raise_if_not_found=False)
+
+        def grade_of(info):
+            names = info.product_id.product_template_attribute_value_ids.filtered(
+                lambda v: v.attribute_id == attr).mapped("name")
+            return names[0] if names else None
+        if grade:
+            return sellers.filtered(lambda s: grade_of(s) in (grade, None))
+        base = sellers.filtered(lambda s: grade_of(s) in ("Ст3сп", None))
+        return base or sellers
 
 
 class SupplierInfoPmkPrice(models.Model):
@@ -140,6 +163,18 @@ class SupplierInfoPmkPrice(models.Model):
             ref = reference.get(info.product_tmpl_id._origin.id)
             mass = ref._pmk_mass_per_unit(info.product_tmpl_id, variant=info.product_id) if ref else 0.0
             info.pmk_price_ton = spec_text.per_ton(info.price_discounted, mass)
+
+    # №309, этап 2: марка строки прайса отдельной колонкой — у листа цены
+    # Ст3сп и 09Г2С одного поставщика стоят рядом, без марки их не отличить.
+    pmk_grade_label = fields.Char("Марка", compute="_compute_pmk_grade_label")
+
+    @api.depends("product_id.product_template_attribute_value_ids")
+    def _compute_pmk_grade_label(self):
+        attr = self.env.ref("pmk_bridge.attr_grade", raise_if_not_found=False)
+        for info in self:
+            names = info.product_id.product_template_attribute_value_ids.filtered(
+                lambda v: v.attribute_id == attr).mapped("name") if attr else []
+            info.pmk_grade_label = names[0] if names else False
 
     @api.depends("product_id.product_template_attribute_value_ids", "product_uom_id")
     def _compute_pmk_variant_label(self):

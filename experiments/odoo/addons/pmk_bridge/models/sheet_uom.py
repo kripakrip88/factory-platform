@@ -7,6 +7,8 @@
 """
 from odoo import api, fields, models
 
+from . import sku as sku_gen
+
 SQM_XMLID = "uom.product_uom_square_meter"
 SHEET_UOM_XMLID = {
     "1250x2500": "pmk_bridge.uom_sheet_1250x2500",
@@ -72,3 +74,68 @@ class ProductTemplateSheetUom(models.Model):
         for tmpl in self:
             if uom and uom != tmpl.uom_id and uom not in tmpl.uom_ids:
                 tmpl.sudo().uom_ids = [(4, uom.id)]
+
+    # ─── Марка — вариант (№309, этап 2, 19.10.2026) ──────────────────────
+    def _compute_default_code(self):
+        """Артикул карточки с несколькими марками — артикул базового варианта.
+
+        Ядро ставит карточке артикул, только пока вариант один: второй вариант
+        (марка 09Г2С) обнулял «LST-GL-3» у карточки — в «Номенклатуре» пусто,
+        поиск по артикулу её не находил. Берём самый короткий артикул варианта:
+        у базового варианта он без хвоста марки («LST-GL-3», а не
+        «LST-GL-3-09G2S», sku.variant_sku).
+        """
+        super()._compute_default_code()
+        for tmpl in self:
+            if tmpl.default_code or len(tmpl.product_variant_ids) < 2:
+                continue
+            codes = [c for c in tmpl.product_variant_ids.mapped("default_code") if c]
+            if codes:
+                tmpl.default_code = min(codes, key=lambda c: (len(c), c))
+
+    def _pmk_grade_variant(self, grade_name, create=False):
+        """Вариант карточки с маркой grade_name; create — завести, если нет.
+
+        Значение марки дописывается в строку характеристики (dynamic: ядро
+        вариантов само не плодит), вариант — по одной комбинации. Существующие
+        варианты не трогаются (замер на копии 19.10: вариант Ст3сп с ценами жив).
+        Артикул — артикул карточки + марка (sku.variant_sku), вес — как у базового.
+        """
+        self.ensure_one()
+        attr = self.env.ref("pmk_bridge.attr_grade", raise_if_not_found=False)
+        Product = self.env["product.product"]
+        if not attr:
+            return Product
+        for variant in self.product_variant_ids:
+            names = variant.product_template_attribute_value_ids.filtered(
+                lambda v: v.attribute_id == attr).mapped("name")
+            if grade_name in names:
+                return variant
+        if not create:
+            return Product
+        value = attr.value_ids.filtered(lambda v: v.name == grade_name)[:1]
+        line = self.attribute_line_ids.filtered(lambda l: l.attribute_id == attr)[:1]
+        if not value or not line or len(self.attribute_line_ids) != 1:
+            return Product
+        base = self.product_variant_ids[:1]
+        base_code = self.default_code
+        line.sudo().value_ids = [(4, value.id)]
+        self.env.flush_all()
+        ptav = self.env["product.template.attribute.value"].sudo().search([
+            ("attribute_line_id", "=", line.id), ("product_attribute_value_id", "=", value.id)], limit=1)
+        variant = self.sudo()._create_product_variant(ptav)
+        if variant:
+            vals = {"weight": base.weight}
+            if base_code:
+                vals["default_code"] = sku_gen.variant_sku(base_code, sku_gen.grade_code(grade_name))
+            variant.write(vals)
+        return variant
+
+    def _pmk_grade_value_exists(self, grade_name):
+        """Марка заведена значением характеристики, и у карточки есть её строка —
+        вариант можно завести (для отчёта пробного прогона загрузчика)."""
+        self.ensure_one()
+        attr = self.env.ref("pmk_bridge.attr_grade", raise_if_not_found=False)
+        return bool(attr and attr.value_ids.filtered(lambda v: v.name == grade_name)
+                    and self.attribute_line_ids.filtered(lambda l: l.attribute_id == attr))
+

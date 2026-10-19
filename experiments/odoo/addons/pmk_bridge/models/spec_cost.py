@@ -1015,8 +1015,11 @@ class MetalSpecLineCost(models.Model):
         position = self._cost_position()
         return position._pmk_mass_per_unit(tmpl) if position else 0.0
 
+    # №309: марка и габарит строки листа выбирают строку прайса — их смена
+    # переписывает источник цены (цена единицы остаётся до «Перечитать цены»,
+    # расхождение подсвечивает «Цены не перечитаны»).
     @api.depends("calc_mode", "profile_id", "sheet_id", "fastener_id", "paint_id",
-                 "spec_id.price_date", "spec_id.supplier_id")
+                 "spec_id.price_date", "spec_id.supplier_id", "grade_id", "layout_sheet_size")
     def _compute_price_from_supplier(self):
         """Одна дверь к цене: прайс → цена за единицу → цена за килограмм.
 
@@ -1176,8 +1179,10 @@ class MetalSpecLineCost(models.Model):
         """
         self.ensure_one()
         date = date or self.spec_id.price_date or fields.Date.context_today(self)
+        grade = (self.grade_id.name or None) if (
+            self.calc_mode == "sheet" and "grade_id" in self._fields) else None
         return tmpl._pmk_find_seller(date, supplier=self.spec_id.supplier_id,
-                                     uom=self._cost_sheet_uom(tmpl)) or False
+                                     uom=self._cost_sheet_uom(tmpl), grade=grade) or False
 
     @api.depends("price_source_id", "layout_sheet_size", "calc_mode")
     def _compute_price_gabarit_note(self):

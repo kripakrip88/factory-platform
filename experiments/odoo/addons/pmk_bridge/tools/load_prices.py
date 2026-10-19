@@ -817,8 +817,9 @@ GRADE_MAP = {
     "09Г2С14": "09Г2С", "09Г2С15": "09Г2С",
     # А ГРУПП (18.10.2026): «Ст3/С255» — С255 по ГОСТ 27772 и есть Ст3сп5.
     "СТ3С255": "Ст3сп", "С255": "Ст3сп",
-    # №309 (19.10.2026): тонкий лист.
-    "08КП": "08кп",
+    # №309 (19.10.2026): тонкий лист. «08кп\пс» Металлсервиса — кп или пс на
+    # выбор поставщика, как «Ст3сп\пс» → Ст3сп.
+    "08КП": "08кп", "08КППС": "08кп",
 }
 
 
@@ -1053,7 +1054,7 @@ def min_qty_in_product_unit(tonnes, mass_kg, unit, digits):
 # 8. ЗАПИСЬ В БАЗУ
 # ═══════════════════════════════════════════════════════════════════════════
 
-def resolve_target(env, item, sheet_sizes):
+def resolve_target(env, item, sheet_sizes, create=False):
     """Куда ложится цена: (шаблон, вариант, единица цены).
 
     №309 (19.10.2026): лист — карточка в м², вариант — МАРКА, габарит —
@@ -1089,14 +1090,21 @@ def resolve_target(env, item, sheet_sizes):
             raise PriceRowError(
                 "габарит листа не заведён единицей",
                 "%s, а заведены %s" % (item.gabarit, ", ".join(sorted(SHEET_UOM_XMLID))))
-        for variant in tmpl.product_variant_ids:
-            names = set(variant.product_template_attribute_value_ids.mapped(
-                "product_attribute_value_id.name"))
-            if grade in names:
-                return tmpl, variant, uom
+        # №309, этап 2 (19.10.2026): марка — вариант, и загрузчик его ЗАВОДИТ.
+        # Прежний запрет («второй вариант обнуляет артикул шаблона») снят:
+        # артикул карточки с несколькими марками — артикул базового варианта
+        # (sheet_uom.py, _compute_default_code), у нового — «LST-GL-3-09G2S».
+        # ⚠️ Заводим ТОЛЬКО при записи (create): odoo shell фиксирует транзакцию
+        # и на пробном прогоне, и вариант остался бы без цены.
+        variant = tmpl._pmk_grade_variant(grade, create=create)
+        if variant:
+            return tmpl, variant, uom
+        if not create and tmpl._pmk_grade_value_exists(grade):
+            raise PriceRowError("варианта марки нет — заведётся при записи",
+                                "%s у карточки %s" % (grade, tmpl.default_code or tmpl.name))
         raise PriceRowError(
-            "варианта марки нет, а создавать его загрузчику цен нельзя",
-            "%s у карточки %s; второй вариант обнуляет артикул шаблона"
+            "варианта марки нет и завести его нельзя",
+            "%s у карточки %s: нет значения марки или строки характеристики"
             % (grade, tmpl.default_code or tmpl.name))
     if item.gabarit not in sheet_sizes:
         raise PriceRowError(
@@ -1397,7 +1405,7 @@ def main():
     targets, no_target = [], []
     for item in winners:
         try:
-            tmpl, variant, uom = resolve_target(env, item, sizes)
+            tmpl, variant, uom = resolve_target(env, item, sizes, create=par["apply"])
             product = variant or tmpl.product_variant_ids[:1]
             if not product:
                 raise PriceRowError("у карточки нет ни одного варианта",
