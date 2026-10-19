@@ -49,6 +49,19 @@
     </field>
   </record>
 
+  <!-- Порог объёма — не наш случай (Антон 19.10.2026): заводу отпускают по
+       самой низкой цене, в прайсе одна строка на позицию с порогом 0. -->
+  <record id="product_supplierinfo_tree_view2_no_qty" model="ir.ui.view">
+    <field name="name">product.supplierinfo.list.view2.pmk.no.qty</field>
+    <field name="model">product.supplierinfo</field>
+    <field name="inherit_id" ref="pmk_purchase.product_supplierinfo_tree_view2_pmk"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='min_qty']" position="attributes">
+        <attribute name="column_invisible">1</attribute>
+      </xpath>
+    </field>
+  </record>
+
   <record id="product_supplierinfo_tree_view2_sheet_m2" model="ir.ui.view">
     <field name="name">product.supplierinfo.list.view2.pmk.sheet.m2</field>
     <field name="model">product.supplierinfo</field>

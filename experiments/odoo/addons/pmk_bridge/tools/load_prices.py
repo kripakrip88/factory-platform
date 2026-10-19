@@ -1424,23 +1424,31 @@ def main():
         selftest_guard(env, book)
 
     if not par["apply"]:
-        print("\n  записей вышло бы: %s" % sum(
-            len([t for t in i.row.tiers if t.qty_from is not None]) for i, _, _, _, _ in targets))
+        print("\n  записей вышло бы: %s (одна на позицию — самая низкая колонка)" % len(targets))
         print("\n=== КОНЕЦ ===")
         return
 
     head("ЗАПИСЬ")
     made = Counter()
     for item, tmpl, variant, product, uom in targets:
+        # ОДНА ЦЕНА НА ПОЗИЦИЮ — САМАЯ НИЗКАЯ КОЛОНКА (Антон 19.10.2026: «нам
+        # всегда считают по самой низкой цене, тк мы оптовики»; «промежуточные
+        # цены поставщиков на нас не распространяются»). Пишем её уровнем 1 с
+        # порогом 0: ручной заказ на любой объём получит эту цену, а не ноль.
+        # Цена уровня — по ПОРЯДКУ уровня (Tier.no), а не по колонке: колонки у
+        # поставщиков разные (Металлсервис 4–6, СПК 7–10, МеталлСити — одна).
+        priced = []
         for tier in [t for t in item.row.tiers if t.qty_from is not None]:
-            # Цена уровня — по ПОРЯДКУ уровня (Tier.no), а не по колонке: колонки у
-            # поставщиков разные (Металлсервис 4–6, СПК 7–10, МеталлСити — одна).
             idx = tier.no - 1
-            gross = Money((_num(item.row.gross[idx]) if idx < len(item.row.gross) else None) or 0.0,
-                          book.price_unit)
-            if not gross.amount:
-                made["уровень без цены"] += 1
-                continue
+            amount = (_num(item.row.gross[idx]) if idx < len(item.row.gross) else None) or 0.0
+            if amount:
+                priced.append((amount, tier))
+        if not priced:
+            made["позиция без цены"] += 1
+            continue
+        low_amount, low_tier = min(priced, key=lambda p: (p[0], p[1].no))
+        for tier in [low_tier._replace(no=1, qty_from=0.0)]:
+            gross = Money(low_amount, book.price_unit)
             # ⚠️ БЕЗ net_of_vat. Цена хранится КАК В БУМАГЕ, с НДС (решение
             # владельца 24.09.2026). Очистка снималась в двух местах, и правка
             # 24.09 задела только разбор: здесь, в записи, деление осталось —

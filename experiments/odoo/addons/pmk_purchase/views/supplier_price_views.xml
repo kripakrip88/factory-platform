@@ -52,8 +52,10 @@
         <field name="pmk_price_ton" optional="show" invisible="not pmk_price_ton"/>
         <field name="date_start" string="Действует с"/>
         <field name="date_end" string="по" optional="show"/>
-        <field name="min_qty" string="Мин. кол-во" optional="show"
-               options="{'hide_trailing_zeros': True}"/>
+        <!-- Порог объёма не показываем (Антон 19.10.2026): заводу всегда
+             отпускают по самой низкой цене, промежуточные цены не действуют,
+             и в прайсе одна строка на позицию — порог у неё 0. -->
+        <field name="min_qty" column_invisible="1"/>
         <field name="currency_id" column_invisible="1"/>
       </list>
     </field>
@@ -77,10 +79,6 @@
         <filter name="no_date" string="Без даты"
                 domain="[('date_start', '=', False)]"/>
         <separator/>
-        <!-- Одна строка на позицию и прайс: оптовые пороги (3, 5 листов)
-             прячутся. Расчёт берёт именно базовую цену. -->
-        <filter name="base_qty" string="Базовая цена (без опта)"
-                domain="[('min_qty', '=', 0)]"/>
 
         <group>
           <filter name="by_partner" string="Поставщик" context="{'group_by': 'partner_id'}"/>

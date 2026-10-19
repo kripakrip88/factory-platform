@@ -201,7 +201,7 @@ class TestPurchaseListsStep25(TransactionCase):
                  if f.get("column_invisible") not in HIDDEN]
         self.assertEqual(names, ["partner_id", "product_tmpl_id", "pmk_variant_label",
                                  "pmk_bar_length_mm", "price", "product_uom_id",
-                                 "pmk_price_ton", "date_start", "date_end", "min_qty"])
+                                 "pmk_price_ton", "date_start", "date_end"])
         self.assertEqual(self._one(arch, "partner_id").get("string"), "Поставщик")
         self.assertEqual(self._one(arch, "date_start").get("string"), "Действует с")
         # R11: у не-проката ячейка пустая, а не «0».
