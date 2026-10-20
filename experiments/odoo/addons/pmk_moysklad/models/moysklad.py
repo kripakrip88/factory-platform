@@ -486,8 +486,14 @@ class PmkMoysklad(models.AbstractModel):
                 if order and when and (not order.pmk_ms_shipped_date
                                        or order.pmk_ms_shipped_date < when.date()):
                     order.pmk_ms_shipped_date = when.date()
+                if order:
+                    self._ms_after_demand(order, dem)
             last, n = dem.get("updated") or last, n + 1
         return n, last
+
+    @api.model
+    def _ms_after_demand(self, order, dem):
+        """Точка для модулей: отгрузка по счёту перенесена (deal_link — сделка)."""
 
     # ------------------------------------------------------------ запуск
     @api.model
