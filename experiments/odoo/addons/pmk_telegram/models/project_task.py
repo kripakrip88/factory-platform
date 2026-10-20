@@ -30,7 +30,9 @@ def _esc(text):
 def html_text(value):
     """Html поля → текст сообщения: абзацы и пункты — строками, пункт — «• »."""
     text = re.sub(r"<li[^>]*>", "\n• ", value or "", flags=re.I)
-    text = re.sub(r"<br\s*/?>|</p>|</li>|</h\d>|</div>", "\n", text, flags=re.I)
+    # </li> не переносит строку: перенос уже даёт «<li>» следующего пункта — иначе
+    # между пунктами пустая строка.
+    text = re.sub(r"<br\s*/?>|</p>|</h\d>|</div>", "\n", text, flags=re.I)
     text = html.unescape(re.sub(r"<[^>]+>", "", text))
     text = re.sub(r"[ \t]+", " ", text)
     text = re.sub(r"\n[ \t]+", "\n", text)
