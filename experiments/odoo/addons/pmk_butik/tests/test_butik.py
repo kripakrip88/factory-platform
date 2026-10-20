@@ -75,6 +75,26 @@ class TestButik(TransactionCase):
         self.assertTrue(row["is_sheet"])
         self.assertGreater(row["weight_one"], 0)
 
+    def test_checker_sheet(self):
+        """«риф 5мм» — рифлёный лист, не гладкий (Антон 20.10.2026); одно «Nмм» у
+        листа — толщина, не длина."""
+        dec = parse.decode_for_cell("риф 5мм 200х300мм 2шт")
+        self.assertEqual((dec["name"], dec["width"], dec["length_mm"], dec["qty"]),
+                         ("Лист рифлёный 5", 200.0, 300.0, 2.0))
+        self.assertEqual(parse.decode_for_cell("пл 10мм")["name"], "Пластина 10")
+        self.assertNotIn("length_mm", parse.decode_for_cell("пл 10мм"))
+        self.assertEqual(parse.sheet_query("Лист рифлёный 5", 5), "риф 5")
+        self.assertEqual(parse.sheet_query("Лист ПВЛ 5", 5), "пвл 5")
+        self.assertEqual(parse.sheet_query("Лист 10", 10), "лист 10")
+        checker = self.env["pmk.metal.sheet"].create({
+            "sheet_type": "Рифлёный", "thickness_mm": 5.0, "gost": "ГОСТ 8568-77", "mass_per_sqm": 41.8})
+        spec = self.env["pmk.butik.spec"].create({"subject": "Тест рифлёного"})
+        detail = spec.butik_rows()["rows"][1]
+        spec.butik_save_row(detail["id"], {"name": "риф 5мм 200х300мм 2шт"})
+        line = spec.line_ids.filtered(lambda l: l.kind == "detail")[:1]
+        self.assertIn("Рифл", line.sheet_id.sheet_type or "", line.sheet_id.display_name)
+        self.assertAlmostEqual(line.sheet_id.mass_per_sqm, checker.mass_per_sqm)
+
     def test_short_line_fills_columns(self):
         spec = self.env["pmk.butik.spec"].create({"subject": "Тест"})
         detail = spec.butik_rows()["rows"][1]

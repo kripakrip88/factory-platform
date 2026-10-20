@@ -230,7 +230,7 @@ class ButikSpec(models.Model):
         Sheet = self.env["pmk.metal.sheet"]
         Fastener = self.env["pmk.metal.fastener"]
         if info["kind"] == "sheet" and info["thickness"]:
-            for rid, _label in Sheet.name_search("лист %s" % _fmt(info["thickness"]), limit=6):
+            for rid, _label in Sheet.name_search(parse.sheet_query(query, info["thickness"]), limit=6):
                 out.append({"key": "sheet:%d" % rid, "label": Sheet.browse(rid).display_name, "kind": "Лист"})
         if info["kind"] == "coating" or (parse.decode(query) or {}).get("kind") == "coating":
             Coating = self.env["pmk.paint.coating"]
@@ -360,7 +360,7 @@ class ButikLine(models.Model):
                 if found:
                     vals.update(coating_id=found[0][0], match_state="coating")
             elif info["kind"] == "sheet" and info["thickness"]:
-                found = Sheet.name_search("лист %s" % _fmt(info["thickness"]), limit=1)
+                found = Sheet.name_search(parse.sheet_query(line.name, info["thickness"]), limit=1)
                 if found:
                     vals.update(sheet_id=found[0][0], match_state="auto")
                 if info["width"]:
