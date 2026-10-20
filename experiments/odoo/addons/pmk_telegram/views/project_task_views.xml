@@ -10,13 +10,21 @@
     <field name="name">project.task.form.pmk.check</field>
     <field name="model">project.task</field>
     <field name="inherit_id" ref="project.view_task_form2"/>
-    <!-- 99 — после вида темы (pmk_theme, шаг 52 «шапка документа»): та ставит свою
-         карточку перед вкладками позже, и наш блок оказывался над ней. -->
-    <field name="priority">99</field>
+    <!-- 999 — после вида темы (pmk_theme step52_doc_top.xml, priority 990): рамка
+         pmk_doc_top к этому времени уже собрана. -->
+    <field name="priority">999</field>
     <field name="active" eval="True"/>
     <field name="arch" type="xml">
-      <xpath expr="//notebook" position="before">
+      <!-- В конец рамки шапки (pmk_theme, шаг 52): над рамкой по правилу темы — ничего
+           (test_step52_flat). Вид — после вида темы (priority 999 > 990). -->
+      <xpath expr="//div[@name='pmk_doc_top']" position="inside">
         <field name="pmk_is_dev_task" invisible="1"/>
+        <!-- №, автор и дата задачи доски (20.10.2026) — над «Как проверить». -->
+        <div class="pmk-task-meta text-muted" name="pmk_task_meta" invisible="not pmk_is_dev_task">
+          <span>№<field name="id" class="d-inline"/></span>
+          <span> · Автор: </span><field name="create_uid" class="d-inline" readonly="1" options="{'no_open': True}"/>
+          <span> · </span><field name="pmk_created_on" class="d-inline"/>
+        </div>
         <div class="pmk-task-check" name="pmk_task_check" invisible="not pmk_is_dev_task and not pmk_check_html">
           <label for="pmk_check_html" class="pmk-task-check__label"/>
           <field name="pmk_check_html" nolabel="1"

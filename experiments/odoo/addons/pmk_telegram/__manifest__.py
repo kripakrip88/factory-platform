@@ -24,7 +24,7 @@
     # pmk_deal — источник «Откуда пришёл» и номер «СД-…» в ответе бота.
     # project — задачи на доске «Доработка системы» (сама доска — в pmk_theme,
     # бот ищет её мягко, по xmlid).
-    "depends": ["crm", "project", "pmk_deal"],
+    "depends": ["crm", "project", "pmk_deal", "pmk_theme"],
     "external_dependencies": {"python": ["requests"]},
     "data": [
         "security/ir.model.access.csv",

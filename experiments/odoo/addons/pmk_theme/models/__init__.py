@@ -27,3 +27,5 @@ from . import tracking_lang
 # Задача 262 (12.10.2026): фото сотрудника — аватар его пользователя.
 from . import hr_avatar
 from . import favicon
+# 20.10.2026: дата создания задачи без времени — для карточки доски.
+from . import dev_task

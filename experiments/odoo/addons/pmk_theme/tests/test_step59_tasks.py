@@ -39,6 +39,20 @@ class TestStep59Tasks(TransactionCase):
         found = self.env["project.task"].search(safe_eval(action.domain))
         self.assertIn(task, found)
 
+    def test_dev_card_number_author_date(self):
+        """Карточка доски (20.10.2026): №(id), автор, дата — свой вид только у этой доски."""
+        from lxml import etree
+        action = self.env.ref("pmk_theme.action_dev_tasks")
+        view = self.env.ref("pmk_theme.view_dev_task_kanban")
+        self.assertEqual(action.view_ids.filtered(lambda v: v.view_mode == "kanban").view_id, view)
+        arch = etree.fromstring(self.env["project.task"].get_views([(view.id, "kanban")])["views"]["kanban"]["arch"])
+        meta = arch.xpath("//div[hasclass('pmk-dev-card-meta')]")
+        self.assertTrue(meta)
+        self.assertEqual([f.get("name") for f in meta[0].iter("field")], ["id", "create_uid", "pmk_created_on"])
+        # Основной вид задач (другие доски) не тронут.
+        base = etree.fromstring(self.env["project.task"].get_views([(False, "kanban")])["views"]["kanban"]["arch"])
+        self.assertFalse(base.xpath("//div[hasclass('pmk-dev-card-meta')]"))
+
     def test_notebook_wraps_everywhere(self):
         """Перенос текста во вкладках — во всех формах, не только .pmk-form."""
         from odoo.tools.misc import file_open
