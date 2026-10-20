@@ -601,6 +601,34 @@ class TestTelegramReviewNotice(TestTelegramDevTask):
         self.assertNotIn("ещё нет", text)
         self.assertIn("Открыть задачу", markup["inline_keyboard"][0][0]["text"])
 
+    def test_check_field_sent_and_kept_in_task(self):
+        """«Как проверить» (20.10.2026): инструкция целиком — в уведомлении и в задаче;
+        раздел описания уже не нужен."""
+        task = self._task_by_author("<p><b>Что проверить</b>: старый текст</p>")
+        task.pmk_check_html = (
+            "<p>Где: Калькуляторы → Расчёты → СМ-00048 → «Конструкции».</p>"
+            "<ul><li>В пустой строке: «шв10 12,43тн» → Enter.</li>"
+            "<li>Должно быть: Швеллер 10, 12 430 кг, длина серым.</li></ul>")
+        self.assertTrue(task.pmk_is_dev_task)
+        task.with_user(self.mover).stage_id = self.stage_review
+        text = self.api.sent[-1][1]
+        self.assertIn("Как проверить:", text)
+        self.assertIn("Где: Калькуляторы → Расчёты", text)
+        self.assertIn("• В пустой строке: «шв10 12,43тн» → Enter.", text)
+        self.assertIn("\n• Должно быть", text)
+        self.assertNotIn("старый текст", text)
+        # Длинная — обрезается с отсылкой к задаче, сообщение остаётся в лимите.
+        task2 = self._task_by_author()
+        task2.pmk_check_html = "<p>%s</p>" % ("проверить " * 400)
+        task2.with_user(self.mover).stage_id = self.stage_review
+        self.assertIn("целиком — в задаче", self.api.sent[-1][1])
+        self.assertLess(len(self.api.sent[-1][1]), 4096)
+
+    def test_check_block_in_task_form(self):
+        from lxml import etree
+        arch = etree.fromstring(self.env["project.task"].get_views([(False, "form")])["views"]["form"]["arch"])
+        self.assertTrue(arch.xpath("//div[@name='pmk_task_check']/field[@name='pmk_check_html']"))
+
     def test_author_moving_own_task_not_notified(self):
         task = self._task_by_author()
         n = len(self.api.sent)

@@ -16,7 +16,7 @@
     # Токен бота и секрет адреса — в системных параметрах (pmk_telegram.*),
     # не в репозитории. Подключение: README.md.
     "name": "ПМК: бот в Телеграме",
-    "version": "19.0.1.7.0",
+    "version": "19.0.1.8.0",
     "summary": "Сделка или задача в доработку из Телеграма: текст или скриншот",
     "category": "Sales/CRM",
     "author": "ПМК Парк",
@@ -30,7 +30,14 @@
         "security/ir.model.access.csv",
         "data/cron.xml",
         "views/res_users_views.xml",
+        # 20.10.2026: «Как проверить» в задаче доски — и в уведомлении автору.
+        "views/project_task_views.xml",
     ],
+    "assets": {
+        "web.assets_backend": [
+            "pmk_telegram/static/src/scss/task_check.scss",
+        ],
+    },
     "installable": True,
     "application": False,
 }

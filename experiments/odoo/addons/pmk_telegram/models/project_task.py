@@ -12,16 +12,29 @@
 import html
 import re
 
-from odoo import models
+from odoo import api, fields, models
 
 from .bot import DEV_ACTION_XMLID
 
 REVIEW_STAGE = "Выложено"          # колонка «Выложено — проверить»
 CHECK_MAX = 400
+# Поле «Как проверить» (20.10.2026) — инструкция целиком: где и что нажать.
+# Сообщение Телеграма до 4096 знаков; 1500 — с запасом на заголовок и кнопку.
+CHECK_FIELD_MAX = 1500
 
 
 def _esc(text):
     return html.escape(text or "", quote=False)
+
+
+def html_text(value):
+    """Html поля → текст сообщения: абзацы и пункты — строками, пункт — «• »."""
+    text = re.sub(r"<li[^>]*>", "\n• ", value or "", flags=re.I)
+    text = re.sub(r"<br\s*/?>|</p>|</li>|</h\d>|</div>", "\n", text, flags=re.I)
+    text = html.unescape(re.sub(r"<[^>]+>", "", text))
+    text = re.sub(r"[ \t]+", " ", text)
+    text = re.sub(r"\n[ \t]+", "\n", text)
+    return re.sub(r"\n{3,}", "\n\n", text).strip()
 
 
 def what_to_check(description_html):
@@ -39,6 +52,21 @@ def what_to_check(description_html):
 
 class ProjectTask(models.Model):
     _inherit = "project.task"
+
+    # Антон 20.10.2026: «чтоб с уведомлением пришла ещё инструкция, что
+    # проверить и где, и так же инструкция была продублирована в саму задачу».
+    # Отдельное поле, а не правка описания: описание пишет автор задачи.
+    pmk_check_html = fields.Html(
+        "Как проверить",
+        help="Где и что проверить после выкладки. При переносе карточки в «Выложено — "
+             "проверить» уходит автору задачи в Телеграм.")
+    pmk_is_dev_task = fields.Boolean(compute="_compute_pmk_is_dev_task")
+
+    @api.depends("project_id")
+    def _compute_pmk_is_dev_task(self):
+        project = self.env["pmk.telegram.bot"].sudo()._pmk_dev_project()
+        for task in self:
+            task.pmk_is_dev_task = bool(project) and task.project_id == project
 
     def write(self, vals):
         before = {t.id: t.stage_id.id for t in self} if "stage_id" in vals else {}
@@ -61,9 +89,15 @@ class ProjectTask(models.Model):
             if not author.pmk_telegram_id or author == self.env.user:
                 continue
             lines = ["✅ <b>Готово к проверке</b>", "«%s»" % _esc(task.name)]
-            check = what_to_check(task.description)
-            if check:
-                lines += ["", "<b>Что проверить:</b> %s" % _esc(check)]
+            guide = html_text(task.pmk_check_html)
+            if guide:
+                if len(guide) > CHECK_FIELD_MAX:
+                    guide = guide[:CHECK_FIELD_MAX - 1].rstrip() + "… (целиком — в задаче)"
+                lines += ["", "<b>Как проверить:</b>", _esc(guide)]
+            else:
+                check = what_to_check(task.description)
+                if check:
+                    lines += ["", "<b>Что проверить:</b> %s" % _esc(check)]
             markup = None
             if base.startswith("https://"):
                 markup = {"inline_keyboard": [[{

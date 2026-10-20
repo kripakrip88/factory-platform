@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <!--
+    «Как проверить» в задаче доски «Доработка системы» (Антон 20.10.2026): над
+    вкладками, чтобы проверяющий видел сразу. Тот же текст уходит автору в
+    Телеграм при переносе в «Выложено — проверить» (models/project_task.py).
+    У задач других проектов — только если заполнено. active в XML — грабли Odoo 19.
+  -->
+  <record id="view_task_form_pmk_check" model="ir.ui.view">
+    <field name="name">project.task.form.pmk.check</field>
+    <field name="model">project.task</field>
+    <field name="inherit_id" ref="project.view_task_form2"/>
+    <!-- 99 — после вида темы (pmk_theme, шаг 52 «шапка документа»): та ставит свою
+         карточку перед вкладками позже, и наш блок оказывался над ней. -->
+    <field name="priority">99</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//notebook" position="before">
+        <field name="pmk_is_dev_task" invisible="1"/>
+        <div class="pmk-task-check" name="pmk_task_check" invisible="not pmk_is_dev_task and not pmk_check_html">
+          <label for="pmk_check_html" class="pmk-task-check__label"/>
+          <field name="pmk_check_html" nolabel="1"
+                 placeholder="Где и что проверить: раздел, документ, что нажать и что должно получиться. Уйдёт автору в Телеграм при переносе в «Выложено — проверить»"/>
+        </div>
+      </xpath>
+    </field>
+  </record>
+</odoo>
