@@ -49,6 +49,8 @@ class TestStep59Tasks(TransactionCase):
         meta = arch.xpath("//div[hasclass('pmk-dev-card-meta')]")
         self.assertTrue(meta)
         self.assertEqual([f.get("name") for f in meta[0].iter("field")], ["id", "create_uid", "pmk_created_on"])
+        state = arch.xpath("//footer//field[@name='state']")
+        self.assertTrue(state and state[0].get("invisible") in ("1", "True"), "Кружок состояния скрыт.")
         # Основной вид задач (другие доски) не тронут.
         base = etree.fromstring(self.env["project.task"].get_views([(False, "kanban")])["views"]["kanban"]["arch"])
         self.assertFalse(base.xpath("//div[hasclass('pmk-dev-card-meta')]"))

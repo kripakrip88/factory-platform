@@ -17,6 +17,11 @@
     <field name="arch" type="xml">
       <!-- В конец рамки шапки (pmk_theme, шаг 52): над рамкой по правилу темы — ничего
            (test_step52_flat). Вид — после вида темы (priority 999 > 990). -->
+      <!-- «Состояние задачи» Odoo («В процессе») у задач доски не показываем: статус —
+           этап-колонка (вверху справа), второе «состояние» путало (Антон 20.10.2026). -->
+      <xpath expr="//div[hasclass('o_state_container')]" position="attributes">
+        <attribute name="invisible">not active or is_template or has_project_template or pmk_is_dev_task</attribute>
+      </xpath>
       <xpath expr="//div[@name='pmk_doc_top']" position="inside">
         <field name="pmk_is_dev_task" invisible="1"/>
         <!-- №, автор и дата задачи доски (20.10.2026) — над «Как проверить». -->

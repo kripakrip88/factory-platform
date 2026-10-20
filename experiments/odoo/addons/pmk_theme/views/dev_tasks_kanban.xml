@@ -21,6 +21,12 @@
           <span> · </span><field name="pmk_created_on"/>
         </div>
       </xpath>
+      <!-- Кружок «состояния задачи» Odoo (В процессе / Нужны правки / Готово…)
+           убран (Антон 20.10.2026): статус задачи на доске — её колонка, а
+           второе «состояние» рядом путало. -->
+      <xpath expr="//footer//field[@name='state']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
     </field>
   </record>
 
