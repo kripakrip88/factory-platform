@@ -31,7 +31,9 @@ export class DealDocMenu extends Component {
 
     async load() {
         const id = this.props.record.resId;
-        const menu = await this.env.services.orm.call("crm.lead", "pmk_doc_menu", [id ? [id] : []]);
+        // Модель — из записи: то же меню у сделки и у счёта (pmk_orders, 20.10.2026).
+        const model = this.props.record.resModel;
+        const menu = await this.env.services.orm.call(model, "pmk_doc_menu", [id ? [id] : []]);
         this.state.create = menu.create || [];
         this.state.print = menu.print || [];
         this.state.loaded = true;
@@ -45,7 +47,7 @@ export class DealDocMenu extends Component {
                 return;
             }
         }
-        const action = await this.env.services.orm.call("crm.lead", item.method, [[record.resId]]);
+        const action = await this.env.services.orm.call(record.resModel, item.method, [[record.resId]]);
         if (action) {
             await this.env.services.action.doAction(action, {
                 onClose: () => record.load(),

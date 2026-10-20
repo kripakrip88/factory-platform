@@ -807,3 +807,36 @@ class TestDealBlankInvoice(TransactionCase):
         deal.action_pmk_new_invoice()
         self.assertEqual(deal._pmk_current_invoice(), invoice, "Второй раз — тот же счёт.")
         self.assertEqual(len(deal._pmk_invoices()), 1)
+
+    def test_spec_from_blank_invoice(self):
+        """«Создать → Расчёт» в счёте (20.10.2026): строки счёта — изделиями
+        одного расчёта, связаны с ними; сделка — «Расчёт»; второй раз — тот же
+        расчёт, не новый."""
+        client = self.env["res.partner"].create({"name": "ООО «Из счёта» (тест)", "is_company": True})
+        deal = self.env["crm.lead"].with_context(mail_create_nolog=True).create({
+            "name": "Ограждение", "type": "opportunity", "partner_id": client.id,
+            "stage_id": self.env.ref("crm.stage_lead1").id})
+        deal.action_pmk_new_invoice()
+        invoice = deal._pmk_current_invoice()
+        invoice.order_line.write({"name": "Ограждение лестницы", "product_uom_qty": 3, "price_unit": 1500})
+        menu = invoice.pmk_doc_menu()
+        self.assertIn("action_pmk_doc_spec", [i["method"] for i in menu["create"]])
+        self.assertIn("action_pmk_doc_print_invoice", [i["method"] for i in menu["print"]])
+
+        action = invoice.action_pmk_doc_spec()
+        spec = invoice.pmk_spec_id
+        self.assertTrue(spec)
+        self.assertEqual(action["res_id"], spec.id)
+        self.assertEqual(spec.opportunity_id, deal)
+        self.assertEqual(spec.product_ids.mapped("name"), ["Ограждение лестницы"])
+        self.assertEqual(spec.product_ids.qty, 3)
+        self.assertEqual(spec.product_ids.price_customer_unit, 1500)
+        self.assertTrue(invoice.order_line.pmk_from_spec)
+        self.assertEqual(invoice.order_line.pmk_spec_product_id, spec.product_ids)
+        self.assertEqual(deal.stage_id, self.env.ref("crm.stage_lead2"),
+                         "Расчёт создан последним — сделка в «Расчёт».")
+        self.assertIn("action_pmk_doc_print_kp", [i["method"] for i in invoice.pmk_doc_menu()["print"]])
+
+        invoice.action_pmk_doc_spec()
+        self.assertEqual(self.env["pmk.metal.spec"].search_count([("opportunity_id", "=", deal.id)]), 1,
+                         "Второй раз — тот же расчёт.")

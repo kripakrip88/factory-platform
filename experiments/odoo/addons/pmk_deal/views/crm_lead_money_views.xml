@@ -96,7 +96,7 @@
           </div>
           <!-- У проигранной (архивной) сделки кнопки «Расчёт и КП» нет —
                и подсказки про неё тоже. -->
-          <span class="pmk-deal-money__empty" invisible="pmk_spec_id or not active">Расчёта ещё нет — кнопка «Расчёт и КП» создаст его со сделкой и клиентом</span>
+          <span class="pmk-deal-money__empty" invisible="pmk_spec_id or not active">Расчёта ещё нет — «Создать → Расчёт» заведёт его со сделкой и клиентом</span>
         </div>
       </xpath>
 

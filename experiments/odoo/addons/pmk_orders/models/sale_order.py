@@ -393,7 +393,12 @@ class SaleOrder(models.Model):
             if order.pmk_is_revision or not order._origin.id:
                 continue
             spec = order.pmk_spec_id.sudo()
-            if order.state == "draft":
+            if order.state == "draft" and not spec:
+                # Счёт без расчёта (типовое изделие, 20.10.2026): строки — руками.
+                order.pmk_lines_hint = _(
+                    "Изделия заведены руками. Посчитать по металлу — «Создать → Расчёт»: "
+                    "строки уйдут в расчёт, и счёт пойдёт за ним.")
+            elif order.state == "draft":
                 order.pmk_lines_hint = _(
                     "Изделия идут вслед за расчётом: поправьте их в расчёте — черновик "
                     "обновится сам. Доставка, монтаж — «Добавить услугу».")
@@ -588,6 +593,82 @@ class SaleOrder(models.Model):
             action["context"] = self.env["project.task"]._pmk_row_defaults(
                 deal=self.opportunity_id, order=self)
         return action
+
+    # ─── Меню «Создать ▾» / «Печать ▾» счёта (как в сделке, 20.10.2026) ──
+    def pmk_doc_menu(self):
+        """Пункты меню документов счёта (виджет pmk_deal_doc_menu). Антон:
+        «кнопка Создать, так же как в сделке»."""
+        menu = {
+            "create": [
+                {"key": "spec", "label": _("Расчёт"), "icon": "fa-calculator",
+                 "method": "action_pmk_doc_spec"},
+                {"key": "task", "label": _("Задача"), "icon": "fa-check-square-o",
+                 "method": "action_pmk_doc_task"},
+            ],
+            "print": [],
+        }
+        if self[:1] and self.env.ref("l10n_ru_doc.action_report_saleorder_new", raise_if_not_found=False):
+            menu["print"].append({"key": "invoice", "label": _("Счёт (PDF)"), "icon": "fa-file-pdf-o",
+                                  "method": "action_pmk_doc_print_invoice"})
+        if self[:1].pmk_spec_id:
+            menu["print"].append({"key": "kp", "label": _("КП (PDF)"), "icon": "fa-file-pdf-o",
+                                  "method": "action_pmk_doc_print_kp"})
+        return menu
+
+    def action_pmk_doc_spec(self):
+        """«Создать → Расчёт» в счёте: расчёт есть — открыть; нет — один
+        расчёт сделки из строк счёта (Антон 20.10.2026: «как было бы лучше
+        сделать, чтоб не плодить кучу документов расчёта»). Строки счёта — в
+        «Металлоизделия» (название, количество, цена клиенту) и связываются с
+        изделиями: счёт дальше идёт за расчётом без задвоения. Зонты и доборки
+        переносит человек — подсказки «→ вентзонт / → доборка» встанут сами
+        (pmk_calc spec_move.py; Антон: «переносит человек»)."""
+        self.ensure_one()
+        if self.pmk_spec_id:
+            return self.action_open_spec()
+        if self.state not in ("draft", "sent"):
+            raise UserError(_("Счёт уже в работе или отменён — расчёт к нему не заводится."))
+        lines = self.order_line.filtered(lambda l: not l.display_type and not l.pmk_from_spec)
+        deal = self.opportunity_id
+        products = [Command.create({
+            "name": line.name or _("Изделие"),
+            "qty": max(1, int(round(line.product_uom_qty or 1))),
+            "price_customer_unit": line.price_unit,
+        }) for line in lines]
+        spec = self.env["pmk.metal.spec"].with_context(mail_create_nolog=True).create({
+            "opportunity_id": deal.id or False,
+            "partner_id": self.partner_id.commercial_partner_id.id,
+            "pmk_org_id": self.pmk_org_id.id or False,
+            "note": deal.name or self.name,
+            "product_ids": products,
+        })
+        order = self.sudo().with_context(**{SYNC: True, SKIP: True, KEEP_APPROVAL: True})
+        for line, product in zip(lines.sudo(), spec.product_ids.sorted("id")):
+            line.with_context(**{SYNC: True, SKIP: True}).write(
+                {"pmk_from_spec": True, "pmk_spec_product_id": product.id})
+        order.write({"pmk_spec_id": spec.id})
+        text = _("Расчёт %(spec)s заведён из счёта %(invoice)s: строк — %(count)s. Зонты и доборки "
+                 "перенесите в их калькуляторы («Перенести в»).",
+                 spec=spec.name, invoice=self.display_name, count=len(lines))
+        self._pmk_note(text)
+        spec.message_post(body=text, subtype_xmlid="mail.mt_note")
+        return self.action_open_spec()
+
+    def action_pmk_doc_task(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window", "name": _("Задача"),
+            "res_model": "mail.activity.schedule", "views": [(False, "form")], "target": "new",
+            "context": {"active_model": self._name, "active_ids": self.ids, "active_id": self.id},
+        }
+
+    def action_pmk_doc_print_invoice(self):
+        self.ensure_one()
+        return self.env.ref("l10n_ru_doc.action_report_saleorder_new").report_action(self)
+
+    def action_pmk_doc_print_kp(self):
+        self.ensure_one()
+        return self.pmk_spec_id.action_print_quotation()
 
     def action_open_spec(self):
         """Кнопка-счётчик «Расчёт» и «Изменить в расчёте» (шаг З-9)."""
