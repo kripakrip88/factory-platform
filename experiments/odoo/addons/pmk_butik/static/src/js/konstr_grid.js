@@ -58,6 +58,15 @@ export class PmkKonstrGrid extends PmkButikGrid {
         return super.colsOf(row);
     }
 
+    saved(row, key) {
+        // Цена — с разрядами («14 560»): так её читают; ввод понимает и без них
+        // (сервер убирает пробелы, _to_float).
+        if (key === "price") {
+            return row.price ? row.price.toLocaleString("ru-RU", { maximumFractionDigits: 2 }) : "";
+        }
+        return super.saved(row, key);
+    }
+
     money(value) {
         return value ? Math.round(value).toLocaleString("ru-RU") : "";
     }

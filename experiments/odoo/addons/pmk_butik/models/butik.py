@@ -294,7 +294,8 @@ def _to_float(value):
     if value in (None, False, ""):
         return 0.0
     try:
-        return float(str(value).replace(",", ".").replace(" ", "").replace(" ", ""))
+        # Пробелы разрядов: обычный, неразрывный и узкий (так пишет Intl в ru-RU).
+        return float(str(value).replace(",", ".").replace(" ", "").replace("\u00a0", "").replace("\u202f", ""))
     except ValueError:
         return 0.0
 
