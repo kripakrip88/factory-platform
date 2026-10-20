@@ -254,16 +254,32 @@ class CrmLead(models.Model):
         return menu
 
     def action_pmk_new_invoice(self):
-        """«Создать → Счёт»: кнопка «Счёт» главного расчёта сделки (черновик
-        счёта покупателю). Без расчёта — подсказка: счёт по типовым изделиям без
-        расчёта — этап 4–5 плана (справочник типовых изделий)."""
+        """«Создать → Счёт»: есть расчёт — кнопка «Счёт» главного расчёта
+        (черновик из его изделий). Расчёта нет — изделие типовое (Антон 20.10:
+        «счёт идёт сразу за сделкой… не всегда нужен расчёт»): пустой черновик
+        со строкой «Изделие». Счёт уже есть — открываем его. Стадия — «Счёт
+        выставлен», счёт черновиком (не «Отправлен»)."""
         self.ensure_one()
         from odoo.addons.pmk_deal.models.deal_money import main_spec
         from odoo.exceptions import UserError
         spec = main_spec(self.spec_ids)
-        if not spec:
-            raise UserError(_("Счёт пока собирается из расчёта — сначала «Создать → Расчёт»."))
-        return spec.action_pmk_invoice()
+        if spec:
+            return spec.action_pmk_invoice()
+        lead = self.sudo().with_context(**{SKIP: True})
+        if not lead._pmk_current_invoice():
+            Order = self.env["sale.order"]
+            if not Order.has_access("create"):
+                raise UserError(_("Заводить счета покупателям вам нельзя по правам — скажите руководителю."))
+            partner = self.partner_id.commercial_partner_id
+            if not partner:
+                raise UserError(_("Укажите клиента в сделке — без него счёт не собрать."))
+            org = self.pmk_org_id if "pmk_org_id" in self._fields else self.env["pmk.org"]
+            invoice = Order._pmk_create_blank(lead, partner, org)
+            lead._pmk_orders_note(_(
+                "Черновик счёта покупателю %s без расчёта: впишите изделия, количество и цену.",
+                invoice.display_name))
+            lead._pmk_doc_stage("pmk_deal.stage_invoiced")
+        return self.action_open_invoice()
 
     def _pmk_orders_react(self, stage, lost, created=False):
         kp_stage = self.env.ref(KP_SENT_STAGE, raise_if_not_found=False)

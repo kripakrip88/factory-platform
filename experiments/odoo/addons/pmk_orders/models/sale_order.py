@@ -915,6 +915,38 @@ class SaleOrder(models.Model):
         Order = ru_env(self.sudo().with_context(clean_context(self.env.context)))
         return Order.with_context(mail_auto_subscribe_no_notify=True).create(vals)
 
+    def _pmk_create_blank(self, deal, partner, org):
+        """Черновик счёта БЕЗ расчёта — «Создать → Счёт» в сделке, когда
+        изделие типовое (воронка «сделка → счёт», Антон 20.10.2026). Одна
+        строка «Изделие» — название, количество и цену вписывает менеджер;
+        справочник типовых изделий — этап 4 плана."""
+        vals = {
+            "partner_id": partner.id,
+            "opportunity_id": deal.id,
+            "pmk_org_id": org.id or False,
+            "origin": deal.display_name,
+            "company_id": (deal.company_id or self.env.company).id,
+            "pricelist_id": False,
+            # Строка не из расчёта (pmk_from_spec False): синхронизация с
+            # расчётом её не тронет, если расчёт появится позже.
+            "order_line": [Command.create({
+                "product_id": self._pmk_service_product().id,
+                "name": _("Изделие"),
+                "product_uom_qty": 1.0,
+                "product_uom_id": self.env.ref("uom.product_uom_unit").id,
+                "price_unit": 0.0,
+                "technical_price_unit": 0.0,
+            })],
+        }
+        if deal.user_id:
+            vals["user_id"] = deal.user_id.id
+        if deal.team_id:
+            vals["team_id"] = deal.team_id.id
+        if "sale_order_template_id" in self._fields:
+            vals["sale_order_template_id"] = False
+        Order = ru_env(self.sudo().with_context(clean_context(self.env.context)))
+        return Order.with_context(mail_auto_subscribe_no_notify=True).create(vals)
+
     def _pmk_sync_from_spec(self, spec=None):
         """Черновик идёт за расчётом: строки-изделия, клиент, организация, сам
         расчёт (переключение на другой расчёт сделки). Вернёт True, если

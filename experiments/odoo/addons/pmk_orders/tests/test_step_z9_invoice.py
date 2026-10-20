@@ -44,7 +44,7 @@ from lxml import etree
 
 from odoo import Command
 from odoo.exceptions import AccessError, UserError
-from odoo.tests import Form, new_test_user, tagged
+from odoo.tests import Form, TransactionCase, new_test_user, tagged
 from odoo.tools.safe_eval import safe_eval
 
 from odoo.addons.pmk_org import hooks as org_hooks
@@ -782,3 +782,28 @@ class TestStepZ9Invoice(Z2Common):
         self.assertTrue(group.tax_payable_account_id)
         self.assertTrue(group.tax_receivable_account_id)
         self.assertEqual(shared.tax_payable_account_id, account, "Прежняя группа не тронута.")
+
+
+@tagged("post_install", "-at_install")
+class TestDealBlankInvoice(TransactionCase):
+    """«Создать → Счёт» в сделке без расчёта (20.10.2026): типовое изделие —
+    пустой черновик со строкой «Изделие», сделка — «Счёт выставлен», счёт
+    черновиком; повторное «Создать → Счёт» — тот же счёт."""
+
+    def test_blank_invoice(self):
+        client = self.env["res.partner"].create({"name": "ООО «Типовой» (тест)", "is_company": True})
+        deal = self.env["crm.lead"].with_context(mail_create_nolog=True).create({
+            "name": "Решётка типовая", "type": "opportunity", "partner_id": client.id,
+            "stage_id": self.env.ref("crm.stage_lead1").id})
+        action = deal.action_pmk_new_invoice()
+        invoice = deal._pmk_current_invoice()
+        self.assertTrue(invoice)
+        self.assertEqual(invoice.state, "draft")
+        self.assertEqual(invoice.partner_id, client)
+        self.assertEqual(invoice.order_line.mapped("name"), ["Изделие"])
+        self.assertFalse(invoice.order_line.pmk_from_spec)
+        self.assertEqual(deal.stage_id, self.env.ref("pmk_deal.stage_invoiced"))
+        self.assertTrue(action)
+        deal.action_pmk_new_invoice()
+        self.assertEqual(deal._pmk_current_invoice(), invoice, "Второй раз — тот же счёт.")
+        self.assertEqual(len(deal._pmk_invoices()), 1)
