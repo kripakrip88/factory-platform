@@ -18,21 +18,26 @@ Enter, Tab, Ctrl+D, вставка блока из Excel.
 size_search.py), метизы — по справочнику метизов. Основной расчёт металлопроката, сделки
 и вкладки не меняются: модуль только добавляет пункт меню.
 """,
-    "version": "19.0.1.1.0",
+    "version": "19.0.1.2.0",
     "category": "Manufacturing",
     "author": "ПМК Парк",
     "license": "LGPL-3",
-    "depends": ["pmk_calc", "crm", "pmk_flow"],
+    "depends": ["pmk_calc", "pmk_bridge", "crm", "pmk_flow"],
     "data": [
         "security/ir.model.access.csv",
         "data/ir_sequence.xml",
         "views/butik_views.xml",
+        # 20.10.2026: «Конструкции» — эта же таблица во вкладке состава расчёта.
+        "views/konstr_views.xml",
     ],
     "assets": {
         "web.assets_backend": [
             "pmk_butik/static/src/js/butik_grid.js",
             "pmk_butik/static/src/xml/butik_grid.xml",
             "pmk_butik/static/src/scss/butik_grid.scss",
+            "pmk_butik/static/src/js/konstr_grid.js",
+            "pmk_butik/static/src/xml/konstr_grid.xml",
+            "pmk_butik/static/src/scss/konstr_grid.scss",
         ],
     },
     "installable": True,

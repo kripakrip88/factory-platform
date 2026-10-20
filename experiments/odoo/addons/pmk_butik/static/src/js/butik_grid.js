@@ -18,7 +18,7 @@ import { _t } from "@web/core/l10n/translation";
 import { registry } from "@web/core/registry";
 import { standardWidgetProps } from "@web/views/widgets/standard_widget_props";
 
-const NUMERIC = new Set(["width", "length_mm", "qty", "product_qty"]);
+const NUMERIC = new Set(["width", "length_mm", "qty", "product_qty", "price"]);
 
 function fmt(value, digits = 1) {
     if (!value) {
@@ -30,6 +30,13 @@ function fmt(value, digits = 1) {
 export class PmkButikGrid extends Component {
     static template = "pmk_butik.Grid";
     static props = { ...standardWidgetProps };
+    // Где живут строки. Наследник «Конструкции» (js/konstr_grid.js) берёт ту же
+    // таблицу, но строки — состав расчёта (pmk.metal.spec, методы konstr_*).
+    static MODEL = "pmk.butik.spec";
+
+    method(name) {
+        return name;
+    }
 
     setup() {
         this.orm = this.env.services.orm;
@@ -97,7 +104,7 @@ export class PmkButikGrid extends Component {
         }
         this.state.busy = true;
         try {
-            const data = await this.orm.call("pmk.butik.spec", method, [[this.specId], ...args]);
+            const data = await this.orm.call(this.constructor.MODEL, this.method(method), [[this.specId], ...args]);
             if (this.alive() && data) {
                 this.state.data = data;
                 // «Сохранено в 14:32»: ячейка уходит на сервер сразу, отдельной
@@ -118,7 +125,7 @@ export class PmkButikGrid extends Component {
             return;
         }
         this.state.loading = true;
-        const data = await this.orm.call("pmk.butik.spec", "butik_rows", [[resId]]);
+        const data = await this.orm.call(this.constructor.MODEL, this.method("butik_rows"), [[resId]]);
         if (this.alive()) {
             this.state.data = data;
             this.state.loading = false;
@@ -198,7 +205,16 @@ export class PmkButikGrid extends Component {
 
     // ─── фокус ──────────────────────────────────────────────────────────
     focusCell(index, col) {
-        this.pendingFocus = { index, col };
+        // У строки нет такой колонки (цена есть только у изделия) — наименование.
+        const row = this.rows[index];
+        if (row && !this.colsOf(row).includes(col)) {
+            col = "name";
+        }
+        // Ищем ячейку по ключу строки, а не по номеру: ответ сервера уже в
+        // state, а таблица перерисуется позже — по номеру фокус попадал в
+        // старую строку на этом месте (20.10.2026: после «+ Строка» текст
+        // набирался в соседнее изделие). Нет ещё такой строки — дождёмся onPatched.
+        this.pendingFocus = { index, col, key: row ? String(row.id) : null };
         this.state.sel = { row: index, col };
         this.applyFocus();
     }
@@ -208,8 +224,9 @@ export class PmkButikGrid extends Component {
         if (!target || !this.root.el) {
             return;
         }
-        const input = this.root.el.querySelector(
-            `[data-index="${target.index}"][data-col="${target.col}"]`);
+        const input = target.key
+            ? this.root.el.querySelector(`[data-key="${target.key}"][data-col="${target.col}"]`)
+            : this.root.el.querySelector(`[data-index="${target.index}"][data-col="${target.col}"]`);
         if (input) {
             this.pendingFocus = null;
             input.focus();
@@ -417,17 +434,33 @@ export class PmkButikGrid extends Component {
         return this.rows[this.state.sel.row];
     }
 
+    /**
+     * Кнопки таблицы: курсор сначала уходит из ячейки (её правка сохранится
+     * сама), и пока сервер отвечает, набранное никуда не попадает. Иначе на
+     * медленном ответе буквы падали в прежнюю ячейку — в изделие над новой
+     * строкой (20.10.2026, проверка «Конструкций» на копии).
+     */
+    releaseFocus() {
+        const el = document.activeElement;
+        if (el && this.root.el?.contains(el)) {
+            el.blur();
+        }
+    }
+
     async addRow() {
+        this.releaseFocus();
         await this.call("butik_save_row", [false, { after_id: this.selRow?.id || false }]);
         this.focusCell(Math.min(this.state.sel.row + 1, this.rows.length - 1), "name");
     }
 
     async addProduct() {
+        this.releaseFocus();
         await this.call("butik_add_product");
         this.focusCell(this.rows.length - 2, "name");
     }
 
     async duplicate() {
+        this.releaseFocus();
         if (this.selRow) {
             await this.call("butik_duplicate_row", [this.selRow.id]);
             this.focusCell(this.state.sel.row + 1, this.state.sel.col);
@@ -435,6 +468,7 @@ export class PmkButikGrid extends Component {
     }
 
     async remove() {
+        this.releaseFocus();
         if (this.selRow) {
             await this.call("butik_delete_row", [this.selRow.id]);
             this.focusCell(Math.max(0, this.state.sel.row - 1), "name");

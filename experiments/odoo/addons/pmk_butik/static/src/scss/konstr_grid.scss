@@ -1,0 +1,27 @@
+// ─── «Конструкции» — таблица Бутика в расчёте (20.10.2026) ───────────────
+//
+// Таблица — стили Бутика (butik_grid.scss, .o_pmk_butik). Здесь — только своё:
+// переключатель «Таблица / Подробно» и колонки цены. В режиме таблицы прежний
+// редактор состава (поле product_ids той же вкладки) спрятан; «Подробно» —
+// наоборот, таблица не рисуется (js/konstr_grid.js).
+.o_pmk_konstr__mode {
+  margin: 2px 0 10px;
+}
+
+.tab-pane:has(.o_pmk_konstr[data-mode="table"]) .o_field_widget[name="product_ids"] {
+  display: none !important;
+}
+
+.o_pmk_konstr__noprice {
+  display: inline-block;
+  padding: 0 6px;
+  border-radius: 8px;
+  background: var(--pmk-tone-yellow-bg, #fbf3d5);
+  color: var(--pmk-tone-yellow-ink, #633806);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.o_pmk_konstr__price::placeholder {
+  color: var(--pmk-text-faint, #b4b2a9);
+}

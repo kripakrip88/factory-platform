@@ -1,0 +1,380 @@
+# -*- coding: utf-8 -*-
+"""«Конструкции» — таблица Бутика внутри расчёта (шаг 2, Антон 20.10.2026).
+
+«Калькулятор Бутик отдельной вкладкой в расчёт… считать конкретно в бутике»;
+вкладка — «Конструкции» (бывший состав расчёта, бывшее «Металлоизделия»).
+Таблица та же, что у отдельного Бутика (js/butik_grid.js): строка изделия,
+под ней детали, короткая запись, стрелки, вставка из Excel. Пишет она в ТОТ ЖЕ
+состав расчёта — изделия pmk.metal.spec.product и детали pmk.metal.spec.line,
+— поэтому цены по прайсам, марка, лист в м², раскладка, вкладки «Металл» и
+«Металлоизделия», заявка на металл работают как раньше, без переноса данных.
+
+Соответствие колонок:
+  № поз.        → «Деталь» (detail_name);
+  Наименование  → распознаётся в вид детали и позицию справочника
+                  (прокат / лист / метиз / покрытие, tools/parse.py);
+                  набранный текст хранится в pmk_text — его и видно в таблице;
+  Ширина, Длина → у листа A × B (a_mm, b_mm), у проката — длина;
+  На 1 шт       → «Кол-во на изделие» (целое, не меньше 1 — правило расчёта);
+  Марка         → справочник марок (grade_id); нет такой — текст в pmk_grade_text;
+  изделие       → название, количество, цена клиенту за шт.
+Краска считается от площади деталей изделия сама (pmk_calc, _compute_paint_area).
+
+Прежний редактор состава остаётся — переключатель «Таблица / Подробно» в
+таблице (раскладка листа, позиции «на разнос», цена закупки по строке).
+"""
+import re
+
+from odoo import _, api, fields, models
+from odoo.exceptions import UserError
+
+from ..tools import parse
+from .butik import _EASTER_RE, _decoded, _fmt, _to_float
+
+PRODUCT, DETAIL = "p", "d"
+MODE_ITEM = {"linear": "profile_id", "sheet": "sheet_id", "fastener": "fastener_id", "paint": "paint_id"}
+
+
+def _key(kind, record_id):
+    return "%s%d" % (kind, record_id)
+
+
+def _parse_key(key):
+    match = re.match(r"^([pd])(\d+)$", key or "")
+    return (match.group(1), int(match.group(2))) if match else (None, None)
+
+
+class MetalSpecLineKonstr(models.Model):
+    _inherit = "pmk.metal.spec.line"
+
+    pmk_text = fields.Char(
+        "Наименование", help="Как записали в таблице «Конструкции» («Уголок 63х4», «Лист 10х60»). "
+                             "Пусто — показывается позиция справочника.")
+    pmk_grade_text = fields.Char(
+        "Марка (текст)", help="Марка из таблицы, которой нет в справочнике марок.")
+
+    def _konstr_item(self):
+        self.ensure_one()
+        return self[MODE_ITEM.get(self.calc_mode, "profile_id")]
+
+    def _konstr_label(self):
+        """Что распознано — строкой под наименованием, как у Бутика."""
+        self.ensure_one()
+        item = self._konstr_item()
+        if not item:
+            if self.pmk_text:
+                return _("нет в справочнике — выберите из подсказки")
+            return ""
+        if self.calc_mode == "linear":
+            text = "%s · %s кг/м" % (item.display_name, _fmt(round(item.mass_per_meter or 0, 3)))
+        elif self.calc_mode == "sheet":
+            text = "%s · %s×%s мм" % (item.display_name, _fmt(self.a_mm) if self.a_mm else "? ширина",
+                                      _fmt(self.b_mm) if self.b_mm else "? длина")
+        elif self.calc_mode == "fastener":
+            text = "%s · метиз" % item.display_name
+        else:
+            text = "%s · %s м² · %s мкм" % (item.display_name, _fmt(round(self.area_m2 or 0, 2)),
+                                           _fmt(self.paint_thickness_um or 0))
+        notes = []
+        if "price_state" in self._fields and self.price_state == "no_price":
+            notes.append(_("нет цены в прайсах"))
+        if self.pmk_item_note:
+            notes.append(self.pmk_item_note)
+        return " · ".join([text] + notes)
+
+    def _konstr_row(self, product):
+        self.ensure_one()
+        sheet = self.calc_mode == "sheet"
+        item = self._konstr_item()
+        name = self.pmk_text or (item.display_name if item else "")
+        qty_product = product.qty or 0
+        return {
+            "id": _key(DETAIL, self.id),
+            "kind": "detail",
+            "parent": _key(PRODUCT, product.id),
+            "pos": self.detail_name or "",
+            "name": name,
+            "is_sheet": sheet,
+            "width": self.a_mm if sheet else 0.0,
+            "length_mm": self.b_mm if sheet else (self.length_mm if self.calc_mode == "linear" else 0.0),
+            "qty": self.qty or 0,
+            "qty_total": (self.qty or 0) * qty_product,
+            "grade": self.grade_id.name or self.pmk_grade_text or "",
+            "weight_one": round(self.weight_one, 4),
+            "weight_total": round(self.weight_total * qty_product, 3),
+            "cost": round((self["cost_fact_total"] if "cost_fact_total" in self._fields else 0.0) * qty_product, 2),
+            "no_price": "price_state" in self._fields and self.price_state == "no_price",
+            "match_state": "auto" if item else ("none" if self.pmk_text else "empty"),
+            "label": self._konstr_label(),
+        }
+
+
+class MetalSpecKonstr(models.Model):
+    _inherit = "pmk.metal.spec"
+
+    # ─── таблица ────────────────────────────────────────────────────────
+    def _konstr_products(self):
+        self.ensure_one()
+        return self.product_ids.sorted(lambda p: (p.sequence, p.id))
+
+    def konstr_rows(self):
+        self.ensure_one()
+        self.check_access("read")
+        rows, weight, cost = [], 0.0, 0.0
+        for number, product in enumerate(self._konstr_products(), 1):
+            rows.append({
+                "id": _key(PRODUCT, product.id),
+                "kind": "product",
+                "number": number,
+                "name": product.name or "",
+                "product_qty": product.qty or 0,
+                "price": product["price_customer_unit"] if "price_customer_unit" in product._fields else 0.0,
+                "weight_one": round(product.weight_one, 3),
+                "weight_total": round(product.weight_total, 3),
+                "cost": round(product["cost_fact_total"] if "cost_fact_total" in product._fields else 0.0, 2),
+            })
+            for line in product.line_ids.sorted(lambda l: (l.sequence, l.id)):
+                row = line._konstr_row(product)
+                rows.append(row)
+                weight += row["weight_total"]
+                cost += row["cost"]
+        return {
+            "rows": rows,
+            "products": len(self.product_ids),
+            "weight_kg": round(weight, 3),
+            "cost": round(cost, 2),
+            "can_write": self.has_access("write"),
+        }
+
+    def _konstr_record(self, key):
+        kind, record_id = _parse_key(key)
+        if kind == PRODUCT:
+            record = self.product_ids.filtered(lambda p: p.id == record_id)
+        elif kind == DETAIL:
+            record = self.product_ids.line_ids.filtered(lambda l: l.id == record_id)
+        else:
+            record = None
+        if not record:
+            raise UserError(_("Строка не найдена — таблица обновится."))
+        return kind, record
+
+    # ─── распознавание наименования ─────────────────────────────────────
+    @api.model
+    def _konstr_resolve(self, text):
+        """Наименование → вид детали и позиция справочника (как у Бутика)."""
+        vals = {"profile_id": False, "sheet_id": False, "fastener_id": False, "paint_id": False}
+        info = parse.classify(text)
+        if info["kind"] == "coating":
+            found = self.env["pmk.paint.coating"].name_search(parse.coating_query(text), limit=1)
+            vals.update(calc_mode="paint", paint_id=found[0][0] if found else False)
+            um = parse.coating_um(text)
+            if um:
+                vals["paint_thickness_um"] = um
+        elif info["kind"] == "sheet" and info["thickness"]:
+            found = self.env["pmk.metal.sheet"].name_search(parse.sheet_query(text, info["thickness"]), limit=1)
+            vals.update(calc_mode="sheet", sheet_id=found[0][0] if found else False)
+            if info["width"]:
+                vals["a_mm"] = info["width"]
+            if info["length"]:
+                vals["b_mm"] = info["length"]
+        elif info["kind"] == "piece":
+            found = self.env["pmk.metal.fastener"].name_search(parse.piece_query(text), limit=1)
+            vals.update(calc_mode="fastener", fastener_id=found[0][0] if found else False)
+        elif info["kind"] != "empty":
+            found = self.env["pmk.metal.profile"].name_search(text, limit=1)
+            vals.update(calc_mode="linear", profile_id=found[0][0] if found else False)
+        return vals
+
+    @api.model
+    def _konstr_grade(self, text):
+        text = (text or "").strip()
+        if not text:
+            return {"grade_id": False, "pmk_grade_text": False}
+        Grade = self.env["pmk.metal.grade"]
+        norm = text.replace(" ", "").lower()
+        grade = Grade.search([("name", "=ilike", text)], limit=1) or Grade.search([]).filtered(
+            lambda g: (g.name or "").replace(" ", "").lower() == norm)[:1]
+        return {"grade_id": grade.id or False, "pmk_grade_text": False if grade else text}
+
+    def _konstr_detail_vals(self, line, clean):
+        """Правка ячеек детали → поля строки расчёта."""
+        vals = {}
+        if "pos" in clean:
+            vals["detail_name"] = (clean["pos"] or "").strip() or False
+        if "name" in clean:
+            text = (clean["name"] or "").strip()
+            vals["pmk_text"] = text or False
+            vals.update(self._konstr_resolve(text))
+        mode = vals.get("calc_mode") or (line.calc_mode if line else "linear")
+        if "width" in clean and mode == "sheet":
+            vals["a_mm"] = _to_float(clean["width"])
+        if "length_mm" in clean:
+            length = _to_float(clean["length_mm"])
+            if mode == "sheet":
+                vals["b_mm"] = length
+            elif mode == "linear":
+                vals["length_mm"] = length
+        if "qty" in clean and mode != "paint":
+            vals["qty"] = max(1, int(round(_to_float(clean["qty"]) or 1)))
+        if "grade" in clean:
+            vals.update(self._konstr_grade(clean["grade"]))
+        # Сменился вид — размеры чужого вида не оставляем (как onchange расчёта).
+        if "calc_mode" in vals and line and vals["calc_mode"] != line.calc_mode:
+            if vals["calc_mode"] != "sheet":
+                vals.setdefault("a_mm", 0.0)
+                vals.setdefault("b_mm", 0.0)
+            if vals["calc_mode"] != "linear":
+                vals["length_mm"] = 0.0
+            if vals["calc_mode"] == "paint":
+                vals["qty"] = 1
+        return vals
+
+    # ─── правка ─────────────────────────────────────────────────────────
+    def konstr_save_row(self, row_key, vals):
+        """Правка ячейки (или новая деталь: row_key = False, vals["after_id"])."""
+        self.ensure_one()
+        self.check_access("write")
+        allowed = {"pos", "name", "product_qty", "length_mm", "qty", "grade", "width", "price"}
+        clean = {k: v for k, v in (vals or {}).items() if k in allowed}
+        if not row_key:
+            self._konstr_insert([clean], (vals or {}).get("after_id"))
+            return self.konstr_rows()
+        kind, record = self._konstr_record(row_key)
+        if kind == PRODUCT:
+            pvals = {}
+            if "name" in clean:
+                name = (clean["name"] or "").strip()
+                pvals["name"] = _("Сам ты лох") if _EASTER_RE.match(name) else (name or record.name)
+            if "product_qty" in clean:
+                pvals["qty"] = max(1, int(_to_float(clean["product_qty"]) or 1))
+            if "price" in clean and "price_customer_unit" in record._fields:
+                pvals["price_customer_unit"] = _to_float(clean["price"])
+            if pvals:
+                record.write(pvals)
+        else:
+            if clean.get("name"):
+                # Короткая запись «д1 шв10 1200мм 10шт 09г» — пустые колонки из неё.
+                decoded = _decoded(clean["name"])
+                if "sheet_width_mm" in decoded:
+                    decoded["width"] = decoded.pop("sheet_width_mm")
+                clean.update(decoded)
+            record.write(self._konstr_detail_vals(record, clean))
+        return self.konstr_rows()
+
+    def _konstr_insert(self, cleans, after_key):
+        """Новые детали после строки after_key: после изделия — первыми в нём,
+        после детали — в том же изделии; без строки — в конце последнего изделия."""
+        products = self._konstr_products()
+        kind, anchor = (None, None)
+        if after_key:
+            kind, anchor = self._konstr_record(after_key)
+        if kind == PRODUCT:
+            product, siblings, index = anchor, anchor.line_ids.sorted(lambda l: (l.sequence, l.id)), 0
+        elif kind == DETAIL:
+            product = anchor.product_id
+            siblings = product.line_ids.sorted(lambda l: (l.sequence, l.id))
+            index = list(siblings).index(anchor) + 1
+        else:
+            product = products[-1:] or self.env["pmk.metal.spec.product"].create({
+                "spec_id": self.id, "name": _("Изделие 1"), "qty": 1})
+            siblings = product.line_ids.sorted(lambda l: (l.sequence, l.id))
+            index = len(siblings)
+        new_vals = []
+        for clean in cleans:
+            vals = {"product_id": product.id, "calc_mode": "linear", "qty": 1}
+            vals.update(self._konstr_detail_vals(False, clean))
+            new_vals.append(vals)
+        created = self.env["pmk.metal.spec.line"].create(new_vals) if new_vals else self.env["pmk.metal.spec.line"]
+        ordered = list(siblings[:index]) + list(created) + list(siblings[index:])
+        for number, line in enumerate(ordered, 1):
+            if line.sequence != number * 10:
+                line.sequence = number * 10
+        return created
+
+    def konstr_insert_rows(self, after_key, rows):
+        """Вставка блока из Excel: «№ | наименование | длина | кол-во | марка»."""
+        self.ensure_one()
+        self.check_access("write")
+        cleans = []
+        for row in rows or []:
+            clean = {"pos": (row.get("pos") or "").strip(), "name": (row.get("name") or "").strip(),
+                     "length_mm": row.get("length_mm") or "", "qty": row.get("qty") or "",
+                     "grade": (row.get("grade") or "").strip()}
+            decoded = _decoded(clean["name"])
+            if "sheet_width_mm" in decoded:
+                decoded["width"] = decoded.pop("sheet_width_mm")
+            for key, value in decoded.items():
+                if key == "name" or not clean.get(key):
+                    clean[key] = value
+            cleans.append({k: v for k, v in clean.items() if v not in ("", None)})
+        target = None
+        kind, record = _parse_key(after_key)
+        if kind == DETAIL:
+            _kind, target = self._konstr_record(after_key)
+            if target.pmk_text or target._konstr_item() or target.detail_name:
+                target = None
+        self._konstr_insert(cleans, after_key)
+        if target and cleans:
+            # Вставили в пустую строку — она уступает место вставленному.
+            target.unlink()
+        return self.konstr_rows()
+
+    def konstr_delete_row(self, row_key):
+        self.ensure_one()
+        self.check_access("write")
+        _kind, record = self._konstr_record(row_key)
+        record.unlink()
+        return self.konstr_rows()
+
+    def konstr_duplicate_row(self, row_key):
+        self.ensure_one()
+        self.check_access("write")
+        kind, record = self._konstr_record(row_key)
+        if kind == PRODUCT:
+            record.action_pmk_copy()
+        else:
+            siblings = record.product_id.line_ids.filtered(lambda l, s=record: l.sequence > s.sequence)
+            for other in siblings:
+                other.sequence += 1
+            record.copy({"product_id": record.product_id.id, "sequence": record.sequence + 1})
+        return self.konstr_rows()
+
+    def konstr_add_product(self):
+        self.ensure_one()
+        self.check_access("write")
+        last = self._konstr_products()[-1:]
+        product = self.env["pmk.metal.spec.product"].create({
+            "spec_id": self.id, "name": _("Изделие %s") % (len(self.product_ids) + 1), "qty": 1,
+            "sequence": (last.sequence or 0) + 10,
+            "line_ids": [fields.Command.create({"calc_mode": "linear", "qty": 1})],
+        })
+        return self.konstr_rows()
+
+    def konstr_set_position(self, row_key, key):
+        """Позиция из подсказки (как в Бутике): прокат / лист / метиз / покрытие."""
+        self.ensure_one()
+        self.check_access("write")
+        kind, line = self._konstr_record(row_key)
+        if kind != DETAIL:
+            raise UserError(_("Позиция выбирается у детали."))
+        model, _sep, ident = (key or "").partition(":")
+        mode = {"profile": "linear", "sheet": "sheet", "fastener": "fastener", "coating": "paint"}.get(model)
+        if not mode or not ident.isdigit():
+            raise UserError(_("Не понял позицию."))
+        vals = {"profile_id": False, "sheet_id": False, "fastener_id": False, "paint_id": False,
+                "calc_mode": mode, MODE_ITEM[mode]: int(ident)}
+        if mode != "linear":
+            vals["length_mm"] = 0.0
+        if mode != "sheet":
+            vals.update(a_mm=0.0, b_mm=0.0)
+        if mode == "sheet" and not line.a_mm:
+            info = parse.classify(line.pmk_text)
+            if info["kind"] == "sheet" and info["width"]:
+                vals["a_mm"] = info["width"]
+        if mode == "paint":
+            vals["qty"] = 1
+            um = parse.coating_um(line.pmk_text)
+            if um:
+                vals["paint_thickness_um"] = um
+        line.write(vals)
+        return self.konstr_rows()

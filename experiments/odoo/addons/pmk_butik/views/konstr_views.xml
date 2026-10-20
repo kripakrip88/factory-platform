@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <!--
+    «Конструкции» — таблица Бутика в расчёте (шаг 2, Антон 20.10.2026). Встаёт
+    первой во вкладке состава, над прежним редактором (product_ids): тот прячется
+    стилем, пока выбран вид «Таблица» (konstr_grid.scss), — переключатель в самой
+    таблице. Узел product_ids не трогаем: на него опираются xpath других модулей.
+    active в XML — грабли Odoo 19.
+  -->
+  <record id="view_metal_spec_form_konstr" model="ir.ui.view">
+    <field name="name">pmk.metal.spec.form.konstr</field>
+    <field name="model">pmk.metal.spec</field>
+    <field name="inherit_id" ref="pmk_calc.view_metal_spec_form"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//page[@name='composition']/field[@name='product_ids']" position="before">
+        <widget name="pmk_konstr_grid"/>
+      </xpath>
+    </field>
+  </record>
+</odoo>

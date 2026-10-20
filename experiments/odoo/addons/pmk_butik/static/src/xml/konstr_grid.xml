@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- «Конструкции» — таблица Бутика в расчёте (20.10.2026), js/konstr_grid.js. Разметка —
+     копия pmk_butik.Grid (xml/butik_grid.xml) с переключателем «Таблица / Подробно» и
+     колонками «Металл, ₽» и «Цена за шт». Правишь одну — сверь другую. -->
+<templates xml:space="preserve">
+  <t t-name="pmk_butik.KonstrGrid">
+    <div class="o_pmk_butik o_pmk_konstr" t-ref="root" t-att-data-mode="view.mode">
+      <div class="o_pmk_konstr__mode btn-group btn-group-sm" role="group" aria-label="Вид состава">
+        <button type="button" class="btn" t-att-class="view.mode === 'table' ? 'btn-secondary active' : 'btn-light'"
+                t-on-click="() => this.setMode('table')" title="Таблица как в Excel: короткая запись, стрелки, вставка из Excel">
+          <i class="fa fa-table me-1" aria-hidden="true"/>Таблица</button>
+        <button type="button" class="btn" t-att-class="view.mode === 'detail' ? 'btn-secondary active' : 'btn-light'"
+                t-on-click="() => this.setMode('detail')" title="Прежний редактор: раскладка листа, позиции «на разнос», цена закупки строкой">
+          <i class="fa fa-list me-1" aria-hidden="true"/>Подробно</button>
+      </div>
+      <t t-if="view.mode === 'table'">
+      <div t-if="!specId" class="o_pmk_butik__start">
+        <button type="button" class="btn btn-primary" t-on-click="() => this.start()">
+          <i class="fa fa-table me-1" aria-hidden="true"/>Начать состав</button>
+        <span class="o_pmk_butik__muted">расчёт сохранится, и откроется таблица конструкций</span>
+      </div>
+      <p t-elif="state.loading or !state.data" class="o_pmk_butik__muted">Загружаю…</p>
+      <t t-else="">
+        <div class="o_pmk_butik__bar">
+          <button type="button" class="btn btn-secondary btn-sm" t-att-disabled="state.busy" t-on-click="() => this.addRow()">
+            <i class="fa fa-plus me-1" aria-hidden="true"/>Строка</button>
+          <button type="button" class="btn btn-secondary btn-sm" t-att-disabled="state.busy" t-on-click="() => this.addProduct()" title="Ctrl+Enter (на Mac — Cmd+Enter)">
+            <i class="fa fa-cube me-1" aria-hidden="true"/>Изделие</button>
+          <button type="button" class="btn btn-secondary btn-sm" t-att-disabled="state.busy" t-on-click="() => this.duplicate()">
+            <i class="fa fa-clone me-1" aria-hidden="true"/>Копия строки</button>
+          <button type="button" class="btn btn-link btn-sm text-muted" t-att-disabled="state.busy" t-on-click="() => this.remove()">
+            <i class="fa fa-trash-o me-1" aria-hidden="true"/>Удалить строку</button>
+          <span class="o_pmk_butik__saved" t-att-class="{ 'o_pmk_butik__saved--busy': state.busy }">
+            <t t-if="state.busy">Сохраняю…</t>
+            <t t-elif="state.savedAt"><i class="fa fa-check me-1" aria-hidden="true"/>Сохранено в <t t-esc="state.savedAt"/></t>
+            <t t-else=""><i class="fa fa-check me-1" aria-hidden="true"/>Каждая ячейка сохраняется сама</t>
+          </span>
+          <span class="o_pmk_butik__hint">Enter, ↑↓ ←→, Tab · Ctrl+Enter — новое изделие · Ctrl+D — значение сверху · Ctrl+V — блок из Excel или столбик строк</span>
+        </div>
+        <div class="o_pmk_butik__wrap">
+          <table class="o_pmk_butik__table">
+            <colgroup>
+              <col style="width:64px"/><col style="width:30%"/><col style="width:90px"/><col style="width:96px"/><col style="width:80px"/>
+              <col style="width:76px"/><col style="width:96px"/><col style="width:90px"/><col style="width:110px"/>
+              <col style="width:110px"/><col style="width:120px"/>
+            </colgroup>
+            <thead><tr>
+              <th class="o_pmk_butik__th-pos"><button type="button" class="o_pmk_butik__chev" t-att-class="{ 'o_pmk_butik__chev--open': allOpen }"
+                  t-att-title="allOpen ? 'Свернуть все изделия' : 'Развернуть все изделия'"
+                  t-on-click="() => this.toggleAll()"/>№ поз.</th><th>Наименование</th><th class="n" title="Для листовых деталей: «Лист 10х60» заполнит сам">Ширина, мм</th><th class="n">Длина, мм</th><th class="n">На 1 шт</th>
+              <th class="n">Всего</th><th>Марка</th><th class="n">Вес 1, кг</th><th class="n">Вес всего, кг</th>
+              <th class="n" title="Закупка металла по прайсам: у детали — на все изделия, у изделия — итог">Металл, ₽</th>
+              <th class="n" title="Цена клиенту за одно изделие">Цена за шт</th>
+            </tr></thead>
+            <tbody>
+              <t t-foreach="rows" t-as="row" t-key="row.id">
+                <tr t-if="row.kind === 'product'" class="o_pmk_butik__product">
+                  <td class="n o_pmk_butik__num">
+                    <button type="button" class="o_pmk_butik__chev" t-att-class="{ 'o_pmk_butik__chev--open': !isCollapsed(row.id) }"
+                            t-att-title="isCollapsed(row.id) ? 'Развернуть' : 'Свернуть'"
+                            t-on-click="() => this.toggle(row.id)"/>
+                    <t t-esc="row.number"/>
+                  </td>
+                  <td colspan="4" t-att-class="{ sel: isSel(row_index, 'name') }">
+                    <!-- Наименование — textarea (как у Бутика): длинное название переносится, строка
+                         растёт (Антон 16.10). Enter в ней — переход ниже, как везде. -->
+                    <textarea rows="1" class="o_pmk_butik__in o_pmk_butik__in--product o_pmk_butik__ta" t-att-value="val(row, 'name')"
+                           t-att-data-index="row_index" t-att-data-key="row.id" data-col="name" t-att-readonly="!state.data.can_write"
+                           placeholder="Изделие: название, шифр, покрытие"
+                           t-on-focus="() => this.onFocus(row_index, 'name')"
+                           t-on-input="(ev) => this.onInput(row, row_index, 'name', ev)"
+                           t-on-change="(ev) => this.commit(row, 'name', ev)"
+                           t-on-keydown="(ev) => this.onKeydown(row_index, 'name', ev)"/>
+                  </td>
+                  <td t-att-class="{ sel: isSel(row_index, 'product_qty') }">
+                    <input class="o_pmk_butik__in n" t-att-value="val(row, 'product_qty')" inputmode="numeric"
+                           t-att-data-index="row_index" t-att-data-key="row.id" data-col="product_qty" t-att-readonly="!state.data.can_write"
+                           t-on-focus="() => this.onFocus(row_index, 'product_qty')"
+                           t-on-input="(ev) => this.onInput(row, row_index, 'product_qty', ev)"
+                           t-on-change="(ev) => this.commit(row, 'product_qty', ev)"
+                           t-on-keydown="(ev) => this.onKeydown(row_index, 'product_qty', ev)"/>
+                  </td>
+                  <td class="o_pmk_butik__muted-cell o_pmk_butik__nowrap">изд., шт<t t-if="isCollapsed(row.id) and childCount(row.id)"> · <t t-esc="childCount(row.id)"/> дет.</t></td>
+                  <td class="n o_pmk_butik__ro o_pmk_butik__pw" title="Вес одного изделия" t-esc="kg(row.weight_one)"/>
+                  <td class="n o_pmk_butik__ro o_pmk_butik__pw" title="Вес изделий всего" t-esc="kg(row.weight_total)"/>
+                  <td class="n o_pmk_butik__ro o_pmk_butik__pw" title="Металл по прайсам на все изделия" t-esc="money(row.cost)"/>
+                  <td t-att-class="{ sel: isSel(row_index, 'price') }">
+                    <input class="o_pmk_butik__in n o_pmk_konstr__price" t-att-value="val(row, 'price')" inputmode="decimal"
+                           t-att-data-index="row_index" t-att-data-key="row.id" data-col="price" t-att-readonly="!state.data.can_write"
+                           placeholder="цена"
+                           t-on-focus="() => this.onFocus(row_index, 'price')"
+                           t-on-input="(ev) => this.onInput(row, row_index, 'price', ev)"
+                           t-on-change="(ev) => this.commit(row, 'price', ev)"
+                           t-on-keydown="(ev) => this.onKeydown(row_index, 'price', ev)"/>
+                  </td>
+                </tr>
+                <tr t-elif="!isCollapsed(row.parent)" class="o_pmk_butik__detail" t-att-class="{ 'o_pmk_butik__detail--bad': row.match_state === 'none' }">
+                  <t t-foreach="['pos', 'name', 'width', 'length_mm', 'qty']" t-as="col" t-key="col">
+                    <td t-if="col === 'width' and !row.is_sheet" class="o_pmk_butik__ro"/>
+                    <td t-else="" t-att-class="{ sel: isSel(row_index, col), n: isNum(col), 'o_pmk_butik__namecell': col === 'name' }">
+                      <textarea t-if="col === 'name'" rows="1" class="o_pmk_butik__in o_pmk_butik__ta"
+                             t-att-value="val(row, col)" t-att-data-index="row_index" t-att-data-key="row.id" data-col="name"
+                             t-att-readonly="!state.data.can_write"
+                             placeholder="Уголок 63х4 · коротко: д1 шв10 1200мм 10шт 09г · лист: т1 10мм 100х100мм 10шт"
+                             t-on-focus="() => this.onFocus(row_index, col)"
+                             t-on-input="(ev) => this.onInput(row, row_index, col, ev)"
+                             t-on-change="(ev) => this.commit(row, col, ev)"
+                             t-on-keydown="(ev) => this.onKeydown(row_index, col, ev)"
+                             t-on-paste="(ev) => this.onPaste(row_index, ev)"/>
+                      <input t-else="" class="o_pmk_butik__in" t-att-class="{ n: isNum(col) }"
+                             t-att-value="val(row, col)" t-att-data-index="row_index" t-att-data-key="row.id" t-att-data-col="col"
+                             t-att-readonly="!state.data.can_write"
+                             t-on-focus="() => this.onFocus(row_index, col)"
+                             t-on-input="(ev) => this.onInput(row, row_index, col, ev)"
+                             t-on-change="(ev) => this.commit(row, col, ev)"
+                             t-on-keydown="(ev) => this.onKeydown(row_index, col, ev)"
+                             t-on-paste="(ev) => this.onPaste(row_index, ev)"/>
+                      <div t-if="col === 'name' and row.label" class="o_pmk_butik__rec"
+                           t-att-class="{ 'o_pmk_butik__rec--bad': row.match_state === 'none' }" t-esc="row.label"/>
+                      <div t-if="col === 'name' and state.suggest and state.suggestRow === row_index" class="o_pmk_butik__suggest">
+                        <div t-foreach="state.suggest" t-as="item" t-key="item.key" class="o_pmk_butik__sitem"
+                             t-att-class="{ 'o_pmk_butik__sitem--active': item_index === state.suggestIdx }"
+                             t-on-mousedown="(ev) => this.choose(row_index, item, ev)">
+                          <span class="o_pmk_butik__skind" t-esc="item.kind"/>
+                          <span t-esc="item.label"/>
+                        </div>
+                      </div>
+                    </td>
+                  </t>
+                  <td class="n o_pmk_butik__ro" t-esc="total(row)"/>
+                  <td t-att-class="{ sel: isSel(row_index, 'grade') }">
+                    <input class="o_pmk_butik__in" t-att-value="val(row, 'grade')" t-att-data-index="row_index" t-att-data-key="row.id"
+                           data-col="grade" t-att-readonly="!state.data.can_write"
+                           t-on-focus="() => this.onFocus(row_index, 'grade')"
+                           t-on-input="(ev) => this.onInput(row, row_index, 'grade', ev)"
+                           t-on-change="(ev) => this.commit(row, 'grade', ev)"
+                           t-on-keydown="(ev) => this.onKeydown(row_index, 'grade', ev)"
+                           t-on-paste="(ev) => this.onPaste(row_index, ev)"/>
+                  </td>
+                  <td class="n o_pmk_butik__ro" t-esc="kg(row.weight_one)"/>
+                  <td class="n o_pmk_butik__ro" t-esc="kg(row.weight_total)"/>
+                  <td class="n o_pmk_butik__ro">
+                    <span t-if="row.no_price" class="o_pmk_konstr__noprice" title="Позиции нет в прайсах — металл не посчитан">нет цены</span>
+                    <t t-else="" t-esc="money(row.cost)"/>
+                  </td>
+                  <td class="o_pmk_butik__ro"/>
+                </tr>
+              </t>
+            </tbody>
+          </table>
+        </div>
+        <div class="o_pmk_butik__total">
+          Изделий: <b t-esc="state.data.products"/> · Металл всего: <b><t t-esc="kg(state.data.weight_kg) or '0'"/> кг</b>
+          <t t-if="state.data.cost"> · по прайсам <b><t t-esc="money(state.data.cost)"/> ₽</b></t>
+        </div>
+      </t>
+    </t>
+    </div>
+  </t>
+</templates>
