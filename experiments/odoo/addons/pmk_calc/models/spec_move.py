@@ -150,7 +150,7 @@ class MetalSpecMove(models.Model):
     # Список позиций расчёта: (поле строк, модель). Новый калькулятор — строка здесь,
     # ветки в _pmk_items / _pmk_put и пункт в меню «Перенести в» (static/src/js/pick_bar.js).
     PMK_SOURCES = {
-        "metal": ("Металлоизделия", "pmk.metal.spec.product"),
+        "metal": ("Конструкции", "pmk.metal.spec.product"),
         "dobor": ("Доборные элементы", "pmk.dobor.order.line"),
         "vent": ("Вентзонты", "pmk.vent.hood"),
     }
@@ -292,7 +292,7 @@ class DoborLineBack(models.Model):
     _inherit = ["pmk.dobor.order.line", "pmk.line.pick.mixin"]
 
     def action_pmk_back_to_metal(self):
-        """Строка доборки — обратно изделием в «Металлоизделия» своего расчёта."""
+        """Строка доборки — обратно изделием в «Конструкции» своего расчёта."""
         for line in self:
             spec = line.order_id.spec_id
             if not spec:

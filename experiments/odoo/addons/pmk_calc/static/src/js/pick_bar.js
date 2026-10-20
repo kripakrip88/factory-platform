@@ -33,7 +33,7 @@ export async function pickAll(records, name, value) {
 }
 
 const TARGETS = [
-    { key: "metal", label: "Металлоизделия" },
+    { key: "metal", label: "Конструкции" },
     { key: "dobor", label: "Доборные элементы" },
     { key: "vent", label: "Вентзонты" },
 ];

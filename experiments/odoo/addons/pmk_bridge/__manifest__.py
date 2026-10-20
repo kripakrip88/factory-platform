@@ -16,7 +16,7 @@
     # 19.0.0.6.0 — печать КП без зашитых «НДС 22%» и «ОГРНИП» (шаг 58):
     # продавца и строку налога отдаёт расчёт (models/print_seller.py),
     # справочник «Наши организации» (pmk_org) их подменяет. Миграции нет.
-    "version": "19.0.0.9.1",
+    "version": "19.0.0.9.2",
     "summary": "Артикулы (default_code) для переноса сортамента pmk_calc в товары",
     "category": "Inventory/Inventory",
     "author": "ПМК Парк",
@@ -106,6 +106,10 @@
             "pmk_bridge/static/src/scss/margin_bar.scss",
             "pmk_bridge/static/src/js/margin_bar_field.js",
             "pmk_bridge/static/src/xml/margin_bar_field.xml",
+            # Сводка «Металлоизделия» (20.10.2026): все изделия расчёта с составом.
+            "pmk_bridge/static/src/scss/spec_summary.scss",
+            "pmk_bridge/static/src/js/spec_summary.js",
+            "pmk_bridge/static/src/xml/spec_summary.xml",
         ],
     },
     "installable": True,

@@ -63,7 +63,7 @@ class MetalSpecMetal(models.Model):
             material = g.sheet_id.display_name or "лист"
             if g.grade_id:
                 material += ", " + g.grade_id.display_name
-            rows.append({"kind": "Лист", "material": material, "source": "Металлоизделия",
+            rows.append({"kind": "Лист", "material": material, "source": "Конструкции",
                          "amount": "%d × %s" % (g.sheets, sizes.get(g.sheet_size, g.sheet_size or "")),
                          "kg": g.sheets * area * mass})
         # Детали без группы (листы не раскладывали черновиком или расчёт старый) — по
@@ -75,7 +75,7 @@ class MetalSpecMetal(models.Model):
         for (sheet, size), count in loose.items():
             m = SIZE_RE.match(size or "")
             area = int(m.group(1)) * int(m.group(2)) / 1e6 if m else 0.0
-            rows.append({"kind": "Лист", "material": sheet.display_name or "лист", "source": "Металлоизделия",
+            rows.append({"kind": "Лист", "material": sheet.display_name or "лист", "source": "Конструкции",
                          "amount": "%d × %s (по деталям, без раскладки)" % (count, sizes.get(size, size or "")),
                          "kg": count * area * (sheet.mass_per_sqm or 0.0)})
         return rows

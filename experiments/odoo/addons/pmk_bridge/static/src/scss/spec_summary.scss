@@ -1,0 +1,127 @@
+// ─── Сводка «Металлоизделия» (Антон 20.10.2026) ──────────────────────────
+//
+// Таблица всех изделий расчёта: js/spec_summary.js. Цвета — переменные темы
+// pmk_theme (светлая и тёмная заданы там); второй аргумент var() — светлое
+// значение, если темы нет. Метки «Откуда» — подкраска color-mix по
+// прозрачному: в тёмной теме тот же тон ложится на тёмный фон без своей пары.
+.o_pmk_summary {
+  width: 100%;
+
+  &__empty {
+    padding: 16px 4px;
+    color: var(--pmk-text-muted, #6b6b6b);
+  }
+
+  &__table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+
+    > thead th {
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--pmk-border, #e4e1d8);
+      color: var(--pmk-text-muted, #6b6b6b);
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    > tbody > tr > td,
+    > tfoot td {
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--pmk-border-soft, #efece4);
+      vertical-align: middle;
+    }
+
+    > tfoot td {
+      border-bottom: 0;
+      font-weight: 600;
+    }
+  }
+
+  &__row.is-clickable { cursor: pointer; }
+  &__row.is-clickable:hover > td { background: var(--pmk-hover, #f5f3ee); }
+  &__row.is-open > td { font-weight: 600; }
+
+  &__name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    .fa { color: var(--pmk-text-muted, #6b6b6b); margin-right: 2px; }
+  }
+
+  &__nochev { display: inline-block; width: 1.28571429em; margin-right: 2px; }
+
+  &__src {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--pmk-text, #1f1f1f);
+    white-space: nowrap;
+
+    &.is-metal  { background: color-mix(in srgb, #7f77dd 18%, transparent); }
+    &.is-manual { background: color-mix(in srgb, #888780 16%, transparent); }
+    &.is-dobor  { background: color-mix(in srgb, #1d9e75 18%, transparent); }
+    &.is-vent   { background: color-mix(in srgb, #d85a30 18%, transparent); }
+  }
+
+  &__noprice { color: var(--pmk-tone-yellow-ink, #633806); font-size: 12px; }
+
+  &__detail > td {
+    padding: 4px 8px 10px 30px !important;
+    background: var(--pmk-surface-sunken, #f7f5f0);
+    font-size: 12px;
+    color: var(--pmk-ink-2, #3d3d3a);
+  }
+
+  &__head { margin: 4px 0 6px; color: var(--pmk-text-muted, #6b6b6b); }
+  &__error { margin: 0 0 6px; color: var(--pmk-danger, #a32d2d); }
+
+  // Таблица деталей — по содержимому, а не во всю ширину: на широком экране
+  // числа уезжали от названий на полметра (замер 20.10, 1463 px).
+  &__sub {
+    width: auto;
+    min-width: 560px;
+    max-width: 100%;
+    border-collapse: collapse;
+
+    th, td { padding-right: 24px !important; }
+
+    th {
+      padding: 3px 6px;
+      color: var(--pmk-text-muted, #6b6b6b);
+      font-weight: 500;
+      border-bottom: 1px solid var(--pmk-border, #e4e1d8);
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 3px 6px;
+      border-bottom: 1px solid var(--pmk-border-soft, #efece4);
+    }
+  }
+
+  &__foot { margin-top: 6px; color: var(--pmk-text-muted, #6b6b6b); }
+
+  &__dobor { display: flex; gap: 20px; align-items: flex-start; padding-top: 4px; }
+
+  &__sketch {
+    flex: 0 0 auto;
+    max-width: 220px;
+
+    svg { max-width: 220px; max-height: 110px; height: auto; }
+  }
+
+  &__facts {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 2px 14px;
+    margin: 0;
+
+    dt { font-weight: 400; color: var(--pmk-text-muted, #6b6b6b); }
+    dd { margin: 0; }
+  }
+}

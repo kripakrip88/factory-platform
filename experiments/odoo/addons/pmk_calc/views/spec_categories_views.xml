@@ -22,7 +22,7 @@
         </div>
       </xpath>
       <xpath expr="//page[@name='composition']" position="attributes">
-        <attribute name="string">Металлоизделия</attribute>
+        <attribute name="string">Конструкции</attribute>
         <attribute name="invisible">not cat_metal</attribute>
       </xpath>
       <!-- Перенос изделий в доборку / вентзонты (13.10.2026, spec_move.py): галочка в

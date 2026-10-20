@@ -39,8 +39,8 @@ class VentHoodOrderSpec(models.Model):
 class MetalSpecCategories(models.Model):
     _inherit = "pmk.metal.spec"
 
-    cat_metal = fields.Boolean("Металлоизделия", default=True,
-                               help="Изделия по чертежу — состав здесь же, во вкладке «Металлоизделия».")
+    cat_metal = fields.Boolean("Конструкции", default=True,
+                               help="Изделия по чертежу — состав здесь же, во вкладке «Конструкции» (до 20.10.2026 — «Металлоизделия»; теперь так называется сводка всех изделий расчёта).")
     cat_dobor = fields.Boolean("Доборные элементы", help="Включено — доборка в расчёте. Выключено — черновик: позиции целы, в расчёт не входят.")
     cat_vent = fields.Boolean("Вентзонты", help="Включено — вентзонты в расчёте. Выключено — черновик: размеры целы, в расчёт не входят.")
     dobor_order_ids = fields.One2many("pmk.dobor.order", "spec_id", "Доборки")

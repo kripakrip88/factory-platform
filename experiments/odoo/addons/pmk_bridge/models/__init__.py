@@ -4,6 +4,8 @@ from . import sku
 from . import sheet_uom
 from . import reference_link
 from . import spec_cost
+# 20.10.2026: вкладка «Металлоизделия» — сводка изделий всех калькуляторов.
+from . import spec_summary
 from . import reference_price
 from . import kp_send
 from . import mail_compose_message

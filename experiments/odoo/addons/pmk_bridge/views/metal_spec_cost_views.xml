@@ -615,4 +615,25 @@
     </field>
   </record>
 
+  <!--
+    «Металлоизделия» — сводка всех изделий расчёта (Антон 20.10.2026): конструкции,
+    доборка, вентзонты одной таблицей, строка раскрывается составом — только
+    смотреть (models/spec_summary.py, js/spec_summary.js). Первой вкладкой.
+    Прежняя «Металлоизделия» (состав с правкой) теперь «Конструкции»
+    (pmk_calc, spec_categories_views.xml). active в XML — грабли Odoo 19.
+  -->
+  <record id="view_metal_spec_form_summary" model="ir.ui.view">
+    <field name="name">pmk.metal.spec.form.summary</field>
+    <field name="model">pmk.metal.spec</field>
+    <field name="inherit_id" ref="pmk_calc.view_metal_spec_form"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//page[@name='composition']" position="before">
+        <page string="Металлоизделия" name="pmk_summary">
+          <field name="pmk_summary" widget="pmk_spec_summary" nolabel="1" readonly="1"/>
+        </page>
+      </xpath>
+    </field>
+  </record>
+
 </odoo>

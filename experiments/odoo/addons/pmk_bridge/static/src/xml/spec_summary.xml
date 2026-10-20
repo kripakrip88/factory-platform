@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+  <!-- Сводка «Металлоизделия»: логика — js/spec_summary.js, данные — models/spec_summary.py. -->
+  <t t-name="pmk_bridge.SpecSummaryField">
+    <div class="o_pmk_summary">
+      <div t-if="!summary.rows.length" class="o_pmk_summary__empty">
+        Изделий пока нет — заведите их во вкладке «Конструкции», доборке или вентзонтах.
+      </div>
+      <table t-else="" class="o_pmk_summary__table">
+        <colgroup>
+          <col/><col style="width: 130px"/><col style="width: 80px"/><col style="width: 110px"/>
+          <col style="width: 120px"/><col style="width: 130px"/>
+        </colgroup>
+        <thead>
+          <tr>
+            <th>Изделие</th><th>Откуда</th><th class="text-end">Кол-во</th><th class="text-end">Вес, кг</th>
+            <th class="text-end">Цена за шт</th><th class="text-end">Сумма</th>
+          </tr>
+        </thead>
+        <tbody>
+          <t t-foreach="summary.rows" t-as="row" t-key="row.key">
+            <tr t-att-class="{'o_pmk_summary__row': 1, 'is-open': open[row.key], 'is-clickable': canOpen(row)}"
+                t-on-click="() => this.toggle(row)">
+              <td class="o_pmk_summary__name">
+                <i t-if="canOpen(row)" t-att-class="'fa fa-fw ' + (open[row.key] ? 'fa-angle-down' : 'fa-angle-right')"/>
+                <span t-else="" class="o_pmk_summary__nochev"/>
+                <t t-esc="row.name"/>
+              </td>
+              <td><span t-att-class="'o_pmk_summary__src is-' + row.source" t-esc="sources[row.source].label"/></td>
+              <td class="text-end" t-esc="num(row.qty)"/>
+              <td class="text-end" t-esc="kg(row.weight)"/>
+              <td t-att-class="{'text-end': 1, 'o_pmk_summary__noprice': !row.price_unit}"
+                  t-esc="row.price_unit ? money(row.price_unit) : 'нет цены'"/>
+              <td class="text-end" t-esc="money(row.total)"/>
+            </tr>
+            <tr t-if="open[row.key]" class="o_pmk_summary__detail">
+              <td colspan="6">
+                <!-- Конструкции: детали изделия. -->
+                <t t-if="row.source === 'metal'">
+                  <table class="o_pmk_summary__sub">
+                    <thead><tr>
+                      <th>Деталь</th><th>Позиция</th><th>Размер</th><th>Марка</th>
+                      <th class="text-end">На 1 шт</th><th class="text-end">Всего</th>
+                      <th class="text-end">Вес в изделии, кг</th><th class="text-end">Металл, ₽</th>
+                    </tr></thead>
+                    <tbody>
+                      <tr t-foreach="row.details" t-as="d" t-key="d_index">
+                        <td t-esc="d.name or d.kind"/><td t-esc="d.item or '—'"/><td t-esc="d.size"/>
+                        <td t-esc="d.grade"/><td class="text-end" t-esc="num(d.qty)"/>
+                        <td class="text-end" t-esc="num(d.qty_total)"/><td class="text-end" t-esc="num(d.weight)"/>
+                        <td class="text-end" t-esc="money(d.cost)"/>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <div class="o_pmk_summary__foot">
+                    Вес изделия <t t-esc="num(row.foot.weight_one)"/> кг ·
+                    металл <t t-esc="money(row.foot.cost_one)"/> ₽ на шт
+                    <t t-if="row.foot.no_price"> · без цены закупки: <t t-esc="row.foot.no_price"/></t>
+                    · править — во вкладке «<t t-esc="sources[row.source].tab"/>»
+                  </div>
+                </t>
+                <!-- Вентзонт: заготовки на один зонт и на все. -->
+                <t t-if="row.source === 'vent'">
+                  <div class="o_pmk_summary__head" t-esc="row.vent.head"/>
+                  <div t-if="row.vent.error" class="o_pmk_summary__error" t-esc="row.vent.error"/>
+                  <table class="o_pmk_summary__sub">
+                    <thead><tr>
+                      <th>Деталь</th><th>Заготовка, мм</th><th class="text-end">На 1 зонт</th><th class="text-end">Всего</th>
+                    </tr></thead>
+                    <tbody>
+                      <tr t-foreach="row.vent.parts" t-as="p" t-key="p_index">
+                        <td t-esc="p.name"/><td t-esc="p.size"/>
+                        <td class="text-end" t-esc="num(p.qty)"/><td class="text-end" t-esc="num(p.qty_total)"/>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <div class="o_pmk_summary__foot">
+                    Металл нетто <t t-esc="num(row.vent.metal_m2)"/> м² · лист 1250 —
+                    <t t-esc="num(row.vent.sheet_m)"/> пог. м на зонт · <t t-esc="num(row.vent.weight_one)"/> кг/шт
+                    · править — во вкладке «<t t-esc="sources[row.source].tab"/>»
+                  </div>
+                </t>
+                <!-- Доборка: эскиз профиля и материал. -->
+                <t t-if="row.source === 'dobor'">
+                  <div t-if="!row.dobor.developed" class="o_pmk_summary__head">
+                    Профиль ещё не нарисован<t t-if="!row.dobor.sheet"> и лист не выбран</t>
+                    — вес и площадь посчитаются после чертежа в калькуляторе доборки.
+                    <t t-if="row.dobor.coating"> Покрытие: <t t-esc="row.dobor.coating"/>.</t>
+                    Планка <t t-esc="num(row.dobor.length)"/> мм.
+                  </div>
+                  <div t-else="" class="o_pmk_summary__dobor">
+                    <div class="o_pmk_summary__sketch" t-out="sketch(row.dobor.sketch)"/>
+                    <dl class="o_pmk_summary__facts">
+                      <dt>Материал</dt><dd t-esc="material(row.dobor)"/>
+                      <dt>Развёртка</dt><dd><t t-esc="num(row.dobor.developed)"/> мм<t t-if="row.dobor.bends"> · <t t-esc="row.dobor.bends"/></t></dd>
+                      <dt>Планка</dt><dd><t t-esc="num(row.dobor.length)"/> мм</dd>
+                      <dt>Площадь</dt><dd><t t-esc="num(row.dobor.area_one)"/> м²/шт · <t t-esc="num(row.dobor.area_total)"/> м² всего</dd>
+                      <dt>Вес</dt><dd><t t-esc="num(row.dobor.weight_one)"/> кг/шт</dd>
+                    </dl>
+                  </div>
+                  <div class="o_pmk_summary__foot">
+                    <t t-if="row.dobor.strips">Полос из рулона — <t t-esc="row.dobor.strips"/> · </t>
+                    править — во вкладке «<t t-esc="sources[row.source].tab"/>»
+                  </div>
+                </t>
+              </td>
+            </tr>
+          </t>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td>Итого<t t-if="summary.unpriced"> <span class="o_pmk_summary__noprice">· без цены: <t t-esc="summary.unpriced"/></span></t></td>
+            <td/><td/><td class="text-end" t-esc="kg(summary.weight)"/><td/>
+            <td class="text-end" t-esc="money(summary.total)"/>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </t>
+</templates>
