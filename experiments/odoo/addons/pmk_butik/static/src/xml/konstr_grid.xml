@@ -42,14 +42,15 @@
             <colgroup>
               <col style="width:64px"/><col style="width:30%"/><col style="width:90px"/><col style="width:96px"/><col style="width:80px"/>
               <col style="width:76px"/><col style="width:96px"/><col style="width:90px"/><col style="width:110px"/>
-              <col style="width:110px"/><col style="width:120px"/>
+              <col style="width:110px"/><col style="width:110px"/><col style="width:120px"/>
             </colgroup>
             <thead><tr>
               <th class="o_pmk_butik__th-pos"><button type="button" class="o_pmk_butik__chev" t-att-class="{ 'o_pmk_butik__chev--open': allOpen }"
                   t-att-title="allOpen ? 'Свернуть все изделия' : 'Развернуть все изделия'"
                   t-on-click="() => this.toggleAll()"/>№ поз.</th><th>Наименование</th><th class="n" title="Для листовых деталей: «Лист 10х60» заполнит сам">Ширина, мм</th><th class="n">Длина, мм</th><th class="n">На 1 шт</th>
-              <th class="n">Всего</th><th>Марка</th><th class="n">Вес 1, кг</th><th class="n">Вес всего, кг</th>
+              <th class="n">Всего</th><th>Марка</th><th class="n">Вес 1, кг</th><th class="n" title="Впишите массу из спецификации КМ — длина проката посчитается сама; пусто — вес по размерам">Вес всего, кг</th>
               <th class="n" title="Закупка металла по прайсам: у детали — на все изделия, у изделия — итог">Металл, ₽</th>
+              <th class="n" title="Цена клиенту за тонну: цена за шт посчитается из веса изделия">Цена за т</th>
               <th class="n" title="Цена клиенту за одно изделие">Цена за шт</th>
             </tr></thead>
             <tbody>
@@ -84,6 +85,15 @@
                   <td class="n o_pmk_butik__ro o_pmk_butik__pw" title="Вес одного изделия" t-esc="kg(row.weight_one)"/>
                   <td class="n o_pmk_butik__ro o_pmk_butik__pw" title="Вес изделий всего" t-esc="kg(row.weight_total)"/>
                   <td class="n o_pmk_butik__ro o_pmk_butik__pw" title="Металл по прайсам на все изделия" t-esc="money(row.cost)"/>
+                  <td t-att-class="{ sel: isSel(row_index, 'price_ton') }">
+                    <input class="o_pmk_butik__in n o_pmk_konstr__price" t-att-value="val(row, 'price_ton')" inputmode="decimal"
+                           t-att-data-index="row_index" t-att-data-key="row.id" data-col="price_ton" t-att-readonly="!state.data.can_write"
+                           placeholder="за т"
+                           t-on-focus="() => this.onFocus(row_index, 'price_ton')"
+                           t-on-input="(ev) => this.onInput(row, row_index, 'price_ton', ev)"
+                           t-on-change="(ev) => this.commit(row, 'price_ton', ev)"
+                           t-on-keydown="(ev) => this.onKeydown(row_index, 'price_ton', ev)"/>
+                  </td>
                   <td t-att-class="{ sel: isSel(row_index, 'price') }">
                     <input class="o_pmk_butik__in n o_pmk_konstr__price" t-att-value="val(row, 'price')" inputmode="decimal"
                            t-att-data-index="row_index" t-att-data-key="row.id" data-col="price" t-att-readonly="!state.data.can_write"
@@ -107,7 +117,7 @@
                              t-on-change="(ev) => this.commit(row, col, ev)"
                              t-on-keydown="(ev) => this.onKeydown(row_index, col, ev)"
                              t-on-paste="(ev) => this.onPaste(row_index, ev)"/>
-                      <input t-else="" class="o_pmk_butik__in" t-att-class="{ n: isNum(col) }"
+                      <input t-else="" class="o_pmk_butik__in" t-att-class="{ n: isNum(col), o_pmk_konstr__derived: col === 'length_mm' and row.length_derived }"
                              t-att-value="val(row, col)" t-att-data-index="row_index" t-att-data-key="row.id" t-att-data-col="col"
                              t-att-readonly="!state.data.can_write"
                              t-on-focus="() => this.onFocus(row_index, col)"
@@ -138,11 +148,22 @@
                            t-on-paste="(ev) => this.onPaste(row_index, ev)"/>
                   </td>
                   <td class="n o_pmk_butik__ro" t-esc="kg(row.weight_one)"/>
-                  <td class="n o_pmk_butik__ro" t-esc="kg(row.weight_total)"/>
+                  <td t-att-class="{ sel: isSel(row_index, 'mass') }">
+                    <input class="o_pmk_butik__in n o_pmk_konstr__mass" t-att-class="{ 'o_pmk_konstr__mass--km': row.by_mass }"
+                           t-att-value="val(row, 'mass')" inputmode="decimal" t-att-placeholder="kg(row.weight_total)"
+                           t-att-title="row.by_mass ? 'Масса по КМ: длина выведена из неё. Сотрите — вес снова по размерам' : 'Впишите массу по КМ — длина посчитается сама'"
+                           t-att-data-index="row_index" t-att-data-key="row.id" data-col="mass" t-att-readonly="!state.data.can_write"
+                           t-on-focus="() => this.onFocus(row_index, 'mass')"
+                           t-on-input="(ev) => this.onInput(row, row_index, 'mass', ev)"
+                           t-on-change="(ev) => this.commit(row, 'mass', ev)"
+                           t-on-keydown="(ev) => this.onKeydown(row_index, 'mass', ev)"
+                           t-on-paste="(ev) => this.onPaste(row_index, ev)"/>
+                  </td>
                   <td class="n o_pmk_butik__ro">
                     <span t-if="row.no_price" class="o_pmk_konstr__noprice" title="Позиции нет в прайсах — металл не посчитан">нет цены</span>
                     <t t-else="" t-esc="money(row.cost)"/>
                   </td>
+                  <td class="o_pmk_butik__ro"/>
                   <td class="o_pmk_butik__ro"/>
                 </tr>
               </t>

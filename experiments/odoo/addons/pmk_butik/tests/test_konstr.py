@@ -4,6 +4,8 @@ from lxml import etree
 
 from odoo.tests import TransactionCase, tagged
 
+from ..tools import parse
+
 
 @tagged("post_install", "-at_install")
 class TestKonstr(TransactionCase):
@@ -100,3 +102,79 @@ class TestKonstr(TransactionCase):
         children = [c.get("name") for c in page]
         self.assertEqual(children[:2], ["pmk_konstr_grid", "product_ids"],
                          "Таблица — над прежним редактором, редактор на месте (xpath модулей).")
+
+    # ─── №307: по массе из спецификации КМ ──────────────────────────────
+    def test_km_short_entry(self):
+        cases = {
+            "шв10 12,43тн": ("Швеллер 10", 12430.0),
+            "шв10 12.43 т": ("Швеллер 10", 12430.0),
+            "Гн.Р180х8 2516,4кг С345": ("Труба профильная 180х180х8", 2516.4),
+            "Гн.Р160х100х6 5423,2кг": ("Труба профильная 160х100х6", 5423.2),
+            "I30Ш1 2293,6кг": ("Двутавр 30Ш1", 2293.6),
+            "L80x6 115,3кг": ("Уголок 80х6", 115.3),
+            "t20 556,3кг с345": ("Лист 20", 556.3),
+        }
+        for text, (name, mass) in cases.items():
+            with self.subTest(text=text):
+                dec = parse.decode_for_cell(text)
+                self.assertEqual((dec["name"], dec["mass_kg"]), (name, mass))
+        # Прежние записи — как были.
+        self.assertEqual(parse.decode_for_cell("шв10п 600 мм 2 шт")["name"], "Швеллер 10П")
+        self.assertEqual(parse.decode_for_cell("уг80х6 1500мм")["length_mm"], 1500.0)
+        self.assertIsNone(parse.decode_for_cell("Уголок 63х4"))
+
+    def test_mass_line_and_price_per_ton(self):
+        rows = self._rows(self.spec.konstr_add_product())
+        product, detail = rows[0], rows[1]
+        self.spec.konstr_save_row(detail["id"], {"name": self.angle.display_name})
+        rows = self._rows(self.spec.konstr_save_row(detail["id"], {"mass": "390"}))
+        line = self.spec.product_ids.line_ids
+        self.assertEqual(line.pmk_mass_kg, 390)
+        self.assertAlmostEqual(line.weight_total, 390, places=3)
+        self.assertAlmostEqual(line.length_mm, 100000, places=0, msg="Длина — из массы: 390 / 3,9 кг/м.")
+        row = self._detail(rows)[0]
+        self.assertTrue(row["by_mass"] and row["length_derived"])
+        self.assertIn("по КМ", row["label"])
+        # Цена за т → цена за шт из веса изделия.
+        rows = self._rows(self.spec.konstr_save_row(product["id"], {"price_ton": "200 000"}))
+        prod = self.spec.product_ids
+        self.assertEqual(prod.pmk_price_ton, 200000)
+        self.assertAlmostEqual(prod.price_customer_unit, 78000, places=2)
+        # Цена за шт руками — «за т» очищается.
+        self.spec.konstr_save_row(product["id"], {"price": "90000"})
+        self.assertEqual((prod.pmk_price_ton, prod.price_customer_unit), (0, 90000))
+        # Изделий 2: «Вес всего» — на все, в строке — на одно.
+        self.spec.konstr_save_row(product["id"], {"product_qty": "2"})
+        self.spec.konstr_save_row(detail["id"], {"mass": "780"})
+        self.assertAlmostEqual(line.pmk_mass_kg, 390, places=3)
+        # Вписали длину — снова по размерам.
+        self.spec.konstr_save_row(detail["id"], {"length_mm": "1000"})
+        self.assertEqual((line.pmk_mass_kg, line.length_mm), (0, 1000))
+        self.assertAlmostEqual(line.weight_total, 3.9, places=3)
+
+    def test_mass_from_short_entry(self):
+        """«уг 63 4 390кг» в ячейке — масса берётся из набранного (на копии 20.10
+        терялась: читали уже расшифрованное наименование)."""
+        detail = self._detail(self._rows(self.spec.konstr_add_product()))[0]
+        self.spec.konstr_save_row(detail["id"], {"name": "уг 63 4 390кг"})
+        line = self.spec.product_ids.line_ids
+        self.assertEqual((line.pmk_text, line.pmk_mass_kg), ("Уголок 63х4", 390))
+        self.assertAlmostEqual(line.weight_total, 390, places=3)
+        self.spec.konstr_save_row(detail["id"], {"name": "шв10 1,5т"})
+        self.assertEqual(line.pmk_mass_kg, 1500)
+
+    def test_mass_sheet_not_laid_out(self):
+        sheet = self.env["pmk.metal.sheet"].create({
+            "sheet_type": "Гладкий (тест КМ)", "thickness_mm": 20.0, "gost": "ГОСТ", "mass_per_sqm": 157.0})
+        self.spec.write({"product_ids": [(0, 0, {"name": "МК по КМ", "qty": 1, "line_ids": [
+            (0, 0, {"calc_mode": "sheet", "sheet_id": sheet.id, "pmk_mass_kg": 314.0, "qty": 1}),
+            (0, 0, {"calc_mode": "sheet", "sheet_id": sheet.id, "a_mm": 200, "b_mm": 300, "qty": 2})]})]})
+        mass_line, size_line = self.spec.product_ids.line_ids.sorted("id")
+        self.assertAlmostEqual(mass_line.weight_total, 314.0, places=3)
+        self.spec.action_draft_layout()
+        self.assertFalse(mass_line.layout_group_id, "Лист «по КМ» не раскладывается.")
+        self.assertTrue(size_line.layout_group_id)
+        buy = [r for r in self.spec._pmk_buy_rows() if r.get("source") == "по КМ"]
+        self.assertEqual(len(buy), 1)
+        self.assertAlmostEqual(buy[0]["kg"], 314.0, places=3)
+        self.assertIn("2 м²", buy[0]["amount"], "314 кг / 157 кг/м² = 2 м².")

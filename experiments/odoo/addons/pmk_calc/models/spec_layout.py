@@ -269,7 +269,8 @@ class MetalSpecLayout(models.Model):
         onchange не отдаёт в зеркало новых деталей (см. выше), а сигнал нужен
         и до сохранения."""
         self.ensure_one()
-        return self.product_ids.line_sheet_ids
+        # Лист «по КМ» (масса без размеров, №307) не раскладывается.
+        return self.product_ids.line_sheet_ids.filtered(lambda l: not l.pmk_mass_kg)
 
     def _pmk_layout_keys(self):
         """Ключи листовых деталей расчёта сейчас — список с повторами: две
@@ -285,7 +286,7 @@ class MetalSpecLayout(models.Model):
         # Через изделие, а не line.product_id: на экране до сохранения
         # количество изделия — то, что набрано в строке «Состава».
         for product in self.product_ids:
-            for line in product.line_sheet_ids:
+            for line in product.line_sheet_ids.filtered(lambda l: not l.pmk_mass_kg):
                 size = sizes.get(line._origin.id) or line.layout_sheet_size
                 keys.append(_layout_key(
                     line.sheet_id._origin.id, line.a_mm, line.b_mm,
@@ -369,7 +370,8 @@ class MetalSpecLayout(models.Model):
         этой кнопкой.
         """
         for spec in self:
-            lines = spec.mapped("product_ids.line_sheet_ids")
+            # Лист «по КМ» (масса без размеров, №307) не раскладывается.
+            lines = spec.mapped("product_ids.line_sheet_ids").filtered(lambda l: not l.pmk_mass_kg)
             spec._pmk_layout_groups(lines)
             # Шаг 56: отпечаток — после раскладки строк, плашка «Раскладка
             # устарела» гаснет.

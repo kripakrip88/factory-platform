@@ -53,16 +53,18 @@ export class PmkKonstrGrid extends PmkButikGrid {
 
     colsOf(row) {
         if (row.kind === "product") {
-            return ["name", "product_qty", "price"];
+            return ["name", "product_qty", "price_ton", "price"];
         }
-        return super.colsOf(row);
+        return [...super.colsOf(row), "mass"];
     }
 
     saved(row, key) {
         // Цена — с разрядами («14 560»): так её читают; ввод понимает и без них
         // (сервер убирает пробелы, _to_float).
-        if (key === "price") {
-            return row.price ? row.price.toLocaleString("ru-RU", { maximumFractionDigits: 2 }) : "";
+        if (key === "price" || key === "price_ton" || key === "mass") {
+            // «Вес всего» — только масса по КМ; вес по размерам виден серым (placeholder).
+            const value = row[key];
+            return value ? value.toLocaleString("ru-RU", { maximumFractionDigits: 2 }) : "";
         }
         return super.saved(row, key);
     }

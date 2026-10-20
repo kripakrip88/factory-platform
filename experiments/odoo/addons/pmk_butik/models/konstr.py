@@ -65,7 +65,19 @@ class MetalSpecLineKonstr(models.Model):
             if self.pmk_text:
                 return _("нет в справочнике — выберите из подсказки")
             return ""
-        if self.calc_mode == "linear":
+        if self.pmk_mass_kg and self.calc_mode in ("linear", "sheet"):
+            # №307: «по КМ» — масса из спецификации, длина / площадь выведены из неё.
+            if self.calc_mode == "linear":
+                mpm = item.mass_per_meter or 0.0
+                text = "%s · %s кг/м · по КМ %s кг = %s м" % (
+                    item.display_name, _fmt(round(mpm, 3)), _fmt(round(self.pmk_mass_kg, 1)),
+                    _fmt(round(self.pmk_mass_kg / mpm, 1)) if mpm else "?")
+            else:
+                mps = item.mass_per_sqm or 0.0
+                text = "%s · %s кг/м² · по КМ %s кг = %s м²" % (
+                    item.display_name, _fmt(round(mps, 2)), _fmt(round(self.pmk_mass_kg, 1)),
+                    _fmt(round(self.pmk_mass_kg / mps, 2)) if mps else "?")
+        elif self.calc_mode == "linear":
             text = "%s · %s кг/м" % (item.display_name, _fmt(round(item.mass_per_meter or 0, 3)))
         elif self.calc_mode == "sheet":
             text = "%s · %s×%s мм" % (item.display_name, _fmt(self.a_mm) if self.a_mm else "? ширина",
@@ -95,13 +107,19 @@ class MetalSpecLineKonstr(models.Model):
             "pos": self.detail_name or "",
             "name": name,
             "is_sheet": sheet,
-            "width": self.a_mm if sheet else 0.0,
-            "length_mm": self.b_mm if sheet else (self.length_mm if self.calc_mode == "linear" else 0.0),
+            # Лист «по КМ» (№307) — без размеров: вес из массы, раскладки нет.
+            "width": self.a_mm if sheet and not self.pmk_mass_kg else 0.0,
+            "length_mm": (self.b_mm if not self.pmk_mass_kg else 0.0) if sheet
+            else (self.length_mm if self.calc_mode == "linear" else 0.0),
+            "length_derived": bool(self.pmk_mass_kg) and self.calc_mode == "linear",
             "qty": self.qty or 0,
             "qty_total": (self.qty or 0) * qty_product,
             "grade": self.grade_id.name or self.pmk_grade_text or "",
             "weight_one": round(self.weight_one, 4),
             "weight_total": round(self.weight_total * qty_product, 3),
+            # «Вес всего» — вводимая ячейка: масса по КМ на все изделия (№307).
+            "mass": round(self.weight_total * qty_product, 3) if self.pmk_mass_kg else 0.0,
+            "by_mass": bool(self.pmk_mass_kg) and self.calc_mode in ("linear", "sheet"),
             "cost": round((self["cost_fact_total"] if "cost_fact_total" in self._fields else 0.0) * qty_product, 2),
             "no_price": "price_state" in self._fields and self.price_state == "no_price",
             "match_state": "auto" if item else ("none" if self.pmk_text else "empty"),
@@ -129,6 +147,7 @@ class MetalSpecKonstr(models.Model):
                 "name": product.name or "",
                 "product_qty": product.qty or 0,
                 "price": product["price_customer_unit"] if "price_customer_unit" in product._fields else 0.0,
+                "price_ton": product["pmk_price_ton"] if "pmk_price_ton" in product._fields else 0.0,
                 "weight_one": round(product.weight_one, 3),
                 "weight_total": round(product.weight_total, 3),
                 "cost": round(product["cost_fact_total"] if "cost_fact_total" in product._fields else 0.0, 2),
@@ -196,9 +215,20 @@ class MetalSpecKonstr(models.Model):
             lambda g: (g.name or "").replace(" ", "").lower() == norm)[:1]
         return {"grade_id": grade.id or False, "pmk_grade_text": False if grade else text}
 
-    def _konstr_detail_vals(self, line, clean):
+    def _konstr_detail_vals(self, line, clean, product=None):
         """Правка ячеек детали → поля строки расчёта."""
         vals = {}
+        product = product or (line.product_id if line else None)
+        # №307: масса по КМ — ячейка «Вес всего» (на все изделия) или «…кг / …т» в
+        # короткой записи. В строке храним на одно изделие. Вписали длину или
+        # ширину руками — деталь снова считается по размерам.
+        mass = clean.get("mass", clean.get("mass_kg"))
+        if mass is not None:
+            total = _to_float(mass)
+            vals["pmk_mass_kg"] = total / (product.qty or 1) if (total and product) else total
+        elif "length_mm" in clean or "width" in clean:
+            if line and line.pmk_mass_kg:
+                vals["pmk_mass_kg"] = 0.0
         if "pos" in clean:
             vals["detail_name"] = (clean["pos"] or "").strip() or False
         if "name" in clean:
@@ -218,6 +248,10 @@ class MetalSpecKonstr(models.Model):
             vals["qty"] = max(1, int(round(_to_float(clean["qty"]) or 1)))
         if "grade" in clean:
             vals.update(self._konstr_grade(clean["grade"]))
+        # Лист «по КМ» — размеры не нужны (старые после смены записи не мешали бы
+        # в «Подробно» и вкладке «Металл»).
+        if vals.get("pmk_mass_kg") and (vals.get("calc_mode") or (line.calc_mode if line else "")) == "sheet":
+            vals.update(a_mm=0.0, b_mm=0.0)
         # Сменился вид — размеры чужого вида не оставляем (как onchange расчёта).
         if "calc_mode" in vals and line and vals["calc_mode"] != line.calc_mode:
             if vals["calc_mode"] != "sheet":
@@ -234,7 +268,8 @@ class MetalSpecKonstr(models.Model):
         """Правка ячейки (или новая деталь: row_key = False, vals["after_id"])."""
         self.ensure_one()
         self.check_access("write")
-        allowed = {"pos", "name", "product_qty", "length_mm", "qty", "grade", "width", "price"}
+        allowed = {"pos", "name", "product_qty", "length_mm", "qty", "grade", "width", "price",
+                   "price_ton", "mass"}
         clean = {k: v for k, v in (vals or {}).items() if k in allowed}
         if not row_key:
             self._konstr_insert([clean], (vals or {}).get("after_id"))
@@ -249,15 +284,21 @@ class MetalSpecKonstr(models.Model):
                 pvals["qty"] = max(1, int(_to_float(clean["product_qty"]) or 1))
             if "price" in clean and "price_customer_unit" in record._fields:
                 pvals["price_customer_unit"] = _to_float(clean["price"])
+            if "price_ton" in clean and "pmk_price_ton" in record._fields:
+                pvals["pmk_price_ton"] = _to_float(clean["price_ton"])
             if pvals:
                 record.write(pvals)
         else:
             if clean.get("name"):
                 # Короткая запись «д1 шв10 1200мм 10шт 09г» — пустые колонки из неё.
+                # Масса («…кг», «…т», №307) — из набранного, до замены наименования.
+                mass = (parse.decode_for_cell(clean["name"]) or {}).get("mass_kg")
                 decoded = _decoded(clean["name"])
                 if "sheet_width_mm" in decoded:
                     decoded["width"] = decoded.pop("sheet_width_mm")
                 clean.update(decoded)
+                if mass:
+                    clean["mass_kg"] = mass
             record.write(self._konstr_detail_vals(record, clean))
         return self.konstr_rows()
 
@@ -282,7 +323,7 @@ class MetalSpecKonstr(models.Model):
         new_vals = []
         for clean in cleans:
             vals = {"product_id": product.id, "calc_mode": "linear", "qty": 1}
-            vals.update(self._konstr_detail_vals(False, clean))
+            vals.update(self._konstr_detail_vals(False, clean, product))
             new_vals.append(vals)
         created = self.env["pmk.metal.spec.line"].create(new_vals) if new_vals else self.env["pmk.metal.spec.line"]
         ordered = list(siblings[:index]) + list(created) + list(siblings[index:])
@@ -303,6 +344,9 @@ class MetalSpecKonstr(models.Model):
             decoded = _decoded(clean["name"])
             if "sheet_width_mm" in decoded:
                 decoded["width"] = decoded.pop("sheet_width_mm")
+            mass = (parse.decode_for_cell(clean["name"]) or {}).get("mass_kg")
+            if mass:
+                decoded["mass_kg"] = mass
             for key, value in decoded.items():
                 if key == "name" or not clean.get(key):
                     clean[key] = value

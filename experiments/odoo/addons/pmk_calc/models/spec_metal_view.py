@@ -86,12 +86,13 @@ class MetalSpecOverview(models.Model):
         self.ensure_one()
         self.check_access("read")
         groups = self.layout_group_ids.sorted("sequence")
-        loose = self.sheet_line_ids.filtered(lambda l: not l.layout_group_id)
+        # Лист «по КМ» (масса, №307) не раскладывается — он в «Итого — что купить».
+        loose = self.sheet_line_ids.filtered(lambda l: not l.layout_group_id and not l.pmk_mass_kg)
         return {
             "kind": getattr(self, "pmk_kind", "kp") or "kp",
             "can_write": self.has_access("write"),
             "sheet_sizes": SHEET_SIZES,
-            "sheet_lines": len(self.sheet_line_ids),
+            "sheet_lines": len(self.sheet_line_ids.filtered(lambda l: not l.pmk_mass_kg)),
             "stale": bool(self.layout_stale),
             "stale_text": self.layout_stale_text or "",
             "sheets": [group._pmk_overview_row() for group in groups],

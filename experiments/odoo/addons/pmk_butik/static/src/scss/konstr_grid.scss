@@ -25,3 +25,17 @@
 .o_pmk_konstr__price::placeholder {
   color: var(--pmk-text-faint, #b4b2a9);
 }
+
+// №307: масса по КМ — ячейка «Вес всего» подсвечена; длина, выведенная из
+// массы, — серая (не вписана руками).
+.o_pmk_konstr__mass--km {
+  background: color-mix(in srgb, #7f77dd 14%, transparent) !important;
+}
+
+.o_pmk_konstr__mass::placeholder {
+  color: var(--pmk-text-muted, #6b6b6b);
+}
+
+.o_pmk_konstr__derived {
+  color: var(--pmk-text-muted, #6b6b6b) !important;
+}

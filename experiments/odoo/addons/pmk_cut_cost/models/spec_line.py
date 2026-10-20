@@ -23,7 +23,7 @@ class MetalSpecLineCutCost(models.Model):
         help="Сколько от купленных по раскрою хлыстов этого типоразмера уходит в детали "
              "расчёта. 0 — раскроя нет, закупка по чистому весу и использованию.")
 
-    @api.depends("calc_mode", "profile_id", "weight_total", "product_id.qty",
+    @api.depends("calc_mode", "profile_id", "weight_total", "product_id.qty", "pmk_mass_kg",
                  "spec_id.product_ids.qty",
                  "spec_id.product_ids.line_linear_ids.weight_total",
                  "spec_id.product_ids.line_linear_ids.profile_id",
@@ -40,7 +40,8 @@ class MetalSpecLineCutCost(models.Model):
             net = defaultdict(float)
             for product in spec.product_ids:
                 for line in product.line_linear_ids:
-                    if line.profile_id:
+                    # Прокат «по КМ» (№307) не режется — в долю раскроя не входит.
+                    if line.profile_id and not line.pmk_mass_kg:
                         net[line.profile_id.id] += (line.weight_total or 0.0) * (product.qty or 0)
             for result in plan.result_ids:
                 pid = result.profile_id.id
@@ -50,7 +51,8 @@ class MetalSpecLineCutCost(models.Model):
                     shares[(spec.id, pid)] = min(1.0, net[pid] / buy)
         for line in self:
             share = 0.0
-            if line.calc_mode == "linear" and line.profile_id:
+            # «По КМ» — доля 0: закупка по чистому весу (использование), без раскроя.
+            if line.calc_mode == "linear" and line.profile_id and not line.pmk_mass_kg:
                 share = shares.get((line.spec_id.id, line.profile_id.id), 0.0)
             line.pmk_cut_share = share
 

@@ -27,6 +27,8 @@ from . import deleted_names
 from .metal_pending import pending_note
 
 MM_IN_M = 1000.0
+# Деталь «по КМ»: от чего зависит длина проката, выведенная из массы.
+MASS_SYNC_FIELDS = ("pmk_mass_kg", "profile_id", "calc_mode", "qty")
 # Поля позиции справочника в детали (шаг З-10: «где завели» позицию «на разнос»).
 PENDING_POSITION_FIELDS = ("profile_id", "sheet_id", "fastener_id", "calc_mode")
 
@@ -331,13 +333,28 @@ class MetalSpecLine(models.Model):
                     "экрана это случилось." % (vals.get("detail_name") or "без названия"))
         lines = super().create(vals_list)
         lines._pmk_mark_pending_origin()
+        lines.filtered("pmk_mass_kg")._pmk_mass_sync()
         return lines
 
     def write(self, vals):
         result = super().write(vals)
         if any(name in vals for name in PENDING_POSITION_FIELDS):
             self._pmk_mark_pending_origin()
+        if any(name in vals for name in MASS_SYNC_FIELDS):
+            self._pmk_mass_sync()
         return result
+
+    def _pmk_mass_sync(self):
+        """Деталь «по КМ» (масса задана): у проката длина — из массы, чтобы
+        цена закупки (₽ за метр, мост) и «Металл» видели метры: масса одной
+        детали ÷ масса метра. Лист считается массой напрямую — размеров нет."""
+        for line in self:
+            mpm = line.profile_id.mass_per_meter if line.calc_mode == "linear" else 0.0
+            if not line.pmk_mass_kg or not mpm:
+                continue
+            length = round(line.pmk_mass_kg / (line.qty or 1) / mpm * MM_IN_M, 1)
+            if abs((line.length_mm or 0.0) - length) > 0.05:
+                super(MetalSpecLine, line).write({"length_mm": length})
 
     # ─── Позиция «на разнос» (шаг З-10, metal_pending.py) ─────────────────
     def _pmk_ref_position(self):
@@ -494,6 +511,16 @@ class MetalSpecLine(models.Model):
     a_mm = fields.Float("A, мм", digits=(12, 1))
     b_mm = fields.Float("B, мм", digits=(12, 1))
     qty = fields.Integer("Кол-во на изделие", required=True, default=1)
+    # №307 (Голубенко; Антон 20.10.2026): прокат и лист «по массе» — как в
+    # спецификации КМ, где длин заготовок ещё нет. Масса строки на одно
+    # изделие (все её штуки); задана — вес из неё, а не из размеров; длина
+    # проката выводится (_pmk_mass_sync). Раскладка листа и раскрой проката
+    # такие строки не берут: заготовки появятся только в КМД.
+    pmk_mass_kg = fields.Float(
+        "Масса по КМ, кг", digits=(12, 3),
+        help="Масса детали из раздела КМ (на одно изделие). Задана — вес и "
+             "цена металла считаются от неё, длина проката выводится сама; "
+             "пусто — по размерам.")
 
     weight_one = fields.Float("Вес шт, кг", compute="_compute_weight", store=True, digits=(12, 3))
     weight_total = fields.Float("Вес в изделии, кг", compute="_compute_weight", store=True, digits=(12, 3))
@@ -504,6 +531,8 @@ class MetalSpecLine(models.Model):
                  "product_id.line_sheet_ids.a_mm",
                  "product_id.line_sheet_ids.b_mm",
                  "product_id.line_sheet_ids.qty",
+                 "product_id.line_sheet_ids.pmk_mass_kg",
+                 "product_id.line_sheet_ids.sheet_id",
                  "calc_mode")
     def _compute_paint_area(self):
         """Площадь окраски изделия: сумма поверхностей его деталей.
@@ -522,10 +551,15 @@ class MetalSpecLine(models.Model):
                 if d.profile_id.surface_per_meter:
                     area += d.profile_id.surface_per_meter * (d.length_mm / MM_IN_M) * (d.qty or 0)
             for d in product.line_sheet_ids:
+                if d.pmk_mass_kg:
+                    # Лист «по КМ»: площадь из массы, красят обе стороны.
+                    if d.sheet_id.mass_per_sqm:
+                        area += d.pmk_mass_kg / d.sheet_id.mass_per_sqm * 2
+                    continue
                 area += (d.a_mm / MM_IN_M) * (d.b_mm / MM_IN_M) * 2 * (d.qty or 0)
             line.area_m2 = area
 
-    @api.depends("calc_mode", "profile_id", "sheet_id", "fastener_id", "paint_id",
+    @api.depends("calc_mode", "profile_id", "sheet_id", "fastener_id", "paint_id", "pmk_mass_kg",
                  "length_mm", "a_mm", "b_mm", "area_m2", "paint_thickness_um", "qty")
     def _compute_weight(self):
         for line in self:
@@ -545,6 +579,8 @@ class MetalSpecLine(models.Model):
                 want = line.paint_thickness_um or base
                 factor = (want / base) if base else 1.0
                 one = line.paint_id.consumption * factor * (line.area_m2 or 0.0)
+            if line.pmk_mass_kg and line.calc_mode in ("linear", "sheet"):
+                one = line.pmk_mass_kg / (line.qty or 1)
             line.weight_one = one
             line.weight_total = one * (line.qty or 0)
 

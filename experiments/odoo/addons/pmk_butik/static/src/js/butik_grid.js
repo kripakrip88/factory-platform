@@ -18,7 +18,7 @@ import { _t } from "@web/core/l10n/translation";
 import { registry } from "@web/core/registry";
 import { standardWidgetProps } from "@web/views/widgets/standard_widget_props";
 
-const NUMERIC = new Set(["width", "length_mm", "qty", "product_qty", "price"]);
+const NUMERIC = new Set(["width", "length_mm", "qty", "product_qty", "price", "price_ton", "mass"]);
 
 function fmt(value, digits = 1) {
     if (!value) {
@@ -98,7 +98,18 @@ export class PmkButikGrid extends Component {
         return this.state.data?.rows || [];
     }
 
-    async call(method, args = []) {
+    /**
+     * Вызовы — по очереди: каждый ответ — таблица целиком, и ответ, пришедший
+     * позже, затирал бы новую строку другого вызова (сохранение ячейки при
+     * уходе из неё и новая строка по Enter идут почти одновременно).
+     */
+    call(method, args = []) {
+        const run = () => this._call(method, args);
+        this.queue = (this.queue || Promise.resolve()).then(run, run);
+        return this.queue;
+    }
+
+    async _call(method, args = []) {
         if (!this.specId) {
             return;
         }
@@ -328,7 +339,11 @@ export class PmkButikGrid extends Component {
         }
         if (ev.key === "Enter" || ev.key === "ArrowDown" || ev.key === "ArrowUp") {
             ev.preventDefault();
-            await this.commit(row, col, ev);
+            // Курсор уходит СРАЗУ, правка сохраняется сама (уход из ячейки —
+            // change → commit). Раньше ждали ответ сервера и только потом
+            // переводили курсор: на медленном ответе следующая строка,
+            // набранная вслед, дописывалась в эту же ячейку (20.10.2026,
+            // проверка спецификации КМ на копии).
             const dir = ev.key === "ArrowUp" ? -1 : 1;
             let next = index + dir;
             while (next > 0 && next < this.rows.length && this.isCollapsed(this.rows[next].parent)) {
@@ -337,10 +352,22 @@ export class PmkButikGrid extends Component {
             if (next < 0) {
                 next = 0;
             }
-            if (next >= this.rows.length) {
-                await this.call("butik_save_row", [false, { after_id: this.rows[this.rows.length - 1]?.id }]);
-            }
             this.closeSuggest();
+            if (next >= this.rows.length) {
+                // Новой строки ещё нет: правку сохраняем сами, ячейку на время
+                // закрываем от ввода (набранное до появления строки — никуда,
+                // а не в эту строку), курсор из неё не уводим — иначе быстрый
+                // поток букв в «пустоту» служба штрихкодов Odoo принимает за
+                // сканер (ошибка handleBarcode, 20.10.2026).
+                const el = ev.target;
+                el.readOnly = true;
+                try {
+                    await this.commit(row, col, ev);
+                    await this.call("butik_save_row", [false, { after_id: this.rows[this.rows.length - 1]?.id }]);
+                } finally {
+                    el.readOnly = !this.state.data?.can_write;
+                }
+            }
             const nextRow = this.rows[next];
             let nextCol = nextRow && nextRow.kind === "product" ? (col === "qty" ? "product_qty" : "name")
                 : (col === "product_qty" ? "qty" : col);

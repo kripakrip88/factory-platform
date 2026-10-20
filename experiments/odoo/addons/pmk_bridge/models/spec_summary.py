@@ -48,6 +48,7 @@ class MetalSpecSummary(models.Model):
         "product_ids.line_ids.grade_id", "product_ids.line_ids.length_mm",
         "product_ids.line_ids.a_mm", "product_ids.line_ids.b_mm", "product_ids.line_ids.qty",
         "product_ids.line_ids.weight_total", "product_ids.line_ids.cost_fact_total",
+        "product_ids.line_ids.pmk_mass_kg",
         "dobor_line_ids", "vent_line_ids")
     def _compute_pmk_summary(self):
         for spec in self:
@@ -71,7 +72,10 @@ class MetalSpecSummary(models.Model):
         for line in product.line_ids.sorted(lambda l: (l.sequence, l.id or 0)):
             item = line.profile_id or line.sheet_id or line.fastener_id or line.paint_id
             size = ""
-            if line.calc_mode == "sheet" and (line.a_mm or line.b_mm):
+            if line.pmk_mass_kg and line.calc_mode in ("linear", "sheet"):
+                # №307: деталь «по КМ» — масса из спецификации, размеров нет.
+                size = "по КМ %s кг" % _mm(line.pmk_mass_kg)
+            elif line.calc_mode == "sheet" and (line.a_mm or line.b_mm):
                 size = "%s × %s мм" % (_mm(line.a_mm), _mm(line.b_mm))
             elif line.calc_mode == "linear" and line.length_mm:
                 size = "%s мм" % _mm(line.length_mm)

@@ -296,7 +296,8 @@ class PmkCutPlan(models.Model):
         rows = {}
         for product in self.spec_id.product_ids:
             for line in product.line_linear_ids:
-                if not line.profile_id or line.length_mm <= 0:
+                # Прокат «по КМ» (масса, №307): заготовок ещё нет — не режем.
+                if not line.profile_id or line.length_mm <= 0 or line.pmk_mass_kg:
                     continue
                 key = (line.profile_id.id, round(line.length_mm, 1))
                 qty = (line.qty or 0) * (product.qty or 0)

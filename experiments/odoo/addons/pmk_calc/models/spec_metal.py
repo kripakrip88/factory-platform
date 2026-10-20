@@ -44,6 +44,14 @@ def rows_table(rows, with_source=True, empty=""):
         head, body, foot)
 
 
+def _num(value, digits):
+    """1440,6 → «1 440,6», 2,00 → «2»: метры и м² для «Купить»."""
+    text = ("{:,.%df}" % digits).format(value or 0.0)
+    if "." in text:
+        text = text.rstrip("0").rstrip(".")
+    return text.replace(",", "\u202f").replace(".", ",")
+
+
 class MetalSpecMetal(models.Model):
     _inherit = "pmk.metal.spec"
 
@@ -105,12 +113,41 @@ class MetalSpecMetal(models.Model):
                              "amount": amount, "kg": v["kg"]})
         return rows
 
+    def _pmk_metal_rows_mass(self):
+        """Прокат и лист «по КМ» (масса, №307): ни раскроя, ни раскладки у них нет —
+        покупка по массе спецификации, одной строкой на позицию и марку."""
+        rows = {}
+        for product in self.product_ids:
+            for line in product.line_ids.filtered(
+                    lambda l: l.pmk_mass_kg and l.calc_mode in ("linear", "sheet")):
+                item = line.profile_id if line.calc_mode == "linear" else line.sheet_id
+                key = (line.calc_mode, item.id, line.grade_id.id)
+                row = rows.setdefault(key, {"line": line, "kg": 0.0})
+                row["kg"] += line.pmk_mass_kg * (product.qty or 0)
+        out = []
+        for (mode, _item, _grade), row in rows.items():
+            line, kg = row["line"], row["kg"]
+            item = line.profile_id if mode == "linear" else line.sheet_id
+            material = item.display_name or ("прокат" if mode == "linear" else "лист")
+            if line.grade_id:
+                material += ", " + line.grade_id.display_name
+            if mode == "linear" and item.mass_per_meter:
+                amount = "по массе КМ: %s м" % _num(kg / item.mass_per_meter, 1)
+            elif mode == "sheet" and item.mass_per_sqm:
+                amount = "по массе КМ: %s м²" % _num(kg / item.mass_per_sqm, 2)
+            else:
+                amount = "по массе КМ"
+            out.append({"kind": "Прокат" if mode == "linear" else "Лист", "material": material,
+                        "source": "по КМ", "amount": amount, "kg": kg})
+        return out
+
     def _pmk_buy_rows(self):
         """Все строки «что купить». Модули категорий дописывают свои (super() + строки)."""
         self.ensure_one()
         rows = []
         if self.cat_metal:
             rows += self._pmk_metal_rows_sheet()
+            rows += self._pmk_metal_rows_mass()
         if self.cat_dobor:
             rows += self._pmk_metal_rows_dobor()
         return rows

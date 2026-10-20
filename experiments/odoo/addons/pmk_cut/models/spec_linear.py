@@ -125,7 +125,8 @@ class MetalSpecLinearOverview(models.Model):
         products = self.product_ids.sorted(lambda p: (p.sequence, p.id))
         for product in products:
             for line in product.line_linear_ids.sorted(lambda l: (l.sequence, l.id)):
-                if not line.profile_id:
+                # Прокат «по КМ» (масса, №307) не режется — он в «Итого — что купить».
+                if not line.profile_id or line.pmk_mass_kg:
                     continue
                 net, rows = parts.setdefault(line.profile_id.id, (0.0, []))
                 qty = (line.qty or 0) * (product.qty or 0)

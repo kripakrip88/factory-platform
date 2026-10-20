@@ -109,10 +109,40 @@ LEN_RE = re.compile(r"^(?:l=)?(%s)\s*мм$" % NUM, re.IGNORECASE)
 DIMS_RE = re.compile(r"^(%s)(?:%s(%s))(?:%s(%s))?(?:мм)?$" % (NUM, _X, NUM, _X, NUM), re.IGNORECASE)
 CLASS_RE = re.compile(r"^(\d{1,2}\.\d)$")
 MKM_RE = re.compile(r"^(\d+)\s*мкм$", re.IGNORECASE)
+MASS_RE = re.compile(r"^(%s)(кг|тн|т)$" % NUM, re.IGNORECASE)
+
+
+# Обозначения профилей из спецификации КМ (№307, Антон 20.10.2026: «как нам
+# присылают спецификацию по заказу с раздела КМ»): «t20» — лист 20, «Гн.Р180х8»
+# — профильная труба 180×180×8 (ГОСТ 30245, квадратная — два числа),
+# «Гн.Р160х100х6», «I30Ш1» — двутавр 30Ш1, «L80x6» — уголок 80×6.
+_N = r"(\d+(?:[.,]\d+)?)"
+_XX = r"\s*[xхXХ×*]\s*"
+_NOT_LETTER = r"(?<![A-Za-zА-Яа-яЁё])"
+KM_ALIASES = (
+    (re.compile(_NOT_LETTER + r"[Гг][Нн]\.?\s*[Рр]\.?\s*" + _N + _XX + _N + _XX + _N),
+     lambda m: "тп%sх%sх%s" % (m.group(1), m.group(2), m.group(3))),
+    (re.compile(_NOT_LETTER + r"[Гг][Нн]\.?\s*[Рр]\.?\s*" + _N + _XX + _N),
+     lambda m: "тп%sх%sх%s" % (m.group(1), m.group(1), m.group(2))),
+    (re.compile(_NOT_LETTER + r"I\s*(\d+)\s*([БбШшКкДдУу]?)\s*(\d*)(?![\dA-Za-zА-Яа-я])"),
+     lambda m: "дв%s%s%s" % (m.group(1), m.group(2).lower(), m.group(3))),
+    (re.compile(_NOT_LETTER + r"L\s*" + _N + _XX + _N + r"(?:" + _XX + _N + r")?"),
+     lambda m: "уг%sх%s" % (m.group(1), m.group(2)) + ("х%s" % m.group(3) if m.group(3) else "")),
+    (re.compile(_NOT_LETTER + r"t\s*" + _N + r"(?![\dA-Za-zА-Яа-яЁё])"),
+     lambda m: "лист %sмм" % m.group(1)),
+)
+
+
+def km_aliases(text):
+    for regex, repl in KM_ALIASES:
+        text = regex.sub(repl, text)
+    return text
 
 
 def _tokens(text):
-    text = re.sub(r"(\d)\s*(шт|мм|мкм)\b", r"\1\2", text, flags=re.IGNORECASE)
+    text = km_aliases(text)
+    # Масса — «12,43тн», «12.43 т», «556,3 кг» (№307): число с единицей — одним словом.
+    text = re.sub(r"(\d)\s*(шт|мм|мкм|кг|тн|т)(?![а-яёa-z])", r"\1\2", text, flags=re.IGNORECASE)
     text = re.sub(r"(%s)%s(%s)" % (NUM, _X, NUM), r"\1х\2", text)
     text = re.sub(r"(%s)%s(%s)" % (NUM, _X, NUM), r"\1х\2", text)
     return [t for t in re.split(r"[\s;]+", text.strip()) if t]
@@ -171,6 +201,11 @@ def decode(line):
         if m:
             out["qty"] = float(m.group(1))
             continue
+        m = MASS_RE.match(low)
+        if m:
+            # Масса из спецификации КМ — в кг (тонны × 1000).
+            out["mass_kg"] = _num(m.group(1)) * (1000.0 if m.group(2).lower() in ("т", "тн") else 1.0)
+            continue
         m = LEN_RE.match(low)
         if m:
             mm.append(_num(m.group(1)))  # длина проката или толщина листа — решаем в конце
@@ -185,8 +220,8 @@ def decode(line):
             if word in PROFILE_ABBR:
                 base, kind = PROFILE_ABBR[word], "linear"
                 if rest:
-                    one = re.match(r"^(%s)([а-яё]*)$" % NUM, rest, re.IGNORECASE)
-                    if one:  # «шв10», «шв10п» — номер и серия
+                    one = re.match(r"^(%s)([бшкдпуэслм]?\d*)$" % NUM, rest, re.IGNORECASE)
+                    if one:  # «шв10», «шв10п», «дв30ш1» — номер и серия
                         sizes, series = [_num(one.group(1))], one.group(2).upper()
                     else:
                         sizes = _dims(rest) or sizes
@@ -274,7 +309,7 @@ def decode_for_cell(line):
         return None
     typed = (line or "").split()
     expanded = typed and dec["name"].split()[0].lower() != typed[0].lower()
-    extra = any(k in dec for k in ("pos", "qty", "length_mm", "grade"))
+    extra = any(k in dec for k in ("pos", "qty", "length_mm", "grade", "mass_kg"))
     return dec if (expanded or extra) else None
 
 

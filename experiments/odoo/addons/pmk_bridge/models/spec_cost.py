@@ -766,9 +766,31 @@ class MetalSpecProductCost(models.Model):
         related="spec_id.currency_id", store=True, readonly=True, string="Валюта")
 
     price_customer_unit = fields.Monetary(
-        "Цена клиенту за шт", help="Сколько просим за одно изделие. Ставит "
+        "Цена клиенту за шт", compute="_compute_price_from_ton", store=True, readonly=False,
+        help="Сколько просим за одно изделие. Ставит "
         "менеджер: цена зависит от переделов, сроков и заказчика, а не от "
-        "веса металла.")
+        "веса металла. Задана «Цена за т» — считается из веса изделия.")
+    # №307 (Антон 20.10.2026: «цена за тонну — отличное решение»): на стадии КМ
+    # цену ставят за тонну конструкций. Задана — цена за шт = цена за т × вес
+    # одного изделия; вписали цену за шт руками — «за т» очищается (write).
+    pmk_price_ton = fields.Monetary(
+        "Цена за т", help="Цена клиенту за тонну конструкций. Задана — цена за шт "
+                          "считается из веса изделия сама.")
+
+    @api.depends("pmk_price_ton", "weight_one")
+    def _compute_price_from_ton(self):
+        for product in self:
+            if product.pmk_price_ton:
+                product.price_customer_unit = round(product.pmk_price_ton * (product.weight_one or 0.0) / 1000.0, 2)
+            else:
+                # Без цены за т — как было (вписана руками); прежнее значение
+                # ядро отдаёт из кэша/базы на время вычисления.
+                product.price_customer_unit = product.price_customer_unit
+
+    def write(self, vals):
+        if "price_customer_unit" in vals and "pmk_price_ton" not in vals:
+            vals = dict(vals, pmk_price_ton=0.0)
+        return super().write(vals)
     price_customer_total = fields.Monetary(
         "Цена клиенту, всего", compute="_compute_customer_line", store=True)
 
