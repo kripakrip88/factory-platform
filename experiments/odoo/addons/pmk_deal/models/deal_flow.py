@@ -189,6 +189,45 @@ class MetalSpecFlow(models.Model):
         return self.filtered(lambda s: s.opportunity_id and not (
             "pmk_kind" in s._fields and s.pmk_kind == "tech"))
 
+    # ─── Меню «Создать» / «Печать» расчёта (Антон 20.10: «да делаем») ──
+    def pmk_doc_menu(self):
+        """Пункты меню документов расчёта — как у сделки и счёта. «Счёт»
+        дописывает pmk_orders. Технический расчёт (pmk_tech) КП не печатает:
+        у него своя кнопка «Заявка на металл»."""
+        spec = self[:1]
+        tech = "pmk_kind" in self._fields and spec.pmk_kind == "tech"
+        menu = {
+            "create": [{"key": "task", "label": _("Задача"), "icon": "fa-check-square-o",
+                        "method": "action_pmk_doc_task"}],
+            "print": [],
+        }
+        if "mail.client.compose" in self.env and (not spec or spec.opportunity_id):
+            menu["create"].insert(0, {"key": "letter", "label": _("Письмо"), "icon": "fa-envelope-o",
+                                      "method": "action_pmk_doc_letter"})
+        if not tech:
+            menu["print"] += [
+                {"key": "kp", "label": _("КП (PDF)"), "icon": "fa-file-pdf-o",
+                 "method": "action_print_quotation"},
+                {"key": "kp_send", "label": _("Отправить КП письмом"), "icon": "fa-paper-plane-o",
+                 "method": "action_send_quotation"},
+            ]
+        return menu
+
+    def action_pmk_doc_task(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window", "name": _("Задача"),
+            "res_model": "mail.activity.schedule", "views": [(False, "form")], "target": "new",
+            "context": {"active_model": self._name, "active_ids": self.ids, "active_id": self.id},
+        }
+
+    def action_pmk_doc_letter(self):
+        """«Создать → Письмо» — то же письмо, что из сделки: контакту, тема по сделке."""
+        self.ensure_one()
+        if not self.opportunity_id:
+            raise UserError(_("У расчёта нет сделки — письмо пишите из почты."))
+        return self.opportunity_id.action_pmk_new_letter()
+
     @api.model_create_multi
     def create(self, vals_list):
         specs = super().create(vals_list)

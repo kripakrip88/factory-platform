@@ -15,8 +15,8 @@
                 </t>
             </Dropdown>
             <Dropdown beforeOpen="load">
-                <button type="button" class="btn btn-secondary">
-                    <i class="fa fa-print me-1"/>Печать<i class="fa fa-caret-down ms-1"/>
+                <button type="button" class="btn btn-secondary o_pmk_doc_menu__print" title="Печать">
+                    <i class="fa fa-print"/><span class="o_pmk_doc_menu__label ms-1">Печать</span><i class="fa fa-caret-down ms-1"/>
                 </button>
                 <t t-set-slot="content">
                     <t t-foreach="state.print" t-as="item" t-key="item.key">
@@ -25,7 +25,7 @@
                         </DropdownItem>
                     </t>
                     <div t-if="state.loaded and !state.print.length" class="dropdown-item-text text-muted small">
-                        Печатать пока нечего — сначала расчёт
+                        Печатать пока нечего
                     </div>
                 </t>
             </Dropdown>

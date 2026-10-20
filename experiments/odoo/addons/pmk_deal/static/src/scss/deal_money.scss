@@ -118,3 +118,20 @@ $pmk-deal-muted: #6b7078;
     color: var(--pmk-tone-red-ink, #f3d2cd);
   }
 }
+
+// «Печать ▾» меню документов (deal_doc_menu.xml) — значком принтера, пока
+// шапка в строке пути и экран уже 1536 px: у счёта с расчётом кнопок столько,
+// что на 1463 px строка вылезала на 44 px и «Отменить» уходила под счётчик
+// «СМ-…» (20.10.2026). Подсказка «Печать» — title кнопки.
+// Мало и этого (счёт с расчётом: ещё 36 px) — «Действия» значком ⚙, как
+// темой на 1200–1365 px (forms_nexus.scss 48.6); подсказка ядра «Действия —
+// Control+U» остаётся.
+@media (min-width: 1200px) and (max-width: 1535.98px) {
+  .o_control_panel .o_pmk_doc_menu__print .o_pmk_doc_menu__label {
+    display: none;
+  }
+
+  .o_form_view.o_pmk_header_up .o_control_panel:has(.o_pmk_doc_menu) .o_pmk_actions_btn .o_pmk_btn_label {
+    display: none;
+  }
+}

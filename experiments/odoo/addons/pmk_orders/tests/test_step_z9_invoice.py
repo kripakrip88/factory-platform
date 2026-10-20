@@ -562,8 +562,18 @@ class TestStepZ9Invoice(Z2Common):
         button = spec_arch.xpath("//header/button[@name='action_pmk_invoice']")
         self.assertEqual(len(button), 1)
         self.assertEqual(button[0].get("string"), "Счёт")
-        self.assertNotIn("btn-primary", button[0].get("class") or "", "Залитая — «КП (PDF)».")
-        self.assertIn("opportunity_id", button[0].get("invisible"))
+        # С 20.10.2026 кнопка скрыта — «Счёт» в «Создать ▾» (меню документов расчёта).
+        self.assertEqual(button[0].get("invisible"), "1")
+        self.assertTrue(spec_arch.xpath("//header/widget[@name='pmk_deal_doc_menu']"))
+        for name in ("action_print_quotation", "action_send_quotation"):
+            self.assertEqual(spec_arch.xpath(f"//header/button[@name='{name}']")[0].get("invisible"), "1")
+        deal, spec, invoice = self._draft()
+        menu = spec.with_user(self.manager).pmk_doc_menu()
+        self.assertEqual(menu["create"][0]["method"], "action_pmk_invoice")
+        self.assertEqual([i["method"] for i in menu["print"]],
+                         ["action_print_quotation", "action_send_quotation"])
+        no_deal = self.env["pmk.metal.spec"].create({"note": "без сделки"})
+        self.assertNotIn("action_pmk_invoice", [i["method"] for i in no_deal.pmk_doc_menu()["create"]])
 
     def test_kp_window_hint(self):
         deal, spec, invoice = self._draft()

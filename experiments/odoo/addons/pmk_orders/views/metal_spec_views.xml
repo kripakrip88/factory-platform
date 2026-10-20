@@ -29,4 +29,36 @@
       </xpath>
     </field>
   </record>
+
+  <!--
+    «Создать ▾» / «Печать ▾» в расчёте — как в сделке и счёте (Антон
+    20.10.2026: «да делаем»). Пункты — pmk.metal.spec.pmk_doc_menu (pmk_deal
+    + «Счёт» отсюда). Кнопки «КП (PDF)», «Отправить КП», «Счёт» скрыты, НЕ
+    удалены: на них держатся xpath'ы pmk_tech. Наследник вида МОСТА с priority
+    99: дети одного родителя идут по priority, внук (наследник вида
+    pmk_orders) применился бы до соседа pmk_tech — и его invisible вернул бы
+    кнопки. «Перечитать цены» и
+    «Заявка на металл» (технический) — остаются кнопками: это не документы.
+  -->
+  <record id="view_metal_spec_form_doc_menu" model="ir.ui.view">
+    <field name="name">pmk.metal.spec.form.doc.menu</field>
+    <field name="model">pmk.metal.spec</field>
+    <field name="inherit_id" ref="pmk_bridge.view_metal_spec_form_cost"/>
+    <field name="priority">99</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//header/*[1]" position="before">
+        <widget name="pmk_deal_doc_menu"/>
+      </xpath>
+      <xpath expr="//header/button[@name='action_print_quotation']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//header/button[@name='action_send_quotation']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+      <xpath expr="//header/button[@name='action_pmk_invoice']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+    </field>
+  </record>
 </odoo>

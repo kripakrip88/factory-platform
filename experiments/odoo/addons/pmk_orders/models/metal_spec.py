@@ -47,6 +47,19 @@ PRODUCT_FIELDS = frozenset({"name", "qty", "price_customer_unit", "sequence", "s
 class MetalSpecInvoice(models.Model):
     _inherit = "pmk.metal.spec"
 
+    def pmk_doc_menu(self):
+        """«Создать → Счёт» первым пунктом (pmk_deal — меню расчёта). Не у
+        технического расчёта: счёт идёт из расчёта КП (pmk_tech). Несохранённый
+        расчёт — пункт есть: меню сохранит, сервер проверит сделку."""
+        menu = super().pmk_doc_menu()
+        spec = self[:1]
+        tech = "pmk_kind" in self._fields and spec.pmk_kind == "tech"
+        if self.env.user.has_group("sales_team.group_sale_salesman") and not tech and (
+                not spec or spec.opportunity_id):
+            menu["create"].insert(0, {"key": "invoice", "label": _("Счёт"), "icon": "fa-file-text-o",
+                                      "method": "action_pmk_invoice"})
+        return menu
+
     def action_pmk_invoice(self):
         """Кнопка «Счёт» в расчёте — см. шапку файла."""
         self.ensure_one()

@@ -583,11 +583,15 @@ class TestStepZ4(Z4Common):
         header = spec_arch.find(".//header")
         filled = [b for b in header.iter("button") if _filled(b)]
         tech_only = [b.get("name") for b in filled if b.get("invisible") == "pmk_kind != 'tech'"]
-        kp_only = [b.get("name") for b in filled if b.get("invisible") == "pmk_kind == 'tech'"]
         self.assertEqual(tech_only, ["action_pmk_metal_request"], "У технического залитая одна.")
-        self.assertEqual(kp_only, ["action_print_quotation"], "У расчёта КП — «КП (PDF)».")
-        send = header.xpath("./button[@name='action_send_quotation']")[0]
-        self.assertEqual(send.get("invisible"), "pmk_kind == 'tech'")
+        # С 20.10.2026 «КП (PDF)» и «Отправить КП» — в «Печать ▾» (pmk_orders,
+        # меню документов): кнопки скрыты, у технического меню печати пусто.
+        for name in ("action_print_quotation", "action_send_quotation"):
+            self.assertEqual(header.xpath(f"./button[@name='{name}']")[0].get("invisible"), "1")
+        tech_spec = self.Spec.create({"note": "тех. меню", "pmk_kind": "tech"})
+        tech_menu = tech_spec.pmk_doc_menu()
+        self.assertEqual(tech_menu["print"], [])
+        self.assertNotIn("action_pmk_invoice", [i["method"] for i in tech_menu["create"]])
         self.assertTrue(spec_arch.xpath("//div[@name='pmk_tech_ref']"))
         self.assertTrue(spec_arch.xpath("//div[@name='pmk_kp_compare']"))
         self.assertTrue(spec_arch.xpath("//div[@name='pmk_tech_outdated']"))
