@@ -624,6 +624,12 @@ class PmkAiChat(models.AbstractModel):
         return ids
 
     @api.model
+    def _worker_jobs(self, free):
+        """Работы фона: [(модель, метод, id)]. Вопросы чата — первыми; модули
+        дописывают свои (pmk_ai_mail — разбор почты) в оставшиеся потоки."""
+        return [("pmk.ai.chat", "_process_request", rid) for rid in self._worker_tick(free)]
+
+    @api.model
     def _process_request(self, request_id):
         """Ответить на вопрос из очереди — от имени спросившего (его права)."""
         req = self.env["pmk.ai.request"].sudo().browse(request_id).exists()

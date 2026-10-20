@@ -22,14 +22,16 @@ pool = ThreadPoolExecutor(WORKER_THREADS)
 inflight = set()
 
 
-def handle(request_id):
+def handle(job):
+    """job = (модель, метод, id): вопрос чата или работа модуля (разбор письма)."""
+    model, method, record_id = job
     try:
         with registry.cursor() as cr:
-            api.Environment(cr, SUPERUSER_ID, {})["pmk.ai.chat"]._process_request(request_id)
+            getattr(api.Environment(cr, SUPERUSER_ID, {})[model], method)(record_id)
     except Exception:
-        _log.exception("вопрос %s", request_id)
+        _log.exception("%s %s", model, record_id)
     finally:
-        inflight.discard(request_id)
+        inflight.discard(job)
 
 
 _log.info("фоновый процесс ассистента запущен, база %s, потоков %s", registry.db_name, WORKER_THREADS)
@@ -40,10 +42,11 @@ while True:
         # без этого фон отвечал бы со старыми настройками из своего кэша.
         registry = registry.check_signaling()
         with registry.cursor() as cr:
-            ids = api.Environment(cr, SUPERUSER_ID, {})["pmk.ai.chat"]._worker_tick(WORKER_THREADS - len(inflight))
-        for request_id in ids:
-            inflight.add(request_id)
-            pool.submit(handle, request_id)
+            jobs = api.Environment(cr, SUPERUSER_ID, {})["pmk.ai.chat"]._worker_jobs(WORKER_THREADS - len(inflight))
+        for job in jobs:
+            job = tuple(job)
+            inflight.add(job)
+            pool.submit(handle, job)
     except Exception:
         _log.exception("цикл очереди")
         time.sleep(5)

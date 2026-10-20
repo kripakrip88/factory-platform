@@ -35,7 +35,10 @@ class TestDealFlow(TransactionCase):
             "product_ids": [Command.create({"name": "Решётка", "qty": 1})]})
 
     def test_stages_order(self):
-        names = self.env["crm.stage"].search([], order="sequence, id").mapped("name")
+        Stage = self.env["crm.stage"]
+        # Колонка «Разобрал ассистент» (pmk_ai_mail) стоит перед воронкой — не этап сделки.
+        domain = [("pmk_ai_only", "=", False)] if "pmk_ai_only" in Stage._fields else []
+        names = Stage.search(domain, order="sequence, id").mapped("name")
         self.assertEqual(names[:5], ["Заявка", "Расчёт", "Счёт выставлен", "Оплачено / в работе", "Закрыта"])
         self.assertFalse(self.env.ref("crm.stage_lead3", raise_if_not_found=False),
                          "«КП отправлено» убрана (Антон 20.10: «не нужна»).")

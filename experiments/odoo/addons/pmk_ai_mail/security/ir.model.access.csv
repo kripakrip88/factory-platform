@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_pmk_ai_mail_triage_user,pmk.ai.mail.triage user,model_pmk_ai_mail_triage,sales_team.group_sale_salesman,1,0,0,0
+access_pmk_ai_mail_triage_admin,pmk.ai.mail.triage admin,model_pmk_ai_mail_triage,base.group_system,1,1,1,1

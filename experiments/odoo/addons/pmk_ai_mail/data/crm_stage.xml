@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <!-- Колонка сделок от ассистента (20.10.2026): первой, стадией по умолчанию не бывает
+       (models/crm.py, _stage_find). noupdate — название и место Антон может менять сам. -->
+  <data noupdate="1">
+    <record id="stage_ai" model="crm.stage">
+      <field name="name">Разобрал ассистент</field>
+      <field name="sequence">-1</field>
+      <field name="pmk_ai_only" eval="True"/>
+    </record>
+  </data>
+</odoo>

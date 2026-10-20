@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <!-- Журнал разбора почты ассистентом (20.10.2026): что пришло, как понял, сколько стоило. -->
+  <record id="view_triage_list" model="ir.ui.view">
+    <field name="name">pmk.ai.mail.triage.list</field>
+    <field name="model">pmk.ai.mail.triage</field>
+    <field name="arch" type="xml">
+      <list create="0" class="o_pmk_triage_list" decoration-muted="state == 'skipped'" decoration-danger="state == 'error'">
+        <field name="date"/>
+        <field name="email_from" width="160px"/>
+        <field name="subject" width="240px"/>
+        <field name="kind" widget="badge" decoration-success="kind == 'request'" decoration-info="kind == 'reply'"/>
+        <field name="summary" width="480px" optional="show"/>
+        <field name="lead_id" optional="show"/>
+        <field name="rating" optional="show"/>
+        <field name="feedback" optional="hide"/>
+        <field name="state" optional="show"/>
+        <field name="cost" sum="Итого, $" optional="show"/>
+        <field name="seconds" optional="hide"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="view_triage_form" model="ir.ui.view">
+    <field name="name">pmk.ai.mail.triage.form</field>
+    <field name="model">pmk.ai.mail.triage</field>
+    <field name="arch" type="xml">
+      <form create="0">
+        <sheet>
+          <group>
+            <group>
+              <field name="date"/>
+              <field name="email_from"/>
+              <field name="subject"/>
+              <field name="message_id"/>
+            </group>
+            <group>
+              <field name="state"/>
+              <field name="kind"/>
+              <field name="lead_id"/>
+              <field name="cost"/>
+              <field name="seconds"/>
+            </group>
+          </group>
+          <group>
+            <field name="title"/>
+            <field name="summary"/>
+            <field name="reason"/>
+            <field name="files_note"/>
+            <field name="rating"/>
+            <field name="feedback"/>
+            <field name="error" invisible="not error"/>
+            <field name="data_json" groups="base.group_no_one"/>
+          </group>
+        </sheet>
+      </form>
+    </field>
+  </record>
+
+  <record id="view_triage_search" model="ir.ui.view">
+    <field name="name">pmk.ai.mail.triage.search</field>
+    <field name="model">pmk.ai.mail.triage</field>
+    <field name="arch" type="xml">
+      <search>
+        <field name="subject"/>
+        <field name="email_from"/>
+        <filter name="requests" string="Заявки" domain="[('kind', '=', 'request')]"/>
+        <filter name="rated" string="С оценкой" domain="[('rating', '!=', False)]"/>
+        <filter name="errors" string="Ошибки" domain="[('state', '=', 'error')]"/>
+        <group>
+          <filter name="by_kind" string="Вид письма" context="{'group_by': 'kind'}"/>
+        </group>
+      </search>
+    </field>
+  </record>
+
+  <record id="action_triage" model="ir.actions.act_window">
+    <field name="name">Разбор почты ассистентом</field>
+    <field name="res_model">pmk.ai.mail.triage</field>
+    <field name="view_mode">list,form</field>
+  </record>
+</odoo>

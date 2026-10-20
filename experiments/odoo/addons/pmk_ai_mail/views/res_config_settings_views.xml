@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <!-- «Настройки → Ассистент → Разбор почты» (20.10.2026). -->
+  <record id="view_res_config_settings_pmk_ai_mail" model="ir.ui.view">
+    <field name="name">res.config.settings.pmk.ai.mail</field>
+    <field name="model">res.config.settings</field>
+    <field name="inherit_id" ref="pmk_ai.view_res_config_settings_pmk_ai"/>
+    <field name="arch" type="xml">
+      <xpath expr="//block[@name='pmk_ai_block']" position="after">
+        <block title="Разбор входящей почты" name="pmk_ai_mail_block">
+          <setting string="Ассистент читает «Входящие»"
+                   help="Заявки — сделками в колонку «Разобрал ассистент», остальные письма — с отметкой вида. Только папка «Входящие» ящика; рассылки и роботы — без ассистента.">
+            <field name="pmk_ai_mail_enabled"/>
+            <div class="row mt8">
+              <label for="pmk_ai_mail_account" class="col-lg-4 o_light_label"/>
+              <field name="pmk_ai_mail_account"/>
+            </div>
+            <div class="row">
+              <label for="pmk_ai_mail_user_id" class="col-lg-4 o_light_label"/>
+              <field name="pmk_ai_mail_user_id" options="{'no_create': True}"/>
+            </div>
+            <div class="row">
+              <label for="pmk_ai_mail_since" class="col-lg-4 o_light_label"/>
+              <field name="pmk_ai_mail_since"/>
+            </div>
+            <button name="%(pmk_ai_mail.action_triage)d" type="action" string="Журнал разбора"
+                    icon="fa-list" class="btn-secondary mt8"/>
+          </setting>
+        </block>
+      </xpath>
+    </field>
+  </record>
+</odoo>

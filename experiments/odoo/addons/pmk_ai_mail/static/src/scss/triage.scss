@@ -1,0 +1,63 @@
+// Блок «Разобрал ассистент» в сделке (20.10.2026, views/crm_lead_views.xml): в рамке
+// шапки сделки, на всю её ширину, отбит линией; метка ассистента — фиолетовая.
+.o_form_view .pmk-doc-top > .pmk-ai-triage {
+  grid-column: 1 / -1;
+}
+
+.o_form_view .pmk-ai-triage {
+  margin: 12px 0 0;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--pmk-border, #e4e1d8);
+
+  &__head {
+    display: inline-block;
+    margin-bottom: 6px;
+    padding: 1px 10px;
+    border-radius: 10px;
+    background: color-mix(in srgb, #7f77dd 16%, transparent);
+    font-weight: 600;
+    font-size: 13px;
+  }
+
+  &__summary {
+    margin: 0 0 6px;
+  }
+
+  &__table {
+    th {
+      padding: 2px 16px 2px 0;
+      color: var(--pmk-text-muted, #6b6b6b);
+      font-weight: 400;
+      vertical-align: top;
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 2px 0;
+    }
+
+    ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+  }
+
+  &__rate {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 8px 0 6px;
+
+    .btn {
+      border: 1px solid var(--pmk-border-strong, #cfcabd);
+    }
+  }
+}
+
+// Журнал разбора: «Кратко» — одной строкой с многоточием, полностью — в карточке
+// разбора; иначе одна строка списка занимала полэкрана (20.10.2026).
+.o_pmk_triage_list td.o_data_cell[name="summary"] {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

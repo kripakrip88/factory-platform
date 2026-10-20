@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <!--
+    Блок «Разобрал ассистент» в сделке (20.10.2026): что понял из письма, оценка
+    👍/👎 и замечание проверяющего. В рамке шапки (pmk_theme шаг 52: над рамкой
+    ничего), вид — после вида темы (priority 999 > 990).
+  -->
+  <record id="view_crm_lead_form_ai_triage" model="ir.ui.view">
+    <field name="name">crm.lead.form.pmk.ai.triage</field>
+    <field name="model">crm.lead</field>
+    <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+    <field name="priority">999</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//div[@name='pmk_doc_top']" position="inside">
+        <field name="pmk_ai_triage_id" invisible="1"/>
+        <div class="pmk-ai-triage" name="pmk_ai_triage" invisible="not pmk_ai_triage_id">
+          <div class="pmk-ai-triage__head">✦ Разобрал ассистент</div>
+          <field name="pmk_ai_card" nolabel="1" readonly="1"/>
+          <div class="pmk-ai-triage__rate">
+            <span class="text-muted">Разбор:</span>
+            <button name="action_pmk_ai_good" type="object" string="👍 Верно" class="btn btn-sm"
+                    invisible="pmk_ai_rating == 'good'"/>
+            <button name="action_pmk_ai_bad" type="object" string="👎 Ошибся" class="btn btn-sm"
+                    invisible="pmk_ai_rating == 'bad'"/>
+            <field name="pmk_ai_rating" readonly="1" invisible="not pmk_ai_rating" class="pmk-ai-triage__mark"/>
+          </div>
+          <field name="pmk_ai_feedback" nolabel="1" class="pmk-ai-triage__note"
+                 placeholder="Замечание ассистенту: что понял не так, что учесть в следующих письмах"/>
+        </div>
+      </xpath>
+    </field>
+  </record>
+</odoo>
