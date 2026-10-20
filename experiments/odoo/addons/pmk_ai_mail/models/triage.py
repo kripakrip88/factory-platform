@@ -46,6 +46,7 @@ STUCK_SEC = 600
 REMARKS = 40               # последних замечаний проверяющего — в правила
 # Пересылка своим сотрудником в ящик заявок — часто заявка клиента с мобильного
 # («Fwd: МК ПС Амурская», 20.10.2026): такие письма разбирает ассистент.
+TWIN_DAYS = 3                # повтор письма (тот же отправитель и тема) — в ту же сделку
 FORWARD_RE = re.compile(r"^\s*(fwd?|пересл[\w.]*)\s*:", re.I)
 ROBOT_RE = re.compile(
     r"^(no-?reply|do-?not-?reply|donotreply|mailer-daemon|postmaster|notifications?|informer|"
@@ -230,12 +231,22 @@ class MailTriage(models.Model):
         """Сделка переписки: у письма или у другого письма той же переписки ящика."""
         if msg.pmk_lead_id:
             return msg.pmk_lead_id
-        if not msg.thread_key:
-            return self.env["crm.lead"]
-        other = self.env["mail.client.message"].sudo().search([
-            ("account_id", "=", msg.account_id.id), ("thread_key", "=", msg.thread_key),
-            ("pmk_lead_id", "!=", False), ("id", "!=", msg.id)], limit=1)
-        return other.pmk_lead_id
+        Message = self.env["mail.client.message"].sudo()
+        if msg.thread_key:
+            other = Message.search([
+                ("account_id", "=", msg.account_id.id), ("thread_key", "=", msg.thread_key),
+                ("pmk_lead_id", "!=", False), ("id", "!=", msg.id)], limit=1)
+            if other:
+                return other.pmk_lead_id
+        # То же письмо второй раз: тот же отправитель и тема за последние дни
+        # («Fwd: МК ПС Амурская» переслали дважды — было две сделки, 20.10.2026).
+        if msg.subject and msg.email_from and msg.date:
+            twin = Message.search([
+                ("account_id", "=", msg.account_id.id), ("email_from", "=", msg.email_from),
+                ("subject", "=", msg.subject), ("pmk_lead_id", "!=", False), ("id", "!=", msg.id),
+                ("date", ">=", fields.Datetime.subtract(msg.date, days=TWIN_DAYS))], limit=1)
+            return twin.pmk_lead_id
+        return self.env["crm.lead"]
 
     def _link(self, msg, lead):
         """Письмо — в чат сделки (как «Привязать к сделке»), если его там ещё нет."""

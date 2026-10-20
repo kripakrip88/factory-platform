@@ -139,6 +139,14 @@ class TestMailTriage(TransactionCase):
         self.assertEqual(api.call_count, 1)
         self.assertEqual(triage.kind, "request")
 
+    def test_same_letter_twice_one_deal(self):
+        first = self._letter(subject="Fwd: МК ПС Амурская")
+        triage, _api = self._run(first, _response(REQUEST))
+        again = self._letter(subject="Fwd: МК ПС Амурская")
+        triage2, api = self._run(again, _response(REQUEST))
+        self.assertEqual(api.call_count, 0)
+        self.assertEqual((triage2.kind, triage2.lead_id), ("reply", triage.lead_id))
+
     def test_reply_in_deal_thread_linked(self):
         first = self._letter()
         triage, _api = self._run(first, _response(REQUEST))
