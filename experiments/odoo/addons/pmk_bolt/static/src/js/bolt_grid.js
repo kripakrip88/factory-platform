@@ -4,9 +4,9 @@
  * как в бутике? … принцип единообразия») — <widget name="pmk_bolt_grid"/>.
  *
  * Та же таблица, что у Бутика и «Конструкций» (pmk_butik/static/src/js/butik_grid.js):
- * клавиши, вставка из Excel, сохранение ячейки при уходе. Строки плоские — болт;
- * ячейка «Болт» — короткая запись «бф 2.1 м30 640мм ст3 10шт» (pmk_bolt/tools/parse.py),
- * под ней — название по ГОСТ, комплект, себестоимость, прошлые продажи. Методы bolt_*.
+ * клавиши, вставка из Excel, сохранение ячейки при уходе, свернуть/развернуть.
+ * Болт — как изделие, под ним состав — как детали: круг, гайки, шайба, плита, работа
+ * (Антон: «состав вида как у металлоизделия»). Методы bolt_* (models/grid.py).
  */
 import { registry } from "@web/core/registry";
 import { PmkButikGrid } from "@pmk_butik/js/butik_grid";
@@ -17,8 +17,9 @@ const METHODS = {
     butik_insert_rows: "bolt_insert_rows",
     butik_delete_row: "bolt_delete_row",
     butik_duplicate_row: "bolt_duplicate_row",
+    butik_add_product: "bolt_add_product",
 };
-const NUMERIC = new Set(["qty", "nut_price", "markup", "price"]);
+const NUMERIC = new Set(["product_qty", "qty", "markup", "price"]);
 
 export class PmkBoltGrid extends PmkButikGrid {
     static template = "pmk_bolt.BoltGrid";
@@ -28,8 +29,11 @@ export class PmkBoltGrid extends PmkButikGrid {
         return METHODS[name] || name;
     }
 
-    colsOf() {
-        return ["name", "qty", "nut_kind", "nut_price", "markup", "price"];
+    colsOf(row) {
+        if (row.kind === "product") {
+            return ["name", "product_qty", "nut_kind", "markup", "price"];
+        }
+        return ["name", "qty", "price"];
     }
 
     isNum(col) {
@@ -38,14 +42,11 @@ export class PmkBoltGrid extends PmkButikGrid {
 
     saved(row, key) {
         const value = row[key];
-        if (key === "price" || key === "nut_price") {
+        if (key === "price") {
             return value ? value.toLocaleString("ru-RU", { maximumFractionDigits: 2 }) : "";
         }
-        if (key === "markup") {
+        if (NUMERIC.has(key)) {
             return value ? String(value).replace(".", ",") : "";
-        }
-        if (key === "qty") {
-            return value ? String(value) : "";
         }
         return value || "";
     }
@@ -57,9 +58,11 @@ export class PmkBoltGrid extends PmkButikGrid {
     // У болтов нет подсказок справочника: запись разбирает сервер.
     onNameInput() {}
 
-    // Новое изделие (Ctrl+Enter у Бутика) — у болтов просто новая строка.
+    // «+ Болт» (Ctrl+Enter): новый болт встаёт последним — туда и курсор.
     async addProduct() {
-        return this.addRow();
+        this.releaseFocus();
+        await this.call("butik_add_product");
+        this.focusCell(this.rows.length - 1, "name");
     }
 
     async onKeydown(index, col, ev) {

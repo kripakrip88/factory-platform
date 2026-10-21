@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Болты — таблица Бутика (21.10.2026), js/bolt_grid.js. Разметка — по образцу
-     pmk_butik.KonstrGrid (классы и поведение те же); строки плоские. -->
+     pmk_butik.KonstrGrid: болт — строка изделия, состав — строки деталей. -->
 <templates xml:space="preserve">
   <t t-name="pmk_bolt.BoltGrid">
     <div class="o_pmk_butik o_pmk_bolt" t-ref="root">
@@ -12,8 +12,11 @@
       <p t-elif="state.loading or !state.data" class="o_pmk_butik__muted">Загружаю…</p>
       <t t-else="">
         <div class="o_pmk_butik__bar">
-          <button type="button" class="btn btn-secondary btn-sm" t-att-disabled="state.busy" t-on-click="() => this.addRow()">
+          <button type="button" class="btn btn-secondary btn-sm" t-att-disabled="state.busy" t-on-click="() => this.addRow()"
+                  title="Строка ниже: запись болта — новый болт, иначе — строка состава («гайка м30 калён 2шт 45»)">
             <i class="fa fa-plus me-1" aria-hidden="true"/>Строка</button>
+          <button type="button" class="btn btn-secondary btn-sm" t-att-disabled="state.busy" t-on-click="() => this.addProduct()" title="Ctrl+Enter (на Mac — Cmd+Enter)">
+            <i class="fa fa-cube me-1" aria-hidden="true"/>Болт</button>
           <button type="button" class="btn btn-secondary btn-sm" t-att-disabled="state.busy" t-on-click="() => this.duplicate()">
             <i class="fa fa-clone me-1" aria-hidden="true"/>Копия строки</button>
           <button type="button" class="btn btn-link btn-sm text-muted" t-att-disabled="state.busy" t-on-click="() => this.remove()">
@@ -23,76 +26,128 @@
             <t t-elif="state.savedAt"><i class="fa fa-check me-1" aria-hidden="true"/>Сохранено в <t t-esc="state.savedAt"/></t>
             <t t-else=""><i class="fa fa-check me-1" aria-hidden="true"/>Каждая ячейка сохраняется сама</t>
           </span>
-          <span class="o_pmk_butik__hint">Enter, ↑↓ ←→, Tab · Ctrl+D — значение сверху · Ctrl+V — столбик строк или блок из Excel</span>
+          <span class="o_pmk_butik__hint">Enter, ↑↓ ←→, Tab · Ctrl+Enter — новый болт · Ctrl+D — значение сверху · Ctrl+V — столбик строк или блок из Excel</span>
         </div>
         <div class="o_pmk_butik__wrap">
           <table class="o_pmk_butik__table">
             <colgroup>
-              <col style="width:44px"/><col style="width:40%"/><col style="width:80px"/><col style="width:110px"/>
-              <col style="width:96px"/><col style="width:90px"/><col style="width:110px"/><col style="width:90px"/>
-              <col style="width:110px"/><col style="width:120px"/>
+              <col style="width:56px"/><col style="width:36%"/><col style="width:80px"/><col style="width:80px"/>
+              <col style="width:90px"/><col style="width:100px"/><col style="width:100px"/><col style="width:96px"/>
+              <col style="width:84px"/><col style="width:96px"/><col style="width:110px"/>
             </colgroup>
             <thead><tr>
-              <th class="n">№</th>
-              <th title="Коротко: бф 2.1 м30 640мм ст3 10шт · р250 — резьба · калён гайка 120 — гайки">Болт</th>
-              <th class="n">Кол-во, шт</th>
-              <th title="обычные, калёные, спецсталь">Гайки</th>
-              <th class="n" title="Цена одной гайки — вписывает менеджер">Гайка, ₽</th>
-              <th class="n">Масса шт, кг</th>
-              <th class="n" title="Круг, плита, шайба, гайки, работа по нормам — на 1 болт">Себест. шт</th>
+              <th class="o_pmk_butik__th-pos"><button type="button" class="o_pmk_butik__chev" t-att-class="{ 'o_pmk_butik__chev--open': allOpen }"
+                  t-att-title="allOpen ? 'Свернуть состав всех болтов' : 'Развернуть состав всех болтов'"
+                  t-on-click="() => this.toggleAll()"/>№</th>
+              <th title="Болт коротко: бф 2.1 м30 640мм ст3 10шт · р250 — резьба · калён гайка 120. Состав — строки ниже">Болт / состав</th>
+              <th class="n" title="У болта — штук болтов, у строки состава — на 1 болт">Кол-во</th>
+              <th class="n" title="Строка состава — на все болты">Всего</th>
+              <th class="n" title="У болта — 1 шт в сборе, у строки состава — на 1 болт">Масса, кг</th>
+              <th title="Вид гаек болта: обычные, калёные, спецсталь">Гайки</th>
+              <th class="n" title="Цена строки состава: круг — за тонну, остальное — за штуку">Цена ед.</th>
+              <th class="n" title="На 1 болт: у болта — сумма состава">Себест.</th>
               <th class="n" title="Из ценовой политики на дату расчёта">Наценка, %</th>
               <th class="n">Цена шт</th>
               <th class="n">Сумма</th>
             </tr></thead>
             <tbody>
-              <tr t-foreach="rows" t-as="row" t-key="row.id" class="o_pmk_butik__detail"
-                  t-att-class="{ 'o_pmk_butik__detail--bad': row.bad, 'o_pmk_bolt__warn': row.warning }">
-                <td class="n o_pmk_butik__num" t-esc="row.number"/>
-                <td t-att-class="{ sel: isSel(row_index, 'name'), 'o_pmk_butik__namecell': true }">
-                  <textarea rows="1" class="o_pmk_butik__in o_pmk_butik__ta" t-att-value="val(row, 'name')"
-                         t-att-data-index="row_index" t-att-data-key="row.id" data-col="name" t-att-readonly="!state.data.can_write"
-                         placeholder="бф 2.1 м30 640мм ст3 10шт"
-                         t-on-focus="() => this.onFocus(row_index, 'name')"
-                         t-on-input="(ev) => this.onInput(row, row_index, 'name', ev)"
-                         t-on-change="(ev) => this.commit(row, 'name', ev)"
-                         t-on-keydown="(ev) => this.onKeydown(row_index, 'name', ev)"
-                         t-on-paste="(ev) => this.onPaste(row_index, ev)"/>
-                  <div t-if="row.label" class="o_pmk_butik__rec" t-att-class="{ 'o_pmk_butik__rec--bad': row.bad }"
-                       t-att-title="row.label" t-esc="row.label"/>
-                  <div t-if="row.detail" class="o_pmk_butik__rec o_pmk_bolt__more" t-att-title="row.detail" t-esc="row.detail"/>
-                  <div t-if="row.warning" class="o_pmk_butik__rec o_pmk_bolt__warning" t-att-title="row.warning" t-esc="row.warning"/>
-                  <div t-if="row.history" class="o_pmk_butik__rec o_pmk_bolt__more" t-att-title="row.history">
-                    Прошлые продажи: <t t-esc="row.history"/></div>
-                </td>
-                <t t-foreach="['qty', 'nut_kind', 'nut_price']" t-as="col" t-key="col">
-                  <td t-att-class="{ sel: isSel(row_index, col), n: isNum(col) }">
-                    <input class="o_pmk_butik__in" t-att-class="{ n: isNum(col) }" t-att-value="val(row, col)"
-                           t-att-data-index="row_index" t-att-data-key="row.id" t-att-data-col="col"
-                           t-att-readonly="!state.data.can_write"
-                           t-att-placeholder="col === 'nut_price' ? 'впишите' : ''"
-                           t-att-title="col === 'nut_price' ? row.nut_hint : ''"
-                           t-on-focus="() => this.onFocus(row_index, col)"
-                           t-on-input="(ev) => this.onInput(row, row_index, col, ev)"
-                           t-on-change="(ev) => this.commit(row, col, ev)"
-                           t-on-keydown="(ev) => this.onKeydown(row_index, col, ev)"
+              <t t-foreach="rows" t-as="row" t-key="row.id">
+                <tr t-if="row.kind === 'product'" class="o_pmk_butik__product" t-att-class="{ 'o_pmk_butik__detail--bad': row.bad }">
+                  <td class="n o_pmk_butik__num">
+                    <button type="button" class="o_pmk_butik__chev" t-att-class="{ 'o_pmk_butik__chev--open': !isCollapsed(row.id) }"
+                            t-att-title="isCollapsed(row.id) ? 'Развернуть состав' : 'Свернуть состав'"
+                            t-on-click="() => this.toggle(row.id)"/>
+                    <t t-esc="row.number"/>
+                  </td>
+                  <td t-att-class="{ sel: isSel(row_index, 'name'), 'o_pmk_butik__namecell': true }">
+                    <textarea rows="1" class="o_pmk_butik__in o_pmk_butik__in--product o_pmk_butik__ta" t-att-value="val(row, 'name')"
+                           t-att-data-index="row_index" t-att-data-key="row.id" data-col="name" t-att-readonly="!state.data.can_write"
+                           placeholder="бф 2.1 м30 640мм ст3 10шт"
+                           t-on-focus="() => this.onFocus(row_index, 'name')"
+                           t-on-input="(ev) => this.onInput(row, row_index, 'name', ev)"
+                           t-on-change="(ev) => this.commit(row, 'name', ev)"
+                           t-on-keydown="(ev) => this.onKeydown(row_index, 'name', ev)"
                            t-on-paste="(ev) => this.onPaste(row_index, ev)"/>
+                    <div t-if="row.label" class="o_pmk_butik__rec" t-att-class="{ 'o_pmk_butik__rec--bad': row.bad }"
+                         t-att-title="row.label" t-esc="row.label"/>
+                    <div t-if="row.warning" class="o_pmk_butik__rec o_pmk_bolt__warning" t-att-title="row.warning" t-esc="row.warning"/>
+                    <div t-if="row.history" class="o_pmk_butik__rec o_pmk_bolt__more" t-att-title="row.history">
+                      Прошлые продажи: <t t-esc="row.history"/></div>
                   </td>
-                </t>
-                <td class="n o_pmk_butik__ro" t-esc="kg(row.mass)"/>
-                <td class="n o_pmk_butik__ro" t-esc="money(row.cost)"/>
-                <t t-foreach="['markup', 'price']" t-as="col" t-key="col">
-                  <td t-att-class="{ sel: isSel(row_index, col), n: true }">
-                    <input class="o_pmk_butik__in n o_pmk_konstr__price" t-att-value="val(row, col)" inputmode="decimal"
-                           t-att-data-index="row_index" t-att-data-key="row.id" t-att-data-col="col"
-                           t-att-readonly="!state.data.can_write"
-                           t-on-focus="() => this.onFocus(row_index, col)"
-                           t-on-input="(ev) => this.onInput(row, row_index, col, ev)"
-                           t-on-change="(ev) => this.commit(row, col, ev)"
-                           t-on-keydown="(ev) => this.onKeydown(row_index, col, ev)"/>
+                  <td t-att-class="{ sel: isSel(row_index, 'product_qty') }">
+                    <input class="o_pmk_butik__in n" t-att-value="val(row, 'product_qty')" inputmode="numeric"
+                           t-att-data-index="row_index" t-att-data-key="row.id" data-col="product_qty" t-att-readonly="!state.data.can_write"
+                           t-on-focus="() => this.onFocus(row_index, 'product_qty')"
+                           t-on-input="(ev) => this.onInput(row, row_index, 'product_qty', ev)"
+                           t-on-change="(ev) => this.commit(row, 'product_qty', ev)"
+                           t-on-keydown="(ev) => this.onKeydown(row_index, 'product_qty', ev)"/>
                   </td>
-                </t>
-                <td class="n o_pmk_butik__ro" t-esc="money(row.total)"/>
-              </tr>
+                  <td class="o_pmk_butik__muted-cell o_pmk_butik__nowrap">шт</td>
+                  <td class="n o_pmk_butik__ro o_pmk_butik__pw" t-att-title="row.mass_total ? 'Всего ' + kg(row.mass_total) + ' кг' : ''" t-esc="kg(row.mass)"/>
+                  <td t-att-class="{ sel: isSel(row_index, 'nut_kind') }">
+                    <input class="o_pmk_butik__in" t-att-value="val(row, 'nut_kind')" title="обычные, калёные, спецсталь"
+                           t-att-data-index="row_index" t-att-data-key="row.id" data-col="nut_kind" t-att-readonly="!state.data.can_write"
+                           t-on-focus="() => this.onFocus(row_index, 'nut_kind')"
+                           t-on-input="(ev) => this.onInput(row, row_index, 'nut_kind', ev)"
+                           t-on-change="(ev) => this.commit(row, 'nut_kind', ev)"
+                           t-on-keydown="(ev) => this.onKeydown(row_index, 'nut_kind', ev)"/>
+                  </td>
+                  <td class="o_pmk_butik__ro"/>
+                  <td class="n o_pmk_butik__ro o_pmk_butik__pw" title="Себестоимость 1 болта — сумма состава" t-esc="money(row.cost)"/>
+                  <t t-foreach="['markup', 'price']" t-as="col" t-key="col">
+                    <td t-att-class="{ sel: isSel(row_index, col) }">
+                      <input class="o_pmk_butik__in n o_pmk_konstr__price" t-att-value="val(row, col)" inputmode="decimal"
+                             t-att-data-index="row_index" t-att-data-key="row.id" t-att-data-col="col" t-att-readonly="!state.data.can_write"
+                             t-on-focus="() => this.onFocus(row_index, col)"
+                             t-on-input="(ev) => this.onInput(row, row_index, col, ev)"
+                             t-on-change="(ev) => this.commit(row, col, ev)"
+                             t-on-keydown="(ev) => this.onKeydown(row_index, col, ev)"/>
+                    </td>
+                  </t>
+                  <td class="n o_pmk_butik__ro o_pmk_butik__pw" t-esc="money(row.total)"/>
+                </tr>
+                <tr t-elif="!isCollapsed(row.parent)" class="o_pmk_butik__detail" t-att-class="{ o_pmk_bolt__own: !row.auto }">
+                  <td class="o_pmk_butik__ro"/>
+                  <td t-att-class="{ sel: isSel(row_index, 'name'), 'o_pmk_butik__namecell': true }">
+                    <textarea rows="1" class="o_pmk_butik__in o_pmk_butik__ta" t-att-value="val(row, 'name')"
+                           t-att-data-index="row_index" t-att-data-key="row.id" data-col="name" t-att-readonly="!state.data.can_write"
+                           placeholder="гайка м30 калён 2шт 45 — своя строка состава · бф 2.1 м30 640мм — новый болт"
+                           t-on-focus="() => this.onFocus(row_index, 'name')"
+                           t-on-input="(ev) => this.onInput(row, row_index, 'name', ev)"
+                           t-on-change="(ev) => this.commit(row, 'name', ev)"
+                           t-on-keydown="(ev) => this.onKeydown(row_index, 'name', ev)"
+                           t-on-paste="(ev) => this.onPaste(row_index, ev)"/>
+                    <div t-if="row.changed" class="o_pmk_butik__rec o_pmk_bolt__warning" t-esc="row.changed"/>
+                  </td>
+                  <td t-att-class="{ sel: isSel(row_index, 'qty'), n: true }">
+                    <input class="o_pmk_butik__in n" t-att-value="val(row, 'qty')" inputmode="decimal"
+                           t-att-data-index="row_index" t-att-data-key="row.id" data-col="qty" t-att-readonly="!state.data.can_write"
+                           t-on-focus="() => this.onFocus(row_index, 'qty')"
+                           t-on-input="(ev) => this.onInput(row, row_index, 'qty', ev)"
+                           t-on-change="(ev) => this.commit(row, 'qty', ev)"
+                           t-on-keydown="(ev) => this.onKeydown(row_index, 'qty', ev)"/>
+                  </td>
+                  <td class="n o_pmk_butik__ro" t-esc="total(row)"/>
+                  <td class="n o_pmk_butik__ro" t-esc="kg(row.mass)"/>
+                  <td class="o_pmk_butik__ro"/>
+                  <td t-att-class="{ sel: isSel(row_index, 'price'), n: true }">
+                    <input class="o_pmk_butik__in n o_pmk_konstr__price" t-att-value="val(row, 'price')" inputmode="decimal"
+                           t-att-placeholder="row.hint or row.price_label" t-att-title="row.hint or row.price_label"
+                           t-att-data-index="row_index" t-att-data-key="row.id" data-col="price" t-att-readonly="!state.data.can_write"
+                           t-on-focus="() => this.onFocus(row_index, 'price')"
+                           t-on-input="(ev) => this.onInput(row, row_index, 'price', ev)"
+                           t-on-change="(ev) => this.commit(row, 'price', ev)"
+                           t-on-keydown="(ev) => this.onKeydown(row_index, 'price', ev)"/>
+                  </td>
+                  <td class="n o_pmk_butik__ro">
+                    <span t-if="row.no_price" class="o_pmk_konstr__noprice" title="Впишите цену — без неё себестоимость занижена">нет цены</span>
+                    <t t-else="" t-esc="money(row.cost)"/>
+                  </td>
+                  <td class="o_pmk_butik__ro"/>
+                  <td class="o_pmk_butik__ro"/>
+                  <td class="o_pmk_butik__ro"/>
+                </tr>
+              </t>
             </tbody>
           </table>
         </div>

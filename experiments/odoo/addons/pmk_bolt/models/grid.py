@@ -3,17 +3,21 @@
 строка ввода не как в бутике? … почему не соблюдается принцип единообразия?»).
 
 Виджет pmk_bolt_grid — наследник таблицы Бутика (pmk_butik/static/src/js/
-butik_grid.js): та же разметка, клавиши (Enter, стрелки, Tab, Ctrl+D), вставка
-блока из Excel. Строки — болты расчёта; методы bolt_* отвечают таблицей целиком.
+butik_grid.js): та же разметка, клавиши, вставка из Excel. Болт — как изделие,
+под ним состав — как детали («болт должен быть составом вида как у металлоизделия,
+отдельно круг гайки шайбы плиты»). Ключи строк: «b<id>» — болт, «p<id>» — состав.
 
-Ячейка «Болт» — короткая запись («бф 2.1 м30 640мм ст3 10шт»), после сохранения
-в ней — запись калькулятора «2.1 М30×640 · Ст3 · резьба 120»; под ней мелко, как
-«узнано как» у Бутика, — название по ГОСТ, комплект, себестоимость, прошлые продажи.
+Ячейка болта — короткая запись («бф 2.1 м30 640мм ст3 10шт»); под ней — название
+по ГОСТ, пометки, прошлые продажи. Новая строка (Enter, «+ Строка»): запись болта —
+новый болт, иначе — своя строка состава текущего болта («гайка м30 калён 2шт 45»).
 """
-from odoo import _, api, fields, models
+from odoo import _, fields, models
 
 from ..tools import gost, parse
 from .bolt import NUT_KINDS
+from .part import parse_part
+
+BOLT, PART = "b", "p"
 
 
 def _to_float(value):
@@ -22,10 +26,6 @@ def _to_float(value):
         return float(text) if text else 0.0
     except ValueError:
         return 0.0
-
-
-def _money(value):
-    return "{:,.0f}".format(value or 0).replace(",", " ")
 
 
 def _nut_kind(text):
@@ -37,43 +37,60 @@ def _nut_kind(text):
     return "plain"
 
 
+def _key(kind, record_id):
+    return "%s%s" % (kind, record_id)
+
+
+def _parse_key(key):
+    key = str(key or "")
+    if len(key) > 1 and key[0] in (BOLT, PART) and key[1:].isdigit():
+        return key[0], int(key[1:])
+    return None, 0
+
+
 class BoltLineGrid(models.Model):
     _inherit = "pmk.bolt.line"
 
     pmk_text = fields.Char("Запись", help="Как набрали в таблице, если калькулятор её не понял.")
     parse_error = fields.Char("Не понял")
 
-    def _grid_row(self, number):
+    def _grid_rows(self, number):
         self.ensure_one()
-        ok = bool(self.bolt_type and self.diameter and self.length and not self.parse_error)
-        cost_parts = [(_("круг"), self.metal_rub), (_("плита"), self.plate_rub), (_("шайба"), self.washer_rub),
-                      (_("гайки"), self.nuts_rub), (_("резьба"), self.thread_rub), (_("гиб, проточка"), self.work_rub)]
-        detail = ""
+        ok = self._pmk_ok() and not self.parse_error
+        rows = [{
+            "id": _key(BOLT, self.id), "kind": "product", "number": number,
+            "name": (self.pmk_text if self.parse_error else self.short_name) or "",
+            "label": self.parse_error or self.name or "", "bad": bool(self.parse_error),
+            "warning": self.warning if ok else "", "history": self.history if ok else "",
+            "product_qty": self.qty or 0, "nut_kind": dict(NUT_KINDS).get(self.nut_kind, ""),
+            "mass_total": (self.mass_one or 0.0) * (self.qty or 0),
+            "markup": self.markup_pct or 0.0, "price": self.price_unit or 0.0,
+            "mass": self.mass_one or 0.0, "cost": self.cost_one or 0.0, "total": self.price_total or 0.0,
+        }]
+        nut_hint = self._pmk_nut_hint() if ok else ""
+        standard = {}
         if ok:
             spec = gost.TYPES[self.bolt_type]
-            kit = [_("заготовка %s мм") % int(self.blank_mm), _("%(n)s гайки М%(d)s", n=spec["nuts"], d=self.diameter),
-                   _("шайба")]
-            if spec["plate"]:
-                b, t, _kg = gost.SIZES[int(self.diameter)]["plate"]
-                kit.append(_("плита %(b)s×%(t)s", b=b, t=t))
-            detail = _("Комплект: %(kit)s · себестоимость: %(cost)s", kit=", ".join(kit),
-                       cost=", ".join("%s %s" % (k, _money(v)) for k, v in cost_parts if v))
-        return {
-            "id": self.id, "kind": "bolt", "number": number,
-            "name": (self.pmk_text if self.parse_error else self.short_name) or "",
-            "label": self.parse_error or self.name or "",
-            "bad": bool(self.parse_error),
-            "detail": detail, "warning": self.warning if ok else "",
-            "history": self.history if ok else "",
-            "nut_hint": self.nut_hint if ok else "",
-            "qty": self.qty or 0, "nut_kind": dict(NUT_KINDS).get(self.nut_kind, ""),
-            "nut_price": self.nut_price or 0.0, "markup": self.markup_pct or 0.0,
-            "price": self.price_unit or 0.0, "mass": self.mass_one or 0.0,
-            "cost": self.cost_one or 0.0, "total": self.price_total or 0.0,
-        }
+            standard = {"stud": 1, "nut": spec["nuts"], "washer": 1, "plate": 1, "work": 1}
+        for part in self.part_ids.sorted(lambda p: (p.sequence, p.id)):
+            stud = part.auto_key == "stud"
+            std = standard.get(part.auto_key)
+            changed = (_("%(qty)s вместо %(std)s по ГОСТ", qty=("%g" % part.qty).replace(".", ","), std=std)
+                       if std is not None and abs(part.qty - std) > 1e-9 else "")
+            rows.append({
+                "id": _key(PART, part.id), "kind": "detail", "parent": _key(BOLT, self.id),
+                "name": part.name or "", "auto": bool(part.auto_key), "changed": changed,
+                "qty": part.qty, "qty_total": part.qty * (self.qty or 0),
+                "mass": part.mass, "cost": part.cost,
+                "price": part.price_ton if stud else part.price_unit,
+                "price_label": _("₽/т") if stud else _("₽/шт"),
+                "hint": nut_hint if part.auto_key == "nut" else "",
+                "no_price": not (part.price_ton if stud else part.price_unit) and part.auto_key != "work",
+            })
+        return rows
 
     def _grid_apply_text(self, text):
-        """Короткая запись в ячейке «Болт» → поля строки. Не понял — запись остаётся с причиной."""
+        """Короткая запись болта → поля. Не понял — запись остаётся с причиной."""
         self.ensure_one()
         text = (text or "").strip()
         if not text:
@@ -87,8 +104,11 @@ class BoltLineGrid(models.Model):
         vals.setdefault("steel", self.steel or "09Г2С")
         if "thread_len" not in vals and vals.get("diameter") != self.diameter:
             vals["thread_len"] = gost.SIZES[int(vals["diameter"])]["l0"]
+        nut_price = vals.pop("nut_price", None)
         vals.update(pmk_text=False, parse_error=False)
         self.write(vals)
+        if nut_price:
+            self.part_ids.filtered(lambda p: p.auto_key == "nut")._pmk_user_write({"price_unit": nut_price})
 
 
 class BoltCalcGrid(models.Model):
@@ -101,81 +121,139 @@ class BoltCalcGrid(models.Model):
         self.ensure_one()
         self.check_access("read")
         if not self.line_ids and self.has_access("write"):
-            # Новый расчёт — сразу пустая строка, в неё и пишут (как у Бутика).
+            # Новый расчёт — сразу пустая строка болта, в неё и пишут (как у Бутика).
             self.env["pmk.bolt.line"].create({"calc_id": self.id, "sequence": 10})
-        lines = self._grid_lines()
+        rows = []
+        for i, line in enumerate(self._grid_lines(), 1):
+            rows += line._grid_rows(i)
         return {
-            "rows": [line._grid_row(i) for i, line in enumerate(lines, 1)],
+            "rows": rows, "products": len(self.line_ids),
             "count": self.total_qty, "weight_kg": self.total_weight,
             "cost": self.total_cost, "amount": self.amount_total,
             "can_write": self.has_access("write"),
         }
 
-    def _grid_insert(self, texts, after_id):
-        lines = self._grid_lines()
-        after = lines.filtered(lambda l: l.id == after_id)
-        seq = after.sequence if after else (max(lines.mapped("sequence") or [0]))
-        later = lines.filtered(lambda l: l.sequence > seq)
-        for line in later:
-            line.sequence += 10 * max(1, len(texts))
-        created = self.env["pmk.bolt.line"]
-        for i, text in enumerate(texts, 1):
-            line = self.env["pmk.bolt.line"].create({"calc_id": self.id, "sequence": seq + i})
-            line._grid_apply_text(text)
-            created |= line
-        return created
+    def _grid_record(self, key):
+        kind, rid = _parse_key(key)
+        if kind == BOLT:
+            return kind, self.line_ids.filtered(lambda l: l.id == rid)
+        if kind == PART:
+            return kind, self.line_ids.part_ids.filtered(lambda p: p.id == rid)
+        return None, self.env["pmk.bolt.line"]
 
-    def bolt_save_row(self, row_id, vals):
-        """Правка ячейки (или новая строка: row_id = False, vals["after_id"])."""
+    def _grid_new_bolt(self, after_line, text=""):
+        """Новый болт после after_line (или в конце)."""
+        lines = self._grid_lines()
+        seq = after_line.sequence if after_line else max(lines.mapped("sequence") or [0])
+        for other in lines.filtered(lambda l: l.sequence > seq):
+            other.sequence += 10
+        line = self.env["pmk.bolt.line"].create({"calc_id": self.id, "sequence": seq + 5})
+        if text:
+            line._grid_apply_text(text)
+        return line
+
+    def _grid_new_part(self, line, after_part, vals):
+        parts = line.part_ids.sorted(lambda p: (p.sequence, p.id))
+        seq = after_part.sequence if after_part else max(parts.mapped("sequence") or [0])
+        for other in parts.filtered(lambda p: p.sequence > seq):
+            other.sequence += 10
+        return self.env["pmk.bolt.part"].create(dict(vals, line_id=line.id, sequence=seq + 5))
+
+    def _grid_place(self, after_key, text):
+        """Новая строка после after_key: запись болта — новый болт, иначе — строка состава."""
+        kind, record = self._grid_record(after_key)
+        line = record if kind == BOLT else (record.line_id if kind == PART else self._grid_lines()[-1:])
+        text = (text or "").strip()
+        if text and not parse.parse(text)[2]:
+            return self._grid_new_bolt(line, text)
+        if not line:
+            return self._grid_new_bolt(False, text)
+        return self._grid_new_part(line, record if kind == PART else False,
+                                   parse_part(text) if text else {"name": "", "qty": 1.0})
+
+    def bolt_save_row(self, row_key, vals):
+        """Правка ячейки (или новая строка: row_key = False, vals["after_id"])."""
         self.ensure_one()
         self.check_access("write")
         vals = vals or {}
-        if not row_id:
-            self._grid_insert([vals.get("name") or ""], vals.get("after_id"))
+        if not row_key:
+            self._grid_place(vals.get("after_id"), vals.get("name") or "")
             return self.bolt_rows()
-        line = self.line_ids.filtered(lambda l: l.id == row_id)
-        if not line:
+        kind, record = self._grid_record(row_key)
+        if not record:
             return self.bolt_rows()
+        if kind == BOLT:
+            if "name" in vals:
+                record._grid_apply_text(vals["name"])
+            if "product_qty" in vals:
+                record.qty = max(1, int(_to_float(vals["product_qty"]) or 1))
+            if "nut_kind" in vals:
+                record.nut_kind = _nut_kind(vals["nut_kind"])
+            if "markup" in vals:
+                record.markup_pct = _to_float(vals["markup"])
+            if "price" in vals:
+                record.price_unit = _to_float(vals["price"])
+            return self.bolt_rows()
+        # Строка состава. Пустая строка, куда вписали болт, — становится болтом.
         if "name" in vals:
-            line._grid_apply_text(vals["name"])
+            text = (vals["name"] or "").strip()
+            if not record.auto_key and text and not parse.parse(text)[2]:
+                line = record.line_id
+                record.unlink()
+                self._grid_new_bolt(line, text)
+                return self.bolt_rows()
+            if record.auto_key:
+                record._pmk_user_write({"name": text or record.name})
+            else:
+                record.write(parse_part(text) if text else {"name": ""})
         if "qty" in vals:
-            line.qty = max(1, int(_to_float(vals["qty"]) or 1))
-        if "nut_kind" in vals:
-            line.nut_kind = _nut_kind(vals["nut_kind"])
-        if "nut_price" in vals:
-            line.nut_price = _to_float(vals["nut_price"])
-        if "markup" in vals:
-            line.markup_pct = _to_float(vals["markup"])
+            record._pmk_user_write({"qty": _to_float(vals["qty"])})
         if "price" in vals:
-            line.price_unit = _to_float(vals["price"])
+            field = "price_ton" if record.auto_key == "stud" else "price_unit"
+            record._pmk_user_write({field: _to_float(vals["price"])})
         return self.bolt_rows()
 
-    def bolt_insert_rows(self, after_id, rows):
-        """Вставка из Excel или письма: столбик строк или колонки (склеиваем в одну запись)."""
+    def bolt_insert_rows(self, after_key, rows):
+        """Вставка из Excel или письма: болты — новыми болтами, прочее — в состав."""
         self.ensure_one()
         self.check_access("write")
         texts = [" ".join(str(v).strip() for v in (row or {}).values() if str(v or "").strip()) for row in rows or []]
         texts = [t for t in texts if t]
-        target = self.line_ids.filtered(lambda l: l.id == after_id)
-        if target and not (target.bolt_type or target.pmk_text) and texts:
-            # Вставка в пустую строку — первая запись в неё же.
-            target._grid_apply_text(texts.pop(0))
-        if texts:
-            self._grid_insert(texts, after_id)
+        kind, record = self._grid_record(after_key)
+        empty_bolt = kind == BOLT and record and not (record.bolt_type or record.pmk_text)
+        if empty_bolt and texts and not parse.parse(texts[0])[2]:
+            record._grid_apply_text(texts.pop(0))
+        key = after_key
+        for text in texts:
+            new = self._grid_place(key, text)
+            key = _key(BOLT if new._name == "pmk.bolt.line" else PART, new.id)
         return self.bolt_rows()
 
-    def bolt_delete_row(self, row_id):
+    def bolt_add_product(self):
+        """«+ Болт» (Ctrl+Enter) — пустой болт в конце."""
         self.ensure_one()
         self.check_access("write")
-        self.line_ids.filtered(lambda l: l.id == row_id).unlink()
+        self._grid_new_bolt(self._grid_lines()[-1:])
         return self.bolt_rows()
 
-    def bolt_duplicate_row(self, row_id):
+    def bolt_delete_row(self, row_key):
         self.ensure_one()
         self.check_access("write")
-        line = self.line_ids.filtered(lambda l: l.id == row_id)
-        if line:
-            for other in self.line_ids.filtered(lambda l, s=line.sequence: l.sequence > s):
-                other.sequence += 1
-            line.copy({"calc_id": self.id, "sequence": line.sequence + 1})
+        _kind, record = self._grid_record(row_key)
+        record.unlink()
+        return self.bolt_rows()
+
+    def bolt_duplicate_row(self, row_key):
+        self.ensure_one()
+        self.check_access("write")
+        kind, record = self._grid_record(row_key)
+        if kind == BOLT and record:
+            for other in self.line_ids.filtered(lambda l, s=record.sequence: l.sequence > s):
+                other.sequence += 10
+            # Состав копируется с правками (copy=True); пересчёт по ГОСТ его не задвоит.
+            record.copy({"calc_id": self.id, "sequence": record.sequence + 5})
+        elif kind == PART and record:
+            # Копия строки состава — своя строка (у ГОСТ на ключ строка одна).
+            vals = {k: record[k] for k in ("name", "qty", "unit_mass", "price_unit")}
+            self._grid_new_part(record.line_id, record, vals)
         return self.bolt_rows()

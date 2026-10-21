@@ -43,60 +43,75 @@ class TestBoltCalc(TransactionCase):
     def setUp(self):
         super().setUp()
         self.Calc = self.env["pmk.bolt.calc"]
-        self.norm30 = self.env.ref("pmk_bolt.norm_m30")
-        self.norm30.write({"round_09g2s_ton": 100000, "round_st3_ton": 80000, "sheet_ton": 50000,
-                           "thread_rub": 100, "bend_rub": 50, "plate_rub": 200, "washer_rub": 20})
+        self.env.ref("pmk_bolt.norm_m30").write({
+            "round_09g2s_ton": 100000, "round_st3_ton": 80000, "sheet_ton": 50000,
+            "thread_rub": 100, "bend_rub": 50, "plate_rub": 200, "washer_rub": 20})
         self.env["pmk.price.policy"].search([]).write({"active": False})
-        policy = self.env["pmk.price.policy"].create({
+        self.env["pmk.price.policy"].create({
             "name": "Тест осень", "date_from": date(2026, 9, 1),
             "line_ids": [Command.create({"kind": "bolt", "markup_pct": 50})]})
         self.env["pmk.price.policy"].create({
             "name": "Тест зима", "date_from": date(2026, 12, 1),
             "line_ids": [Command.create({"kind": "bolt", "markup_pct": 30})]})
-        self.policy = policy
 
-    def _calc(self, day=date(2026, 10, 21), **line):
-        vals = dict(bolt_type="2.1", diameter="30", length=600, steel="09Г2С", qty=10, nut_price=40)
+    def _calc(self, day=date(2026, 10, 21), nut=40, **line):
+        vals = dict(bolt_type="2.1", diameter="30", length=600, steel="09Г2С", qty=10)
         vals.update(line)
-        return self.Calc.create({"date": day, "line_ids": [Command.create(vals)]})
+        calc = self.Calc.create({"date": day, "line_ids": [Command.create(vals)]})
+        nuts = calc.line_ids.part_ids.filtered(lambda p: p.auto_key == "nut")
+        nuts._pmk_user_write({"price_unit": nut})
+        return calc
 
-    def test_cost_and_price(self):
+    def _part(self, line, key):
+        return line.part_ids.filtered(lambda p: p.auto_key == key)
+
+    def test_composition_from_gost(self):
         calc = self._calc()
         line = calc.line_ids
         self.assertTrue(calc.name.startswith("БЛТ-"))
         self.assertEqual(line.name, "Болт фундаментный (анкерный) тип 2.1 М-30х600, резьба 120 мм, 09Г2С ГОСТ 24379.1-2012")
-        self.assertEqual(line.mass_one, 6.64)
-        self.assertEqual(line.metal_ton, 100000)
-        stud = gost.stud_kg("2.1", 30, 600)
-        self.assertAlmostEqual(line.metal_rub, stud * 100, places=2)
-        self.assertAlmostEqual(line.plate_rub, 2.08 * 50 + 200, places=2)
-        self.assertAlmostEqual(line.washer_rub, 0.33 * 50 + 20, places=2)
-        self.assertEqual(line.nuts_rub, 160, "2.1 — 4 гайки")
-        self.assertEqual(line.thread_rub, 200, "2.1 — резьба с двух концов")
-        self.assertEqual(line.work_rub, 0)
+        self.assertEqual(line.part_ids.mapped("auto_key"), ["stud", "nut", "washer", "plate", "work"])
+        stud = self._part(line, "stud")
+        self.assertEqual(stud.price_ton, 100000)
+        self.assertAlmostEqual(stud.cost, round(gost.stud_kg("2.1", 30, 600), 3) * 100, places=2)
+        self.assertEqual(self._part(line, "nut").qty, 4, "2.1 — 4 гайки")
+        self.assertEqual(self._part(line, "nut").cost, 160)
+        self.assertAlmostEqual(self._part(line, "plate").price_unit, round(2.08 * 50 + 200, 2))
+        self.assertAlmostEqual(self._part(line, "washer").price_unit, round(0.33 * 50 + 20, 2))
+        self.assertEqual(self._part(line, "work").price_unit, 200, "2.1 — резьба с двух концов")
+        self.assertAlmostEqual(line.cost_one, sum(line.part_ids.mapped("cost")), places=2)
         self.assertEqual(line.markup_pct, 50)
         self.assertEqual(line.price_unit, float(int(line.cost_one * 1.5) + 1))
-        self.assertIn("Гайка М30 ГОСТ 5915 × 4", line.kit_text)
-        self.assertIn("Плита 120×120×20", line.kit_text)
+        self.assertEqual(line.mass_one, 6.64)
         self.assertEqual(calc.total_qty, 10)
-        self.assertAlmostEqual(calc.amount_total, line.price_unit * 10)
+
+    def test_extra_nuts_kept_on_recalc(self):
+        """Антон: «иногда просят дополнительные гайки … скорректировать при расчёте»."""
+        line = self._calc().line_ids
+        nut = self._part(line, "nut")
+        nut._pmk_user_write({"qty": 6})
+        self.assertTrue(nut.edited)
+        self.assertAlmostEqual(line.mass_one, 6.64 + 2 * gost.NUT_KG[30], places=3)
+        line.length = 700  # пересчёт болта
+        self.assertEqual((nut.qty, nut.price_unit), (6, 40), "поправленное не затёрто")
+        self.assertIn("заготовка 700 мм", self._part(line, "stud").name)
+        line.bolt_type = "1.1"  # у 1.1 плиты нет
+        self.assertFalse(self._part(line, "plate"))
+        self.assertEqual(self._part(line, "work").price_unit, 100 + 50, "резьба + гиб")
 
     def test_bent_bolt_extended_thread_and_season(self):
-        calc = self._calc(day=date(2026, 12, 15), bolt_type="1.1", length=950, thread_len=250, steel="Ст3")
-        line = calc.line_ids
+        line = self._calc(day=date(2026, 12, 15), bolt_type="1.1", length=950, thread_len=250, steel="Ст3").line_ids
         self.assertEqual(line.blank_mm, 950 + 90 - 60)
         self.assertEqual(line.markup_pct, 30, "зимняя политика")
-        self.assertEqual(line.metal_ton, 80000, "Ст3")
-        self.assertEqual(line.work_rub, 50, "один гиб")
-        self.assertAlmostEqual(line.thread_rub, 100 * 250 / 120, places=2)
+        self.assertEqual(self._part(line, "stud").price_ton, 80000, "Ст3")
+        self.assertAlmostEqual(self._part(line, "work").price_unit, round(100 * 250 / 120 + 50, 2))
         self.assertIn("длина не из ряда ГОСТ", line.warning)
         self.assertIn("удлинённая резьба: +130 мм", line.warning)
-        self.assertIn("резьба 250 мм", line.name)
 
-    def test_nut_hint_and_manual_price(self):
-        self._calc(nut_price=55, nut_kind="hardened")
-        line = self._calc(nut_price=0, nut_kind="hardened").line_ids
-        self.assertIn("55 ₽", line.nut_hint)
+    def test_nut_hint_and_warning(self):
+        self._calc(nut=55, nut_kind="hardened")
+        line = self._calc(nut=0, nut_kind="hardened").line_ids
+        self.assertIn("55 ₽", line._pmk_nut_hint())
         self.assertIn("впишите цену гайки", line.warning)
         line.price_unit = 9999
         self.assertEqual(line.price_total, 9999 * 10)
@@ -105,6 +120,7 @@ class TestBoltCalc(TransactionCase):
         line = self._calc(bolt_type="2.2", diameter="30").line_ids
         self.assertEqual(line.warning, "Тип 2.2 делают М56–М90")
         self.assertFalse(line.cost_one)
+        self.assertFalse(line.part_ids)
 
     def test_norm_checked_on_and_stale(self):
         norm = self.env.ref("pmk_bolt.norm_m24")
@@ -118,14 +134,11 @@ class TestBoltCalc(TransactionCase):
     def test_history_from_sale_lines(self):
         partner = self.env["res.partner"].create({"name": "ООО «Порт»"})
         product = self.env["product.product"].create({"name": "Позиция"})
-        order = self.env["sale.order"].create({"partner_id": partner.id, "order_line": [Command.create({
+        self.env["sale.order"].create({"partner_id": partner.id, "order_line": [Command.create({
             "product_id": product.id, "price_unit": 2599,
             "name": "Болт фундаментный (анкерный) тип 2.1 М-30х600 09Г2С ГОСТ 24379.1-2012"})]})
-        self.assertTrue(order)
-        line = self._calc().line_ids
-        self.assertIn("2 599 ₽", line.history)
-        other = self._calc(length=610).line_ids
-        self.assertIn("не продавали", other.history)
+        self.assertIn("2 599 ₽", self._calc().line_ids.history)
+        self.assertIn("не продавали", self._calc(length=610).line_ids.history)
 
 
 @tagged("post_install", "-at_install")
@@ -143,35 +156,46 @@ class TestQuickAdd(TransactionCase):
         self.assertEqual(parse.parse("бф 2.1 м12 500")[2], "Тип 2.1 делают М16–М48")
         self.assertTrue(parse.parse("бф м30 600")[2].startswith("не указан тип"))
 
-    def test_grid_like_butik(self):
+    def test_grid_bolts_and_composition(self):
         calc = self.env["pmk.bolt.calc"].create({})
-        data = calc.bolt_save_row(False, {"name": "бф 2.1 м30 640мм ст3 10шт"})
-        row = data["rows"][0]
-        self.assertEqual(row["name"], "2.1 М30×640 · Ст3 · резьба 120")
-        self.assertIn("ГОСТ 24379.1-2012", row["label"])
-        self.assertIn("4 гайки М30", row["detail"])
-        self.assertEqual(row["qty"], 10)
-        # Ячейки: количество, гайки, цена гайки — как в Бутике.
-        data = calc.bolt_save_row(row["id"], {"qty": "896", "nut_kind": "калёные", "nut_price": "45,5"})
-        row = data["rows"][0]
-        self.assertEqual((row["qty"], row["nut_kind"], row["nut_price"]), (896, "калёные", 45.5))
-        # Правка записи без «шт» не сбрасывает количество.
-        row = calc.bolt_save_row(row["id"], {"name": "2.1 М30×700 · Ст3 · резьба 120"})["rows"][0]
-        self.assertEqual((row["name"], row["qty"]), ("2.1 М30×700 · Ст3 · резьба 120", 896))
-        # Пустая строка (Enter в конце) — не болт и без пометок.
-        data = calc.bolt_save_row(False, {"after_id": row["id"]})
-        self.assertEqual((data["rows"][1]["name"], data["rows"][1]["warning"]), ("", ""))
-        # Непонятая запись остаётся в ячейке с причиной.
-        bad = calc.bolt_save_row(data["rows"][1]["id"], {"name": "бф м30 600"})["rows"][1]
+        rows = calc.bolt_rows()["rows"]
+        self.assertEqual((len(rows), rows[0]["kind"], rows[0]["name"]), (1, "product", ""), "пустая строка болта")
+        bolt_key = rows[0]["id"]
+        rows = calc.bolt_save_row(bolt_key, {"name": "бф 2.1 м30 640мм ст3 10шт калён гайка 45"})["rows"]
+        self.assertEqual(rows[0]["name"], "2.1 М30×640 · Ст3 · резьба 120")
+        self.assertEqual(rows[0]["product_qty"], 10)
+        self.assertEqual([r["kind"] for r in rows], ["product"] + ["detail"] * 5, "болт + состав по ГОСТ")
+        nut = next(r for r in rows if r["name"].startswith("Гайка"))
+        self.assertEqual((nut["qty"], nut["qty_total"], nut["price"]), (4, 40, 45), "цена гайки из записи")
+        # Доп. гайки — правкой количества в строке состава.
+        rows = calc.bolt_save_row(nut["id"], {"qty": "6"})["rows"]
+        nut = next(r for r in rows if r["name"].startswith("Гайка"))
+        self.assertEqual((nut["qty"], nut["changed"]), (6, "6 вместо 4 по ГОСТ"))
+        # Enter внизу → пустая строка состава; своя строка — в состав, запись болта — новый болт.
+        rows = calc.bolt_save_row(False, {"after_id": rows[-1]["id"]})["rows"]
+        own = rows[-1]
+        self.assertEqual((own["kind"], own["parent"]), ("detail", bolt_key))
+        rows = calc.bolt_save_row(own["id"], {"name": "шайба м30 доп 2шт 15"})["rows"]
+        own = rows[-1]
+        self.assertEqual((own["qty"], own["price"], own["cost"]), (2, 15, 30))
+        rows = calc.bolt_save_row(False, {"after_id": own["id"]})["rows"]
+        rows = calc.bolt_save_row(rows[-1]["id"], {"name": "бф 1.1 м24х1000 09г2с 48шт"})["rows"]
+        products = [r for r in rows if r["kind"] == "product"]
+        self.assertEqual([p["name"] for p in products],
+                         ["2.1 М30×640 · Ст3 · резьба 120", "1.1 М24×1000 · 09Г2С · резьба 110"])
+        # Ctrl+V столбиком: болт и строка состава.
+        data = calc.bolt_insert_rows(products[1]["id"], [{"name": "бф 5 м36 800 ст3 20шт"}, {"name": "гайка м36 1шт 70"}])
+        products = [r for r in data["rows"] if r["kind"] == "product"]
+        self.assertEqual(len(products), 3)
+        self.assertTrue(any(r["name"] == "гайка м36 1шт 70" and r["parent"] == products[2]["id"] for r in data["rows"]))
+        # Копия болта — с составом и правками; удаление.
+        data = calc.bolt_duplicate_row(products[0]["id"])
+        self.assertEqual(len([r for r in data["rows"] if r["kind"] == "product"]), 4)
+        copy_nut = [r for r in data["rows"] if r["name"].startswith("Гайка М30")]
+        self.assertEqual([r["qty"] for r in copy_nut], [6, 6])
+        data = calc.bolt_delete_row(products[0]["id"])
+        self.assertEqual(len([r for r in data["rows"] if r["kind"] == "product"]), 3)
+        # Непонятая запись болта — в ячейке с причиной.
+        bad_key = data["rows"][0]["id"]
+        bad = calc.bolt_save_row(bad_key, {"name": "бф м30 600"})["rows"][0]
         self.assertEqual((bad["name"], bad["bad"]), ("бф м30 600", True))
-        self.assertTrue(bad["label"].startswith("не указан тип"))
-        # Ctrl+V столбиком — в пустую строку и ниже.
-        data = calc.bolt_insert_rows(bad["id"], [{"name": "1.1 м24х1000 09г2с 48шт"}, {"name": "бф 5 м36 800 ст3 20шт"}])
-        self.assertEqual([r["name"] for r in data["rows"]],
-                         ["2.1 М30×700 · Ст3 · резьба 120", "бф м30 600", "1.1 М24×1000 · 09Г2С · резьба 110",
-                          "5 М36×800 · Ст3 · резьба 130"])
-        data = calc.bolt_duplicate_row(data["rows"][0]["id"])
-        self.assertEqual(len(data["rows"]), 5)
-        data = calc.bolt_delete_row(data["rows"][1]["id"])
-        self.assertEqual(len(data["rows"]), 4)
-        self.assertEqual(data["count"], 896 + 48 + 20)

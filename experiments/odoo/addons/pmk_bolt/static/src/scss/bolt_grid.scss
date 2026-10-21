@@ -1,6 +1,7 @@
-// Болты — таблица Бутика (21.10.2026): стили берём у pmk_butik (butik_grid.scss,
-// konstr_grid.scss), здесь только подписи под записью болта.
+// Болты — таблица Бутика (21.10.2026): стили — у pmk_butik (butik_grid.scss,
+// konstr_grid.scss); здесь подписи под записью и своя строка состава.
 .o_pmk_bolt {
-  .o_pmk_bolt__more { color: var(--bt-muted, #6b6b6b); }
+  .o_pmk_bolt__more { color: var(--bt-muted, #6b7079); }
   .o_pmk_bolt__warning { color: var(--bt-warn, #9a6b00); }
+  .o_pmk_bolt__own .o_pmk_butik__ta { font-style: italic; }
 }

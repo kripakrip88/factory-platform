@@ -8,10 +8,11 @@
 Строка — один болт: тип, М, длина, резьба, сталь, количество, гайки.
 - Название — одним видом, с длиной резьбы («часто просят удлинённую»).
 - Масса — по приложению А ГОСТ; длина не из ряда — по формуле, с пометкой.
-- Себестоимость: круг (заготовка по правилу цеха, 2d на гиб) + плита и шайба
-  из листа + работа по нормам (резьба, гиб, проточка) + гайки — цену гайки
-  вписывает Владимир («угадай мелодию»), рядом — последняя вписанная цена
-  гайки того же М и вида («накопим статистику и сможем предлагать цену»).
+- Себестоимость — сумма СОСТАВА болта (models/part.py), как детали изделия в
+  «Конструкциях»: круг (заготовка, 2d на гиб), гайки, шайба, плита, работа по
+  нормам. Состав заполняет калькулятор по ГОСТ; строку можно поправить или
+  добавить свою («доп. гайки») — правку пересчёт не затрёт. Цену гайки вписывает
+  Владимир («угадай мелодию»), подсказка — последняя цена гайки того же М и вида.
 - Цена = себестоимость × (1 + наценка ценовой политики); правится руками.
 - Подсказка — прошлые продажи этого размера (строки счетов МоегоСклада).
 """
@@ -86,12 +87,9 @@ class BoltLine(models.Model):
     steel = fields.Selection(STEELS, "Сталь", default="09Г2С")
     qty = fields.Integer("Кол-во, шт", required=True, default=1)
     nut_kind = fields.Selection(NUT_KINDS, "Гайки", required=True, default="plain")
-    nut_price = fields.Float("Гайка, ₽/шт", digits=(12, 2), help="Вписывает менеджер: гайки бывают разные.")
-    nut_hint = fields.Char("Прошлая цена гайки", compute="_compute_nut_hint")
-    metal_ton = fields.Float("Круг, ₽/т", compute="_compute_metal_ton", store=True, readonly=False,
-                             digits=(12, 0), help="Из «Норм для болтов» по марке; можно поправить в строке.")
     markup_pct = fields.Float("Наценка, %", compute="_compute_markup", store=True, readonly=False,
                               digits=(6, 1), help="Из ценовой политики на дату расчёта; можно поправить.")
+    part_ids = fields.One2many("pmk.bolt.part", "line_id", "Состав", copy=True)
 
     name = fields.Char("Наименование", compute="_compute_calc", store=True)
     short_name = fields.Char("Болт", compute="_compute_calc", store=True,
@@ -99,31 +97,19 @@ class BoltLine(models.Model):
     warning = fields.Char("Внимание", compute="_compute_calc", store=True)
     blank_mm = fields.Float("Заготовка, мм", compute="_compute_calc", store=True, digits=(10, 0))
     mass_one = fields.Float("Масса шт, кг", compute="_compute_calc", store=True, digits=(10, 2))
-    metal_rub = fields.Float("Круг", digits=(12, 2), compute="_compute_calc", store=True)
-    plate_rub = fields.Float("Плита", digits=(12, 2), compute="_compute_calc", store=True)
-    washer_rub = fields.Float("Шайба", digits=(12, 2), compute="_compute_calc", store=True)
-    nuts_rub = fields.Float("Гайки", digits=(12, 2), compute="_compute_calc", store=True)
-    thread_rub = fields.Float("Резьба", digits=(12, 2), compute="_compute_calc", store=True)
-    work_rub = fields.Float("Гиб, проточка", digits=(12, 2), compute="_compute_calc", store=True)
     cost_one = fields.Float("Себестоимость шт", digits=(12, 2), compute="_compute_calc", store=True)
     price_unit = fields.Float("Цена шт", digits=(12, 2), compute="_compute_price", store=True, readonly=False)
     price_total = fields.Float("Сумма", digits=(12, 2), compute="_compute_total", store=True)
     margin_pct = fields.Float("Маржа, %", compute="_compute_total", store=True, digits=(5, 1))
-    kit_text = fields.Text("Комплект", compute="_compute_kit")
     history = fields.Char("Прошлые продажи", compute="_compute_history")
+
+    BOLT_FIELDS = ("bolt_type", "diameter", "length", "thread_len", "steel", "nut_kind")
 
     # ─── Подстановки ────────────────────────────────────────────────────
     @api.depends("diameter")
     def _compute_thread_len(self):
         for line in self:
             line.thread_len = gost.SIZES[int(line.diameter)]["l0"] if line.diameter else 0
-
-    @api.depends("diameter", "steel")
-    def _compute_metal_ton(self):
-        Norm = self.env["pmk.bolt.norm"]
-        for line in self:
-            norm = Norm._pmk_for(int(line.diameter)) if line.diameter else Norm
-            line.metal_ton = (norm.round_09g2s_ton if line.steel == "09Г2С" else norm.round_st3_ton) if norm else 0.0
 
     @api.depends("calc_id.date")
     def _compute_markup(self):
@@ -132,14 +118,89 @@ class BoltLine(models.Model):
             markup = Policy._pmk_markup("bolt", line.calc_id.date)
             line.markup_pct = markup or 0.0
 
+    def _pmk_ok(self):
+        self.ensure_one()
+        d = int(self.diameter or 0)
+        return bool(self.bolt_type and d and self.length and not gost.check(self.bolt_type, d))
+
+    # ─── Состав по ГОСТ ─────────────────────────────────────────────────
+    def _pmk_auto_parts(self):
+        """{auto_key: значения} для этого болта. Цены — из «Норм для болтов»."""
+        self.ensure_one()
+        d = int(self.diameter)
+        spec, s = gost.TYPES[self.bolt_type], gost.SIZES[d]
+        norm = self.env["pmk.bolt.norm"]._pmk_for(d)
+        sheet_ton = norm.sheet_ton if norm else 0.0
+        l0 = s["l0"]
+        thread = self.thread_len or l0
+        blank = gost.blank_mm(self.bolt_type, d, self.length)
+        kind = {"plain": "", "hardened": " калёные", "special": " спецсталь"}[self.nut_kind or "plain"]
+        out = {
+            "stud": dict(sequence=1, name=_("Круг %(d1)s %(steel)s — шпилька поз. %(pos)s, заготовка %(blank)s мм",
+                                            d1=s["d1"], steel=self.steel or "", pos=spec["pos"], blank=round(blank)),
+                         qty=1.0, unit_mass=round(gost.stud_kg(self.bolt_type, d, self.length), 3),
+                         price_ton=(norm.round_09g2s_ton if self.steel == "09Г2С" else norm.round_st3_ton) if norm else 0.0),
+            "nut": dict(sequence=2, name=_("Гайка М%(d)s %(gost)s%(kind)s", d=d, gost=gost.NUT_GOST[d], kind=kind),
+                        qty=float(spec["nuts"]), unit_mass=gost.NUT_KG[d], price_unit=0.0),
+            "washer": dict(sequence=3, name=_("Шайба М%s ГОСТ 24379.1") % d, qty=1.0, unit_mass=s["w"],
+                           price_unit=round(s["w"] * sheet_ton / 1000.0 + (norm.washer_rub if norm else 0.0), 2)),
+        }
+        if spec["plate"]:
+            b, t, kg = s["plate"]
+            out["plate"] = dict(sequence=4, name=_("Плита %(b)s×%(b)s×%(t)s ГОСТ 24379.1", b=b, t=t), qty=1.0,
+                                unit_mass=kg, price_unit=round(kg * sheet_ton / 1000.0 + (norm.plate_rub if norm else 0.0), 2))
+        work = [_("резьба %(n)s × %(t)s мм", n=spec["thread_ends"], t=thread)]
+        price = (norm.thread_rub * (thread / l0 + spec["thread_ends"] - 1)) if norm else 0.0
+        if spec["bends"]:
+            work.append(_("гиб × %s") % spec["bends"])
+            price += norm.bend_rub * spec["bends"] if norm else 0.0
+        if spec["turn_ends"]:
+            work.append(_("проточка × %s") % spec["turn_ends"])
+            price += norm.turn_rub * spec["turn_ends"] if norm else 0.0
+        out["work"] = dict(sequence=5, name=_("Работа: %s") % ", ".join(work), qty=1.0, unit_mass=0.0,
+                           price_unit=round(price, 2))
+        return out
+
+    def _pmk_sync_parts(self):
+        """Состав по ГОСТ. Поправленные руками строки: имя и масса — по болту, количество
+        и цены — как поправили. Свои строки не трогаем. Не болт — строк из ГОСТ нет."""
+        Part = self.env["pmk.bolt.part"]
+        for line in self:
+            autos = line.part_ids.filtered("auto_key")
+            if not line._pmk_ok():
+                autos.unlink()
+                continue
+            want = line._pmk_auto_parts()
+            for part in autos:
+                vals = want.pop(part.auto_key, None)
+                if vals is None:
+                    part.unlink()
+                    continue
+                if part.edited:
+                    vals = {k: v for k, v in vals.items() if k in ("name", "unit_mass", "sequence")}
+                part.write(vals)
+            for key, vals in want.items():
+                Part.create(dict(vals, line_id=line.id, auto_key=key))
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        lines = super().create(vals_list)
+        lines._pmk_sync_parts()
+        return lines
+
+    def write(self, vals):
+        res = super().write(vals)
+        if set(self.BOLT_FIELDS) & set(vals) and not self.env.context.get("pmk_bolt_no_sync"):
+            self._pmk_sync_parts()
+        return res
+
     # ─── Расчёт ─────────────────────────────────────────────────────────
-    @api.depends("bolt_type", "diameter", "length", "thread_len", "steel", "qty", "nut_price", "metal_ton")
+    @api.depends("bolt_type", "diameter", "length", "thread_len", "steel", "part_ids.cost", "part_ids.mass",
+                 "part_ids.qty", "part_ids.price_unit", "part_ids.price_ton")
     def _compute_calc(self):
-        Norm = self.env["pmk.bolt.norm"]
         for line in self:
             d = int(line.diameter or 0)
-            empty = dict(blank_mm=0, mass_one=0, metal_rub=0, plate_rub=0, washer_rub=0, nuts_rub=0,
-                         thread_rub=0, work_rub=0, cost_one=0, name="", short_name="")
+            empty = dict(blank_mm=0, mass_one=0, cost_one=0, name="", short_name="")
             if not (line.bolt_type and d and line.length):
                 line.update(dict(empty, warning=""))
                 continue
@@ -148,40 +209,31 @@ class BoltLine(models.Model):
                 line.update(dict(empty, warning=problem))
                 continue
             spec, s = gost.TYPES[line.bolt_type], gost.SIZES[d]
-            l0 = s["l0"]
-            thread = line.thread_len or l0
-            norm = Norm._pmk_for(d)
+            thread = line.thread_len or s["l0"]
+            parts = line.part_ids
             notes = []
             if gost.table_mass(line.bolt_type, d, line.length) is None:
                 notes.append(_("длина не из ряда ГОСТ — масса по соседним длинам"))
-            if thread > l0:
-                notes.append(_("удлинённая резьба: +%s мм к ГОСТ") % (thread - l0))
-            if not norm:
+            if thread > s["l0"]:
+                notes.append(_("удлинённая резьба: +%s мм к ГОСТ") % (thread - s["l0"]))
+            if not self.env["pmk.bolt.norm"]._pmk_for(d):
                 notes.append(_("нет норм для М%s — заполните «Нормы для болтов»") % d)
-            if not line.metal_ton:
+            if parts.filtered(lambda p: p.auto_key == "stud" and not p.price_ton):
                 notes.append(_("нет цены круга"))
-            if not line.nut_price:
+            if parts.filtered(lambda p: p.auto_key == "nut" and not p.price_unit):
                 notes.append(_("впишите цену гайки"))
-            sheet_ton = norm.sheet_ton if norm else 0.0
-            plate_kg = s["plate"][2] if spec["plate"] else 0.0
-            thread_rub = norm.thread_rub * (thread / l0 + spec["thread_ends"] - 1) if norm else 0.0
-            work_rub = (norm.bend_rub * spec["bends"] + norm.turn_rub * spec["turn_ends"]) if norm else 0.0
-            vals = dict(
+            # Масса: по ГОСТ + то, что сверх комплекта (доп. гайки, свои строки).
+            standard = {"stud": 1, "nut": spec["nuts"], "washer": 1, "plate": 1, "work": 0}
+            extra = sum(p.mass if not p.auto_key else max(0.0, p.qty - standard[p.auto_key]) * p.unit_mass
+                        for p in parts)
+            line.update(dict(
                 name=gost.name(line.bolt_type, d, line.length, thread, line.steel),
                 short_name="%s М%s×%s · %s · резьба %s" % (line.bolt_type, d, line.length, line.steel, thread),
                 warning="; ".join(notes),
                 blank_mm=round(gost.blank_mm(line.bolt_type, d, line.length)),
-                mass_one=gost.mass(line.bolt_type, d, line.length),
-                metal_rub=gost.stud_kg(line.bolt_type, d, line.length) * line.metal_ton / 1000.0,
-                plate_rub=(plate_kg * sheet_ton / 1000.0 + (norm.plate_rub if norm else 0.0)) if spec["plate"] else 0.0,
-                washer_rub=s["w"] * sheet_ton / 1000.0 + (norm.washer_rub if norm else 0.0),
-                nuts_rub=spec["nuts"] * (line.nut_price or 0.0),
-                thread_rub=thread_rub,
-                work_rub=work_rub,
-            )
-            vals["cost_one"] = sum(vals[k] for k in ("metal_rub", "plate_rub", "washer_rub", "nuts_rub",
-                                                     "thread_rub", "work_rub"))
-            line.update(vals)
+                mass_one=gost.mass(line.bolt_type, d, line.length) + extra,
+                cost_one=sum(parts.mapped("cost")),
+            ))
 
     @api.depends("cost_one", "markup_pct")
     def _compute_price(self):
@@ -197,33 +249,19 @@ class BoltLine(models.Model):
             line.margin_pct = ((line.price_unit - line.cost_one) / line.price_unit * 100.0
                                if line.price_unit else 0.0)
 
-    @api.depends("bolt_type", "diameter", "length")
-    def _compute_kit(self):
-        for line in self:
-            d = int(line.diameter or 0)
-            if not d or gost.check(line.bolt_type, d) or not line.length:
-                line.kit_text = ""
-                continue
-            spec, s = gost.TYPES[line.bolt_type], gost.SIZES[d]
-            rows = [_("Шпилька поз. %(pos)s, заготовка %(blank)s мм (круг %(d1)s)", pos=spec["pos"],
-                      blank=round(gost.blank_mm(line.bolt_type, d, line.length)), d1=s["d1"]),
-                    _("Гайка М%(d)s %(gost)s × %(n)s", d=d, gost=gost.NUT_GOST[d], n=spec["nuts"]),
-                    _("Шайба М%(d)s ГОСТ 24379.1 (%(kg)s кг)", d=d, kg=str(s["w"]).replace(".", ","))]
-            if spec["plate"]:
-                b, t, kg = s["plate"]
-                rows.append(_("Плита %(b)s×%(b)s×%(t)s мм (%(kg)s кг)", b=b, t=t, kg=str(kg).replace(".", ",")))
-            line.kit_text = "\n".join(rows)
-
-    @api.depends("diameter", "nut_kind")
-    def _compute_nut_hint(self):
-        for line in self:
-            prev = self.search([("diameter", "=", line.diameter), ("nut_kind", "=", line.nut_kind),
-                                ("nut_price", ">", 0), ("id", "!=", line._origin.id or 0)],
-                               order="write_date desc, id desc", limit=1) if line.diameter else self.browse()
-            line.nut_hint = (_("М%(d)s %(kind)s: %(price)s ₽ — %(doc)s, %(date)s", d=line.diameter,
-                               kind=dict(NUT_KINDS)[line.nut_kind], price=round(prev.nut_price),
-                               doc=prev.calc_id.name, date=prev.calc_id.date.strftime("%d.%m.%Y"))
-                             if prev else _("цен гаек М%s этого вида ещё не вписывали") % (line.diameter or ""))
+    def _pmk_nut_hint(self):
+        """Последняя вписанная цена гайки того же М и вида — подсказка («накопим статистику»)."""
+        self.ensure_one()
+        if not self.diameter:
+            return ""
+        prev = self.env["pmk.bolt.part"].search([
+            ("auto_key", "=", "nut"), ("price_unit", ">", 0), ("line_id.diameter", "=", self.diameter),
+            ("line_id.nut_kind", "=", self.nut_kind), ("line_id", "!=", self.id)],
+            order="write_date desc, id desc", limit=1)
+        if not prev:
+            return ""
+        return _("было %(price)s ₽ — %(doc)s, %(date)s", price=("%g" % prev.price_unit).replace(".", ","),
+                 doc=prev.line_id.calc_id.name, date=prev.line_id.calc_id.date.strftime("%d.%m.%Y"))
 
     @api.depends("bolt_type", "diameter", "length", "steel")
     def _compute_history(self):
