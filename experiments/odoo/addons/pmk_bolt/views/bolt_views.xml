@@ -34,10 +34,10 @@
           </div>
           <field name="has_warnings" invisible="1"/>
           <field name="currency_id" invisible="1"/>
-          <field name="line_ids" context="{'default_calc_id': id}">
+          <field name="line_ids" string="Болт" context="{'default_calc_id': id}">
             <list decoration-warning="warning">
               <field name="sequence" widget="handle"/>
-              <field name="name"/>
+              <field name="short_name" width="300px"/>
               <field name="qty"/>
               <field name="mass_one"/>
               <field name="cost_one" digits="[12,0]"/>
@@ -48,7 +48,8 @@
               <field name="warning" optional="show"/>
               <field name="currency_id" column_invisible="1"/>
             </list>
-            <form string="Фундаментный болт">
+            <!-- pmk-doc-form: у дробных полей рамка ввода (pmk_theme, «Рамка в рамке»). -->
+            <form string="Фундаментный болт" class="pmk-doc-form">
               <field name="currency_id" invisible="1"/>
               <div class="oe_title"><h2><field name="name" readonly="1"/></h2></div>
               <div class="alert alert-warning" role="alert" invisible="not warning"><field name="warning"/></div>
@@ -67,7 +68,7 @@
                   <field name="nut_hint" readonly="1" string="Прошлая цена гайки"/>
                   <field name="metal_ton"/>
                   <field name="markup_pct"/>
-                  <field name="price_unit"/>
+                  <field name="price_unit" digits="[12,0]"/>
                   <field name="history" readonly="1"/>
                 </group>
               </group>
@@ -108,7 +109,7 @@
         <field name="note" optional="show"/>
         <field name="total_qty"/>
         <field name="total_weight" optional="show"/>
-        <field name="amount_total" digits="[12,0]" sum="Итого"/>
+        <field name="amount_total" sum="Итого"/>
         <field name="user_id" optional="show"/>
         <field name="currency_id" column_invisible="1"/>
       </list>

@@ -42,8 +42,8 @@ class BoltCalc(models.Model):
     currency_id = fields.Many2one("res.currency", default=lambda self: self.env.company.currency_id)
     total_qty = fields.Integer("Болтов, шт", compute="_compute_totals", store=True)
     total_weight = fields.Float("Вес, кг", compute="_compute_totals", store=True, digits=(12, 1))
-    total_cost = fields.Monetary("Себестоимость", compute="_compute_totals", store=True)
-    amount_total = fields.Monetary("Сумма", compute="_compute_totals", store=True)
+    total_cost = fields.Float("Себестоимость", digits=(12, 2), compute="_compute_totals", store=True)
+    amount_total = fields.Float("Сумма", digits=(12, 2), compute="_compute_totals", store=True)
     margin_pct = fields.Float("Маржа, %", compute="_compute_totals", store=True, digits=(5, 1))
     has_warnings = fields.Boolean(compute="_compute_totals", store=True)
 
@@ -85,7 +85,7 @@ class BoltLine(models.Model):
     steel = fields.Selection(STEELS, "Сталь", required=True, default="09Г2С")
     qty = fields.Integer("Кол-во, шт", required=True, default=1)
     nut_kind = fields.Selection(NUT_KINDS, "Гайки", required=True, default="plain")
-    nut_price = fields.Monetary("Гайка, ₽/шт", help="Вписывает менеджер: гайки бывают разные.")
+    nut_price = fields.Float("Гайка, ₽/шт", digits=(12, 2), help="Вписывает менеджер: гайки бывают разные.")
     nut_hint = fields.Char("Прошлая цена гайки", compute="_compute_nut_hint")
     metal_ton = fields.Float("Круг, ₽/т", compute="_compute_metal_ton", store=True, readonly=False,
                              digits=(12, 0), help="Из «Норм для болтов» по марке; можно поправить в строке.")
@@ -93,18 +93,20 @@ class BoltLine(models.Model):
                               digits=(6, 1), help="Из ценовой политики на дату расчёта; можно поправить.")
 
     name = fields.Char("Наименование", compute="_compute_calc", store=True)
+    short_name = fields.Char("Болт", compute="_compute_calc", store=True,
+                             help="Коротко для списка: тип, М×L, сталь, резьба.")
     warning = fields.Char("Внимание", compute="_compute_calc", store=True)
     blank_mm = fields.Float("Заготовка, мм", compute="_compute_calc", store=True, digits=(10, 0))
     mass_one = fields.Float("Масса шт, кг", compute="_compute_calc", store=True, digits=(10, 2))
-    metal_rub = fields.Monetary("Круг", compute="_compute_calc", store=True)
-    plate_rub = fields.Monetary("Плита", compute="_compute_calc", store=True)
-    washer_rub = fields.Monetary("Шайба", compute="_compute_calc", store=True)
-    nuts_rub = fields.Monetary("Гайки", compute="_compute_calc", store=True)
-    thread_rub = fields.Monetary("Резьба", compute="_compute_calc", store=True)
-    work_rub = fields.Monetary("Гиб, проточка", compute="_compute_calc", store=True)
-    cost_one = fields.Monetary("Себестоимость шт", compute="_compute_calc", store=True)
-    price_unit = fields.Monetary("Цена шт", compute="_compute_price", store=True, readonly=False)
-    price_total = fields.Monetary("Сумма", compute="_compute_total", store=True)
+    metal_rub = fields.Float("Круг", digits=(12, 2), compute="_compute_calc", store=True)
+    plate_rub = fields.Float("Плита", digits=(12, 2), compute="_compute_calc", store=True)
+    washer_rub = fields.Float("Шайба", digits=(12, 2), compute="_compute_calc", store=True)
+    nuts_rub = fields.Float("Гайки", digits=(12, 2), compute="_compute_calc", store=True)
+    thread_rub = fields.Float("Резьба", digits=(12, 2), compute="_compute_calc", store=True)
+    work_rub = fields.Float("Гиб, проточка", digits=(12, 2), compute="_compute_calc", store=True)
+    cost_one = fields.Float("Себестоимость шт", digits=(12, 2), compute="_compute_calc", store=True)
+    price_unit = fields.Float("Цена шт", digits=(12, 2), compute="_compute_price", store=True, readonly=False)
+    price_total = fields.Float("Сумма", digits=(12, 2), compute="_compute_total", store=True)
     margin_pct = fields.Float("Маржа, %", compute="_compute_total", store=True, digits=(5, 1))
     kit_text = fields.Text("Комплект", compute="_compute_kit")
     history = fields.Char("Прошлые продажи", compute="_compute_history")
@@ -139,7 +141,7 @@ class BoltLine(models.Model):
             empty = dict(blank_mm=0, mass_one=0, metal_rub=0, plate_rub=0, washer_rub=0, nuts_rub=0,
                          thread_rub=0, work_rub=0, cost_one=0)
             if problem or not line.length:
-                line.update(dict(empty, name="", warning=problem or _("Укажите длину")))
+                line.update(dict(empty, name="", short_name="", warning=problem or _("Укажите длину")))
                 continue
             spec, s = gost.TYPES[line.bolt_type], gost.SIZES[d]
             l0 = s["l0"]
@@ -147,7 +149,7 @@ class BoltLine(models.Model):
             norm = Norm._pmk_for(d)
             notes = []
             if gost.table_mass(line.bolt_type, d, line.length) is None:
-                notes.append(_("длина не из ряда ГОСТ — масса по формуле"))
+                notes.append(_("длина не из ряда ГОСТ — масса по соседним длинам"))
             if thread > l0:
                 notes.append(_("удлинённая резьба: +%s мм к ГОСТ") % (thread - l0))
             if not norm:
@@ -162,6 +164,7 @@ class BoltLine(models.Model):
             work_rub = (norm.bend_rub * spec["bends"] + norm.turn_rub * spec["turn_ends"]) if norm else 0.0
             vals = dict(
                 name=gost.name(line.bolt_type, d, line.length, thread, line.steel),
+                short_name="%s М%s×%s · %s · резьба %s" % (line.bolt_type, d, line.length, line.steel, thread),
                 warning="; ".join(notes),
                 blank_mm=round(gost.blank_mm(line.bolt_type, d, line.length)),
                 mass_one=gost.mass(line.bolt_type, d, line.length),
@@ -201,10 +204,10 @@ class BoltLine(models.Model):
             rows = [_("Шпилька поз. %(pos)s, заготовка %(blank)s мм (круг %(d1)s)", pos=spec["pos"],
                       blank=round(gost.blank_mm(line.bolt_type, d, line.length)), d1=s["d1"]),
                     _("Гайка М%(d)s %(gost)s × %(n)s", d=d, gost=gost.NUT_GOST[d], n=spec["nuts"]),
-                    _("Шайба М%(d)s ГОСТ 24379.1 (%(kg)s кг)", d=d, kg=s["w"])]
+                    _("Шайба М%(d)s ГОСТ 24379.1 (%(kg)s кг)", d=d, kg=str(s["w"]).replace(".", ","))]
             if spec["plate"]:
                 b, t, kg = s["plate"]
-                rows.append(_("Плита %(b)s×%(b)s×%(t)s мм (%(kg)s кг)", b=b, t=t, kg=kg))
+                rows.append(_("Плита %(b)s×%(b)s×%(t)s мм (%(kg)s кг)", b=b, t=t, kg=str(kg).replace(".", ",")))
             line.kit_text = "\n".join(rows)
 
     @api.depends("diameter", "nut_kind")
