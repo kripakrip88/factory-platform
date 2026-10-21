@@ -20,6 +20,8 @@ import re
 
 from odoo import _, api, fields, models
 
+from odoo.addons.pmk_bridge.tools import spec_text
+
 from ..tools import gost
 
 STEELS = [("Ст3", "Ст3"), ("09Г2С", "09Г2С")]
@@ -124,29 +126,51 @@ class BoltLine(models.Model):
         return bool(self.bolt_type and d and self.length and not gost.check(self.bolt_type, d))
 
     # ─── Состав по ГОСТ ─────────────────────────────────────────────────
+    def _pmk_ref_price_ton(self, record, grade=None):
+        """₽/т позиции общего справочника (круг, лист) — тем же правилом, что строка
+        расчёта: самая низкая цена прайсов на дату (pmk_bridge _pmk_find_seller).
+        Нет цены — 0: позиции нет в прайсах («в городе нет»), не подставляем соседнюю."""
+        tmpl = record.product_tmpl_id if record else False
+        if not tmpl:
+            return 0.0
+        seller = tmpl._pmk_find_seller(self.calc_id.date or fields.Date.context_today(self), grade=grade)
+        if not seller:
+            return 0.0
+        return spec_text.per_ton(seller.price_discounted, record._pmk_mass_per_unit(tmpl))
+
+    def _pmk_round(self, diameter):
+        return self.env["pmk.metal.profile"].search(
+            [("profile_type", "=", "Круг"), ("size_label", "=", "d%s" % diameter)], limit=1)
+
+    def _pmk_plate_sheet(self, thickness):
+        return self.env["pmk.metal.sheet"].search(
+            [("sheet_type", "=", "Гладкий"), ("thickness_mm", "=", thickness)], limit=1)
+
     def _pmk_auto_parts(self):
-        """{auto_key: значения} для этого болта. Цены — из «Металла для болтов»."""
+        """{auto_key: значения} для этого болта — только материалы (Антон 21.10.2026):
+        круг и лист плиты — из общих справочников по прайсам; гайки и шайба —
+        покупные, цену вписывает менеджер."""
         self.ensure_one()
         d = int(self.diameter)
         spec, s = gost.TYPES[self.bolt_type], gost.SIZES[d]
-        norm = self.env["pmk.bolt.norm"]._pmk_for(d)
-        sheet_ton = norm.sheet_ton if norm else 0.0
+        grade = "09Г2С" if self.steel == "09Г2С" else None  # Ст3 — самая дешёвая марка, как в расчёте
         blank = gost.blank_mm(self.bolt_type, d, self.length)
         kind = {"plain": "", "hardened": " калёные", "special": " спецсталь"}[self.nut_kind or "plain"]
         out = {
             "stud": dict(sequence=1, name=_("Круг %(d1)s %(steel)s — шпилька поз. %(pos)s, заготовка %(blank)s мм",
                                             d1=s["d1"], steel=self.steel or "", pos=spec["pos"], blank=round(blank)),
                          qty=1.0, unit_mass=round(gost.stud_kg(self.bolt_type, d, self.length), 3),
-                         price_ton=(norm.round_09g2s_ton if self.steel == "09Г2С" else norm.round_st3_ton) if norm else 0.0),
+                         price_ton=self._pmk_ref_price_ton(self._pmk_round(s["d1"]), grade)),
             "nut": dict(sequence=2, name=_("Гайка М%(d)s %(gost)s%(kind)s", d=d, gost=gost.NUT_GOST[d], kind=kind),
                         qty=float(spec["nuts"]), unit_mass=gost.NUT_KG[d], price_unit=0.0),
             "washer": dict(sequence=3, name=_("Шайба М%s ГОСТ 24379.1") % d, qty=1.0, unit_mass=s["w"],
-                           price_unit=round(s["w"] * sheet_ton / 1000.0, 2)),
+                           price_unit=0.0),
         }
         if spec["plate"]:
             b, t, kg = s["plate"]
-            out["plate"] = dict(sequence=4, name=_("Плита %(b)s×%(b)s×%(t)s ГОСТ 24379.1", b=b, t=t), qty=1.0,
-                                unit_mass=kg, price_unit=round(kg * sheet_ton / 1000.0, 2))
+            sheet_ton = self._pmk_ref_price_ton(self._pmk_plate_sheet(t), grade)
+            out["plate"] = dict(sequence=4, name=_("Плита %(b)s×%(b)s×%(t)s ГОСТ 24379.1 — лист %(t)s мм", b=b, t=t),
+                                qty=1.0, unit_mass=kg, price_unit=round(kg * sheet_ton / 1000.0, 2))
         return out
 
     def _pmk_sync_parts(self):
@@ -204,12 +228,14 @@ class BoltLine(models.Model):
                 notes.append(_("длина не из ряда ГОСТ — масса по соседним длинам"))
             if thread > s["l0"]:
                 notes.append(_("удлинённая резьба: +%s мм к ГОСТ") % (thread - s["l0"]))
-            if not self.env["pmk.bolt.norm"]._pmk_for(d):
-                notes.append(_("нет цен металла для М%s — заполните «Металл для болтов»") % d)
             if parts.filtered(lambda p: p.auto_key == "stud" and not p.price_ton):
-                notes.append(_("нет цены круга"))
+                notes.append(_("нет цены круга %s в прайсах — впишите в строке") % s["d1"])
+            if parts.filtered(lambda p: p.auto_key == "plate" and not p.price_unit):
+                notes.append(_("нет цены листа %s мм в прайсах — впишите в строке") % s["plate"][1])
             if parts.filtered(lambda p: p.auto_key == "nut" and not p.price_unit):
                 notes.append(_("впишите цену гайки"))
+            if parts.filtered(lambda p: p.auto_key == "washer" and not p.price_unit):
+                notes.append(_("впишите цену шайбы"))
             # Масса: по ГОСТ + то, что сверх комплекта (доп. гайки, свои строки).
             standard = {"stud": 1, "nut": spec["nuts"], "washer": 1, "plate": 1}
             extra = sum(p.mass if not p.auto_key else max(0.0, p.qty - standard[p.auto_key]) * p.unit_mass
@@ -237,15 +263,17 @@ class BoltLine(models.Model):
             line.margin_pct = ((line.price_unit - line.cost_one) / line.price_unit * 100.0
                                if line.price_unit else 0.0)
 
-    def _pmk_nut_hint(self):
-        """Последняя вписанная цена гайки того же М и вида — подсказка («накопим статистику»)."""
+    def _pmk_buy_hint(self, key):
+        """Последняя вписанная цена покупной позиции (гайка того же вида, шайба) того же М —
+        подсказка («накопим статистику и сможем предлагать цену»)."""
         self.ensure_one()
         if not self.diameter:
             return ""
-        prev = self.env["pmk.bolt.part"].search([
-            ("auto_key", "=", "nut"), ("price_unit", ">", 0), ("line_id.diameter", "=", self.diameter),
-            ("line_id.nut_kind", "=", self.nut_kind), ("line_id", "!=", self.id)],
-            order="write_date desc, id desc", limit=1)
+        domain = [("auto_key", "=", key), ("price_unit", ">", 0), ("line_id.diameter", "=", self.diameter),
+                  ("line_id", "!=", self.id)]
+        if key == "nut":
+            domain.append(("line_id.nut_kind", "=", self.nut_kind))
+        prev = self.env["pmk.bolt.part"].search(domain, order="write_date desc, id desc", limit=1)
         if not prev:
             return ""
         return _("было %(price)s ₽ — %(doc)s, %(date)s", price=("%g" % prev.price_unit).replace(".", ","),

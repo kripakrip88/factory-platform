@@ -67,7 +67,7 @@ class BoltLineGrid(models.Model):
             "markup": self.markup_pct or 0.0, "price": self.price_unit or 0.0,
             "mass": self.mass_one or 0.0, "cost": self.cost_one or 0.0, "total": self.price_total or 0.0,
         }]
-        nut_hint = self._pmk_nut_hint() if ok else ""
+        hints = {key: self._pmk_buy_hint(key) for key in ("nut", "washer")} if ok else {}
         standard = {}
         if ok:
             spec = gost.TYPES[self.bolt_type]
@@ -84,7 +84,7 @@ class BoltLineGrid(models.Model):
                 "mass": part.mass, "cost": part.cost,
                 "price": part.price_ton if stud else part.price_unit,
                 "price_label": _("₽/т") if stud else _("₽/шт"),
-                "hint": nut_hint if part.auto_key == "nut" else "",
+                "hint": hints.get(part.auto_key, ""),
                 "no_price": not (part.price_ton if stud else part.price_unit),
             })
         return rows

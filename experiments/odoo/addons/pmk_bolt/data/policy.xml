@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!-- Стартовая ценовая политика (21.10.2026): наценка из прототипа — уточнить. -->
+  <data noupdate="1">
+    <record id="policy_start" model="pmk.price.policy">
+      <field name="name">Осень 2026 (стартовая — уточнить)</field>
+      <field name="date_from">2026-09-01</field>
+      <field name="note">Наценка взята из прототипа (45 %). Уточнить и завести следующие сезоны.</field>
+    </record>
+    <record id="policy_start_bolt" model="pmk.price.policy.line">
+      <field name="policy_id" ref="policy_start"/>
+      <field name="kind">bolt</field>
+      <field name="markup_pct">45</field>
+    </record>
+  </data>
+</odoo>

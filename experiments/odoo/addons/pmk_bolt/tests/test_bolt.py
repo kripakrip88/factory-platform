@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Калькулятор фундаментных болтов (21.10.2026)."""
 from datetime import date
+from unittest.mock import patch
 
 from odoo import Command
 from odoo.tests import TransactionCase, tagged
@@ -43,8 +44,15 @@ class TestBoltCalc(TransactionCase):
     def setUp(self):
         super().setUp()
         self.Calc = self.env["pmk.bolt.calc"]
-        self.env.ref("pmk_bolt.norm_m30").write({
-            "round_09g2s_ton": 100000, "round_st3_ton": 80000, "sheet_ton": 50000})
+        # Цены общих справочников (прайсы) — подставные: круг 09Г2С 100 000 ₽/т, Ст3 80 000,
+        # лист 50 000. Настоящий путь к прайсу — test_round_price_from_price_list.
+        def fake_price(line, record, grade=None):
+            if record._name == "pmk.metal.sheet":
+                return 50000.0
+            return 100000.0 if grade == "09Г2С" else 80000.0
+        patcher = patch.object(type(self.env["pmk.bolt.line"]), "_pmk_ref_price_ton", fake_price)
+        patcher.start()
+        self.addCleanup(patcher.stop)
         self.env["pmk.price.policy"].search([]).write({"active": False})
         self.env["pmk.price.policy"].create({
             "name": "Тест осень", "date_from": date(2026, 9, 1),
@@ -53,12 +61,13 @@ class TestBoltCalc(TransactionCase):
             "name": "Тест зима", "date_from": date(2026, 12, 1),
             "line_ids": [Command.create({"kind": "bolt", "markup_pct": 30})]})
 
-    def _calc(self, day=date(2026, 10, 21), nut=40, **line):
+    def _calc(self, day=date(2026, 10, 21), nut=40, washer=25, **line):
         vals = dict(bolt_type="2.1", diameter="30", length=600, steel="09Г2С", qty=10)
         vals.update(line)
         calc = self.Calc.create({"date": day, "line_ids": [Command.create(vals)]})
-        nuts = calc.line_ids.part_ids.filtered(lambda p: p.auto_key == "nut")
-        nuts._pmk_user_write({"price_unit": nut})
+        parts = calc.line_ids.part_ids
+        parts.filtered(lambda p: p.auto_key == "nut")._pmk_user_write({"price_unit": nut})
+        parts.filtered(lambda p: p.auto_key == "washer")._pmk_user_write({"price_unit": washer})
         return calc
 
     def _part(self, line, key):
@@ -76,8 +85,8 @@ class TestBoltCalc(TransactionCase):
         self.assertAlmostEqual(stud.cost, round(gost.stud_kg("2.1", 30, 600), 3) * 100, places=2)
         self.assertEqual(self._part(line, "nut").qty, 4, "2.1 — 4 гайки")
         self.assertEqual(self._part(line, "nut").cost, 160)
-        self.assertAlmostEqual(self._part(line, "plate").price_unit, round(2.08 * 50, 2))
-        self.assertAlmostEqual(self._part(line, "washer").price_unit, round(0.33 * 50, 2))
+        self.assertAlmostEqual(self._part(line, "plate").price_unit, round(2.08 * 50, 2), msg="плита — металл листа")
+        self.assertEqual(self._part(line, "washer").price_unit, 25, "шайба покупная — цену вписывают")
         self.assertAlmostEqual(line.cost_one, sum(line.part_ids.mapped("cost")), places=2)
         self.assertEqual(line.markup_pct, 50)
         self.assertEqual(line.price_unit, float(int(line.cost_one * 1.5) + 1))
@@ -108,8 +117,9 @@ class TestBoltCalc(TransactionCase):
     def test_nut_hint_and_warning(self):
         self._calc(nut=55, nut_kind="hardened")
         line = self._calc(nut=0, nut_kind="hardened").line_ids
-        self.assertIn("55 ₽", line._pmk_nut_hint())
+        self.assertIn("55 ₽", line._pmk_buy_hint("nut"))
         self.assertIn("впишите цену гайки", line.warning)
+        self.assertIn("25 ₽", line._pmk_buy_hint("washer"))
         line.price_unit = 9999
         self.assertEqual(line.price_total, 9999 * 10)
 
@@ -119,14 +129,10 @@ class TestBoltCalc(TransactionCase):
         self.assertFalse(line.cost_one)
         self.assertFalse(line.part_ids)
 
-    def test_norm_checked_on_and_stale(self):
-        norm = self.env.ref("pmk_bolt.norm_m24")
-        norm.checked_on = False
-        self.assertTrue(norm.stale)
-        norm.sheet_ton = 70000
-        self.assertEqual(norm.checked_on, date.today())
-        self.assertEqual(norm.checked_by, self.env.user)
-        self.assertFalse(norm.stale)
+    def test_no_price_warnings(self):
+        line = self._calc(nut=0, washer=0).line_ids
+        self.assertIn("впишите цену гайки", line.warning)
+        self.assertIn("впишите цену шайбы", line.warning)
 
     def test_history_from_sale_lines(self):
         partner = self.env["res.partner"].create({"name": "ООО «Порт»"})
@@ -136,6 +142,24 @@ class TestBoltCalc(TransactionCase):
             "name": "Болт фундаментный (анкерный) тип 2.1 М-30х600 09Г2С ГОСТ 24379.1-2012"})]})
         self.assertIn("2 599 ₽", self._calc().line_ids.history)
         self.assertIn("не продавали", self._calc(length=610).line_ids.history)
+
+
+@tagged("post_install", "-at_install")
+class TestRefPrices(TransactionCase):
+
+    def test_round_price_from_price_list(self):
+        """Круг — из общего справочника по прайсу, без отдельного справочника для болтов."""
+        line = self.env["pmk.bolt.line"].new({"bolt_type": "2.1", "diameter": "30", "length": 600})
+        rnd = line._pmk_round(30)
+        self.assertTrue(rnd, "круг d30 — в общем справочнике сортамента")
+        if not rnd.product_tmpl_id:
+            # Чистая тестовая база: карточку товара справочнику заводит мост — здесь сами.
+            rnd.product_tmpl_id = self.env["product.template"].create({"name": "Круг d30 (тест)"})
+        supplier = self.env["res.partner"].create({"name": "Поставщик круга (тест)"})
+        self.env["product.supplierinfo"].create({
+            "partner_id": supplier.id, "product_tmpl_id": rnd.product_tmpl_id.id, "price": 555.0})
+        self.assertAlmostEqual(line._pmk_ref_price_ton(rnd), 555.0 / rnd.mass_per_meter * 1000, places=0)
+        self.assertEqual(line._pmk_ref_price_ton(self.env["pmk.metal.profile"]), 0.0, "нет позиции — нет цены")
 
 
 @tagged("post_install", "-at_install")
