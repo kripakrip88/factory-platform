@@ -133,7 +133,7 @@ class TestQuickAdd(TransactionCase):
 
     def test_parse_like_butik(self):
         from ..tools import parse
-        vals, notes, error = parse.parse("бф 2.1 м30 640мм ст3 10шт")
+        vals, _notes, _error = parse.parse("бф 2.1 м30 640мм ст3 10шт")
         self.assertEqual(vals, {"bolt_type": "2.1", "diameter": "30", "length": 640, "steel": "Ст3", "qty": 10})
         vals, _n, _e = parse.parse("Болт фундаментный 2.1 М16х450 ГОСТ 24379.1-2012 09Г2С")
         self.assertEqual((vals["diameter"], vals["length"], vals["steel"]), ("16", 450, "09Г2С"))
@@ -143,11 +143,35 @@ class TestQuickAdd(TransactionCase):
         self.assertEqual(parse.parse("бф 2.1 м12 500")[2], "Тип 2.1 делают М16–М48")
         self.assertTrue(parse.parse("бф м30 600")[2].startswith("не указан тип"))
 
-    def test_quick_add_keeps_failed_lines(self):
-        calc = self.env["pmk.bolt.calc"].create({"quick_text": "бф 2.1 м30 640мм ст3 10шт\nбф м30 600\n1.1 м24х1000 09г2с 48шт"})
-        action = calc.action_quick_add()
-        self.assertEqual(len(calc.line_ids), 2)
-        self.assertEqual(calc.line_ids.mapped("short_name"),
-                         ["2.1 М30×640 · Ст3 · резьба 120", "1.1 М24×1000 · 09Г2С · резьба 110"])
-        self.assertEqual(calc.quick_text, "бф м30 600 ← не указан тип (1.1, 1.2, 2.1, 2.2 или 5)")
-        self.assertEqual(action["params"]["type"], "warning")
+    def test_grid_like_butik(self):
+        calc = self.env["pmk.bolt.calc"].create({})
+        data = calc.bolt_save_row(False, {"name": "бф 2.1 м30 640мм ст3 10шт"})
+        row = data["rows"][0]
+        self.assertEqual(row["name"], "2.1 М30×640 · Ст3 · резьба 120")
+        self.assertIn("ГОСТ 24379.1-2012", row["label"])
+        self.assertIn("4 гайки М30", row["detail"])
+        self.assertEqual(row["qty"], 10)
+        # Ячейки: количество, гайки, цена гайки — как в Бутике.
+        data = calc.bolt_save_row(row["id"], {"qty": "896", "nut_kind": "калёные", "nut_price": "45,5"})
+        row = data["rows"][0]
+        self.assertEqual((row["qty"], row["nut_kind"], row["nut_price"]), (896, "калёные", 45.5))
+        # Правка записи без «шт» не сбрасывает количество.
+        row = calc.bolt_save_row(row["id"], {"name": "2.1 М30×700 · Ст3 · резьба 120"})["rows"][0]
+        self.assertEqual((row["name"], row["qty"]), ("2.1 М30×700 · Ст3 · резьба 120", 896))
+        # Пустая строка (Enter в конце) — не болт и без пометок.
+        data = calc.bolt_save_row(False, {"after_id": row["id"]})
+        self.assertEqual((data["rows"][1]["name"], data["rows"][1]["warning"]), ("", ""))
+        # Непонятая запись остаётся в ячейке с причиной.
+        bad = calc.bolt_save_row(data["rows"][1]["id"], {"name": "бф м30 600"})["rows"][1]
+        self.assertEqual((bad["name"], bad["bad"]), ("бф м30 600", True))
+        self.assertTrue(bad["label"].startswith("не указан тип"))
+        # Ctrl+V столбиком — в пустую строку и ниже.
+        data = calc.bolt_insert_rows(bad["id"], [{"name": "1.1 м24х1000 09г2с 48шт"}, {"name": "бф 5 м36 800 ст3 20шт"}])
+        self.assertEqual([r["name"] for r in data["rows"]],
+                         ["2.1 М30×700 · Ст3 · резьба 120", "бф м30 600", "1.1 М24×1000 · 09Г2С · резьба 110",
+                          "5 М36×800 · Ст3 · резьба 130"])
+        data = calc.bolt_duplicate_row(data["rows"][0]["id"])
+        self.assertEqual(len(data["rows"]), 5)
+        data = calc.bolt_delete_row(data["rows"][1]["id"])
+        self.assertEqual(len(data["rows"]), 4)
+        self.assertEqual(data["count"], 896 + 48 + 20)

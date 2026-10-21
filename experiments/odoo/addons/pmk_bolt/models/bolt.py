@@ -19,7 +19,7 @@ import re
 
 from odoo import _, api, fields, models
 
-from ..tools import gost, parse
+from ..tools import gost
 
 STEELS = [("Ст3", "Ст3"), ("09Г2С", "09Г2С")]
 NUT_KINDS = [("plain", "обычные"), ("hardened", "калёные"), ("special", "спецсталь")]
@@ -46,15 +46,13 @@ class BoltCalc(models.Model):
     amount_total = fields.Float("Сумма", digits=(12, 2), compute="_compute_totals", store=True)
     margin_pct = fields.Float("Маржа, %", compute="_compute_totals", store=True, digits=(5, 1))
     has_warnings = fields.Boolean(compute="_compute_totals", store=True)
-    quick_text = fields.Text(
-        "Быстрый ввод", help="Болт строкой, как в Бутике: «бф 2.1 м30 640мм ст3 10шт». По строке на болт — "
-                             "можно вставить столбиком из письма или Excel. Резьба — «р250», гайки — «калён гайка 120».")
 
     @api.depends("line_ids.qty", "line_ids.mass_one", "line_ids.cost_one", "line_ids.price_total",
-                 "line_ids.warning")
+                 "line_ids.warning", "line_ids.name")
     def _compute_totals(self):
         for calc in self:
-            lines = calc.line_ids
+            # Только распознанные болты: пустая строка таблицы и непонятая запись — не болт.
+            lines = calc.line_ids.filtered("name")
             calc.total_qty = sum(lines.mapped("qty"))
             calc.total_weight = sum(l.mass_one * l.qty for l in lines)
             calc.total_cost = sum(l.cost_one * l.qty for l in lines)
@@ -62,33 +60,6 @@ class BoltCalc(models.Model):
             calc.margin_pct = ((calc.amount_total - calc.total_cost) / calc.amount_total * 100.0
                                if calc.amount_total else 0.0)
             calc.has_warnings = any(lines.mapped("warning"))
-
-    def action_quick_add(self):
-        """«Добавить»: каждая строка поля — болт. Непонятые строки остаются в поле с причиной."""
-        self.ensure_one()
-        added, failed, notes = 0, [], []
-        seq = max(self.line_ids.mapped("sequence") or [0])
-        for raw in re.split(r"[\n;]+", self.quick_text or ""):
-            text = raw.split(" ← ")[0].strip()
-            if not text:
-                continue
-            vals, line_notes, error = parse.parse(text)
-            if error:
-                failed.append("%s ← %s" % (text, error))
-                continue
-            seq += 10
-            self.env["pmk.bolt.line"].create(dict(vals, calc_id=self.id, sequence=seq))
-            added += 1
-            notes += ["%s: %s" % (text, n) for n in line_notes]
-        self.quick_text = "\n".join(failed) or False
-        message = _("Добавлено болтов: %s.", added)
-        if failed:
-            message += " " + _("Не понял %s — строки остались в поле ввода с причиной.", len(failed))
-        if notes:
-            message += " " + "; ".join(notes[:5])
-        return {"type": "ir.actions.client", "tag": "display_notification", "params": {
-            "message": message, "type": "warning" if failed else "success", "sticky": bool(failed),
-            "next": {"type": "ir.actions.client", "tag": "soft_reload"}}}
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -106,13 +77,13 @@ class BoltLine(models.Model):
     calc_id = fields.Many2one("pmk.bolt.calc", required=True, ondelete="cascade", index=True)
     sequence = fields.Integer(default=10)
     currency_id = fields.Many2one(related="calc_id.currency_id")
-    bolt_type = fields.Selection([(k, v["label"]) for k, v in gost.TYPES.items()], "Тип", required=True,
-                                 default="1.1")
-    diameter = fields.Selection(DIAMETERS, "Диаметр", required=True, default="24")
-    length = fields.Integer("Длина L, мм", required=True, default=1000)
+    # Не обязательные: пустая строка таблицы (Enter в конце) — ещё не болт.
+    bolt_type = fields.Selection([(k, v["label"]) for k, v in gost.TYPES.items()], "Тип")
+    diameter = fields.Selection(DIAMETERS, "Диаметр")
+    length = fields.Integer("Длина L, мм")
     thread_len = fields.Integer("Резьба, мм", compute="_compute_thread_len", store=True, readonly=False,
                                 help="По ГОСТ — по диаметру; можно длиннее («удлинённая резьба»).")
-    steel = fields.Selection(STEELS, "Сталь", required=True, default="09Г2С")
+    steel = fields.Selection(STEELS, "Сталь", default="09Г2С")
     qty = fields.Integer("Кол-во, шт", required=True, default=1)
     nut_kind = fields.Selection(NUT_KINDS, "Гайки", required=True, default="plain")
     nut_price = fields.Float("Гайка, ₽/шт", digits=(12, 2), help="Вписывает менеджер: гайки бывают разные.")
@@ -167,11 +138,14 @@ class BoltLine(models.Model):
         Norm = self.env["pmk.bolt.norm"]
         for line in self:
             d = int(line.diameter or 0)
-            problem = gost.check(line.bolt_type, d) if d else _("Выберите диаметр")
             empty = dict(blank_mm=0, mass_one=0, metal_rub=0, plate_rub=0, washer_rub=0, nuts_rub=0,
-                         thread_rub=0, work_rub=0, cost_one=0)
-            if problem or not line.length:
-                line.update(dict(empty, name="", short_name="", warning=problem or _("Укажите длину")))
+                         thread_rub=0, work_rub=0, cost_one=0, name="", short_name="")
+            if not (line.bolt_type and d and line.length):
+                line.update(dict(empty, warning=""))
+                continue
+            problem = gost.check(line.bolt_type, d)
+            if problem:
+                line.update(dict(empty, warning=problem))
                 continue
             spec, s = gost.TYPES[line.bolt_type], gost.SIZES[d]
             l0 = s["l0"]
@@ -254,7 +228,7 @@ class BoltLine(models.Model):
     @api.depends("bolt_type", "diameter", "length", "steel")
     def _compute_history(self):
         for line in self:
-            line.history = line._pmk_history_text() if line.diameter and line.length else ""
+            line.history = line._pmk_history_text() if line.bolt_type and line.diameter and line.length else ""
 
     def _pmk_history_text(self, limit=3):
         """Прошлые продажи этого размера по строкам счетов (из МоегоСклада — свои названия)."""

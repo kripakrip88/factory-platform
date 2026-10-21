@@ -2,8 +2,8 @@
 <odoo>
   <!--
     Калькулятор фундаментных болтов (21.10.2026). Шапка — как у зонтов (pmk-doc-top,
-    pmk-doc-head / pmk-kpi из pmk_theme); строки — список, болт открывается окном с
-    разбором: комплект по ГОСТ, себестоимость по частям, прошлые продажи размера.
+    pmk-doc-head / pmk-kpi из pmk_theme); болты — таблица Бутика (виджет pmk_bolt_grid):
+    короткая запись в ячейке, под ней — ГОСТ, комплект, себестоимость, прошлые продажи.
   -->
   <record id="view_bolt_calc_form" model="ir.ui.view">
     <field name="name">pmk.bolt.calc.form</field>
@@ -14,7 +14,7 @@
           <div class="pmk-doc-top" name="pmk_doc_top">
             <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
             <div class="alert alert-warning" role="alert" invisible="not has_warnings">
-              У части болтов есть пометки — они в колонке «Внимание».
+              У части болтов есть пометки — они под записью болта, жёлтым.
             </div>
             <div class="pmk-doc-head">
               <div class="pmk-doc-head__fields">
@@ -32,71 +32,10 @@
               </div>
             </div>
           </div>
-          <!-- Болт строкой, как в Бутике (21.10.2026): «бф 2.1 м30 640мм ст3 10шт». -->
-          <div class="pmk-bolt-quick d-flex gap-2 align-items-start mb-3" name="pmk_bolt_quick">
-            <field name="quick_text" nolabel="1" class="flex-grow-1"
-                   placeholder="бф 2.1 м30 640мм ст3 10шт — по строке на болт, можно вставить столбиком; р250 — резьба, «калён гайка 120» — гайки"/>
-            <button name="action_quick_add" type="object" string="Добавить" class="btn-secondary" icon="fa-plus"/>
-          </div>
           <field name="has_warnings" invisible="1"/>
-          <field name="currency_id" invisible="1"/>
-          <field name="line_ids" string="Болт" context="{'default_calc_id': id}">
-            <list decoration-warning="warning">
-              <field name="sequence" widget="handle"/>
-              <field name="short_name" width="300px"/>
-              <field name="qty"/>
-              <field name="mass_one"/>
-              <field name="cost_one" digits="[12,0]"/>
-              <field name="markup_pct" optional="show"/>
-              <field name="price_unit" digits="[12,0]"/>
-              <field name="price_total" digits="[12,0]" sum="Итого"/>
-              <field name="margin_pct" optional="hide"/>
-              <field name="warning" optional="show"/>
-              <field name="currency_id" column_invisible="1"/>
-            </list>
-            <!-- pmk-doc-form: у дробных полей рамка ввода (pmk_theme, «Рамка в рамке»). -->
-            <form string="Фундаментный болт" class="pmk-doc-form">
-              <field name="currency_id" invisible="1"/>
-              <div class="oe_title"><h2><field name="name" readonly="1"/></h2></div>
-              <div class="alert alert-warning" role="alert" invisible="not warning"><field name="warning"/></div>
-              <group>
-                <group string="Болт">
-                  <field name="bolt_type"/>
-                  <field name="diameter"/>
-                  <field name="length"/>
-                  <field name="thread_len"/>
-                  <field name="steel"/>
-                  <field name="qty"/>
-                </group>
-                <group string="Гайки и цена">
-                  <field name="nut_kind"/>
-                  <field name="nut_price"/>
-                  <field name="nut_hint" readonly="1" string="Прошлая цена гайки"/>
-                  <field name="metal_ton"/>
-                  <field name="markup_pct"/>
-                  <field name="price_unit" digits="[12,0]"/>
-                  <field name="history" readonly="1"/>
-                </group>
-              </group>
-              <group>
-                <group string="Комплект по ГОСТ, на 1 болт">
-                  <field name="kit_text" nolabel="1" readonly="1" colspan="2"/>
-                  <field name="blank_mm"/>
-                  <field name="mass_one"/>
-                </group>
-                <group string="Себестоимость, на 1 болт">
-                  <field name="metal_rub" digits="[12,0]"/>
-                  <field name="plate_rub" digits="[12,0]" invisible="not plate_rub"/>
-                  <field name="washer_rub" digits="[12,0]"/>
-                  <field name="nuts_rub" digits="[12,0]"/>
-                  <field name="thread_rub" digits="[12,0]"/>
-                  <field name="work_rub" digits="[12,0]" invisible="not work_rub"/>
-                  <field name="cost_one" digits="[12,0]"/>
-                  <field name="margin_pct"/>
-                </group>
-              </group>
-            </form>
-          </field>
+          <!-- Болты — таблица Бутика (21.10.2026: «почему строка ввода не как в бутике?»):
+               тот же компонент, клавиши и вставка из Excel; js/bolt_grid.js. -->
+          <widget name="pmk_bolt_grid"/>
         </sheet>
         <chatter/>
       </form>

@@ -10,7 +10,7 @@
     "category": "Manufacturing",
     "author": "ПМК Парк",
     "license": "LGPL-3",
-    "depends": ["pmk_calc", "sale", "crm"],
+    "depends": ["pmk_calc", "pmk_butik", "sale", "crm"],
     "data": [
         "security/ir.model.access.csv",
         "data/sequence.xml",
@@ -20,5 +20,12 @@
         "views/policy_views.xml",
         "views/menus.xml",
     ],
+    "assets": {
+        "web.assets_backend": [
+            "pmk_bolt/static/src/js/bolt_grid.js",
+            "pmk_bolt/static/src/xml/bolt_grid.xml",
+            "pmk_bolt/static/src/scss/bolt_grid.scss",
+        ],
+    },
     "installable": True,
 }
