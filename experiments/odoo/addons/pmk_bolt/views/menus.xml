@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <menuitem id="menu_bolt_calc" name="Фундаментные болты" parent="pmk_calc.menu_pmk_calc"
+            action="action_bolt_calc" sequence="35"/>
+  <menuitem id="menu_bolt_norm" name="Нормы для болтов" parent="pmk_calc.menu_pmk_calc_reference"
+            action="action_bolt_norm" sequence="60"/>
+  <menuitem id="menu_price_policy" name="Ценовая политика" parent="pmk_calc.menu_pmk_calc_reference"
+            action="action_price_policy" sequence="65"/>
+</odoo>

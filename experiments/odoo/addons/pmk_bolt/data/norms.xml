@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!-- Нормы по диаметрам — СТАРТОВЫЕ, условные (21.10.2026): «Проверено» пусто,
+       строки подсвечены «пора проверить». noupdate: правки Владимира обновление не тронет. -->
+  <data noupdate="1">
+    <record id="norm_m12" model="pmk.bolt.norm">
+      <field name="diameter">12</field>
+      <field name="round_st3_ton">72000</field>
+      <field name="round_09g2s_ton">85000</field>
+      <field name="sheet_ton">80000</field>
+      <field name="thread_rub">30</field>
+      <field name="bend_rub">25</field>
+      <field name="turn_rub">0</field>
+      <field name="plate_rub">40</field>
+      <field name="washer_rub">10</field>
+      <field name="note">условные цифры — проверить</field>
+    </record>
+    <record id="norm_m16" model="pmk.bolt.norm">
+      <field name="diameter">16</field>
+      <field name="round_st3_ton">72000</field>
+      <field name="round_09g2s_ton">85000</field>
+      <field name="sheet_ton">80000</field>
+      <field name="thread_rub">40</field>
+      <field name="bend_rub">30</field>
+      <field name="turn_rub">0</field>
+      <field name="plate_rub">50</field>
+      <field name="washer_rub">12</field>
+      <field name="note">условные цифры — проверить</field>
+    </record>
+    <record id="norm_m20" model="pmk.bolt.norm">
+      <field name="diameter">20</field>
+      <field name="round_st3_ton">72000</field>
+      <field name="round_09g2s_ton">85000</field>
+      <field name="sheet_ton">80000</field>
+      <field name="thread_rub">60</field>
+      <field name="bend_rub">40</field>
+      <field name="turn_rub">0</field>
+      <field name="plate_rub">60</field>
+      <field name="washer_rub">15</field>
+      <field name="note">условные цифры — проверить</field>
+    </record>
+    <record id="norm_m24" model="pmk.bolt.norm">
+      <field name="diameter">24</field>
+      <field name="round_st3_ton">72000</field>
+      <field name="round_09g2s_ton">85000</field>
+      <field name="sheet_ton">80000</field>
+      <field name="thread_rub">80</field>
+      <field name="bend_rub">50</field>
+      <field name="turn_rub">0</field>
+      <field name="plate_rub">80</field>
+      <field name="washer_rub">18</field>
+      <field name="note">условные цифры — проверить</field>
+    </record>
+    <record id="norm_m30" model="pmk.bolt.norm">
+      <field name="diameter">30</field>
+      <field name="round_st3_ton">72000</field>
+      <field name="round_09g2s_ton">85000</field>
+      <field name="sheet_ton">80000</field>
+      <field name="thread_rub">120</field>
+      <field name="bend_rub">70</field>
+      <field name="turn_rub">0</field>
+      <field name="plate_rub">100</field>
+      <field name="washer_rub">22</field>
+      <field name="note">условные цифры — проверить</field>
+    </record>
+    <record id="norm_m36" model="pmk.bolt.norm">
+      <field name="diameter">36</field>
+      <field name="round_st3_ton">72000</field>
+      <field name="round_09g2s_ton">85000</field>
+      <field name="sheet_ton">80000</field>
+      <field name="thread_rub">160</field>
+      <field name="bend_rub">100</field>
+      <field name="turn_rub">0</field>
+      <field name="plate_rub">120</field>
+      <field name="washer_rub">26</field>
+      <field name="note">условные цифры — проверить</field>
+    </record>
+    <record id="norm_m42" model="pmk.bolt.norm">
+      <field name="diameter">42</field>
+      <field name="round_st3_ton">72000</field>
+      <field name="round_09g2s_ton">85000</field>
+      <field name="sheet_ton">80000</field>
+      <field name="thread_rub">220</field>
+      <field name="bend_rub">140</field>
+      <field name="turn_rub">0</field>
+      <field name="plate_rub">150</field>
+      <field name="washer_rub">30</field>
+      <field name="note">условные цифры — проверить</field>
+    </record>
+    <record id="norm_m48" model="pmk.bolt.norm">
+      <field name="diameter">48</field>
+      <field name="round_st3_ton">72000</field>
+      <field name="round_09g2s_ton">85000</field>
+      <field name="sheet_ton">80000</field>
+      <field name="thread_rub">280</field>
+      <field name="bend_rub">180</field>
+      <field name="turn_rub">0</field>
+      <field name="plate_rub">180</field>
+      <field name="washer_rub">35</field>
+      <field name="note">условные цифры — проверить</field>
+    </record>
+    <record id="norm_m56" model="pmk.bolt.norm">
+      <field name="diameter">56</field>
+      <field name="round_st3_ton">72000</field>
+      <field name="round_09g2s_ton">85000</field>
+      <field name="sheet_ton">80000</field>
+      <field name="thread_rub">340</field>
+      <field name="bend_rub">0</field>
+      <field name="turn_rub">400</field>
+      <field name="plate_rub">220</field>
+      <field name="washer_rub">45</field>
+      <field name="note">условные цифры — проверить</field>
+    </record>
+    <record id="norm_m64" model="pmk.bolt.norm">
+      <field name="diameter">64</field>
+      <field name="round_st3_ton">72000</field>
+      <field name="round_09g2s_ton">85000</field>
+      <field name="sheet_ton">80000</field>
+      <field name="thread_rub">400</field>
+      <field name="bend_rub">0</field>
+      <field name="turn_rub">480</field>
+      <field name="plate_rub">260</field>
+      <field name="washer_rub">55</field>
+      <field name="note">условные цифры — проверить</field>
+    </record>
+    <record id="norm_m72" model="pmk.bolt.norm">
+      <field name="diameter">72</field>
+      <field name="round_st3_ton">72000</field>
+      <field name="round_09g2s_ton">85000</field>
+      <field name="sheet_ton">80000</field>
+      <field name="thread_rub">460</field>
+      <field name="bend_rub">0</field>
+      <field name="turn_rub">560</field>
+      <field name="plate_rub">300</field>
+      <field name="washer_rub">65</field>
+      <field name="note">условные цифры — проверить</field>
+    </record>
+    <record id="norm_m80" model="pmk.bolt.norm">
+      <field name="diameter">80</field>
+      <field name="round_st3_ton">72000</field>
+      <field name="round_09g2s_ton">85000</field>
+      <field name="sheet_ton">80000</field>
+      <field name="thread_rub">520</field>
+      <field name="bend_rub">0</field>
+      <field name="turn_rub">640</field>
+      <field name="plate_rub">340</field>
+      <field name="washer_rub">75</field>
+      <field name="note">условные цифры — проверить</field>
+    </record>
+    <record id="norm_m90" model="pmk.bolt.norm">
+      <field name="diameter">90</field>
+      <field name="round_st3_ton">72000</field>
+      <field name="round_09g2s_ton">85000</field>
+      <field name="sheet_ton">80000</field>
+      <field name="thread_rub">600</field>
+      <field name="bend_rub">0</field>
+      <field name="turn_rub">760</field>
+      <field name="plate_rub">400</field>
+      <field name="washer_rub">90</field>
+      <field name="note">условные цифры — проверить</field>
+    </record>
+    <record id="policy_start" model="pmk.price.policy">
+      <field name="name">Осень 2026 (стартовая — уточнить)</field>
+      <field name="date_from">2026-09-01</field>
+      <field name="note">Наценка взята из прототипа (45 %). Уточнить и завести следующие сезоны.</field>
+    </record>
+    <record id="policy_start_bolt" model="pmk.price.policy.line">
+      <field name="policy_id" ref="policy_start"/>
+      <field name="kind">bolt</field>
+      <field name="markup_pct">45</field>
+    </record>
+  </data>
+</odoo>

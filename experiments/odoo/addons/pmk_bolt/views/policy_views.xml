@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <record id="view_price_policy_list" model="ir.ui.view">
+    <field name="name">pmk.price.policy.list</field>
+    <field name="model">pmk.price.policy</field>
+    <field name="arch" type="xml">
+      <list>
+        <field name="name"/>
+        <field name="date_from"/>
+        <field name="date_to"/>
+        <field name="line_ids" widget="many2many_tags" optional="hide"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="view_price_policy_form" model="ir.ui.view">
+    <field name="name">pmk.price.policy.form</field>
+    <field name="model">pmk.price.policy</field>
+    <field name="arch" type="xml">
+      <form string="Ценовая политика">
+        <sheet>
+          <div class="oe_title"><h1><field name="name" placeholder="Зима 2026/27"/></h1></div>
+          <group>
+            <group>
+              <field name="date_from"/>
+              <field name="date_to"/>
+            </group>
+            <group>
+              <field name="active" widget="boolean_toggle"/>
+            </group>
+          </group>
+          <field name="line_ids">
+            <list editable="bottom">
+              <field name="kind"/>
+              <field name="markup_pct"/>
+            </list>
+          </field>
+          <field name="note" placeholder="Почему такая наценка в этом сезоне"/>
+        </sheet>
+      </form>
+    </field>
+  </record>
+
+  <record id="action_price_policy" model="ir.actions.act_window">
+    <field name="name">Ценовая политика</field>
+    <field name="res_model">pmk.price.policy</field>
+    <field name="view_mode">list,form</field>
+    <field name="help" type="html">
+      <p class="o_view_nocontent_smiling_face">Заведите наценку на сезон</p>
+      <p>Период и наценка по виду изделий — калькуляторы берут ту, что действует на дату расчёта.</p>
+    </field>
+  </record>
+</odoo>

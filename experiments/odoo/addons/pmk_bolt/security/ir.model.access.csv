@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_pmk_bolt_calc_user,pmk_bolt_calc.user,model_pmk_bolt_calc,base.group_user,1,1,1,1
+access_pmk_bolt_line_user,pmk_bolt_line.user,model_pmk_bolt_line,base.group_user,1,1,1,1
+access_pmk_bolt_norm_user,pmk_bolt_norm.user,model_pmk_bolt_norm,base.group_user,1,1,1,0
+access_pmk_price_policy_user,pmk_price_policy.user,model_pmk_price_policy,base.group_user,1,1,1,1
+access_pmk_price_policy_line_user,pmk_price_policy_line.user,model_pmk_price_policy_line,base.group_user,1,1,1,1
