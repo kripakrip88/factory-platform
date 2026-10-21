@@ -19,7 +19,7 @@ import re
 
 from odoo import _, api, fields, models
 
-from ..tools import gost
+from ..tools import gost, parse
 
 STEELS = [("Ст3", "Ст3"), ("09Г2С", "09Г2С")]
 NUT_KINDS = [("plain", "обычные"), ("hardened", "калёные"), ("special", "спецсталь")]
@@ -46,6 +46,9 @@ class BoltCalc(models.Model):
     amount_total = fields.Float("Сумма", digits=(12, 2), compute="_compute_totals", store=True)
     margin_pct = fields.Float("Маржа, %", compute="_compute_totals", store=True, digits=(5, 1))
     has_warnings = fields.Boolean(compute="_compute_totals", store=True)
+    quick_text = fields.Text(
+        "Быстрый ввод", help="Болт строкой, как в Бутике: «бф 2.1 м30 640мм ст3 10шт». По строке на болт — "
+                             "можно вставить столбиком из письма или Excel. Резьба — «р250», гайки — «калён гайка 120».")
 
     @api.depends("line_ids.qty", "line_ids.mass_one", "line_ids.cost_one", "line_ids.price_total",
                  "line_ids.warning")
@@ -59,6 +62,33 @@ class BoltCalc(models.Model):
             calc.margin_pct = ((calc.amount_total - calc.total_cost) / calc.amount_total * 100.0
                                if calc.amount_total else 0.0)
             calc.has_warnings = any(lines.mapped("warning"))
+
+    def action_quick_add(self):
+        """«Добавить»: каждая строка поля — болт. Непонятые строки остаются в поле с причиной."""
+        self.ensure_one()
+        added, failed, notes = 0, [], []
+        seq = max(self.line_ids.mapped("sequence") or [0])
+        for raw in re.split(r"[\n;]+", self.quick_text or ""):
+            text = raw.split(" ← ")[0].strip()
+            if not text:
+                continue
+            vals, line_notes, error = parse.parse(text)
+            if error:
+                failed.append("%s ← %s" % (text, error))
+                continue
+            seq += 10
+            self.env["pmk.bolt.line"].create(dict(vals, calc_id=self.id, sequence=seq))
+            added += 1
+            notes += ["%s: %s" % (text, n) for n in line_notes]
+        self.quick_text = "\n".join(failed) or False
+        message = _("Добавлено болтов: %s.", added)
+        if failed:
+            message += " " + _("Не понял %s — строки остались в поле ввода с причиной.", len(failed))
+        if notes:
+            message += " " + "; ".join(notes[:5])
+        return {"type": "ir.actions.client", "tag": "display_notification", "params": {
+            "message": message, "type": "warning" if failed else "success", "sticky": bool(failed),
+            "next": {"type": "ir.actions.client", "tag": "soft_reload"}}}
 
     @api.model_create_multi
     def create(self, vals_list):

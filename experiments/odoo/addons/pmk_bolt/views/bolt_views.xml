@@ -32,6 +32,12 @@
               </div>
             </div>
           </div>
+          <!-- Болт строкой, как в Бутике (21.10.2026): «бф 2.1 м30 640мм ст3 10шт». -->
+          <div class="pmk-bolt-quick d-flex gap-2 align-items-start mb-3" name="pmk_bolt_quick">
+            <field name="quick_text" nolabel="1" class="flex-grow-1"
+                   placeholder="бф 2.1 м30 640мм ст3 10шт — по строке на болт, можно вставить столбиком; р250 — резьба, «калён гайка 120» — гайки"/>
+            <button name="action_quick_add" type="object" string="Добавить" class="btn-secondary" icon="fa-plus"/>
+          </div>
           <field name="has_warnings" invisible="1"/>
           <field name="currency_id" invisible="1"/>
           <field name="line_ids" string="Болт" context="{'default_calc_id': id}">

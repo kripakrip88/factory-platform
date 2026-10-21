@@ -126,3 +126,28 @@ class TestBoltCalc(TransactionCase):
         self.assertIn("2 599 ₽", line.history)
         other = self._calc(length=610).line_ids
         self.assertIn("не продавали", other.history)
+
+
+@tagged("post_install", "-at_install")
+class TestQuickAdd(TransactionCase):
+
+    def test_parse_like_butik(self):
+        from ..tools import parse
+        vals, notes, error = parse.parse("бф 2.1 м30 640мм ст3 10шт")
+        self.assertEqual(vals, {"bolt_type": "2.1", "diameter": "30", "length": 640, "steel": "Ст3", "qty": 10})
+        vals, _n, _e = parse.parse("Болт фундаментный 2.1 М16х450 ГОСТ 24379.1-2012 09Г2С")
+        self.assertEqual((vals["diameter"], vals["length"], vals["steel"]), ("16", 450, "09Г2С"))
+        vals, _n, _e = parse.parse("2.1 м30*600 р250 09г2с 896шт калён гайка 120")
+        self.assertEqual((vals["thread_len"], vals["qty"], vals["nut_kind"], vals["nut_price"]),
+                         (250, 896, "hardened", 120.0))
+        self.assertEqual(parse.parse("бф 2.1 м12 500")[2], "Тип 2.1 делают М16–М48")
+        self.assertTrue(parse.parse("бф м30 600")[2].startswith("не указан тип"))
+
+    def test_quick_add_keeps_failed_lines(self):
+        calc = self.env["pmk.bolt.calc"].create({"quick_text": "бф 2.1 м30 640мм ст3 10шт\nбф м30 600\n1.1 м24х1000 09г2с 48шт"})
+        action = calc.action_quick_add()
+        self.assertEqual(len(calc.line_ids), 2)
+        self.assertEqual(calc.line_ids.mapped("short_name"),
+                         ["2.1 М30×640 · Ст3 · резьба 120", "1.1 М24×1000 · 09Г2С · резьба 110"])
+        self.assertEqual(calc.quick_text, "бф м30 600 ← не указан тип (1.1, 1.2, 2.1, 2.2 или 5)")
+        self.assertEqual(action["params"]["type"], "warning")
