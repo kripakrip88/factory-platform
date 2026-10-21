@@ -571,7 +571,8 @@ class TestStepZ9Invoice(Z2Common):
         menu = spec.with_user(self.manager).pmk_doc_menu()
         self.assertEqual(menu["create"][0]["method"], "action_pmk_invoice")
         self.assertEqual([i["method"] for i in menu["print"]],
-                         ["action_print_quotation", "action_send_quotation"])
+                         ["action_print_quotation", "action_send_quotation",
+                          "action_pmk_xlsx", "action_pmk_xlsx_client"])
         no_deal = self.env["pmk.metal.spec"].create({"note": "без сделки"})
         self.assertNotIn("action_pmk_invoice", [i["method"] for i in no_deal.pmk_doc_menu()["create"]])
 
