@@ -10,3 +10,4 @@ from . import mail_compose_message
 from . import ir_actions
 # Категории расчёта (12.10.2026): доборки и вентзонты в счёте.
 from . import category_invoice
+from . import spec_xlsx

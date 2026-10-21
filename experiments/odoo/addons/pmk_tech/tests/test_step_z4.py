@@ -590,7 +590,8 @@ class TestStepZ4(Z4Common):
             self.assertEqual(header.xpath(f"./button[@name='{name}']")[0].get("invisible"), "1")
         tech_spec = self.Spec.create({"note": "тех. меню", "pmk_kind": "tech"})
         tech_menu = tech_spec.pmk_doc_menu()
-        self.assertEqual(tech_menu["print"], [])
+        # КП технический расчёт не печатает; Excel — да, только внутренний (21.10.2026).
+        self.assertEqual([i["method"] for i in tech_menu["print"]], ["action_pmk_xlsx"])
         self.assertNotIn("action_pmk_invoice", [i["method"] for i in tech_menu["create"]])
         self.assertTrue(spec_arch.xpath("//div[@name='pmk_tech_ref']"))
         self.assertTrue(spec_arch.xpath("//div[@name='pmk_kp_compare']"))
