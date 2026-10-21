@@ -44,8 +44,7 @@ class TestBoltCalc(TransactionCase):
         super().setUp()
         self.Calc = self.env["pmk.bolt.calc"]
         self.env.ref("pmk_bolt.norm_m30").write({
-            "round_09g2s_ton": 100000, "round_st3_ton": 80000, "sheet_ton": 50000,
-            "thread_rub": 100, "bend_rub": 50, "plate_rub": 200, "washer_rub": 20})
+            "round_09g2s_ton": 100000, "round_st3_ton": 80000, "sheet_ton": 50000})
         self.env["pmk.price.policy"].search([]).write({"active": False})
         self.env["pmk.price.policy"].create({
             "name": "Тест осень", "date_from": date(2026, 9, 1),
@@ -70,15 +69,15 @@ class TestBoltCalc(TransactionCase):
         line = calc.line_ids
         self.assertTrue(calc.name.startswith("БЛТ-"))
         self.assertEqual(line.name, "Болт фундаментный (анкерный) тип 2.1 М-30х600, резьба 120 мм, 09Г2С ГОСТ 24379.1-2012")
-        self.assertEqual(line.part_ids.mapped("auto_key"), ["stud", "nut", "washer", "plate", "work"])
+        self.assertEqual(line.part_ids.mapped("auto_key"), ["stud", "nut", "washer", "plate"],
+                         "только материалы — работу не считаем")
         stud = self._part(line, "stud")
         self.assertEqual(stud.price_ton, 100000)
         self.assertAlmostEqual(stud.cost, round(gost.stud_kg("2.1", 30, 600), 3) * 100, places=2)
         self.assertEqual(self._part(line, "nut").qty, 4, "2.1 — 4 гайки")
         self.assertEqual(self._part(line, "nut").cost, 160)
-        self.assertAlmostEqual(self._part(line, "plate").price_unit, round(2.08 * 50 + 200, 2))
-        self.assertAlmostEqual(self._part(line, "washer").price_unit, round(0.33 * 50 + 20, 2))
-        self.assertEqual(self._part(line, "work").price_unit, 200, "2.1 — резьба с двух концов")
+        self.assertAlmostEqual(self._part(line, "plate").price_unit, round(2.08 * 50, 2))
+        self.assertAlmostEqual(self._part(line, "washer").price_unit, round(0.33 * 50, 2))
         self.assertAlmostEqual(line.cost_one, sum(line.part_ids.mapped("cost")), places=2)
         self.assertEqual(line.markup_pct, 50)
         self.assertEqual(line.price_unit, float(int(line.cost_one * 1.5) + 1))
@@ -97,14 +96,12 @@ class TestBoltCalc(TransactionCase):
         self.assertIn("заготовка 700 мм", self._part(line, "stud").name)
         line.bolt_type = "1.1"  # у 1.1 плиты нет
         self.assertFalse(self._part(line, "plate"))
-        self.assertEqual(self._part(line, "work").price_unit, 100 + 50, "резьба + гиб")
 
     def test_bent_bolt_extended_thread_and_season(self):
         line = self._calc(day=date(2026, 12, 15), bolt_type="1.1", length=950, thread_len=250, steel="Ст3").line_ids
         self.assertEqual(line.blank_mm, 950 + 90 - 60)
         self.assertEqual(line.markup_pct, 30, "зимняя политика")
         self.assertEqual(self._part(line, "stud").price_ton, 80000, "Ст3")
-        self.assertAlmostEqual(self._part(line, "work").price_unit, round(100 * 250 / 120 + 50, 2))
         self.assertIn("длина не из ряда ГОСТ", line.warning)
         self.assertIn("удлинённая резьба: +130 мм", line.warning)
 
@@ -126,7 +123,7 @@ class TestBoltCalc(TransactionCase):
         norm = self.env.ref("pmk_bolt.norm_m24")
         norm.checked_on = False
         self.assertTrue(norm.stale)
-        norm.thread_rub = 90
+        norm.sheet_ton = 70000
         self.assertEqual(norm.checked_on, date.today())
         self.assertEqual(norm.checked_by, self.env.user)
         self.assertFalse(norm.stale)
@@ -164,7 +161,7 @@ class TestQuickAdd(TransactionCase):
         rows = calc.bolt_save_row(bolt_key, {"name": "бф 2.1 м30 640мм ст3 10шт калён гайка 45"})["rows"]
         self.assertEqual(rows[0]["name"], "2.1 М30×640 · Ст3 · резьба 120")
         self.assertEqual(rows[0]["product_qty"], 10)
-        self.assertEqual([r["kind"] for r in rows], ["product"] + ["detail"] * 5, "болт + состав по ГОСТ")
+        self.assertEqual([r["kind"] for r in rows], ["product"] + ["detail"] * 4, "болт + состав по ГОСТ")
         nut = next(r for r in rows if r["name"].startswith("Гайка"))
         self.assertEqual((nut["qty"], nut["qty_total"], nut["price"]), (4, 40, 45), "цена гайки из записи")
         # Доп. гайки — правкой количества в строке состава.

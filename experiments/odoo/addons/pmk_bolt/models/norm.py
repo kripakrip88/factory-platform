@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
-"""Нормы для фундаментных болтов по диаметру: металл и работа.
+"""Металл для фундаментных болтов по диаметру: круг Ст3 и 09Г2С, лист (плита, шайба).
+
+Только материалы — работу (резьба, гиб) не считаем, как в остальных изделиях
+(Антон 21.10.2026).
 
 Антон 21.10.2026: «цены условные, но их нужно перепроверять» — таблицу правит
 Владимир; у строки видно, когда и кто последний раз проверял цифры. Изменил
@@ -10,14 +13,13 @@
 """
 from odoo import api, fields, models
 
-PRICE_FIELDS = ("round_st3_ton", "round_09g2s_ton", "sheet_ton", "thread_rub", "bend_rub", "turn_rub",
-                "plate_rub", "washer_rub")
+PRICE_FIELDS = ("round_st3_ton", "round_09g2s_ton", "sheet_ton")
 STALE_DAYS = 90
 
 
 class BoltNorm(models.Model):
     _name = "pmk.bolt.norm"
-    _description = "Нормы для фундаментных болтов"
+    _description = "Металл для фундаментных болтов"
     _order = "diameter"
     _rec_name = "diameter"
 
@@ -25,12 +27,6 @@ class BoltNorm(models.Model):
     round_st3_ton = fields.Float("Круг Ст3, ₽/т", digits=(12, 0))
     round_09g2s_ton = fields.Float("Круг 09Г2С, ₽/т", digits=(12, 0))
     sheet_ton = fields.Float("Лист (плита, шайба), ₽/т", digits=(12, 0))
-    thread_rub = fields.Float("Резьба, ₽", digits=(12, 0),
-                              help="Нарезка одного конца на длину по ГОСТ. Длиннее — пропорционально.")
-    bend_rub = fields.Float("Гиб, ₽", digits=(12, 0), help="Один гиб.")
-    turn_rub = fields.Float("Проточка, ₽", digits=(12, 0), help="Один конец (тип 2.2).")
-    plate_rub = fields.Float("Плита, работа ₽", digits=(12, 0), help="Резка плиты и отверстие.")
-    washer_rub = fields.Float("Шайба, работа ₽", digits=(12, 0))
     checked_on = fields.Date("Проверено", readonly=True)
     checked_by = fields.Many2one("res.users", "Кем", readonly=True)
     stale = fields.Boolean("Пора проверить", compute="_compute_stale",

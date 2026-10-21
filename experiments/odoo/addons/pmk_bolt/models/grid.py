@@ -5,7 +5,7 @@
 Виджет pmk_bolt_grid — наследник таблицы Бутика (pmk_butik/static/src/js/
 butik_grid.js): та же разметка, клавиши, вставка из Excel. Болт — как изделие,
 под ним состав — как детали («болт должен быть составом вида как у металлоизделия,
-отдельно круг гайки шайбы плиты»). Ключи строк: «b<id>» — болт, «p<id>» — состав.
+отдельно круг гайки шайбы плиты»; только материалы). Ключи строк: «b<id>» — болт, «p<id>» — состав.
 
 Ячейка болта — короткая запись («бф 2.1 м30 640мм ст3 10шт»); под ней — название
 по ГОСТ, пометки, прошлые продажи. Новая строка (Enter, «+ Строка»): запись болта —
@@ -71,7 +71,7 @@ class BoltLineGrid(models.Model):
         standard = {}
         if ok:
             spec = gost.TYPES[self.bolt_type]
-            standard = {"stud": 1, "nut": spec["nuts"], "washer": 1, "plate": 1, "work": 1}
+            standard = {"stud": 1, "nut": spec["nuts"], "washer": 1, "plate": 1}
         for part in self.part_ids.sorted(lambda p: (p.sequence, p.id)):
             stud = part.auto_key == "stud"
             std = standard.get(part.auto_key)
@@ -85,7 +85,7 @@ class BoltLineGrid(models.Model):
                 "price": part.price_ton if stud else part.price_unit,
                 "price_label": _("₽/т") if stud else _("₽/шт"),
                 "hint": nut_hint if part.auto_key == "nut" else "",
-                "no_price": not (part.price_ton if stud else part.price_unit) and part.auto_key != "work",
+                "no_price": not (part.price_ton if stud else part.price_unit),
             })
         return rows
 

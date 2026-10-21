@@ -9,8 +9,8 @@
 - Название — одним видом, с длиной резьбы («часто просят удлинённую»).
 - Масса — по приложению А ГОСТ; длина не из ряда — по формуле, с пометкой.
 - Себестоимость — сумма СОСТАВА болта (models/part.py), как детали изделия в
-  «Конструкциях»: круг (заготовка, 2d на гиб), гайки, шайба, плита, работа по
-  нормам. Состав заполняет калькулятор по ГОСТ; строку можно поправить или
+  «Конструкциях»: круг (заготовка, 2d на гиб), гайки, шайба, плита — только
+  материалы, работу не считаем (как в остальных изделиях). Состав заполняет калькулятор по ГОСТ; строку можно поправить или
   добавить свою («доп. гайки») — правку пересчёт не затрёт. Цену гайки вписывает
   Владимир («угадай мелодию»), подсказка — последняя цена гайки того же М и вида.
 - Цена = себестоимость × (1 + наценка ценовой политики); правится руками.
@@ -125,14 +125,12 @@ class BoltLine(models.Model):
 
     # ─── Состав по ГОСТ ─────────────────────────────────────────────────
     def _pmk_auto_parts(self):
-        """{auto_key: значения} для этого болта. Цены — из «Норм для болтов»."""
+        """{auto_key: значения} для этого болта. Цены — из «Металла для болтов»."""
         self.ensure_one()
         d = int(self.diameter)
         spec, s = gost.TYPES[self.bolt_type], gost.SIZES[d]
         norm = self.env["pmk.bolt.norm"]._pmk_for(d)
         sheet_ton = norm.sheet_ton if norm else 0.0
-        l0 = s["l0"]
-        thread = self.thread_len or l0
         blank = gost.blank_mm(self.bolt_type, d, self.length)
         kind = {"plain": "", "hardened": " калёные", "special": " спецсталь"}[self.nut_kind or "plain"]
         out = {
@@ -143,22 +141,12 @@ class BoltLine(models.Model):
             "nut": dict(sequence=2, name=_("Гайка М%(d)s %(gost)s%(kind)s", d=d, gost=gost.NUT_GOST[d], kind=kind),
                         qty=float(spec["nuts"]), unit_mass=gost.NUT_KG[d], price_unit=0.0),
             "washer": dict(sequence=3, name=_("Шайба М%s ГОСТ 24379.1") % d, qty=1.0, unit_mass=s["w"],
-                           price_unit=round(s["w"] * sheet_ton / 1000.0 + (norm.washer_rub if norm else 0.0), 2)),
+                           price_unit=round(s["w"] * sheet_ton / 1000.0, 2)),
         }
         if spec["plate"]:
             b, t, kg = s["plate"]
             out["plate"] = dict(sequence=4, name=_("Плита %(b)s×%(b)s×%(t)s ГОСТ 24379.1", b=b, t=t), qty=1.0,
-                                unit_mass=kg, price_unit=round(kg * sheet_ton / 1000.0 + (norm.plate_rub if norm else 0.0), 2))
-        work = [_("резьба %(n)s × %(t)s мм", n=spec["thread_ends"], t=thread)]
-        price = (norm.thread_rub * (thread / l0 + spec["thread_ends"] - 1)) if norm else 0.0
-        if spec["bends"]:
-            work.append(_("гиб × %s") % spec["bends"])
-            price += norm.bend_rub * spec["bends"] if norm else 0.0
-        if spec["turn_ends"]:
-            work.append(_("проточка × %s") % spec["turn_ends"])
-            price += norm.turn_rub * spec["turn_ends"] if norm else 0.0
-        out["work"] = dict(sequence=5, name=_("Работа: %s") % ", ".join(work), qty=1.0, unit_mass=0.0,
-                           price_unit=round(price, 2))
+                                unit_mass=kg, price_unit=round(kg * sheet_ton / 1000.0, 2))
         return out
 
     def _pmk_sync_parts(self):
@@ -217,13 +205,13 @@ class BoltLine(models.Model):
             if thread > s["l0"]:
                 notes.append(_("удлинённая резьба: +%s мм к ГОСТ") % (thread - s["l0"]))
             if not self.env["pmk.bolt.norm"]._pmk_for(d):
-                notes.append(_("нет норм для М%s — заполните «Нормы для болтов»") % d)
+                notes.append(_("нет цен металла для М%s — заполните «Металл для болтов»") % d)
             if parts.filtered(lambda p: p.auto_key == "stud" and not p.price_ton):
                 notes.append(_("нет цены круга"))
             if parts.filtered(lambda p: p.auto_key == "nut" and not p.price_unit):
                 notes.append(_("впишите цену гайки"))
             # Масса: по ГОСТ + то, что сверх комплекта (доп. гайки, свои строки).
-            standard = {"stud": 1, "nut": spec["nuts"], "washer": 1, "plate": 1, "work": 0}
+            standard = {"stud": 1, "nut": spec["nuts"], "washer": 1, "plate": 1}
             extra = sum(p.mass if not p.auto_key else max(0.0, p.qty - standard[p.auto_key]) * p.unit_mass
                         for p in parts)
             line.update(dict(

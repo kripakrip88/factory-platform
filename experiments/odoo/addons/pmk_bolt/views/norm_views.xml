@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-  <!-- Нормы для болтов: правит Владимир; изменил цену — «Проверено» ставится само.
+  <!-- Металл для болтов: правит Владимир; изменил цену — «Проверено» ставится само.
        Жёлтым — не проверяли или больше 90 дней. -->
   <record id="view_bolt_norm_list" model="ir.ui.view">
     <field name="name">pmk.bolt.norm.list</field>
@@ -11,11 +11,6 @@
         <field name="round_st3_ton"/>
         <field name="round_09g2s_ton"/>
         <field name="sheet_ton"/>
-        <field name="thread_rub"/>
-        <field name="bend_rub"/>
-        <field name="turn_rub"/>
-        <field name="plate_rub"/>
-        <field name="washer_rub"/>
         <field name="checked_on"/>
         <field name="checked_by" widget="many2one_avatar_user"/>
         <field name="stale" column_invisible="1"/>
@@ -26,7 +21,7 @@
   </record>
 
   <record id="action_bolt_norm" model="ir.actions.act_window">
-    <field name="name">Нормы для болтов</field>
+    <field name="name">Металл для болтов</field>
     <field name="res_model">pmk.bolt.norm</field>
     <field name="view_mode">list</field>
   </record>
