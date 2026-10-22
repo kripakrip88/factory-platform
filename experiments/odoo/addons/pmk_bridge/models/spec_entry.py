@@ -34,6 +34,21 @@ ROUTES = [("dobor", re.compile(r"^\s*дэ\b")), ("vent", re.compile(r"^\s*(зо�
 LABELS = {"metal": "Конструкции", "dobor": "Доборка", "vent": "Вентзонты"}
 
 
+WORD_RE = re.compile(r"[а-яa-z]{3,}")
+STOP_WORDS = {"ral", "рал", "мм", "шт", "зонт", "цинк", "лист", "планка", "доборный", "элемент"}
+
+
+def _same_start(word, name):
+    """«вино» ~ «винный», «белый» ~ «белая», «шоколад» ~ «шоколадный»: общее начало от 3 букв,
+    расходятся не больше чем двумя последними буквами более короткого слова (окончание)."""
+    n = 0
+    for a, b in zip(word, name):
+        if a != b:
+            break
+        n += 1
+    return n >= max(3, min(len(word), len(name)) - 2)
+
+
 def _low(text):
     return (text or "").lower().replace("ё", "е")
 
@@ -112,8 +127,8 @@ class MetalSpecEntry(models.Model):
         return (int(m.group(1)), low[:m.start()] + " " + low[m.end():]) if m else (1, low)
 
     def _pmk_entry_coating(self, low):
-        """Цвет: «рал8017» / «ral 8017», голое «8017», если такой RAL есть в справочнике, «цинк».
-        Ответ: (покрытие, строка без цвета)."""
+        """Цвет: «рал8017» / «ral 8017», голое «8017», если такой RAL есть в справочнике, название
+        цвета из справочника («вино», «шоколад», «графит»), «цинк». Ответ: (покрытие, строка без цвета)."""
         Coating = self.env["pmk.dobor.coating"]
         m = RAL_RE.search(low)
         if m:
@@ -126,11 +141,34 @@ class MetalSpecEntry(models.Model):
                 coating = Coating.search([("ral_code", "=", m.group(1))], limit=1)
                 if coating:
                     return coating, low[:m.start()] + " " + low[m.end():]
+        coating, low2 = self._pmk_entry_coating_word(low)
+        if coating:
+            return coating, low2
         m = ZINC_RE.search(low)
         if m:
             zinc = self.env.ref("pmk_calc.coating_zinc", raise_if_not_found=False) \
                 or Coating.search([("name", "=ilike", "Цинк")], limit=1)
             return zinc, low[:m.start()] + " " + low[m.end():]
+        return Coating, low
+
+    def _pmk_entry_coating_word(self, low):
+        """Цвет словом (Антон 22.10.2026: «вино» → RAL 3005): слово строки совпадает началом
+        (от 3 букв) со словом названия покрытия в справочнике — «вино», «винный» → «RAL 3005 Вино».
+        Два разных покрытия — ошибка: уточнить RAL."""
+        Coating = self.env["pmk.dobor.coating"]
+        words = [(m, m.group(0)) for m in WORD_RE.finditer(low) if m.group(0) not in STOP_WORDS]
+        found = {}
+        for coating in Coating.search([("ral_code", "!=", False)]):
+            names = [w for w in WORD_RE.findall(_low(coating.name)) if w not in STOP_WORDS]
+            for m, word in words:
+                if any(_same_start(word, name) for name in names):
+                    found.setdefault(coating, m)
+        if len(found) > 1:
+            raise UserError(_("цвет неоднозначен (%s) — допишите RAL, например «рал%s»")
+                            % (", ".join(c.name for c in found), next(iter(found)).ral_code))
+        if found:
+            coating, m = next(iter(found.items()))
+            return coating, low[:m.start()] + " " + low[m.end():]
         return Coating, low
 
     def _pmk_entry_sheet(self, low):

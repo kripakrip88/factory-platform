@@ -146,11 +146,18 @@ class TestSpecSummary(TransactionCase):
         product = spec.product_ids
         self.assertEqual((product.name, product.qty), ("Ферма Ф-2", 3))
         self.assertEqual({r["source"] for r in spec.pmk_summary["rows"]}, {"dobor", "vent", "manual"})
+        # Цвет словом из справочника (Антон 22.10.2026: «вино» → RAL 3005).
+        wine = self.env["pmk.dobor.coating"].search([("ral_code", "=", "3005")], limit=1) \
+            or self.env["pmk.dobor.coating"].create({"name": "RAL 3005 Вино", "ral_code": "3005"})
+        res = spec.pmk_summary_add(["дэ 2000мм 0,45мм вино 5шт", "зонт 500х1000 0,65 винный 1шт"])
+        self.assertEqual(res["added"], {"Доборка": 1, "Вентзонты": 1}, res["errors"])
+        self.assertEqual(spec.dobor_line_ids.filtered(lambda l: l.qty == 5).coating_id, wine)
+        self.assertEqual(spec.vent_line_ids.filtered(lambda h: h.qty == 1).coating_id, wine)
         # Без цвета у зонта и без толщины у доборки — не заводим, ошибка словами.
         res = spec.pmk_summary_add(["зонт 500х1000 0,65 2шт", "дэ 2000мм 10шт"])
         self.assertEqual(res["added"], {})
         self.assertEqual(len(res["errors"]), 2)
-        self.assertEqual(len(spec.vent_line_ids), 1)
+        self.assertEqual(len(spec.vent_line_ids), 2)
 
     def test_entry_move(self):
         """«Перенести в»: строка без своей работы переносится; не разобралась — остаётся на месте."""

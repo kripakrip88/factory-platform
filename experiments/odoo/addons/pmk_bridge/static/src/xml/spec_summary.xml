@@ -126,7 +126,7 @@
                      t-on-input="onEntryInput" t-on-keydown="onEntryKeydown" t-on-paste="onEntryPaste"/>
               <div class="o_pmk_summary__entry-hint">
                 Enter — добавить · Ctrl+V — столбик строк из Excel или письма · «дэ» — доборка, «зонт» — вентзонты,
-                «бф» — болты, остальное — в «Конструкции»
+                «бф» — болты, остальное — в «Конструкции» · цвет: рал8017, 8017 или словом — вино, шоколад, графит
               </div>
             </td>
           </tr>
