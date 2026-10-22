@@ -198,6 +198,49 @@ class ButikSpec(models.Model):
         self._butik_renumber()
         return self.butik_rows()
 
+    def butik_move_row(self, row_id, target_id, below):
+        """№312: перетащить строку. Изделие — вместе со своими деталями (до следующего изделия),
+        деталь — одна, в изделие той строки, над/под которую её бросили."""
+        self.ensure_one()
+        self.check_access("write")
+        lines = list(self.line_ids.sorted(lambda l: (l.sequence, l.id)))
+        ids = [l.id for l in lines]
+        if row_id not in ids or target_id not in ids or row_id == target_id:
+            return self.butik_rows()
+
+        def block(index):
+            if lines[index].kind != "product":
+                return index, index
+            end = index + 1
+            while end < len(lines) and lines[end].kind != "product":
+                end += 1
+            return index, end - 1
+
+        a, b = block(ids.index(row_id))
+        moving = lines[a:b + 1]
+        rest = lines[:a] + lines[b + 1:]
+        target = next(l for l in rest if l.id == target_id) if target_id not in [m.id for m in moving] else None
+        if target is None:
+            return self.butik_rows()
+        t = rest.index(target)
+        if moving[0].kind == "product" and target.kind != "product":
+            # Изделие бросили на деталь — ставим относительно её изделия целиком.
+            while t > 0 and rest[t].kind != "product":
+                t -= 1
+            if below:
+                t += 1
+                while t < len(rest) and rest[t].kind != "product":
+                    t += 1
+                rest[t:t] = moving
+            else:
+                rest[t:t] = moving
+        else:
+            rest[t + 1 if below else t:t + 1 if below else t] = moving
+        for number, line in enumerate(rest, 1):
+            if line.sequence != number * 10:
+                line.sequence = number * 10
+        return self.butik_rows()
+
     def butik_duplicate_row(self, row_id):
         self.ensure_one()
         self.check_access("write")

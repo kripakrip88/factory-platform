@@ -28,6 +28,7 @@ const METHODS = {
     butik_duplicate_row: "konstr_duplicate_row",
     butik_add_product: "konstr_add_product",
     butik_set_position: "konstr_set_position",
+    butik_move_row: "konstr_move_row",
 };
 const MODE_KEY = "pmk_konstr_mode";
 

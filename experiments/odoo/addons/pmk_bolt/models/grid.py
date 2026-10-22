@@ -12,6 +12,7 @@ butik_grid.js): та же разметка, клавиши, вставка из 
 новый болт, иначе — своя строка состава текущего болта («гайка м30 калён 2шт 45»).
 """
 from odoo import _, fields, models
+from odoo.exceptions import UserError
 
 from ..tools import gost, parse
 from .bolt import NUT_KINDS
@@ -241,6 +242,38 @@ class BoltCalcGrid(models.Model):
         self.check_access("write")
         _kind, record = self._grid_record(row_key)
         record.unlink()
+        return self.bolt_rows()
+
+    def bolt_move_row(self, row_key, target_key, below):
+        """№312: перетащить строку. Болт — среди болтов (с составом), строка состава — в болт той
+        строки, над/под которую её бросили (на болт — первой строкой состава)."""
+        self.ensure_one()
+        self.check_access("write")
+        kind, record = self._grid_record(row_key)
+        tkind, target = self._grid_record(target_key)
+        if not record or not target or record == target:
+            return self.bolt_rows()
+        if kind == BOLT:
+            bolt = target if tkind == BOLT else target.line_id
+            bolts = [l for l in self._grid_lines() if l != record]
+            if bolt == record or bolt not in bolts:
+                return self.bolt_rows()
+            bolts.insert(bolts.index(bolt) + (1 if below else 0), record)
+            for number, line in enumerate(bolts, 1):
+                if line.sequence != number * 10:
+                    line.sequence = number * 10
+            return self.bolt_rows()
+        bolt = target if tkind == BOLT else target.line_id
+        if record.auto_key and bolt != record.line_id:
+            raise UserError(_("Строка состава по ГОСТ остаётся у своего болта — переносится только своя строка."))
+        parts = [p for p in bolt.part_ids.sorted(lambda p: (p.sequence, p.id)) if p != record]
+        index = 0 if tkind == BOLT else parts.index(target) + (1 if below else 0)
+        parts.insert(index, record)
+        if record.line_id != bolt:
+            record.line_id = bolt
+        for number, part in enumerate(parts, 1):
+            if part.sequence != number * 10:
+                part.sequence = number * 10
         return self.bolt_rows()
 
     def bolt_duplicate_row(self, row_key):

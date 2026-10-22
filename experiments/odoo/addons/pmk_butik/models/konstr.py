@@ -329,6 +329,40 @@ class MetalSpecKonstr(models.Model):
             record.write(self._konstr_detail_vals(record, clean))
         return self.konstr_rows()
 
+    def konstr_move_row(self, row_key, target_key, below):
+        """№312: перетащить строку. Изделие — вместе с деталями (среди изделий), деталь — в изделие
+        той строки, над/под которую её бросили (на изделие — первой деталью)."""
+        self.ensure_one()
+        self.check_access("write")
+        kind, record = self._konstr_record(row_key)
+        tkind, target = self._konstr_record(target_key)
+        if record == target:
+            return self.konstr_rows()
+        if kind == PRODUCT:
+            target_product = target if tkind == PRODUCT else target.product_id
+            products = [p for p in self._konstr_products() if p != record]
+            if target_product == record:
+                return self.konstr_rows()
+            index = products.index(target_product) + (1 if below else 0)
+            products.insert(index, record)
+            for number, product in enumerate(products, 1):
+                if product.sequence != number * 10:
+                    product.sequence = number * 10
+            return self.konstr_rows()
+        product = target if tkind == PRODUCT else target.product_id
+        siblings = [l for l in product.line_ids.sorted(lambda l: (l.sequence, l.id)) if l != record]
+        if tkind == PRODUCT:
+            index = 0
+        else:
+            index = siblings.index(target) + (1 if below else 0)
+        siblings.insert(index, record)
+        if record.product_id != product:
+            record.product_id = product
+        for number, line in enumerate(siblings, 1):
+            if line.sequence != number * 10:
+                line.sequence = number * 10
+        return self.konstr_rows()
+
     def konstr_save_prices(self, prices):
         """№314: «Сохранить цены» — ручные цены за тонну пачкой {ключ детали: значение}
         (Антон 22.10.2026: цена не сохраняется сама — кнопкой или в окне «было → стало»)."""

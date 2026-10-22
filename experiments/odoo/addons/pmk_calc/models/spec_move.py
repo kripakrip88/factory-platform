@@ -286,6 +286,27 @@ class LinePickCopy(models.AbstractModel):
         self.unlink()
         return True
 
+    # №312 (Антон 23.10.2026): во вкладках доборки и зонтов расчёта список только для чтения —
+    # порядок строк стрелками; перетаскивание — в сводке «Металлоизделия» и в самом калькуляторе.
+    def _pmk_shift(self, step):
+        for line in self:
+            lines = line.order_id.line_ids.sorted(lambda l: (l.sequence, l.id))
+            ids = lines.ids
+            j = ids.index(line.id) + step
+            if 0 <= j < len(ids):
+                ordered = list(lines)
+                ordered[ids.index(line.id)], ordered[j] = ordered[j], ordered[ids.index(line.id)]
+                for number, other in enumerate(ordered, 1):
+                    if other.sequence != number * 10:
+                        other.sequence = number * 10
+        return True
+
+    def action_pmk_move_up(self):
+        return self._pmk_shift(-1)
+
+    def action_pmk_move_down(self):
+        return self._pmk_shift(1)
+
 
 class DoborLineBack(models.Model):
     _name = "pmk.dobor.order.line"

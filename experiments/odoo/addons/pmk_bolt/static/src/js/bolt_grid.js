@@ -17,6 +17,7 @@ const METHODS = {
     butik_insert_rows: "bolt_insert_rows",
     butik_delete_row: "bolt_delete_row",
     butik_duplicate_row: "bolt_duplicate_row",
+    butik_move_row: "bolt_move_row",
     butik_add_product: "bolt_add_product",
 };
 const NUMERIC = new Set(["product_qty", "qty", "markup", "price"]);

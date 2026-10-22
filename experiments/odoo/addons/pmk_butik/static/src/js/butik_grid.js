@@ -15,6 +15,7 @@
  */
 import { Component, onMounted, onPatched, status, useEffect, useRef, useState } from "@odoo/owl";
 import { _t } from "@web/core/l10n/translation";
+import { ConfirmationDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { registry } from "@web/core/registry";
 import { standardWidgetProps } from "@web/views/widgets/standard_widget_props";
 
@@ -44,7 +45,7 @@ export class PmkButikGrid extends Component {
         this.root = useRef("root");
         this.state = useState({
             data: null, loading: true, sel: { row: 0, col: "name" }, busy: false,
-            suggest: null, suggestRow: null, suggestIdx: -1, savedAt: "",
+            suggest: null, suggestRow: null, suggestIdx: -1, savedAt: "", over: null,
         });
         this.pendingFocus = null;
         this.suggestTimer = null;
@@ -491,6 +492,74 @@ export class PmkButikGrid extends Component {
         if (this.selRow) {
             await this.call("butik_duplicate_row", [this.selRow.id]);
             this.focusCell(this.state.sel.row + 1, this.state.sel.col);
+        }
+    }
+
+    // ─── №312: у строки — ручка ⠿ (перетащить), «копировать», «удалить» ──
+    // (Голубенко, Антон 23.10.2026: «кнопки удалить, копировать во всех разделах; drag-n-drop»).
+    armDrag() {
+        this.dragArmed = true;
+    }
+
+    onRowDragStart(row, ev) {
+        if (!this.dragArmed || !this.state.data?.can_write) {
+            ev.preventDefault();
+            return;
+        }
+        this.releaseFocus();
+        this.dragRow = row;
+        ev.dataTransfer.effectAllowed = "move";
+        ev.dataTransfer.setData("text/plain", String(row.id));
+        ev.currentTarget.classList.add("o_pmk_butik__dragging");
+    }
+
+    onRowDragEnd(ev) {
+        this.dragArmed = false;
+        this.dragRow = null;
+        ev.currentTarget.classList.remove("o_pmk_butik__dragging");
+        this.state.over = null;
+    }
+
+    onRowDragOver(row, ev) {
+        if (this.dragRow && this.dragRow.id !== row.id) {
+            ev.preventDefault();
+            this.state.over = row.id;
+        }
+    }
+
+    async onRowDrop(row, ev) {
+        ev.preventDefault();
+        const from = this.dragRow;
+        this.state.over = null;
+        if (!from || from.id === row.id) {
+            return;
+        }
+        const ids = this.rows.map((r) => r.id);
+        const below = ids.indexOf(from.id) < ids.indexOf(row.id);
+        await this.call("butik_move_row", [from.id, row.id, below]);
+    }
+
+    async copyRow(row) {
+        this.releaseFocus();
+        await this.call("butik_duplicate_row", [row.id]);
+    }
+
+    async deleteRow(row) {
+        this.releaseFocus();
+        const product = row.kind === "product";
+        const ok = await new Promise((resolve) => {
+            this.env.services.dialog.add(ConfirmationDialog, {
+                title: _t("Удалить строку"),
+                body: product
+                    ? _t("Удалить «%s» вместе с деталями?", row.name || _t("изделие"))
+                    : _t("Удалить «%s»?", row.name || _t("строку")),
+                confirmLabel: _t("Удалить"),
+                confirm: () => resolve(true),
+                cancel: () => resolve(false),
+            }, { onClose: () => resolve(false) });
+        });
+        if (ok) {
+            await this.call("butik_delete_row", [row.id]);
         }
     }
 

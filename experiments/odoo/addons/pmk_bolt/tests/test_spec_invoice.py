@@ -135,3 +135,18 @@ class TestBoltInSpecAndInvoice(Z2Common):
         spec.pmk_summary_order([bolt_key] + [k for k in keys if k != bolt_key])
         names = invoice.order_line.sorted("sequence").mapped("name")
         self.assertEqual(names[0], line.name, "Болт первым и в счёте.")
+
+    def test_grid_move_rows(self):
+        """№312: болт — среди болтов; строка состава по ГОСТ в чужой болт не переносится."""
+        from odoo.exceptions import UserError
+        _deal, spec, line = self._bolt_spec()
+        doc = spec.bolt_calc_ids
+        second = doc._grid_new_bolt(line, "бф 1.1 м20 1000 ст3 4шт")
+        doc.bolt_move_row("b%s" % second.id, "b%s" % line.id, False)
+        self.assertEqual(doc._grid_lines().filtered("name")[:1], second)
+        nut = line.part_ids.filtered(lambda p: p.auto_key == "nut")
+        with self.assertRaises(UserError):
+            doc.bolt_move_row("p%s" % nut.id, "b%s" % second.id, False)
+        washer = line.part_ids.filtered(lambda p: p.auto_key == "washer")
+        doc.bolt_move_row("p%s" % washer.id, "p%s" % nut.id, False)
+        self.assertEqual(line.part_ids.sorted(lambda p: (p.sequence, p.id)).mapped("auto_key")[:2], ["stud", "washer"])

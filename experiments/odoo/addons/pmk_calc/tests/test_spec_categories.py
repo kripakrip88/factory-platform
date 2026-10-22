@@ -169,3 +169,20 @@ class TestSpecCategories(TransactionCase):
         self.assertFalse(dobor.line_ids)
         with self.assertRaises(Exception):
             spec.pmk_bulk("metal", "move", "metal", spec.product_ids.ids)
+
+
+@tagged("post_install", "-at_install")
+class TestShiftArrows(TransactionCase):
+    """№312: стрелки порядка у строки доборки во вкладке расчёта."""
+
+    def test_shift(self):
+        order = self.env["pmk.dobor.order"].create({})
+        Line = self.env["pmk.dobor.order.line"]
+        a, b, c = (Line.create({"order_id": order.id, "title": t, "sequence": s, "plank_length": 1000})
+                   for t, s in (("А", 10), ("Б", 20), ("В", 30)))
+        c.action_pmk_move_up()
+        self.assertEqual(order.line_ids.sorted("sequence").mapped("title"), ["А", "В", "Б"])
+        a.action_pmk_move_down()
+        self.assertEqual(order.line_ids.sorted("sequence").mapped("title"), ["В", "А", "Б"])
+        order.line_ids.sorted("sequence")[0].action_pmk_move_up()
+        self.assertEqual(order.line_ids.sorted("sequence").mapped("title"), ["В", "А", "Б"])

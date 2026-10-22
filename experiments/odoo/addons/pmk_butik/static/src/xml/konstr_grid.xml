@@ -47,12 +47,15 @@
         <div class="o_pmk_butik__wrap">
           <table class="o_pmk_butik__table">
             <colgroup>
-              <col style="width:64px"/><col style="width:26%"/><col style="width:90px"/><col style="width:96px"/><col style="width:80px"/>
-              <col style="width:76px"/><col style="width:96px"/><col style="width:90px"/><col style="width:110px"/>
-              <col style="width:110px"/><col style="width:104px"/><col style="width:110px"/><col style="width:120px"/>
+              <!-- Наименование — без ширины: берёт всё, что осталось (№312: + ручка и действия). -->
+              <col style="width:22px"/>
+              <col style="width:60px"/><col/><col style="width:84px"/><col style="width:84px"/><col style="width:64px"/>
+              <col style="width:60px"/><col style="width:76px"/><col style="width:74px"/><col style="width:90px"/>
+              <col style="width:92px"/><col style="width:92px"/><col style="width:92px"/><col style="width:104px"/>
+              <col style="width:52px"/>
             </colgroup>
             <thead><tr>
-              <th class="o_pmk_butik__th-pos"><button type="button" class="o_pmk_butik__chev" t-att-class="{ 'o_pmk_butik__chev--open': allOpen }"
+              <th class="o_pmk_butik__th-grip"/><th class="o_pmk_butik__th-pos"><button type="button" class="o_pmk_butik__chev" t-att-class="{ 'o_pmk_butik__chev--open': allOpen }"
                   t-att-title="allOpen ? 'Свернуть все изделия' : 'Развернуть все изделия'"
                   t-on-click="() => this.toggleAll()"/>№ поз.</th><th>Наименование</th><th class="n" title="Для листовых деталей: «Лист 10х60» заполнит сам">Ширина, мм</th><th class="n">Длина, мм</th><th class="n">На 1 шт</th>
               <th class="n">Всего</th><th>Марка</th><th class="n">Вес 1, кг</th><th class="n" title="Впишите массу из спецификации КМ — длина проката посчитается сама; пусто — вес по размерам">Вес всего, кг</th>
@@ -60,10 +63,11 @@
               <th class="n" title="Цена металла детали за тонну: по прайсу (серым) или вписанная вручную, если позиции в прайсах нет">Металл, ₽/т</th>
               <th class="n" title="Цена клиенту за тонну изделия: цена за шт посчитается из веса">Клиенту, ₽/т</th>
               <th class="n" title="Цена клиенту за одно изделие">Клиенту, ₽/шт</th>
-            </tr></thead>
+            <th/></tr></thead>
             <tbody>
               <t t-foreach="rows" t-as="row" t-key="row.id">
-                <tr t-if="row.kind === 'product'" class="o_pmk_butik__product">
+                <tr t-if="row.kind === 'product'" class="o_pmk_butik__product" t-att-draggable="state.data.can_write ? 'true' : 'false'" t-att-data-over="state.over === row.id ? '1' : ''" t-on-dragstart="(ev) => this.onRowDragStart(row, ev)" t-on-dragend="(ev) => this.onRowDragEnd(ev)" t-on-dragover="(ev) => this.onRowDragOver(row, ev)" t-on-drop="(ev) => this.onRowDrop(row, ev)">
+                  <td class="o_pmk_butik__grip" title="Перетащить строку" t-on-mousedown="() => this.armDrag()">⠿</td>
                   <td class="n o_pmk_butik__num">
                     <button type="button" class="o_pmk_butik__chev" t-att-class="{ 'o_pmk_butik__chev--open': !isCollapsed(row.id) }"
                             t-att-title="isCollapsed(row.id) ? 'Развернуть' : 'Свернуть'"
@@ -112,8 +116,15 @@
                            t-on-change="(ev) => this.commit(row, 'price', ev)"
                            t-on-keydown="(ev) => this.onKeydown(row_index, 'price', ev)"/>
                   </td>
+                <td class="o_pmk_butik__acts">
+                    <button type="button" class="btn btn-link btn-sm" title="Копировать — копия встанет ниже" aria-label="Копировать"
+                            t-att-disabled="state.busy or !state.data.can_write" t-on-click="() => this.copyRow(row)"><i class="fa fa-clone"/></button>
+                    <button type="button" class="btn btn-link btn-sm o_pmk_butik__del" title="Удалить строку" aria-label="Удалить"
+                            t-att-disabled="state.busy or !state.data.can_write" t-on-click="() => this.deleteRow(row)"><i class="fa fa-trash-o"/></button>
+                  </td>
                 </tr>
-                <tr t-elif="!isCollapsed(row.parent)" class="o_pmk_butik__detail" t-att-class="{ 'o_pmk_butik__detail--bad': row.match_state === 'none' }">
+                <tr t-elif="!isCollapsed(row.parent)" class="o_pmk_butik__detail" t-att-class="{ 'o_pmk_butik__detail--bad': row.match_state === 'none' }" t-att-draggable="state.data.can_write ? 'true' : 'false'" t-att-data-over="state.over === row.id ? '1' : ''" t-on-dragstart="(ev) => this.onRowDragStart(row, ev)" t-on-dragend="(ev) => this.onRowDragEnd(ev)" t-on-dragover="(ev) => this.onRowDragOver(row, ev)" t-on-drop="(ev) => this.onRowDrop(row, ev)">
+                  <td class="o_pmk_butik__grip" title="Перетащить строку" t-on-mousedown="() => this.armDrag()">⠿</td>
                   <t t-foreach="['pos', 'name', 'width', 'length_mm', 'qty']" t-as="col" t-key="col">
                     <td t-if="col === 'width' and !row.is_sheet" class="o_pmk_butik__ro"/>
                     <td t-else="" t-att-class="{ sel: isSel(row_index, col), n: isNum(col), 'o_pmk_butik__namecell': col === 'name' }">
@@ -196,6 +207,12 @@
                       title="Цена металла за тонну по прайсу" t-esc="money(row.metal_ton)"/>
                   <td class="o_pmk_butik__ro"/>
                   <td class="o_pmk_butik__ro"/>
+                <td class="o_pmk_butik__acts">
+                    <button type="button" class="btn btn-link btn-sm" title="Копировать — копия встанет ниже" aria-label="Копировать"
+                            t-att-disabled="state.busy or !state.data.can_write" t-on-click="() => this.copyRow(row)"><i class="fa fa-clone"/></button>
+                    <button type="button" class="btn btn-link btn-sm o_pmk_butik__del" title="Удалить строку" aria-label="Удалить"
+                            t-att-disabled="state.busy or !state.data.can_write" t-on-click="() => this.deleteRow(row)"><i class="fa fa-trash-o"/></button>
+                  </td>
                 </tr>
               </t>
             </tbody>

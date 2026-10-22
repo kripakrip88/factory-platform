@@ -238,3 +238,27 @@ textarea.o_pmk_butik__ta {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+// №312: ручка ⠿ слева, «копировать» и «удалить» справа (видны при наведении на строку);
+// куда встанет перетаскиваемая строка — синяя черта сверху.
+.o_pmk_butik {
+  .o_pmk_butik__grip {
+    cursor: grab;
+    color: var(--bt-muted, #6b7079);
+    text-align: center;
+    user-select: none;
+    padding: 0 !important;
+  }
+  .o_pmk_butik__acts {
+    white-space: nowrap;
+    text-align: right;
+    padding: 0 2px !important;
+
+    .btn { padding: 0 3px; color: var(--bt-muted, #6b7079); opacity: 0; transition: opacity 120ms ease-out; }
+    .btn:hover { color: inherit; }
+    .o_pmk_butik__del:hover { color: var(--pmk-tone-red-ink, #a32d2d); }
+  }
+  tr:hover > .o_pmk_butik__acts .btn, .o_pmk_butik__acts .btn:focus { opacity: 1; }
+  .o_pmk_butik__dragging { opacity: 0.4; }
+  tr[data-over="1"] > td { box-shadow: inset 0 2px 0 var(--pmk-accent, #378add); }
+}

@@ -222,3 +222,15 @@ class TestButik(TransactionCase):
         spec = self.env["pmk.butik.spec"].create({"lead_id": lead.id})
         self.assertEqual(spec.lead_id, lead)
         self.assertTrue(spec.name.startswith("БТ-"))
+
+    def test_move_product_block(self):
+        """№312: в Бутике изделие перетаскивается вместе со своими деталями."""
+        doc = self.env["pmk.butik.spec"].create({})
+        doc.line_ids.unlink()
+        Line = self.env["pmk.butik.line"]
+        rows = [("product", "А", 10), ("detail", "а1", 20), ("product", "Б", 30), ("detail", "б1", 40)]
+        recs = {n: Line.create({"spec_id": doc.id, "kind": k, "name": n, "sequence": s}) for k, n, s in rows}
+        doc.butik_move_row(recs["Б"].id, recs["А"].id, False)
+        self.assertEqual(doc.line_ids.sorted("sequence").mapped("name"), ["Б", "б1", "А", "а1"])
+        doc.butik_move_row(recs["а1"].id, recs["б1"].id, True)
+        self.assertEqual(doc.line_ids.sorted("sequence").mapped("name"), ["Б", "б1", "а1", "А"])

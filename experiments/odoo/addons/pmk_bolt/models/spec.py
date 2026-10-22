@@ -122,6 +122,9 @@ class MetalSpecBolt(models.Model):
     def bolt_duplicate_row(self, row_key):
         return self._bolt_call("bolt_duplicate_row", row_key)
 
+    def bolt_move_row(self, row_key, target_key, below):
+        return self._bolt_call("bolt_move_row", row_key, target_key, below)
+
     # ─── Сводка «Металлоизделия»: болты строками с составом ─────────────
     # Зависимости сводки pmk_bridge (spec_summary.py) — те же, плюс болты: метод
     # переопределён, и без повтора @api.depends форма перестала бы обновлять сводку.

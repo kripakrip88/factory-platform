@@ -31,12 +31,14 @@
         <div class="o_pmk_butik__wrap">
           <table class="o_pmk_butik__table">
             <colgroup>
-              <col style="width:56px"/><col style="width:36%"/><col style="width:80px"/><col style="width:80px"/>
+              <col style="width:22px"/>
+              <col style="width:56px"/><col/><col style="width:80px"/><col style="width:80px"/>
               <col style="width:90px"/><col style="width:100px"/><col style="width:100px"/><col style="width:96px"/>
               <col style="width:84px"/><col style="width:96px"/><col style="width:110px"/>
+              <col style="width:52px"/>
             </colgroup>
             <thead><tr>
-              <th class="o_pmk_butik__th-pos"><button type="button" class="o_pmk_butik__chev" t-att-class="{ 'o_pmk_butik__chev--open': allOpen }"
+              <th class="o_pmk_butik__th-grip"/><th class="o_pmk_butik__th-pos"><button type="button" class="o_pmk_butik__chev" t-att-class="{ 'o_pmk_butik__chev--open': allOpen }"
                   t-att-title="allOpen ? 'Свернуть состав всех болтов' : 'Развернуть состав всех болтов'"
                   t-on-click="() => this.toggleAll()"/>№</th>
               <th title="Болт коротко: бф 2.1 м30 640мм ст3 10шт · р250 — резьба · калён гайка 120. Состав — строки ниже">Болт / состав</th>
@@ -49,10 +51,11 @@
               <th class="n" title="Из ценовой политики на дату расчёта">Наценка, %</th>
               <th class="n">Цена шт</th>
               <th class="n">Сумма</th>
-            </tr></thead>
+            <th/></tr></thead>
             <tbody>
               <t t-foreach="rows" t-as="row" t-key="row.id">
-                <tr t-if="row.kind === 'product'" class="o_pmk_butik__product" t-att-class="{ 'o_pmk_butik__detail--bad': row.bad }">
+                <tr t-if="row.kind === 'product'" class="o_pmk_butik__product" t-att-class="{ 'o_pmk_butik__detail--bad': row.bad }" t-att-draggable="state.data.can_write ? 'true' : 'false'" t-att-data-over="state.over === row.id ? '1' : ''" t-on-dragstart="(ev) => this.onRowDragStart(row, ev)" t-on-dragend="(ev) => this.onRowDragEnd(ev)" t-on-dragover="(ev) => this.onRowDragOver(row, ev)" t-on-drop="(ev) => this.onRowDrop(row, ev)">
+                  <td class="o_pmk_butik__grip" title="Перетащить строку" t-on-mousedown="() => this.armDrag()">⠿</td>
                   <td class="n o_pmk_butik__num">
                     <button type="button" class="o_pmk_butik__chev" t-att-class="{ 'o_pmk_butik__chev--open': !isCollapsed(row.id) }"
                             t-att-title="isCollapsed(row.id) ? 'Развернуть состав' : 'Свернуть состав'"
@@ -105,8 +108,15 @@
                     </td>
                   </t>
                   <td class="n o_pmk_butik__ro o_pmk_butik__pw" t-esc="money(row.total)"/>
+                <td class="o_pmk_butik__acts">
+                    <button type="button" class="btn btn-link btn-sm" title="Копировать — копия встанет ниже" aria-label="Копировать"
+                            t-att-disabled="state.busy or !state.data.can_write" t-on-click="() => this.copyRow(row)"><i class="fa fa-clone"/></button>
+                    <button type="button" class="btn btn-link btn-sm o_pmk_butik__del" title="Удалить строку" aria-label="Удалить"
+                            t-att-disabled="state.busy or !state.data.can_write" t-on-click="() => this.deleteRow(row)"><i class="fa fa-trash-o"/></button>
+                  </td>
                 </tr>
-                <tr t-elif="!isCollapsed(row.parent)" class="o_pmk_butik__detail" t-att-class="{ o_pmk_bolt__own: !row.auto }">
+                <tr t-elif="!isCollapsed(row.parent)" class="o_pmk_butik__detail" t-att-class="{ o_pmk_bolt__own: !row.auto }" t-att-draggable="state.data.can_write ? 'true' : 'false'" t-att-data-over="state.over === row.id ? '1' : ''" t-on-dragstart="(ev) => this.onRowDragStart(row, ev)" t-on-dragend="(ev) => this.onRowDragEnd(ev)" t-on-dragover="(ev) => this.onRowDragOver(row, ev)" t-on-drop="(ev) => this.onRowDrop(row, ev)">
+                  <td class="o_pmk_butik__grip" title="Перетащить строку" t-on-mousedown="() => this.armDrag()">⠿</td>
                   <td class="o_pmk_butik__ro"/>
                   <td t-att-class="{ sel: isSel(row_index, 'name'), 'o_pmk_butik__namecell': true }">
                     <textarea rows="1" class="o_pmk_butik__in o_pmk_butik__ta" t-att-value="val(row, 'name')"
@@ -146,6 +156,12 @@
                   <td class="o_pmk_butik__ro"/>
                   <td class="o_pmk_butik__ro"/>
                   <td class="o_pmk_butik__ro"/>
+                <td class="o_pmk_butik__acts">
+                    <button type="button" class="btn btn-link btn-sm" title="Копировать — копия встанет ниже" aria-label="Копировать"
+                            t-att-disabled="state.busy or !state.data.can_write" t-on-click="() => this.copyRow(row)"><i class="fa fa-clone"/></button>
+                    <button type="button" class="btn btn-link btn-sm o_pmk_butik__del" title="Удалить строку" aria-label="Удалить"
+                            t-att-disabled="state.busy or !state.data.can_write" t-on-click="() => this.deleteRow(row)"><i class="fa fa-trash-o"/></button>
+                  </td>
                 </tr>
               </t>
             </tbody>

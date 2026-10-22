@@ -178,3 +178,21 @@ class TestKonstr(TransactionCase):
         self.assertEqual(len(buy), 1)
         self.assertAlmostEqual(buy[0]["kg"], 314.0, places=3)
         self.assertIn("2 м²", buy[0]["amount"], "314 кг / 157 кг/м² = 2 м².")
+
+    def test_move_rows(self):
+        """№312: перетащить — изделие с деталями среди изделий, деталь — в другое изделие."""
+        Command = __import__("odoo").Command
+        spec = self.env["pmk.metal.spec"].create({"note": "Перетаскивание", "product_ids": [
+            Command.create({"name": "А", "sequence": 10, "line_ids": [
+                Command.create({"detail_name": "а1", "sequence": 10}), Command.create({"detail_name": "а2", "sequence": 20})]}),
+            Command.create({"name": "Б", "sequence": 20, "line_ids": [
+                Command.create({"detail_name": "б1", "sequence": 10})]})]})
+        a, b = spec.product_ids.sorted("sequence")
+        spec.konstr_move_row("p%s" % b.id, "p%s" % a.id, False)
+        self.assertEqual(spec._konstr_products().mapped("name"), ["Б", "А"])
+        a1 = a.line_ids.filtered(lambda l: l.detail_name == "а1")
+        b1 = b.line_ids
+        spec.konstr_move_row("d%s" % a1.id, "d%s" % b1.id, True)
+        self.assertEqual(a1.product_id, b)
+        self.assertEqual(b.line_ids.sorted("sequence").mapped("detail_name"), ["б1", "а1"])
+        self.assertEqual(a.line_ids.mapped("detail_name"), ["а2"])
