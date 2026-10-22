@@ -232,7 +232,7 @@ class MetalSpecXlsx(models.Model):
             length = line.length_mm
         price_t = None
         if line.calc_mode in ("linear", "sheet") and "price_ton" in line._fields:
-            price_t = round(line.price_ton) if line.price_state == "ok" else 0
+            price_t = round(line.price_ton) if line.price_state in ("ok", "manual") else 0
         return (line.detail_name or "", name, length, line.qty, line.grade_id.display_name or "",
                 line.weight_total * (product.qty or 0), price_t)
 

@@ -39,3 +39,21 @@
 .o_pmk_konstr__derived {
   color: var(--pmk-text-muted, #6b6b6b) !important;
 }
+
+// №314: цена металла за тонну у детали — из прайса серым; вписанная вручную — курсивом с бледно-жёлтым
+// фоном (как «нет цены», но тише); подсказка из другого расчёта — мелко под ячейкой.
+.o_pmk_konstr__ton { color: var(--pmk-text-muted, #6b6b6b); }
+.o_pmk_konstr__manual::placeholder { color: var(--pmk-tone-yellow-ink, #633806); opacity: 0.7; }
+.o_pmk_konstr__manual--set {
+  font-style: italic;
+  background: var(--pmk-tone-yellow-bg, #fbf3d5) !important;
+}
+.o_pmk_konstr__hint {
+  margin-top: 1px;
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--pmk-tone-yellow-ink, #633806);
+  white-space: normal;
+
+  .o_pmk_konstr__hint-use { font-size: 12px; }
+}

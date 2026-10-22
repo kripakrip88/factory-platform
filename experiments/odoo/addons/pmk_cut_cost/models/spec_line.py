@@ -65,7 +65,7 @@ class MetalSpecLineCutCost(models.Model):
                 continue
             # Как в мосте: итог — от локального числа, не от округлённого поля.
             clean_one = (line.price_unit * (line.length_mm / MM_IN_M)
-                         if line.price_state == "ok" else 0.0)
+                         if line.price_state in ("ok", "manual") else 0.0)
             qty = line.qty or 0
             fact_one = clean_one / share
             weight_fact = line.weight_one / share

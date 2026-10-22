@@ -55,7 +55,15 @@ export class PmkKonstrGrid extends PmkButikGrid {
         if (row.kind === "product") {
             return ["name", "product_qty", "price_ton", "price"];
         }
-        return [...super.colsOf(row), "mass"];
+        // №314: нет цены в прайсах — «Цена за т» детали вписывается руками.
+        return [...super.colsOf(row), "mass", ...(row.can_manual ? ["price_ton"] : [])];
+    }
+
+    /** №314: цена, вписанная вручную в другом расчёте, — в эту деталь по щелчку. */
+    useManualHint(row) {
+        if (row.manual_hint) {
+            this.call("butik_save_row", [row.id, { price_ton: row.manual_hint.price }]);
+        }
     }
 
     saved(row, key) {

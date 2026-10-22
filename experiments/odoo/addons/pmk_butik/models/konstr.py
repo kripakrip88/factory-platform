@@ -94,6 +94,24 @@ class MetalSpecLineKonstr(models.Model):
             notes.append(self.pmk_item_note)
         return " · ".join([text] + notes)
 
+    def _konstr_manual_hint(self):
+        """Та же позиция и марка, цена вписана вручную в другом расчёте — последняя такая
+        (Антон 22.10.2026: «подставить цену из расчёта, указав ссылку на этот расчёт»).
+        Сама не подставляется: «нет в прайсе» обычно значит «в городе нет» — решает человек."""
+        self.ensure_one()
+        item = {"linear": ("profile_id", self.profile_id), "sheet": ("sheet_id", self.sheet_id)}.get(self.calc_mode)
+        if not item or not item[1]:
+            return False
+        domain = [(item[0], "=", item[1].id), ("pmk_manual_price_ton", ">", 0),
+                  ("grade_id", "=", self.grade_id.id or False)]
+        if self.spec_id.id:
+            domain.append(("spec_id", "!=", self.spec_id.id))
+        other = self.sudo().search(domain, order="write_date desc", limit=1)
+        if not other:
+            return False
+        return {"price": round(other.pmk_manual_price_ton), "spec_id": other.spec_id.id,
+                "spec": other.spec_id.name or "", "date": other.write_date.strftime("%d.%m.%Y")}
+
     def _konstr_row(self, product):
         self.ensure_one()
         sheet = self.calc_mode == "sheet"
@@ -121,7 +139,13 @@ class MetalSpecLineKonstr(models.Model):
             "mass": round(self.weight_total * qty_product, 3) if self.pmk_mass_kg else 0.0,
             "by_mass": bool(self.pmk_mass_kg) and self.calc_mode in ("linear", "sheet"),
             "cost": round((self["cost_fact_total"] if "cost_fact_total" in self._fields else 0.0) * qty_product, 2),
-            "no_price": "price_state" in self._fields and self.price_state == "no_price",
+            "no_price": self.price_state == "no_price",
+            # №314: цена металла за тонну у детали — из прайса (только смотреть) или вписанная
+            # вручную, когда позиции в прайсах нет; подсказка — вписанная раньше в другом расчёте.
+            "price_ton": round(self.price_ton) if self.price_state in ("ok", "manual") else 0.0,
+            "manual": self.price_state == "manual",
+            "can_manual": self.calc_mode in ("linear", "sheet") and self.price_state in ("no_price", "manual"),
+            "manual_hint": self._konstr_manual_hint() if self.price_state == "no_price" else False,
             "match_state": "auto" if item else ("none" if self.pmk_text else "empty"),
             "label": self._konstr_label(),
         }
@@ -248,6 +272,9 @@ class MetalSpecKonstr(models.Model):
             vals["qty"] = max(1, int(round(_to_float(clean["qty"]) or 1)))
         if "grade" in clean:
             vals.update(self._konstr_grade(clean["grade"]))
+        if "price_ton" in clean:
+            # №314: цена металла за тонну, когда позиции нет в прайсах (сотрите — снова «нет цены»).
+            vals["pmk_manual_price_ton"] = _to_float(clean["price_ton"])
         # Лист «по КМ» — размеры не нужны (старые после смены записи не мешали бы
         # в «Подробно» и вкладке «Металл»).
         if vals.get("pmk_mass_kg") and (vals.get("calc_mode") or (line.calc_mode if line else "")) == "sheet":

@@ -396,7 +396,7 @@ class MetalSpecCost(models.Model):
                 continue
             lines = Line.search([
                 ("spec_id", "=", spec_id),
-                ("price_state", "not in", ("ok", "empty")),
+                ("price_state", "not in", ("ok", "manual", "empty")),
             ])
             # Одна позиция справочника в нескольких деталях — одной строкой.
             # Вес строки — на одно изделие, умножаем на их количество.
@@ -884,7 +884,7 @@ class MetalSpecProductCost(models.Model):
             product.cost_fact_total = product.cost_fact_one * qty
             product.weight_fact_total = product.weight_fact_one * qty
             product.no_price_count = len(lines.filtered(
-                lambda l: l.price_state not in ("ok", "empty")))
+                lambda l: l.price_state not in ("ok", "manual", "empty")))
 
 
 class MetalSpecLineCost(models.Model):
@@ -949,12 +949,22 @@ class MetalSpecLineCost(models.Model):
          ("ok", "Цена есть"),
          ("no_link", "Нет карточки товара"),
          ("no_price", "Нет цены в прайсах"),
+         ("manual", "Цена вручную"),
          ("no_mass", "Неизвестна масса"),
          ("not_material", "Не материал")],
         "Состояние цены", compute="_compute_price_from_supplier", store=True,
         default="empty",
         help="Почему у строки нет стоимости. «Нет цены» — прайс не содержит "
              "эту позицию; такая строка считается нулём, и итог занижен.")
+
+    # №314 (Голубенко 20.10.2026, Антон 22.10: «вчера столкнулись — нужно было вписать примерную
+    # цену, делаем сразу»): позиции нет в прайсах — цену металла за тонну вписывают руками.
+    # Прайс главнее: появится позиция в прайсе — ручная перестаёт действовать (после «Перечитать
+    # цены»). Только прокат и лист — металл, цена по тоннам.
+    pmk_manual_price_ton = fields.Float(
+        "Цена вручную, ₽/т", digits=(12, 2),
+        help="Позиции нет в прайсах — примерная цена металла за тонну (с НДС). Работает, только пока "
+             "в прайсах цены нет.")
 
     price_partner_id = fields.Many2one(
         "res.partner", "Поставщик цены", compute="_compute_price_from_supplier",
@@ -1120,7 +1130,8 @@ class MetalSpecLineCost(models.Model):
     # переписывает источник цены (цена единицы остаётся до «Перечитать цены»,
     # расхождение подсвечивает «Цены не перечитаны»).
     @api.depends("calc_mode", "profile_id", "sheet_id", "fastener_id", "paint_id",
-                 "spec_id.price_date", "spec_id.supplier_id", "grade_id", "layout_sheet_size")
+                 "spec_id.price_date", "spec_id.supplier_id", "grade_id", "layout_sheet_size",
+                 "pmk_manual_price_ton")
     def _compute_price_from_supplier(self):
         """Одна дверь к цене: прайс → цена за единицу → цена за килограмм.
 
@@ -1133,6 +1144,8 @@ class MetalSpecLineCost(models.Model):
             # или марка сменилась (19.10.2026, Антон: «при замене марки стали
             # в листе цена закупки не меняется» — в редакторе до сохранения).
             was_source = line.price_source_id
+            # №314: была ручная цена, а позиция появилась в прайсе — цена прайса, не прежняя ручная.
+            was_manual = line.price_state == "manual"
             line._reset_price_fields()
             tmpl = line._cost_product()
 
@@ -1154,6 +1167,13 @@ class MetalSpecLineCost(models.Model):
 
             seller = line._cost_find_seller(tmpl)
             if not seller:
+                if line.pmk_manual_price_ton > 0 and line.calc_mode in ("linear", "sheet"):
+                    # №314: вписанная цена за тонну → кг → единица учёта (метр, м²).
+                    line.price_state = "manual"
+                    line.price_ton = line.pmk_manual_price_ton
+                    line.price_kg = line.pmk_manual_price_ton / KG_IN_TON
+                    line.price_unit = line.price_kg * mass_unit
+                    continue
                 line.price_state = "no_price"
                 continue
 
@@ -1183,7 +1203,7 @@ class MetalSpecLineCost(models.Model):
             moved = bool(was_source) and (
                 was_source.product_tmpl_id != seller.product_tmpl_id
                 or was_source.product_id != seller.product_id)
-            if not line.price_unit or moved:
+            if not line.price_unit or moved or was_manual:
                 # Прежняя цена запоминается ровно в тот момент, когда её
                 # заменяют: кнопка обнуляет price_unit, и здесь ещё доступно
                 # то, что стояло до обнуления — через снимок в price_prev_unit
@@ -1214,7 +1234,7 @@ class MetalSpecLineCost(models.Model):
                     or line.fastener_id or line.paint_id)
             line.position_label = item.display_name if item else ""
 
-    @api.depends("price_unit", "price_state", "price_ton", "cost_fact_total",
+    @api.depends("price_unit", "price_state", "price_ton", "cost_fact_total", "pmk_manual_price_ton",
                  "spec_id.compare_effective_date", "spec_id.price_date",
                  "spec_id.supplier_id",
                  "profile_id", "sheet_id", "fastener_id", "paint_id")
@@ -1269,6 +1289,12 @@ class MetalSpecLineCost(models.Model):
                 # позиции в нём не было; новее — цена есть только в нём.
                 line.price_compare_note = (
                     "есть только в том прайсе" if later else "не было в том прайсе")
+                line.price_compare_pct = 0.0
+                line.cost_compare_delta = 0.0
+            elif line.price_state == "manual":
+                # №314: в прайсах позиции нет ни тогда, ни сейчас — считаем по вписанной цене.
+                line.price_now_ton = line.price_ton
+                line.price_compare_note = "вручную, %s ₽/т" % "{:,.0f}".format(line.price_ton).replace(",", " ")
                 line.price_compare_pct = 0.0
                 line.cost_compare_delta = 0.0
             else:
@@ -1380,7 +1406,7 @@ class MetalSpecLineCost(models.Model):
     def _compute_cost(self):
         for line in self:
             clean_one = 0.0
-            if line.price_state == "ok":
+            if line.price_state in ("ok", "manual"):
                 if line.calc_mode == "linear":
                     clean_one = line.price_unit * (line.length_mm / MM_IN_M)
                 elif line.calc_mode == "fastener":

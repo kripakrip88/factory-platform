@@ -360,7 +360,9 @@
               <field name="cost_fact_total" string="Закупка" widget="monetary"
                      sum="Итого" optional="show"/>
               <field name="price_compare_note" string="Замечание"
-                     decoration-danger="price_compare_note != False"/>
+                     decoration-danger="price_compare_note != False and price_state != 'manual'"
+                     decoration-warning="price_state == 'manual'"/>
+              <field name="price_state" string="Состояние цены" optional="hide"/>
               <field name="currency_id" column_invisible="1"/>
             </list>
           </field>
