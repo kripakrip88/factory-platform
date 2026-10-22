@@ -178,3 +178,27 @@ class TestSpecSummary(TransactionCase):
                                                          "profile_id": self.angle.id, "length_mm": 500, "qty": 1})]
         with self.assertRaises(Exception):
             spec.pmk_summary_move("metal-%s" % spec.product_ids[:1].id, "vent")
+
+    def test_summary_order_copy_delete(self):
+        """№312: перетащить (сквозной порядок), копировать, удалить — из сводки."""
+        spec = self._spec()
+        keys = [r["key"] for r in spec.pmk_summary["rows"]]
+        self.assertEqual([k.split("-")[0] for k in keys], ["metal", "metal", "dobor", "vent"],
+                         "Не перетаскивали — блоками категорий, как было.")
+        new_order = [keys[3], keys[0], keys[2], keys[1]]
+        spec.pmk_summary_order(new_order)
+        spec.invalidate_recordset(["pmk_summary"])
+        self.assertEqual([r["key"] for r in spec.pmk_summary["rows"]], new_order)
+        # Копия встаёт сразу под исходной, и в своей вкладке тоже.
+        dobor_key = keys[2]
+        spec.pmk_summary_copy(dobor_key)
+        spec.invalidate_recordset(["pmk_summary"])
+        rows = [r["key"] for r in spec.pmk_summary["rows"]]
+        self.assertEqual(len(spec.dobor_line_ids), 2)
+        self.assertEqual(rows.index(dobor_key) + 1, rows.index("dobor-%s" % (spec.dobor_line_ids - spec._pmk_summary_record(dobor_key)[1]).id))
+        # Удалить — строки нет, запись в истории.
+        spec.pmk_summary_delete(keys[3])
+        spec.invalidate_recordset(["pmk_summary"])
+        self.assertNotIn(keys[3], [r["key"] for r in spec.pmk_summary["rows"]])
+        self.assertFalse(spec.vent_line_ids)
+        self.assertTrue(any("Удалено в сводке" in (m.body or "") for m in spec.message_ids))

@@ -122,3 +122,16 @@ class TestBoltInSpecAndInvoice(Z2Common):
         self.assertEqual(res, {"moved": "Конструкции"})
         self.assertFalse(line.exists())
         self.assertIn("бф 1.1 м20 1000 ст3", spec.product_ids.mapped("name"))
+
+    def test_invoice_follows_summary_order(self):
+        """№312: порядок сводки — порядок строк счёта (болт перетащили наверх)."""
+        deal, spec, line = self._bolt_spec()
+        spec.with_user(self.manager).action_pmk_invoice()
+        invoice = self._invoices(deal)
+        names = invoice.order_line.sorted("sequence").mapped("name")
+        self.assertEqual(names[-1], line.name, "Не перетаскивали — болты после конструкций.")
+        keys = [r["key"] for r in spec.pmk_summary["rows"]]
+        bolt_key = "bolt-%s" % line.id
+        spec.pmk_summary_order([bolt_key] + [k for k in keys if k != bolt_key])
+        names = invoice.order_line.sorted("sequence").mapped("name")
+        self.assertEqual(names[0], line.name, "Болт первым и в счёте.")

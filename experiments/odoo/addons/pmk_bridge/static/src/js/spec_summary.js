@@ -15,6 +15,7 @@
  */
 import { Component, markup, status, useState } from "@odoo/owl";
 import { _t } from "@web/core/l10n/translation";
+import { ConfirmationDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { registry } from "@web/core/registry";
 import { standardFieldProps } from "@web/views/fields/standard_field_props";
 
@@ -35,7 +36,9 @@ export class SpecSummaryField extends Component {
 
     setup() {
         this.open = useState({});
-        this.entry = useState({ text: "", busy: false });
+        this.entry = useState({ text: "", busy: false, over: null });
+        this.dragArmed = false;
+        this.dragKey = null;
         this.sources = SOURCES;
         this.notification = this.env.services.notification;
         this.orm = this.env.services.orm;
@@ -127,6 +130,84 @@ export class SpecSummaryField extends Component {
         const lines = text.replace(/\r/g, "").split("\n")
             .map((line) => line.split("\t").map((c) => c.trim()).filter((c) => c).join(" "));
         this.add(lines);
+    }
+
+    // ─── №312: перетащить, копировать, удалить (Голубенко, Антон 23.10.2026) ──
+    // Порядок строк сводки — сквозной, он же порядок в КП и счёте.
+    armDrag() {
+        this.dragArmed = true;
+    }
+
+    onDragStart(row, ev) {
+        if (!this.dragArmed || !this.canEdit) {
+            ev.preventDefault();
+            return;
+        }
+        this.dragKey = row.key;
+        ev.dataTransfer.effectAllowed = "move";
+        ev.dataTransfer.setData("text/plain", row.key);
+        ev.currentTarget.classList.add("o_pmk_summary__dragging");
+    }
+
+    onDragEnd(ev) {
+        this.dragArmed = false;
+        this.dragKey = null;
+        ev.currentTarget.classList.remove("o_pmk_summary__dragging");
+        this.entry.over = null;
+    }
+
+    onDragOver(row, ev) {
+        if (this.dragKey && this.dragKey !== row.key) {
+            ev.preventDefault();
+            this.entry.over = row.key;
+        }
+    }
+
+    async onDrop(row, ev) {
+        ev.preventDefault();
+        const from = this.dragKey;
+        this.entry.over = null;
+        if (!from || from === row.key) {
+            return;
+        }
+        const keys = this.summary.rows.map((r) => r.key).filter((k) => k !== from);
+        keys.splice(keys.indexOf(row.key) + (this._below(row.key, from) ? 1 : 0), 0, from);
+        await this._rowCall("pmk_summary_order", [keys], _t("Порядок изменён"));
+    }
+
+    /** Тащили сверху вниз — встаёт под строкой, снизу вверх — над ней. */
+    _below(target, from) {
+        const keys = this.summary.rows.map((r) => r.key);
+        return keys.indexOf(from) < keys.indexOf(target);
+    }
+
+    async copyRow(row) {
+        await this._rowCall("pmk_summary_copy", [row.key], _t("Скопировано: %s", row.name));
+    }
+
+    async deleteRow(row) {
+        const ok = await new Promise((resolve) => {
+            this.env.services.dialog.add(ConfirmationDialog, {
+                title: _t("Удалить строку"),
+                body: _t("Удалить «%s» из расчёта? В историю расчёта ляжет запись.", row.name),
+                confirmLabel: _t("Удалить"),
+                confirm: () => resolve(true),
+                cancel: () => resolve(false),
+            }, { onClose: () => resolve(false) });
+        });
+        if (ok) {
+            await this._rowCall("pmk_summary_delete", [row.key], _t("Удалено: %s", row.name));
+        }
+    }
+
+    async _rowCall(method, args, done) {
+        const resId = await this._ready();
+        if (!resId) {
+            return;
+        }
+        await this.orm.call("pmk.metal.spec", method, [[resId], ...args]);
+        this.notification.add(done, { type: "success" });
+        await this._reload();
     }
 
     async move(row, ev) {

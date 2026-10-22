@@ -49,7 +49,8 @@ class MetalSpecSummary(models.Model):
         "product_ids.line_ids.a_mm", "product_ids.line_ids.b_mm", "product_ids.line_ids.qty",
         "product_ids.line_ids.weight_total", "product_ids.line_ids.cost_fact_total",
         "product_ids.line_ids.pmk_mass_kg",
-        "dobor_line_ids", "vent_line_ids")
+        "dobor_line_ids", "vent_line_ids",
+        "product_ids.pmk_kp_seq", "dobor_order_ids.line_ids.pmk_kp_seq", "vent_order_ids.line_ids.pmk_kp_seq")
     def _compute_pmk_summary(self):
         for spec in self:
             rows = []
@@ -59,6 +60,7 @@ class MetalSpecSummary(models.Model):
                 rows += [spec._pmk_summary_dobor(l) for l in spec.dobor_line_ids]
             if spec.cat_vent:
                 rows += [spec._pmk_summary_vent(h) for h in spec.vent_line_ids]
+            rows = spec._pmk_summary_sorted(rows)  # №312: сквозной порядок (порядок в КП)
             spec.pmk_summary = {
                 "rows": rows,
                 "weight": _r(sum(r["weight"] for r in rows), 1),
@@ -93,6 +95,7 @@ class MetalSpecSummary(models.Model):
         key = product.id if isinstance(product.id, int) else str(product.id)
         return {
             "key": "metal-%s" % key,
+            "kp": product.pmk_kp_seq,
             "source": "metal" if details else "manual",
             "name": product.name or "",
             "qty": product.qty,
@@ -118,6 +121,7 @@ class MetalSpecSummary(models.Model):
         coating = line.coating_id
         return {
             "key": "dobor-%s" % line.id,
+            "kp": line.pmk_kp_seq,
             "source": "dobor",
             "name": line.display_name or "",
             "qty": line.qty,
@@ -170,6 +174,7 @@ class MetalSpecSummary(models.Model):
             head.append(hood.layout)
         return {
             "key": "vent-%s" % hood.id,
+            "kp": hood.pmk_kp_seq,
             "source": "vent",
             "name": "Зонт %s" % (hood.hood_label or hood.display_name or ""),
             "qty": qty,

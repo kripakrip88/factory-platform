@@ -8,12 +8,14 @@
       </div>
       <table t-if="summary.rows.length or canEdit" class="o_pmk_summary__table">
         <colgroup>
+          <col t-if="canEdit" style="width: 26px"/>
           <col/><col style="width: 130px"/><col style="width: 80px"/><col style="width: 110px"/>
           <col style="width: 120px"/><col style="width: 130px"/>
-          <col t-if="canEdit" style="width: 140px"/>
+          <col t-if="canEdit" style="width: 200px"/>
         </colgroup>
         <thead t-if="summary.rows.length">
           <tr>
+            <th t-if="canEdit"/>
             <th>Изделие</th><th>Откуда</th><th class="text-end">Кол-во</th><th class="text-end">Вес, кг</th>
             <th class="text-end">Цена за шт</th><th class="text-end">Сумма</th>
             <th t-if="canEdit"/>
@@ -21,8 +23,13 @@
         </thead>
         <tbody>
           <t t-foreach="summary.rows" t-as="row" t-key="row.key">
-            <tr t-att-class="{'o_pmk_summary__row': 1, 'is-open': open[row.key], 'is-clickable': canOpen(row)}"
+            <tr t-att-class="{'o_pmk_summary__row': 1, 'is-open': open[row.key], 'is-clickable': canOpen(row), 'o_pmk_summary__over': entry.over === row.key}"
+                t-att-draggable="canEdit ? 'true' : 'false'"
+                t-on-dragstart="(ev) => this.onDragStart(row, ev)" t-on-dragend="(ev) => this.onDragEnd(ev)"
+                t-on-dragover="(ev) => this.onDragOver(row, ev)" t-on-drop="(ev) => this.onDrop(row, ev)"
                 t-on-click="() => this.toggle(row)">
+              <td t-if="canEdit" class="o_pmk_summary__handle" title="Перетащить: порядок в сводке — порядок в КП и счёте"
+                  t-on-mousedown="() => this.armDrag()" t-on-click.stop="() => {}">⠿</td>
               <td class="o_pmk_summary__name">
                 <i t-if="canOpen(row)" t-att-class="'fa fa-fw ' + (open[row.key] ? 'fa-angle-down' : 'fa-angle-right')"/>
                 <span t-else="" class="o_pmk_summary__nochev"/>
@@ -35,6 +42,12 @@
                   t-esc="row.price_unit ? money(row.price_unit) : 'нет цены'"/>
               <td class="text-end" t-esc="money(row.total)"/>
               <td t-if="canEdit" class="o_pmk_summary__move" t-on-click.stop="() => {}">
+                <span class="o_pmk_summary__acts">
+                  <button type="button" class="btn btn-link btn-sm" title="Копировать — копия встанет ниже"
+                          aria-label="Копировать" t-on-click="() => this.copyRow(row)"><i class="fa fa-clone"/></button>
+                  <button type="button" class="btn btn-link btn-sm o_pmk_summary__del" title="Удалить из расчёта"
+                          aria-label="Удалить" t-on-click="() => this.deleteRow(row)"><i class="fa fa-trash-o"/></button>
+                </span>
                 <select t-if="canMove(row)" class="form-select form-select-sm" aria-label="Перенести в"
                         t-on-change="(ev) => this.move(row, ev)">
                   <option value="">Перенести в…</option>
@@ -45,7 +58,7 @@
               </td>
             </tr>
             <tr t-if="open[row.key]" class="o_pmk_summary__detail">
-              <td t-att-colspan="canEdit ? 7 : 6">
+              <td t-att-colspan="canEdit ? 8 : 6">
                 <!-- Конструкции: детали изделия. -->
                 <t t-if="row.source === 'metal'">
                   <table class="o_pmk_summary__sub">
@@ -119,7 +132,7 @@
           </t>
           <!-- Ввод строк (22.10.2026): Enter — строка, Ctrl+V — столбик из Excel или письма. -->
           <tr t-if="canEdit" class="o_pmk_summary__entry">
-            <td t-att-colspan="7">
+            <td t-att-colspan="8">
               <input type="text" class="o_pmk_summary__entry-input" t-att-value="entry.text"
                      t-att-disabled="entry.busy"
                      placeholder="Новая строка: дэ 2500мм 0,45мм рал8017 10шт · зонт 500х1000 0,65 8017 2шт · бф 2.1 м30 600 09г2с 16шт · Ферма Ф-2 3шт"
@@ -133,6 +146,7 @@
         </tbody>
         <tfoot t-if="summary.rows.length">
           <tr>
+            <td t-if="canEdit"/>
             <td>Итого<t t-if="summary.unpriced"> <span class="o_pmk_summary__noprice">· без цены: <t t-esc="summary.unpriced"/></span></t></td>
             <td/><td/><td class="text-end" t-esc="kg(summary.weight)"/><td/>
             <td class="text-end" t-esc="money(summary.total)"/>

@@ -927,9 +927,27 @@ class SaleOrder(models.Model):
         }, **item["link"])
 
     @api.model
+    def _pmk_invoice_items_ordered(self, spec):
+        """Строки счёта в порядке сводки «Металлоизделия» (№312, Антон 23.10.2026: порядок в сводке
+        сквозной — он же порядок в КП и счёте). Строки, которых нет в сводке, — после, как были."""
+        items = self._pmk_invoice_items(spec)
+        kinds = {"metal": "p", "manual": "p", "dobor": "d", "vent": "v", "bolt": "b"}
+        rank = {}
+        if "pmk_summary" in spec._fields:
+            for number, row in enumerate((spec.pmk_summary or {}).get("rows", [])):
+                kind, _sep, rid = str(row.get("key") or "").partition("-")
+                if rid.isdigit() and row.get("source") in kinds:
+                    rank[(kinds[row["source"]], int(rid))] = number
+        ordered = sorted(enumerate(items), key=lambda pair: (rank.get(pair[1]["key"], 10 ** 6), pair[0]))
+        result = []
+        for number, (_i, item) in enumerate(ordered, 1):
+            result.append(dict(item, sequence=number * 10))
+        return result
+
+    @api.model
     def _pmk_line_commands(self, spec):
         return [Command.create(self._pmk_line_vals(item))
-                for item in self._pmk_invoice_items(spec)]
+                for item in self._pmk_invoice_items_ordered(spec)]
 
     def _pmk_sync_line_commands(self, spec):
         """Строки-изделия черновика = изделия расчёта с ценой: совпавшие по
@@ -937,7 +955,7 @@ class SaleOrder(models.Model):
         из расчёта (услуги) не трогаются."""
         self.ensure_one()
         currency = self.currency_id or self.company_id.currency_id
-        wanted = {item["key"]: item for item in self._pmk_invoice_items(spec)}
+        wanted = {item["key"]: item for item in self._pmk_invoice_items_ordered(spec)}
         commands, seen = [], set()
         for line in self.order_line.filtered("pmk_from_spec"):
             key = self._pmk_line_key(line)

@@ -140,7 +140,7 @@ class MetalSpecBolt(models.Model):
         "dobor_line_ids", "vent_line_ids",
         "cat_bolt", "bolt_calc_ids.line_ids.name", "bolt_calc_ids.line_ids.qty",
         "bolt_calc_ids.line_ids.price_unit", "bolt_calc_ids.line_ids.mass_one",
-        "bolt_calc_ids.line_ids.part_ids.cost")
+        "bolt_calc_ids.line_ids.part_ids.cost", "bolt_calc_ids.line_ids.pmk_kp_seq")
     def _compute_pmk_summary(self):
         super()._compute_pmk_summary()
         for spec in self:
@@ -150,7 +150,7 @@ class MetalSpecBolt(models.Model):
             rows = list(summary.get("rows", []))
             for line in spec.bolt_calc_ids.line_ids.filtered("name").sorted(lambda l: (l.sequence, l.id)):
                 rows.append(spec._pmk_summary_bolt(line))
-            summary["rows"] = rows
+            summary["rows"] = spec._pmk_summary_sorted(rows)  # №312: сквозной порядок
             summary["weight"] = round(sum(r.get("weight") or 0 for r in rows), 1)
             summary["total"] = round(sum(r.get("total") or 0 for r in rows), 2)
             summary["unpriced"] = sum(1 for r in rows if not r.get("price_unit"))
@@ -158,7 +158,7 @@ class MetalSpecBolt(models.Model):
 
     def _pmk_summary_bolt(self, line):
         return {
-            "key": "bolt-%s" % line.id, "source": "bolt", "name": line.name or "",
+            "key": "bolt-%s" % line.id, "kp": line.pmk_kp_seq, "source": "bolt", "name": line.name or "",
             "qty": line.qty, "weight": round(line.mass_one * line.qty, 1),
             "price_unit": round(line.price_unit, 2), "total": round(line.price_total, 2),
             "details": [{
@@ -262,3 +262,17 @@ class MetalSpecBolt(models.Model):
             if line:
                 return line, line.pmk_entry_text or line.pmk_text or line.short_name or line.name
         return super()._pmk_entry_source_more(kind, rid)
+
+    # ─── №312: строка болта в сводке — найти, копировать (удаляет pmk_bridge: unlink) ──
+    def _pmk_summary_record_more(self, kind, rid):
+        if kind == "bolt":
+            return self.bolt_calc_ids.line_ids.filtered(lambda l: l.id == rid)
+        return super()._pmk_summary_record_more(kind, rid)
+
+    def _pmk_summary_copy_record(self, kind, record):
+        if kind == "bolt":
+            before = record.calc_id.line_ids
+            record.calc_id.bolt_duplicate_row("b%s" % record.id)
+            return record.calc_id.line_ids - before
+        return super()._pmk_summary_copy_record(kind, record)
+

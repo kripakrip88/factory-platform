@@ -63,6 +63,10 @@ class EntryText(models.AbstractModel):
     _description = "Строка из сводки «Металлоизделия»"
 
     pmk_entry_text = fields.Char("Набрано в сводке", copy=False)
+    # №312 (Голубенко, Антон 23.10.2026): сквозной порядок строк сводки «Металлоизделия» —
+    # он же порядок строк в КП и счёте. 0 — не перетаскивали: строка идёт блоком своей
+    # категории после расставленных.
+    pmk_kp_seq = fields.Integer("Порядок в КП", copy=False, default=0)
 
 
 class MetalSpecProductEntry(models.Model):
@@ -303,3 +307,92 @@ class MetalSpecEntry(models.Model):
             return {"error": error}
         record.unlink()
         return {"moved": labels[target]}
+
+
+class MetalSpecSummaryRows(models.Model):
+    """№312: строки сводки — перетащить, копировать, удалить (Голубенко 20.10, Антон 23.10.2026:
+    «кнопки удалить, копировать во всех разделах; drag-n-drop перетаскивания позиций»)."""
+    _inherit = "pmk.metal.spec"
+
+    def _pmk_summary_record(self, key):
+        """Ключ строки сводки → запись (изделие, позиция доборки, зонт; болт — pmk_bolt)."""
+        kind, _sep, rid = str(key or "").partition("-")
+        rid = int(rid) if rid.isdigit() else 0
+        record = {"metal": self.product_ids, "dobor": self.dobor_line_ids,
+                  "vent": self.vent_line_ids}.get(kind)
+        record = record.filtered(lambda r: r.id == rid) if record is not None else None
+        if record is None:
+            record = self._pmk_summary_record_more(kind, rid)
+        if not record:
+            raise UserError(_("Строка не найдена — обновите страницу."))
+        return kind, record
+
+    def _pmk_summary_record_more(self, kind, rid):
+        return None
+
+    @staticmethod
+    def _pmk_summary_sorted(rows):
+        """Сначала расставленные (порядок в КП), потом остальные — блоками категорий, как были."""
+        return sorted(rows, key=lambda r: (0 if r.get("kp") else 1, r.get("kp") or 0))
+
+    def _pmk_summary_keys(self):
+        return [r["key"] for r in (self.pmk_summary or {}).get("rows", [])]
+
+    def pmk_summary_order(self, keys):
+        """Новый порядок строк сводки (перетаскивание) — номера 10, 20, 30…"""
+        self.ensure_one()
+        self.check_access("write")
+        for number, key in enumerate(keys or [], 1):
+            _kind, record = self._pmk_summary_record(key)
+            if record.pmk_kp_seq != number * 10:
+                record.pmk_kp_seq = number * 10
+        self.invalidate_recordset(["pmk_summary"])
+        if hasattr(self, "_pmk_sync_draft_invoices"):
+            self._pmk_sync_draft_invoices()
+        return True
+
+    def _pmk_summary_copy_record(self, kind, record):
+        """Копия строки своим калькулятором; ответ — новая запись."""
+        if kind == "metal":
+            before = self.product_ids
+            record.action_pmk_copy()
+            return self.product_ids - before
+        if kind in ("dobor", "vent"):
+            before = record.order_id.line_ids
+            record.action_pmk_copy()
+            return record.order_id.line_ids - before
+        return self.env[record._name]
+
+    def pmk_summary_copy(self, key):
+        """«Копировать» в сводке: копия сразу под исходной (и в сводке, и в своей вкладке)."""
+        self.ensure_one()
+        self.check_access("write")
+        kind, record = self._pmk_summary_record(key)
+        keys = self._pmk_summary_keys()
+        new = self._pmk_summary_copy_record(kind, record)
+        self.invalidate_recordset(["pmk_summary"])
+        if new and any(self._pmk_summary_record(k)[1].pmk_kp_seq for k in keys):
+            new_key = "%s-%s" % ("metal" if kind == "metal" else kind, new[:1].id)
+            order = [k for k in keys]
+            order.insert(order.index(key) + 1, new_key)
+            self.pmk_summary_order(order)
+        self.message_post(body=_("Скопировано в сводке: %s") % (record.display_name or ""),
+                          subtype_xmlid="mail.mt_note")
+        return True
+
+    def pmk_summary_delete(self, key):
+        """«Удалить» в сводке (с подтверждением на экране); запись — в историю расчёта."""
+        self.ensure_one()
+        self.check_access("write")
+        kind, record = self._pmk_summary_record(key)
+        name = record.display_name or ""
+        labels = {"metal": _("Конструкции"), "dobor": _("Доборка"), "vent": _("Вентзонты")}
+        label = labels.get(kind) or self._pmk_entry_labels().get(kind, kind)
+        if kind in ("dobor", "vent"):
+            record.action_pmk_delete()
+        else:
+            record.unlink()
+        self.invalidate_recordset(["pmk_summary"])
+        self.message_post(body=_("Удалено в сводке: %(name)s (%(cat)s)", name=name, cat=label),
+                          subtype_xmlid="mail.mt_note")
+        return True
