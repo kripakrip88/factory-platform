@@ -39,6 +39,9 @@ from .moysklad import API, ms_id
 _logger = logging.getLogger(__name__)
 
 MODE_PARAM = "pmk_moysklad.export_mode"
+# С какого момента счета уходят в МС (Антон 22.10.2026: «счета, которые сейчас есть в Odoo, —
+# тест, переносим только свежесозданные»). Ставится сам при первом прогоне в режиме live.
+SINCE_PARAM = "pmk_moysklad.export_since"
 FOLDER_PARAM = "pmk_moysklad.odoo_folder_id"
 STATE_ODOO = "Из Odoo"
 STATE_CANCEL = "Не актуальна"
@@ -49,7 +52,7 @@ EXPORT_FIELDS = {"order_line", "partner_id", "pmk_org_id", "date_order", "state"
 UOM_MS = {"units": "шт", "единицы": "шт", "шт": "шт", "kg": "кг", "кг": "кг", "t": "т", "т": "т",
           "m": "м", "м": "м", "m²": "м2", "м²": "м2", "m2": "м2", "м2": "м2"}
 EXPORT_STATES = [("pending", "Ждёт выгрузки"), ("done", "Выгружен"), ("dry", "Вхолостую"),
-                 ("error", "Ошибка выгрузки")]
+                 ("error", "Ошибка выгрузки"), ("skip", "Не выгружается: создан до включения")]
 
 
 class MsWriteError(Exception):
@@ -79,7 +82,7 @@ class SaleOrderMsExport(models.Model):
 
     def _pmk_ms_queue(self):
         for order in self.sudo():
-            if order._pmk_ms_exportable() and order.pmk_ms_export_state != "pending":
+            if order._pmk_ms_exportable() and order.pmk_ms_export_state not in ("pending", "skip"):
                 super(SaleOrderMsExport, order).write({"pmk_ms_from_odoo": True, "pmk_ms_export_state": "pending"})
 
     @api.model_create_multi
@@ -100,6 +103,17 @@ class SaleOrderMsExport(models.Model):
         mode = self.env["ir.config_parameter"].sudo().get_param(MODE_PARAM) or "off"
         if mode not in ("dry", "live"):
             return
+        if mode == "live":
+            Param = self.env["ir.config_parameter"].sudo()
+            since = Param.get_param(SINCE_PARAM)
+            if not since:
+                since = fields.Datetime.to_string(fields.Datetime.now())
+                Param.set_param(SINCE_PARAM, since)
+            old = self.sudo().search([("pmk_ms_export_state", "=", "pending"), ("create_date", "<", since)])
+            if old:
+                super(SaleOrderMsExport, old).write({
+                    "pmk_ms_export_state": "skip",
+                    "pmk_ms_export_note": "создан до включения выгрузки (%s) — в МС не переносим" % since[:16]})
         orders = self.sudo().search([("pmk_ms_export_state", "=", "pending")], limit=BATCH, order="id")
         if not orders:
             return

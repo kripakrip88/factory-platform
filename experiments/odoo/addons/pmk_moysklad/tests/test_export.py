@@ -16,6 +16,7 @@ class TestMsExport(TransactionCase):
         ensure_taxes(self.env, self.env.company)
         Param = self.env["ir.config_parameter"].sudo()
         Param.set_param("pmk_moysklad.odoo_folder_id", "folder-odoo")
+        Param.set_param(ex.SINCE_PARAM, "2000-01-01 00:00:00")  # «включили давно»: свои счета — свежие
         self.org = self.env["pmk.org"].search([], limit=1)
         self.org.pmk_ms_id = "org-ms-1"
         self.client = self.env["res.partner"].create({"name": "ООО «Выгрузка»", "is_company": True,
@@ -129,4 +130,19 @@ class TestMsExport(TransactionCase):
         self.assertEqual(order.pmk_ms_export_state, "error")
         self.assertIn("нет ИНН", order.pmk_ms_export_note)
         self.assertFalse(self.writes)
+
+    def test_live_skips_older_invoices(self):
+        """Включили «live» — счета, созданные до этого (тестовые), в МС не уходят (22.10.2026)."""
+        Param = self.env["ir.config_parameter"].sudo()
+        old = self._invoice()
+        self.env.cr.execute("UPDATE sale_order SET create_date = now() - interval '1 day' WHERE id = %s", [old.id])
+        old.invalidate_recordset(["create_date"])
+        Param.set_param(ex.SINCE_PARAM, False)
+        self._mode("live")
+        self.env["sale.order"].with_context(pmk_ms_no_commit=True)._cron_ms_export()
+        self.assertEqual(old.pmk_ms_export_state, "skip")
+        self.assertTrue(Param.get_param(ex.SINCE_PARAM))
+        self.assertFalse([w for w in self.writes if w[1] == "entity/invoiceout"])
+        old.order_line.price_unit = 999
+        self.assertEqual(old.pmk_ms_export_state, "skip", "Правка тестового не ставит его в очередь.")
 
