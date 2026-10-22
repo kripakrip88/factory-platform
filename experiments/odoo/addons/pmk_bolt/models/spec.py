@@ -9,7 +9,12 @@ spec_categories.py): включили категорию — к расчёту �
 bolt_* расчёта передаёт вызов его документу болтов): вводят прямо в расчёте, как в
 «Конструкциях». Сводка «Металлоизделия» — болты строками с составом.
 """
+import re
+
 from odoo import _, api, fields, models
+from odoo.exceptions import UserError
+
+from ..tools import parse
 
 
 class BoltCalcSpec(models.Model):
@@ -18,6 +23,12 @@ class BoltCalcSpec(models.Model):
     spec_id = fields.Many2one("pmk.metal.spec", "Расчёт", index=True, copy=False, ondelete="cascade",
                               help="Расчёт заказа, к которому относятся эти болты (категория «Фундаментные "
                                    "болты»). Пусто — расчёт болтов сам по себе (прикидка).")
+
+
+class BoltLineEntry(models.Model):
+    """Как болт набрали в сводке «Металлоизделия» — для «Перенести в»."""
+    _name = "pmk.bolt.line"
+    _inherit = ["pmk.bolt.line", "pmk.summary.entry.mixin"]
 
 
 class MetalSpecBolt(models.Model):
@@ -215,3 +226,39 @@ class MetalSpecBolt(models.Model):
             if names:
                 bolts = _("болты: %s") % ", ".join(names)
                 spec.price_missing_text = "; ".join(t for t in (spec.price_missing_text, bolts) if t)
+
+    # ─── Ввод строкой в сводке «Металлоизделия» (pmk_bridge spec_entry.py) ─
+    def _pmk_entry_route(self, text):
+        if re.match(r"^\s*(бф|болт)", (text or "").lower()):
+            return "bolt"
+        return super()._pmk_entry_route(text)
+
+    def _pmk_entry_labels(self):
+        labels = super()._pmk_entry_labels()
+        labels["bolt"] = _("Болты")
+        return labels
+
+    def _pmk_entry_bolt(self, text):
+        """«бф 2.1 м30 600 09г2с 16шт» — болт в документ болтов расчёта (пустая строка таблицы —
+        в неё). Не понял — ошибка словами, строка не заводится."""
+        error = parse.parse(text)[2]
+        if error:
+            raise UserError(error)
+        if not self.cat_bolt:
+            self.cat_bolt = True
+        doc = self._pmk_bolt_doc()
+        empty = doc.line_ids.filtered(lambda l: not l.bolt_type and not l.pmk_text and not l.part_ids)[:1]
+        if empty:
+            empty._grid_apply_text(text)
+            line = empty
+        else:
+            line = doc._grid_new_bolt(doc._grid_lines()[-1:], text)
+        line.pmk_entry_text = text
+        return line
+
+    def _pmk_entry_source_more(self, kind, rid):
+        if kind == "bolt":
+            line = self.bolt_calc_ids.line_ids.filtered(lambda l: l.id == rid)
+            if line:
+                return line, line.pmk_entry_text or line.pmk_text or line.short_name or line.name
+        return super()._pmk_entry_source_more(kind, rid)

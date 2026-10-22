@@ -4,17 +4,19 @@
   <t t-name="pmk_bridge.SpecSummaryField">
     <div class="o_pmk_summary">
       <div t-if="!summary.rows.length" class="o_pmk_summary__empty">
-        Изделий пока нет — заведите их во вкладке «Конструкции», доборке или вентзонтах.
+        Изделий пока нет — впишите их строкой ниже или заведите во вкладке своей категории.
       </div>
-      <table t-else="" class="o_pmk_summary__table">
+      <table t-if="summary.rows.length or canEdit" class="o_pmk_summary__table">
         <colgroup>
           <col/><col style="width: 130px"/><col style="width: 80px"/><col style="width: 110px"/>
           <col style="width: 120px"/><col style="width: 130px"/>
+          <col t-if="canEdit" style="width: 140px"/>
         </colgroup>
-        <thead>
+        <thead t-if="summary.rows.length">
           <tr>
             <th>Изделие</th><th>Откуда</th><th class="text-end">Кол-во</th><th class="text-end">Вес, кг</th>
             <th class="text-end">Цена за шт</th><th class="text-end">Сумма</th>
+            <th t-if="canEdit"/>
           </tr>
         </thead>
         <tbody>
@@ -32,9 +34,18 @@
               <td t-att-class="{'text-end': 1, 'o_pmk_summary__noprice': !row.price_unit}"
                   t-esc="row.price_unit ? money(row.price_unit) : 'нет цены'"/>
               <td class="text-end" t-esc="money(row.total)"/>
+              <td t-if="canEdit" class="o_pmk_summary__move" t-on-click.stop="() => {}">
+                <select t-if="canMove(row)" class="form-select form-select-sm" aria-label="Перенести в"
+                        t-on-change="(ev) => this.move(row, ev)">
+                  <option value="">Перенести в…</option>
+                  <t t-foreach="targets" t-as="target" t-key="target.key">
+                    <option t-if="target.key !== row.source" t-att-value="target.key" t-esc="target.label"/>
+                  </t>
+                </select>
+              </td>
             </tr>
             <tr t-if="open[row.key]" class="o_pmk_summary__detail">
-              <td colspan="6">
+              <td t-att-colspan="canEdit ? 7 : 6">
                 <!-- Конструкции: детали изделия. -->
                 <t t-if="row.source === 'metal'">
                   <table class="o_pmk_summary__sub">
@@ -106,12 +117,26 @@
               </td>
             </tr>
           </t>
+          <!-- Ввод строк (22.10.2026): Enter — строка, Ctrl+V — столбик из Excel или письма. -->
+          <tr t-if="canEdit" class="o_pmk_summary__entry">
+            <td t-att-colspan="7">
+              <input type="text" class="o_pmk_summary__entry-input" t-att-value="entry.text"
+                     t-att-disabled="entry.busy"
+                     placeholder="Новая строка: дэ 2500мм 0,45мм рал8017 10шт · зонт 500х1000 0,65 8017 2шт · бф 2.1 м30 600 09г2с 16шт · Ферма Ф-2 3шт"
+                     t-on-input="onEntryInput" t-on-keydown="onEntryKeydown" t-on-paste="onEntryPaste"/>
+              <div class="o_pmk_summary__entry-hint">
+                Enter — добавить · Ctrl+V — столбик строк из Excel или письма · «дэ» — доборка, «зонт» — вентзонты,
+                «бф» — болты, остальное — в «Конструкции»
+              </div>
+            </td>
+          </tr>
         </tbody>
-        <tfoot>
+        <tfoot t-if="summary.rows.length">
           <tr>
             <td>Итого<t t-if="summary.unpriced"> <span class="o_pmk_summary__noprice">· без цены: <t t-esc="summary.unpriced"/></span></t></td>
             <td/><td/><td class="text-end" t-esc="kg(summary.weight)"/><td/>
             <td class="text-end" t-esc="money(summary.total)"/>
+            <td t-if="canEdit"/>
           </tr>
         </tfoot>
       </table>

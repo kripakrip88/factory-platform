@@ -106,3 +106,19 @@ class TestBoltInSpecAndInvoice(Z2Common):
         self.assertTrue(any(c.startswith("Круг 30") for c in cells))
         money = [str(c.value) for row in book["Металл и деньги"].iter_rows() for c in row if c.value]
         self.assertTrue(any(c.startswith("Гайка М30") for c in money))
+
+    def test_summary_entry_bolt(self):
+        """Ввод в сводке: «бф …» — в болты расчёта (пустая строка таблицы — в неё), перенос обратно."""
+        deal = self._deal()
+        spec = self._spec(deal, products=[("Ферма Ф-1", 2, 1000.0)])
+        res = spec.pmk_summary_add(["бф 1.1 м20 1000 ст3 8шт", "бф м20 8шт"])
+        self.assertEqual(res["added"], {"Болты": 1})
+        self.assertEqual(len(res["errors"]), 1)
+        line = spec.bolt_calc_ids.line_ids.filtered("name")
+        self.assertTrue(spec.cat_bolt)
+        self.assertEqual((line.bolt_type, line.diameter, line.length, line.qty), ("1.1", "20", 1000, 8))
+        self.assertEqual(len(spec.bolt_calc_ids.line_ids), 1, "Пустая строка таблицы заполнена, не добавлена.")
+        res = spec.pmk_summary_move("bolt-%s" % line.id, "metal")
+        self.assertEqual(res, {"moved": "Конструкции"})
+        self.assertFalse(line.exists())
+        self.assertIn("бф 1.1 м20 1000 ст3", spec.product_ids.mapped("name"))

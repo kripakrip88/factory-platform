@@ -6,8 +6,15 @@
  * вентзонты. Строка раскрывается стрелкой и показывает состав — только
  * смотреть («можно раскрыть, но не редактировать»); правят во вкладке своего
  * калькулятора. Что раскрыто — помнится, пока открыта форма.
+ *
+ * Ввод строк (Антон 22.10.2026: «забиваем общий список, а потом разносим по
+ * категориям»): строка внизу таблицы, как в Бутике — Enter заводит строку,
+ * Ctrl+V — столбик из Excel или письма. Сервер (models/spec_entry.py) сам
+ * раскладывает по категориям: «дэ …» — доборка, «зонт …» — вентзонты, «бф …» —
+ * болты, остальное — «Конструкции». Ошиблась категория — «Перенести в…».
  */
-import { Component, markup, useState } from "@odoo/owl";
+import { Component, markup, status, useState } from "@odoo/owl";
+import { _t } from "@web/core/l10n/translation";
 import { registry } from "@web/core/registry";
 import { standardFieldProps } from "@web/views/fields/standard_field_props";
 
@@ -28,7 +35,117 @@ export class SpecSummaryField extends Component {
 
     setup() {
         this.open = useState({});
+        this.entry = useState({ text: "", busy: false });
         this.sources = SOURCES;
+        this.notification = this.env.services.notification;
+        this.orm = this.env.services.orm;
+    }
+
+    /** Форма открыта на правку (у кого нет прав — только смотреть). */
+    get canEdit() {
+        return this.props.record.isInEdition;
+    }
+
+    /** Строка ещё ничья: у изделия нет деталей, у доборки — нарисованного профиля. */
+    canMove(row) {
+        if (row.source === "metal") {
+            return false;
+        }
+        return !(row.source === "dobor" && row.dobor && row.dobor.developed);
+    }
+
+    get targets() {
+        return Object.entries(this.sources)
+            .filter(([key]) => key !== "manual")
+            .map(([key, src]) => ({ key, label: src.label }));
+    }
+
+    /** Новый или правленный расчёт — сначала сохранить: серверу нужен номер и шапка. */
+    async _ready() {
+        const record = this.props.record;
+        if (!record.resId || (await record.isDirty())) {
+            if (!(await record.save())) {
+                return false;
+            }
+        }
+        return record.resId;
+    }
+
+    async _reload() {
+        const record = this.props.record;
+        if (status(this) !== "destroyed") {
+            await record.model.mutex.exec(() => record._load());
+        }
+    }
+
+    async add(texts) {
+        texts = texts.map((t) => t.trim()).filter((t) => t);
+        if (!texts.length || this.entry.busy) {
+            return;
+        }
+        this.entry.busy = true;
+        try {
+            const resId = await this._ready();
+            if (!resId) {
+                return;
+            }
+            const res = await this.orm.call("pmk.metal.spec", "pmk_summary_add", [[resId], texts]);
+            const added = Object.entries(res.added || {}).map(([cat, n]) => `${cat} — ${n}`);
+            if (added.length) {
+                this.entry.text = "";
+                this.notification.add(_t("Добавлено: %s", added.join(", ")), { type: "success" });
+            }
+            for (const error of res.errors || []) {
+                this.notification.add(error, { type: "warning", sticky: true });
+            }
+            await this._reload();
+        } finally {
+            if (status(this) !== "destroyed") {
+                this.entry.busy = false;
+            }
+        }
+    }
+
+    onEntryInput(ev) {
+        this.entry.text = ev.target.value;
+    }
+
+    onEntryKeydown(ev) {
+        if (ev.key === "Enter" && !ev.shiftKey) {
+            ev.preventDefault();
+            this.add([this.entry.text]);
+        }
+    }
+
+    onEntryPaste(ev) {
+        const text = ev.clipboardData?.getData("text") || "";
+        if (!text.includes("\n") && !text.includes("\t")) {
+            return;
+        }
+        ev.preventDefault();
+        // Столбик строк; колонки Excel — через пробел в одну запись.
+        const lines = text.replace(/\r/g, "").split("\n")
+            .map((line) => line.split("\t").map((c) => c.trim()).filter((c) => c).join(" "));
+        this.add(lines);
+    }
+
+    async move(row, ev) {
+        const target = ev.target.value;
+        ev.target.value = "";
+        if (!target) {
+            return;
+        }
+        const resId = await this._ready();
+        if (!resId) {
+            return;
+        }
+        const res = await this.orm.call("pmk.metal.spec", "pmk_summary_move", [[resId], row.key, target]);
+        if (res.error) {
+            this.notification.add(_t("Не перенесено: %s", res.error), { type: "warning", sticky: true });
+        } else {
+            this.notification.add(_t("Перенесено в «%s»", res.moved), { type: "success" });
+        }
+        await this._reload();
     }
 
     get summary() {

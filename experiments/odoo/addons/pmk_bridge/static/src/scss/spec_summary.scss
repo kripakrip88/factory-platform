@@ -124,4 +124,33 @@
     dt { font-weight: 400; color: var(--pmk-text-muted, #6b6b6b); }
     dd { margin: 0; }
   }
+
+  // Ввод строк (22.10.2026): строка внизу таблицы — как пустая строка Бутика.
+  &__entry > td {
+    padding: 8px 8px 10px !important;
+    border-bottom: none !important;
+  }
+
+  &__entry-input {
+    width: 100%;
+    height: 32px;
+    padding: 4px 10px;
+    border: 1px solid var(--pmk-border, #e4e1d8);
+    border-radius: 6px;
+    background: var(--pmk-surface, #fff);
+    color: var(--pmk-text, #1f1f1f);
+    font: inherit;
+
+    &::placeholder { color: var(--pmk-text-muted, #6b6b6b); font-style: italic; }
+    &:focus { outline: none; border-color: var(--pmk-text-muted, #6b6b6b); }
+    &:disabled { opacity: 0.6; }
+  }
+
+  &__entry-hint {
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--pmk-text-muted, #6b6b6b);
+  }
+
+  &__move .form-select { height: 28px; padding-top: 2px; padding-bottom: 2px; font-size: 12px; }
 }

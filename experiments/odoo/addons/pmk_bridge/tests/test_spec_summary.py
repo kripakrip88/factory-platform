@@ -118,3 +118,56 @@ class TestSpecSummary(TransactionCase):
         self.assertAlmostEqual(spec.price_customer_total, products, places=2)
         self.assertAlmostEqual(spec.total_weight, sum(spec.product_ids.mapped("weight_total"))
                                + sum(spec.dobor_line_ids.mapped("weight_total")), places=2)
+
+    def _zinc(self, thick):
+        Sheet = self.env["pmk.metal.sheet"]
+        return Sheet.search([("sheet_type", "=", "Оцинкованный"), ("thickness_mm", "=", thick)], limit=1) \
+            or Sheet.create({"sheet_type": "Оцинкованный", "thickness_mm": thick, "gost": "ГОСТ 14918-2020",
+                             "mass_per_sqm": thick * 7.85})
+
+    def test_entry_routes_lines(self):
+        """Ввод в сводке (22.10.2026): строка сама уходит в свою категорию."""
+        self._zinc(0.45)
+        self._zinc(0.65)
+        spec = self.env["pmk.metal.spec"].create({"note": "Ввод строками"})
+        res = spec.pmk_summary_add(["дэ 2500мм 0,45мм рал8017 10шт", "зонт 500х1000 0,65 8017 2шт",
+                                    "Ферма Ф-2 3шт", "зонт 0,65 8017 2шт", "  "])
+        self.assertEqual(res["added"], {"Доборка": 1, "Вентзонты": 1, "Конструкции": 1})
+        self.assertEqual(len(res["errors"]), 1)
+        self.assertIn("размера шахты", res["errors"][0])
+        self.assertTrue(spec.cat_dobor and spec.cat_vent and spec.cat_metal)
+        line = spec.dobor_line_ids
+        self.assertEqual((line.plank_length, line.qty, line.sheet_id.thickness_mm, line.coating_id.ral_code),
+                         (2500, 10, 0.45, "8017"))
+        self.assertIn("RAL 8017 (", line.title)
+        hood = spec.vent_line_ids
+        self.assertEqual((hood.width, hood.length, hood.qty, hood.thickness, hood.coating_id.ral_code),
+                         (500, 1000, 2, 0.65, "8017"))
+        product = spec.product_ids
+        self.assertEqual((product.name, product.qty), ("Ферма Ф-2", 3))
+        self.assertEqual({r["source"] for r in spec.pmk_summary["rows"]}, {"dobor", "vent", "manual"})
+        # Без цвета у зонта и без толщины у доборки — не заводим, ошибка словами.
+        res = spec.pmk_summary_add(["зонт 500х1000 0,65 2шт", "дэ 2000мм 10шт"])
+        self.assertEqual(res["added"], {})
+        self.assertEqual(len(res["errors"]), 2)
+        self.assertEqual(len(spec.vent_line_ids), 1)
+
+    def test_entry_move(self):
+        """«Перенести в»: строка без своей работы переносится; не разобралась — остаётся на месте."""
+        self._zinc(0.65)
+        spec = self.env["pmk.metal.spec"].create({"note": "Перенос"})
+        spec.pmk_summary_add(["Отлив 2000 3шт", "зонт 500х1000 0,65 8017 2шт"])
+        product, hood = spec.product_ids, spec.vent_line_ids
+        res = spec.pmk_summary_move("metal-%s" % product.id, "dobor")
+        self.assertIn("error", res)
+        self.assertTrue(product.exists())
+        res = spec.pmk_summary_move("vent-%s" % hood.id, "metal")
+        self.assertEqual(res, {"moved": "Конструкции"})
+        self.assertFalse(hood.exists())
+        moved = spec.product_ids - product
+        self.assertEqual((moved.name, moved.qty), ("зонт 500х1000 0,65 8017", 2))
+        # Изделие с деталями не переносится.
+        spec.product_ids[:1].line_ids = [Command.create({"detail_name": "Стойка", "calc_mode": "linear",
+                                                         "profile_id": self.angle.id, "length_mm": 500, "qty": 1})]
+        with self.assertRaises(Exception):
+            spec.pmk_summary_move("metal-%s" % spec.product_ids[:1].id, "vent")
