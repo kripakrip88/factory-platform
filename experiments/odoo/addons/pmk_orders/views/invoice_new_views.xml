@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    «Создать» в списке «Счета покупателям» (22.10.2026, этап 5): окно «Новый счёт» — сделка или
+    клиент, ниже словами — что будет (по расчёту / пустой / уже есть). Логика — wizard/invoice_new.py.
+  -->
+  <record id="view_pmk_invoice_new_wizard_form" model="ir.ui.view">
+    <field name="name">pmk.invoice.new.wizard.form</field>
+    <field name="model">pmk.invoice.new.wizard</field>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <form string="Новый счёт">
+        <group>
+          <field name="lead_id" options="{'no_create': True}" placeholder="Сделка с клиентом"/>
+          <field name="partner_id" options="{'no_create': True}" placeholder="или клиент — сделку заведём"/>
+        </group>
+        <div class="text-muted">
+          <field name="hint" nolabel="1" readonly="1"/>
+        </div>
+        <footer>
+          <button name="action_create" type="object" string="Создать счёт" class="btn-primary" data-hotkey="q"/>
+          <button special="cancel" string="Отмена" class="btn-link"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+
+  <record id="action_pmk_invoice_new_wizard" model="ir.actions.act_window">
+    <field name="name">Новый счёт</field>
+    <field name="res_model">pmk.invoice.new.wizard</field>
+    <field name="view_mode">form</field>
+    <field name="target">new</field>
+  </record>
+
+  <!-- Кнопка — в шапке списка счетов, всегда (display="always"), а не «Новое» ядра: счёт без
+       сделки не заводим. -->
+  <record id="view_order_list_pmk_invoice_new" model="ir.ui.view">
+    <field name="name">sale.order.list.pmk.invoice.new</field>
+    <field name="model">sale.order</field>
+    <field name="inherit_id" ref="sale.sale_order_tree"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="/list/header" position="inside">
+        <button name="%(pmk_orders.action_pmk_invoice_new_wizard)d" type="action" string="Создать"
+                class="btn-primary" display="always" groups="sales_team.group_sale_salesman"/>
+      </xpath>
+    </field>
+  </record>
+</odoo>

@@ -78,6 +78,7 @@
         "views/mail_compose_views.xml",
         "views/project_task_views.xml",
         "views/won_wizard_views.xml",
+        "views/invoice_new_views.xml",
         "views/crm_lead_views.xml",
         "views/menus.xml",
     ],

@@ -13,3 +13,4 @@ from . import test_step_z15_order_row
 from . import test_category_invoice
 from . import test_filter_panel
 from . import test_spec_xlsx
+from . import test_invoice_new

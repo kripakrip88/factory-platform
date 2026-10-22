@@ -188,7 +188,8 @@ class TestStepZ2Invoice(Z2Common):
         self.assertEqual(deal.pmk_invoice_count, 1)
         seq = self.env.ref("sale.seq_sale_order")
         if seq.prefix == hooks.PREFIX:
-            self.assertTrue(invoice.name.startswith("СЧ-"), invoice.name)
+            # С pmk_moysklad — номер МС с буквой «д» (22.10.2026), без него — «СЧ-».
+            self.assertTrue(invoice.name.startswith("СЧ-") or invoice.name.endswith("д"), invoice.name)
 
         lines = invoice.order_line.sorted("sequence")
         self.assertEqual(lines.mapped("name"), ["Секция ограждения ОГ-1", "Ферма Ф-1"],
