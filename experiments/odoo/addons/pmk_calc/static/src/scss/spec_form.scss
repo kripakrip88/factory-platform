@@ -435,3 +435,9 @@
   .n { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
   tfoot td { font-weight: 700; border-bottom: 0; }
 }
+
+// №312: ручка ⠿ в списках доборки и зонтов расчёта; куда встанет строка — синяя черта сверху.
+.o_pmk_grip { cursor: grab; color: var(--pmk-text-muted, #6b6b6b); user-select: none; padding: 0 4px; }
+tr:hover .o_pmk_grip { color: var(--pmk-text, #1f1f1f); }
+.o_pmk_grip_dragging { opacity: 0.4; }
+.o_pmk_grip_over > td { box-shadow: inset 0 2px 0 var(--pmk-accent, #378add); }

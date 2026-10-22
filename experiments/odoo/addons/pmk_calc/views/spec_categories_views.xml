@@ -51,6 +51,7 @@
           </div>
           <field name="dobor_line_ids" nolabel="1" readonly="1">
             <list create="0" delete="0" no_open="1">
+              <field name="sequence" widget="pmk_row_grip" string=" " width="28px"/>
               <field name="pmk_pick" widget="pmk_pick_toggle" string=" " width="40px" options="{'autosave': false, 'pick_source': 'dobor'}"/>
               <field name="sketch" widget="pmk_svg" string="Профиль"/>
               <field name="title"/>
@@ -62,10 +63,6 @@
               <field name="weight_total" digits="[12,1]" sum="Вес"/>
               <field name="price_unit" string="Цена за шт, ₽"/>
               <field name="price_total" sum="Сумма"/>
-              <button name="action_pmk_move_up" type="object" icon="fa-arrow-up" class="pmk-row-copy"
-                      title="Выше (порядок в КП и счёте — перетаскиванием во вкладке «Металлоизделия»)"/>
-              <button name="action_pmk_move_down" type="object" icon="fa-arrow-down" class="pmk-row-copy"
-                      title="Ниже"/>
               <button name="action_pmk_copy" type="object" icon="fa-clone" class="pmk-row-copy"
                       title="Копировать строку — встанет сразу под ней"/>
               <button name="action_pmk_delete" type="object" icon="fa-trash-o" class="pmk-row-delete"
@@ -86,6 +83,7 @@
           </div>
           <field name="vent_line_ids" nolabel="1" readonly="1">
             <list create="0" delete="0" no_open="1">
+              <field name="sequence" widget="pmk_row_grip" string=" " width="28px"/>
               <field name="pmk_pick" widget="pmk_pick_toggle" string=" " width="40px" options="{'autosave': false, 'pick_source': 'vent'}"/>
               <field name="hood_label" string="Зонт"/>
               <field name="hood_size"/>
@@ -96,10 +94,6 @@
               <field name="total_mass_net_kg" string="Вес всего, кг" sum="Вес"/>
               <field name="price_unit" string="Цена за шт, ₽"/>
               <field name="price_total" sum="Сумма"/>
-              <button name="action_pmk_move_up" type="object" icon="fa-arrow-up" class="pmk-row-copy"
-                      title="Выше (порядок в КП и счёте — перетаскиванием во вкладке «Металлоизделия»)"/>
-              <button name="action_pmk_move_down" type="object" icon="fa-arrow-down" class="pmk-row-copy"
-                      title="Ниже"/>
               <button name="action_pmk_copy" type="object" icon="fa-clone" class="pmk-row-copy"
                       title="Копировать строку — встанет сразу под ней"/>
               <button name="action_pmk_delete" type="object" icon="fa-trash-o" class="pmk-row-delete"

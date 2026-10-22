@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+  <!-- №312: ручка перетаскивания строки списка только для чтения (js/row_grip.js). -->
+  <t t-name="pmk_calc.RowGrip">
+    <span class="o_pmk_grip" t-ref="root" title="Перетащить строку" t-on-mousedown="() => this.arm()">⠿</span>
+  </t>
+</templates>

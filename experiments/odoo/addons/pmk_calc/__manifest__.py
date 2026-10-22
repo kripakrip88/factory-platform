@@ -82,6 +82,9 @@
             "pmk_calc/static/src/js/dobor_copy_line.js",
             "pmk_calc/static/src/xml/dobor_copy_line.xml",
             # 13.10.2026: «Перенести» в списке изделий — выбор диапазона через Shift.
+            # 23.10.2026 (№312): ручка перетаскивания в списках только для чтения.
+            "pmk_calc/static/src/js/row_grip.js",
+            "pmk_calc/static/src/xml/row_grip.xml",
             "pmk_calc/static/src/js/pick_toggle.js",
             "pmk_calc/static/src/js/pick_head.js",
             "pmk_calc/static/src/xml/pick_toggle.xml",

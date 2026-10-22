@@ -286,26 +286,37 @@ class LinePickCopy(models.AbstractModel):
         self.unlink()
         return True
 
-    # №312 (Антон 23.10.2026): во вкладках доборки и зонтов расчёта список только для чтения —
-    # порядок строк стрелками; перетаскивание — в сводке «Металлоизделия» и в самом калькуляторе.
-    def _pmk_shift(self, step):
-        for line in self:
-            lines = line.order_id.line_ids.sorted(lambda l: (l.sequence, l.id))
-            ids = lines.ids
-            j = ids.index(line.id) + step
-            if 0 <= j < len(ids):
-                ordered = list(lines)
-                ordered[ids.index(line.id)], ordered[j] = ordered[j], ordered[ids.index(line.id)]
-                for number, other in enumerate(ordered, 1):
-                    if other.sequence != number * 10:
-                        other.sequence = number * 10
+    def action_pmk_move_to(self, target_id, below=False):
+        """№312 (Антон 23.10.2026): перетаскивание во вкладках доборки и зонтов расчёта (список только
+        для чтения — ручка js/row_grip.js): строка встаёт над/под target_id своего калькулятора."""
+        line = self[:1]
+        if not line:
+            return True
+        lines = [l for l in line.order_id.line_ids.sorted(lambda l: (l.sequence, l.id)) if l != line]
+        target = next((l for l in lines if l.id == target_id), None)
+        if target is None:
+            return True
+        lines.insert(lines.index(target) + (1 if below else 0), line)
+        for number, other in enumerate(lines, 1):
+            if other.sequence != number * 10:
+                other.sequence = number * 10
         return True
 
+    # Стрелки ↑↓ (были на копии 23.10.2026 до ручки ⠿): методы оставлены, чтобы обновление базы,
+    # где в сохранённой разметке ещё есть эти кнопки, проходило проверку видов.
+    def _pmk_neighbor(self, step):
+        line = self[:1]
+        lines = line.order_id.line_ids.sorted(lambda l: (l.sequence, l.id)).ids if line else []
+        j = lines.index(line.id) + step if line else -1
+        return lines[j] if 0 <= j < len(lines) else False
+
     def action_pmk_move_up(self):
-        return self._pmk_shift(-1)
+        other = self._pmk_neighbor(-1)
+        return self.action_pmk_move_to(other, False) if other else True
 
     def action_pmk_move_down(self):
-        return self._pmk_shift(1)
+        other = self._pmk_neighbor(1)
+        return self.action_pmk_move_to(other, True) if other else True
 
 
 class DoborLineBack(models.Model):

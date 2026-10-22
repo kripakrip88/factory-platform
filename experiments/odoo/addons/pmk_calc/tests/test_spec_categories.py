@@ -172,17 +172,15 @@ class TestSpecCategories(TransactionCase):
 
 
 @tagged("post_install", "-at_install")
-class TestShiftArrows(TransactionCase):
-    """№312: стрелки порядка у строки доборки во вкладке расчёта."""
+class TestRowGripMove(TransactionCase):
+    """№312: перетаскивание строки доборки во вкладке расчёта (ручка ⠿)."""
 
-    def test_shift(self):
+    def test_move_to(self):
         order = self.env["pmk.dobor.order"].create({})
         Line = self.env["pmk.dobor.order.line"]
         a, b, c = (Line.create({"order_id": order.id, "title": t, "sequence": s, "plank_length": 1000})
                    for t, s in (("А", 10), ("Б", 20), ("В", 30)))
-        c.action_pmk_move_up()
-        self.assertEqual(order.line_ids.sorted("sequence").mapped("title"), ["А", "В", "Б"])
-        a.action_pmk_move_down()
+        c.action_pmk_move_to(a.id, False)
         self.assertEqual(order.line_ids.sorted("sequence").mapped("title"), ["В", "А", "Б"])
-        order.line_ids.sorted("sequence")[0].action_pmk_move_up()
-        self.assertEqual(order.line_ids.sorted("sequence").mapped("title"), ["В", "А", "Б"])
+        c.action_pmk_move_to(b.id, True)
+        self.assertEqual(order.line_ids.sorted("sequence").mapped("title"), ["А", "Б", "В"])
