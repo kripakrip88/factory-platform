@@ -3,9 +3,11 @@
 
 Сопоставление (tools/match.py): переводы между своими счетами (ИНН плательщика
 = ИНН нашей организации) — не поступление, в группу не идут. Клиент — по ИНН.
-Счёт покупателю — номер из назначения + ИНН клиента + сумма. Сам бот ничего
-не отмечает оплаченным: показывает, а отметку делает человек
-(«сначала наблюдать», решение Антона).
+Счёт покупателю — номер из назначения + ИНН клиента + сумма. Счета из
+МоегоСклада бот не отмечает: показывает, отметку в МС делает человек
+(«сначала наблюдать», решение Антона). Счёт, сделанный в Odoo, оплата отмечает
+сама (Антон 22.10.2026, этап 5 «сделка → счёт»): sale.order._pmk_bank_paid
+(pmk_orders) — сумма к «Оплачено по банку», сделка в «Оплачено / в работе».
 """
 import json
 import logging
@@ -75,7 +77,40 @@ class PmkBankPayment(models.Model):
             "state": "baseline" if baseline else "new",
         })
         pay._pmk_match()
+        if not baseline:
+            pay._pmk_apply_to_orders()
         return pay
+
+    def _pmk_label(self):
+        self.ensure_one()
+        bank = dict(self.account_id._fields["bank"].selection).get(self.account_id.bank, "банк")
+        return "%s, п/п %s" % (bank, self.doc_number) if self.doc_number else bank
+
+    def _pmk_apply_to_orders(self):
+        """Счёт, сделанный в Odoo, — оплачен этим поступлением (pmk_orders: _pmk_bank_paid). Один
+        счёт в платёжке — вся сумма ему; несколько — каждому его сумма, если платёж их покрывает,
+        иначе — заметка: разнести руками. Сбой не мешает записать поступление."""
+        for pay in self.filtered(lambda p: p.state == "new" and p.sale_order_ids):
+            orders = pay.sale_order_ids.sudo()
+            if not hasattr(orders, "_pmk_bank_paid"):
+                continue
+            orders = orders.filtered(lambda o: o._pmk_is_odoo_invoice())
+            if not orders:
+                continue
+            if len(pay.sale_order_ids) == 1:
+                shares = [(orders, pay.amount)]
+            elif pay.amount + 1 >= sum(pay.sale_order_ids.mapped("amount_total")):
+                shares = [(order, order.amount_total) for order in orders]
+            else:
+                pay.note = "несколько счетов, сумма меньше их итога — оплату отметьте руками"
+                continue
+            try:
+                with self.env.cr.savepoint():
+                    for order, amount in shares:
+                        order._pmk_bank_paid(amount, pay.executed, pay._pmk_label())
+            except Exception:  # noqa: BLE001 — поступление важнее отметки
+                _logger.exception("Поступление %s: отметка оплаты счёта не вышла", pay.id)
+                pay.note = "оплату в счёте отметить не вышло — отметьте руками"
 
     # ── сопоставление ────────────────────────────────────────────────────
 

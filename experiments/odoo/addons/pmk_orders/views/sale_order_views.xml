@@ -466,6 +466,11 @@
           <div class="o_pmk_invoice_total_tax">
             <field name="pmk_tax_text" nolabel="1"/>
           </div>
+          <!-- Оплата от банка — счета, сделанные в Odoo (22.10.2026, models/bank_paid.py). -->
+          <div class="o_pmk_invoice_total_tax" invisible="not pmk_bank_paid">
+            оплачено по банку: <field name="pmk_bank_paid" widget="monetary" nolabel="1"
+                                      options="{'currency_field': 'currency_id'}" class="d-inline"/>
+          </div>
         </div>
       </xpath>
 

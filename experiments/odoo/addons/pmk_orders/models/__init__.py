@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from . import sale_order
 from . import sale_order_line
+# Оплата счёта Odoo от банка (22.10.2026).
+from . import bank_paid
 from . import project
 from . import project_task
 from . import crm_lead

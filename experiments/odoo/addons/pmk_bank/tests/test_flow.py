@@ -85,6 +85,16 @@ class TestFlow(TransactionCase):
         self.assertNotIn("8163", text)
         self.assertIn("Открыть счёт", markup["inline_keyboard"][0][0]["text"])
 
+    def test_odoo_invoice_marked_paid(self):
+        """Счёт, сделанный в Odoo (не из МС), оплата отмечает сама (pmk_orders, 22.10.2026)."""
+        if "pmk_bank_paid" not in self.order._fields:
+            self.skipTest("pmk_orders не установлен")
+        self._sync([])
+        self._sync([op("odoo-1", 5000, "2502075437", "Предоплата по счету 01183")])
+        self.assertEqual(self.order.pmk_bank_paid, 5000)
+        self._sync([op("odoo-2", 6500, "2502075437", "Доплата по счету 01183")])
+        self.assertEqual(self.order.pmk_bank_paid, 11500, "Частичные оплаты складываются.")
+
     def test_own_transfer_not_sent(self):
         self._sync([])
         pay = self._sync([op("c", 5000, "272107382162", "Перевод между счетами")])
