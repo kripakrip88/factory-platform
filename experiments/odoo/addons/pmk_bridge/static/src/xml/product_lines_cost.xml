@@ -33,6 +33,8 @@
               t-att-class="'pmk-cost-signal--' + signal.tone"
               t-att-title="signal.title" t-esc="signal.label"/>
         <t t-else="" t-esc="costOf(line)"/>
+        <span t-if="line.data.price_state === 'manual'" class="pmk-cost-signal pmk-cost-signal--manual ms-1"
+              title="Позиции нет в прайсах — цена металла вписана вручную (в «Таблице», колонка «Металл, ₽/т»)">вручную</span>
       </td>
     </xpath>
 

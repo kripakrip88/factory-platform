@@ -47,9 +47,9 @@
         <div class="o_pmk_butik__wrap">
           <table class="o_pmk_butik__table">
             <colgroup>
-              <col style="width:64px"/><col style="width:30%"/><col style="width:90px"/><col style="width:96px"/><col style="width:80px"/>
+              <col style="width:64px"/><col style="width:26%"/><col style="width:90px"/><col style="width:96px"/><col style="width:80px"/>
               <col style="width:76px"/><col style="width:96px"/><col style="width:90px"/><col style="width:110px"/>
-              <col style="width:110px"/><col style="width:110px"/><col style="width:120px"/>
+              <col style="width:110px"/><col style="width:104px"/><col style="width:110px"/><col style="width:120px"/>
             </colgroup>
             <thead><tr>
               <th class="o_pmk_butik__th-pos"><button type="button" class="o_pmk_butik__chev" t-att-class="{ 'o_pmk_butik__chev--open': allOpen }"
@@ -57,8 +57,9 @@
                   t-on-click="() => this.toggleAll()"/>№ поз.</th><th>Наименование</th><th class="n" title="Для листовых деталей: «Лист 10х60» заполнит сам">Ширина, мм</th><th class="n">Длина, мм</th><th class="n">На 1 шт</th>
               <th class="n">Всего</th><th>Марка</th><th class="n">Вес 1, кг</th><th class="n" title="Впишите массу из спецификации КМ — длина проката посчитается сама; пусто — вес по размерам">Вес всего, кг</th>
               <th class="n" title="Закупка металла по прайсам: у детали — на все изделия, у изделия — итог">Металл, ₽</th>
-              <th class="n" title="У изделия — цена клиенту за тонну (цена за шт посчитается из веса). У детали — цена металла за тонну: по прайсу или вписанная вручную, если в прайсах позиции нет">Цена за т</th>
-              <th class="n" title="Цена клиенту за одно изделие">Цена за шт</th>
+              <th class="n" title="Цена металла детали за тонну: по прайсу (серым) или вписанная вручную, если позиции в прайсах нет">Металл, ₽/т</th>
+              <th class="n" title="Цена клиенту за тонну изделия: цена за шт посчитается из веса">Клиенту, ₽/т</th>
+              <th class="n" title="Цена клиенту за одно изделие">Клиенту, ₽/шт</th>
             </tr></thead>
             <tbody>
               <t t-foreach="rows" t-as="row" t-key="row.id">
@@ -92,6 +93,7 @@
                   <td class="n o_pmk_butik__ro o_pmk_butik__pw" title="Вес одного изделия" t-esc="kg(row.weight_one)"/>
                   <td class="n o_pmk_butik__ro o_pmk_butik__pw" title="Вес изделий всего" t-esc="kg(row.weight_total)"/>
                   <td class="n o_pmk_butik__ro o_pmk_butik__pw" title="Металл по прайсам на все изделия" t-esc="money(row.cost)"/>
+                  <td class="o_pmk_butik__ro o_pmk_butik__pw"/>
                   <td t-att-class="{ sel: isSel(row_index, 'price_ton') }">
                     <input class="o_pmk_butik__in n o_pmk_konstr__price" t-att-value="val(row, 'price_ton')" inputmode="decimal"
                            t-att-data-index="row_index" t-att-data-key="row.id" data-col="price_ton" t-att-readonly="!state.data.can_write"
@@ -175,23 +177,24 @@
                            t-on-paste="(ev) => this.onPaste(row_index, ev)"/>
                   </td>
                   <td class="n o_pmk_butik__ro">
-                    <span t-if="row.no_price" class="o_pmk_konstr__noprice" title="Позиции нет в прайсах — металл не посчитан. Впишите цену за тонну в соседней ячейке">нет цены</span>
+                    <span t-if="row.no_price" class="o_pmk_konstr__noprice" title="Позиции нет в прайсах — металл не посчитан. Впишите цену за тонну в ячейку «Металл, ₽/т»">нет цены</span>
                     <t t-else="" t-esc="money(row.cost)"/>
                   </td>
-                  <!-- №314: у детали «Цена за т» — металл: из прайса серым; нет в прайсах — вписать. -->
-                  <td t-if="row.can_manual" t-att-class="{ sel: isSel(row_index, 'price_ton') }">
+                  <!-- №314: «Металл, ₽/т» детали: из прайса серым; нет в прайсах — вписать. -->
+                  <td t-if="row.can_manual" t-att-class="{ sel: isSel(row_index, 'metal_ton') }">
                     <input class="o_pmk_butik__in n o_pmk_konstr__price o_pmk_konstr__manual"
                            t-att-class="{ 'o_pmk_konstr__manual--set': row.manual and !isPending(row), 'o_pmk_konstr__manual--pending': isPending(row) }"
-                           t-att-value="val(row, 'price_ton')" inputmode="decimal" placeholder="₽/т"
+                           t-att-value="val(row, 'metal_ton')" inputmode="decimal" placeholder="₽/т"
                            t-att-title="isPending(row) ? 'Не сохранено — кнопка «Сохранить цены» над таблицей' : (row.manual ? 'Цена вручную: позиции нет в прайсах. Сотрите — снова «нет цены»' : 'Позиции нет в прайсах — впишите примерную цену металла за тонну и нажмите «Сохранить цены»')"
-                           t-att-data-index="row_index" t-att-data-key="row.id" data-col="price_ton" t-att-readonly="!state.data.can_write"
-                           t-on-focus="() => this.onFocus(row_index, 'price_ton')"
-                           t-on-input="(ev) => this.onInput(row, row_index, 'price_ton', ev)"
-                           t-on-change="(ev) => this.commit(row, 'price_ton', ev)"
-                           t-on-keydown="(ev) => this.onKeydown(row_index, 'price_ton', ev)"/>
+                           t-att-data-index="row_index" t-att-data-key="row.id" data-col="metal_ton" t-att-readonly="!state.data.can_write"
+                           t-on-focus="() => this.onFocus(row_index, 'metal_ton')"
+                           t-on-input="(ev) => this.onInput(row, row_index, 'metal_ton', ev)"
+                           t-on-change="(ev) => this.commit(row, 'metal_ton', ev)"
+                           t-on-keydown="(ev) => this.onKeydown(row_index, 'metal_ton', ev)"/>
                   </td>
                   <td t-else="" class="n o_pmk_butik__ro o_pmk_konstr__ton"
-                      title="Цена металла за тонну по прайсу" t-esc="money(row.price_ton)"/>
+                      title="Цена металла за тонну по прайсу" t-esc="money(row.metal_ton)"/>
+                  <td class="o_pmk_butik__ro"/>
                   <td class="o_pmk_butik__ro"/>
                 </tr>
               </t>

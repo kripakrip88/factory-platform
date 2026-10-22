@@ -58,10 +58,10 @@ class TestManualPrice(TransactionCase):
         row = next(r for r in spec.konstr_rows()["rows"] if r["kind"] == "detail")
         self.assertTrue(row["can_manual"] and row["no_price"])
         self.assertFalse(row["manual_hint"])
-        spec.konstr_save_row(row["id"], {"price_ton": "95 000"})
+        spec.konstr_save_row(row["id"], {"metal_ton": "95 000"})
         self.assertEqual((line.price_state, line.pmk_manual_price_ton), ("manual", 95000))
         row = next(r for r in spec.konstr_rows()["rows"] if r["kind"] == "detail")
-        self.assertEqual((row["price_ton"], row["manual"], row["can_manual"]), (95000, True, True))
+        self.assertEqual((row["metal_ton"], row["manual"], row["can_manual"]), (95000, True, True))
         # Другой расчёт с той же позицией — подсказка со ссылкой на первый.
         other, other_line = self._spec()
         hint = next(r for r in other.konstr_rows()["rows"] if r["kind"] == "detail")["manual_hint"]

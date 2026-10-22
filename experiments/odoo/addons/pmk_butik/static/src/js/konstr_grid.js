@@ -64,7 +64,7 @@ export class PmkKonstrGrid extends PmkButikGrid {
     }
 
     val(row, key) {
-        if (key === "price_ton" && this.isPending(row) && this.drafts[`${row.id}:${key}`] === undefined) {
+        if (key === "metal_ton" && this.isPending(row) && this.drafts[`${row.id}:${key}`] === undefined) {
             return this.pendingBucket[row.id].value;
         }
         return super.val(row, key);
@@ -75,13 +75,13 @@ export class PmkKonstrGrid extends PmkButikGrid {
     }
 
     async commit(row, col, ev) {
-        if (col !== "price_ton" || row.kind !== "detail") {
+        if (col !== "metal_ton" || row.kind !== "detail") {
             return super.commit(row, col, ev);
         }
         const raw = ev.target.value.trim();
         delete this.drafts[`${row.id}:${col}`];
         setPending(this.specId, row.id, {
-            name: this._pendingName(row), old: row.manual ? String(row.price_ton) : "", value: raw,
+            name: this._pendingName(row), old: row.manual ? String(row.metal_ton) : "", value: raw,
         });
     }
 
@@ -117,7 +117,7 @@ export class PmkKonstrGrid extends PmkButikGrid {
             return ["name", "product_qty", "price_ton", "price"];
         }
         // №314: нет цены в прайсах — «Цена за т» детали вписывается руками.
-        return [...super.colsOf(row), "mass", ...(row.can_manual ? ["price_ton"] : [])];
+        return [...super.colsOf(row), "mass", ...(row.can_manual ? ["metal_ton"] : [])];
     }
 
     /** №314: цена, вписанная вручную в другом расчёте, — в эту деталь по щелчку (до «Сохранить цены»). */
@@ -132,7 +132,7 @@ export class PmkKonstrGrid extends PmkButikGrid {
     saved(row, key) {
         // Цена — с разрядами («14 560»): так её читают; ввод понимает и без них
         // (сервер убирает пробелы, _to_float).
-        if (key === "price" || key === "price_ton" || key === "mass") {
+        if (key === "price" || key === "price_ton" || key === "metal_ton" || key === "mass") {
             // «Вес всего» — только масса по КМ; вес по размерам виден серым (placeholder).
             const value = row[key];
             return value ? value.toLocaleString("ru-RU", { maximumFractionDigits: 2 }) : "";

@@ -68,7 +68,8 @@ patch(ProductLinesRenderer.prototype, {
      */
     costOf(line) {
         const state = line.data.price_state;
-        if (state && state !== "ok") {
+        // №314: цена вручную (позиции нет в прайсах) — сумма есть, рядом пометка «вручную».
+        if (state && state !== "ok" && state !== "manual") {
             return "—";
         }
         const value = line.data.cost_fact_total || 0;
