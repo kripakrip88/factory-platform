@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- №314: окно «было → стало» при уходе со страницы расчёта с несохранёнными ценами (js/price_pending.js). -->
+<templates xml:space="preserve">
+  <t t-name="pmk_butik.PendingPricesDialog">
+    <Dialog title="'Цены не сохранены'" size="'md'">
+      <p>Вы вписали цены металла вручную, но не сохранили их:</p>
+      <table class="table table-sm o_pmk_pending__table">
+        <thead><tr><th>Позиция</th><th class="text-end">Было, ₽/т</th><th class="text-end">Стало, ₽/т</th></tr></thead>
+        <tbody>
+          <tr t-foreach="props.items" t-as="item" t-key="item.key">
+            <td t-esc="item.name"/>
+            <td class="text-end" t-esc="item.old ? money(item.old) : 'нет цены'"/>
+            <td class="text-end fw-bold" t-esc="item.value ? money(item.value) : 'нет цены'"/>
+          </tr>
+        </tbody>
+      </table>
+      <t t-set-slot="footer">
+        <button class="btn btn-primary" t-on-click="() => this.choose('save')">Сохранить</button>
+        <button class="btn btn-secondary" t-on-click="() => this.choose('discard')">Не сохранять</button>
+        <button class="btn btn-link" t-on-click="() => this.choose('stay')">Остаться</button>
+      </t>
+    </Dialog>
+  </t>
+</templates>

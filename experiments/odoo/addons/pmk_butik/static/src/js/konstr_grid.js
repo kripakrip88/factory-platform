@@ -18,6 +18,7 @@ import { _t } from "@web/core/l10n/translation";
 import { useState } from "@odoo/owl";
 import { ConfirmationDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { PmkButikGrid } from "./butik_grid";
+import { clearPending, pendingPrices, savePending, setPending } from "./price_pending";
 
 const METHODS = {
     butik_rows: "konstr_rows",
@@ -45,6 +46,66 @@ export class PmkKonstrGrid extends PmkButikGrid {
     setup() {
         super.setup();
         this.view = useState({ mode: readMode() });
+        // №314: несохранённые ручные цены (js/price_pending.js) — общие для формы расчёта.
+        this.pending = useState(pendingPrices);
+    }
+
+    // ─── №314: ручная цена за тонну — кнопкой «Сохранить цены», не сама ──
+    get pendingBucket() {
+        return (this.specId && this.pending[this.specId]) || {};
+    }
+
+    get pendingCount() {
+        return Object.keys(this.pendingBucket).length;
+    }
+
+    isPending(row) {
+        return row.kind === "detail" && Boolean(this.pendingBucket[row.id]);
+    }
+
+    val(row, key) {
+        if (key === "price_ton" && this.isPending(row) && this.drafts[`${row.id}:${key}`] === undefined) {
+            return this.pendingBucket[row.id].value;
+        }
+        return super.val(row, key);
+    }
+
+    _pendingName(row) {
+        return [row.pos, row.name].filter((part) => part).join(" · ");
+    }
+
+    async commit(row, col, ev) {
+        if (col !== "price_ton" || row.kind !== "detail") {
+            return super.commit(row, col, ev);
+        }
+        const raw = ev.target.value.trim();
+        delete this.drafts[`${row.id}:${col}`];
+        setPending(this.specId, row.id, {
+            name: this._pendingName(row), old: row.manual ? String(row.price_ton) : "", value: raw,
+        });
+    }
+
+    async savePrices() {
+        if (this.state.busy) {
+            return;
+        }
+        this.state.busy = true;
+        try {
+            const data = await savePending(this.orm, this.specId);
+            if (data && this.alive()) {
+                this.state.data = data;
+                this.state.savedAt = new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+                await this.refreshHead();
+            }
+        } finally {
+            if (this.alive()) {
+                this.state.busy = false;
+            }
+        }
+    }
+
+    discardPrices() {
+        clearPending(this.specId);
     }
 
     method(name) {
@@ -59,10 +120,12 @@ export class PmkKonstrGrid extends PmkButikGrid {
         return [...super.colsOf(row), "mass", ...(row.can_manual ? ["price_ton"] : [])];
     }
 
-    /** №314: цена, вписанная вручную в другом расчёте, — в эту деталь по щелчку. */
+    /** №314: цена, вписанная вручную в другом расчёте, — в эту деталь по щелчку (до «Сохранить цены»). */
     useManualHint(row) {
         if (row.manual_hint) {
-            this.call("butik_save_row", [row.id, { price_ton: row.manual_hint.price }]);
+            setPending(this.specId, row.id, {
+                name: this._pendingName(row), old: "", value: String(row.manual_hint.price),
+            });
         }
     }
 

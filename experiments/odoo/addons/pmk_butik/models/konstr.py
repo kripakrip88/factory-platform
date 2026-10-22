@@ -329,6 +329,17 @@ class MetalSpecKonstr(models.Model):
             record.write(self._konstr_detail_vals(record, clean))
         return self.konstr_rows()
 
+    def konstr_save_prices(self, prices):
+        """№314: «Сохранить цены» — ручные цены за тонну пачкой {ключ детали: значение}
+        (Антон 22.10.2026: цена не сохраняется сама — кнопкой или в окне «было → стало»)."""
+        self.ensure_one()
+        self.check_access("write")
+        for key, value in (prices or {}).items():
+            kind, record = self._konstr_record(key)
+            if kind == DETAIL:
+                record.write({"pmk_manual_price_ton": _to_float(value)})
+        return self.konstr_rows()
+
     def _konstr_insert(self, cleans, after_key):
         """Новые детали после строки after_key: после изделия — первыми в нём,
         после детали — в том же изделии; без строки — в конце последнего изделия."""

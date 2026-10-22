@@ -35,6 +35,8 @@ size_search.py), метизы — по справочнику метизов. О
             "pmk_butik/static/src/js/butik_grid.js",
             "pmk_butik/static/src/xml/butik_grid.xml",
             "pmk_butik/static/src/scss/butik_grid.scss",
+            "pmk_butik/static/src/js/price_pending.js",
+            "pmk_butik/static/src/xml/price_pending.xml",
             "pmk_butik/static/src/js/konstr_grid.js",
             "pmk_butik/static/src/xml/konstr_grid.xml",
             "pmk_butik/static/src/scss/konstr_grid.scss",

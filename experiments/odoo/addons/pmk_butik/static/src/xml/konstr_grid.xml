@@ -30,8 +30,15 @@
             <i class="fa fa-clone me-1" aria-hidden="true"/>Копия строки</button>
           <button type="button" class="btn btn-link btn-sm text-muted" t-att-disabled="state.busy" t-on-click="() => this.remove()">
             <i class="fa fa-trash-o me-1" aria-hidden="true"/>Удалить строку</button>
-          <span class="o_pmk_butik__saved" t-att-class="{ 'o_pmk_butik__saved--busy': state.busy }">
+          <!-- №314: ручные цены — только кнопкой (было → стало при уходе со страницы, js/price_pending.js). -->
+          <t t-if="pendingCount">
+            <button type="button" class="btn btn-primary btn-sm" t-att-disabled="state.busy" t-on-click="() => this.savePrices()">
+              <i class="fa fa-floppy-o me-1" aria-hidden="true"/>Сохранить цены (<t t-esc="pendingCount"/>)</button>
+            <button type="button" class="btn btn-link btn-sm" t-att-disabled="state.busy" t-on-click="() => this.discardPrices()">Отменить</button>
+          </t>
+          <span class="o_pmk_butik__saved" t-att-class="{ 'o_pmk_butik__saved--busy': state.busy, 'o_pmk_konstr__unsaved': pendingCount and !state.busy }">
             <t t-if="state.busy">Сохраняю…</t>
+            <t t-elif="pendingCount"><i class="fa fa-exclamation-circle me-1" aria-hidden="true"/>Цены не сохранены: <t t-esc="pendingCount"/></t>
             <t t-elif="state.savedAt"><i class="fa fa-check me-1" aria-hidden="true"/>Сохранено в <t t-esc="state.savedAt"/></t>
             <t t-else=""><i class="fa fa-check me-1" aria-hidden="true"/>Каждая ячейка сохраняется сама</t>
           </span>
@@ -174,9 +181,9 @@
                   <!-- №314: у детали «Цена за т» — металл: из прайса серым; нет в прайсах — вписать. -->
                   <td t-if="row.can_manual" t-att-class="{ sel: isSel(row_index, 'price_ton') }">
                     <input class="o_pmk_butik__in n o_pmk_konstr__price o_pmk_konstr__manual"
-                           t-att-class="{ 'o_pmk_konstr__manual--set': row.manual }"
+                           t-att-class="{ 'o_pmk_konstr__manual--set': row.manual and !isPending(row), 'o_pmk_konstr__manual--pending': isPending(row) }"
                            t-att-value="val(row, 'price_ton')" inputmode="decimal" placeholder="₽/т"
-                           t-att-title="row.manual ? 'Цена вручную: позиции нет в прайсах. Сотрите — снова «нет цены»' : 'Позиции нет в прайсах — впишите примерную цену металла за тонну'"
+                           t-att-title="isPending(row) ? 'Не сохранено — кнопка «Сохранить цены» над таблицей' : (row.manual ? 'Цена вручную: позиции нет в прайсах. Сотрите — снова «нет цены»' : 'Позиции нет в прайсах — впишите примерную цену металла за тонну и нажмите «Сохранить цены»')"
                            t-att-data-index="row_index" t-att-data-key="row.id" data-col="price_ton" t-att-readonly="!state.data.can_write"
                            t-on-focus="() => this.onFocus(row_index, 'price_ton')"
                            t-on-input="(ev) => this.onInput(row, row_index, 'price_ton', ev)"

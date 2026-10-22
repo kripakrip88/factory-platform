@@ -67,3 +67,18 @@ class TestManualPrice(TransactionCase):
         hint = next(r for r in other.konstr_rows()["rows"] if r["kind"] == "detail")["manual_hint"]
         self.assertEqual((hint["price"], hint["spec_id"]), (95000, spec.id))
         self.assertEqual(other_line.price_state, "no_price", "Сама не подставляется.")
+
+    def test_save_prices_and_history(self):
+        """«Сохранить цены» пачкой; каждая правка — в историю расчёта: было → стало (22.10.2026)."""
+        spec, line = self._spec()
+        key = next(r for r in spec.konstr_rows()["rows"] if r["kind"] == "detail")["id"]
+        spec.konstr_save_prices({key: "9 800"})
+        spec.konstr_save_prices({key: "98000"})
+        spec.konstr_save_prices({key: ""})
+        self.assertEqual(line.price_state, "no_price")
+        notes = [m.body for m in spec.message_ids if "цен" in (m.body or "")]
+        text = " | ".join(str(n) for n in notes)
+        self.assertIn("цена вручную 9 800 ₽/т", text)
+        self.assertIn("было 9 800 → стало 98 000 ₽/т", text)
+        self.assertIn("стёрта", text)
+        self.assertIn("Балка", text)

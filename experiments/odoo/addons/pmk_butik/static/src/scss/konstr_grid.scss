@@ -57,3 +57,11 @@
 
   .o_pmk_konstr__hint-use { font-size: 12px; }
 }
+
+// №314: цена вписана, но не сохранена — оранжевая рамка; надпись «Цены не сохранены» над таблицей.
+.o_pmk_konstr__manual--pending {
+  font-weight: 600;
+  box-shadow: inset 0 0 0 2px var(--pmk-tone-orange, #d85a30) !important;
+}
+.o_pmk_konstr__unsaved { color: var(--pmk-tone-orange, #d85a30) !important; }
+.o_pmk_pending__table td, .o_pmk_pending__table th { padding: 4px 8px; }

@@ -930,12 +930,41 @@ class MetalSpecLineCost(models.Model):
         «moved»), правка цены единицы — пересчёт за кг/т по ней.
         Флаг контекста — от повторного входа: досчёт сам пишет эти поля.
         """
+        manual_before = ({line.id: line.pmk_manual_price_ton for line in self}
+                         if "pmk_manual_price_ton" in vals else None)
         res = super().write(vals)
+        if manual_before is not None:
+            self._pmk_log_manual_price(manual_before)
         if self.env.context.get("pmk_price_recompute"):
             return res
         if "price_unit" in vals or any(f in vals for f in self.PMK_PRICE_POSITION_FIELDS):
             self.with_context(pmk_price_recompute=True)._compute_price_from_supplier()
         return res
+
+    def _pmk_log_manual_price(self, before):
+        """№314, Антон 22.10.2026 («обязательно делаем»): ручная цена — в историю расчёта: что за
+        позиция, было → стало, кто (автор записи) и когда. Одна запись на расчёт."""
+        def rub(value):
+            return "{:,.0f}".format(value or 0).replace(",", "\u202f")
+        by_spec = {}
+        for line in self:
+            old, new = before.get(line.id) or 0.0, line.pmk_manual_price_ton or 0.0
+            if abs(old - new) < 0.005 or not line.spec_id:
+                continue
+            item = line.profile_id or line.sheet_id or line.fastener_id or line.paint_id
+            where = " ".join(x for x in (line.detail_name or "", "в «%s»" % line.product_id.name
+                                          if line.product_id else "") if x)
+            what = "%s%s" % (item.display_name if item else "позиция", " (%s)" % where if where else "")
+            if not old:
+                text = "%s: цена вручную %s ₽/т" % (what, rub(new))
+            elif not new:
+                text = "%s: ручная цена %s ₽/т стёрта — снова «нет цены»" % (what, rub(old))
+            else:
+                text = "%s: цена вручную было %s → стало %s ₽/т" % (what, rub(old), rub(new))
+            by_spec.setdefault(line.spec_id, []).append(text)
+        for spec, texts in by_spec.items():
+            spec.sudo().message_post(body=Markup("<br/>").join(texts), author_id=self.env.user.partner_id.id,
+                                     message_type="comment", subtype_xmlid="mail.mt_note")
 
     def _pmk_fill_lost_price(self):
         lost = self.filtered(lambda l: l.price_state == "empty" and l._cost_position())
