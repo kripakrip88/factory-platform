@@ -159,3 +159,59 @@ class MetalSpecBolt(models.Model):
             "foot": {"weight_one": round(line.mass_one, 2), "cost_one": round(line.cost_one, 2),
                      "warning": line.warning or ""},
         }
+
+    # ─── Шапка расчёта: вес, изделия, цена, себестоимость, «нет цены» ────
+    # Антон 22.10.2026: шапка — по всем категориям. Зависимости ниже складываются с
+    # основными (pmk_calc metal_spec.py, pmk_bridge spec_cost.py).
+    def _pmk_bolt_lines(self):
+        return self.bolt_calc_ids.line_ids.filtered("name") if self.cat_bolt else self.env["pmk.bolt.line"]
+
+    def _pmk_cat_totals(self):
+        out = super()._pmk_cat_totals()
+        lines = self._pmk_bolt_lines()
+        if self.cat_bolt:
+            out.append({"key": "bolt", "count": len(lines),
+                        "weight": sum(l.mass_one * l.qty for l in lines),
+                        "price": sum(lines.mapped("price_total")),
+                        "cost": sum(l.cost_one * l.qty for l in lines),
+                        "unpriced": len(lines.filtered(lambda l: not l.price_unit))})
+        return out
+
+    def _pmk_bolt_missing(self):
+        """Состав болтов без цены (круг не в прайсах, шайба не вписана): названия по разу."""
+        names = []
+        for part in self._pmk_bolt_lines().part_ids.filtered("name"):
+            price = part.price_ton if part.auto_key == "stud" else part.price_unit
+            name = part.name.split(" — ")[0]  # «Круг 30 09Г2С — шпилька поз. 3, …» → «Круг 30 09Г2С»
+            if not price and name not in names:
+                names.append(name)
+        return names
+
+    @api.depends("cat_bolt", "bolt_calc_ids.line_ids.mass_one", "bolt_calc_ids.line_ids.qty",
+                 "bolt_calc_ids.line_ids.name")
+    def _compute_totals(self):
+        super()._compute_totals()
+
+    @api.depends("cat_bolt", "bolt_calc_ids.line_ids.price_total", "bolt_calc_ids.line_ids.cost_one",
+                 "bolt_calc_ids.line_ids.qty", "bolt_calc_ids.line_ids.name")
+    def _compute_customer_totals(self):
+        super()._compute_customer_totals()
+
+    @api.depends("cat_bolt", "bolt_calc_ids.line_ids.name", "bolt_calc_ids.line_ids.part_ids.price_unit",
+                 "bolt_calc_ids.line_ids.part_ids.price_ton", "bolt_calc_ids.line_ids.part_ids.name")
+    def _compute_cost_totals(self):
+        """«Нет цены у N поз.» — и состав болтов без цены: себестоимость болтов занижена."""
+        super()._compute_cost_totals()
+        for spec in self:
+            missing = len(spec._pmk_bolt_missing())
+            if missing:
+                spec.no_price_count += missing
+                spec.price_incomplete = True
+
+    def _compute_price_missing_text(self):
+        super()._compute_price_missing_text()
+        for spec in self:
+            names = spec._pmk_bolt_missing()
+            if names:
+                bolts = _("болты: %s") % ", ".join(names)
+                spec.price_missing_text = "; ".join(t for t in (spec.price_missing_text, bolts) if t)

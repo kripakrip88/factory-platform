@@ -154,6 +154,10 @@
           <div class="pmk-kpi__value">
             <field name="price_customer_total" widget="monetary"/>
           </div>
+          <!-- Все категории расчёта (22.10.2026): у доборки, зонтов, болтов без цены — итог занижен. -->
+          <div class="pmk-kpi__sub" invisible="customer_unpriced_count == 0">без цены:
+            <field name="customer_unpriced_count" nolabel="1"/> поз.</div>
+          <field name="price_uncosted" invisible="1"/>
         </div>
         <!--
           Процент маржи — отдельной строкой под суммой: в одной строке с
@@ -172,6 +176,7 @@
             <field name="margin_amount" widget="monetary"/>
           </div>
           <div class="pmk-kpi__sub"><field name="margin_pct" nolabel="1"/> % от цены</div>
+          <div class="pmk-kpi__sub" invisible="price_uncosted == 0">доборка, зонты — не входят</div>
         </div>
         <div class="pmk-kpi__card pmk-kpi__card--warn"
              invisible="price_customer_total == 0 or not price_incomplete">
@@ -181,17 +186,18 @@
           </div>
           <div class="pmk-kpi__sub">≤ <field name="margin_pct" nolabel="1"/> % · без
             <field name="no_price_count" nolabel="1"/> поз.</div>
+          <div class="pmk-kpi__sub" invisible="price_uncosted == 0">доборка, зонты — не входят</div>
         </div>
         <div class="pmk-kpi__card" invisible="price_incomplete">
           <div class="pmk-kpi__label">Металл к закупке</div>
           <div class="pmk-kpi__value">
-            <field name="total_cost_fact" widget="monetary"/>
+            <field name="cost_all_total" widget="monetary"/>
           </div>
         </div>
         <div class="pmk-kpi__card pmk-kpi__card--warn" invisible="not price_incomplete">
           <div class="pmk-kpi__label">Металл к закупке</div>
           <div class="pmk-kpi__value">
-            <field name="total_cost_fact" widget="monetary"/>
+            <field name="cost_all_total" widget="monetary"/>
           </div>
           <div class="pmk-kpi__sub">занижен: без <field name="no_price_count" nolabel="1"/> поз.</div>
         </div>

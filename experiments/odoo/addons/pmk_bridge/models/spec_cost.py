@@ -339,6 +339,21 @@ class MetalSpecCost(models.Model):
     margin_pct = fields.Float(
         "Маржа, %", compute="_compute_customer_totals", store=True,
         digits=(6, 1), aggregator=None)
+    # Шапка по всем категориям расчёта (Антон 22.10.2026: «да делаем всё»). Цена
+    # клиенту — конструкции, доборка, зонты, болты. Маржа — только там, где известна
+    # себестоимость (конструкции, болты): у доборки и зонтов цена вписана руками, а
+    # металла в рублях нет — с их ценой маржа вышла бы завышенной.
+    cost_all_total = fields.Monetary(
+        "Себестоимость материалов", compute="_compute_customer_totals", store=True,
+        help="Металл к закупке по конструкциям плюс материалы болтов (круг, гайки, шайбы, "
+             "плиты). Доборка и зонты сюда не входят: себестоимость у них пока не считается.")
+    price_uncosted = fields.Monetary(
+        "Цена без себестоимости", compute="_compute_customer_totals", store=True,
+        help="Цена клиенту позиций, у которых себестоимость не считается (доборка, зонты): "
+             "в маржу не входит.")
+    customer_unpriced_count = fields.Integer(
+        "Без цены клиенту", compute="_compute_customer_totals", store=True,
+        help="Позиции категорий (доборка, зонты, болты) без цены клиенту — итог занижен.")
 
     no_price_count = fields.Integer(
         "Позиций без цены", compute="_compute_cost_totals", store=True)
@@ -402,11 +417,14 @@ class MetalSpecCost(models.Model):
     # знаке, и точное «==» показывало бы строку почти всегда.
     buy_weight_differs = fields.Boolean(compute="_compute_buy_weight_differs")
 
-    @api.depends("total_weight_fact", "total_weight")
+    # Сравнение — с весом конструкций: «Купить, т» считается по их деталям, а в общем
+    # весе расчёта с 22.10.2026 ещё доборка, зонты и болты.
+    @api.depends("total_weight_fact", "product_ids.weight_total")
     def _compute_buy_weight_differs(self):
         for spec in self:
             spec.buy_weight_differs = abs(
-                (spec.total_weight_fact or 0.0) - (spec.total_weight or 0.0)) >= 0.5
+                (spec.total_weight_fact or 0.0)
+                - sum(spec.product_ids.mapped("weight_total"))) >= 0.5
 
     @staticmethod
     def _pmk_weight_label(kg):
@@ -417,14 +435,23 @@ class MetalSpecCost(models.Model):
             return "%d кг" % round(kg)
         return ("%.1f кг" % kg).replace(".", ",")
 
-    @api.depends("product_ids.price_customer_total", "total_cost_fact")
+    @api.depends("product_ids.price_customer_total", "total_cost_fact",
+                 "cat_metal", "cat_dobor", "cat_vent",
+                 "dobor_order_ids.line_ids.price_total", "vent_order_ids.line_ids.price_total")
     def _compute_customer_totals(self):
         for spec in self:
-            total = sum(spec.product_ids.mapped("price_customer_total"))
+            cats = spec._pmk_cat_totals()
+            products = sum(spec.product_ids.mapped("price_customer_total")) if spec.cat_metal else 0.0
+            costed = products + sum(c["price"] for c in cats if c["cost"] is not None)
+            cost = (spec.total_cost_fact if spec.cat_metal else 0.0) + sum(
+                c["cost"] for c in cats if c["cost"] is not None)
+            total = products + sum(c["price"] for c in cats)
             spec.price_customer_total = total
-            spec.margin_amount = total - spec.total_cost_fact
-            spec.margin_pct = (
-                (total - spec.total_cost_fact) / total * 100.0) if total else 0.0
+            spec.cost_all_total = cost
+            spec.price_uncosted = total - costed
+            spec.customer_unpriced_count = sum(c["unpriced"] for c in cats)
+            spec.margin_amount = costed - cost
+            spec.margin_pct = ((costed - cost) / costed * 100.0) if costed else 0.0
 
     # ─── Копия расчёта — новый расчёт на сегодня (приёмка 01.10.2026, R4) ──
     #

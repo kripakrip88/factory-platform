@@ -242,7 +242,7 @@ class CrmLeadMoney(models.Model):
         "pmk_spec_id.name",
         "pmk_spec_id.total_weight",
         "pmk_spec_id.price_customer_total",
-        "pmk_spec_id.total_cost_fact",
+        "pmk_spec_id.cost_all_total",
         "pmk_spec_id.margin_pct",
         "pmk_spec_id.no_price_count",
         "pmk_spec_id.price_incomplete",
@@ -261,13 +261,14 @@ class CrmLeadMoney(models.Model):
                 continue
             lead.pmk_spec_summary = money_text.spec_line(
                 spec.name, spec.total_weight, spec.price_customer_total,
-                spec.total_cost_fact, spec.margin_pct)
+                spec.cost_all_total, spec.margin_pct)
             lead.pmk_spec_card = money_text.card_line(
                 spec.total_weight, spec.price_customer_total, spec.margin_pct)
             lead.pmk_no_price_label = money_text.no_price_label(spec.no_price_count) or False
             lead.pmk_kpi_weight = money_text.weight(spec.total_weight)
             lead.pmk_kpi_price = money_text.kpi_price(spec.price_customer_total)
-            lead.pmk_kpi_metal = money_text.rub(spec.total_cost_fact)
+            # Металл — та же себестоимость, что в марже: конструкции и материалы болтов (22.10.2026).
+            lead.pmk_kpi_metal = money_text.rub(spec.cost_all_total)
             lead.pmk_kpi_margin = money_text.kpi_margin(
                 spec.price_customer_total, spec.margin_pct, spec.price_incomplete)
 

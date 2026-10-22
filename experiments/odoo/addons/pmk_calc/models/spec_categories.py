@@ -116,3 +116,38 @@ class MetalSpecCategories(models.Model):
 
     def action_open_vent(self):
         return self._pmk_open_child("vent_order_ids")
+
+    # ------------------------------------------------- итоги шапки по категориям
+    # Шапка расчёта (вес, изделия, цена клиенту, маржа) — по всем категориям, что входят
+    # в расчёт (Антон 22.10.2026: «да делаем всё»), а не по одним «Конструкциям».
+    def _pmk_cat_totals(self):
+        """Категории расчёта кроме «Конструкций», что сейчас в расчёте: список словарей
+        {key, count, weight, price, cost, unpriced}. cost=None — себестоимость категория
+        не считает (у доборки и зонтов цена клиенту вписывается вручную, металла в рублях
+        нет) — такие в маржу не входят. Модули категорий дописывают свои (super() + строки)."""
+        self.ensure_one()
+        out = []
+        if self.cat_dobor:
+            lines = self.dobor_line_ids
+            out.append({"key": "dobor", "count": len(lines), "weight": sum(lines.mapped("weight_total")),
+                        "price": sum(lines.mapped("price_total")), "cost": None,
+                        "unpriced": len(lines.filtered(lambda l: not l.price_unit))})
+        if self.cat_vent:
+            hoods = self.vent_line_ids
+            out.append({"key": "vent", "count": len(hoods), "weight": sum(hoods.mapped("total_mass_net_kg")),
+                        "price": sum(hoods.mapped("price_total")), "cost": None,
+                        "unpriced": len(hoods.filtered(lambda h: not h.price_unit))})
+        return out
+
+    @api.depends("cat_metal", "cat_dobor", "cat_vent",
+                 "dobor_order_ids.line_ids.weight_total", "vent_order_ids.line_ids.total_mass_net_kg")
+    def _compute_totals(self):
+        """Вес и число изделий — по всем категориям расчёта (зависимости складываются
+        с основными в metal_spec.py)."""
+        super()._compute_totals()
+        for spec in self:
+            cats = spec._pmk_cat_totals()
+            weight = (spec.total_weight if spec.cat_metal else 0.0) + sum(c["weight"] for c in cats)
+            spec.total_weight = weight
+            spec.total_weight_t = weight / 1000.0
+            spec.total_products = (spec.total_products if spec.cat_metal else 0) + sum(c["count"] for c in cats)

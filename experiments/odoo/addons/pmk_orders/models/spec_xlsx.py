@@ -8,7 +8,7 @@
   наименование сортаментом, длина, кол-во на 1 шт, кол-во изделий, всего
   (формулой), марка, изделие, вес и цена металла за тонну — та, что подставила
   система (не обратный счёт: стоимость закупки целым листом/хлыстом даёт
-  «625 000 ₽/т» на мелком заказе); ниже — зонты и доборка блоками;
+  «625 000 ₽/т» на мелком заказе); ниже — зонты, доборка, болты блоками;
 - «Металл и деньги» — внутренний: материалы (метры, м², вес деталей, купить,
   стоимость закупки) и по изделиям металл, цена клиенту, маржа.
 
@@ -197,6 +197,7 @@ class MetalSpecXlsx(models.Model):
                 material = " · ".join(p for p in (info.get("sheet"), info.get("coating")) if p)
                 block(row.get("qty"), "%s\n%s" % (row.get("name") or "", material), [
                     ("", desc, info.get("length") or "", 1, "", _num(info.get("weight_one")) * (row.get("qty") or 0), None)])
+        self._pmk_xlsx_composition_more(rows, section, block)
         r = state["r"]
         ws.merge_range(r, 0, r, 8, _("Итого вес"), fmt.total)
         ws.write_formula(r, 9, "=SUM(J%d:J%d)" % (start + 1, r), fmt.total_kg)
@@ -210,6 +211,10 @@ class MetalSpecXlsx(models.Model):
         ws.set_column(9, 9, 10)
         ws.set_column(10, 10, 12)
         ws.freeze_panes(start, 0)
+
+    def _pmk_xlsx_composition_more(self, rows, section, block):
+        """Разделы других калькуляторов на листе «Состав» (pmk_bolt — болты): section(заголовок),
+        block(кол-во, изделие, строки) — как у зонтов и доборки."""
 
     def _pmk_xlsx_line(self, line, product):
         """Строка детали в записи Бутова: «Труба круглая 57x3» + длина, «Лист гладкий 4х100»
@@ -230,6 +235,9 @@ class MetalSpecXlsx(models.Model):
             price_t = round(line.price_ton) if line.price_state == "ok" else 0
         return (line.detail_name or "", name, length, line.qty, line.grade_id.display_name or "",
                 line.weight_total * (product.qty or 0), price_t)
+
+    def _pmk_xlsx_money_more(self, rows, add):
+        """Материалы других калькуляторов на листе «Металл и деньги»: add(материал, kg=, rub=, …)."""
 
     # Лист 3 ─────────────────────────────────────────────────────────────
     def _pmk_xlsx_money(self, wb, fmt, rows):
@@ -271,6 +279,7 @@ class MetalSpecXlsx(models.Model):
                 info = row.get("dobor") or {}
                 add(info.get("sheet") or _("Лист (доборка)"), m2=info.get("area_total"),
                     kg=_num(info.get("weight_one")) * (row.get("qty") or 0))
+        self._pmk_xlsx_money_more(rows, add)
         for key, a in agg.items():
             ws.write(r, 0, key, fmt.wrap)
             ws.write(r, 1, a["m"] or "", fmt.kg)

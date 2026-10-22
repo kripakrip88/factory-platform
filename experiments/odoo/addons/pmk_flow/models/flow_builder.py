@@ -249,7 +249,7 @@ class PmkFlowBuilder(models.AbstractModel):
             customer = _field(record, 'price_customer_total', 0.0)
             if customer > 0:
                 return 'цена клиенту %s ₽' % _num(customer), 'green'
-            metal = _field(record, 'total_cost_fact', 0.0)
+            metal = _field(record, 'cost_all_total', 0.0) or _field(record, 'total_cost_fact', 0.0)
             if metal:
                 return 'металл %s ₽' % _num(metal), 'blue'
             if record.total_weight:

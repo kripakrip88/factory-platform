@@ -71,3 +71,38 @@ class TestBoltInSpecAndInvoice(Z2Common):
         action = invoice.action_pmk_doc_bolts()
         self.assertTrue(spec.cat_bolt)
         self.assertEqual(action.get("res_id"), spec.id)
+
+    def test_header_with_bolts(self):
+        """Шапка расчёта (22.10.2026): цена, себестоимость, вес и «нет цены» — с болтами."""
+        _deal, spec, line = self._bolt_spec()
+        products = sum(spec.product_ids.mapped("price_customer_total"))
+        self.assertAlmostEqual(spec.price_customer_total, products + line.price_total, places=2)
+        self.assertAlmostEqual(spec.cost_all_total, spec.total_cost_fact + line.cost_one * line.qty, places=2)
+        self.assertAlmostEqual(spec.margin_amount, spec.price_customer_total - spec.cost_all_total, places=2)
+        self.assertEqual(spec.price_uncosted, 0)
+        self.assertAlmostEqual(spec.total_weight, sum(spec.product_ids.mapped("weight_total"))
+                               + line.mass_one * line.qty, places=2)
+        self.assertEqual(spec.total_products, len(spec.product_ids) + 1)
+        before = spec.no_price_count
+        # Шайба без цены — себестоимость занижена: «нет цены» в шапке с названием.
+        line.part_ids.filtered(lambda p: p.auto_key == "washer")._pmk_user_write({"price_unit": 0})
+        self.assertEqual(spec.no_price_count, before + 1)
+        self.assertTrue(spec.price_incomplete)
+        self.assertIn("Шайба", spec.price_missing_text)
+        # Болты выключили — шапка без них.
+        spec.cat_bolt = False
+        self.assertAlmostEqual(spec.price_customer_total, products, places=2)
+        self.assertEqual(spec.no_price_count, before)
+
+    def test_xlsx_composition_bolts(self):
+        """«Расчёт (Excel)»: на листе «Состав» — раздел болтов с составом."""
+        import io
+        from openpyxl import load_workbook
+        _deal, spec, line = self._bolt_spec()
+        book = load_workbook(io.BytesIO(spec._pmk_xlsx()))
+        cells = [str(c.value) for row in book["Состав"].iter_rows() for c in row if c.value]
+        self.assertIn("Фундаментные болты", cells)
+        self.assertIn(line.name, cells)
+        self.assertTrue(any(c.startswith("Круг 30") for c in cells))
+        money = [str(c.value) for row in book["Металл и деньги"].iter_rows() for c in row if c.value]
+        self.assertTrue(any(c.startswith("Гайка М30") for c in money))

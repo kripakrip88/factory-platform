@@ -92,3 +92,29 @@ class TestSpecSummary(TransactionCase):
         self.assertEqual(composition.get("string"), "Конструкции")
         self.assertEqual(arch.xpath("//page[@name='pmk_summary']")[0].get("string"), "Металлоизделия")
         self.assertTrue(arch.xpath("//field[@name='pmk_summary'][@widget='pmk_spec_summary']"))
+
+    def test_header_all_categories(self):
+        """Шапка — по всем категориям (22.10.2026): цена клиенту и вес с доборкой и зонтами,
+        маржа — только по позициям с себестоимостью."""
+        spec = self._spec()
+        products = sum(spec.product_ids.mapped("price_customer_total"))
+        self.assertEqual(products, 3000 + 2500)
+        self.assertAlmostEqual(spec.price_customer_total, products + 25600 + 7800, places=2)
+        self.assertAlmostEqual(spec.price_uncosted, 25600 + 7800, places=2)
+        self.assertAlmostEqual(spec.cost_all_total, spec.total_cost_fact, places=2)
+        self.assertAlmostEqual(spec.margin_amount, products - spec.total_cost_fact, places=2)
+        weight = (sum(spec.product_ids.mapped("weight_total")) + sum(spec.dobor_line_ids.mapped("weight_total"))
+                  + sum(spec.vent_line_ids.mapped("total_mass_net_kg")))
+        self.assertGreater(sum(spec.dobor_line_ids.mapped("weight_total")), 0)
+        self.assertAlmostEqual(spec.total_weight, weight, places=2)
+        self.assertEqual(spec.total_products, 2 + 1 + 1)
+        self.assertEqual(spec.customer_unpriced_count, 0)
+        # Без цены клиенту у доборки — итог меньше, пометка «без цены».
+        spec.dobor_line_ids.price_unit = 0
+        self.assertAlmostEqual(spec.price_customer_total, products + 7800, places=2)
+        self.assertEqual(spec.customer_unpriced_count, 1)
+        # Категория выключена — в шапку не входит.
+        spec.cat_vent = False
+        self.assertAlmostEqual(spec.price_customer_total, products, places=2)
+        self.assertAlmostEqual(spec.total_weight, sum(spec.product_ids.mapped("weight_total"))
+                               + sum(spec.dobor_line_ids.mapped("weight_total")), places=2)

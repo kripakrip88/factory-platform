@@ -5,3 +5,4 @@ from . import part
 from . import grid
 from . import spec
 from . import invoice
+from . import spec_xlsx
