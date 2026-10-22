@@ -47,11 +47,24 @@
       <!-- Счёт из МоегоСклада «В работе» в Odoo не бывает — расчёт по нему заводится в любом
            статусе, кроме отменённого (Антон 12.10: «сделать по нему внутренний расчёт»). -->
       <xpath expr="//header/button[@name='action_pmk_tech_spec'][1]" position="attributes">
-        <attribute name="invisible">pmk_tech_spec_id or pmk_is_revision or state == 'cancel' or (state != 'sale' and not pmk_ms_id)</attribute>
+        <attribute name="invisible">pmk_tech_spec_id or pmk_is_revision or state == 'cancel' or (state != 'sale' and (not pmk_ms_id or pmk_ms_from_odoo))</attribute>
       </xpath>
       <xpath expr="//notebook" position="inside">
-        <page string="МойСклад" name="pmk_ms" invisible="not pmk_ms_id">
-          <group>
+        <page string="МойСклад" name="pmk_ms" invisible="not pmk_ms_id and not pmk_ms_export_state">
+          <!-- Счёт, сделанный в Odoo (этап 6): как идёт выгрузка в МС — строкой и подробности под ней. -->
+          <field name="pmk_ms_from_odoo" invisible="1"/>
+          <div class="mb-3" invisible="not pmk_ms_from_odoo">
+            <div>
+              <span class="fw-bold">Выгрузка в МойСклад:</span>
+              <field name="pmk_ms_export_state" nolabel="1" class="d-inline ms-1"/>
+              <span invisible="not pmk_ms_export_at"> · </span>
+              <field name="pmk_ms_export_at" nolabel="1" class="d-inline" invisible="not pmk_ms_export_at"/>
+            </div>
+            <div class="text-muted" invisible="not pmk_ms_export_note">
+              <field name="pmk_ms_export_note" nolabel="1"/>
+            </div>
+          </div>
+          <group invisible="not pmk_ms_id">
             <group>
               <field name="pmk_ms_state"/>
               <field name="pmk_ms_url" widget="url" string="Счёт в МоёмСкладе"

@@ -38,4 +38,15 @@
     <field name="nextcall" eval="(DateTime.now() + timedelta(days=1)).strftime('%Y-%m-%d 23:00:00') if DateTime.now().hour &gt;= 23 else DateTime.now().strftime('%Y-%m-%d 23:00:00')"/>
     <field name="active" eval="True"/>
   </record>
+  <!-- Счёт Odoo → МойСклад (этап 6, 22.10.2026, models/export.py): очередь раз в 2 минуты.
+       Режим — системный параметр pmk_moysklad.export_mode (off / dry / live), без него — ничего. -->
+  <record id="cron_ms_export" model="ir.cron">
+    <field name="name">Odoo → МойСклад: выгрузка счетов</field>
+    <field name="model_id" ref="sale.model_sale_order"/>
+    <field name="state">code</field>
+    <field name="code">model._cron_ms_export()</field>
+    <field name="interval_number">2</field>
+    <field name="interval_type">minutes</field>
+    <field name="active" eval="True"/>
+  </record>
 </odoo>

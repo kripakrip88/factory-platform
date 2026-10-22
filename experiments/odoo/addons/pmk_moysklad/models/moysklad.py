@@ -452,6 +452,15 @@ class PmkMoysklad(models.AbstractModel):
     def _upsert_invoice(self, inv, orgs, ctx, Order):
         vals, state = self._invoice_vals(inv, orgs, ctx)
         order = Order.search([("pmk_ms_id", "=", vals["pmk_ms_id"])], limit=1)
+        if order and "pmk_ms_from_odoo" in order._fields and order.pmk_ms_from_odoo:
+            # Счёт, сделанный в Odoo (export.py): главный — Odoo. Из МС — только статус, суммы,
+            # «Не актуальна» → отмена; строки, клиент и номер не трогаем.
+            keep = ("pmk_ms_state", "pmk_ms_updated", "pmk_ms_sum", "pmk_ms_shipped_sum")
+            order = order.with_context(pmk_ms_sync=True)
+            order.write({k: vals[k] for k in keep})
+            if state == "Не актуальна" and order.state != "cancel":
+                order.write({"state": "cancel"})
+            return order
         if order:
             if order.state == "cancel":
                 order.write({"state": "draft"})

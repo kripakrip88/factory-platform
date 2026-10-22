@@ -24,7 +24,9 @@ class SaleOrderBankPaid(models.Model):
 
     def _pmk_is_odoo_invoice(self):
         self.ensure_one()
-        return not ("pmk_ms_id" in self._fields and self.pmk_ms_id) and not self.pmk_is_revision
+        # Сделан в Odoo — нет id МС или он выгружен из Odoo (pmk_moysklad, этап 6: pmk_ms_from_odoo).
+        from_ms = "pmk_ms_id" in self._fields and self.pmk_ms_id and not self["pmk_ms_from_odoo"]
+        return not from_ms and not self.pmk_is_revision
 
     def _pmk_bank_paid(self, amount, day, label):
         """Поступление amount от day (label — «Модульбанк, п/п 123») по этому счёту. True — отмечено."""

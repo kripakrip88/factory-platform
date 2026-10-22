@@ -32,7 +32,7 @@ class TestBankPaid(Z2Common):
         invoice = self._invoices(deal)
         if "pmk_ms_id" not in invoice._fields:
             self.skipTest("pmk_moysklad не установлен")
-        invoice.sudo().pmk_ms_id = "ms-bank-1"
+        invoice.sudo().write({"pmk_ms_id": "ms-bank-1", "pmk_ms_from_odoo": False})  # пришёл из МС
         self.assertFalse(invoice._pmk_bank_paid(4000, date(2026, 10, 22), "Модульбанк"))
         self.assertFalse(invoice.pmk_bank_paid)
         self.assertNotEqual(deal.stage_id, self.env.ref("pmk_deal.stage_in_work"))
