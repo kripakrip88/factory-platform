@@ -285,7 +285,8 @@ class BoltLine(models.Model):
             line.history = line._pmk_history_text() if line.bolt_type and line.diameter and line.length else ""
 
     def _pmk_history_text(self, limit=3):
-        """Прошлые продажи этого размера по строкам счетов (из МоегоСклада — свои названия)."""
+        """Прошлые продажи этого размера по строкам счетов (из МоегоСклада — свои названия).
+        Строки счёта от болтов этого же расчёта — не «прошлые продажи», их не берём."""
         self.ensure_one()
         if "sale.order.line" not in self.env:
             return ""
@@ -298,8 +299,10 @@ class BoltLine(models.Model):
              WHERE o.state != 'cancel' AND l.price_unit > 0
                AND l.name ~* '(болт|анкер).{0,30}фундамент|фундамент.{0,20}(болт|анкер)'
                AND l.name ~* %s AND l.name ~* %s AND l.name ~* %s
+               AND (l.pmk_bolt_line_id IS NULL OR NOT l.pmk_bolt_line_id = ANY(%s))
              ORDER BY o.date_order DESC LIMIT %s
-        """, (size, r"(тип\s*)?" + re.escape(self.bolt_type) + r"\.?\s*М", steel, limit))
+        """, (size, r"(тип\s*)?" + re.escape(self.bolt_type) + r"\.?\s*М", steel,
+              self.calc_id.line_ids.ids or [0], limit))
         rows = self.env.cr.fetchall()
         if not rows:
             return _("Этот размер раньше не продавали — сверить цену")

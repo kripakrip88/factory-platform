@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Болты в расчёте (21.10.2026): переключатель категории «Фундаментные болты» рядом с
+    остальными и вкладка с той же таблицей, что в калькуляторе (виджет pmk_spec_bolt_grid,
+    вызовы bolt_* расчёта уходят его документу болтов). active в XML — грабли Odoo 19.
+  -->
+  <record id="view_metal_spec_form_bolt" model="ir.ui.view">
+    <field name="name">pmk.metal.spec.form.bolt</field>
+    <field name="model">pmk.metal.spec</field>
+    <field name="inherit_id" ref="pmk_calc.view_metal_spec_form_categories"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="//div[@name='pmk_spec_cats']" position="inside">
+        <span class="pmk-spec-cats__item"><field name="cat_bolt" widget="boolean_toggle" nolabel="1"/><label for="cat_bolt"/><span class="pmk-cat-draft" invisible="cat_bolt or not bolt_calc_ids">черновик</span></span>
+      </xpath>
+      <xpath expr="//page[@name='pmk_cat_vent']" position="after">
+        <page string="Фундаментные болты" name="pmk_cat_bolt" invisible="not cat_bolt and not bolt_calc_ids">
+          <div class="pmk-cat-head">
+            <button name="action_open_bolts" type="object" class="btn-secondary" icon="fa-external-link"
+                    string="Открыть калькулятор болтов" invisible="not bolt_calc_ids"/>
+            <span class="pmk-cat-draft" invisible="cat_bolt">Черновик — в расчёт не входит</span>
+            <span class="pmk-cat-muted">Болт коротко: бф 2.1 м30 640мм ст3 10шт — под ним состав: круг, гайки, шайба, плита.</span>
+            <field name="bolt_calc_ids" invisible="1"/>
+          </div>
+          <widget name="pmk_spec_bolt_grid"/>
+        </page>
+      </xpath>
+    </field>
+  </record>
+</odoo>

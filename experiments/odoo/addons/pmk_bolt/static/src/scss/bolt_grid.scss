@@ -5,3 +5,6 @@
   .o_pmk_bolt__warning { color: var(--bt-warn, #9a6b00); }
   .o_pmk_bolt__own .o_pmk_butik__ta { font-style: italic; }
 }
+
+// Сводка «Металлоизделия» (pmk_bridge spec_summary.scss): плашка «Болты» — как у соседей.
+.o_pmk_summary__src.is-bolt { background: color-mix(in srgb, #378add 18%, transparent); }

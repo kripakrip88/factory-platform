@@ -20,6 +20,7 @@
               <div class="pmk-doc-head__fields">
                 <div class="pmk-field" name="pmk_f_partner"><label for="partner_id"/><field name="partner_id" nolabel="1"/></div>
                 <div class="pmk-field" name="pmk_f_deal"><label for="opportunity_id"/><field name="opportunity_id" nolabel="1"/></div>
+                <div class="pmk-field" name="pmk_f_spec" invisible="not spec_id"><label for="spec_id"/><field name="spec_id" nolabel="1" readonly="1"/></div>
                 <div class="pmk-field" name="pmk_f_date"><label for="date"/><field name="date" nolabel="1"/></div>
                 <div class="pmk-field" name="pmk_f_user"><label for="user_id"/><field name="user_id" nolabel="1"/></div>
                 <div class="pmk-field pmk-field--wide" name="pmk_f_note"><label for="note"/><field name="note" nolabel="1" placeholder="Объект, чертёж"/></div>

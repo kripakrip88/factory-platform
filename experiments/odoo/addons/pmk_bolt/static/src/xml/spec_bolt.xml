@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Сводка «Металлоизделия» (pmk_bridge): болт раскрывается составом — только смотреть. -->
+<templates xml:space="preserve">
+  <t t-name="pmk_bolt.SpecSummaryBolt" t-inherit="pmk_bridge.SpecSummaryField" t-inherit-mode="extension">
+    <xpath expr="//t[@t-if=&quot;row.source === 'metal'&quot;]" position="before">
+      <t t-if="row.source === 'bolt'">
+        <table class="o_pmk_summary__sub">
+          <thead><tr>
+            <th>Состав</th><th class="text-end">На 1 болт</th><th class="text-end">Всего</th>
+            <th class="text-end">Масса на болт, кг</th><th class="text-end">Цена</th><th class="text-end">Стоимость на болт, ₽</th>
+          </tr></thead>
+          <tbody>
+            <tr t-foreach="row.details" t-as="d" t-key="d_index">
+              <td t-esc="d.name"/><td class="text-end" t-esc="num(d.qty)"/><td class="text-end" t-esc="num(d.qty_total)"/>
+              <td class="text-end" t-esc="num(d.weight)"/>
+              <td class="text-end"><t t-if="d.price"><t t-esc="money(d.price)"/> <t t-esc="d.price_label"/></t><t t-else="">нет цены</t></td>
+              <td class="text-end" t-esc="money(d.cost)"/>
+            </tr>
+          </tbody>
+        </table>
+        <div class="o_pmk_summary__foot">
+          Масса болта <t t-esc="num(row.foot.weight_one)"/> кг ·
+          себестоимость <t t-esc="money(row.foot.cost_one)"/> ₽ на шт
+          <t t-if="row.foot.warning"> · <t t-esc="row.foot.warning"/></t>
+          · править — во вкладке «<t t-esc="sources[row.source].tab"/>»
+        </div>
+      </t>
+    </xpath>
+  </t>
+</templates>
