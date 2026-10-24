@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-"""№306 (вариант «в»): группа «Все документы» удаляет лиды; сделки — только в архив."""
-from odoo.exceptions import AccessError, UserError
+"""№306: группа «Все документы» удаляет лиды; «Удалить» сделки — в архив."""
+from odoo.exceptions import AccessError
 from odoo.tests import TransactionCase, new_test_user, tagged
 
 
@@ -20,10 +20,10 @@ class TestLeadDelete(TransactionCase):
         self.assertFalse(lead.exists())
         deal = self.env["crm.lead"].create({"name": "Сделка (тест №306)", "type": "opportunity",
                                             "partner_id": self.partner.id})
-        with self.assertRaises(UserError):
-            deal.with_user(self.all_docs).unlink()
-        deal.with_user(self.all_docs).action_archive()
-        self.assertFalse(deal.active, "Сделку — в архив.")
+        deal.with_user(self.all_docs).unlink()
+        self.assertTrue(deal.exists(), "Сделка не удалена…")
+        self.assertFalse(deal.active, "…а убрана в архив.")
+        self.assertTrue(any("в архив" in (m.body or "") for m in deal.message_ids))
         deal.with_user(self.all_docs).action_unarchive()
         self.assertTrue(deal.active, "И обратно.")
 
@@ -32,12 +32,12 @@ class TestLeadDelete(TransactionCase):
         with self.assertRaises(AccessError):
             lead.with_user(self.own).unlink()
 
-    def test_deal_with_invoice_guarded(self):
-        deal = self.env["crm.lead"].create({"name": "Сделка со счётом (тест №306)", "type": "opportunity",
+    def test_lead_with_invoice_archived(self):
+        lead = self.env["crm.lead"].create({"name": "Лид со счётом (тест №306)", "type": "lead",
                                             "partner_id": self.partner.id})
-        self.env["sale.order"].create({"partner_id": self.partner.id, "opportunity_id": deal.id})
-        with self.assertRaises(UserError):
-            deal.with_user(self.all_docs).unlink()
-        self.assertTrue(deal.exists())
-        deal.unlink()            # администратор (суперпользователь теста) — может
-        self.assertFalse(deal.exists())
+        self.env["sale.order"].create({"partner_id": self.partner.id, "opportunity_id": lead.id})
+        lead.with_user(self.all_docs).unlink()
+        self.assertTrue(lead.exists())
+        self.assertFalse(lead.active)
+        lead.unlink()            # администратор (суперпользователь теста) — насовсем
+        self.assertFalse(lead.exists())
