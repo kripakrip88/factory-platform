@@ -13,3 +13,5 @@ from . import deal_number
 from . import spec_children
 # 20.10.2026: воронка «сделка → (расчёт) → счёт», меню документов, обзвон лидов.
 from . import deal_flow
+# №306 (24.10.2026): удаление лидов и сделок группе «Все документы».
+from . import lead_delete

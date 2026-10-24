@@ -21,3 +21,4 @@ from . import test_step48_deal_head
 # Разбор UX, шаг 54: смена дохода от расчёта — строкой в истории сделки.
 from . import test_step54_revenue_history
 from . import test_deal_flow
+from . import test_lead_delete
