@@ -1346,8 +1346,9 @@ class MetalSpecLineCost(models.Model):
         """
         self.ensure_one()
         date = date or self.spec_id.price_date or fields.Date.context_today(self)
+        # №313 (24.10.2026): марка — и у проката, не только у листа.
         grade = (self.grade_id.name or None) if (
-            self.calc_mode == "sheet" and "grade_id" in self._fields) else None
+            self.calc_mode in ("sheet", "linear") and "grade_id" in self._fields) else None
         return tmpl._pmk_find_seller(date, supplier=self.spec_id.supplier_id,
                                      uom=self._cost_sheet_uom(tmpl), grade=grade) or False
 

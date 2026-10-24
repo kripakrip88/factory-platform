@@ -221,6 +221,8 @@
                       <field name="pmk_item_note"/>
                       <field name="length_mm"/>
                       <field name="qty"/>
+                      <!-- №313 (24.10.2026): марка проката — в редакторе «Состава». -->
+                      <field name="grade_id" options="{'no_create': True}"/>
                       <field name="weight_one" readonly="1"/>
                       <field name="weight_total" readonly="1"/>
                     </list>
@@ -421,7 +423,9 @@
                                дробная длина остаётся дробной — «2 500,5». -->
                           <field name="length_mm" options="{'hide_trailing_zeros': True}"/>
                           <field name="qty"/>
-                          <field name="grade_id" options="{'no_create': True}" optional="hide"/>
+                          <!-- №313: цена проката — по марке строки, как у листа. -->
+                          <field name="grade_id" string="Марка" options="{'no_create': True}"
+                                 optional="show" placeholder="любая"/>
                           <!-- Вес с одним знаком, как в списке изделий (шаг 24). -->
                           <field name="weight_one" readonly="1" digits="[12,1]"/>
                           <field name="weight_total" readonly="1" digits="[12,1]" sum="Итого, кг"/>

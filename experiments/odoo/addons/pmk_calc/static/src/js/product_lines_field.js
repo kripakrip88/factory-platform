@@ -88,6 +88,9 @@ const SECTIONS = [
             },
             { name: "length_mm", label: "Длина, мм" },
             { name: "qty", label: "Кол-во" },
+            // №313 (Владимир, 24.10.2026): 09Г2С дороже Ст3 — марка у детали
+            // проката, как у листа. Пусто — самая дешёвая из прайсов.
+            { ref: true, name: "grade_id", label: "Марка", placeholder: "любая" },
         ],
     },
     {
@@ -593,7 +596,8 @@ export class ProductLinesRenderer extends ListRenderer {
     describe(line) {
         const d = line.data;
         if (d.calc_mode === "linear") {
-            return [relName(d.profile_id), `${num(d.length_mm)} мм`];
+            const grade = d.grade_id ? `, ${relName(d.grade_id)}` : "";
+            return [relName(d.profile_id) + grade, `${num(d.length_mm)} мм`];
         }
         if (d.calc_mode === "sheet") {
             // Марка — только выбранная: пусто значит «самая дешёвая».

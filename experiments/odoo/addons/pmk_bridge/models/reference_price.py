@@ -17,6 +17,8 @@
 from odoo import api, fields, models
 
 from ..tools import spec_text
+from ..tools import grades
+from ..tools.grades import BASE_GRADE
 from .reference_link import LINKED_MODELS
 
 
@@ -67,6 +69,12 @@ class ProductTemplatePmkSeller(models.Model):
           18.10: такой марки в прайсах «не может не быть»). Марка не задана —
           самая дешёвая из всех марок (Антон 19.10: «в 90% случаев нужен самый
           дешёвый материал… если требуется, марку меняют в расчёте вручную»);
+        • прокат, МАРКА (№313, Владимир 24.10.2026: 09Г2С на 15–20% дороже Ст3):
+          марка задана — только цены варианта этой марки. Цены без варианта
+          (марка в прайсе не опознана — «Ст2кп», «Углерод.») — только базовой
+          марке Ст3сп: обычная сталь, как и было до №313. 09Г2С вместо Ст3сп
+          и наоборот не подставляем — «цены нет». Марка не задана — самая
+          дешёвая из всех, как у листа;
         • лист в м² (№309): строка ГАБАРИТА uom («Лист 1500×3000»); у
           поставщиков такого нет — любого габарита (вариант «а», Антон 18.10:
           цена тонны та же, единица приведена к м²). Габарит не задан — как
@@ -89,6 +97,10 @@ class ProductTemplatePmkSeller(models.Model):
                 return empty
         if self._pmk_is_sqm():
             sellers = self._pmk_sellers_of_grade(sellers, grade)
+            if not sellers:
+                return empty
+        elif grade:
+            sellers = self._pmk_linear_sellers_of_grade(sellers, grade)
             if not sellers:
                 return empty
         if not supplier:
@@ -115,6 +127,68 @@ class ProductTemplatePmkSeller(models.Model):
         if grade:
             return sellers.filtered(lambda s: grade_of(s) in (grade, None))
         return sellers
+
+    def _pmk_linear_sellers_of_grade(self, sellers, grade):
+        """Прокат (№313): строки прайса марки grade; строки без варианта — только
+        базовой марке (Ст3сп). Правило — в _pmk_find_seller."""
+        attr = self.env.ref("pmk_bridge.attr_grade", raise_if_not_found=False)
+
+        def grade_of(info):
+            names = info.product_id.product_template_attribute_value_ids.filtered(
+                lambda v: v.attribute_id == attr).mapped("name")
+            return names[0] if names else None
+        # Вариант карточки без строки прайса со своей маркой (product_id пуст у
+        # старых цен) — «без марки»; марка базового варианта у проката — Ст3сп.
+        return sellers.filtered(
+            lambda s: grade_of(s) == grade or (grade_of(s) is None and grade == BASE_GRADE))
+
+
+    def _pmk_linear_prices_to_grade_variants(self):
+        """№313 (24.10.2026): старые цены проката — с шаблона на вариант марки.
+
+        До №313 цена проката лежала на шаблоне, а марка осталась только в
+        названии строки прайса («Труба эл/св 114 х 4 Ст 09Г2С»). Загрузчик теперь
+        пишет цену на вариант марки, а ряд цен он ведёт по варианту: оставь старые
+        строки на шаблоне — новая цена не закрыла бы прошлый период, и старая
+        всплывала бы рядом. Поэтому переносим ряд целиком, с историей.
+
+        Карточкам проката без характеристики марки (147 позиций сортамента от
+        18.10.2026 завели без неё) — характеристика с базовой маркой Ст3сп, как
+        у остальных: единственный вариант её впитывает, нового не заводится.
+        Без этого цену Ст3пс или 09Г2С такой карточки загрузчику положить некуда.
+
+        Марка не опознана — строка остаётся на шаблоне («марка не различается»,
+        годится базовой марке).
+        Возвращает (перенесено по маркам, осталось на шаблоне, не перенесено).
+        """
+        attr = self.env.ref("pmk_bridge.attr_grade", raise_if_not_found=False)
+        moved, kept, refused = {}, 0, {}
+        if not attr:
+            return moved, kept, refused
+        tmpls = self.env["pmk.metal.profile"].sudo().with_context(
+            active_test=False).search([]).product_tmpl_id
+        base = attr.value_ids.filtered(lambda v: v.name == BASE_GRADE)[:1]
+        bare = tmpls.filtered(lambda t: not t.attribute_line_ids and len(t.product_variant_ids) == 1)
+        if base:
+            for tmpl in bare:
+                tmpl.attribute_line_ids = [(0, 0, {"attribute_id": attr.id, "value_ids": [(6, 0, base.ids)]})]
+            moved["карточкам добавлена марка Ст3сп"] = len(bare)
+        tmpl_ids = tmpls.ids
+        infos = self.env["product.supplierinfo"].sudo().search(
+            [("product_tmpl_id", "in", tmpl_ids), ("product_id", "=", False)])
+        for info in infos:
+            grade = grades.grade_from_vendor_name(info.product_name)
+            tmpl = info.product_tmpl_id
+            if not grade or not tmpl.attribute_line_ids.filtered(lambda l: l.attribute_id == attr):
+                kept += 1
+                continue
+            variant = tmpl._pmk_grade_variant(grade, create=True)
+            if not variant:
+                refused[grade] = refused.get(grade, 0) + 1
+                continue
+            info.product_id = variant.id
+            moved[grade] = moved.get(grade, 0) + 1
+        return moved, kept, refused
 
 
 class SupplierInfoPmkPrice(models.Model):
