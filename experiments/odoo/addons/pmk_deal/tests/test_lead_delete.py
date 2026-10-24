@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""№306: «Удалить» лиды и сделки у группы «Все документы»; сделку со счётом — нет."""
+"""№306 (вариант «в»): группа «Все документы» удаляет лиды; сделки — только в архив."""
 from odoo.exceptions import AccessError, UserError
 from odoo.tests import TransactionCase, new_test_user, tagged
 
@@ -14,15 +14,21 @@ class TestLeadDelete(TransactionCase):
         cls.own = new_test_user(cls.env, "pmk306_own", groups="sales_team.group_sale_salesman")
         cls.partner = cls.env["res.partner"].create({"name": "Клиент (тест №306)", "is_company": True})
 
-    def test_all_documents_can_delete(self):
+    def test_all_documents_delete_leads_archive_deals(self):
         lead = self.env["crm.lead"].create({"name": "Лид (тест №306)", "type": "lead"})
+        lead.with_user(self.all_docs).unlink()
+        self.assertFalse(lead.exists())
         deal = self.env["crm.lead"].create({"name": "Сделка (тест №306)", "type": "opportunity",
                                             "partner_id": self.partner.id})
-        (lead | deal).with_user(self.all_docs).unlink()
-        self.assertFalse((lead | deal).exists())
+        with self.assertRaises(UserError):
+            deal.with_user(self.all_docs).unlink()
+        deal.with_user(self.all_docs).action_archive()
+        self.assertFalse(deal.active, "Сделку — в архив.")
+        deal.with_user(self.all_docs).action_unarchive()
+        self.assertTrue(deal.active, "И обратно.")
 
     def test_own_documents_still_cannot(self):
-        lead = self.env["crm.lead"].create({"name": "Лид (тест №306)", "user_id": self.own.id})
+        lead = self.env["crm.lead"].create({"name": "Лид (тест №306)", "type": "lead", "user_id": self.own.id})
         with self.assertRaises(AccessError):
             lead.with_user(self.own).unlink()
 
