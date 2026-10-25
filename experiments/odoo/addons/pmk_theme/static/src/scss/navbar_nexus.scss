@@ -1145,3 +1145,294 @@ i.pmk_vi {
 .o_control_panel .o_control_panel_main_buttons {
   margin-inline-end: 8px;
 }
+
+
+// ═══ Шаг 75: разделы вкладками, как вкладки документа (25.10.2026) ════════════
+// Антон 25.10: «шапка выбивается из общего стиля». После v1.117 система — серый
+// фон, белые карточки в рамке r10, графит; шапка оставалась двумя полосами во
+// всю ширину, с радугой значков и лаймом. Прототипы в чате, выбран вариант
+// «А · Карточка» + обозначение раздела «как вкладки документа» (скрин шага 67),
+// подсветка «3 · вкладка чистая, без кромки».
+//
+// Стало:
+//  • первая строка — на фоне верхней зоны (тот же #f9f9f9, что у панели с
+//    «Новое» и поиском под шапкой — шапка и панель читаются одной зоной);
+//  • открытый раздел — белая вкладка, «вырастающая» из карточки ниже: ножки
+//    radial-gradient — ровно приём шага 67 (forms_nexus.scss), те же радиус,
+//    цвета карточки и черты; закрытые — серый текст, между ними тонкая черта,
+//    у соседей открытой её нет, наведение — бледная «таблетка»;
+//  • значки закрытых серые, цвет раздела — только у значка открытой вкладки;
+//  • вторая строка — белая карточка r10 в рамке; текущий пункт — бледная
+//    плашка тона раздела (палитра этапов $pmk-stage-tones), без точки;
+//  • «Настройки» — значком ⚙ справа, у трея (подпись — для чтения с экрана и
+//    подсказкой title).
+// Кнопка ассистента сжата до значка — в pmk_ai (ai_panel.xml/scss).
+//
+// Порог 768 px — как у карточек шага 52 (на телефоне своё меню ядра); вкладки
+// — от 1101 px, где вообще есть строка модулей (.pmk_apps_bar).
+//
+// !important — только там, где ядро/Nexus красят с !important (фон и черта
+// .o_main_navbar, отступы .o_menu_sections, цвет пунктов второй строки).
+//
+// ОТКАТ: удалить раздел — вернётся вид шагов 23/47 (две полосы, подчёркивание,
+// точка «где я»); в pmk_ai вернуть надпись «Ассистент».
+
+$pmk-nav-r: 10px;
+// Карточка и открытая вкладка — переменной: в тёмной теме фон шапки — цвет
+// панели под ней (--pmk-surface), и карточка должна быть на ступень светлее.
+$pmk-nav-card: unquote("var(--pmk-nav-card, var(--pmk-surface, #fff))");
+$pmk-nav-line: unquote("var(--pmk-border, #e3e4e8)");
+
+// Раздел → (бледный тон светлой, тон тёмной из словаря dark.scss). Бледные —
+// $pmk-stage-tones (forms_nexus.scss), продублированы: файлы темы не зависят от
+// переменных друг друга. Текст плашки — цвет значка раздела, затемнённый до
+// ≥ 4,5 к своему тону. У Продаж — приглушённый лайм (лаймом по белому не пишем).
+$pmk-nav-tones: (
+  "pmk_theme.menu_pmk_sales":      (#eef3dc, "lime"),
+  "pmk_theme.menu_pmk_production": (#fcebdc, "orange"),
+  "pmk_theme.menu_pmk_purchase":   (#e0f1ec, "teal"),
+  "pmk_theme.menu_pmk_stock":      (#e6eefa, "blue"),
+  "pmk_theme.menu_pmk_money":      (#e4f3e3, "green"),
+  "pmk_theme.menu_pmk_reports":    (#f0f0f0, "grey"),
+  "pmk_theme.menu_pmk_people":     (#f9e4ec, "raspberry"),
+  "pmk_laser.menu_pmk_laser":      (#f0e7f6, "purple"),
+  "pmk_calc.menu_pmk_calc":        (#ece8f8, "violet"),
+  "base.menu_administration":      (#f0f0f0, "grey"),
+  "pmk_theme.menu_pmk_tasks":      (#fbf3d5, "yellow"),
+);
+
+@media screen and (min-width: 768px) {
+
+  // Тон текущего раздела — переменными на шапке (атрибут ставит
+  // navbar_active_section.js), их читает плашка второй строки.
+  @each $xmlid, $pair in $pmk-nav-tones {
+    header.o_navbar[data-pmk-app="#{$xmlid}"] {
+      --pmk-nav-tone: #{nth($pair, 1)};
+      --pmk-nav-ink: #{mix(map-get($pmk-accents-light, $xmlid), #000, 60%)};
+    }
+  }
+
+  header.o_navbar .o_main_navbar {
+    background: var(--pmk-nav-page, #{$pmk-nx-surface}) !important;
+    border-bottom: 0 !important;
+    padding-bottom: 8px;
+  }
+
+  // ─── Вторая строка — карточка ──────────────────────────────────────────
+  // margin-top −1 px: верх карточки уходит под открытую вкладку, и её низ
+  // закрывает черту карточки (как .o_notebook_content в шаге 67).
+  header.o_navbar .o_menu_sections {
+    position: relative;
+    z-index: 1;
+    flex: 1 0 calc(100% - 32px) !important;
+    margin: -1px 16px 0 !important;
+    padding: 4px 6px !important;
+    min-height: 36px;
+    border: 1px solid $pmk-nav-line;
+    border-radius: $pmk-nav-r;
+    background: $pmk-nav-card;
+  }
+
+  header.o_navbar .o_menu_sections .pmk_section--active {
+    background: var(--pmk-nav-tone, #f0f0f0) !important;
+    color: var(--pmk-nav-ink, #{$pmk-nx-ink}) !important;
+
+    &:hover {
+      background: var(--pmk-nav-tone, #f0f0f0) !important;
+      color: var(--pmk-nav-ink, #{$pmk-nx-ink}) !important;
+    }
+
+    // Точка «где я» (шаг 23) — её роль теперь у плашки.
+    &::before {
+      display: none;
+    }
+  }
+}
+
+@media screen and (min-width: 1101px) {
+
+  // ─── Первая строка — вкладки ───────────────────────────────────────────
+  // Полоса выше карточки (z-index), чтобы открытая вкладка легла поверх её
+  // черты. overflow: hidden у полосы (шаг 5) режет всё за её краями — поэтому
+  // отступы слева/справа под ножки: 36 = поле карточки 16 + её скругление 10 +
+  // ножка 10, у первой вкладки ножка ложится на прямой край карточки.
+  header.o_navbar .pmk_apps_bar {
+    position: relative;
+    z-index: 2;
+    align-self: stretch;
+    align-items: flex-end;
+    gap: 0;
+    height: var(--o-navbar-height, 46px);
+    margin-left: 0;
+    padding: 0 12px 0 36px;
+  }
+
+  header.o_navbar .pmk_apps_bar .pmk_app {
+    position: relative;
+    height: 36px;
+    padding: 0 14px;
+    border: 1px solid transparent;
+    border-bottom: 0;
+    border-radius: $pmk-nav-r $pmk-nav-r 0 0;
+    background: transparent;
+    box-shadow: none;
+    color: #7b7f88;
+    font-weight: 500;
+
+    &:hover {
+      background-color: transparent;
+      color: $pmk-nx-ink;
+    }
+
+    // Наведение — «таблетка» внутри вкладки, не во всю высоту (шаг 67).
+    &:not(.pmk_app--active)::after {
+      content: "";
+      position: absolute;
+      inset: 4px 2px;
+      z-index: -1;
+      border-radius: 8px;
+      background: transparent;
+    }
+
+    &:not(.pmk_app--active):hover::after {
+      background: rgba(22, 25, 28, 0.06);
+    }
+
+    // Значки закрытых — серые: цвет раздела только у открытой.
+    &:not(.pmk_app--active)::before {
+      color: #9a9ea6;
+    }
+  }
+
+  // Черта между закрытыми — фоном (::before занят значком, ::after —
+  // таблеткой/ножками). У соседа открытой и под курсором её нет.
+  header.o_navbar .pmk_apps_bar .pmk_app + .pmk_app {
+    background: linear-gradient(#{$pmk-nav-line}, #{$pmk-nav-line}) 0 50% / 1px 16px no-repeat;
+  }
+
+  header.o_navbar .pmk_apps_bar .pmk_app--active + .pmk_app,
+  header.o_navbar .pmk_apps_bar .pmk_app:hover + .pmk_app,
+  header.o_navbar .pmk_apps_bar .pmk_app + .pmk_app:hover {
+    background-image: none;
+  }
+
+  // ─── Открытая вкладка ──────────────────────────────────────────────────
+  header.o_navbar .pmk_apps_bar .pmk_app.pmk_app--active {
+    z-index: 1;
+    border-color: $pmk-nav-line;
+    background: $pmk-nav-card;
+    box-shadow: none;
+    color: $pmk-nx-ink;
+    font-weight: 600;
+
+    // Ножки: вогнутая дуга радиуса $pmk-nav-r. На 1 px шире радиуса — крайним
+    // столбцом ложится на боковую черту вкладки, дуга продолжает её без стыка.
+    &::after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      left: -$pmk-nav-r - 1px;
+      right: -$pmk-nav-r - 1px;
+      height: $pmk-nav-r + 1px;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 0 0, transparent $pmk-nav-r,
+          #{$pmk-nav-line} $pmk-nav-r, #{$pmk-nav-line} $pmk-nav-r + 1px, #{$pmk-nav-card} $pmk-nav-r + 1px)
+          left bottom / ($pmk-nav-r + 1px) ($pmk-nav-r + 1px) no-repeat,
+        radial-gradient(circle at 100% 0, transparent $pmk-nav-r,
+          #{$pmk-nav-line} $pmk-nav-r, #{$pmk-nav-line} $pmk-nav-r + 1px, #{$pmk-nav-card} $pmk-nav-r + 1px)
+          right bottom / ($pmk-nav-r + 1px) ($pmk-nav-r + 1px) no-repeat;
+    }
+  }
+
+  // ─── «Настройки» — значком справа ──────────────────────────────────────
+  header.o_navbar .pmk_apps_bar .pmk_app[data-menu-xmlid="base.menu_administration"] {
+    margin-left: auto;
+    padding: 0 11px;
+    background-image: none;
+
+    .pmk_app__label {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+  }
+
+  // Трей и переключатель темы — по центру вкладок, а не всей строки
+  // (вкладки прижаты к низу). Высоту пунктов трея ядро берёт из
+  // --o-navbar-height — сужаем её только внутри трея. Аватар ядро считает от
+  // той же высоты (стал бы 16 px) — возвращаем прежние 26.
+  header.o_navbar .o_menu_systray {
+    --o-navbar-height: 36px;
+    align-self: flex-end;
+  }
+
+  header.o_navbar .pmk_theme_switch {
+    align-self: flex-end;
+    height: 36px;
+  }
+
+  header.o_navbar .o_menu_systray .o_user_avatar {
+    width: 26px;
+    height: 26px;
+  }
+}
+
+// ─── Тёмная пара шага 75 ────────────────────────────────────────────────
+@media screen and (min-width: 768px) {
+
+  // Как в светлой: фон шапки = фон панели «Новое / поиск» под ней (одна
+  // верхняя зона), карточка с вкладкой — на ступень светлее.
+  body.o_nexus_dark header.o_navbar {
+    --pmk-nav-page: var(--pmk-surface, #272a30);
+    --pmk-nav-card: var(--pmk-surface-2, #2e3138);
+  }
+
+  @each $xmlid, $pair in $pmk-nav-tones {
+    $tone: nth($pair, 2);
+    body.o_nexus_dark header.o_navbar[data-pmk-app="#{$xmlid}"] {
+      @if $tone == "lime" {
+        --pmk-nav-tone: var(--pmk-fill-soft, #2e3420);
+        --pmk-nav-ink: var(--pmk-accent, #d4e57a);
+      } @else {
+        --pmk-nav-tone: var(--pmk-tone-#{$tone}-bg);
+        --pmk-nav-ink: var(--pmk-tone-#{$tone}-ink);
+      }
+    }
+  }
+
+  // Светлые правила тёмной темы (раздел выше) весят (0,5,2) с !important —
+  // пара не легче.
+  body.o_nexus_dark.o_web_client header.o_navbar .o_menu_sections .pmk_section--active {
+    &,
+    &:hover {
+      background: var(--pmk-nav-tone, #404143) !important;
+      color: var(--pmk-nav-ink, #e4e1da) !important;
+    }
+  }
+}
+
+@media screen and (min-width: 1101px) {
+  body.o_nexus_dark header.o_navbar .pmk_apps_bar .pmk_app {
+    color: rgba(244, 241, 234, 0.62);
+
+    &:hover {
+      color: #e4e1da;
+    }
+
+    &:not(.pmk_app--active)::before {
+      color: rgba(244, 241, 234, 0.42);
+    }
+
+    &:not(.pmk_app--active):hover::after {
+      background: rgba(255, 255, 255, 0.07);
+    }
+
+    &.pmk_app--active {
+      color: #e4e1da;
+    }
+  }
+}
