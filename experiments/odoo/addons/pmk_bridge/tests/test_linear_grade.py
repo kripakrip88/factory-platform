@@ -52,6 +52,10 @@ class TestLinearGrade(TransactionCase):
         self.assertIsNone(grades.grade_from_vendor_name("Круг 20"), "размер, не сталь 20")
         self.assertIsNone(grades.grade_from_vendor_name("Труба профильная 60х40х3"))
         self.assertIsNone(grades.grade_from_vendor_name("Труба 57х3 Ст2кп"), "марка не заведена")
+        self.assertEqual(grades.map_grade("С345"), "09Г2С")
+        self.assertEqual(grades.map_grade("с 345"), "09Г2С")
+        self.assertEqual(grades.grade_family("Ст3пс"), {"Ст3сп", "Ст3пс"})
+        self.assertEqual(grades.grade_family("09Г2С"), {"09Г2С"})
 
     def test_find_seller_by_grade(self):
         st3 = self._info("Труба эл/св 114 х 4 Ст3сп\\пс", 849.40, self.base)
@@ -122,5 +126,7 @@ class TestLinearGrade(TransactionCase):
         self.assertEqual(tmpl._pmk_grade_variant("Ст3сп"), variant, "Единственный вариант — Ст3сп.")
         self.assertEqual(tmpl.default_code, "TPK-T-140x3")
         self.assertEqual(info.product_id.product_template_attribute_value_ids.name, "Ст3пс")
-        self.assertFalse(tmpl._pmk_find_seller(self.today, grade="Ст3сп"), "Ст3пс за Ст3сп не выдаём.")
+        self.assertEqual(tmpl._pmk_find_seller(self.today, grade="Ст3сп"), info,
+                         "Ст3пс годится строке Ст3сп — взаимозаменяемые (Антон 25.10).")
+        self.assertFalse(tmpl._pmk_find_seller(self.today, grade="09Г2С"))
         self.assertEqual(tmpl._pmk_find_seller(self.today), info, "Без марки — какая есть.")

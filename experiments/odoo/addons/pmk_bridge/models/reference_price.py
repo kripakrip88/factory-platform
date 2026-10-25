@@ -73,7 +73,8 @@ class ProductTemplatePmkSeller(models.Model):
           марка задана — только цены варианта этой марки. Цены без варианта
           (марка в прайсе не опознана — «Ст2кп», «Углерод.») — только базовой
           марке Ст3сп: обычная сталь, как и было до №313. 09Г2С вместо Ст3сп
-          и наоборот не подставляем — «цены нет». Марка не задана — самая
+          и наоборот не подставляем — «цены нет». Ст3сп и Ст3пс — одна сталь
+          (Антон 25.10.2026: «взаимозаменяемые»): берётся самая дешёвая из двух. Марка не задана — самая
           дешёвая из всех, как у листа;
         • лист в м² (№309): строка ГАБАРИТА uom («Лист 1500×3000»); у
           поставщиков такого нет — любого габарита (вариант «а», Антон 18.10:
@@ -125,7 +126,8 @@ class ProductTemplatePmkSeller(models.Model):
                 lambda v: v.attribute_id == attr).mapped("name")
             return names[0] if names else None
         if grade:
-            return sellers.filtered(lambda s: grade_of(s) in (grade, None))
+            family = grades.grade_family(grade)       # Ст3сп = Ст3пс (Антон 25.10)
+            return sellers.filtered(lambda s: grade_of(s) is None or grade_of(s) in family)
         return sellers
 
     def _pmk_linear_sellers_of_grade(self, sellers, grade):
@@ -139,8 +141,9 @@ class ProductTemplatePmkSeller(models.Model):
             return names[0] if names else None
         # Вариант карточки без строки прайса со своей маркой (product_id пуст у
         # старых цен) — «без марки»; марка базового варианта у проката — Ст3сп.
+        family = grades.grade_family(grade)           # Ст3сп = Ст3пс (Антон 25.10)
         return sellers.filtered(
-            lambda s: grade_of(s) == grade or (grade_of(s) is None and grade == BASE_GRADE))
+            lambda s: grade_of(s) in family or (grade_of(s) is None and BASE_GRADE in family))
 
 
     def _pmk_linear_prices_to_grade_variants(self):

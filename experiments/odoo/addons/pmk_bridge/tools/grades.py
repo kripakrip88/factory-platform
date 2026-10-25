@@ -76,3 +76,17 @@ def grade_from_vendor_name(name):
             if grade:
                 return grade
     return None
+
+
+# Взаимозаменяемые марки (Антон 25.10.2026: Ст3сп и Ст3пс — «это взаимозаменяемые
+# стали»): строка с одной из них берёт самую дешёвую цену любой. С345 = 09Г2С —
+# уже в GRADE_MAP (написание прайса и ячейки «Марка» → 09Г2С).
+GRADE_EQUIV = (frozenset(("Ст3сп", "Ст3пс")),)
+
+
+def grade_family(grade):
+    """Марки, чья цена годится строке с маркой grade (сама марка — всегда)."""
+    for family in GRADE_EQUIV:
+        if grade in family:
+            return family
+    return frozenset((grade,))

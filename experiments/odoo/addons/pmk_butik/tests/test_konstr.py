@@ -53,10 +53,22 @@ class TestKonstr(TransactionCase):
         row = self._detail(rows)[0]
         self.assertTrue(row["is_sheet"])
         self.assertEqual((row["width"], row["length_mm"]), (100, 200))
-        self.assertEqual(row["grade"], line.grade_id.name or line.pmk_grade_text)
+        self.assertEqual(row["grade"], line.pmk_grade_text or line.grade_id.name)
         # Марки нет в справочнике — текстом, не теряется.
         self.spec.konstr_save_row(detail["id"], {"grade": "Неведомая-99"})
         self.assertEqual((line.grade_id.id, line.pmk_grade_text), (False, "Неведомая-99"))
+        # Антон 25.10.2026: «С345 считаем как 09Г2С» — цена по 09Г2С, в ячейке — С345.
+        g09 = self.env["pmk.metal.grade"].search([("name", "=", "09Г2С")], limit=1)
+        rows = self._rows(self.spec.konstr_save_row(detail["id"], {"grade": "С345"}))
+        self.assertEqual((line.grade_id, line.pmk_grade_text), (g09, "С345"))
+        self.assertEqual(self._detail(rows)[0]["grade"], "С345")
+        # Точное имя марки — без текста.
+        self.spec.konstr_save_row(detail["id"], {"grade": "09г2с"})
+        self.assertEqual((line.grade_id, line.pmk_grade_text), (g09, False))
+        # Марку сменили в «Подробно» — вписанное в таблицу не висит.
+        self.spec.konstr_save_row(detail["id"], {"grade": "С345"})
+        line.grade_id = self.env["pmk.metal.grade"].search([("name", "=", "Ст3сп")], limit=1)
+        self.assertFalse(line.pmk_grade_text)
 
     def test_paste_and_insert_after_product(self):
         rows = self._rows(self.spec.konstr_add_product())

@@ -28,6 +28,8 @@ import re
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
+from odoo.addons.pmk_bridge.tools import grades
+
 from ..tools import parse
 from .butik import _EASTER_RE, _decoded, _fmt, _to_float
 
@@ -51,7 +53,15 @@ class MetalSpecLineKonstr(models.Model):
         "Наименование", help="Как записали в таблице «Конструкции» («Уголок 63х4», «Лист 10х60»). "
                              "Пусто — показывается позиция справочника.")
     pmk_grade_text = fields.Char(
-        "Марка (текст)", help="Марка из таблицы, которой нет в справочнике марок.")
+        "Марка (текст)", help="Марка, как её вписали в таблицу: нет в справочнике марок или записана "
+                              "иначе («С345» — цена по 09Г2С, марка справочника в «Марка стали»).")
+
+    def write(self, vals):
+        # Марку сменили в «Подробно» (только справочник) — вписанное в таблицу
+        # «С345» больше не про эту строку.
+        if "grade_id" in vals and "pmk_grade_text" not in vals:
+            vals = dict(vals, pmk_grade_text=False)
+        return super().write(vals)
 
     def _konstr_item(self):
         self.ensure_one()
@@ -132,7 +142,8 @@ class MetalSpecLineKonstr(models.Model):
             "length_derived": bool(self.pmk_mass_kg) and self.calc_mode == "linear",
             "qty": self.qty or 0,
             "qty_total": (self.qty or 0) * qty_product,
-            "grade": self.grade_id.name or self.pmk_grade_text or "",
+            # Вписанное («С345») — поверх марки справочника, по которой цена (09Г2С).
+            "grade": self.pmk_grade_text or self.grade_id.name or "",
             "weight_one": round(self.weight_one, 4),
             "weight_total": round(self.weight_total * qty_product, 3),
             # «Вес всего» — вводимая ячейка: масса по КМ на все изделия (№307).
@@ -230,6 +241,10 @@ class MetalSpecKonstr(models.Model):
 
     @api.model
     def _konstr_grade(self, text):
+        """Марка из ячейки → справочник марок. Точное имя — марка как есть; иначе —
+        словарь написаний прайсов (Антон 25.10.2026: «С345 считаем как 09Г2С»,
+        «ст3», «С255» → Ст3сп): цена — по марке справочника, а в ячейке остаётся
+        то, что вписали (С345). Не опознана — только текст, цена самая дешёвая."""
         text = (text or "").strip()
         if not text:
             return {"grade_id": False, "pmk_grade_text": False}
@@ -237,7 +252,11 @@ class MetalSpecKonstr(models.Model):
         norm = text.replace(" ", "").lower()
         grade = Grade.search([("name", "=ilike", text)], limit=1) or Grade.search([]).filtered(
             lambda g: (g.name or "").replace(" ", "").lower() == norm)[:1]
-        return {"grade_id": grade.id or False, "pmk_grade_text": False if grade else text}
+        if grade:
+            return {"grade_id": grade.id, "pmk_grade_text": False}
+        mapped = grades.map_grade(text)
+        grade = Grade.search([("name", "=", mapped)], limit=1) if mapped else Grade
+        return {"grade_id": grade.id or False, "pmk_grade_text": text}
 
     def _konstr_detail_vals(self, line, clean, product=None):
         """Правка ячеек детали → поля строки расчёта."""
