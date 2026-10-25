@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <menuitem id="menu_kolodec_calc" name="Металлоизделия колодцев" parent="pmk_calc.menu_pmk_calc"
+            action="action_kolodec_calc" sequence="37"/>
+  <menuitem id="menu_kolodec_ref" name="Справочник изделий колодцев" parent="pmk_calc.menu_pmk_calc_reference"
+            action="action_kolodec_ref" sequence="67"/>
+</odoo>

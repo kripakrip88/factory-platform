@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!-- Справочник металлоизделий колодцев: собирается из tools/<альбом>.py (tools/catalog.py), только чтение. -->
+  <record id="view_kolodec_ref_list" model="ir.ui.view">
+    <field name="name">pmk.kolodec.ref.list</field>
+    <field name="model">pmk.kolodec.ref</field>
+    <field name="arch" type="xml">
+      <list create="0" edit="0" delete="0" decoration-muted="outside">
+        <field name="album" optional="hide"/>
+        <field name="item_type"/>
+        <field name="mark"/>
+        <field name="designation" optional="show"/>
+        <field name="length"/>
+        <field name="rungs" optional="show"/>
+        <field name="width" optional="show"/>
+        <field name="mass"/>
+        <field name="album_mass"/>
+        <field name="ratio" optional="show"/>
+        <field name="outside" widget="boolean" optional="show"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="view_kolodec_ref_form" model="ir.ui.view">
+    <field name="name">pmk.kolodec.ref.form</field>
+    <field name="model">pmk.kolodec.ref</field>
+    <field name="arch" type="xml">
+      <form create="0" edit="0" delete="0">
+        <sheet>
+          <div class="oe_title"><h1><field name="mark"/></h1><field name="name"/></div>
+          <group>
+            <group>
+              <field name="album"/>
+              <field name="item_type"/>
+              <field name="designation"/>
+              <field name="outside"/>
+            </group>
+            <group>
+              <field name="length"/>
+              <field name="rungs"/>
+              <field name="width"/>
+              <field name="mass"/>
+              <field name="album_mass"/>
+              <field name="ratio"/>
+            </group>
+          </group>
+          <field name="parts_text" nolabel="1"/>
+        </sheet>
+      </form>
+    </field>
+  </record>
+
+  <record id="view_kolodec_ref_search" model="ir.ui.view">
+    <field name="name">pmk.kolodec.ref.search</field>
+    <field name="model">pmk.kolodec.ref</field>
+    <field name="arch" type="xml">
+      <search>
+        <field name="mark"/>
+        <field name="designation"/>
+        <filter name="st902" string="Стремянки С1 (902)" domain="[('item_type', '=', 'st902')]"/>
+        <filter name="st901" string="Стремянки С (901)" domain="[('item_type', '=', 'st901')]"/>
+        <filter name="ms" string="Элементы МС" domain="[('item_type', '=', 'ms')]"/>
+        <filter name="pr" string="Проставки" domain="[('item_type', '=', 'pr')]"/>
+        <separator/>
+        <filter name="outside" string="Вне альбома" domain="[('outside', '=', True)]"/>
+        <group>
+          <filter name="by_album" string="Альбом" context="{'group_by': 'album'}"/>
+          <filter name="by_type" string="Изделие" context="{'group_by': 'item_type'}"/>
+        </group>
+      </search>
+    </field>
+  </record>
+
+  <record id="action_kolodec_ref" model="ir.actions.act_window">
+    <field name="name">Справочник изделий колодцев</field>
+    <field name="res_model">pmk.kolodec.ref</field>
+    <field name="view_mode">list,form</field>
+    <field name="context">{'search_default_by_type': 1}</field>
+  </record>
+</odoo>

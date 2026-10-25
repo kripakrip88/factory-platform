@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_pmk_kolodec_calc_user,pmk_kolodec_calc.user,model_pmk_kolodec_calc,base.group_user,1,1,1,1
+access_pmk_kolodec_line_user,pmk_kolodec_line.user,model_pmk_kolodec_line,base.group_user,1,1,1,1
+access_pmk_kolodec_part_user,pmk_kolodec_part.user,model_pmk_kolodec_part,base.group_user,1,1,1,1
+access_pmk_kolodec_ref_user,pmk_kolodec_ref.user,model_pmk_kolodec_ref,base.group_user,1,0,0,0
+access_pmk_kolodec_ref_system,pmk_kolodec_ref.system,model_pmk_kolodec_ref,base.group_system,1,1,1,1
