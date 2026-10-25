@@ -18,17 +18,17 @@ class OporaRef(models.Model):
     _rec_name = "designation"
 
     opora_type = fields.Selection(TYPES, "Категория", required=True, readonly=True)
-    dn = fields.Integer("Дн трубы, мм", required=True, readonly=True)
+    dn = fields.Integer("Дн трубы, мм", required=True, readonly=True, aggregator=False)
     execution = fields.Char("Исполнение", required=True, readonly=True)
     designation = fields.Char("Обозначение", readonly=True, help="Без марки стали: «219-КХ-А12».")
-    height = fields.Integer("Н, мм", readonly=True, help="У КП — до низа трубы, у КХ — до низа хомута.")
-    length = fields.Integer("Длина корпуса, мм", readonly=True)
-    width = fields.Integer("Ширина B, мм", readonly=True)
-    thickness = fields.Integer("Лист корпуса, мм", readonly=True)
-    mass = fields.Float("Масса по деталям, кг", digits=(10, 2), readonly=True)
-    ost_mass = fields.Float("Масса по ОСТ, кг", digits=(10, 1), readonly=True,
+    height = fields.Integer("Н, мм", readonly=True, aggregator=False, help="У КП — до низа трубы, у КХ — до низа хомута.")
+    length = fields.Integer("Длина корпуса, мм", readonly=True, aggregator=False)
+    width = fields.Integer("Ширина B, мм", readonly=True, aggregator=False)
+    thickness = fields.Integer("Лист корпуса, мм", readonly=True, aggregator=False)
+    mass = fields.Float("Масса по деталям, кг", digits=(10, 2), readonly=True, aggregator=False)
+    ost_mass = fields.Float("Масса по ОСТ, кг", digits=(10, 1), readonly=True, aggregator=False,
                             help="«Не более» по таблице ОСТ (у КХ — без упоров).")
-    ratio = fields.Integer("Детали / ОСТ, %", readonly=True)
+    ratio = fields.Integer("Детали / ОСТ, %", readonly=True, aggregator=False)
     parts_text = fields.Text("Состав", readonly=True)
 
     _key_uniq = models.Constraint("UNIQUE(opora_type, dn, execution)", "Опора в справочнике — один раз.")
@@ -51,7 +51,7 @@ class OporaRef(models.Model):
                         designation="%s-%s-%s" % (dn, ost.TYPES[kind]["code"], exe),
                         height=g["h"], length=g["L"], width=g["B"], thickness=g["S"],
                         mass=mass, ost_mass=ost_mass, ratio=round(mass / ost_mass * 100) if ost_mass else 0,
-                        parts_text="\n".join("%s — %g шт × %.2f кг" % (p["name"], p["qty"], p["unit_mass"])
+                        parts_text="\n".join(("%s — %g шт × %.2f кг" % (p["name"], p["qty"], p["unit_mass"])).replace(".", ",")
                                              for p in parts),
                     )
                     rec = have.pop((kind, dn, exe), None)

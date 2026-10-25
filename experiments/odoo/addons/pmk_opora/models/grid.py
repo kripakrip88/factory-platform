@@ -72,7 +72,7 @@ class OporaLineGrid(models.Model):
                 "qty": part.qty, "qty_total": part.qty * (self.qty or 0),
                 "mass": part.mass, "cost": part.cost, "price": price,
                 "price_label": _("₽/т") if metal else _("₽/шт"),
-                "hint": hints.get(part.auto_key, ""), "no_price": not price,
+                "hint": hints.get(part.auto_key, ""), "no_price": bool(part.name) and not price,
             })
         return rows
 
