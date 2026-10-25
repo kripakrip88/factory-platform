@@ -18,10 +18,10 @@ from odoo import _, api, fields, models
 
 from odoo.addons.pmk_bridge.tools import spec_text
 
-from ..tools import ost
+from ..tools import catalog
 
-STEELS = [(s, s) for s in ost.STEELS]
-TYPES = [(k, v["label"]) for k, v in ost.TYPES.items()]
+STEELS = [(s, s) for s in catalog.STEELS]
+TYPES = [(k, "%s — %s" % (v["label"], v["standard"])) for k, v in catalog.TYPES.items()]
 PRICE_GRADE = {"09Г2С": "09Г2С", "10Г2": "10Г2", "20": "20"}  # Ст3пс/Ст3сп — самая дешёвая, как в расчёте
 
 
@@ -77,8 +77,8 @@ class OporaLine(models.Model):
     currency_id = fields.Many2one(related="calc_id.currency_id")
     # Не обязательные: пустая строка таблицы (Enter в конце) — ещё не опора.
     opora_type = fields.Selection(TYPES, "Тип")
-    dn = fields.Integer("Дн трубы, мм")
-    execution = fields.Char("Исполнение", help="А12, АС13 (С — сварной корпус), Б22 (с подушкой, только КП)")
+    dn = fields.Float("Дн трубы, мм", digits=(6, 1))
+    execution = fields.Char("Исполнение", help="ОСТ 36-146-88: А12, АС13 (С — сварной корпус), Б22 (с подушкой, только КП). ОСТ 36-94-83: высота марки — 100 или 70.")
     height = fields.Integer("Своя высота Н, мм", help="Пусто — по ОСТ. В счетах встречается «Н=50» у А12.")
     steel = fields.Selection(STEELS, "Сталь", default="Ст3пс")
     qty = fields.Integer("Кол-во, шт", required=True, default=1)
@@ -109,8 +109,8 @@ class OporaLine(models.Model):
     def _pmk_ok(self):
         self.ensure_one()
         return bool(self.opora_type and self.dn and self.execution
-                    and not ost.check(self.opora_type, self.dn, self.execution)
-                    and not ost.check_height(self.opora_type, self.dn, self.execution, self.height))
+                    and not catalog.check(self.opora_type, self.dn, self.execution)
+                    and not catalog.check_height(self.opora_type, self.dn, self.execution, self.height))
 
     # ─── Состав по ОСТ ──────────────────────────────────────────────────
     def _pmk_sheet_price_ton(self, thickness):
@@ -132,7 +132,7 @@ class OporaLine(models.Model):
         """{auto_key: значения} — детали по ОСТ, только материалы."""
         self.ensure_one()
         out, prices = {}, {}
-        for part in ost.parts(self.opora_type, self.dn, self.execution, self.height or None):
+        for part in catalog.parts(self.opora_type, self.dn, self.execution, self.height or None):
             vals = dict(sequence=part["sequence"], name=part["name"], qty=float(part["qty"]),
                         unit_mass=part["unit_mass"], thickness=part["thickness"])
             if part["metal"]:
@@ -187,8 +187,8 @@ class OporaLine(models.Model):
             if not (line.opora_type and line.dn and line.execution):
                 line.update(dict(empty, warning=""))
                 continue
-            problem = (ost.check(line.opora_type, line.dn, line.execution)
-                       or ost.check_height(line.opora_type, line.dn, line.execution, line.height))
+            problem = (catalog.check(line.opora_type, line.dn, line.execution)
+                       or catalog.check_height(line.opora_type, line.dn, line.execution, line.height))
             if problem:
                 line.update(dict(empty, warning=problem))
                 continue
@@ -196,22 +196,19 @@ class OporaLine(models.Model):
             notes = []
             if line.height:
                 notes.append(_("высота не по ОСТ: Н=%(h)s вместо %(std)s — корпус и рёбра пересчитаны",
-                               h=line.height, std=ost.standard_h(line.opora_type, line.dn, line.execution)))
+                               h=line.height, std=catalog.standard_h(line.opora_type, line.dn, line.execution)))
             no_sheet = sorted({p.thickness for p in parts if p.price_ton == 0 and p.unit_mass and p.thickness})
             if no_sheet:
                 notes.append(_("нет цены листа %(t)s мм %(steel)s в прайсах — впишите в строке",
                                t=", ".join("%g" % t for t in no_sheet), steel=line.steel or ""))
             if parts.filtered(lambda p: p.auto_key in ("bolt", "nut") and not p.price_unit):
                 notes.append(_("впишите цену болтов и гаек"))
-            spec = ost.TYPES[line.opora_type]
             line.update(dict(
-                name=ost.name(line.opora_type, line.dn, line.execution, line.steel, line.height or None),
-                short_name="%s %s Дн%s · %s · %s%s" % (
-                    spec["code"], line.execution, line.dn, "неподвижная" if spec["fixed"] else "подвижная",
-                    line.steel or "", (" · Н=%s" % line.height) if line.height else ""),
+                name=catalog.name(line.opora_type, line.dn, line.execution, line.steel, line.height or None),
+                short_name=catalog.short(line.opora_type, line.dn, line.execution, line.steel, line.height or None),
                 warning="; ".join(notes),
                 mass_one=sum(parts.mapped("mass")),
-                ost_mass=ost.ost_mass(line.opora_type, line.dn, line.execution),
+                ost_mass=catalog.ost_mass(line.opora_type, line.dn, line.execution),
                 cost_one=sum(parts.mapped("cost")),
             ))
 
@@ -249,24 +246,21 @@ class OporaLine(models.Model):
 
     def _pmk_history_text(self, limit=3):
         """Прошлые продажи этой опоры по строкам счетов (из МоегоСклада — свои названия):
-        тот же тип, Дн и исполнение; неподвижные — отдельно от подвижных."""
+        шаблоны — у стандарта (tools/<стандарт>.history_patterns); неподвижные — отдельно."""
         self.ensure_one()
         if "sale.order.line" not in self.env:
             return ""
-        spec = ost.TYPES[self.opora_type]
-        code = r"(К|K)\s*(Х|X)" if spec["code"] == "КХ" else r"(К|K)\s*(П|P)"
-        base = ost.split_exe(self.execution)[0]
-        exe = r"(А|A)\s*(С|C)?\s*-?\s*" + base[1:] if base[0] == "А" else r"(Б|B)\s*(С|C)?\s*-?\s*" + base[1:]
-        fixed = "NOT " if not spec["fixed"] else ""
+        patterns, fixed = catalog.history_patterns(self.opora_type, self.dn, self.execution)
+        where = " AND ".join(["l.name ~* %s"] * len(patterns))
+        if fixed is not None:
+            where += " AND " + ("" if fixed else "NOT ") + "(l.name ~* '(неподв|с\\s*упор)')"
         self.env.cr.execute("""
             SELECT l.price_unit, o.date_order, p.name
               FROM sale_order_line l JOIN sale_order o ON o.id = l.order_id
               LEFT JOIN res_partner p ON p.id = o.partner_id
-             WHERE o.state != 'cancel' AND l.price_unit > 0 AND l.name ~* 'опор'
-               AND l.name ~ %s AND l.name ~* %s AND l.name ~ %s
-               AND """ + fixed + """(l.name ~* '(неподв|с\\s*упор)')
+             WHERE o.state != 'cancel' AND l.price_unit > 0 AND l.name ~* 'опор' AND """ + where + """
              ORDER BY o.date_order DESC LIMIT %s
-        """, (code, r"(^|\D)%s(\D|$)" % self.dn, exe + r"(\D|$)", limit))
+        """, tuple(patterns) + (limit,))
         rows = self.env.cr.fetchall()
         if not rows:
             return _("Такую опору раньше не продавали — сверить цену")

@@ -2,6 +2,6 @@
 <odoo>
   <menuitem id="menu_opora_calc" name="Опоры трубопроводов" parent="pmk_calc.menu_pmk_calc"
             action="action_opora_calc" sequence="36"/>
-  <menuitem id="menu_opora_ref" name="Опоры ОСТ 36-146-88" parent="pmk_calc.menu_pmk_calc_reference"
+  <menuitem id="menu_opora_ref" name="Справочник опор" parent="pmk_calc.menu_pmk_calc_reference"
             action="action_opora_ref" sequence="66"/>
 </odoo>

@@ -25,6 +25,7 @@ import math
 
 DENSITY = 7.85e-6  # кг/мм³
 OST = "ОСТ 36-146-88"
+STANDARD = OST
 LENGTHS = {"1": 170, "2": 340, "3": 680}
 BEND_K = 0.4  # нейтральный слой гиба корпуса: r + 0,4·S
 # Фаски нижних углов рёбер под внутренний радиус гиба корпуса (Антон 25.10.2026: «у ребра должны быть
@@ -32,10 +33,10 @@ BEND_K = 0.4  # нейтральный слой гиба корпуса: r + 0,4
 RIB_CHAMFER_GAP = 2
 
 TYPES = {
-    "kp": dict(code="КП", label="КП подвижная", fixed=False),
-    "kp_fix": dict(code="КП", label="КП неподвижная", fixed=True),
-    "kx": dict(code="КХ", label="КХ подвижная", fixed=False),
-    "kx_fix": dict(code="КХ", label="КХ неподвижная (с упорами)", fixed=True),
+    "kp": dict(code="КП", label="КП подвижная", fixed=False, standard=OST),
+    "kp_fix": dict(code="КП", label="КП неподвижная", fixed=True, standard=OST),
+    "kx": dict(code="КХ", label="КХ подвижная", fixed=False, standard=OST),
+    "kx_fix": dict(code="КХ", label="КХ неподвижная (с упорами)", fixed=True, standard=OST),
 }
 STEELS = ("Ст3пс", "Ст3сп", "20", "09Г2С", "10Г2")
 
@@ -417,9 +418,10 @@ def ost_mass(kind, dn, exe):
     return KX[(dn, base)][4] if TYPES[kind]["code"] == "КХ" else KP[(dn, base)][9]
 
 
-def designation(kind, dn, exe, steel):
-    """Условное обозначение по ОСТ: «219-КХ-А12-09Г2С»."""
-    return "%s-%s-%s-%s" % (dn, TYPES[kind]["code"], (exe or "").upper(), steel)
+def designation(kind, dn, exe, steel=None):
+    """Условное обозначение по ОСТ: «219-КХ-А12-09Г2С» (без стали — «219-КХ-А12»)."""
+    text = "%s-%s-%s" % (dn, TYPES[kind]["code"], (exe or "").upper())
+    return "%s-%s" % (text, steel) if steel else text
 
 
 def name(kind, dn, exe, steel, h=None):
@@ -432,3 +434,18 @@ def name(kind, dn, exe, steel, h=None):
     if spec["fixed"] and spec["code"] == "КХ":
         text += " (с упорами)"
     return text
+
+
+def short(kind, dn, exe, steel, h=None):
+    spec = TYPES[kind]
+    return "%s %s Дн%s · %s · %s%s" % (spec["code"], exe, dn, "неподвижная" if spec["fixed"] else "подвижная",
+                                      steel or "", (" · Н=%s" % h) if h else "")
+
+
+def history_patterns(kind, dn, exe):
+    """Регулярки для строк счетов МС (все должны совпасть) и неподвижная ли (True/False)."""
+    spec = TYPES[kind]
+    code = r"(К|K)\s*(Х|X)" if spec["code"] == "КХ" else r"(К|K)\s*(П|P)"
+    base = split_exe(exe)[0]
+    letter = r"(А|A)" if base[0] == "А" else r"(Б|B)"
+    return [code, r"(^|\D)%s(\D|$)" % dn, letter + r"\s*(С|C)?\s*-?\s*" + base[1:] + r"(\D|$)"], spec["fixed"]

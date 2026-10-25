@@ -2,7 +2,8 @@
 """Опоры трубопроводов по ОСТ 36-146-88 (25.10.2026)."""
 from odoo.tests import TransactionCase, tagged
 
-from ..tools import ost, parse
+from ..tools import catalog, parse
+from ..tools import ost36_146 as ost
 
 
 @tagged("post_install", "-at_install")
@@ -106,3 +107,38 @@ class TestCalc(TransactionCase):
         self.assertTrue(Ref.search_count([("opora_type", "=", "kx"), ("dn", "=", 219), ("execution", "=", "А12")]))
         self.assertFalse(Ref.search_count([("opora_type", "=", "kx_fix"), ("dn", "=", 219), ("execution", "=", "А11")]))
         self.assertEqual(Ref.search_count([("opora_type", "=", "kp")]), len(ost.KP))
+        # ОСТ 36-94-83: ОПП1 — с составом, остальные марки — справочник без состава.
+        self.assertEqual(Ref.search_count([("opora_type", "=", "opp1")]), 20)
+        opp2 = Ref.search([("designation", "=", "ОПП2-100.57")])
+        self.assertTrue(opp2 and not opp2.has_parts and opp2.ost_mass == 1.24)
+
+
+@tagged("post_install", "-at_install")
+class TestOst3694(TransactionCase):
+    """ОСТ 36-94-83 «Опоры подвижные» (25.10.2026): ОПП1 — состав по черт. 1, табл. 1."""
+
+    def test_opp1_mass_within_ost(self):
+        for dn in catalog.diameters("opp1"):
+            for exe in ("100", "70"):
+                ratio = catalog.mass("opp1", dn, exe) / catalog.ost_mass("opp1", dn, exe)
+                self.assertTrue(0.85 < ratio <= 1.0, "ОПП1-%s.%s: %.3f" % (exe, dn, ratio))
+
+    def test_opp1_parse_and_name(self):
+        vals, _n, err = parse.parse("Опора корпусная ОПП1-100.18 ОСТ 36-94-83  Н=100мм")
+        self.assertFalse(err)
+        self.assertEqual((vals["opora_type"], vals["execution"], vals["dn"]), ("opp1", "100", 18.0))
+        vals, _n, err = parse.parse("опп1 70 21,3 10шт 09г2с")
+        self.assertEqual((vals["dn"], vals["qty"], vals["steel"]), (21.3, 10, "09Г2С"))
+        self.assertIn("только в справочнике", parse.parse("ОПП2-100.57 ОСТ 36-94-83")[2])
+        self.assertEqual(catalog.name("opp1", 21.3, "70", "Ст3пс"), "Опора подвижная ОПП1-70.21,3 ОСТ 36-94-83, Ст3пс")
+        self.assertEqual(catalog.name("kx", 219.0, "А12", "09Г2С"), "Опора подвижная 219-КХ-А12-09Г2С ОСТ 36-146-88")
+
+    def test_opp1_in_calc(self):
+        calc = self.env["pmk.opora.calc"].create({})
+        key = calc.opora_rows()["rows"][0]["id"]
+        calc.opora_save_row(key, {"name": "опп1-100.18 6шт"})
+        line = calc.line_ids
+        self.assertEqual(line.qty, 6)
+        self.assertEqual(set(line.part_ids.mapped("auto_key")), {"corpus", "rib"})
+        self.assertAlmostEqual(line.mass_one, 0.565, delta=0.01)  # 0,439 + 0,126; поле — 2 знака
+        self.assertEqual(line.ost_mass, 0.6)
