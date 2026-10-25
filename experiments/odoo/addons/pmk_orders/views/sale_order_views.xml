@@ -77,7 +77,9 @@
     <field name="active" eval="True"/>
     <field name="arch" type="xml">
       <xpath expr="/form" position="attributes">
-        <attribute name="class" add="o_pmk_header_up o_pmk_invoice_form" separator=" "/>
+        <!-- o_pmk_head_a — шапка «вариант А» (Антон 25.10.2026): одна главная
+             кнопка, остальные в «Ещё ▾», статус у номера (pmk_theme form_head). -->
+        <attribute name="class" add="o_pmk_header_up o_pmk_head_a o_pmk_invoice_form" separator=" "/>
         <attribute name="create">0</attribute>
         <attribute name="duplicate">0</attribute>
       </xpath>
@@ -221,8 +223,10 @@
             <span class="o_stat_text">Расчёт</span>
           </div>
         </button>
+        <!-- Заказа нет — счётчик с нулём не показываем (вариант А шапки,
+             25.10.2026); завести заказ — «Создать ▾ → Заказ». -->
         <button name="action_open_planner_row" type="object" class="oe_stat_button"
-                icon="fa-industry" invisible="pmk_is_revision">
+                icon="fa-industry" invisible="pmk_is_revision or not pmk_task_count">
           <field name="pmk_task_count" widget="statinfo" string="Заказ"/>
         </button>
       </xpath>

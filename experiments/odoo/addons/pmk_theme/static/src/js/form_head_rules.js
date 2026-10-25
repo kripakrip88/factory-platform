@@ -10,6 +10,45 @@
 export const HEADER_UP_CLASS = "o_pmk_header_up";
 
 /**
+ * Метка формы: шапка «вариант А» (Антон 25.10.2026) — одна главная кнопка
+ * (следующий шаг), остальные кнопки — в «Ещё ▾», статус — у номера.
+ */
+export const HEAD_A_CLASS = "o_pmk_head_a";
+
+/**
+ * Флаги кнопки шапки по её классам: primary — кандидат в главную кнопку
+ * (btn-primary / oe_highlight), more — всегда в «Ещё ▾» (o_pmk_more),
+ * keep — всегда в ряду (o_pmk_keep). Виджеты (меню «Создать ▾») — keep.
+ */
+export function headButtonFlags(classes, isWidget = false) {
+    const list = String(classes || "").split(/[\s`'"+]+/);
+    const has = (c) => list.includes(c);
+    return {
+        primary: has("btn-primary") || has("oe_highlight"),
+        more: has("o_pmk_more"),
+        keep: isWidget || has("o_pmk_keep"),
+    };
+}
+
+/**
+ * Раскладка видимых кнопок шапки «вариант А»: main — первая главная кнопка,
+ * keep — в ряду справа от «Ещё ▾», more — в «Ещё ▾». Главная с o_pmk_more
+ * УСТУПАЕТ: становится главной, только если другой главной нет («Технический
+ * расчёт» счёта — второстепенный в черновике, главный в работе).
+ * slots — [{name, primary, more, keep}] в порядке шапки.
+ */
+export function splitHeadSlots(slots) {
+    const rest = slots.filter((slot) => !slot.keep);
+    const main =
+        rest.find((slot) => slot.primary && !slot.more) || rest.find((slot) => slot.primary) || null;
+    return {
+        main: main ? main.name : null,
+        more: rest.filter((slot) => slot !== main).map((slot) => slot.name),
+        keep: slots.filter((slot) => slot.keep).map((slot) => slot.name),
+    };
+}
+
+/**
  * Размер экрана ядра (SIZES в @web/core/ui/ui_service), с которого шапка
  * уходит в строку пути: XL — от 1200 px. Уже — отдельной строкой, как было.
  *

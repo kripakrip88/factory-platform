@@ -604,6 +604,10 @@ class SaleOrder(models.Model):
                  "method": "action_pmk_doc_spec"},
                 {"key": "task", "label": _("Задача"), "icon": "fa-check-square-o",
                  "method": "action_pmk_doc_task"},
+                # Шапка «вариант А» (25.10.2026): счётчик «Заказ» с нулём скрыт —
+                # завести строку плана отсюда (есть — откроется она).
+                {"key": "order", "label": _("Заказ (в план)"), "icon": "fa-industry",
+                 "method": "action_open_planner_row"},
             ],
             "print": [],
         }

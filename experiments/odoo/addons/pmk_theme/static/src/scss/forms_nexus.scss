@@ -3770,3 +3770,56 @@ $pmk-tab-r: 10px !default;
 .o_kanban_renderer .o_kanban_record.o_dragged * {
   transition: none !important;
 }
+
+// ═══ Шапка документа «вариант А» (Антон 25.10.2026) ═══
+// Разметка — xml/form_head.xml (1а и статус у номера), раскладка — js/form_head.js.
+// В «Ещё ▾» кнопки шапки — строками меню, без заливки и рамки: главная кнопка
+// (чёрная) на экране одна. Отмена документа — красным, чтобы не нажать мимо.
+.o_pmk_more_item.dropdown-item {
+  padding: 0;
+
+  > .btn {
+    display: block;
+    width: 100%;
+    text-align: left;
+    border: 0 !important;
+    border-radius: 0;
+    box-shadow: none !important;
+    outline: 0;
+    background: transparent !important;
+    color: #16191c !important;
+    font-weight: 400;
+    padding: 0.4rem 1rem;
+
+    &:hover {
+      background: #f0f0f0 !important;
+    }
+  }
+
+  > .btn[name="action_cancel"] {
+    color: #b3261e !important;
+  }
+
+  // Фокус клавиатуры — подложкой, как наведение, а не чёрной рамкой.
+  &.focus > .btn,
+  &:focus-visible > .btn {
+    background: #f0f0f0 !important;
+  }
+}
+
+body.o_nexus_dark .o_pmk_more_item.dropdown-item > .btn {
+  color: var(--pmk-text) !important;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.06) !important;
+  }
+}
+
+body.o_nexus_dark .o_pmk_more_item.dropdown-item > .btn[name="action_cancel"] {
+  color: #ff8a80 !important;
+}
+
+// Статус у номера — с отступом от «⚙ ▾» и номера.
+.o_pmk_head_a_status {
+  margin-left: 6px;
+}

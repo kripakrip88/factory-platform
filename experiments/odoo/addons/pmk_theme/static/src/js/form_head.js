@@ -49,13 +49,16 @@ import { FormStatusIndicator } from "@web/views/form/form_status_indicator/form_
 import { StatusBarButtons } from "@web/views/form/status_bar_buttons/status_bar_buttons";
 import { useViewCompiler } from "@web/views/view_compiler";
 import {
+    HEAD_A_CLASS,
     HEADER_UP_CLASS,
+    headButtonFlags,
     headerUpAt,
     hotkeyLabel,
     isAlwaysHidden,
     isShortCrumb,
     isStatusNode,
     pagerTooltip,
+    splitHeadSlots,
 } from "@pmk_theme/js/form_head_rules";
 
 // Скомпилированная шапка в строке пути ищет компонент строки кнопок у
@@ -120,7 +123,17 @@ patch(FormController.prototype, {
         // Без шапки наверху — null, и вложенная форма не унаследует флаг
         // внешней.
         const up = Boolean(this.pmkHeaderButtonsTemplate || this.pmkHeaderStatusTemplate);
-        useSubEnv({ pmkHeaderUp: up ? () => this.pmkHeaderInPanel() : null });
+        // Шапка «вариант А» (Антон 25.10.2026): метка o_pmk_head_a у формы.
+        this.pmkHeadA = up && Boolean(formEl.classList.contains(HEAD_A_CLASS));
+        useSubEnv({
+            pmkHeaderUp: up ? () => this.pmkHeaderInPanel() : null,
+            pmkHeadA: this.pmkHeadA ? () => this.pmkHeaderInPanel() : null,
+        });
+    },
+
+    /** Статус — у номера документа (вариант А), а не справа перед стрелками. */
+    get pmkStatusAtTitle() {
+        return this.pmkHeadA && Boolean(this.pmkHeaderStatusTemplate) && this.pmkHeaderInPanel();
     },
 
     /** Шапка рисуется в строке пути: она разобрана и экран от 1200 px. */
@@ -141,6 +154,16 @@ patch(FormCompiler.prototype, {
      */
     compileHeader(el, params) {
         const compiled = super.compileHeader(...arguments);
+        // Вариант А: флаги кнопок для раскладки «главная / Ещё ▾ / в ряду»
+        // (StatusBarButtons ниже) — параметрами слотов, как isVisible ядра.
+        for (const slot of compiled?.querySelectorAll?.("StatusBarButtons > t[t-set-slot]") || []) {
+            const node = slot.firstElementChild;
+            const isButton = node?.tagName === "ViewButton";
+            const flags = headButtonFlags(isButton ? node.getAttribute("className") : "", !isButton);
+            slot.setAttribute("pmkPrimary", String(flags.primary));
+            slot.setAttribute("pmkMore", String(flags.more));
+            slot.setAttribute("pmkKeep", String(flags.keep));
+        }
         if (compiled && el.closest?.("form")?.classList.contains(HEADER_UP_CLASS)) {
             compiled.setAttribute(
                 "t-if",
@@ -148,6 +171,21 @@ patch(FormCompiler.prototype, {
             );
         }
         return compiled;
+    },
+});
+
+patch(StatusBarButtons.prototype, {
+    /** Вариант А: видимые кнопки — главная, «Ещё ▾» и оставшиеся в ряду. */
+    pmkSplitSlots() {
+        const slots = this.props.slots || {};
+        return splitHeadSlots(
+            this.visibleSlotNames.map((name) => ({
+                name,
+                primary: Boolean(slots[name].pmkPrimary),
+                more: Boolean(slots[name].pmkMore),
+                keep: Boolean(slots[name].pmkKeep),
+            }))
+        );
     },
 });
 

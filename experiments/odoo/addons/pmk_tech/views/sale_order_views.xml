@@ -29,8 +29,10 @@
     <field name="active" eval="True"/>
     <field name="arch" type="xml">
       <xpath expr="//header/*[1]" position="before">
+        <!-- o_pmk_more: в шапке «вариант А» уступает шагу счёта (в черновике
+             главная — «На согласование»), главная — когда счёт в работе. -->
         <button name="action_pmk_tech_spec" type="object" string="Технический расчёт"
-                class="btn-primary"
+                class="btn-primary o_pmk_more"
                 invisible="pmk_tech_spec_id or pmk_is_revision or state != 'sale'"
                 title="Копия расчёта, по которому выставлен счёт: инженер правит состав и материалы, раскладывает листы. Расчёт КП не меняется"/>
       </xpath>

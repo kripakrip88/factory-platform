@@ -26,11 +26,50 @@
         <t t-call="{{ pmkHeaderButtonsTemplate }}" t-call-context="{ __comp__: Object.assign(Object.create(this), { this, props: { ...this.props, record: this.model.root }, state: {} }) }"/>
       </div>
     </xpath>
+    <!-- Вариант А (Антон 25.10.2026): статус — у номера документа, первым в
+         слоте рядом с названием (перед «Сохранить / Отменить»). -->
+    <xpath expr="//t[@t-set-slot='control-panel-status-indicator']/t[@t-if='canEdit']" position="before">
+      <div t-if="pmkStatusAtTitle" class="o_pmk_cp_header o_pmk_cp_header_status o_pmk_head_a_status d-flex align-items-center">
+        <t t-call="{{ pmkHeaderStatusTemplate }}" t-call-context="{ __comp__: Object.assign(Object.create(this), { this, props: { ...this.props, record: this.model.root }, state: {} }) }"/>
+      </div>
+    </xpath>
     <xpath expr="//t[@t-set-slot='control-panel-status-indicator']" position="after">
       <t t-set-slot="control-panel-navigation-additional">
-        <div t-if="pmkHeaderStatusTemplate and pmkHeaderInPanel()" class="o_pmk_cp_header o_pmk_cp_header_status d-flex align-items-center">
+        <div t-if="pmkHeaderStatusTemplate and pmkHeaderInPanel() and !pmkHeadA" class="o_pmk_cp_header o_pmk_cp_header_status d-flex align-items-center">
           <t t-call="{{ pmkHeaderStatusTemplate }}" t-call-context="{ __comp__: Object.assign(Object.create(this), { this, props: { ...this.props, record: this.model.root }, state: {} }) }"/>
         </div>
+      </t>
+    </xpath>
+  </t>
+
+  <!--
+    1а. Вариант А (Антон 25.10.2026, формы с меткой o_pmk_head_a, шапка в
+        строке пути): одна главная кнопка — следующий шаг (первая видимая
+        btn-primary без o_pmk_more), остальные кнопки — в «Ещё ▾», виджеты
+        (меню «Создать ▾ / Печать») и o_pmk_keep — в ряду после «Ещё ▾».
+        Раскладка — StatusBarButtons.pmkSplitSlots (js/form_head.js). На
+        телефоне и в листе — как в ядре.
+  -->
+  <t t-inherit="web.StatusBarButtons" t-inherit-mode="extension">
+    <xpath expr="//t[@t-else='']" position="before">
+      <t t-elif="env.pmkHeadA and env.pmkHeadA()">
+        <t t-set="pmkSplit" t-value="pmkSplitSlots()"/>
+        <t t-if="pmkSplit.main" t-slot="{{ pmkSplit.main }}"/>
+        <Dropdown t-if="pmkSplit.more.length" menuClass="'o_pmk_more_menu'">
+          <button class="btn btn-secondary o_pmk_more_btn" title="Другие действия документа">
+            <span>Ещё</span><i class="fa fa-angle-down ms-1" aria-hidden="true"/>
+          </button>
+          <t t-set-slot="content">
+            <t t-foreach="pmkSplit.more" t-as="slot" t-key="slot">
+              <DropdownItem class="'o-dropdown-item-unstyled-button o_pmk_more_item'">
+                <t t-slot="{{ slot }}"/>
+              </DropdownItem>
+            </t>
+          </t>
+        </Dropdown>
+        <t t-foreach="pmkSplit.keep" t-as="slot" t-key="slot">
+          <t t-slot="{{ slot }}"/>
+        </t>
       </t>
     </xpath>
   </t>
