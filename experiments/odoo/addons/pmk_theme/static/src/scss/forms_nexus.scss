@@ -223,9 +223,9 @@
   width: 100%;
   padding: 7px 12px;
   min-height: 44px;              // правило touch-target-size: попадать пальцем, не только мышью
-  border: 1px solid #eae6dc !important;
+  border: 1px solid #e6e6e6 !important;
   border-radius: 10px;
-  background: #faf9f6 !important;
+  background: #f9f9f9 !important;
   color: #4b4f58 !important;
   font-size: 13px;
   cursor: pointer;
@@ -233,7 +233,7 @@
 
   &:hover {
     background: #fff;
-    border-color: #dad5c8;
+    border-color: #d5d5d5;
   }
 
   &:focus-visible {
@@ -443,7 +443,7 @@ body.o_nexus_dark {
 // ─── Кнопка действия внутри строки поля ───────────────────────────────────
 //
 // «Заполнить по ИНН» выглядела вторым полем, а не кнопкой: тема красит её
-// той же рамкой, что и поля ввода (1 px #DAD5C8 на белом), и рядом с полем
+// той же рамкой, что и поля ввода (1 px #D5D5D5 на белом), и рядом с полем
 // ИНН они читались как два одинаковых прямоугольника.
 //
 // Делаем кнопкой: акцентная рамка и текст, прозрачный фон, компактные
@@ -589,7 +589,7 @@ body.o_nexus_dark {
 // это очевидным.
 //
 // Переносим геометрию и даём светлые цвета. Оформление то же, что у прочих
-// поверхностей темы: белая плашка, рамка #EAE6DC, скругление 12.
+// поверхностей темы: белая плашка, рамка #E6E6E6, скругление 12.
 .pmk-doc-head {
   display: grid;
   grid-template-columns: 2fr 1fr;
@@ -740,7 +740,7 @@ body.o_nexus_dark {
   flex-direction: column;
   justify-content: flex-start;
   background: #fff;
-  border: 1px solid #eae6dc;
+  border: 1px solid #e6e6e6;
   border-radius: 12px;
   padding: 10px 14px;
   min-width: 0;
@@ -884,7 +884,7 @@ body.o_nexus_dark {
   .o_button_more {
     height: 100%;
     padding: 0 12px;
-    border: 1px solid rgb(234, 230, 220) !important;
+    border: 1px solid rgb(230, 230, 230) !important;
     border-radius: 8px !important;
     background: transparent !important;
     color: #4b4f58 !important;
@@ -894,7 +894,7 @@ body.o_nexus_dark {
     &.show,
     &[aria-expanded="true"] {
       border-color: #9aa0a6 !important;
-      background: #f3f2ef !important;
+      background: #f2f2f2 !important;
       color: #14141a !important;
     }
   }
@@ -902,7 +902,7 @@ body.o_nexus_dark {
 
 .o_dropdown_more.o-form-buttonbox {
   padding: 4px !important;
-  border: 1px solid rgb(234, 230, 220) !important;
+  border: 1px solid rgb(230, 230, 230) !important;
   border-radius: 8px;
   box-shadow: 0 6px 18px rgba(20, 20, 26, 0.12);
 
@@ -916,7 +916,7 @@ body.o_nexus_dark {
     background: transparent !important;
 
     &:hover {
-      background: #f3f2ef !important;
+      background: #f2f2f2 !important;
     }
   }
 
@@ -961,7 +961,7 @@ body.o_nexus_dark {
   margin: 0 !important;
   padding-right: 12px !important;
   padding-left: 12px !important;
-  border: 1px solid rgb(234, 230, 220) !important;
+  border: 1px solid rgb(230, 230, 230) !important;
   border-radius: 8px !important;
   background: #fff !important;
   box-shadow: none !important;
@@ -1040,7 +1040,7 @@ body.o_nexus_dark {
 .o-dropdown--menu:has(.o_pmk_stage_item) {
   min-width: 220px;
   padding: 4px !important;
-  border: 1px solid rgb(234, 230, 220) !important;
+  border: 1px solid rgb(230, 230, 230) !important;
   border-radius: 8px;
   box-shadow: 0 6px 18px rgba(20, 20, 26, 0.12);
 }
@@ -1080,7 +1080,7 @@ body.o_nexus_dark {
   &:hover,
   &:focus,
   &.focus {
-    background: #f3f2ef !important;
+    background: #f2f2f2 !important;
   }
 
   // Цветная точка у каждого статуса (15.10.2026) — тоном этапа ($pmk-stage-dots ниже);
@@ -1108,7 +1108,7 @@ body.o_nexus_dark {
   // Текущая стадия в списке — тем же тоном, что кнопка (правила ниже);
   // без тона — светло-серая.
   &.active {
-    background: #f1f0ec !important;
+    background: #f0f0f0 !important;
     color: #14141a !important;
     font-weight: 600;
 
@@ -1123,7 +1123,7 @@ body.o_nexus_dark {
 // js/statusbar_compact.js (TONES). Подобраны бледными: насыщенный цвет Odoo
 // (ярко-красный, ярко-зелёный) на кнопке резал бы глаз так же, как лайм.
 $pmk-stage-tones: (
-  grey: (#f1f0ec, #dedbd2),
+  grey: (#f0f0f0, #dbdbdb),
   red: (#fbe7e4, #efc3bc),
   orange: (#fcebdc, #f1cba7),
   yellow: (#fbf3d5, #ead68e),
@@ -1139,7 +1139,7 @@ $pmk-stage-tones: (
 
 // Точка статуса в списке стадий — насыщеннее фона кнопки, но не ярко (лайм приглушённый).
 $pmk-stage-dots: (
-  grey: #a8a294, red: #d9614c, orange: #e08a3c, yellow: #d9a521, cyan: #3fb3c2,
+  grey: #a2a2a2, red: #d9614c, orange: #e08a3c, yellow: #d9a521, cyan: #3fb3c2,
   purple: #9b6fd1, almond: #c4a27a, teal: #3ea58a, blue: #5b8fe0, raspberry: #d1588a,
   green: #5cb357, violet: #8a74d6,
 );
@@ -1191,12 +1191,12 @@ $pmk-stage-dots: (
   --mc-ticked-bg: rgba(221, 235, 148, 0.45);
   --mc-await-us-bg: #fbf3d5;
   --mc-await-us-color: #6b5410;
-  --mc-await-client-bg: #f1f0ec;
+  --mc-await-client-bg: #f0f0f0;
   --mc-await-client-color: #55585e;
   // Шаг 20 (30.09.2026): плашка «мы» в переписке — тем же серым тоном.
   // Подложка наших писем (--mc-ours-bg) — из модуля почты, бледная
   // нейтральная: лайм заливкой режет глаз.
-  --mc-ours-badge-bg: #f1f0ec;
+  --mc-ours-badge-bg: #f0f0f0;
   --mc-ours-badge-color: #55585e;
 }
 
@@ -1237,7 +1237,7 @@ $pmk-stage-dots: (
 // папка остаётся прежней.
 .o_mail_client_row.active,
 .o_mail_client_row.active.o_ticked {
-  background-color: #eeede8;
+  background-color: #ededed;
   box-shadow: inset 3px 0 0 #6b6f76;
 }
 
@@ -1359,7 +1359,7 @@ $pmk-badge-ink: (
 // просроченное красным, черновик голубым…): там серый ноль выбивался бы из
 // цвета строки. У таких строк в классах есть text-* — их и пропускаем.
 .o_list_renderer .o_data_row:not([class*="text-"]) > td.o_pmk_zero {
-  color: #b4b2a9;
+  color: #b2b2b2;
 }
 
 // ─── 5. Шапка, группы, итоги ────────────────────────────────────────────────
@@ -1374,7 +1374,7 @@ $pmk-badge-ink: (
 // сплошных лаймовых плит; лайм — «где я», заливкой он режет глаз. Строка
 // группы отличается от записи и так: жирная подпись, стрелка, счётчик.
 .o_list_renderer {
-  --ListRenderer-thead-bg-color: #f5f3ee;
+  --ListRenderer-thead-bg-color: #f3f3f3;
 
   tr.o_group_header {
     --table-bg: #f4f8df;
@@ -1794,20 +1794,20 @@ body.o_nexus_dark .o_dialog .o_field_widget.o_mail_composer_message {
 // заметки, а «Внутренней заметке» (o-mail-Chatter-logNote) — btn-primary
 // active, пока открыт её редактор. На сделке, лиде, контрагенте, в закупке
 // рядом с главной кнопкой документа стояла вторая залитая. Обе — как
-// «Внутренняя заметка» в покое (btn-secondary темы): белая, рамка #dad5c8,
-// текст #16171b; наведение — #faf9f6 и тёмная рамка, тоже как у неё. Нажата
+// «Внутренняя заметка» в покое (btn-secondary темы): белая, рамка #d5d5d5,
+// текст #16171b; наведение — #f9f9f9 и тёмная рамка, тоже как у неё. Нажата
 // (открыт её редактор, класс active) — тёмная рамка без заливки. С шага 32
 // так выглядела лента одного расчёта (pmk_calc, dobor_builder.scss), теперь —
 // все ленты. Вес (0,3,0).
 .o-mail-Chatter-topbar .btn-primary.o-mail-Chatter-sendMessage,
 .o-mail-Chatter-topbar .btn-primary.o-mail-Chatter-logNote {
   background: #ffffff !important;
-  border: 1px solid #dad5c8 !important;
+  border: 1px solid #d5d5d5 !important;
   color: #16171b !important;
   box-shadow: none !important;
 
   &:hover {
-    background: #faf9f6 !important;
+    background: #f9f9f9 !important;
     border-color: #16191c !important;
     color: #16191c !important;
   }
@@ -1835,12 +1835,12 @@ body.o_nexus_dark .o_dialog .o_field_widget.o_mail_composer_message {
 // остаётся залитой. Вес (0,2,0).
 .btn.o_form_button_create {
   background: #ffffff !important;
-  border: 1px solid #dad5c8 !important;
+  border: 1px solid #d5d5d5 !important;
   color: #16171b !important;
   box-shadow: none !important;
 
   &:hover {
-    background: #faf9f6 !important;
+    background: #f9f9f9 !important;
     border-color: #16191c !important;
     color: #16191c !important;
   }
@@ -1862,12 +1862,12 @@ body.o_nexus_dark .o_dialog .o_field_widget.o_mail_composer_message {
 .o_mail_client:has(.o_mail_client_composer) .o_mail_client_topbar .btn-primary,
 .o_mail_client_composer .btn-sm.btn-primary {
   background: #ffffff !important;
-  border: 1px solid #dad5c8 !important;
+  border: 1px solid #d5d5d5 !important;
   color: #16171b !important;
   box-shadow: none !important;
 
   &:hover {
-    background: #faf9f6 !important;
+    background: #f9f9f9 !important;
     border-color: #16191c !important;
     color: #16191c !important;
   }
@@ -1896,12 +1896,12 @@ body.o_nexus_dark .o_dialog .o_field_widget.o_mail_composer_message {
 // Окно уже сохранённой строки («Сохранить» одна) не меняется. Вес (0,3,0).
 .modal-footer .btn.o_form_button_save_new {
   background: #ffffff !important;
-  border: 1px solid #dad5c8 !important;
+  border: 1px solid #d5d5d5 !important;
   color: #16171b !important;
   box-shadow: none !important;
 
   &:hover {
-    background: #faf9f6 !important;
+    background: #f9f9f9 !important;
     border-color: #16191c !important;
     color: #16191c !important;
   }
@@ -1944,7 +1944,7 @@ body.o_nexus_dark .o_dialog .o_field_widget.o_mail_composer_message {
 // Ядро помечает выбранную строку классами table-info и o_data_row_selected
 // (web/static/src/views/list/list_renderer.js, getRowClass): голубой фон
 // Bootstrap. Тема (theme_nexus lists.scss) задаёт у .table-info подложку
-// полосатой строки #faf9f6 с !important — а список без группировки полосатый
+// полосатой строки #f9f9f9 с !important — а список без группировки полосатый
 // (table-striped), и подложка ложится тенью поверх фона ячейки: каждая
 // вторая выбранная строка выглядела невыбранной (вывод по коду). Здесь —
 // лайм открытого письма в почте (--mc-active-bg, раздел «Почтовый клиент:
@@ -2118,7 +2118,7 @@ body.o_nexus_dark .o_dialog .o_field_widget.o_mail_composer_message {
   font-weight: 600;
 
   &:hover {
-    background: #faf9f6 !important;
+    background: #f9f9f9 !important;
     border-color: #16191c !important;
     color: #16191c !important;
   }
@@ -2645,7 +2645,7 @@ $pmk-short-fields: phone, email, url, date, datetime, daterange, remaining_days,
     .o_pmk_cols_list {
       max-height: 60vh;
       overflow-y: auto;
-      border-top: 1px solid #ebe8e0;
+      border-top: 1px solid #e8e8e8;
     }
 
     .o_pmk_cols_row {
@@ -2654,7 +2654,7 @@ $pmk-short-fields: phone, email, url, date, datetime, daterange, remaining_days,
       gap: 8px;
       min-height: 38px;
       padding: 2px 4px;
-      border-bottom: 1px solid #ebe8e0;
+      border-bottom: 1px solid #e8e8e8;
     }
 
     .o_pmk_cols_row_off .o_pmk_cols_label {
@@ -2696,7 +2696,7 @@ $pmk-short-fields: phone, email, url, date, datetime, daterange, remaining_days,
       display: inline-flex;
       align-items: center;
       padding: 0 0 0 8px;
-      border: 1px solid #dad5c8;
+      border: 1px solid #d5d5d5;
       border-radius: 10px;
       color: #4b4f58;
       font-size: 0.8125rem;
@@ -2994,7 +2994,7 @@ $pmk-aside-pair: $pmk-sheet-max + $pmk-aside-max + $pmk-sheet-inset;
 // бежевом» (v3): шапка — всё, что выше вкладок, — в рамке r10, отступ 16 до
 // вкладок; содержимое вкладки — белой рамкой r10 в 12 от ярлыков; во
 // вкладке одна таблица — рамка самой таблицы, двойной нет; карточки итогов
-// белые; фон страницы бежевый (#F5F3EE, theme_nexus) остаётся.
+// белые; фон страницы бежевый (#F3F3F3, theme_nexus) остаётся.
 //
 // БЫЛО. Белый лист .o_form_sheet — карточка чужой темы (theme_nexus,
 // forms.scss: nx-card, r18, тень, padding 26/30 !important), таблица в нём —
@@ -3165,7 +3165,7 @@ $pmk-card-line: unquote("var(--pmk-border, #e3e4e8)") !default;
 
   // ─── 52.5 Таблицы документа — по краю карточек ──────────────────────────
   //
-  // Тема: .o_list_renderer { рамка #eae6dc, r18, margin 4 px }, тёмная —
+  // Тема: .o_list_renderer { рамка #e6e6e6, r18, margin 4 px }, тёмная —
   // рамка с !important (0,2,1). Ядро: первой таблице вкладки — margin-top
   // -16 px и крайние ячейки от --Notebook-padding-x (0,9,0) — после 52.1 это
   // 0, текст лёг бы на рамку. Поэтому !important.
@@ -3209,7 +3209,7 @@ $pmk-card-line: unquote("var(--pmk-border, #e3e4e8)") !default;
     border-radius: 10px;
   }
 
-  // Левую черту блока истории (тема Nexus, border-left #eae6dc) внутри
+  // Левую черту блока истории (тема Nexus, border-left #e6e6e6) внутри
   // карточки не нужно: рамка уже есть, черта читалась полосой у края.
   // Сам блок истории — прозрачный и тоже скруглён: белым прямоугольником
   // он перекрывал скругление рамки (Антон 11.10: «скругления рамки истории
@@ -3351,7 +3351,7 @@ $pmk-card-line: unquote("var(--pmk-border, #e3e4e8)") !default;
   margin-inline-start: 6px;
   padding: 0 6px;
   border-radius: 9px;
-  background: #eceae4;
+  background: #eaeaea;
   color: #4b4f58;
   font-size: 11px;
   font-weight: 600;
@@ -3722,14 +3722,14 @@ $pmk-tab-r: 10px !default;
 // ═══ Шаг 69: панель фильтров и канбан без колонок — карточками, как таблица (15.10.2026) ═══
 // (Антон 15.10.2026: «колонку фильтров сделать как основную таблицу скругления»,
 // «рамку где отображаются сотрудники — тоже, чтобы всё было единообразно»).
-// Таблица — theme_nexus lists.scss: белый фон, рамка #eae6dc, радиус 18 px,
+// Таблица — theme_nexus lists.scss: белый фон, рамка #e6e6e6, радиус 18 px,
 // отступ 4 px. Ядро ставит панели bg-view и h-100 (утилиты Bootstrap с
 // !important) — перебиваем тем же, иначе низ карточки уходит под экран на 8 px.
 // Канбан с колонками (этапы) не трогаем: колонки разделены и так.
 .o_component_with_search_panel > .o_search_panel {
   margin: 4px 0 4px 4px;
   height: calc(100% - 8px) !important;
-  border: 1px solid #eae6dc;
+  border: 1px solid #e6e6e6;
   border-radius: 18px;
   background: #fff !important;
 }
@@ -3737,7 +3737,7 @@ $pmk-tab-r: 10px !default;
 .o_content > .o_kanban_renderer.o_kanban_ungrouped {
   margin: 4px;
   min-height: calc(100% - 8px);
-  border: 1px solid #eae6dc;
+  border: 1px solid #e6e6e6;
   border-radius: 18px;
   background: #fff;
 }

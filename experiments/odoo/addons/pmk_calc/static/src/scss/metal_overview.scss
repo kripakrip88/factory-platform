@@ -5,11 +5,11 @@
 .o_pmk_mo {
   --mo-card: #fff;
   --mo-ink: #1f2328;
-  --mo-border: #e3ded3;
-  --mo-sub: #faf8f4;
+  --mo-border: #dedede;
+  --mo-sub: #f8f8f8;
   --mo-muted: #6b7079;
   --mo-faint: #8a8f96;
-  --mo-hover: #f6f4ee;
+  --mo-hover: #f4f4f4;
   --mo-low: #fdf3d6;
   --mo-low-ink: #7a5a00;
   --mo-bad: #fbe3e1;
@@ -188,10 +188,10 @@
 
 // ── окно схемы ───────────────────────────────────────────────────────────
 .o_pmk_mscheme {
-  --ms-plate: #f3f1ec;
-  --ms-plate-line: #b9b2a3;
+  --ms-plate: #f1f1f1;
+  --ms-plate-line: #b2b2b2;
   --ms-part-line: #ffffff;
-  --ms-rest: #e7e4dc;
+  --ms-rest: #e4e4e4;
   --ms-scrap: #f4d4cf;
 
   .o_pmk_mscheme__item { margin-bottom: 18px; }

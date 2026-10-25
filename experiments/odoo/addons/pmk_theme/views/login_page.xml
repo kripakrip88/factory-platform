@@ -22,7 +22,7 @@
         <t t-set="no_header" t-value="True"/>
         <t t-set="no_footer" t-value="True"/>
         <style>
-          .pmk-login-body { background: #f4f1ea; }
+          .pmk-login-body { background: #f1f1f1; }
           .pmk-login { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
             font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif; }
           .pmk-login__brand { background: #16191c; color: #e8eadf; padding: 48px 56px 36px; display: flex;
@@ -49,10 +49,10 @@
           .pmk-login__note a { color: inherit; text-decoration: underline; }
           .pmk-login .oe_login_form, .pmk-login form { max-width: none; margin: 0; padding: 0; }
           .pmk-login .form-label { color: #59636e; font-size: 14px; }
-          .pmk-login .form-control { border-radius: 10px; padding: 10px 12px; font-size: 15px; border-color: #d6d1c6; }
+          .pmk-login .form-control { border-radius: 10px; padding: 10px 12px; font-size: 15px; border-color: #d1d1d1; }
           .pmk-login .form-control:focus { border-color: #16191c; box-shadow: none; }
           .pmk-login .input-group .form-control { border-radius: 10px 0 0 10px; }
-          .pmk-login .o_show_password { border-radius: 0 10px 10px 0; border-color: #d6d1c6 !important; }
+          .pmk-login .o_show_password { border-radius: 0 10px 10px 0; border-color: #d1d1d1 !important; }
           .pmk-login .oe_login_buttons .btn-primary { border: 0; border-radius: 10px; padding: 11px; font-size: 15px;
             font-weight: 600; background: #16191c; color: #e8eadf; }
           .pmk-login .oe_login_buttons .btn-primary:hover { background: #2b3036; }

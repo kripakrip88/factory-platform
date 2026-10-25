@@ -4,7 +4,7 @@
   display: block;
   margin: 0 0 10px;
   padding: 14px 16px;
-  border: 1.5px dashed var(--pmk-border-strong, #cfcabd);
+  border: 1.5px dashed var(--pmk-border-strong, #cacaca);
   border-radius: 12px;
   text-align: center;
   color: var(--pmk-text-muted, #8a8d96);
@@ -50,7 +50,7 @@
 
   &--ok { background: #eaf3de; color: #27500a; }
   &--warn { background: #faeeda; color: #633806; }
-  &--grey { background: #f1efe8; color: #444441; }
+  &--grey { background: #efefef; color: #444441; }
 }
 
 .pmk-pud__seg {

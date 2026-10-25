@@ -13,7 +13,7 @@
 // наследует разметку воронки вместе с классом — колонки у него так же
 // раздельные, а шапка штатная (полосы этапа в ней нет).
 
-$pmk-pipe-column-light: #f1f0ec; // тон «grey» темы (forms_nexus.scss, $pmk-stage-tones)
+$pmk-pipe-column-light: #f0f0f0; // тон «grey» темы (forms_nexus.scss, $pmk-stage-tones)
 $pmk-pipe-radius: 10px;
 
 .o_kanban_view.o_opportunity_kanban .o_kanban_renderer {
@@ -141,7 +141,7 @@ $pmk-pipe-radius: 10px;
     height: 2px;
     margin-top: 8px;
     border-radius: 0;
-    background: #ddd7ca;
+    background: #d7d7d7;
     overflow: visible;
 
     > i { display: block; height: 2px; border-radius: 2px; }
@@ -200,7 +200,7 @@ $pmk-pipe-radius: 10px;
     display: inline-block;
     padding: 1px 8px;
     border-radius: 9px;
-    background: #f1efe8;
+    background: #efefef;
     color: #444441;
     font-size: 11px;
     line-height: 1.6;

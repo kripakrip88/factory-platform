@@ -591,7 +591,7 @@
 .pmk-prow__section {
   margin-bottom: 10px;
   padding-left: 10px;
-  border-left: 3px solid var(--pmk-accent, var(--pmk-border, #eae6dc));
+  border-left: 3px solid var(--pmk-accent, var(--pmk-border, #e6e6e6));
 
   &:last-child { margin-bottom: 0; }
 }
@@ -637,12 +637,12 @@
     font-size: 11px;
     color: var(--pmk-ink-3, #6b6f76);
     padding: 2px 10px 3px 0;
-    border-bottom: 1px solid var(--pmk-border, #eae6dc);
+    border-bottom: 1px solid var(--pmk-border, #e6e6e6);
   }
 
   td {
     padding: 4px 10px 4px 0;
-    border-bottom: 1px solid var(--pmk-border, #eae6dc);
+    border-bottom: 1px solid var(--pmk-border, #e6e6e6);
     // Длинные названия режем многоточием, полное — в подсказке.
     overflow: hidden;
     text-overflow: ellipsis;
@@ -838,7 +838,7 @@
   // плотной таблицы; отступы между кнопками держим, чтобы не промахиваться.
   min-height: 28px;
   padding: 3px 10px;
-  border: 1px solid var(--pmk-accent, var(--pmk-border, #eae6dc));
+  border: 1px solid var(--pmk-accent, var(--pmk-border, #e6e6e6));
   border-radius: 14px;
   background: var(--pmk-surface, #ffffff);
   color: var(--pmk-ink, #14141a);
@@ -893,19 +893,19 @@
 // Кнопки «Новое» на форме расчёта больше нет вовсе (приёмка 01.10.2026, R6:
 // js/spec_form_view.js) — правило для неё (.o_form_button_create) снято.
 // Цвета — как у контурных кнопок темы (btn-secondary): белый, рамка
-// #dad5c8, текст #16171b; в тёмной — поверхность, рамка и текст из
+// #d5d5d5, текст #16171b; в тёмной — поверхность, рамка и текст из
 // переменных dark.scss. Вес (0,3,0) выше тёмного правила
 // «body.o_nexus_dark .btn-primary» (0,1,1), поэтому лайм туда не вернётся.
 // «Внутренняя заметка» в ленте открытой становится btn-primary — это то же
 // правило, заливки у неё больше нет.
 .o_form_view.pmk-spec-form .o-mail-Chatter-topbar .btn-primary {
   background: var(--pmk-surface-2, #ffffff) !important;
-  border: 1px solid var(--pmk-border-strong, #dad5c8) !important;
+  border: 1px solid var(--pmk-border-strong, #d5d5d5) !important;
   color: var(--pmk-ink, #16171b) !important;
   box-shadow: none !important;
 
   &:hover {
-    background: var(--pmk-hover, #faf9f6) !important;
+    background: var(--pmk-hover, #f9f9f9) !important;
     border-color: var(--pmk-ink, #16171b) !important;
   }
 
