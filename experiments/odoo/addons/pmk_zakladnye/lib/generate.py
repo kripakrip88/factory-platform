@@ -1097,6 +1097,10 @@ def iso_sheet(M, rods, wpos):
     sc = iso3d.Scene()
     step = max(A, B) / 25
     sc.box(0, 0, 0, A, B, t, step)
+    # ПРАВКА ERP (25.10.2026): технологические отверстия (6/76, «отв. 10×10») — и на изометрии.
+    for hh in M["tech"]:
+        for x, y in hh["pts"]:
+            sc.hole((x, Y(y), t), hh["w"], hh["h"], t)
     balloons = [(1, (A * 0.82, B * 0.18, t))] + ([(2, (A * 0.82, B * 0.18, M["H"]))] if M["fam"] == "B" else [])
     if M["fam"] == "B":
         H = M["H"]

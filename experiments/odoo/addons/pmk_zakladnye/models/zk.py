@@ -123,7 +123,7 @@ class ZkLine(models.Model):
 
     def _zk_key(self):
         self.ensure_one()
-        return "%s|%s|%s" % (self.series or "", self.mark or "", _fmt(self.length or 0))
+        return "%s|%s|%s|v%s" % (self.series or "", self.mark or "", _fmt(self.length or 0), catalog.DRAW_VERSION)
 
     def _zk_ok(self):
         self.ensure_one()

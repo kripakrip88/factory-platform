@@ -43,6 +43,58 @@ def shade(n):
     return (v, v, v)
 
 
+def _clip_poly(pts, x0, x1, y0, y1):
+    """Сазерленд — Ходжман: выпуклый многоугольник (x, y) по прямоугольнику."""
+    for inside, cut in ((lambda p: p[0] >= x0, lambda a, b: _at_x(a, b, x0)),
+                        (lambda p: p[0] <= x1, lambda a, b: _at_x(a, b, x1)),
+                        (lambda p: p[1] >= y0, lambda a, b: _at_y(a, b, y0)),
+                        (lambda p: p[1] <= y1, lambda a, b: _at_y(a, b, y1))):
+        out = []
+        for i, cur in enumerate(pts):
+            prev = pts[i - 1]
+            if inside(cur):
+                if not inside(prev):
+                    out.append(cut(prev, cur))
+                out.append(cur)
+            elif inside(prev):
+                out.append(cut(prev, cur))
+        pts = out
+        if not pts:
+            break
+    return pts
+
+
+def _at_x(a, b, x):
+    k = (x - a[0]) / (b[0] - a[0])
+    return (x, a[1] + (b[1] - a[1]) * k)
+
+
+def _at_y(a, b, y):
+    k = (y - a[1]) / (b[1] - a[1])
+    return (a[0] + (b[0] - a[0]) * k, y)
+
+
+def _clip_seg(a, b, x0, x1, y0, y1):
+    """Лян — Барски: отрезок по прямоугольнику; вне — None."""
+    dx, dy = b[0] - a[0], b[1] - a[1]
+    lo, hi = 0.0, 1.0
+    for p, q in ((-dx, a[0] - x0), (dx, x1 - a[0]), (-dy, a[1] - y0), (dy, y1 - a[1])):
+        if abs(p) < 1e-12:
+            if q < -1e-9:
+                return None
+            continue
+        r = q / p
+        if p < 0:
+            lo = max(lo, r)
+        else:
+            hi = min(hi, r)
+        if lo > hi + 1e-12:
+            return None
+    if hi - lo < 1e-9:
+        return None
+    return (a[0] + dx * lo, a[1] + dy * lo), (a[0] + dx * hi, a[1] + dy * hi)
+
+
 class Scene:
     def __init__(self):
         self.faces = []        # (depth, poly3d, fill, edges[(p, q)])
@@ -130,6 +182,37 @@ class Scene:
         # «наклейка» на грань: глубже всех кусков грани под ней не уйдёт
         self.faces.append((dot(c, E) + 2 * r + 20, poly, fill, list(zip(poly, poly[1:] + poly[:1]))))
 
+    def hole(self, c, w, h, t):
+        """Сквозное прямоугольное отверстие w×h (по X и Y) в пластине толщиной t; c — центр на
+        видимой грани z = c[2]. Вырез: в проёме — фон (за пластиной пусто) и видимые стенки
+        отверстия, ОБРЕЗАННЫЕ контуром проёма (дальше их закрывает сама пластина). Обрезка —
+        в плоскости грани: точку сдвигаем вдоль взгляда E до z = c[2] (проекция не меняется).
+        ПРАВКА ERP (pmk_zakladnye, 25.10.2026): Антон — «на изометрии не видно отверстия 10х10мм»,
+        затем «почему чёрными прямоугольниками, а не вырезами в листовом теле»."""
+        x, y, z = c
+        x0, x1, y0, y1, zb = x - w / 2, x + w / 2, y - h / 2, y + h / 2, z - t
+        flat = lambda p: (p[0] + (z - p[2]), p[1] + (z - p[2]))       # вдоль E=(1,1,1) на плоскость z
+        lift = lambda q: (q[0], q[1], z)
+        base = dot(c, E) + max(w, h) + t + 20                          # поверх кусков грани
+        top = [(x0, y0, z), (x1, y0, z), (x1, y1, z), (x0, y1, z)]
+        self.faces.append((base, top, (1.0, 1.0, 1.0), []))
+        walls = (([(x0, y0, zb), (x0, y1, zb), (x0, y1, z), (x0, y0, z)], (1, 0, 0)),
+                 ([(x0, y0, zb), (x1, y0, zb), (x1, y0, z), (x0, y0, z)], (0, 1, 0)))
+        for poly, n in walls:
+            if dot(n, E) <= 0:
+                continue
+            clip = _clip_poly([flat(p) for p in poly], x0, x1, y0, y1)
+            if len(clip) >= 3:
+                self.faces.append((base + 1, [lift(q) for q in clip], shade(n), []))
+        # Рёбра: контур проёма и рёбра стенок (углы и низ), видимые в проёме.
+        edges = list(zip(top, top[1:] + top[:1]))
+        for p, q in (((x0, y0, zb), (x0, y0, z)), ((x0, y1, zb), (x0, y1, z)), ((x1, y0, zb), (x1, y0, z)),
+                     ((x0, y0, zb), (x0, y1, zb)), ((x0, y0, zb), (x1, y0, zb))):
+            seg = _clip_seg(flat(p), flat(q), x0, x1, y0, y1)
+            if seg:
+                edges.append((lift(seg[0]), lift(seg[1])))
+        self.faces.append((base + 2, [], (1.0, 1.0, 1.0), edges))
+
     # ------------------------------------------------------------------ вывод
     @staticmethod
     def proj(p):
@@ -150,8 +233,9 @@ class Scene:
         to = lambda p: (ox + self.proj(p)[0] * k, oy - self.proj(p)[1] * k)
         sh = g.page.new_shape()                   # одна фигура, порядок путей = порядок рисования
         for _, poly, col, ed in sorted(self.faces, key=lambda f: f[0]):
-            sh.draw_polyline([g.P(*to(p)) for p in poly])
-            sh.finish(width=0.3, color=col, fill=col, closePath=True)
+            if poly:                              # без многоугольника — только рёбра (вырез, ПРАВКА ERP)
+                sh.draw_polyline([g.P(*to(p)) for p in poly])
+                sh.finish(width=0.3, color=col, fill=col, closePath=True)
             for p, q in ed:
                 sh.draw_line(g.P(*to(p)), g.P(*to(q)))
             if ed:
