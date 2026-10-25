@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!-- Стартовая поправка для круга ⌀18 (ступени, МН1): 2 диаметра на гиб, как у фундаментных болтов. -->
+  <data noupdate="1">
+    <record id="bend_d18" model="pmk.kolodec.bend">
+      <field name="diameter">18</field>
+      <field name="factor">2</field>
+      <field name="note">Как у фундаментных болтов (Антон 25.10.2026)</field>
+    </record>
+  </data>
+</odoo>

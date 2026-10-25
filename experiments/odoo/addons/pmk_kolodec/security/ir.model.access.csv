@@ -4,3 +4,4 @@ access_pmk_kolodec_line_user,pmk_kolodec_line.user,model_pmk_kolodec_line,base.g
 access_pmk_kolodec_part_user,pmk_kolodec_part.user,model_pmk_kolodec_part,base.group_user,1,1,1,1
 access_pmk_kolodec_ref_user,pmk_kolodec_ref.user,model_pmk_kolodec_ref,base.group_user,1,0,0,0
 access_pmk_kolodec_ref_system,pmk_kolodec_ref.system,model_pmk_kolodec_ref,base.group_system,1,1,1,1
+access_pmk_kolodec_bend_user,pmk_kolodec_bend.user,model_pmk_kolodec_bend,base.group_user,1,1,1,0

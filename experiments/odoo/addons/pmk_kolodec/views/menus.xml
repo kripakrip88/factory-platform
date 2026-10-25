@@ -4,4 +4,6 @@
             action="action_kolodec_calc" sequence="37"/>
   <menuitem id="menu_kolodec_ref" name="Справочник изделий колодцев" parent="pmk_calc.menu_pmk_calc_reference"
             action="action_kolodec_ref" sequence="67"/>
+  <menuitem id="menu_kolodec_bend" name="Поправка на гиб круга" parent="pmk_calc.menu_pmk_calc_reference"
+            action="action_kolodec_bend" sequence="68"/>
 </odoo>

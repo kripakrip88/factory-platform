@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from . import policy
+from . import bend
 from . import kolodec
 from . import part
 from . import grid

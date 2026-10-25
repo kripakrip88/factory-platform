@@ -29,6 +29,19 @@ class TestAlbums(TransactionCase):
             self.assertAlmostEqual(catalog.mass("ms", mark), catalog.album_mass("ms", mark), delta=0.02)
         self.assertAlmostEqual(catalog.mass("zo", "ЗО"), 15.8, delta=0.1)
 
+    def test_mn1_bend_deduction(self):
+        """Каждый гиб убирает 2 диаметра (как у фундаментных болтов): 850 − 4·2·18 = 706."""
+        self.assertEqual(alb901_5.mn1_blank(), 706)
+        self.assertAlmostEqual(catalog.mass("mn1", "МН1"), 1.41, delta=0.01)
+        self.assertAlmostEqual(catalog.mass("mn1", "МН1", 0), 1.70, delta=0.01)
+
+    def test_strips_priced_as_sheet(self):
+        """Полоса у нас — лист, режем лазером: материал деталей из полос — только лист."""
+        for kind, mark in (("ms", "МС-5"), ("zo", "ЗО"), ("k1", "К1")):
+            for p in catalog.parts(kind, mark):
+                if p["metal"] and "лист" in p["name"]:
+                    self.assertEqual([m[0] for m in p["material"]], ["sheet"], p["name"])
+
     def test_pr_sketch_close_to_album(self):
         for mark in catalog.marks("pr"):
             ratio = catalog.mass("pr", mark) / catalog.album_mass("pr", mark)
@@ -111,6 +124,17 @@ class TestCalc(TransactionCase):
         calc.kolodec_save_row("p%s" % stud.id, {"price": "45"})
         self.assertEqual(stud.cost, 360)
         self.assertIn("эскиз", line.warning)
+
+    def test_mn1_bend_setting(self):
+        """Коэффициент гиба технолог правит в «Поправке на гиб» — заготовка МН1 считается по нему."""
+        self.env["pmk.kolodec.bend"].search([("diameter", "=", 18)]).unlink()
+        self.env["pmk.kolodec.bend"].create({"diameter": 18, "factor": 1.5})
+        calc = self.env["pmk.kolodec.calc"].create({})
+        key = calc.kolodec_rows()["rows"][0]["id"]
+        calc.kolodec_save_row(key, {"name": "мн1 50шт"})
+        bar = calc.line_ids.part_ids
+        self.assertIn("заготовка 742", bar.name)
+        self.assertAlmostEqual(bar.unit_mass, 0.742 * 1.998, delta=0.005)
 
     def test_bad_record_kept(self):
         calc = self.env["pmk.kolodec.calc"].create({})

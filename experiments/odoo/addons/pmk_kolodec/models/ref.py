@@ -40,10 +40,13 @@ class KolodecRef(models.Model):
     def _pmk_rows(self):
         """{(вид, марка): значения} — всё, что должно быть в справочнике."""
         rows = {}
+        Bend = self.env["pmk.kolodec.bend"]
         for kind, spec in catalog.TYPES.items():
+            diameter = catalog.BENT_ROUND.get(kind)
+            bend_k = Bend._pmk_factor(diameter) if diameter else None
             for seq, mark in enumerate(catalog.marks(kind), 1):
                 d = catalog.dims(kind, mark)
-                mass = catalog.mass(kind, mark)
+                mass = catalog.mass(kind, mark, bend_k)
                 album_mass = catalog.album_mass(kind, mark)
                 rows[(kind, mark)] = dict(
                     album=spec["album"], sequence=seq, designation=catalog.designation(kind, mark),
@@ -52,7 +55,7 @@ class KolodecRef(models.Model):
                     ratio=round(mass / album_mass * 100) if album_mass else 0,
                     outside=bool(catalog.outside_album(kind, mark)),
                     parts_text="\n".join(("%s — %g шт × %.3f кг" % (p["name"], p["qty"], p["unit_mass"]))
-                                         .replace(".", ",") for p in catalog.parts(kind, mark)),
+                                         .replace(".", ",") for p in catalog.parts(kind, mark, bend_k)),
                 )
         return rows
 

@@ -31,12 +31,17 @@ def dims(kind, mark):
     return album(kind).dims(kind, mark)
 
 
-def parts(kind, mark):
-    return album(kind).parts(kind, mark)
+# Диаметр круга, гибы которого зависят от настройки «Поправка на гиб»: вид → ⌀.
+BENT_ROUND = {"mn1": 18}
 
 
-def mass(kind, mark):
-    return round(sum(p["qty"] * p["unit_mass"] for p in parts(kind, mark)), 2)
+def parts(kind, mark, bend_k=None):
+    """bend_k — вычет на гиб в диаметрах (настройка калькулятора); None — по умолчанию (2)."""
+    return album(kind).parts(kind, mark, bend_k)
+
+
+def mass(kind, mark, bend_k=None):
+    return round(sum(p["qty"] * p["unit_mass"] for p in parts(kind, mark, bend_k)), 2)
 
 
 def album_mass(kind, mark):

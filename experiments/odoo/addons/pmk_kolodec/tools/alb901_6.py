@@ -16,8 +16,8 @@ PDF-страницы 31–32. Документация — docs/TPR_901-09-11.84
   угловым швом (У5-Δ6), средняя 6×80 длиной B — у короткой пластины заподлицо с её краем.
 Масса таблицы сходится с деталями (МС-1: 2·0,80 + 0,34 = 1,94).
 
-В альбоме — полосы ГОСТ 103 (8×80, 6×80). В справочнике таких полос нет — режем из листа
-той же толщины (материал состава: полоса, если появится цена, иначе лист).
+В альбоме — полосы ГОСТ 103 (8×80, 6×80). Полоса у нас — это лист, режем лазером (Антон
+25.10.2026) — цена по листу той же толщины.
 """
 from .common import part, strip_kg
 
@@ -40,8 +40,8 @@ MS = {
     "МС-7": ("КЖИ.11.0.0-02", 110, 1.63), "МС-8": ("КЖИ.11.0.0-03", 120, 1.67),
 }
 PLATE_W, END_L, SHORT_L, END_T, MID_T = 80, 160, 84, 8, 6
-MAT8 = [("profile", "Полоса", "8x80"), ("sheet", 8)]
-MAT6 = [("profile", "Полоса", "6x80"), ("sheet", 6)]
+MAT8 = [("sheet", 8)]
+MAT6 = [("sheet", 6)]
 
 
 def marks(kind):
@@ -64,14 +64,14 @@ def dims(kind, mark):
     return dict(length=MS[mark][1] + 2 * END_T, width=PLATE_W, height=END_L)
 
 
-def parts(kind, mark):
+def parts(kind, mark, bend_k=None):
     b = MS[mark][1]
-    mid = part("mid", 2, "Пластина средняя 6×80 L=%s" % b, 1, strip_kg(MID_T, PLATE_W, b), MAT6)
+    mid = part("mid", 2, "Пластина средняя 6×80×%s — лист 6" % b, 1, strip_kg(MID_T, PLATE_W, b), MAT6)
     if symmetric(mark):
-        return [part("end", 1, "Пластина торцевая 8×80 L=%s" % END_L, 2, strip_kg(END_T, PLATE_W, END_L), MAT8), mid]
+        return [part("end", 1, "Пластина торцевая 8×80×%s — лист 8" % END_L, 2, strip_kg(END_T, PLATE_W, END_L), MAT8), mid]
     return [
-        part("end", 1, "Пластина торцевая 8×80 L=%s" % END_L, 1, strip_kg(END_T, PLATE_W, END_L), MAT8),
-        part("short", 3, "Пластина торцевая 8×80 L=%s" % SHORT_L, 1, strip_kg(END_T, PLATE_W, SHORT_L), MAT8),
+        part("end", 1, "Пластина торцевая 8×80×%s — лист 8" % END_L, 1, strip_kg(END_T, PLATE_W, END_L), MAT8),
+        part("short", 3, "Пластина торцевая 8×80×%s — лист 8" % SHORT_L, 1, strip_kg(END_T, PLATE_W, SHORT_L), MAT8),
         mid,
     ]
 

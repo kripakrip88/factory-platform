@@ -147,11 +147,16 @@ class KolodecLine(models.Model):
             return _("лист %s мм") % ("%g" % material[1]).replace(".", ",")
         return "%s %s" % (material[1].lower(), material[2])
 
+    def _pmk_bend_k(self):
+        """Вычет на гиб из настройки «Поправка на гиб» — для изделий из гнутого круга (МН1)."""
+        diameter = catalog.BENT_ROUND.get(self.item_type)
+        return self.env["pmk.kolodec.bend"]._pmk_factor(diameter) if diameter else None
+
     def _pmk_auto_parts(self):
         """{auto_key: значения} — детали по альбому, только материалы."""
         self.ensure_one()
         out, cache = {}, {}
-        for part in catalog.parts(self.item_type, self.mark):
+        for part in catalog.parts(self.item_type, self.mark, self._pmk_bend_k()):
             vals = dict(sequence=part["sequence"], name=part["name"], qty=float(part["qty"]),
                         unit_mass=part["unit_mass"], metal=part["metal"])
             if part["metal"]:

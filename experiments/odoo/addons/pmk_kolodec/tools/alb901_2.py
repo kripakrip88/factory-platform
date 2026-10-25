@@ -77,7 +77,7 @@ def dims(kind, mark):
     return dict(length=r["L"], width=r["D"], dn=r["dn"], thickness=r["B"])
 
 
-def parts(kind, mark):
+def parts(kind, mark, bend_k=None):
     dy = int(mark[2:])
     r = row(mark)
     n, d_hole, m = FLANGE[dy]

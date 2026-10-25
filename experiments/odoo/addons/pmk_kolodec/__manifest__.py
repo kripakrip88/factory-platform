@@ -7,7 +7,7 @@
     # Масса — по фактическим деталям; состав — прокат и лист по прайсам, покупное вписывают;
     # наценка — «Ценовая политика» (вид «Металлоизделия колодцев»).
     "name": "ПМК: металлоизделия колодцев",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.1.0",  # 19.0.1.1.0 — полоса = лист, поправка на гиб в настройках
     "summary": "Калькулятор и справочник: стремянки, элементы МС, скоба МН1, проставки, ЗО, К1 по ТПР 901-09-11.84 и 902-09-22.84",
     "category": "Manufacturing",
     "author": "ПМК Парк",
@@ -17,8 +17,10 @@
         "security/ir.model.access.csv",
         "data/sequence.xml",
         "data/policy.xml",
+        "data/bend.xml",
         "views/kolodec_views.xml",
         "views/ref_views.xml",
+        "views/bend_views.xml",
         "views/menus.xml",
         "data/ref_fill.xml",
     ],
