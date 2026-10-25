@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_pmk_opora_calc_user,pmk_opora_calc.user,model_pmk_opora_calc,base.group_user,1,1,1,1
+access_pmk_opora_line_user,pmk_opora_line.user,model_pmk_opora_line,base.group_user,1,1,1,1
+access_pmk_opora_part_user,pmk_opora_part.user,model_pmk_opora_part,base.group_user,1,1,1,1
+access_pmk_opora_ref_user,pmk_opora_ref.user,model_pmk_opora_ref,base.group_user,1,0,0,0
+access_pmk_opora_ref_system,pmk_opora_ref.system,model_pmk_opora_ref,base.group_system,1,1,1,1

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!-- Наценка опор в стартовой политике — как у болтов (45 %), уточнить. -->
+  <data noupdate="1">
+    <record id="policy_start_opora" model="pmk.price.policy.line">
+      <field name="policy_id" ref="pmk_bolt.policy_start"/>
+      <field name="kind">opora</field>
+      <field name="markup_pct">45</field>
+    </record>
+  </data>
+</odoo>
