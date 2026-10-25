@@ -178,6 +178,17 @@ class TestSupplierInvoice(TransactionCase):
         other = self._recognize({"is_invoice": False, "reason": "УПД, не счёт"})
         self.assertEqual((other.state, other.reason), ("skipped", "УПД, не счёт"))
 
+    def test_invoice_without_metal_skipped(self):
+        """Перевозка и услуги — счёт без металла сам уходит в «Не счёт» (Антон 25.10.2026)."""
+        data = dict(INVOICE, number="777", lines=[
+            {"name": "Перевозка сборного груза", "unit": "шт", "qty": 1, "price": 4927, "amount": 4927,
+             "kind": "service"},
+            {"name": "Расширитель 26067RU", "unit": "шт", "qty": 2, "price": 100, "amount": 200, "kind": "other"}])
+        inv = self._recognize(data)
+        self.assertEqual(inv.state, "skipped")
+        self.assertIn("нет металлопроката", inv.reason)
+        self.assertEqual(len(inv.line_ids), 2, "строки остаются — видно, что было в счёте")
+
     def test_kind_and_size_rules(self):
         self.assertEqual(M.expected_kind("трубы электросварные квадрат 40х3")[0], "Труба профильная квадратная")
         self.assertEqual(M.expected_kind("Квадрат 16 Ст3")[0], "Квадрат")

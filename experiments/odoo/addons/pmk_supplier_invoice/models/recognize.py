@@ -31,6 +31,7 @@ BATCH = 20
 STUCK_SEC = 600
 # «Cчет Сч-0029200…» у Металлсервиса — с ЛАТИНСКОЙ «C» в начале: обе буквы.
 SUBJECT_RE = r"([сc]ч[её]т|invoice)"
+NO_METAL = "В счёте нет металлопроката — цены обновлять нечего."
 
 LINE_SCHEMA = {
     "type": "object",
@@ -222,6 +223,11 @@ class SupplierInvoiceQueue(models.Model):
             })
         self.line_ids.unlink()
         self.env["pmk.supplier.invoice.line"].create(lines)
+        if not self.line_ids.filtered(lambda l: l.kind == "metal"):
+            # Перевозка, услуги, расширители — счёт, но цен металла в нём нет (Антон 25.10.2026:
+            # проверяющему в «Ждут проверки» только то, что обновляет цены).
+            self.write({"state": "skipped", "reason": NO_METAL})
+            return
         self.line_ids._pmk_match()
         self.state = "review"
 
