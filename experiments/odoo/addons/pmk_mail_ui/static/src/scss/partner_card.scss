@@ -148,17 +148,6 @@
   padding: .125rem 0;
 }
 
-.pmk-pcard__actions {
-  display: flex;
-  flex-direction: column;
-  gap: .375rem;
-  margin-top: 1.25rem;
-
-  .btn {
-    width: 100%;
-  }
-}
-
 // ─── Окно «Новый контрагент из письма» (partner_dialog.js) ────────────────
 // Окно — поверх страницы, вне почты: токенов --mc-* здесь нет, цвета —
 // переменные Bootstrap (тёмная тема переопределяет их сама).

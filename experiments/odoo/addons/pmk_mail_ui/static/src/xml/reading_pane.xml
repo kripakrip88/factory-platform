@@ -16,19 +16,44 @@
     тема письма. На узком окне кнопка — один значок, поэтому имя для
     экранного диктора в aria-label, а значок от диктора спрятан.
   -->
+  <!--
+    25.10.2026 (почта проще): вместо кнопки «Лид» — меню «В работу ▾»: всё,
+    что делает из письма запись в системе (лид, сделка, контрагент). Класс
+    pmk-mail-lead и клавиша L остались на кнопке меню (step41_mail.xml): L
+    открывает меню. Пункты по данным карточки справа (reading_pane_lead.js).
+  -->
   <t t-name="pmk_mail_ui.ReadingPaneLead"
      t-inherit="mail_client.ReadingPane"
      t-inherit-mode="extension">
 
     <xpath expr="//div[hasclass('o_mail_client_toolbar')]/div[hasclass('vr')]" position="before">
-      <button class="btn btn-sm btn-light flex-shrink-0 pmk-mail-lead"
-              t-if="env.pmkCrm"
-              t-att-disabled="pmkLead.busy"
-              title="Создать лида из этого письма"
-              aria-label="Создать лида из этого письма"
-              t-on-click="() => this.pmkCreateLead()">
-        <i class="fa" aria-hidden="true" t-att-class="pmkLead.busy ? 'fa-circle-o-notch fa-spin' : 'fa-user-plus'"/><span class="o_mail_client_label ms-1">Лид</span>
-      </button>
+      <Dropdown t-if="pmkWorkMenu" position="'bottom-end'" menuClass="'pmk-mail-work-menu'">
+        <button class="btn btn-sm btn-primary flex-shrink-0 pmk-mail-lead"
+                t-att-disabled="pmkLead.busy"
+                title="В работу: лид, сделка, контрагент"
+                aria-label="В работу: лид, сделка, контрагент">
+          <i class="fa me-1" aria-hidden="true" t-att-class="pmkLead.busy ? 'fa-circle-o-notch fa-spin' : 'fa-briefcase'"/><span class="o_mail_client_label">В работу</span><i class="fa fa-caret-down ms-1" aria-hidden="true"/>
+        </button>
+        <t t-set-slot="content">
+          <t t-if="env.pmkCrm">
+            <DropdownItem t-if="pmkCard and pmkCard.lead" onSelected="() => this.pmkOpenLead()">
+              <i class="fa fa-fw fa-handshake-o me-2" aria-hidden="true"/>Открыть лид
+            </DropdownItem>
+            <DropdownItem t-else="" onSelected="() => this.pmkCreateLead()">
+              <i class="fa fa-fw fa-user-plus me-2" aria-hidden="true"/>Лид из письма
+            </DropdownItem>
+            <DropdownItem t-if="!pmkCard or pmkCard.can_link" onSelected="() => this.pmkLinkDeal()">
+              <i class="fa fa-fw fa-link me-2" aria-hidden="true"/>Привязать к сделке
+            </DropdownItem>
+          </t>
+          <DropdownItem t-if="pmkCard and pmkCard.partner" onSelected="() => this.pmkOpenPartner()">
+            <i class="fa fa-fw fa-address-card-o me-2" aria-hidden="true"/>Открыть контрагента
+          </DropdownItem>
+          <DropdownItem t-elif="pmkCanPartner" onSelected="() => this.pmkCreatePartner()">
+            <i class="fa fa-fw fa-plus me-2" aria-hidden="true"/>Создать контрагента
+          </DropdownItem>
+        </t>
+      </Dropdown>
     </xpath>
   </t>
 

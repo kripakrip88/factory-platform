@@ -855,6 +855,34 @@
     }
 }
 
+// ПРАВКА ПМК (почта проще, 25.10.2026): «Всем» и «Переслать» — справа от
+// строки ответа, тихими кнопками-ссылками (ответ — главное действие).
+.o_mail_client_reply_bar {
+    gap: .25rem;
+}
+
+.o_mail_client_reply_alt {
+    flex-shrink: 0;
+    padding: .375rem .625rem;
+    border: 0;
+    border-radius: .375rem;
+    background: transparent;
+    color: var(--mc-muted, #6b7079);
+    white-space: nowrap;
+
+    &:hover,
+    &:focus-visible {
+        background-color: var(--mc-hover-bg);
+        color: inherit;
+        outline: 0;
+    }
+}
+
+// ПРАВКА ПМК (почта проще): кнопка «Фильтр ▾» — вплотную к полю поиска.
+.o_mail_client_filter_toggle {
+    white-space: nowrap;
+}
+
 .o_mail_client_composer.o_mail_client_composer_inline {
     border-left: 0;
     flex: 0 0 auto;
