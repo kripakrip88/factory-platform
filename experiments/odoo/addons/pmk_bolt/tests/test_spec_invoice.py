@@ -67,7 +67,8 @@ class TestBoltInSpecAndInvoice(Z2Common):
         spec.with_user(self.manager).action_pmk_invoice()
         invoice = self._invoices(deal)
         keys = [i["key"] for i in invoice.pmk_doc_menu()["create"]]
-        self.assertIn("bolts", keys)
+        # Задача 318 (25.10.2026): болты — раздел расчёта, в «Создать ▾» счёта их нет.
+        self.assertNotIn("bolts", keys)
         action = invoice.action_pmk_doc_bolts()
         self.assertTrue(spec.cat_bolt)
         self.assertEqual(action.get("res_id"), spec.id)

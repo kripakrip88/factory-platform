@@ -53,11 +53,10 @@ class SaleOrderBolt(models.Model):
         return super()._pmk_line_key(line)
 
     # ─── «Создать ▾ → Фундаментные болты» ───────────────────────────────
-    def pmk_doc_menu(self):
-        menu = super().pmk_doc_menu()
-        menu["create"].insert(1, {"key": "bolts", "label": _("Фундаментные болты"), "icon": "fa-cog",
-                                  "method": "action_pmk_doc_bolts"})
-        return menu
+    # «Создать ▾ → Фундаментные болты» снят (Антон 25.10.2026, задача 318: «почему в
+    # выпадашке создать висит калькулятор фундаментных болтов?»): болты — раздел
+    # расчёта, не документ; добавляют их в расчёте (переключатель или «бф …» в
+    # «Металлоизделиях»). Метод ниже оставлен — на него могут ссылаться старые действия.
 
     def action_pmk_doc_bolts(self):
         self.ensure_one()
