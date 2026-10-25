@@ -22,6 +22,7 @@ import {
     pickKeyButton,
 } from "./panes/hotkeys";
 import {
+    PINNED_FILTER_IDS,
     QUICK_FILTER_IDS,
     SEARCH_DELAY_MS,
     searchDecision,
@@ -732,6 +733,34 @@ export class MailClientInbox extends Component {
 
     get quickFiltersLabel() {
         return _t("Quick filters");
+    }
+
+    /**
+     * ПРАВКА ПМК (почта проще, 25.10.2026): кружками — только «Непрочитанные»
+     * и «Ждут ответа» (PINNED_FILTER_IDS); меню «Фильтр ▾» у поиска — все
+     * фильтры. Выбран фильтр не из кружков — его имя на кнопке меню.
+     */
+    get chipFilters() {
+        return this.quickFilters.filter((f) => PINNED_FILTER_IDS.includes(f.id));
+    }
+
+    get menuFilters() {
+        return this.filters
+            .filter((f) => f.id !== "all")
+            .map((f) => ({ id: f.id, label: String(f.label), icon: f.icon || "" }));
+    }
+
+    get menuFilterActive() {
+        return this.state.filter !== "all" && !PINNED_FILTER_IDS.includes(this.state.filter);
+    }
+
+    get menuFilterLabel() {
+        return this.menuFilterActive ? String(this.activeFilter.label) : _t("Фильтр");
+    }
+
+    /** ПРАВКА ПМК (почта проще): пункт меню вида ⚙ — куда переключит. */
+    get readerLayoutMenuLabel() {
+        return this.state.readerFull ? _t("Письмо рядом со списком") : _t("Письмо на весь экран");
     }
 
     /** Повторный щелчок по нажатой кнопке-фильтру снимает фильтр. */
