@@ -64,6 +64,144 @@
   </t>
 
   <!--
+    1б. То же для primary-копий web.FormView, собранных до нашего бандла: задача и
+        доска «Доработка системы», проект, их общий предок (Антон 25.10.2026:
+        «почему не отредактирована шапка в задачах?»). Правка web.FormView до
+        копий не доходит; без этих блоков шапка с меткой пряталась из листа, а в
+        строку пути не попадала — этап пропадал совсем. Слот навигации заводим
+        здесь, «Историю» в него кладёт xml/doc_tools.xml (грузится после).
+  -->
+  <t t-inherit="resource.FormViewWithHtmlExpander" t-inherit-mode="extension">
+    <!-- Вариант А (Антон 25.10.2026: «убираем все»): кнопок-счётчиков связей в
+         шапке нет — их число во вкладке «Связи · N» (pmk_flow). На телефоне и
+         в листе (уже 1200 px) — как в ядре. -->
+    <xpath expr="//t[@t-set-slot='layout-actions']/t[@t-if='!env.isSmall and buttonBoxTemplate']" position="attributes">
+      <attribute name="t-if">!env.isSmall and buttonBoxTemplate and !pmkCountersInTab</attribute>
+    </xpath>
+    <xpath expr="//t[@t-set-slot='layout-actions']/t[@t-if='!env.isSmall and buttonBoxTemplate and !pmkCountersInTab']" position="before">
+      <div t-if="pmkHeaderButtonsTemplate and pmkHeaderInPanel()" class="o_pmk_cp_header o_pmk_cp_header_buttons d-flex align-items-center">
+        <t t-call="{{ pmkHeaderButtonsTemplate }}" t-call-context="{ __comp__: Object.assign(Object.create(this), { this, props: { ...this.props, record: this.model.root }, state: {}, pmkPart: pmkHeadAOn ? 'right' : undefined }) }"/>
+      </div>
+    </xpath>
+    <!-- Вариант А (Антон 25.10.2026): статус — у номера документа, первым в
+         слоте рядом с названием (перед «Сохранить / Отменить»). -->
+    <!-- Вариант А (Антон 25.10.2026): «Создать ▾ / Печать» — слева, у номера,
+         где была «⚙»; «⚙» — справа, у «Истории» (слот навигации ниже). -->
+    <xpath expr="//t[@t-set-slot='control-panel-additional-actions']/CogMenu" position="attributes">
+      <attribute name="t-if">!pmkHeadAOn</attribute>
+    </xpath>
+    <!-- «Новое» у номера — не у документов варианта А (Антон 25.10.2026: «да давай
+         уберём»): как у счёта, сделки и расчёта; новый документ — из списка или
+         «Создать ▾». -->
+    <xpath expr="//t[@t-set-slot='control-panel-create-button']/button[hasclass('o_form_button_create')]" position="attributes">
+      <attribute name="t-if">canCreate and !pmkHeadA</attribute>
+    </xpath>
+    <xpath expr="//t[@t-set-slot='control-panel-status-indicator']/t[@t-if='canEdit']" position="before">
+      <div t-if="pmkHeadAOn and pmkHeaderButtonsTemplate" class="o_pmk_cp_header o_pmk_head_a_left d-flex align-items-center">
+        <t t-call="{{ pmkHeaderButtonsTemplate }}" t-call-context="{ __comp__: Object.assign(Object.create(this), { this, props: { ...this.props, record: this.model.root }, state: {}, pmkPart: 'left' }) }"/>
+      </div>
+      <div t-if="pmkStatusAtTitle" class="o_pmk_cp_header o_pmk_cp_header_status o_pmk_head_a_status d-flex align-items-center">
+        <t t-call="{{ pmkHeaderStatusTemplate }}" t-call-context="{ __comp__: Object.assign(Object.create(this), { this, props: { ...this.props, record: this.model.root }, state: {} }) }"/>
+      </div>
+    </xpath>
+    <xpath expr="//t[@t-set-slot='control-panel-status-indicator']" position="after">
+      <t t-set-slot="control-panel-navigation-additional">
+        <CogMenu t-if="pmkHeadAOn" t-props="this.cogMenuProps"/>
+        <div t-if="pmkHeaderStatusTemplate and pmkHeaderInPanel() and !pmkStatusAtTitle" class="o_pmk_cp_header o_pmk_cp_header_status d-flex align-items-center">
+          <t t-call="{{ pmkHeaderStatusTemplate }}" t-call-context="{ __comp__: Object.assign(Object.create(this), { this, props: { ...this.props, record: this.model.root }, state: {} }) }"/>
+        </div>
+      </t>
+    </xpath>
+  </t>
+
+  <t t-inherit="project.ProjectTaskFormView" t-inherit-mode="extension">
+    <!-- Вариант А (Антон 25.10.2026: «убираем все»): кнопок-счётчиков связей в
+         шапке нет — их число во вкладке «Связи · N» (pmk_flow). На телефоне и
+         в листе (уже 1200 px) — как в ядре. -->
+    <xpath expr="//t[@t-set-slot='layout-actions']/t[@t-if='!env.isSmall and buttonBoxTemplate']" position="attributes">
+      <attribute name="t-if">!env.isSmall and buttonBoxTemplate and !pmkCountersInTab</attribute>
+    </xpath>
+    <xpath expr="//t[@t-set-slot='layout-actions']/t[@t-if='!env.isSmall and buttonBoxTemplate and !pmkCountersInTab']" position="before">
+      <div t-if="pmkHeaderButtonsTemplate and pmkHeaderInPanel()" class="o_pmk_cp_header o_pmk_cp_header_buttons d-flex align-items-center">
+        <t t-call="{{ pmkHeaderButtonsTemplate }}" t-call-context="{ __comp__: Object.assign(Object.create(this), { this, props: { ...this.props, record: this.model.root }, state: {}, pmkPart: pmkHeadAOn ? 'right' : undefined }) }"/>
+      </div>
+    </xpath>
+    <!-- Вариант А (Антон 25.10.2026): статус — у номера документа, первым в
+         слоте рядом с названием (перед «Сохранить / Отменить»). -->
+    <!-- Вариант А (Антон 25.10.2026): «Создать ▾ / Печать» — слева, у номера,
+         где была «⚙»; «⚙» — справа, у «Истории» (слот навигации ниже). -->
+    <xpath expr="//t[@t-set-slot='control-panel-additional-actions']/CogMenu" position="attributes">
+      <attribute name="t-if">!pmkHeadAOn</attribute>
+    </xpath>
+    <!-- «Новое» у номера — не у документов варианта А (Антон 25.10.2026: «да давай
+         уберём»): как у счёта, сделки и расчёта; новый документ — из списка или
+         «Создать ▾». -->
+    <xpath expr="//t[@t-set-slot='control-panel-create-button']/ProjectTaskTemplateDropdown" position="attributes">
+      <attribute name="t-if">canCreate and !pmkHeadA</attribute>
+    </xpath>
+    <xpath expr="//t[@t-set-slot='control-panel-status-indicator']/t[@t-if='canEdit']" position="before">
+      <div t-if="pmkHeadAOn and pmkHeaderButtonsTemplate" class="o_pmk_cp_header o_pmk_head_a_left d-flex align-items-center">
+        <t t-call="{{ pmkHeaderButtonsTemplate }}" t-call-context="{ __comp__: Object.assign(Object.create(this), { this, props: { ...this.props, record: this.model.root }, state: {}, pmkPart: 'left' }) }"/>
+      </div>
+      <div t-if="pmkStatusAtTitle" class="o_pmk_cp_header o_pmk_cp_header_status o_pmk_head_a_status d-flex align-items-center">
+        <t t-call="{{ pmkHeaderStatusTemplate }}" t-call-context="{ __comp__: Object.assign(Object.create(this), { this, props: { ...this.props, record: this.model.root }, state: {} }) }"/>
+      </div>
+    </xpath>
+    <xpath expr="//t[@t-set-slot='control-panel-status-indicator']" position="after">
+      <t t-set-slot="control-panel-navigation-additional">
+        <CogMenu t-if="pmkHeadAOn" t-props="this.cogMenuProps"/>
+        <div t-if="pmkHeaderStatusTemplate and pmkHeaderInPanel() and !pmkStatusAtTitle" class="o_pmk_cp_header o_pmk_cp_header_status d-flex align-items-center">
+          <t t-call="{{ pmkHeaderStatusTemplate }}" t-call-context="{ __comp__: Object.assign(Object.create(this), { this, props: { ...this.props, record: this.model.root }, state: {} }) }"/>
+        </div>
+      </t>
+    </xpath>
+  </t>
+
+  <t t-inherit="project.ProjectFormView" t-inherit-mode="extension">
+    <!-- Вариант А (Антон 25.10.2026: «убираем все»): кнопок-счётчиков связей в
+         шапке нет — их число во вкладке «Связи · N» (pmk_flow). На телефоне и
+         в листе (уже 1200 px) — как в ядре. -->
+    <xpath expr="//t[@t-set-slot='layout-actions']/t[@t-if='!env.isSmall and buttonBoxTemplate']" position="attributes">
+      <attribute name="t-if">!env.isSmall and buttonBoxTemplate and !pmkCountersInTab</attribute>
+    </xpath>
+    <xpath expr="//t[@t-set-slot='layout-actions']/t[@t-if='!env.isSmall and buttonBoxTemplate and !pmkCountersInTab']" position="before">
+      <div t-if="pmkHeaderButtonsTemplate and pmkHeaderInPanel()" class="o_pmk_cp_header o_pmk_cp_header_buttons d-flex align-items-center">
+        <t t-call="{{ pmkHeaderButtonsTemplate }}" t-call-context="{ __comp__: Object.assign(Object.create(this), { this, props: { ...this.props, record: this.model.root }, state: {}, pmkPart: pmkHeadAOn ? 'right' : undefined }) }"/>
+      </div>
+    </xpath>
+    <!-- Вариант А (Антон 25.10.2026): статус — у номера документа, первым в
+         слоте рядом с названием (перед «Сохранить / Отменить»). -->
+    <!-- Вариант А (Антон 25.10.2026): «Создать ▾ / Печать» — слева, у номера,
+         где была «⚙»; «⚙» — справа, у «Истории» (слот навигации ниже). -->
+    <xpath expr="//t[@t-set-slot='control-panel-additional-actions']/CogMenu" position="attributes">
+      <attribute name="t-if">!pmkHeadAOn</attribute>
+    </xpath>
+    <!-- «Новое» у номера — не у документов варианта А (Антон 25.10.2026: «да давай
+         уберём»): как у счёта, сделки и расчёта; новый документ — из списка или
+         «Создать ▾». -->
+    <xpath expr="//t[@t-set-slot='control-panel-create-button']/ProjectTemplateDropdown" position="attributes">
+      <attribute name="t-if">canCreate and !pmkHeadA</attribute>
+    </xpath>
+    <xpath expr="//t[@t-set-slot='control-panel-status-indicator']/t[@t-if='canEdit']" position="before">
+      <div t-if="pmkHeadAOn and pmkHeaderButtonsTemplate" class="o_pmk_cp_header o_pmk_head_a_left d-flex align-items-center">
+        <t t-call="{{ pmkHeaderButtonsTemplate }}" t-call-context="{ __comp__: Object.assign(Object.create(this), { this, props: { ...this.props, record: this.model.root }, state: {}, pmkPart: 'left' }) }"/>
+      </div>
+      <div t-if="pmkStatusAtTitle" class="o_pmk_cp_header o_pmk_cp_header_status o_pmk_head_a_status d-flex align-items-center">
+        <t t-call="{{ pmkHeaderStatusTemplate }}" t-call-context="{ __comp__: Object.assign(Object.create(this), { this, props: { ...this.props, record: this.model.root }, state: {} }) }"/>
+      </div>
+    </xpath>
+    <xpath expr="//t[@t-set-slot='control-panel-status-indicator']" position="after">
+      <t t-set-slot="control-panel-navigation-additional">
+        <CogMenu t-if="pmkHeadAOn" t-props="this.cogMenuProps"/>
+        <div t-if="pmkHeaderStatusTemplate and pmkHeaderInPanel() and !pmkStatusAtTitle" class="o_pmk_cp_header o_pmk_cp_header_status d-flex align-items-center">
+          <t t-call="{{ pmkHeaderStatusTemplate }}" t-call-context="{ __comp__: Object.assign(Object.create(this), { this, props: { ...this.props, record: this.model.root }, state: {} }) }"/>
+        </div>
+      </t>
+    </xpath>
+  </t>
+
+
+  <!--
     1а. Вариант А (Антон 25.10.2026, формы с меткой o_pmk_head_a, шапка в
         строке пути): одна главная кнопка — следующий шаг (первая видимая
         btn-primary без o_pmk_more), остальные кнопки — в «Ещё ▾», виджеты

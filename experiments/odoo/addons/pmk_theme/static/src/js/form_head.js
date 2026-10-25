@@ -95,6 +95,14 @@ function splitHeader(header) {
 
 patch(FormController.prototype, {
     setup() {
+        // Наследники со своим static components, объявленным до нашего бандла
+        // (задача и проект — ProjectTaskFormController, ProjectFormController),
+        // не видят StatusBarButtons, добавленный FormController выше: строка
+        // кнопок в строке пути падала «Cannot find the definition of component».
+        const Ctrl = this.constructor;
+        if (Ctrl.components && !Ctrl.components.StatusBarButtons) {
+            Ctrl.components = { ...Ctrl.components, StatusBarButtons };
+        }
         super.setup(...arguments);
         this.pmkHeaderButtonsTemplate = null;
         this.pmkHeaderStatusTemplate = null;

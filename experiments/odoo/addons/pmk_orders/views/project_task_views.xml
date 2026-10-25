@@ -277,4 +277,22 @@
     <field name="view_id" ref="view_task_order_form"/>
     <field name="act_window_id" ref="action_orders"/>
   </record>
+
+  <!--
+    Задача (доска «Доработка системы», задачи проектов) — шапка «вариант А»
+    (Антон 25.10.2026: «почему не отредактирована шапка в задачах?»): этап и
+    кнопки — в строке пути, «⚙ · ↺ · ‹ ›» справа, без «Новое» (pmk_theme form_head).
+    Счётчики задачи (подзадачи, родитель) остаются: вкладки «Связи» у задачи нет.
+  -->
+  <record id="view_task_form2_head_a" model="ir.ui.view">
+    <field name="name">project.task.form.pmk.head.a</field>
+    <field name="model">project.task</field>
+    <field name="inherit_id" ref="project.view_task_form2"/>
+    <field name="active" eval="True"/>
+    <field name="arch" type="xml">
+      <xpath expr="/form" position="attributes">
+        <attribute name="class" add="o_pmk_header_up o_pmk_head_a" separator=" "/>
+      </xpath>
+    </field>
+  </record>
 </odoo>

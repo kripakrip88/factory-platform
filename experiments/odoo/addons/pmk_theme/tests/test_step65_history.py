@@ -281,10 +281,14 @@ class TestStep65History(TransactionCase):
         for name, built in copies.items():
             with self.subTest(template=name):
                 self.assertIsNone(built.find(NAV_SLOT), "Слота у копии не было — заводим.")
+                # С 25.10.2026 слот заводит form_head.xml (шапка «вариант А», блок 1б),
+                # doc_tools.xml кладёт «Историю» внутрь — порядок бандла тот же.
+                built = _apply(built, _block(_xml(HEAD_XML), name))
                 built = _apply(built, _block(_xml(OURS), name))
                 slots = built.findall(NAV_SLOT)
                 self.assertEqual(len(slots), 1)
-                self.assertEqual(slots[0][0].get("t-component"), "pmkDocToolsCls")
+                kids = [c for c in slots[0] if isinstance(c.tag, str)]
+                self.assertEqual(kids[-1].get("t-component"), "pmkDocToolsCls", "«История» — последней.")
                 self.assertIsNotNone(built.find(STATUS_SLOT))
 
     def test_history_chatter_template(self):

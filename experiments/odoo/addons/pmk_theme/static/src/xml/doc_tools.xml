@@ -65,29 +65,24 @@
   <!--
     Primary-копии web.FormView, собранные ДО нашего бандла («Список дел»,
     задачи и доска «Доработка системы», проекты): правка web.FormView до них
-    не доходит, слота этапа у них нет — заводим его.
+    не доходит. Слот этапа у них заводит xml/form_head.xml (блок 1б, грузится
+    раньше), здесь — значки внутрь него.
   -->
   <t t-inherit="resource.FormViewWithHtmlExpander" t-inherit-mode="extension">
-    <xpath expr="//t[@t-set-slot='control-panel-status-indicator']" position="after">
-      <t t-set-slot="control-panel-navigation-additional">
-        <t t-if="pmkDocToolsOn" t-component="pmkDocToolsCls" t-props="pmkDocToolsProps"/>
-      </t>
+    <xpath expr="//t[@t-set-slot='control-panel-navigation-additional']" position="inside">
+      <t t-if="pmkDocToolsOn" t-component="pmkDocToolsCls" t-props="pmkDocToolsProps"/>
     </xpath>
   </t>
 
   <t t-inherit="project.ProjectTaskFormView" t-inherit-mode="extension">
-    <xpath expr="//t[@t-set-slot='control-panel-status-indicator']" position="after">
-      <t t-set-slot="control-panel-navigation-additional">
-        <t t-if="pmkDocToolsOn" t-component="pmkDocToolsCls" t-props="pmkDocToolsProps"/>
-      </t>
+    <xpath expr="//t[@t-set-slot='control-panel-navigation-additional']" position="inside">
+      <t t-if="pmkDocToolsOn" t-component="pmkDocToolsCls" t-props="pmkDocToolsProps"/>
     </xpath>
   </t>
 
   <t t-inherit="project.ProjectFormView" t-inherit-mode="extension">
-    <xpath expr="//t[@t-set-slot='control-panel-status-indicator']" position="after">
-      <t t-set-slot="control-panel-navigation-additional">
-        <t t-if="pmkDocToolsOn" t-component="pmkDocToolsCls" t-props="pmkDocToolsProps"/>
-      </t>
+    <xpath expr="//t[@t-set-slot='control-panel-navigation-additional']" position="inside">
+      <t t-if="pmkDocToolsOn" t-component="pmkDocToolsCls" t-props="pmkDocToolsProps"/>
     </xpath>
   </t>
 
