@@ -29,6 +29,22 @@ class TestFilterPanel(TransactionCase):
             xml = f.read()
         self.assertIn('t-inherit="web.SearchBarMenu"', xml)
         self.assertNotIn("web.ListView", xml)
+        # «Мои …» (упрощение 25.10.2026): поле пользователя есть у каждой модели.
+        for model, name in (("sale.order", "user_id"), ("pmk.metal.spec", "create_uid"),
+                            ("crm.lead", "user_id"), ("project.task", "user_ids")):
+            with self.subTest(model=model, mine=name):
+                self.assertIn(name, self.env[model]._fields)
+                self.assertRegex(js, r'name: "%s", type: "mine"' % name)
+        # Статусы МоегоСклада — ключи как в МС (подписи короче, ключи нет).
+        for state in ("Предоплата получена", "В производство", "Заказ готов", "Заказ отгружен", "Не актуальна"):
+            self.assertIn('["%s", ' % state, js)
+        # Штатное меню — свёрнуто под ссылку, кнопка одна — «Показать N».
+        self.assertIn("pmk-filter--std", xml)
+        self.assertIn("countLabel", xml)
+        self.assertNotIn("Найти", xml)
+        with file_open("pmk_orders/static/src/scss/filter_panel.scss") as f:
+            scss = f.read()
+        self.assertIn(":has(> .pmk-filter:not(.pmk-filter--std)) > :not(.pmk-filter)", scss)
         # Планировщик узнаётся по ключу контекста окна — он у окна есть.
         ctx = self.env.ref("pmk_orders.action_orders").context
         self.assertIn("default_pmk_metal", ctx)

@@ -14,41 +14,64 @@
 // (crm.lead), «Заказы в работе» (project.task окна планировщика — по ключу
 // default_pmk_metal в контексте, чтобы доска «Доработка системы» фильтра не получила).
 // Набор полей — CONFIG; поле, которого у модели нет (модуль не стоит), пропускается.
+//
+// Упрощение 25.10.2026 (Антон: «окно фильтров перегружено»; прототип в чате, «делай
+// везде»): поля разложены рядами по виду — период строкой чипов («Свой…» открывает
+// даты), выбор записей и суммы — в один ряд, варианты — чипами с группами, «да/нет»
+// и «Мои …» — одной строкой «Показать только» (пара «да/нет» — два взаимоисключающих
+// чипа). Штатные «Фильтры / Группировка / Избранное» свёрнуты под ссылку внизу;
+// «Найдено N» + «Найти» → одна кнопка «Показать N».
 
 import { Component, onMounted, onWillStart, useState } from "@odoo/owl";
 import { Domain } from "@web/core/domain";
 import { patch } from "@web/core/utils/patch";
 import { useBus, useService } from "@web/core/utils/hooks";
 import { useDropdownCloser } from "@web/core/dropdown/dropdown_hooks";
+import { user } from "@web/core/user";
 import { MultiRecordSelector } from "@web/core/record_selectors/multi_record_selector";
 import { SearchBar } from "@web/search/search_bar/search_bar";
 import { SearchBarMenu } from "@web/search/search_bar_menu/search_bar_menu";
 
-const MS_STATES = ["Согласование", "Предоплата получена", "Оплачен", "Постоплата", "В производство",
-    "Заказ готов", "Заказ отгружен", "Заказ работника", "Не актуальна"];
+// Статусы МоегоСклада: ключ — как в МС, подпись короче, группа — по жизни счёта.
+const MS_STATES = [
+    ["Согласование", "Согласование", "оплата"],
+    ["Предоплата получена", "Предоплата", "оплата"],
+    ["Оплачен", "Оплачен", "оплата"],
+    ["Постоплата", "Постоплата", "оплата"],
+    ["В производство", "В производстве", "цех"],
+    ["Заказ готов", "Готов", "цех"],
+    ["Заказ отгружен", "Отгружен", "цех"],
+    ["Заказ работника", "Заказ работника", "прочее"],
+    ["Не актуальна", "Не актуален", "прочее"],
+];
 
-// type: period | many | choice | range | tri | flag
+// type: period | many | range | choice | mine | tri | flag
+// Ряды окна: period — строка чипов; many и range — один ряд полей; choice — чипы
+// (третий элемент варианта — подпись группы); mine, tri, flag — «Показать только».
+// tri: yes / no — подписи двух чипов; flag и mine — один чип с подписью label.
 const CONFIG = {
     invoices: [
         { name: "date_order", type: "period", label: "Период" },
         { name: "partner_id", type: "many", label: "Контрагент", model: "res.partner" },
         { name: "pmk_org_id", type: "many", label: "Наша организация", model: "pmk.org" },
-        { name: "pmk_ms_state", type: "choice", label: "Статус МоегоСклада",
-          choices: MS_STATES.map((s) => [s, s]) },
         { name: "amount_total", type: "range", label: "Сумма, ₽" },
-        { name: "pmk_ms_shipped_date", type: "tri", label: "Отгрузка", yes: "отгружен", no: "не отгружен" },
-        { name: "pmk_ms_id", type: "tri", label: "Откуда", yes: "МойСклад", no: "из расчёта" },
-        { name: "pmk_ms_note", type: "flag", label: "Расхождения с МоимСкладом" },
+        { name: "pmk_ms_state", type: "choice", label: "Статус в МоёмСкладе", choices: MS_STATES },
+        { name: "user_id", type: "mine", label: "Мои счета" },
+        { name: "pmk_ms_shipped_date", type: "tri", label: "Отгрузка", yes: "Отгружены", no: "Не отгружены" },
+        { name: "pmk_ms_id", type: "tri", label: "Откуда", yes: "Из МоегоСклада", no: "Из расчёта" },
+        { name: "pmk_ms_note", type: "flag", label: "Расходятся с МС" },
     ],
     specs: [
         { name: "date", type: "period", label: "Период" },
         { name: "partner_id", type: "many", label: "Клиент", model: "res.partner" },
         { name: "pmk_org_id", type: "many", label: "Наша организация", model: "pmk.org" },
         { name: "opportunity_id", type: "many", label: "Сделка", model: "crm.lead" },
-        { name: "pmk_kind", type: "choice", label: "Вид", choices: [["kp", "Для КП"], ["tech", "Технический"]] },
         { name: "price_customer_total", type: "range", label: "Цена клиенту, ₽" },
-        { name: "cat_dobor", type: "flag", label: "Есть доборка" },
-        { name: "cat_vent", type: "flag", label: "Есть вентзонты" },
+        { name: "pmk_kind", type: "choice", label: "Вид", choices: [["kp", "Для КП"], ["tech", "Технический"]] },
+        // Менеджера у расчёта нет — «мои» по автору.
+        { name: "create_uid", type: "mine", label: "Мои расчёты" },
+        { name: "cat_dobor", type: "flag", label: "С доборкой" },
+        { name: "cat_vent", type: "flag", label: "С вентзонтами" },
     ],
     deals: [
         { name: "create_date", type: "period", label: "Создана" },
@@ -57,6 +80,7 @@ const CONFIG = {
         { name: "user_id", type: "many", label: "Менеджер", model: "res.users" },
         { name: "pmk_org_id", type: "many", label: "Наша организация", model: "pmk.org" },
         { name: "expected_revenue", type: "range", label: "Сумма, ₽" },
+        { name: "user_id", type: "mine", label: "Мои сделки", key: "user_id_mine" },
     ],
     orders: [
         { name: "pmk_date_due", type: "period", label: "Срок сдачи" },
@@ -66,11 +90,14 @@ const CONFIG = {
         { name: "user_ids", type: "many", label: "Ответственный", model: "res.users" },
         { name: "pmk_org_id", type: "many", label: "Наша организация", model: "pmk.org" },
         { name: "pmk_amount", type: "range", label: "Сумма, ₽" },
-        { name: "pmk_sale_order_id", type: "tri", label: "Счёт", yes: "привязан", no: "не привязан" },
-        { name: "pmk_overdue", type: "flag", label: "Просрочено" },
+        { name: "user_ids", type: "mine", label: "Мои заказы", key: "user_ids_mine" },
+        { name: "pmk_sale_order_id", type: "tri", label: "Счёт", yes: "Со счётом", no: "Без счёта" },
+        { name: "pmk_overdue", type: "flag", label: "Просроченные" },
     ],
 };
 
+const QUICK = [["today", "Сегодня"], ["week", "Неделя"], ["month", "Месяц"],
+    ["quarter", "Квартал"], ["year", "Год"]];
 
 const MODEL_KEY = { "sale.order": "invoices", "pmk.metal.spec": "specs", "crm.lead": "deals" };
 
@@ -106,12 +133,29 @@ function saveValues(key, values) {
     }
 }
 
+function loadStd(key) {
+    try {
+        return window.localStorage.getItem(`${storageKey(key)}:std`) === "1";
+    } catch {
+        return false;
+    }
+}
+
+function saveStd(key, open) {
+    try {
+        window.localStorage.setItem(`${storageKey(key)}:std`, open ? "1" : "0");
+    } catch {
+        // приватный режим — без запоминания
+    }
+}
+
 // Поля набора, которые есть у модели, — один запрос на модель за сеанс.
 const fieldsCache = new Map();
 function fieldsFor(orm, resModel, key) {
     if (!fieldsCache.has(key)) {
         fieldsCache.set(key, orm.call(resModel, "fields_get", [], { attributes: ["type"] }).then((meta) =>
-            CONFIG[key].filter((f) => f.name in meta).map((f) => ({ ...f, ftype: meta[f.name].type }))
+            CONFIG[key].filter((f) => f.name in meta)
+                .map((f) => ({ ...f, key: f.key || f.name, ftype: meta[f.name].type }))
         ));
     }
     return fieldsCache.get(key);
@@ -131,7 +175,7 @@ function ru(dateStr) {
 }
 
 function isActive(f, values) {
-    const v = values[f.name] || {};
+    const v = values[f.key || f.name] || {};
     switch (f.type) {
         case "period":
         case "range":
@@ -143,19 +187,21 @@ function isActive(f, values) {
         case "tri":
             return v.mode === "yes" || v.mode === "no";
         case "flag":
+        case "mine":
             return Boolean(v.on);
     }
     return false;
 }
 
-export function domainAndLabel(fields, values) {
+// uid — для «Мои …»; по умолчанию — вошедший пользователь.
+export function domainAndLabel(fields, values, uid = user.userId) {
     const domain = [];
     const parts = [];
     for (const f of fields) {
         if (!isActive(f, values)) {
             continue;
         }
-        const v = values[f.name];
+        const v = values[f.key || f.name];
         if (f.type === "period") {
             const dt = f.ftype === "datetime";
             if (v.from) {
@@ -185,6 +231,9 @@ export function domainAndLabel(fields, values) {
             parts.push(`${f.label}: ${v.mode === "yes" ? f.yes : f.no}`);
         } else if (f.type === "flag") {
             domain.push(f.ftype === "boolean" ? [f.name, "=", true] : [f.name, "!=", false]);
+            parts.push(f.label);
+        } else if (f.type === "mine") {
+            domain.push(f.ftype === "many2many" ? [f.name, "in", [uid]] : [f.name, "=", uid]);
             parts.push(f.label);
         }
     }
@@ -241,9 +290,17 @@ export class PmkFilterPanel extends Component {
         this.orm = useService("orm");
         this.closer = useDropdownCloser();
         this.sm = this.env.searchModel;
-        this.state = useState({ values: loadValues(this.props.configKey), fields: [], count: null });
-        this.periods = [["today", "Сегодня"], ["week", "Неделя"], ["month", "Месяц"],
-            ["quarter", "Квартал"], ["year", "Год"], ["all", "Всё время"]];
+        this.quickList = QUICK;
+        this.state = useState({
+            values: loadValues(this.props.configKey),
+            fields: [],
+            count: null,
+            // Штатные «Фильтры / Группировка / Избранное» — свёрнуты; раскрыл —
+            // запоминается (кто группирует часто, не раскрывает каждый раз).
+            std: loadStd(this.props.configKey),
+            // «Свой…» нажат, даты ещё не введены — поля дат уже видны.
+            custom: false,
+        });
         onWillStart(async () => {
             this.state.fields = await fieldsFor(this.orm, this.sm.resModel, this.props.configKey);
             this.recount();
@@ -254,25 +311,71 @@ export class PmkFilterPanel extends Component {
         return this.state.fields;
     }
 
+    // ─── Ряды окна ────────────────────────────────────────────────────────
     get periodField() {
         return this.fields.find((f) => f.type === "period");
+    }
+
+    get inputFields() {
+        return this.fields.filter((f) => f.type === "many" || f.type === "range");
+    }
+
+    get choiceFields() {
+        return this.fields.filter((f) => f.type === "choice");
+    }
+
+    get toggleFields() {
+        return this.fields.filter((f) => f.type === "mine" || f.type === "tri" || f.type === "flag");
     }
 
     get activeCount() {
         return this.fields.filter((f) => isActive(f, this.state.values)).length;
     }
 
-    value(name) {
-        return this.state.values[name] || {};
+    // Варианты с подписью группы перед первым вариантом группы.
+    choiceItems(f) {
+        let group = null;
+        return f.choices.map((c) => {
+            const head = c[2] && c[2] !== group ? c[2] : "";
+            group = c[2] || group;
+            return { key: c[0], label: c[1], head };
+        });
     }
 
-    set(name, patchValues) {
-        this.state.values[name] = { ...this.value(name), ...patchValues };
+    // Чипы «Показать только»: tri — два взаимоисключающих, flag и mine — один.
+    toggleItems() {
+        const items = [];
+        for (const f of this.toggleFields) {
+            const v = this.value(f.key);
+            if (f.type === "tri") {
+                items.push({ id: `${f.key}:yes`, label: f.yes, on: v.mode === "yes", f, mode: "yes" });
+                items.push({ id: `${f.key}:no`, label: f.no, on: v.mode === "no", f, mode: "no" });
+            } else {
+                items.push({ id: f.key, label: f.label, on: Boolean(v.on), f });
+            }
+        }
+        return items;
+    }
+
+    toggle(item) {
+        if (item.f.type === "tri") {
+            this.set(item.f.key, { mode: item.on ? "" : item.mode });
+        } else {
+            this.set(item.f.key, { on: !item.on });
+        }
+    }
+
+    value(key) {
+        return this.state.values[key] || {};
+    }
+
+    set(key, patchValues) {
+        this.state.values[key] = { ...this.value(key), ...patchValues };
         this.recount();
     }
 
-    // «Найдено: N» — сколько документов покажет список после «Найти»: условия
-    // окна плюс остальные плашки поиска.
+    // «Показать N» — сколько документов покажет список: условия окна плюс
+    // остальные плашки поиска.
     recount() {
         clearTimeout(this.timer);
         this.timer = setTimeout(async () => {
@@ -286,14 +389,39 @@ export class PmkFilterPanel extends Component {
         }, 300);
     }
 
-    quickActive(kind) {
+    get countLabel() {
+        const n = this.state.count;
+        return n === null ? "Показать" : `Показать ${n.toLocaleString("ru-RU")}`;
+    }
+
+    // ─── Период ───────────────────────────────────────────────────────────
+    // Чип «Всё время» — когда дат нет; «Свой…» — даты введены руками (или
+    // нажат и ждёт дат); остальные — по своему ключу.
+    get periodValue() {
         const f = this.periodField;
-        const v = f && this.value(f.name);
-        return Boolean(v) && v.quick === kind;
+        return f ? this.value(f.key) : {};
+    }
+
+    get periodCustom() {
+        const v = this.periodValue;
+        return this.state.custom || Boolean((v.from || v.to) && !QUICK.some((q) => q[0] === v.quick));
+    }
+
+    quickActive(kind) {
+        const v = this.periodValue;
+        if (kind === "all") {
+            return !this.periodCustom && !v.from && !v.to;
+        }
+        return !this.periodCustom && v.quick === kind;
     }
 
     quick(kind) {
         const f = this.periodField;
+        this.state.custom = false;
+        if (kind === "custom") {
+            this.state.custom = true;
+            return;
+        }
         const now = new Date();
         let from = new Date(now);
         if (kind === "week") {
@@ -306,16 +434,31 @@ export class PmkFilterPanel extends Component {
             from = new Date(now.getFullYear(), 0, 1);
         }
         if (kind === "all") {
-            this.set(f.name, { from: "", to: "", quick: "all" });
+            this.set(f.key, { from: "", to: "", quick: "" });
         } else {
-            this.set(f.name, { from: ymd(from), to: ymd(now), quick: kind });
+            this.set(f.key, { from: ymd(from), to: ymd(now), quick: kind });
         }
     }
 
     toggleChoice(f, key) {
-        const keys = new Set(this.value(f.name).keys || []);
+        const keys = new Set(this.value(f.key).keys || []);
         keys.has(key) ? keys.delete(key) : keys.add(key);
-        this.set(f.name, { keys: [...keys] });
+        this.set(f.key, { keys: [...keys] });
+    }
+
+    toggleStd() {
+        this.state.std = !this.state.std;
+        saveStd(this.props.configKey, this.state.std);
+    }
+
+    onKeydown(ev) {
+        // Enter в поле суммы/даты — как «Показать» (в выборе записей Enter
+        // выбирает запись — его не трогаем).
+        if (ev.key === "Enter" && ev.target.matches("input.pmk-filter__in")) {
+            ev.preventDefault();
+            ev.target.dispatchEvent(new Event("change", { bubbles: true }));
+            this.apply();
+        }
     }
 
     apply() {
@@ -326,6 +469,7 @@ export class PmkFilterPanel extends Component {
 
     clear() {
         this.state.values = {};
+        this.state.custom = false;
         saveValues(this.props.configKey, {});
         applyFilter(this.sm, this.fields, {});
         this.recount();

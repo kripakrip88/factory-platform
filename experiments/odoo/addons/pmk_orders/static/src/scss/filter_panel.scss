@@ -1,31 +1,46 @@
 // Фильтр документов в окне ползунков (13.10.2026) — js/filter_panel.js.
-// Вид первого прототипа: подписи 11 px серым над полями, поля 28 px в тонкой
-// рамке, сетка в четыре колонки, быстрые периоды кружками, внизу «Найдено».
-// Цвета — переменными темы (в тёмной теме dark.scss задаёт свои).
+// Упрощён 25.10.2026 (прототип в чате): ряды по виду полей — период чипами,
+// выбор записей и суммы в один ряд, варианты чипами с группами, «Показать
+// только»; штатные «Фильтры / Группировка / Избранное» свёрнуты под ссылку;
+// одна кнопка «Показать N». Выбранный чип — бледный лайм, как плашка текущего
+// пункта в шапке (лаймом по белому не пишем). Цвета — переменными темы.
 
 // Окно ползунков: фильтр — во всю ширину сверху, три колонки ядра — под ним.
-// Ширина окна — по фильтру (~920 px), а не во весь экран (у ядра w-md-auto
-// с !important — перебиваем тем же).
+// Ширина окна — по фильтру, а не во весь экран (у ядра w-md-auto с
+// !important — перебиваем тем же).
 .o_search_bar_menu:has(> .pmk-filter) {
   flex-wrap: wrap !important;
-  width: 920px !important;
+  width: 780px !important;
   max-width: calc(100vw - 16px);
 }
 
+// Штатные колонки — только когда раскрыты ссылкой внизу фильтра.
+.o_search_bar_menu:has(> .pmk-filter:not(.pmk-filter--std)) > :not(.pmk-filter) {
+  display: none !important;
+}
+
 .pmk-filter {
+  --pmk-chip-on-bg: #eef3dc;
+  --pmk-chip-on-bd: #d7e2b0;
+  --pmk-chip-on-ink: #475500;
   flex: 0 0 100%;
-  margin: -4px 0 14px;
-  padding: 0 16px 14px;
-  border-bottom: 1px solid var(--pmk-border, #e3e4e8);
+  margin: -4px 0 0;
+  padding: 0 16px 12px;
   font-size: 13px;
   color: var(--pmk-ink, #14141a);
+}
+
+// Раскрыто штатное меню — черта отделяет его от фильтра.
+.pmk-filter--std {
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--pmk-border, #e3e4e8);
 }
 
 .pmk-filter__head {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 10px;
+  margin-bottom: 4px;
   font-size: 14px;
   font-weight: 500;
 
@@ -38,34 +53,51 @@
   min-width: 18px;
   padding: 0 6px;
   border-radius: 9px;
-  background: rgba(61, 115, 214, 0.12);
-  color: #2d5fb8;
+  background: var(--pmk-ink, #16171b);
+  color: var(--pmk-surface, #fff);
   font-size: 11px;
   line-height: 18px;
   text-align: center;
 }
 
+.pmk-filter__reset,
+.pmk-filter__more {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--pmk-label, #6b7079);
+  font-size: 12px;
+  font-weight: 400;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--pmk-ink, #16171b);
+  }
+}
+
+.pmk-filter__reset {
+  margin-left: auto;
+}
+
+.pmk-filter__more .fa {
+  width: 10px;
+}
+
+.pmk-filter__row {
+  margin-top: 10px;
+}
+
+// Выбор записей и суммы — ряд из 3–4 колонок, лишнее переносится.
 .pmk-filter__grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  grid-auto-flow: row dense;
-  gap: 10px 14px;
-}
-
-// Много вариантов (статусы МоегоСклада) — на две колонки, иначе ряд в три строки.
-.pmk-filter__field--choice {
-  grid-column: span 2;
-}
-
-@media (max-width: 991.98px) {
-  .pmk-filter__grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px 12px;
+  margin-top: 10px;
 }
 
 .pmk-filter__label {
   display: block;
-  margin-bottom: 3px;
+  margin-bottom: 4px;
   font-size: 11px;
   font-weight: 400;
   color: var(--pmk-label, #6b7079);
@@ -84,7 +116,7 @@
 
   &:focus {
     outline: none;
-    border-color: #3d73d6;
+    border-color: var(--pmk-ink-3, #6b7079);
   }
 
   &::placeholder {
@@ -121,108 +153,82 @@
   }
 }
 
+// Даты «Свой…» — в том же ряду, что чипы периода.
+.pmk-filter__pair--dates {
+  flex: 0 1 280px;
+  margin-left: 4px;
+}
+
 .pmk-filter__dash {
   color: var(--pmk-ink-3, #9a9ea6);
 }
 
-// Варианты (статусы МоегоСклада, вид расчёта) — кружки, выбранные залиты.
 .pmk-filter__chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  align-items: center;
+  gap: 5px;
 }
 
-.pmk-filter__chip,
-.pmk-filter__q {
-  padding: 1px 9px;
-  border: 1px solid var(--pmk-border, #dcdde2);
-  border-radius: 12px;
-  background: transparent;
-  color: var(--pmk-ink-2, #4b4f58);
+// Подпись группы вариантов («оплата · цех · прочее»).
+.pmk-filter__group {
+  margin: 0 1px 0 8px;
   font-size: 11px;
+  color: var(--pmk-ink-3, #9a9ea6);
+
+  &:first-child {
+    margin-left: 0;
+  }
+}
+
+.pmk-filter__chip {
+  padding: 2px 10px;
+  border: 1px solid var(--pmk-border, #dcdde2);
+  border-radius: 13px;
+  background: var(--pmk-surface, #fff);
+  color: var(--pmk-ink-2, #33363d);
+  font-size: 12px;
   font-weight: 400;
   line-height: 18px;
+  white-space: nowrap;
   cursor: pointer;
   transition: background-color 0.15s ease-out, border-color 0.15s ease-out;
 
   &:hover {
-    border-color: #3d73d6;
+    border-color: var(--pmk-border-strong, #b9bcc3);
   }
 
-  &--on {
-    background: rgba(61, 115, 214, 0.12);
-    border-color: rgba(61, 115, 214, 0.5);
-    color: #2d5fb8;
+  &--on,
+  &--on:hover {
+    background: var(--pmk-chip-on-bg);
+    border-color: var(--pmk-chip-on-bd);
+    color: var(--pmk-chip-on-ink);
     font-weight: 500;
   }
-}
-
-// «все · да · нет» — одной полосой.
-.pmk-filter__seg {
-  display: flex;
-  min-height: 28px;
-  border: 1px solid var(--pmk-border, #dcdde2);
-  border-radius: 6px;
-  overflow: hidden;
-
-  button {
-    flex: 1 1 auto;
-    padding: 2px 6px;
-    border: 0;
-    background: transparent;
-    color: var(--pmk-ink-2, #4b4f58);
-    font-size: 12px;
-    font-weight: 400;
-    white-space: nowrap;
-    cursor: pointer;
-
-    + button {
-      border-left: 1px solid var(--pmk-border, #dcdde2);
-    }
-
-    &.on {
-      background: rgba(61, 115, 214, 0.12);
-      color: #2d5fb8;
-      font-weight: 500;
-    }
-  }
-}
-
-.pmk-filter__quick {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 10px;
 }
 
 .pmk-filter__foot {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
   gap: 8px;
-  margin-top: 12px;
-}
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--pmk-border, #e3e4e8);
 
-.pmk-filter__found {
-  margin-right: auto;
-  font-size: 11px;
-  color: var(--pmk-label, #6b7079);
+  .btn-primary {
+    margin-left: auto;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pmk-filter__chip,
-  .pmk-filter__q {
+  .pmk-filter__chip {
     transition: none;
   }
 }
 
-// Тёмная тема: синий светлее, на тёмном фоне.
-.o_nexus_dark {
-  .pmk-filter__badge,
-  .pmk-filter__chip--on,
-  .pmk-filter__q--on,
-  .pmk-filter__seg button.on {
-    background: rgba(122, 162, 240, 0.18);
-    color: #a9c4f5;
-  }
+// Тёмная тема: выбранный чип — лайм тёмного словаря (dark.scss, раздел 0).
+.o_nexus_dark .pmk-filter {
+  --pmk-chip-on-bg: var(--pmk-fill-soft, #2e3420);
+  --pmk-chip-on-bd: var(--pmk-fill, #3d451e);
+  --pmk-chip-on-ink: var(--pmk-accent, #d4e57a);
 }
