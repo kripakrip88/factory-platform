@@ -131,9 +131,14 @@ patch(FormController.prototype, {
         });
     },
 
+    /** Шапка «вариант А» сейчас в строке пути (экран от 1200 px). */
+    get pmkHeadAOn() {
+        return this.pmkHeadA && this.pmkHeaderInPanel();
+    },
+
     /** Статус — у номера документа (вариант А), а не справа перед стрелками. */
     get pmkStatusAtTitle() {
-        return this.pmkHeadA && Boolean(this.pmkHeaderStatusTemplate) && this.pmkHeaderInPanel();
+        return this.pmkHeadAOn && Boolean(this.pmkHeaderStatusTemplate);
     },
 
     /** Шапка рисуется в строке пути: она разобрана и экран от 1200 px. */
@@ -163,6 +168,7 @@ patch(FormCompiler.prototype, {
             slot.setAttribute("pmkPrimary", String(flags.primary));
             slot.setAttribute("pmkMore", String(flags.more));
             slot.setAttribute("pmkKeep", String(flags.keep));
+            slot.setAttribute("pmkSkip", String(flags.skip));
         }
         if (compiled && el.closest?.("form")?.classList.contains(HEADER_UP_CLASS)) {
             compiled.setAttribute(
@@ -184,6 +190,7 @@ patch(StatusBarButtons.prototype, {
                 primary: Boolean(slots[name].pmkPrimary),
                 more: Boolean(slots[name].pmkMore),
                 keep: Boolean(slots[name].pmkKeep),
+                skip: Boolean(slots[name].pmkSkip),
             }))
         );
     },
@@ -194,7 +201,7 @@ patch(FormStatusIndicator.prototype, {
         return `Сохранить — ${hotkeyLabel("s", isMacOS())}`;
     },
     get pmkDiscardTip() {
-        return `Отменить все изменения — ${hotkeyLabel("j", isMacOS())}`;
+        return `Отменить изменения — ${hotkeyLabel("j", isMacOS())}`;
     },
 });
 

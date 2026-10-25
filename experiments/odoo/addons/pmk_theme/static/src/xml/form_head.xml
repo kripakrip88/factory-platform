@@ -21,7 +21,13 @@
        листа), а у контроллера state нет.
   -->
   <t t-inherit="web.FormView" t-inherit-mode="extension">
-    <xpath expr="//t[@t-set-slot='layout-actions']/t[@t-if='!env.isSmall and buttonBoxTemplate']" position="before">
+    <!-- Вариант А (Антон 25.10.2026: «убираем все»): кнопок-счётчиков связей в
+         шапке нет — их число во вкладке «Связи · N» (pmk_flow). На телефоне и
+         в листе (уже 1200 px) — как в ядре. -->
+    <xpath expr="//t[@t-set-slot='layout-actions']/t[@t-if='!env.isSmall and buttonBoxTemplate']" position="attributes">
+      <attribute name="t-if">!env.isSmall and buttonBoxTemplate and !pmkHeadAOn</attribute>
+    </xpath>
+    <xpath expr="//t[@t-set-slot='layout-actions']/t[@t-if='!env.isSmall and buttonBoxTemplate and !pmkHeadAOn']" position="before">
       <div t-if="pmkHeaderButtonsTemplate and pmkHeaderInPanel()" class="o_pmk_cp_header o_pmk_cp_header_buttons d-flex align-items-center">
         <t t-call="{{ pmkHeaderButtonsTemplate }}" t-call-context="{ __comp__: Object.assign(Object.create(this), { this, props: { ...this.props, record: this.model.root }, state: {} }) }"/>
       </div>
@@ -55,6 +61,9 @@
       <t t-elif="env.pmkHeadA and env.pmkHeadA()">
         <t t-set="pmkSplit" t-value="pmkSplitSlots()"/>
         <t t-if="pmkSplit.main" t-slot="{{ pmkSplit.main }}"/>
+        <t t-foreach="pmkSplit.inline" t-as="slot" t-key="slot">
+          <t t-slot="{{ slot }}"/>
+        </t>
         <Dropdown t-if="pmkSplit.more.length" menuClass="'o_pmk_more_menu'">
           <button class="btn btn-secondary o_pmk_more_btn" title="Другие действия документа">
             <span>Ещё</span><i class="fa fa-angle-down ms-1" aria-hidden="true"/>
@@ -99,9 +108,10 @@
       <attribute name="t-att-data-tooltip">pmkSaveTip</attribute>
       <attribute name="aria-label">Сохранить</attribute>
     </xpath>
+    <!-- Значком (Антон 25.10.2026: «занимают очень много места — поменять на
+         иконки»): ✓ и ✕, название — в подсказке с клавишей. -->
     <xpath expr="//button[hasclass('o_form_button_save')]/i" position="replace">
       <i class="fa fa-check o_pmk_btn_icon"/>
-      <span class="o_pmk_btn_label">Сохранить</span>
     </xpath>
     <xpath expr="//button[hasclass('o_form_button_cancel')]" position="attributes">
       <attribute name="class">o_form_button_cancel btn btn-secondary</attribute>
@@ -111,7 +121,6 @@
     </xpath>
     <xpath expr="//button[hasclass('o_form_button_cancel')]/i" position="replace">
       <i class="fa fa-times o_pmk_btn_icon"/>
-      <span class="o_pmk_btn_label">Отменить</span>
     </xpath>
   </t>
 

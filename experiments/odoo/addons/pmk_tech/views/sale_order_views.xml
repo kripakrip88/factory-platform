@@ -29,16 +29,17 @@
     <field name="active" eval="True"/>
     <field name="arch" type="xml">
       <xpath expr="//header/*[1]" position="before">
-        <!-- o_pmk_more: в шапке «вариант А» уступает шагу счёта (в черновике
-             главная — «На согласование»), главная — когда счёт в работе. -->
+        <!-- o_pmk_in_create: в шапке «вариант А» — пунктом «Создать ▾»
+             (Антон 25.10.2026: «логичнее перенести в выпадашку создать»);
+             кнопка — для узкого экрана. -->
         <button name="action_pmk_tech_spec" type="object" string="Технический расчёт"
-                class="btn-primary o_pmk_more"
+                class="btn-primary o_pmk_in_create"
                 invisible="pmk_tech_spec_id or pmk_is_revision or state != 'sale'"
                 title="Копия расчёта, по которому выставлен счёт: инженер правит состав и материалы, раскладывает листы. Расчёт КП не меняется"/>
       </xpath>
       <xpath expr="//header/button[@id='action_confirm']" position="after">
         <button name="action_pmk_tech_spec" type="object" string="Технический расчёт"
-                class="btn-secondary"
+                class="btn-secondary o_pmk_in_create"
                 invisible="pmk_tech_spec_id or pmk_is_revision or state != 'sent'"
                 title="Копия расчёта, по которому выставлен счёт: инженер правит состав и материалы, раскладывает листы. Расчёт КП не меняется"/>
       </xpath>

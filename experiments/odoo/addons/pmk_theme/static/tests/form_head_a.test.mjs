@@ -12,35 +12,42 @@ const { HEAD_A_CLASS, headButtonFlags, splitHeadSlots } = await import(RULES);
 assert.equal(HEAD_A_CLASS, "o_pmk_head_a");
 
 // Классы кнопки приходят выражением компилятора: `btn-primary` + ` ` + `...`.
-assert.deepEqual(headButtonFlags("`btn-primary` + ` ` + ``"), { primary: true, more: false, keep: false });
-assert.deepEqual(headButtonFlags("`oe_highlight`"), { primary: true, more: false, keep: false });
-assert.deepEqual(headButtonFlags("`btn-primary o_pmk_more`"), { primary: true, more: true, keep: false });
-assert.deepEqual(headButtonFlags("`btn-secondary o_pmk_keep`"), { primary: false, more: false, keep: true });
-assert.deepEqual(headButtonFlags("", true), { primary: false, more: false, keep: true }, "виджет — в ряду");
+assert.deepEqual(headButtonFlags("`btn-primary` + ` ` + ``"), { primary: true, more: false, keep: false, skip: false });
+assert.deepEqual(headButtonFlags("`oe_highlight`"), { primary: true, more: false, keep: false, skip: false });
+assert.deepEqual(headButtonFlags("`btn-primary o_pmk_more`"), { primary: true, more: true, keep: false, skip: false });
+assert.deepEqual(headButtonFlags("`btn-secondary o_pmk_keep`"), { primary: false, more: false, keep: true, skip: false });
+assert.deepEqual(headButtonFlags("", true), { primary: false, more: false, keep: true, skip: false }, "виджет — в ряду");
 assert.equal(headButtonFlags("`btn-primary-x`").primary, false, "только целый класс");
+assert.equal(headButtonFlags("`btn-primary o_pmk_in_create`").skip, true, "есть в «Создать ▾»");
+assert.equal(headButtonFlags("`o_pmk_in_cog`").skip, true, "есть в «⚙»");
 
-// Счёт в черновике: «Технический расчёт» уступает «На согласование».
+// Счёт в черновике у руководителя: «На согласование» главная, «Согласовано» —
+// одна — обычной кнопкой; «Технический расчёт» и «Отменить счёт» — в меню.
 assert.deepEqual(
     splitHeadSlots([
-        { name: "tech", primary: true, more: true },
+        { name: "tech", primary: true, skip: true },
         { name: "menu", keep: true },
+        { name: "toApproval", primary: true },
         { name: "approve", primary: true },
-        { name: "cancel" },
+        { name: "cancel", skip: true },
     ]),
-    { main: "approve", more: ["tech", "cancel"], keep: ["menu"] }
+    { main: "toApproval", inline: ["approve"], more: [], keep: ["menu"] }
 );
-// Счёт в работе: другой главной нет — «Технический расчёт» главная.
+// Счёт в работе: шага нет — ни главной, ни «Ещё ▾».
 assert.deepEqual(
-    splitHeadSlots([{ name: "tech", primary: true, more: true }, { name: "menu", keep: true }, { name: "cancel" }]),
-    { main: "tech", more: ["cancel"], keep: ["menu"] }
+    splitHeadSlots([{ name: "tech", primary: true, skip: true }, { name: "menu", keep: true }, { name: "cancel", skip: true }]),
+    { main: null, inline: [], more: [], keep: ["menu"] }
 );
-// Главных две — главная первая, вторая в «Ещё ▾».
+// «Ещё ▾» — от двух; главная с o_pmk_more уступает.
 assert.deepEqual(
-    splitHeadSlots([{ name: "a", primary: true }, { name: "b", primary: true }]),
-    { main: "a", more: ["b"], keep: [] }
+    splitHeadSlots([{ name: "a", primary: true, more: true }, { name: "b", primary: true }, { name: "c" }]),
+    { main: "b", inline: [], more: ["a", "c"], keep: [] }
 );
-// Главной нет — все в «Ещё ▾».
-assert.deepEqual(splitHeadSlots([{ name: "x" }, { name: "y" }]), { main: null, more: ["x", "y"], keep: [] });
-assert.deepEqual(splitHeadSlots([]), { main: null, more: [], keep: [] });
+// Другой главной нет — уступающая главная.
+assert.deepEqual(
+    splitHeadSlots([{ name: "a", primary: true, more: true }, { name: "c" }]),
+    { main: "a", inline: ["c"], more: [], keep: [] }
+);
+assert.deepEqual(splitHeadSlots([]), { main: null, inline: [], more: [], keep: [] });
 
 console.log("form_head_a: ok");

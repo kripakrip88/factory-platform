@@ -24,7 +24,7 @@
     #             «Предмета КП», старт и сдача из срока счёта (рабочие дни),
     #             «Выиграно» с окном «Оплата / гарантия», галочка
     #             «Гарантийное письмо».
-    "version": "19.0.1.4.0",  # 19.0.1.4.0 — «Печать → Расчёт (Excel)»
+    "version": "19.0.1.5.0",  # 19.0.1.5.0 — шапка «вариант А»; 19.0.1.4.0 — «Печать → Расчёт (Excel)»
     "summary": "Счёт покупателю из расчёта: черновик, условия, согласование, «Отправлен» по «Отправить КП», редакции, планировщик",
     "category": "Sales/Sales",
     "author": "ПМК Парк",
@@ -74,6 +74,8 @@
         "data/activity_types.xml",
         "data/orders_project.xml",
         "views/sale_order_views.xml",
+        # «⚙ → Отменить счёт» (шапка «вариант А», 25.10.2026).
+        "data/invoice_cancel_action.xml",
         "views/metal_spec_views.xml",
         "views/mail_compose_views.xml",
         "views/project_task_views.xml",

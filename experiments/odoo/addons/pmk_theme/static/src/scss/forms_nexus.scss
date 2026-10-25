@@ -1151,19 +1151,12 @@ $pmk-stage-dots: (
 }
 
 @each $tone, $pair in $pmk-stage-tones {
-  // Заливка-прогресс (15.10.2026): пройденная доля пути — тоном рамки, остаток — фоном
-  // тона; --pmk-stage-progress ставит js (pmkProgress). Вне пути — 0 %, без заливки.
-  // Вариант А «стекло» (Антон 15.10.2026): у заливки блик в верхней половине и переход
-  // от светлого к тону рамки — как стеклянная капсула. Слои: блик и заливка шириной
-  // прогресса, под ними фон тона.
+  // Плоская плашка (Антон 25.10.2026: «стиль кнопки выпадает из общего стиля своим
+  // стеклянностью»): бледный тон этапа и рамка тоном, без блика и заливки-прогресса
+  // (было с 15.10.2026, вариант «стекло»).
   .o_form_view .o_statusbar_status > .btn.o_pmk_stage_toggle[data-pmk-tone="#{$tone}"]:not(.d-none) {
     border-color: nth($pair, 2) !important;
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.12) 48%,
-                      rgba(255, 255, 255, 0) 52%) 0 0 / var(--pmk-stage-progress, 0%) 100% no-repeat,
-      linear-gradient(90deg, mix(nth($pair, 1), nth($pair, 2), 40%), nth($pair, 2))
-        0 0 / var(--pmk-stage-progress, 0%) 100% no-repeat,
-      nth($pair, 1) !important;
+    background: nth($pair, 1) !important;
   }
 
   .o-dropdown--menu .dropdown-item.o_pmk_stage_item.active.o_pmk_tone_#{$tone} {
@@ -1188,7 +1181,7 @@ $pmk-stage-dots: (
 .o_mail_client {
   // Открытая папка (Антон 25.10.2026: «лаймом слишком пёстро») — как
   // открытое письмо: бледно-серая подложка и графитовая полоска слева.
-  --mc-active-bg: #ececec;
+  --mc-active-bg: #ededed;
   --mc-active-color: #16191c;
   --mc-ticked-bg: rgba(221, 235, 148, 0.45);
   --mc-await-us-bg: #fbf3d5;
@@ -2083,9 +2076,6 @@ body.o_nexus_dark .o_dialog .o_field_widget.o_mail_composer_message {
     white-space: nowrap;
   }
 
-  .o_form_button_cancel .o_pmk_btn_icon {
-    display: none;
-  }
 }
 
 @media (max-width: 767.98px) {
@@ -2173,8 +2163,9 @@ body.o_nexus_dark .o_dialog .o_field_widget.o_mail_composer_message {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
+    // 32 px — как все кнопки строки пути (Антон 25.10.2026, было 28).
+    width: 32px;
+    height: 32px;
     padding: 0 !important;
   }
 }
@@ -3744,17 +3735,6 @@ $pmk-tab-r: 10px !default;
   background: #fff;
 }
 
-// ═══ Доска с колонками — на фоне страницы (25.10.2026) ═══
-// Антон 25.10: «что за разделение возле этапа оплачено?» Фон доски ядра
-// (--Kanban-background, #f8f9fa) лежит на самом рендерере, а он шириной в экран:
-// колонки шире экрана, страница прокручивается вбок, и там, где рендерер
-// кончается, проступает бежевый фон страницы — вертикальная граница посреди
-// колонки. Прозрачный фон: доска целиком на бежевом («плоско на бежевом», шаг 52),
-// белые карточки. Тёмная тема задаёт фон доски сама (dark.scss, раздел 12).
-.o_kanban_renderer.o_kanban_grouped {
-  --Kanban-background: transparent;
-}
-
 // ═══ Шаг 70: перетаскивание карточек канбана без задержки (15.10.2026) ═══
 // Антон 15.10: «при перетягивании сделки очень плохая анимация — карточка как будто
 // прилипла к своей колонке и сопротивляется переносу». Чужая тема ставит карточке
@@ -3771,7 +3751,18 @@ $pmk-tab-r: 10px !default;
   transition: none !important;
 }
 
-// ═══ Шапка документа «вариант А» (Антон 25.10.2026) ═══
+// ═══ Шаг 71: доска с колонками — на фоне страницы (25.10.2026) ═══
+// Антон 25.10: «что за разделение возле этапа оплачено?» Фон доски ядра
+// (--Kanban-background, #f8f9fa) лежит на самом рендерере, а он шириной в экран:
+// колонки шире экрана, страница прокручивается вбок, и там, где рендерер
+// кончается, проступает бежевый фон страницы — вертикальная граница посреди
+// колонки. Прозрачный фон: доска целиком на бежевом («плоско на бежевом», шаг 52),
+// белые карточки. Тёмная тема задаёт фон доски сама (dark.scss, раздел 12).
+.o_kanban_renderer.o_kanban_grouped {
+  --Kanban-background: transparent;
+}
+
+// ═══ Шаг 72: шапка документа «вариант А» (Антон 25.10.2026) ═══
 // Разметка — xml/form_head.xml (1а и статус у номера), раскладка — js/form_head.js.
 // В «Ещё ▾» кнопки шапки — строками меню, без заливки и рамки: главная кнопка
 // (чёрная) на экране одна. Отмена документа — красным, чтобы не нажать мимо.
@@ -3822,4 +3813,36 @@ body.o_nexus_dark .o_pmk_more_item.dropdown-item > .btn[name="action_cancel"] {
 // Статус у номера — с отступом от «⚙ ▾» и номера.
 .o_pmk_head_a_status {
   margin-left: 6px;
+}
+
+// ═══ Шаг 73: шапка документа — одна высота (Антон 25.10.2026) ═══
+// «Размер шестерёнки, история и переключатель карточек отличается сильно по размеру
+// от статуса и кнопок». Всё в строке пути формы — 32 px, значки — квадрат 32×32.
+.o_form_view .o_control_panel {
+  .o_form_status_indicator .o_form_button_save,
+  .o_form_status_indicator .o_form_button_cancel {
+    width: 32px;
+    height: 32px;
+    padding: 0 !important;
+    justify-content: center;
+  }
+
+  .o_pmk_actions_btn {
+    display: inline-flex;
+    align-items: center;
+    height: 32px;
+    min-width: 32px;
+  }
+
+  .o_pmk_history_btn,
+  .o_pager_previous,
+  .o_pager_next {
+    width: 32px;
+    height: 32px;
+  }
+
+  .o_pmk_cp_header .btn,
+  .o_statusbar_status > .btn.o_pmk_stage_toggle:not(.d-none) {
+    height: 32px;
+  }
 }

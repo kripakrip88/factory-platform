@@ -10,7 +10,7 @@
 список — только «Закупкам» (поле под группой: без прав на заказы поставщику
 его не прочитать).
 """
-from odoo import api, fields, models
+from odoo import _, api, fields, models
 
 
 class SaleOrderTech(models.Model):
@@ -40,6 +40,20 @@ class SaleOrderTech(models.Model):
         for order in self:
             order.pmk_metal_request_count = len(
                 order.pmk_metal_request_ids.filtered(lambda po: po.state != "cancel"))
+
+    # ─── «Создать ▾ → Технический расчёт» (шапка «вариант А», 25.10.2026) ──
+    def _pmk_tech_spec_allowed(self):
+        """Технический расчёт завести можно: его нет, счёт отправлен или в работе
+        (те же условия, что у кнопок шапки — views/sale_order_views.xml)."""
+        self.ensure_one()
+        return not self.pmk_tech_spec_id and not self.pmk_is_revision and self.state in ("sent", "sale")
+
+    def pmk_doc_menu(self):
+        menu = super().pmk_doc_menu()
+        if self[:1] and self._pmk_tech_spec_allowed():
+            menu["create"].append({"key": "tech", "label": _("Технический расчёт"), "icon": "fa-wrench",
+                                   "method": "action_pmk_tech_spec"})
+        return menu
 
     def action_pmk_tech_spec(self):
         self.ensure_one()

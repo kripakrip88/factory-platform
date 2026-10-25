@@ -347,12 +347,20 @@ export class PmkScheduleTask extends Component {
     }
 }
 
+// Документы, где «Задача» есть в «Создать ▾» (pmk_deal, pmk_orders: пункт
+// action_pmk_doc_task) — в «⚙» её не дублируем (Антон 25.10.2026: «в
+// шестерёнке можно создать задачу — это глупость»).
+const TASK_IN_CREATE_MENU = ["crm.lead", "sale.order"];
+
 export const pmkScheduleTaskItem = {
     Component: PmkScheduleTask,
     // Первой группой, над штатными пунктами (у них 1 и 100).
     groupNumber: 0,
     isDisplayed: (env) =>
-        env.config?.viewType === "form" && Boolean(env.pmkHideChatter) && Boolean(env.pmkHasActivities),
+        env.config?.viewType === "form" &&
+        Boolean(env.pmkHideChatter) &&
+        Boolean(env.pmkHasActivities) &&
+        !TASK_IN_CREATE_MENU.includes(env.model?.root?.resModel),
 };
 
 registry.category("cogMenu").add("pmk-schedule-task", pmkScheduleTaskItem, { sequence: 5 });

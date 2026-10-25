@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  «⚙ → Отменить счёт» (шапка «вариант А», Антон 25.10.2026). Отмена — редкое
+  действие, которое ломает документ: из ряда рабочих кнопок — в «⚙». То же, что
+  кнопка шапки (sale.order.action_cancel): счёт «Отменён», в МойСклад — «Не
+  актуальна», вернуть — «Вернуть в черновик». Счёт в работе заблокирован —
+  ядро попросит сначала «Разблокировать».
+-->
+<odoo>
+  <record id="action_pmk_invoice_cancel" model="ir.actions.server">
+    <field name="name">Отменить счёт</field>
+    <field name="model_id" ref="sale.model_sale_order"/>
+    <field name="binding_model_id" ref="sale.model_sale_order"/>
+    <field name="binding_view_types">form</field>
+    <field name="state">code</field>
+    <field name="code">
+done = records.filtered(lambda order: order.state == 'cancel')
+if done:
+    raise UserError("Счёт %s уже отменён." % ", ".join(done.mapped("name")))
+blocked = records.filtered(lambda order: order.pmk_is_revision or order.state not in ('draft', 'sent', 'sale'))
+if blocked:
+    raise UserError("Этот счёт отменить нельзя: %s." % ", ".join(blocked.mapped("name")))
+action = records.action_cancel()
+if not isinstance(action, dict):
+    action = {"type": "ir.actions.client", "tag": "soft_reload"}
+    </field>
+  </record>
+</odoo>

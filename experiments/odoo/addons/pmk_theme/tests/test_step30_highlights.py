@@ -183,7 +183,8 @@ class TestHighlightsStep30(TransactionCase):
             with self.subTest(selector=selector):
                 decls = rules[selector]
                 self.assertTrue(decls["background"].startswith("#fff"), decls)
-                self.assertIn("#dad5c8", decls["border"])
+                # Рамка — серым (палитра 25.10.2026: бежевый #dad5c8 → #d5d5d5).
+                self.assertIn("#d5d5d5", decls["border"])
                 self.assertEqual(decls["box-shadow"], "none !important")
                 self.assertIn(selector + ":hover", rules)
         # Кольцо фокуса с клавиатуры не погашено (box-shadow: none выше): у
@@ -219,9 +220,10 @@ class TestHighlightsStep30(TransactionCase):
         self.assertIn("#ddeb94", rules[BOX]["background-color"])
 
     def test_same_lime_as_open_letter(self):
-        """Выбранная строка — тем же лаймом, что открытое письмо в почте."""
+        """Открытая папка почты — серым, как открытое письмо (Антон 25.10.2026:
+        «лаймом слишком пёстро»); в тёмной теме — как выбранная строка списка."""
         rules = _rules(self._backend_css())
-        self.assertEqual(rules[".o_mail_client"]["--mc-active-bg"], rules[ROW]["--table-bg"])
+        self.assertEqual(rules[".o_mail_client"]["--mc-active-bg"], "#ededed")
         dark_row = _rules(_media_blocks(self._backend_css(), "@media screen"))[DARK + ROW]
         self.assertEqual(rules[DARK + ".o_mail_client"]["--mc-active-bg"], dark_row["--table-bg"])
 

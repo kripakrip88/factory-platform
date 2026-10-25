@@ -649,7 +649,8 @@ class TestStepZ2Invoice(Z2Common):
         self.assertIn("action_open_spec", names)
         self.assertIn("action_open_planner_row", names)
         planner = box.xpath(".//button[@name='action_open_planner_row']")[0]
-        self.assertEqual(planner.get("invisible"), "pmk_is_revision", "Наш шаг — виден всегда.")
+        # Шапка «вариант А» (25.10.2026): заказа нет — счётчика нет («Создать ▾ → Заказ»).
+        self.assertEqual(planner.get("invisible"), "pmk_is_revision or not pmk_task_count")
         header = arch.find(".//header")
         confirm = header.xpath("./button[@id='action_confirm']")[0]
         self.assertEqual(confirm.get("string"), "Оплата пришла — в работу")

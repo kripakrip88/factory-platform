@@ -69,6 +69,15 @@ class SaleOrderMs(models.Model):
             order.pmk_ms_url = MS_URL % order.pmk_ms_id if order.pmk_ms_id else False
 
 
+    def _pmk_tech_spec_allowed(self):
+        """Счёт из МойСклада (заведён там, не в Odoo) — технический расчёт и в
+        черновике: так же условие кнопки шапки (views/sale_order_views.xml)."""
+        if super()._pmk_tech_spec_allowed():
+            return True
+        return (not self.pmk_tech_spec_id and not self.pmk_is_revision and self.state != "cancel"
+                and bool(self.pmk_ms_id) and not self.pmk_ms_from_odoo)
+
+
 class SaleOrderLineMs(models.Model):
     _inherit = "sale.order.line"
 

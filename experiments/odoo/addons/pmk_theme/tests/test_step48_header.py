@@ -151,7 +151,9 @@ class TestHeaderStep48(TransactionCase):
         children = [c for c in actions if isinstance(c.tag, str)]
         self.assertIn("o_pmk_cp_header_buttons", _classes(children[0]),
                       "Кнопки шапки — перед счётчиками.")
-        self.assertEqual(children[1].get("t-if"), "!env.isSmall and buttonBoxTemplate")
+        # Шапка «вариант А» (25.10.2026): счётчиков в строке пути нет — их число
+        # во вкладке «Связи · N».
+        self.assertEqual(children[1].get("t-if"), "!env.isSmall and buttonBoxTemplate and !pmkHeadAOn")
         call = children[0].find("t[@t-call]")
         self.assertIn("pmkHeaderButtonsTemplate", call.get("t-call"))
         self.assertIn("state: {}", call.get("t-call-context"),
@@ -211,8 +213,13 @@ class TestHeaderStep48(TransactionCase):
         self.assertEqual(save.get("t-ref"), "save", "Ядро обращается к кнопке через t-ref.")
         self.assertEqual(save.get("t-on-click.stop"), "save")
         self.assertEqual(cancel.get("t-on-click.stop"), "discard")
-        self.assertEqual(save.find("span").text, "Сохранить")
-        self.assertEqual(cancel.find("span").text, "Отменить")
+        # Значками ✓ и ✕ (Антон 25.10.2026: «занимают очень много места»):
+        # подписи — в подсказке и aria-label.
+        self.assertIsNone(save.find("span"))
+        self.assertIsNone(cancel.find("span"))
+        self.assertIn("fa-check", save.find("i").get("class"))
+        self.assertIn("fa-times", cancel.find("i").get("class"))
+        self.assertEqual(save.get("aria-label"), "Сохранить")
         self.assertIsNone(save.get("data-tooltip"))
         self.assertEqual(save.get("t-att-data-tooltip"), "pmkSaveTip")
         # Красный треугольник ошибки — как в ядре.

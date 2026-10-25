@@ -10,7 +10,7 @@
     #
     # Авторство исходного кода сохранено, лицензия прежняя — LGPL-3.
     'name': 'ПМК: схема связей документов',
-    'version': '19.0.2.0.1',
+    'version': '19.0.2.1.0',
     'category': 'Productivity',
     'summary': 'Как связаны письмо, сделка, расчёт, раскрой, лазер, заказ и закупка — одной схемой',
     'description': 'Схема связанных документов завода: от письма и сделки через '
@@ -53,6 +53,8 @@
             'pmk_flow/static/src/flow_map.scss',
             'pmk_flow/static/src/flow_map.js',
             'pmk_flow/static/src/flow_map.xml',
+            # Число связей в заголовке вкладки (шапка «вариант А», 25.10.2026).
+            'pmk_flow/static/src/flow_tab_count.js',
         ],
     },
     'installable': True,

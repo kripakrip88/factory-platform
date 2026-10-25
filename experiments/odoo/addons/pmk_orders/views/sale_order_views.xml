@@ -170,11 +170,20 @@
       <xpath expr="//header/button[@id='create_invoice_percentage']" position="attributes">
         <attribute name="groups">pmk_theme.group_pmk_money</attribute>
       </xpath>
+      <!-- Шапка «вариант А» (Антон 25.10.2026): «Отменить счёт» — в «⚙»
+           (действие data/invoice_cancel_action.xml); кнопка шапки остаётся для
+           узкого экрана, в строке пути её прячет o_pmk_in_cog. Название — не
+           «Отменить»: так же называется отмена несохранённых правок. -->
       <xpath expr="//header/button[@name='action_cancel']" position="attributes">
         <attribute name="invisible">state not in ['draft', 'sent', 'sale'] or not id or locked or pmk_is_revision</attribute>
+        <attribute name="string">Отменить счёт</attribute>
+        <attribute name="class" add="o_pmk_in_cog" separator=" "/>
       </xpath>
+      <!-- Отменённый счёт: следующий шаг — вернуть в черновик (главная кнопка). -->
       <xpath expr="//header/button[@name='action_draft']" position="attributes">
         <attribute name="invisible">state != 'cancel' or pmk_is_revision</attribute>
+        <attribute name="string">Вернуть в черновик</attribute>
+        <attribute name="class" add="btn-primary" separator=" "/>
       </xpath>
       <xpath expr="//header/button[@name='action_unlock']" position="attributes">
         <attribute name="invisible">not locked or pmk_is_revision</attribute>

@@ -17,8 +17,10 @@ export const HEAD_A_CLASS = "o_pmk_head_a";
 
 /**
  * Флаги кнопки шапки по её классам: primary — кандидат в главную кнопку
- * (btn-primary / oe_highlight), more — всегда в «Ещё ▾» (o_pmk_more),
- * keep — всегда в ряду (o_pmk_keep). Виджеты (меню «Создать ▾») — keep.
+ * (btn-primary / oe_highlight); more — уступает другой главной (o_pmk_more);
+ * keep — всегда в ряду (o_pmk_keep; виджеты — меню «Создать ▾»); skip — в
+ * шапке не показывать, есть в меню (o_pmk_in_create — пункт «Создать ▾»,
+ * o_pmk_in_cog — пункт «⚙»; Антон 25.10.2026).
  */
 export function headButtonFlags(classes, isWidget = false) {
     const list = String(classes || "").split(/[\s`'"+]+/);
@@ -27,24 +29,29 @@ export function headButtonFlags(classes, isWidget = false) {
         primary: has("btn-primary") || has("oe_highlight"),
         more: has("o_pmk_more"),
         keep: isWidget || has("o_pmk_keep"),
+        skip: has("o_pmk_in_create") || has("o_pmk_in_cog"),
     };
 }
 
 /**
  * Раскладка видимых кнопок шапки «вариант А»: main — первая главная кнопка,
- * keep — в ряду справа от «Ещё ▾», more — в «Ещё ▾». Главная с o_pmk_more
- * УСТУПАЕТ: становится главной, только если другой главной нет («Технический
- * расчёт» счёта — второстепенный в черновике, главный в работе).
- * slots — [{name, primary, more, keep}] в порядке шапки.
+ * inline — второстепенные в ряду, more — в «Ещё ▾», keep — в ряду после них.
+ * Главная с o_pmk_more УСТУПАЕТ: главная, только если другой нет. «Ещё ▾» —
+ * от двух кнопок: меню ради одной — «глупость настоящая» (Антон 25.10.2026),
+ * одна — обычной кнопкой. skip — не показывается вовсе.
+ * slots — [{name, primary, more, keep, skip}] в порядке шапки.
  */
 export function splitHeadSlots(slots) {
-    const rest = slots.filter((slot) => !slot.keep);
+    const shown = slots.filter((slot) => !slot.skip);
+    const rest = shown.filter((slot) => !slot.keep);
     const main =
         rest.find((slot) => slot.primary && !slot.more) || rest.find((slot) => slot.primary) || null;
+    const others = rest.filter((slot) => slot !== main).map((slot) => slot.name);
     return {
         main: main ? main.name : null,
-        more: rest.filter((slot) => slot !== main).map((slot) => slot.name),
-        keep: slots.filter((slot) => slot.keep).map((slot) => slot.name),
+        inline: others.length === 1 ? others : [],
+        more: others.length > 1 ? others : [],
+        keep: shown.filter((slot) => slot.keep).map((slot) => slot.name),
     };
 }
 

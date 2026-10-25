@@ -461,12 +461,8 @@ $pmk-dark-alerts: (
 
   @each $tone, $t in $pmk-dark-tones {
     body.o_nexus_dark .o_form_view .o_statusbar_status > .btn.o_pmk_stage_toggle[data-pmk-tone="#{$tone}"]:not(.d-none) {
-      background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0) 50%)
-          0 0 / var(--pmk-stage-progress, 0%) 100% no-repeat,
-        linear-gradient(90deg, mix(nth($t, 1), nth($t, 2), 40%), nth($t, 2))
-          0 0 / var(--pmk-stage-progress, 0%) 100% no-repeat,
-        nth($t, 1) !important;
+      // Плоская плашка, как в светлой (25.10.2026): без блика и заливки-прогресса.
+      background: nth($t, 1) !important;
       border-color: nth($t, 2) !important;
     }
 
