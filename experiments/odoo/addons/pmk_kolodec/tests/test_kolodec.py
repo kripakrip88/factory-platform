@@ -86,6 +86,14 @@ class TestParse(TransactionCase):
         self.assertEqual(self._p("зо 3шт"), ("zo", "ЗО"))
         self.assertEqual(self._p("крышка к1"), ("k1", "К1"))
 
+    def test_ladder_by_hp(self):
+        """«Таблица стремянок»: 902 — A = Нр, 901 — A = Нр − 300."""
+        self.assertEqual(self._p("стремянка нр 1800"), ("st902", "С1-04"))
+        self.assertEqual(self._p("стремянка колодец Нр=600"), ("st902", "С1-00"))
+        self.assertEqual(self._p("стремянка нр 1800 901"), ("st901", "С-2"))
+        self.assertEqual(self._p("стремянка Нр 2,7 м 901"), ("st901", "С-5"))
+        self.assertIn("нет", parse.parse("стремянка нр 1750")[2])
+
     def test_rejects(self):
         self.assertIn("НТС", parse.parse("Лестница стремянка h=3,0м НТС 62-91-111А")[2])
         self.assertIn("нет", parse.parse("с1-19")[2])
