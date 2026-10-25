@@ -95,3 +95,4 @@ from . import test_t262_employees
 from . import test_t265_chrome_tabs
 from . import test_t266_wide
 from . import test_login_page
+from . import test_step75_navbar_tabs

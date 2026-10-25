@@ -4,7 +4,7 @@
   <t t-name="pmk_ai.Panel">
     <div class="o_pmk_ai">
       <button type="button" class="o_pmk_ai__btn" t-att-class="{ 'o_pmk_ai__btn--on': state.open }"
-              title="Ассистент" t-on-click="toggle">✦ <span>Ассистент</span></button>
+              title="Ассистент" aria-label="Ассистент" t-on-click="toggle">✦</button>
       <div t-if="state.open" class="o_pmk_ai__pan" role="dialog" aria-label="Ассистент" t-att-style="'top:' + state.top + 'px'">
         <div class="o_pmk_ai__hd">
           <b t-esc="state.threadName or 'Новый диалог'"/>

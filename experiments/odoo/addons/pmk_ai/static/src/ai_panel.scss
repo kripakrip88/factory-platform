@@ -21,17 +21,24 @@ body.o_nexus_dark .o_pmk_ai {
   --ai-acc: #b3c38d;
   --ai-bad: #f3a19e;
 }
+// Кнопка — значок ✦ без надписи (шапка вкладками, шаг 75 pmk_theme, 25.10.2026):
+// белый квадрат в рамке, как прочие значки трея; открытая панель — бледный лайм.
 .o_pmk_ai__btn {
-  border: 1px solid var(--ai-bd);
-  background: var(--ai-lime);
-  color: var(--ai-ink);
-  border-radius: 8px;
-  padding: 2px 10px;
-  font-size: 13px;
-  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
   margin: 0 6px;
-  &:hover, &.o_pmk_ai__btn--on { border-color: var(--ai-mut); }
-  @media (max-width: 767.98px) { span { display: none; } }
+  border: 1px solid var(--ai-bd);
+  border-radius: 8px;
+  background: var(--ai-card);
+  color: var(--ai-ink);
+  font-size: 15px;
+  line-height: 1;
+  &:hover { border-color: var(--ai-mut); }
+  &.o_pmk_ai__btn--on { border-color: var(--ai-mut); background: var(--ai-lime); }
 }
 .o_pmk_ai__pan {
   position: fixed;
