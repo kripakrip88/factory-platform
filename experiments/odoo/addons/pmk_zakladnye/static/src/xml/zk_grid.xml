@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Закладные — таблица Бутика (25.10.2026), js/zk_grid.js. Разметка — по образцу
+     pmk_bolt.BoltGrid: строка — изделие; состав и чертёж выбранной строки — панелью ниже. -->
+<templates xml:space="preserve">
+  <t t-name="pmk_zakladnye.ZkGrid">
+    <div class="o_pmk_butik o_pmk_zk" t-ref="root">
+      <div t-if="!specId" class="o_pmk_butik__start">
+        <button type="button" class="btn btn-primary" t-on-click="() => this.start()">
+          <i class="fa fa-table me-1" aria-hidden="true"/>Начать</button>
+        <span class="o_pmk_butik__muted">документ сохранится, и откроется таблица изделий</span>
+      </div>
+      <p t-elif="state.loading or !state.data" class="o_pmk_butik__muted">Загружаю…</p>
+      <t t-else="">
+        <div class="o_pmk_butik__bar">
+          <button type="button" class="btn btn-secondary btn-sm" t-att-disabled="state.busy" t-on-click="() => this.addRow()"
+                  title="Строка ниже выбранной">
+            <i class="fa fa-plus me-1" aria-hidden="true"/>Строка</button>
+          <button type="button" class="btn btn-secondary btn-sm" t-att-disabled="state.busy" t-on-click="() => this.duplicate()">
+            <i class="fa fa-clone me-1" aria-hidden="true"/>Копия строки</button>
+          <button type="button" class="btn btn-link btn-sm text-muted" t-att-disabled="state.busy" t-on-click="() => this.remove()">
+            <i class="fa fa-trash-o me-1" aria-hidden="true"/>Удалить строку</button>
+          <span class="o_pmk_butik__saved" t-att-class="{ 'o_pmk_butik__saved--busy': state.busy }">
+            <t t-if="state.busy">Сохраняю…</t>
+            <t t-elif="state.savedAt"><i class="fa fa-check me-1" aria-hidden="true"/>Сохранено в <t t-esc="state.savedAt"/></t>
+            <t t-else=""><i class="fa fa-check me-1" aria-hidden="true"/>Каждая ячейка сохраняется сама</t>
+          </span>
+          <span class="o_pmk_butik__hint">Enter, ↑↓ ←→, Tab · Ctrl+D — значение сверху · Ctrl+V — столбик марок из Excel</span>
+        </div>
+        <div class="o_pmk_butik__wrap">
+          <table class="o_pmk_butik__table">
+            <colgroup>
+              <col style="width:22px"/><col style="width:40px"/><col/>
+              <col style="width:92px"/><col style="width:80px"/><col style="width:72px"/>
+              <col style="width:130px"/><col style="width:170px"/><col style="width:86px"/><col style="width:86px"/>
+              <col style="width:104px"/><col style="width:52px"/>
+            </colgroup>
+            <thead><tr>
+              <th class="o_pmk_butik__th-grip"/><th class="o_pmk_butik__th-pos">№</th>
+              <th title="Марка коротко: мн 201-5 12шт · мн 104-1 1200 10шт · м1-9-7 4шт">Марка</th>
+              <th>Серия</th>
+              <th class="n" title="Только у погонных (МН 104, 127–132)">Длина</th>
+              <th class="n">Кол-во</th>
+              <th title="A × B × t, мм; «2 ×» — МН 201–228 (вторая пластина с отверстиями)">Пластина</th>
+              <th>Анкеры</th>
+              <th class="n">Масса 1, кг</th>
+              <th class="n">Всего, кг</th>
+              <th>Чертёж</th>
+            <th/></tr></thead>
+            <tbody>
+              <t t-foreach="rows" t-as="row" t-key="row.id">
+                <tr class="o_pmk_butik__product" t-att-class="{ 'o_pmk_butik__detail--bad': row.bad, 'o_pmk_zk__sel': panelRow and panelRow.id === row.id }"
+                    t-att-draggable="state.data.can_write ? 'true' : 'false'" t-att-data-over="state.over === row.id ? '1' : ''"
+                    t-on-dragstart="(ev) => this.onRowDragStart(row, ev)" t-on-dragend="(ev) => this.onRowDragEnd(ev)"
+                    t-on-dragover="(ev) => this.onRowDragOver(row, ev)" t-on-drop="(ev) => this.onRowDrop(row, ev)">
+                  <td class="o_pmk_butik__grip" title="Перетащить строку" t-on-mousedown="() => this.armDrag()">⠿</td>
+                  <td class="n o_pmk_butik__num"><t t-esc="row.number"/></td>
+                  <td t-att-class="{ sel: isSel(row_index, 'name'), 'o_pmk_butik__namecell': true }">
+                    <textarea rows="1" class="o_pmk_butik__in o_pmk_butik__in--product o_pmk_butik__ta" t-att-value="val(row, 'name')"
+                           t-att-data-index="row_index" t-att-data-key="row.id" data-col="name" t-att-readonly="!state.data.can_write"
+                           placeholder="мн 201-5 12шт"
+                           t-on-focus="() => this.onFocus(row_index, 'name')"
+                           t-on-input="(ev) => this.onInput(row, row_index, 'name', ev)"
+                           t-on-change="(ev) => this.commit(row, 'name', ev)"
+                           t-on-keydown="(ev) => this.onKeydown(row_index, 'name', ev)"
+                           t-on-paste="(ev) => this.onPaste(row_index, ev)"/>
+                    <div t-if="row.label" class="o_pmk_butik__rec" t-att-class="{ 'o_pmk_butik__rec--bad': row.bad }"
+                         t-att-title="row.label" t-esc="row.label"/>
+                    <div t-if="row.warning" class="o_pmk_butik__rec o_pmk_zk__warning" t-att-title="row.warning" t-esc="row.warning"/>
+                  </td>
+                  <td class="o_pmk_butik__ro o_pmk_butik__nowrap" t-esc="row.series"/>
+                  <td t-if="row.pogon" t-att-class="{ sel: isSel(row_index, 'length') }">
+                    <input class="o_pmk_butik__in n" t-att-value="val(row, 'length')" inputmode="numeric"
+                           t-att-data-index="row_index" t-att-data-key="row.id" data-col="length" t-att-readonly="!state.data.can_write"
+                           t-on-focus="() => this.onFocus(row_index, 'length')"
+                           t-on-input="(ev) => this.onInput(row, row_index, 'length', ev)"
+                           t-on-change="(ev) => this.commit(row, 'length', ev)"
+                           t-on-keydown="(ev) => this.onKeydown(row_index, 'length', ev)"/>
+                  </td>
+                  <td t-else="" class="n o_pmk_butik__ro o_pmk_butik__muted-cell">—</td>
+                  <td t-att-class="{ sel: isSel(row_index, 'product_qty') }">
+                    <input class="o_pmk_butik__in n" t-att-value="val(row, 'product_qty')" inputmode="numeric"
+                           t-att-data-index="row_index" t-att-data-key="row.id" data-col="product_qty" t-att-readonly="!state.data.can_write"
+                           t-on-focus="() => this.onFocus(row_index, 'product_qty')"
+                           t-on-input="(ev) => this.onInput(row, row_index, 'product_qty', ev)"
+                           t-on-change="(ev) => this.commit(row, 'product_qty', ev)"
+                           t-on-keydown="(ev) => this.onKeydown(row_index, 'product_qty', ev)"/>
+                  </td>
+                  <td class="o_pmk_butik__ro o_pmk_butik__nowrap" t-att-title="row.plate" t-esc="row.plate"/>
+                  <td class="o_pmk_butik__ro o_pmk_zk__clip" t-att-title="row.anchors" t-esc="row.anchors"/>
+                  <td class="n o_pmk_butik__ro" t-esc="kg(row.mass)"/>
+                  <td class="n o_pmk_butik__ro o_pmk_butik__pw" t-esc="kg(row.mass_total)"/>
+                  <td class="o_pmk_butik__ro o_pmk_butik__nowrap">
+                    <span t-if="row.draw_label" t-att-class="'o_pmk_zk__draw o_pmk_zk__draw--' + row.draw"
+                          t-att-title="row.draw_error or ''">
+                      <i t-att-class="'fa me-1 ' + drawIcon(row)" aria-hidden="true"/><t t-esc="row.draw_label"/></span>
+                  </td>
+                  <td class="o_pmk_butik__acts">
+                    <button type="button" class="btn btn-link btn-sm" title="Копировать — копия встанет ниже" aria-label="Копировать"
+                            t-att-disabled="state.busy or !state.data.can_write" t-on-click="() => this.copyRow(row)"><i class="fa fa-clone"/></button>
+                    <button type="button" class="btn btn-link btn-sm o_pmk_butik__del" title="Удалить строку" aria-label="Удалить"
+                            t-att-disabled="state.busy or !state.data.can_write" t-on-click="() => this.deleteRow(row)"><i class="fa fa-trash-o"/></button>
+                  </td>
+                </tr>
+              </t>
+            </tbody>
+          </table>
+        </div>
+        <div class="o_pmk_butik__total">
+          Изделий: <b><t t-esc="state.data.count or 0"/> шт</b> (<t t-esc="state.data.products or 0"/> марок)
+          · Масса: <b><t t-esc="kg(state.data.weight_kg) or '0'"/> кг</b>
+          <span class="o_pmk_butik__muted ms-2">Марки нет в серии — строка жёлтым, с причиной.</span>
+        </div>
+        <t t-set="p" t-value="panelRow"/>
+        <div t-if="p" class="o_pmk_zk__panel">
+          <div class="o_pmk_zk__card">
+            <div class="o_pmk_zk__title"><t t-esc="p.full_mark"/> — состав на 1 шт</div>
+            <table class="o_pmk_zk__comp">
+              <thead><tr><th class="n">Поз.</th><th>Наименование</th><th class="n">Кол.</th><th class="n">Масса ед., кг</th><th>Материал</th></tr></thead>
+              <tbody>
+                <tr t-foreach="p.comp" t-as="c" t-key="c.pos">
+                  <td class="n" t-esc="c.pos"/><td t-esc="c.name"/><td class="n" t-esc="c.qty"/>
+                  <td class="n" t-esc="kg(c.mass)"/><td class="o_pmk_butik__muted" t-esc="c.material"/>
+                </tr>
+              </tbody>
+            </table>
+            <div class="o_pmk_zk__note">
+              Шов: <t t-esc="p.weld"/>.
+              Масса <b><t t-esc="kg(p.mass)"/> кг</b> с наплавленным металлом 1 %<t t-if="p.site_mass"> · по серии <t t-esc="kg(p.site_mass)"/> кг</t>.
+            </div>
+          </div>
+          <div class="o_pmk_zk__card o_pmk_zk__drawing">
+            <div class="o_pmk_zk__title">Чертёж, лист 1 из 2</div>
+            <a t-if="p.png_url" t-att-href="p.pdf_url" target="_blank" class="o_pmk_zk__sheet" title="Открыть PDF">
+              <img t-att-src="p.png_url" alt="Чертёж, лист 1"/></a>
+            <div t-else="" class="o_pmk_zk__sheet o_pmk_zk__sheet--empty">
+              <t t-if="p.draw === 'queued'">Чертёж рисуется — придёт уведомление</t>
+              <t t-elif="p.draw === 'error'">Чертёж не построен: <t t-esc="p.draw_error"/></t>
+              <t t-else="">Чертежа ещё нет — «Подготовить чертежи» в шапке</t>
+            </div>
+            <div class="o_pmk_zk__links">
+              <a t-if="p.pdf_url" class="btn btn-secondary btn-sm" t-att-href="p.pdf_url" target="_blank">
+                <i class="fa fa-file-pdf-o me-1"/>Открыть PDF</a>
+              <a t-if="p.dxf_url" class="btn btn-secondary btn-sm" t-att-href="p.dxf_url">
+                <i class="fa fa-file-archive-o me-1"/>DXF пластин и шайб</a>
+            </div>
+          </div>
+        </div>
+      </t>
+    </div>
+  </t>
+</templates>

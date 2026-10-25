@@ -1,0 +1,298 @@
+{
+ "page": 72,
+ "sheet": 46,
+ "title": "Детали М1-7-1, М1-7-6, М1-10-1",
+ "notes_on_sheet": [
+  "Указания к деталям группы «1» см. на листе 39"
+ ],
+ "items": [
+  {
+   "mark": "М1-7-1",
+   "family": "plate_straight",
+   "plate": {
+    "pos": "114",
+    "A": 290,
+    "B": 300,
+    "t": 10,
+    "qty": 1
+   },
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "294",
+     "d": 14,
+     "cls": "A-III",
+     "L": 480,
+     "qty": 6,
+     "kind": "straight",
+     "points": [
+      [
+       80,
+       40
+      ],
+      [
+       210,
+       40
+      ],
+      [
+       80,
+       150
+      ],
+      [
+       210,
+       150
+      ],
+      [
+       80,
+       260
+      ],
+      [
+       210,
+       260
+      ]
+     ],
+     "washer_pos": null,
+     "thread": null,
+     "bend": null
+    }
+   ],
+   "washers": [],
+   "other": [],
+   "tech_holes": [
+    {
+     "size": "10x10",
+     "points": [
+      [
+       145,
+       40
+      ],
+      [
+       145,
+       260
+      ]
+     ]
+    }
+   ],
+   "risk_top_x": 145,
+   "spec": [
+    {
+     "pos": "114",
+     "section": "-290×10",
+     "length": 300,
+     "qty": 1,
+     "m1": 6.8,
+     "mall": 6.8
+    },
+    {
+     "pos": "294",
+     "section": "Ø14 A-III",
+     "length": 480,
+     "qty": 6,
+     "m1": 0.58,
+     "mall": 3.5
+    }
+   ],
+   "mass_total": 10.3,
+   "checks": {
+    "spec_sum": 10.3,
+    "spec_sum_eq_total": true,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": [
+    "риска (верх) на оси x=145 (цепочка 80|65|65|80)"
+   ]
+  },
+  {
+   "mark": "М1-7-6",
+   "family": "plate_straight",
+   "plate": {
+    "pos": "114",
+    "A": 290,
+    "B": 300,
+    "t": 10,
+    "qty": 1
+   },
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "294",
+     "d": 14,
+     "cls": "A-III",
+     "L": 480,
+     "qty": 6,
+     "kind": "straight",
+     "points": [
+      [
+       55,
+       40
+      ],
+      [
+       145,
+       40
+      ],
+      [
+       235,
+       40
+      ],
+      [
+       55,
+       260
+      ],
+      [
+       145,
+       260
+      ],
+      [
+       235,
+       260
+      ]
+     ],
+     "washer_pos": null,
+     "thread": null,
+     "bend": null
+    }
+   ],
+   "washers": [],
+   "other": [],
+   "tech_holes": [
+    {
+     "size": "10x10",
+     "points": [
+      [
+       55,
+       150
+      ],
+      [
+       235,
+       150
+      ]
+     ]
+    }
+   ],
+   "risk_top_x": 145,
+   "spec": [
+    {
+     "pos": "114",
+     "section": "-290×10",
+     "length": 300,
+     "qty": 1,
+     "m1": 6.8,
+     "mall": 6.8
+    },
+    {
+     "pos": "294",
+     "section": "Ø14 A-III",
+     "length": 480,
+     "qty": 6,
+     "m1": 0.58,
+     "mall": 3.5
+    }
+   ],
+   "mass_total": 10.3,
+   "checks": {
+    "spec_sum": 10.3,
+    "spec_sum_eq_total": true,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": [
+    "отв. 10×10 без собственной привязки по x — на осях анкеров (x=55/235)"
+   ]
+  },
+  {
+   "mark": "М1-10-1",
+   "family": "plate_straight",
+   "plate": {
+    "pos": "117",
+    "A": 290,
+    "B": 250,
+    "t": 10,
+    "qty": 1
+   },
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "268",
+     "d": 12,
+     "cls": "A-III",
+     "L": 420,
+     "qty": 6,
+     "kind": "straight",
+     "points": [
+      [
+       55,
+       40
+      ],
+      [
+       145,
+       40
+      ],
+      [
+       235,
+       40
+      ],
+      [
+       55,
+       210
+      ],
+      [
+       145,
+       210
+      ],
+      [
+       235,
+       210
+      ]
+     ],
+     "washer_pos": null,
+     "thread": null,
+     "bend": null
+    }
+   ],
+   "washers": [],
+   "other": [],
+   "tech_holes": [
+    {
+     "size": "10x10",
+     "points": [
+      [
+       55,
+       125
+      ],
+      [
+       235,
+       125
+      ]
+     ]
+    }
+   ],
+   "risk_top_x": 145,
+   "spec": [
+    {
+     "pos": "117",
+     "section": "-250×10",
+     "length": 290,
+     "qty": 1,
+     "m1": 5.7,
+     "mall": 5.7
+    },
+    {
+     "pos": "268",
+     "section": "Ø12 A-III",
+     "length": 420,
+     "qty": 6,
+     "m1": 0.37,
+     "mall": 2.2
+    }
+   ],
+   "mass_total": 7.9,
+   "checks": {
+    "spec_sum": 7.9,
+    "spec_sum_eq_total": true,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": [
+    "отв. 10×10 без собственной привязки по x — на осях анкеров (x=55/235)"
+   ]
+  }
+ ]
+}

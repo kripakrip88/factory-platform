@@ -1,0 +1,696 @@
+{
+ "page": 103,
+ "sheet": 77,
+ "title": "Детали М3-9, М3-10, М3-20, М3-22, М3-22-1, М3-23, М3-23-1",
+ "notes_on_sheet": [
+  "Указания к деталям группы \"3\" смотрите на листе 75."
+ ],
+ "items": [
+  {
+   "mark": "М3-9",
+   "family": "plate_straight",
+   "plate": {
+    "pos": "57а",
+    "A": 250,
+    "B": 190,
+    "t": 8,
+    "qty": 1
+   },
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "248",
+     "d": 10,
+     "cls": "A-III",
+     "L": 530,
+     "qty": 6,
+     "kind": "straight",
+     "points": [
+      [
+       35,
+       25
+      ],
+      [
+       125,
+       25
+      ],
+      [
+       215,
+       25
+      ],
+      [
+       35,
+       165
+      ],
+      [
+       125,
+       165
+      ],
+      [
+       215,
+       165
+      ]
+     ],
+     "washer_pos": null,
+     "thread": null,
+     "bend": null
+    }
+   ],
+   "washers": [],
+   "other": [],
+   "tech_holes": [
+    {
+     "size": "10x10",
+     "points": [
+      [
+       65,
+       95
+      ],
+      [
+       185,
+       95
+      ]
+     ]
+    }
+   ],
+   "risk_top_x": null,
+   "spec": [
+    {
+     "pos": "57а",
+     "section": "-190×8",
+     "length": 250,
+     "qty": 1,
+     "m1": 3.0,
+     "mall": 3.0
+    },
+    {
+     "pos": "248",
+     "section": "Ø10 A-III",
+     "length": 530,
+     "qty": 6,
+     "m1": 0.33,
+     "mall": 2.0
+    }
+   ],
+   "mass_total": 5.0,
+   "checks": {
+    "spec_sum": 5.0,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": [
+    "цепочки: горизонт. 35-90-90-35 «для М3-9, М3-23, М3-23-1», вертик. «для М3-9» 25-70-70-25; отв. 10×10 — 60 и 60 от средней оси",
+    "рисок на виде нет — risk_top_x=null"
+   ]
+  },
+  {
+   "mark": "М3-22",
+   "family": "plate_straight",
+   "plate": {
+    "pos": "119",
+    "A": 230,
+    "B": 270,
+    "t": 10,
+    "qty": 1
+   },
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "296",
+     "d": 14,
+     "cls": "A-III",
+     "L": 850,
+     "qty": 6,
+     "kind": "straight",
+     "points": [
+      [
+       35,
+       35
+      ],
+      [
+       115,
+       35
+      ],
+      [
+       195,
+       35
+      ],
+      [
+       35,
+       235
+      ],
+      [
+       115,
+       235
+      ],
+      [
+       195,
+       235
+      ]
+     ],
+     "washer_pos": null,
+     "thread": null,
+     "bend": null
+    }
+   ],
+   "washers": [],
+   "other": [],
+   "tech_holes": [
+    {
+     "size": "10x10",
+     "points": [
+      [
+       55,
+       135
+      ],
+      [
+       175,
+       135
+      ]
+     ]
+    }
+   ],
+   "risk_top_x": null,
+   "spec": [
+    {
+     "pos": "119",
+     "section": "-230×10",
+     "length": 270,
+     "qty": 1,
+     "m1": 4.9,
+     "mall": 4.9
+    },
+    {
+     "pos": "296",
+     "section": "Ø14 A-III",
+     "length": 850,
+     "qty": 6,
+     "m1": 1.03,
+     "mall": 6.2
+    }
+   ],
+   "mass_total": 11.1,
+   "checks": {
+    "spec_sum": 11.1,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": [
+    "цепочки: горизонт. 35-80-80-35 «для М3-22, М3-22-1», вертик. 35-100-100-35",
+    "рисок на виде нет — risk_top_x=null"
+   ]
+  },
+  {
+   "mark": "М3-22-1",
+   "family": "plate_bent",
+   "plate": {
+    "pos": "119",
+    "A": 230,
+    "B": 270,
+    "t": 10,
+    "qty": 1
+   },
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "348",
+     "d": 14,
+     "cls": "A-III",
+     "L": 850,
+     "qty": 6,
+     "kind": "bent",
+     "points": [
+      [
+       35,
+       35
+      ],
+      [
+       115,
+       35
+      ],
+      [
+       195,
+       35
+      ],
+      [
+       35,
+       235
+      ],
+      [
+       115,
+       235
+      ],
+      [
+       195,
+       235
+      ]
+     ],
+     "washer_pos": null,
+     "thread": null,
+     "bend": {
+      "straight": 150,
+      "overall": 850,
+      "offset": 35,
+      "note": "разрез 1-1 «только для М3-22-1»: прямой участок 150 от пластины (размер 10 — толщина), далее наклон; общий вертикальный размер 850 (по листу от верха пластины до конца стержня — включает ли толщину 10, по чертежу однозначно не видно; в спецификации L=850), конец смещён по горизонтали на 35"
+     }
+    }
+   ],
+   "washers": [],
+   "other": [],
+   "tech_holes": [
+    {
+     "size": "10x10",
+     "points": [
+      [
+       55,
+       135
+      ],
+      [
+       175,
+       135
+      ]
+     ]
+    }
+   ],
+   "risk_top_x": null,
+   "spec": [
+    {
+     "pos": "119",
+     "section": "-230×10",
+     "length": 270,
+     "qty": 1,
+     "m1": 4.9,
+     "mall": 4.9
+    },
+    {
+     "pos": "348",
+     "section": "Ø14 A-III",
+     "length": 850,
+     "qty": 6,
+     "m1": 1.03,
+     "mall": 6.2
+    }
+   ],
+   "mass_total": 11.1,
+   "checks": {
+    "spec_sum": 11.1,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": [
+    "цепочки: горизонт. 35-80-80-35 «для М3-22, М3-22-1», вертик. 35-100-100-35",
+    "рисок на виде нет — risk_top_x=null",
+    "сайт: гнутость анкеров не отражена"
+   ]
+  },
+  {
+   "mark": "М3-23",
+   "family": "plate_straight",
+   "plate": {
+    "pos": "50",
+    "A": 250,
+    "B": 210,
+    "t": 8,
+    "qty": 1
+   },
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "249",
+     "d": 10,
+     "cls": "A-III",
+     "L": 830,
+     "qty": 6,
+     "kind": "straight",
+     "points": [
+      [
+       35,
+       70
+      ],
+      [
+       125,
+       70
+      ],
+      [
+       215,
+       70
+      ],
+      [
+       35,
+       140
+      ],
+      [
+       125,
+       140
+      ],
+      [
+       215,
+       140
+      ]
+     ],
+     "washer_pos": null,
+     "thread": null,
+     "bend": null
+    }
+   ],
+   "washers": [],
+   "other": [],
+   "tech_holes": [
+    {
+     "size": "10x10",
+     "points": [
+      [
+       65,
+       105
+      ],
+      [
+       185,
+       105
+      ]
+     ]
+    }
+   ],
+   "risk_top_x": null,
+   "spec": [
+    {
+     "pos": "50",
+     "section": "-210×8",
+     "length": 250,
+     "qty": 1,
+     "m1": 3.3,
+     "mall": 3.3
+    },
+    {
+     "pos": "249",
+     "section": "Ø10 A-III",
+     "length": 830,
+     "qty": 6,
+     "m1": 0.51,
+     "mall": 3.1
+    }
+   ],
+   "mass_total": 6.4,
+   "checks": {
+    "spec_sum": 6.4,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": [
+    "в спецификации М3-23 и М3-23-1 одной строкой; различие — вертик. цепочка «для М3-23» 70-35-35-70",
+    "рисок на виде нет — risk_top_x=null"
+   ]
+  },
+  {
+   "mark": "М3-23-1",
+   "family": "plate_straight",
+   "plate": {
+    "pos": "50",
+    "A": 250,
+    "B": 210,
+    "t": 8,
+    "qty": 1
+   },
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "249",
+     "d": 10,
+     "cls": "A-III",
+     "L": 830,
+     "qty": 6,
+     "kind": "straight",
+     "points": [
+      [
+       35,
+       35
+      ],
+      [
+       125,
+       35
+      ],
+      [
+       215,
+       35
+      ],
+      [
+       35,
+       175
+      ],
+      [
+       125,
+       175
+      ],
+      [
+       215,
+       175
+      ]
+     ],
+     "washer_pos": null,
+     "thread": null,
+     "bend": null
+    }
+   ],
+   "washers": [],
+   "other": [],
+   "tech_holes": [
+    {
+     "size": "10x10",
+     "points": [
+      [
+       65,
+       105
+      ],
+      [
+       185,
+       105
+      ]
+     ]
+    }
+   ],
+   "risk_top_x": null,
+   "spec": [
+    {
+     "pos": "50",
+     "section": "-210×8",
+     "length": 250,
+     "qty": 1,
+     "m1": 3.3,
+     "mall": 3.3
+    },
+    {
+     "pos": "249",
+     "section": "Ø10 A-III",
+     "length": 830,
+     "qty": 6,
+     "m1": 0.51,
+     "mall": 3.1
+    }
+   ],
+   "mass_total": 6.4,
+   "checks": {
+    "spec_sum": 6.4,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": [
+    "в спецификации М3-23 и М3-23-1 одной строкой; различие — вертик. цепочка «для М3-23-1» 35-70-70-35",
+    "рисок на виде нет — risk_top_x=null"
+   ]
+  },
+  {
+   "mark": "М3-10",
+   "family": "plate_straight",
+   "plate": {
+    "pos": "129",
+    "A": 210,
+    "B": 200,
+    "t": 10,
+    "qty": 1
+   },
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "266",
+     "d": 12,
+     "cls": "A-III",
+     "L": 360,
+     "qty": 8,
+     "kind": "straight",
+     "points": [
+      [
+       20,
+       50
+      ],
+      [
+       80,
+       50
+      ],
+      [
+       130,
+       50
+      ],
+      [
+       190,
+       50
+      ],
+      [
+       20,
+       150
+      ],
+      [
+       80,
+       150
+      ],
+      [
+       130,
+       150
+      ],
+      [
+       190,
+       150
+      ]
+     ],
+     "washer_pos": null,
+     "thread": null,
+     "bend": null
+    }
+   ],
+   "washers": [],
+   "other": [],
+   "tech_holes": [
+    {
+     "size": "10x10",
+     "points": [
+      [
+       105,
+       100
+      ]
+     ]
+    }
+   ],
+   "risk_top_x": null,
+   "spec": [
+    {
+     "pos": "129",
+     "section": "-200×10",
+     "length": 210,
+     "qty": 1,
+     "m1": 3.3,
+     "mall": 3.3
+    },
+    {
+     "pos": "266",
+     "section": "Ø12 A-III",
+     "length": 360,
+     "qty": 8,
+     "m1": 0.32,
+     "mall": 2.6
+    }
+   ],
+   "mass_total": 5.9,
+   "checks": {
+    "spec_sum": 5.9,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": [
+    "вид «М3-10, М3-20»: горизонт. «для М3-10» 20-60-25-25-60-20 (210), вертик. 50-50-50-50 (200); одно отв. 10×10 в центре",
+    "рисок на виде нет — risk_top_x=null"
+   ]
+  },
+  {
+   "mark": "М3-20",
+   "family": "plate_straight",
+   "plate": {
+    "pos": "59",
+    "A": 190,
+    "B": 200,
+    "t": 8,
+    "qty": 1
+   },
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "266",
+     "d": 12,
+     "cls": "A-III",
+     "L": 360,
+     "qty": 8,
+     "kind": "straight",
+     "points": [
+      [
+       20,
+       50
+      ],
+      [
+       70,
+       50
+      ],
+      [
+       120,
+       50
+      ],
+      [
+       170,
+       50
+      ],
+      [
+       20,
+       150
+      ],
+      [
+       70,
+       150
+      ],
+      [
+       120,
+       150
+      ],
+      [
+       170,
+       150
+      ]
+     ],
+     "washer_pos": null,
+     "thread": null,
+     "bend": null
+    }
+   ],
+   "washers": [],
+   "other": [],
+   "tech_holes": [
+    {
+     "size": "10x10",
+     "points": [
+      [
+       95,
+       100
+      ]
+     ]
+    }
+   ],
+   "risk_top_x": null,
+   "spec": [
+    {
+     "pos": "59",
+     "section": "-190×8",
+     "length": 200,
+     "qty": 1,
+     "m1": 2.4,
+     "mall": 2.4
+    },
+    {
+     "pos": "266",
+     "section": "Ø12 A-III",
+     "length": 360,
+     "qty": 8,
+     "m1": 0.32,
+     "mall": 2.6
+    }
+   ],
+   "mass_total": 5.0,
+   "checks": {
+    "spec_sum": 5.0,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": [
+    "вид «М3-10, М3-20»: горизонт. «для М3-20» 20-50-25-25-50-20 (190), вертик. 50-50-50-50 (200); одно отв. 10×10 в центре",
+    "рисок на виде нет — risk_top_x=null"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,530 @@
+{
+ "page": 80,
+ "sheet": 54,
+ "title": "Детали М1-12, М1-12-1, М1-12-2, М1-13 ÷ М1-16",
+ "notes_on_sheet": [
+  "Указания к деталям группы «1» см. на листе 39"
+ ],
+ "items": [
+  {
+   "mark": "М1-12",
+   "family": "plate_straight",
+   "plate": {
+    "pos": "125",
+    "A": 290,
+    "B": 200,
+    "t": 10,
+    "qty": 1
+   },
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "262",
+     "d": 12,
+     "cls": "A-III",
+     "L": 270,
+     "qty": 6,
+     "kind": "straight",
+     "points": [
+      [
+       70,
+       50
+      ],
+      [
+       145,
+       50
+      ],
+      [
+       220,
+       50
+      ],
+      [
+       70,
+       150
+      ],
+      [
+       145,
+       150
+      ],
+      [
+       220,
+       150
+      ]
+     ],
+     "washer_pos": null,
+     "thread": null,
+     "bend": null
+    }
+   ],
+   "washers": [],
+   "other": [],
+   "tech_holes": [
+    {
+     "size": "10x10",
+     "points": [
+      [
+       145,
+       100
+      ]
+     ]
+    }
+   ],
+   "risk_top_x": 145,
+   "spec": [
+    {
+     "pos": "125",
+     "section": "-200×10",
+     "length": 290,
+     "qty": 1,
+     "m1": 4.6,
+     "mall": 4.6
+    },
+    {
+     "pos": "262",
+     "section": "Ø12 A-III",
+     "length": 270,
+     "qty": 6,
+     "m1": 0.24,
+     "mall": 1.4
+    }
+   ],
+   "mass_total": 6.0,
+   "checks": {
+    "spec_sum": 6.0,
+    "spec_sum_eq_total": true,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": [
+    "одно отв. 10×10 в центре пластины (145,100)"
+   ]
+  },
+  {
+   "mark": "М1-12-1",
+   "family": "plate_straight",
+   "plate": {
+    "pos": "125",
+    "A": 290,
+    "B": 200,
+    "t": 10,
+    "qty": 1
+   },
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "262",
+     "d": 12,
+     "cls": "A-III",
+     "L": 270,
+     "qty": 6,
+     "kind": "straight",
+     "points": [
+      [
+       20,
+       50
+      ],
+      [
+       145,
+       50
+      ],
+      [
+       270,
+       50
+      ],
+      [
+       20,
+       150
+      ],
+      [
+       145,
+       150
+      ],
+      [
+       270,
+       150
+      ]
+     ],
+     "washer_pos": null,
+     "thread": null,
+     "bend": null
+    }
+   ],
+   "washers": [],
+   "other": [],
+   "tech_holes": [
+    {
+     "size": "10x10",
+     "points": [
+      [
+       145,
+       100
+      ]
+     ]
+    }
+   ],
+   "risk_top_x": 145,
+   "spec": [
+    {
+     "pos": "125",
+     "section": "-200×10",
+     "length": 290,
+     "qty": 1,
+     "m1": 4.6,
+     "mall": 4.6
+    },
+    {
+     "pos": "262",
+     "section": "Ø12 A-III",
+     "length": 270,
+     "qty": 6,
+     "m1": 0.24,
+     "mall": 1.4
+    }
+   ],
+   "mass_total": 6.0,
+   "checks": {
+    "spec_sum": 6.0,
+    "spec_sum_eq_total": true,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": [
+    "одно отв. 10×10 в центре пластины (145,100)"
+   ]
+  },
+  {
+   "mark": "М1-12-2",
+   "family": "plate_straight",
+   "plate": {
+    "pos": "125",
+    "A": 290,
+    "B": 200,
+    "t": 10,
+    "qty": 1
+   },
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "262",
+     "d": 12,
+     "cls": "A-III",
+     "L": 270,
+     "qty": 6,
+     "kind": "straight",
+     "points": [
+      [
+       30,
+       50
+      ],
+      [
+       145,
+       50
+      ],
+      [
+       260,
+       50
+      ],
+      [
+       30,
+       150
+      ],
+      [
+       145,
+       150
+      ],
+      [
+       260,
+       150
+      ]
+     ],
+     "washer_pos": null,
+     "thread": null,
+     "bend": null
+    }
+   ],
+   "washers": [],
+   "other": [],
+   "tech_holes": [
+    {
+     "size": "10x10",
+     "points": [
+      [
+       145,
+       100
+      ]
+     ]
+    }
+   ],
+   "risk_top_x": 145,
+   "spec": [
+    {
+     "pos": "125",
+     "section": "-200×10",
+     "length": 290,
+     "qty": 1,
+     "m1": 4.6,
+     "mall": 4.6
+    },
+    {
+     "pos": "262",
+     "section": "Ø12 A-III",
+     "length": 270,
+     "qty": 6,
+     "m1": 0.24,
+     "mall": 1.4
+    }
+   ],
+   "mass_total": 6.0,
+   "checks": {
+    "spec_sum": 6.0,
+    "spec_sum_eq_total": true,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": [
+    "одно отв. 10×10 в центре пластины (145,100)"
+   ]
+  },
+  {
+   "mark": "М1-13",
+   "family": "angle",
+   "plate": null,
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "262",
+     "d": 12,
+     "cls": "A-III",
+     "L": 270,
+     "qty": 1,
+     "kind": "straight",
+     "points": null,
+     "washer_pos": null,
+     "thread": null,
+     "bend": null,
+     "note": "стержень-распорка между двумя уголками поз. 357: лежит на полках уголков и приваривается к ним; торец в 15 мм от наружной грани уголка; по длине уголка — посередине (75|75)"
+    }
+   ],
+   "washers": [],
+   "other": [
+    {
+     "pos": "357",
+     "name": "уголок",
+     "section": "L63×5",
+     "length": 150,
+     "qty": 2,
+     "note": "уголки вертикальными полками наружу; габарит по наружным граням 300 (+0/−2)"
+    }
+   ],
+   "tech_holes": [],
+   "risk_top_x": null,
+   "spec": [
+    {
+     "pos": "357",
+     "section": "L63×5",
+     "length": 150,
+     "qty": 2,
+     "m1": 0.73,
+     "mall": 1.5
+    },
+    {
+     "pos": "262",
+     "section": "Ø12 A-III",
+     "length": 270,
+     "qty": 1,
+     "m1": 0.24,
+     "mall": 0.2
+    }
+   ],
+   "mass_total": 1.7,
+   "checks": {
+    "spec_sum": 1.7,
+    "spec_sum_eq_total": true,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": [
+    "пластины нет: изделие из двух уголков и стержня; plate=null"
+   ]
+  },
+  {
+   "mark": "М1-14",
+   "family": "angle",
+   "plate": null,
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "267",
+     "d": 12,
+     "cls": "A-III",
+     "L": 370,
+     "qty": 1,
+     "kind": "straight",
+     "points": null,
+     "washer_pos": null,
+     "thread": null,
+     "bend": null,
+     "note": "стержень-распорка между двумя уголками поз. 357: лежит на полках уголков и приваривается к ним; торец в 15 мм от наружной грани уголка; по длине уголка — посередине (75|75)"
+    }
+   ],
+   "washers": [],
+   "other": [
+    {
+     "pos": "357",
+     "name": "уголок",
+     "section": "L63×5",
+     "length": 150,
+     "qty": 2,
+     "note": "уголки вертикальными полками наружу; габарит по наружным граням 400 (+0/−2)"
+    }
+   ],
+   "tech_holes": [],
+   "risk_top_x": null,
+   "spec": [
+    {
+     "pos": "357",
+     "section": "L63×5",
+     "length": 150,
+     "qty": 2,
+     "m1": 0.73,
+     "mall": 1.5
+    },
+    {
+     "pos": "267",
+     "section": "Ø12 A-III",
+     "length": 370,
+     "qty": 1,
+     "m1": 0.33,
+     "mall": 0.3
+    }
+   ],
+   "mass_total": 1.8,
+   "checks": {
+    "spec_sum": 1.8,
+    "spec_sum_eq_total": true,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": [
+    "пластины нет: изделие из двух уголков и стержня; plate=null"
+   ]
+  },
+  {
+   "mark": "М1-15",
+   "family": "angle",
+   "plate": null,
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "269",
+     "d": 12,
+     "cls": "A-III",
+     "L": 470,
+     "qty": 1,
+     "kind": "straight",
+     "points": null,
+     "washer_pos": null,
+     "thread": null,
+     "bend": null,
+     "note": "стержень-распорка между двумя уголками поз. 357: лежит на полках уголков и приваривается к ним; торец в 15 мм от наружной грани уголка; по длине уголка — посередине (75|75)"
+    }
+   ],
+   "washers": [],
+   "other": [
+    {
+     "pos": "357",
+     "name": "уголок",
+     "section": "L63×5",
+     "length": 150,
+     "qty": 2,
+     "note": "уголки вертикальными полками наружу; габарит по наружным граням 500 (+0/−2)"
+    }
+   ],
+   "tech_holes": [],
+   "risk_top_x": null,
+   "spec": [
+    {
+     "pos": "357",
+     "section": "L63×5",
+     "length": 150,
+     "qty": 2,
+     "m1": 0.73,
+     "mall": 1.5
+    },
+    {
+     "pos": "269",
+     "section": "Ø12 A-III",
+     "length": 470,
+     "qty": 1,
+     "m1": 0.42,
+     "mall": 0.4
+    }
+   ],
+   "mass_total": 1.9,
+   "checks": {
+    "spec_sum": 1.9,
+    "spec_sum_eq_total": true,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": [
+    "пластины нет: изделие из двух уголков и стержня; plate=null"
+   ]
+  },
+  {
+   "mark": "М1-16",
+   "family": "angle",
+   "plate": null,
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "271",
+     "d": 12,
+     "cls": "A-III",
+     "L": 570,
+     "qty": 1,
+     "kind": "straight",
+     "points": null,
+     "washer_pos": null,
+     "thread": null,
+     "bend": null,
+     "note": "стержень-распорка между двумя уголками поз. 357: лежит на полках уголков и приваривается к ним; торец в 15 мм от наружной грани уголка; по длине уголка — посередине (75|75)"
+    }
+   ],
+   "washers": [],
+   "other": [
+    {
+     "pos": "357",
+     "name": "уголок",
+     "section": "L63×5",
+     "length": 150,
+     "qty": 2,
+     "note": "уголки вертикальными полками наружу; габарит по наружным граням 600 (+0/−2)"
+    }
+   ],
+   "tech_holes": [],
+   "risk_top_x": null,
+   "spec": [
+    {
+     "pos": "357",
+     "section": "L63×5",
+     "length": 150,
+     "qty": 2,
+     "m1": 0.73,
+     "mall": 1.5
+    },
+    {
+     "pos": "271",
+     "section": "Ø12 A-III",
+     "length": 570,
+     "qty": 1,
+     "m1": 0.5,
+     "mall": 0.5
+    }
+   ],
+   "mass_total": 2.0,
+   "checks": {
+    "spec_sum": 2.0,
+    "spec_sum_eq_total": true,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": [
+    "пластины нет: изделие из двух уголков и стержня; plate=null"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,373 @@
+{
+ "page": 65,
+ "sheet": 39,
+ "title": "Детали М1-1-1, М1-2-1, М1-3-1, М1-5-1",
+ "notes_on_sheet": [
+  "Указания к деталям группы «1»:",
+  "1. Анкеры привариваются к пластинам втавр дуговой сваркой под слоем флюса на сварочных автоматах по ГОСТ 19292-73.",
+  "2. Материал пластин из сталей группы «В», ГОСТ 380-71*.",
+  "3. Тип антикоррозионной защиты и марки стали пластин и анкеров указываются на специальном листе каждого конкретного проекта в соответствии с таблицами 1÷5 (см. стр. 23÷26).",
+  "4. Технические требования и методы испытаний изделий должны соответствовать ГОСТу 10922-75.",
+  "5. На фасадах закладных деталей пластины усиления (шайбы) условно показаны пунктирной линией."
+ ],
+ "items": [
+  {
+   "mark": "М1-1-1",
+   "family": "plate_straight",
+   "plate": {
+    "pos": "111",
+    "A": 390,
+    "B": 300,
+    "t": 10,
+    "qty": 1
+   },
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "294",
+     "d": 14,
+     "cls": "A-III",
+     "L": 480,
+     "qty": 6,
+     "kind": "straight",
+     "points": [
+      [
+       75,
+       40
+      ],
+      [
+       315,
+       40
+      ],
+      [
+       75,
+       150
+      ],
+      [
+       315,
+       150
+      ],
+      [
+       75,
+       260
+      ],
+      [
+       315,
+       260
+      ]
+     ],
+     "washer_pos": null,
+     "thread": null,
+     "bend": null
+    }
+   ],
+   "washers": [],
+   "other": [],
+   "tech_holes": [
+    {
+     "size": "10x10",
+     "points": [
+      [
+       195,
+       40
+      ],
+      [
+       195,
+       260
+      ]
+     ]
+    }
+   ],
+   "risk_top_x": 195,
+   "spec": [
+    {
+     "pos": "111",
+     "section": "-300×10",
+     "length": 390,
+     "qty": 1,
+     "m1": 9.2,
+     "mall": 9.2
+    },
+    {
+     "pos": "294",
+     "section": "Ø14 A-III",
+     "length": 480,
+     "qty": 6,
+     "m1": 0.58,
+     "mall": 3.5
+    }
+   ],
+   "mass_total": 12.7,
+   "checks": {
+    "spec_sum": 12.7,
+    "spec_sum_eq_total": true,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": []
+  },
+  {
+   "mark": "М1-2-1",
+   "family": "plate_straight",
+   "plate": {
+    "pos": "111",
+    "A": 390,
+    "B": 300,
+    "t": 10,
+    "qty": 1
+   },
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "294",
+     "d": 14,
+     "cls": "A-III",
+     "L": 480,
+     "qty": 4,
+     "kind": "straight",
+     "points": [
+      [
+       75,
+       40
+      ],
+      [
+       315,
+       40
+      ],
+      [
+       75,
+       260
+      ],
+      [
+       315,
+       260
+      ]
+     ],
+     "washer_pos": null,
+     "thread": null,
+     "bend": null
+    }
+   ],
+   "washers": [],
+   "other": [],
+   "tech_holes": [
+    {
+     "size": "10x10",
+     "points": [
+      [
+       75,
+       150
+      ],
+      [
+       315,
+       150
+      ]
+     ]
+    }
+   ],
+   "risk_top_x": 195,
+   "spec": [
+    {
+     "pos": "111",
+     "section": "-300×10",
+     "length": 390,
+     "qty": 1,
+     "m1": 9.2,
+     "mall": 9.2
+    },
+    {
+     "pos": "294",
+     "section": "Ø14 A-III",
+     "length": 480,
+     "qty": 4,
+     "m1": 0.58,
+     "mall": 2.3
+    }
+   ],
+   "mass_total": 11.5,
+   "checks": {
+    "spec_sum": 11.5,
+    "spec_sum_eq_total": true,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": [
+    "отв. 10×10 без собственной привязки по x — стоят на осях анкеров (x=75/315), по y — на оси пластины"
+   ]
+  },
+  {
+   "mark": "М1-3-1",
+   "family": "plate_straight",
+   "plate": {
+    "pos": "116",
+    "A": 390,
+    "B": 250,
+    "t": 10,
+    "qty": 1
+   },
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "294",
+     "d": 14,
+     "cls": "A-III",
+     "L": 480,
+     "qty": 4,
+     "kind": "straight",
+     "points": [
+      [
+       75,
+       40
+      ],
+      [
+       315,
+       40
+      ],
+      [
+       75,
+       210
+      ],
+      [
+       315,
+       210
+      ]
+     ],
+     "washer_pos": null,
+     "thread": null,
+     "bend": null
+    }
+   ],
+   "washers": [],
+   "other": [],
+   "tech_holes": [
+    {
+     "size": "10x10",
+     "points": [
+      [
+       75,
+       125
+      ],
+      [
+       315,
+       125
+      ]
+     ]
+    }
+   ],
+   "risk_top_x": 195,
+   "spec": [
+    {
+     "pos": "116",
+     "section": "-250×10",
+     "length": 390,
+     "qty": 1,
+     "m1": 7.7,
+     "mall": 7.7
+    },
+    {
+     "pos": "294",
+     "section": "Ø14 A-III",
+     "length": 480,
+     "qty": 4,
+     "m1": 0.58,
+     "mall": 2.3
+    }
+   ],
+   "mass_total": 10.0,
+   "checks": {
+    "spec_sum": 10.0,
+    "spec_sum_eq_total": true,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": [
+    "отв. 10×10 без собственной привязки по x — стоят на осях анкеров (x=75/315), по y — на оси пластины"
+   ]
+  },
+  {
+   "mark": "М1-5-1",
+   "family": "plate_straight",
+   "plate": {
+    "pos": "124",
+    "A": 390,
+    "B": 200,
+    "t": 10,
+    "qty": 1
+   },
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "294",
+     "d": 14,
+     "cls": "A-III",
+     "L": 480,
+     "qty": 4,
+     "kind": "straight",
+     "points": [
+      [
+       75,
+       40
+      ],
+      [
+       315,
+       40
+      ],
+      [
+       75,
+       160
+      ],
+      [
+       315,
+       160
+      ]
+     ],
+     "washer_pos": null,
+     "thread": null,
+     "bend": null
+    }
+   ],
+   "washers": [],
+   "other": [],
+   "tech_holes": [
+    {
+     "size": "10x10",
+     "points": [
+      [
+       75,
+       100
+      ],
+      [
+       315,
+       100
+      ]
+     ]
+    }
+   ],
+   "risk_top_x": 195,
+   "spec": [
+    {
+     "pos": "124",
+     "section": "-200×10",
+     "length": 390,
+     "qty": 1,
+     "m1": 6.1,
+     "mall": 6.1
+    },
+    {
+     "pos": "294",
+     "section": "Ø14 A-III",
+     "length": 480,
+     "qty": 4,
+     "m1": 0.58,
+     "mall": 2.3
+    }
+   ],
+   "mass_total": 8.4,
+   "checks": {
+    "spec_sum": 8.4,
+    "spec_sum_eq_total": true,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": [
+    "отв. 10×10 без собственной привязки по x — стоят на осях анкеров (x=75/315), по y — на оси пластины"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,7258 @@
+{
+ "source": "альбом 1.400-6/76 вып. 1, стр. 136–145 (листы 110–119)",
+ "units": {
+  "length": "мм",
+  "mass": "кг"
+ },
+ "conventions": {
+  "plates": "a, b, δ — как в графах Табл. 22; section = «-a×δ», length = b (как в спецификациях деталей, напр. поз. 117: -250×10, 290)",
+  "plates_holes": "A — горизонталь, B — вертикаль на эскизе; x от левой кромки, y от верхней",
+  "anchors_bent": "dims — длины участков по эскизу (сумма = длине), rise/offset/depth — размер по вертикали на эскизе; угол и радиус гиба на листе не даны (null)"
+ },
+ "plates": [
+  {
+   "pos": "1",
+   "pos_variants": [
+    "1"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 6,
+   "a": 290,
+   "b": 290,
+   "section": "-290×6",
+   "length": 290,
+   "mass": 4.0,
+   "check": {
+    "mass_calc_7850": 3.961
+   }
+  },
+  {
+   "pos": "2",
+   "pos_variants": [
+    "2"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 6,
+   "a": 250,
+   "b": 300,
+   "section": "-250×6",
+   "length": 300,
+   "mass": 3.5,
+   "check": {
+    "mass_calc_7850": 3.532
+   }
+  },
+  {
+   "pos": "3",
+   "pos_variants": [
+    "3"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 6,
+   "a": 240,
+   "b": 270,
+   "section": "-240×6",
+   "length": 270,
+   "mass": 3.1,
+   "check": {
+    "mass_calc_7850": 3.052
+   }
+  },
+  {
+   "pos": "4",
+   "pos_variants": [
+    "4"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 6,
+   "a": 230,
+   "b": 240,
+   "section": "-230×6",
+   "length": 240,
+   "mass": 2.6,
+   "check": {
+    "mass_calc_7850": 2.6
+   }
+  },
+  {
+   "pos": "5",
+   "pos_variants": [
+    "5"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 6,
+   "a": 200,
+   "b": 270,
+   "section": "-200×6",
+   "length": 270,
+   "mass": 2.5,
+   "check": {
+    "mass_calc_7850": 2.543
+   }
+  },
+  {
+   "pos": "6",
+   "pos_variants": [
+    "6"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 6,
+   "a": 190,
+   "b": 240,
+   "section": "-190×6",
+   "length": 240,
+   "mass": 2.2,
+   "check": {
+    "mass_calc_7850": 2.148
+   }
+  },
+  {
+   "pos": "7",
+   "pos_variants": [
+    "7"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 6,
+   "a": 180,
+   "b": 270,
+   "section": "-180×6",
+   "length": 270,
+   "mass": 2.3,
+   "check": {
+    "mass_calc_7850": 2.289
+   }
+  },
+  {
+   "pos": "8",
+   "pos_variants": [
+    "8"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 6,
+   "a": 180,
+   "b": 230,
+   "section": "-180×6",
+   "length": 230,
+   "mass": 2.0,
+   "check": {
+    "mass_calc_7850": 1.95
+   }
+  },
+  {
+   "pos": "9",
+   "pos_variants": [
+    "9"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 6,
+   "a": 200,
+   "b": 200,
+   "section": "-200×6",
+   "length": 200,
+   "mass": 1.9,
+   "check": {
+    "mass_calc_7850": 1.884
+   }
+  },
+  {
+   "pos": "10",
+   "pos_variants": [
+    "10"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 6,
+   "a": 150,
+   "b": 150,
+   "section": "-150×6",
+   "length": 150,
+   "mass": 1.1,
+   "check": {
+    "mass_calc_7850": 1.06
+   }
+  },
+  {
+   "pos": "11",
+   "pos_variants": [
+    "11"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 6,
+   "a": 140,
+   "b": 270,
+   "section": "-140×6",
+   "length": 270,
+   "mass": 1.8,
+   "check": {
+    "mass_calc_7850": 1.78
+   }
+  },
+  {
+   "pos": "12",
+   "pos_variants": [
+    "12"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 6,
+   "a": 140,
+   "b": 230,
+   "section": "-140×6",
+   "length": 230,
+   "mass": 1.5,
+   "check": {
+    "mass_calc_7850": 1.517
+   }
+  },
+  {
+   "pos": "13",
+   "pos_variants": [
+    "13"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 6,
+   "a": 140,
+   "b": 190,
+   "section": "-140×6",
+   "length": 190,
+   "mass": 1.3,
+   "check": {
+    "mass_calc_7850": 1.253
+   }
+  },
+  {
+   "pos": "14",
+   "pos_variants": [
+    "14"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 6,
+   "a": 130,
+   "b": 440,
+   "section": "-130×6",
+   "length": 440,
+   "mass": 2.7,
+   "check": {
+    "mass_calc_7850": 2.694
+   }
+  },
+  {
+   "pos": "15",
+   "pos_variants": [
+    "15"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 6,
+   "a": 120,
+   "b": 300,
+   "section": "-120×6",
+   "length": 300,
+   "mass": 1.7,
+   "check": {
+    "mass_calc_7850": 1.696
+   }
+  },
+  {
+   "pos": "16",
+   "pos_variants": [
+    "16"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 6,
+   "a": 120,
+   "b": 150,
+   "section": "-120×6",
+   "length": 150,
+   "mass": 0.9,
+   "check": {
+    "mass_calc_7850": 0.848
+   }
+  },
+  {
+   "pos": "17",
+   "pos_variants": [
+    "17"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 6,
+   "a": 100,
+   "b": 200,
+   "section": "-100×6",
+   "length": 200,
+   "mass": 0.9,
+   "check": {
+    "mass_calc_7850": 0.942
+   }
+  },
+  {
+   "pos": "18",
+   "pos_variants": [
+    "18"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 6,
+   "a": 100,
+   "b": "п.м",
+   "section": "-100×6",
+   "length": null,
+   "mass": 4.7,
+   "mass_unit": "кг/п.м",
+   "note": "длина не фиксирована: в графе «b» — «п.м», вес дан на погонный метр",
+   "check": {
+    "mass_calc_7850": 4.71
+   }
+  },
+  {
+   "pos": "19",
+   "pos_variants": [
+    "19"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 6,
+   "a": 80,
+   "b": 200,
+   "section": "-80×6",
+   "length": 200,
+   "mass": 0.8,
+   "check": {
+    "mass_calc_7850": 0.754
+   }
+  },
+  {
+   "pos": "20",
+   "pos_variants": [
+    "20"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 6,
+   "a": 80,
+   "b": 130,
+   "section": "-80×6",
+   "length": 130,
+   "mass": 0.5,
+   "check": {
+    "mass_calc_7850": 0.49
+   }
+  },
+  {
+   "pos": "21",
+   "pos_variants": [
+    "21"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 6,
+   "a": 80,
+   "b": 100,
+   "section": "-80×6",
+   "length": 100,
+   "mass": 0.4,
+   "check": {
+    "mass_calc_7850": 0.377
+   }
+  },
+  {
+   "pos": "22",
+   "pos_variants": [
+    "22"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 6,
+   "a": 80,
+   "b": 150,
+   "section": "-80×6",
+   "length": 150,
+   "mass": 0.6,
+   "check": {
+    "mass_calc_7850": 0.565
+   }
+  },
+  {
+   "pos": "23",
+   "pos_variants": [
+    "23"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 6,
+   "a": 80,
+   "b": 230,
+   "section": "-80×6",
+   "length": 230,
+   "mass": 0.9,
+   "check": {
+    "mass_calc_7850": 0.867
+   }
+  },
+  {
+   "pos": "24",
+   "pos_variants": [
+    "24",
+    "24а"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 6,
+   "a": 60,
+   "b": 100,
+   "section": "-60×6",
+   "length": 100,
+   "mass": 0.3,
+   "check": {
+    "mass_calc_7850": 0.283
+   }
+  },
+  {
+   "pos": "25",
+   "pos_variants": [
+    "25"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 6,
+   "a": 60,
+   "b": 200,
+   "section": "-60×6",
+   "length": 200,
+   "mass": 0.6,
+   "check": {
+    "mass_calc_7850": 0.565
+   }
+  },
+  {
+   "pos": "26",
+   "pos_variants": [
+    "26"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 6,
+   "a": 60,
+   "b": "п.м",
+   "section": "-60×6",
+   "length": null,
+   "mass": 2.8,
+   "mass_unit": "кг/п.м",
+   "note": "длина не фиксирована: в графе «b» — «п.м», вес дан на погонный метр",
+   "check": {
+    "mass_calc_7850": 2.826
+   }
+  },
+  {
+   "pos": "27",
+   "pos_variants": [
+    "27"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 6,
+   "a": 50,
+   "b": 100,
+   "section": "-50×6",
+   "length": 100,
+   "mass": 0.24,
+   "check": {
+    "mass_calc_7850": 0.235
+   }
+  },
+  {
+   "pos": "28",
+   "pos_variants": [
+    "28"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 6,
+   "a": 40,
+   "b": 40,
+   "section": "-40×6",
+   "length": 40,
+   "mass": 0.08,
+   "check": {
+    "mass_calc_7850": 0.075
+   }
+  },
+  {
+   "pos": "29",
+   "pos_variants": [
+    "29"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 6,
+   "a": 100,
+   "b": 120,
+   "section": "-100×6",
+   "length": 120,
+   "mass": 0.6,
+   "check": {
+    "mass_calc_7850": 0.565
+   }
+  },
+  {
+   "pos": "30",
+   "pos_variants": [
+    "30"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 6,
+   "a": 250,
+   "b": 350,
+   "section": "-250×6",
+   "length": 350,
+   "mass": 4.1,
+   "check": {
+    "mass_calc_7850": 4.121
+   }
+  },
+  {
+   "pos": "31",
+   "pos_variants": [
+    "31"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": null,
+   "a": null,
+   "b": null,
+   "section": null,
+   "length": null,
+   "mass": null,
+   "empty_on_sheet": true,
+   "note": "строка позиции на листе пустая (номер зарезервирован)"
+  },
+  {
+   "pos": "32",
+   "pos_variants": [
+    "32"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": null,
+   "a": null,
+   "b": null,
+   "section": null,
+   "length": null,
+   "mass": null,
+   "empty_on_sheet": true,
+   "note": "строка позиции на листе пустая (номер зарезервирован)"
+  },
+  {
+   "pos": "33",
+   "pos_variants": [
+    "33"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": null,
+   "a": null,
+   "b": null,
+   "section": null,
+   "length": null,
+   "mass": null,
+   "empty_on_sheet": true,
+   "note": "строка позиции на листе пустая (номер зарезервирован)"
+  },
+  {
+   "pos": "34",
+   "pos_variants": [
+    "34",
+    "34а"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 8,
+   "a": 490,
+   "b": 650,
+   "section": "-490×8",
+   "length": 650,
+   "mass": 20.0,
+   "check": {
+    "mass_calc_7850": 20.002
+   }
+  },
+  {
+   "pos": "35",
+   "pos_variants": [
+    "35",
+    "35а"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 8,
+   "a": 390,
+   "b": 590,
+   "section": "-390×8",
+   "length": 590,
+   "mass": 14.5,
+   "check": {
+    "mass_calc_7850": 14.45
+   }
+  },
+  {
+   "pos": "36",
+   "pos_variants": [
+    "36",
+    "36а"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 8,
+   "a": 390,
+   "b": 550,
+   "section": "-390×8",
+   "length": 550,
+   "mass": 13.5,
+   "check": {
+    "mass_calc_7850": 13.471
+   }
+  },
+  {
+   "pos": "37",
+   "pos_variants": [
+    "37"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 8,
+   "a": 390,
+   "b": 390,
+   "section": "-390×8",
+   "length": 390,
+   "mass": 9.5,
+   "check": {
+    "mass_calc_7850": 9.552
+   }
+  },
+  {
+   "pos": "38",
+   "pos_variants": [
+    "38"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 8,
+   "a": 400,
+   "b": 490,
+   "section": "-400×8",
+   "length": 490,
+   "mass": 12.2,
+   "check": {
+    "mass_calc_7850": 12.309
+   }
+  },
+  {
+   "pos": "39",
+   "pos_variants": [
+    "39"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": null,
+   "a": null,
+   "b": null,
+   "section": null,
+   "length": null,
+   "mass": null,
+   "empty_on_sheet": true,
+   "note": "строка позиции на листе пустая (номер зарезервирован)"
+  },
+  {
+   "pos": "40",
+   "pos_variants": [
+    "40"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 8,
+   "a": 300,
+   "b": 490,
+   "section": "-300×8",
+   "length": 490,
+   "mass": 9.2,
+   "check": {
+    "mass_calc_7850": 9.232
+   }
+  },
+  {
+   "pos": "41",
+   "pos_variants": [
+    "41",
+    "41а"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 8,
+   "a": 300,
+   "b": 390,
+   "section": "-300×8",
+   "length": 390,
+   "mass": 7.4,
+   "check": {
+    "mass_calc_7850": 7.348
+   }
+  },
+  {
+   "pos": "42",
+   "pos_variants": [
+    "42",
+    "42а"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 8,
+   "a": 290,
+   "b": 590,
+   "section": "-290×8",
+   "length": 590,
+   "mass": 10.7,
+   "check": {
+    "mass_calc_7850": 10.745
+   }
+  },
+  {
+   "pos": "43",
+   "pos_variants": [
+    "43",
+    "43а"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 8,
+   "a": 290,
+   "b": 300,
+   "section": "-290×8",
+   "length": 300,
+   "mass": 5.5,
+   "check": {
+    "mass_calc_7850": 5.464
+   }
+  },
+  {
+   "pos": "44",
+   "pos_variants": [
+    "44"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 8,
+   "a": 210,
+   "b": 270,
+   "section": "-210×8",
+   "length": 270,
+   "mass": 3.6,
+   "check": {
+    "mass_calc_7850": 3.561
+   }
+  },
+  {
+   "pos": "45",
+   "pos_variants": [
+    "45"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 8,
+   "a": 270,
+   "b": 390,
+   "section": "-270×8",
+   "length": 390,
+   "mass": 6.6,
+   "check": {
+    "mass_calc_7850": 6.613
+   }
+  },
+  {
+   "pos": "46",
+   "pos_variants": [
+    "46"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 8,
+   "a": 270,
+   "b": 270,
+   "section": "-270×8",
+   "length": 270,
+   "mass": 4.6,
+   "check": {
+    "mass_calc_7850": 4.578
+   }
+  },
+  {
+   "pos": "47",
+   "pos_variants": [
+    "47"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 8,
+   "a": 240,
+   "b": 300,
+   "section": "-240×8",
+   "length": 300,
+   "mass": 4.5,
+   "check": {
+    "mass_calc_7850": 4.522
+   }
+  },
+  {
+   "pos": "48",
+   "pos_variants": [
+    "48",
+    "48а",
+    "48б"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 8,
+   "a": 240,
+   "b": 270,
+   "section": "-240×8",
+   "length": 270,
+   "mass": 4.1,
+   "check": {
+    "mass_calc_7850": 4.069
+   }
+  },
+  {
+   "pos": "49",
+   "pos_variants": [
+    "49",
+    "49а",
+    "49б"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 8,
+   "a": 230,
+   "b": 240,
+   "section": "-230×8",
+   "length": 240,
+   "mass": 3.5,
+   "check": {
+    "mass_calc_7850": 3.467
+   }
+  },
+  {
+   "pos": "50",
+   "pos_variants": [
+    "50"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 8,
+   "a": 210,
+   "b": 250,
+   "section": "-210×8",
+   "length": 250,
+   "mass": 3.3,
+   "check": {
+    "mass_calc_7850": 3.297
+   }
+  },
+  {
+   "pos": "51",
+   "pos_variants": [
+    "51"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 8,
+   "a": 200,
+   "b": 390,
+   "section": "-200×8",
+   "length": 390,
+   "mass": 4.9,
+   "check": {
+    "mass_calc_7850": 4.898
+   }
+  },
+  {
+   "pos": "52",
+   "pos_variants": [
+    "52"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 8,
+   "a": 200,
+   "b": 340,
+   "section": "-200×8",
+   "length": 340,
+   "mass": 4.3,
+   "check": {
+    "mass_calc_7850": 4.27
+   }
+  },
+  {
+   "pos": "53",
+   "pos_variants": [
+    "53"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 8,
+   "a": 200,
+   "b": 300,
+   "section": "-200×8",
+   "length": 300,
+   "mass": 3.8,
+   "check": {
+    "mass_calc_7850": 3.768
+   }
+  },
+  {
+   "pos": "54",
+   "pos_variants": [
+    "54"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 8,
+   "a": 200,
+   "b": 290,
+   "section": "-200×8",
+   "length": 290,
+   "mass": 3.6,
+   "check": {
+    "mass_calc_7850": 3.642
+   }
+  },
+  {
+   "pos": "55",
+   "pos_variants": [
+    "55"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 8,
+   "a": 200,
+   "b": 240,
+   "section": "-200×8",
+   "length": 240,
+   "mass": 3.0,
+   "check": {
+    "mass_calc_7850": 3.014
+   }
+  },
+  {
+   "pos": "56",
+   "pos_variants": [
+    "56"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 8,
+   "a": 200,
+   "b": 200,
+   "section": "-200×8",
+   "length": 200,
+   "mass": 2.5,
+   "check": {
+    "mass_calc_7850": 2.512
+   }
+  },
+  {
+   "pos": "57",
+   "pos_variants": [
+    "57",
+    "57а"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 8,
+   "a": 190,
+   "b": 250,
+   "section": "-190×8",
+   "length": 250,
+   "mass": 3.0,
+   "check": {
+    "mass_calc_7850": 2.983
+   }
+  },
+  {
+   "pos": "58",
+   "pos_variants": [
+    "58",
+    "58а",
+    "58б"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 8,
+   "a": 190,
+   "b": 240,
+   "section": "-190×8",
+   "length": 240,
+   "mass": 2.9,
+   "check": {
+    "mass_calc_7850": 2.864
+   }
+  },
+  {
+   "pos": "59",
+   "pos_variants": [
+    "59"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 8,
+   "a": 190,
+   "b": 200,
+   "section": "-190×8",
+   "length": 200,
+   "mass": 2.4,
+   "check": {
+    "mass_calc_7850": 2.386
+   }
+  },
+  {
+   "pos": "60",
+   "pos_variants": [
+    "60"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 8,
+   "a": 180,
+   "b": 390,
+   "section": "-180×8",
+   "length": 390,
+   "mass": 4.4,
+   "check": {
+    "mass_calc_7850": 4.409
+   }
+  },
+  {
+   "pos": "61",
+   "pos_variants": [
+    "61"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 8,
+   "a": 180,
+   "b": 180,
+   "section": "-180×8",
+   "length": 180,
+   "mass": 2.0,
+   "check": {
+    "mass_calc_7850": 2.035
+   }
+  },
+  {
+   "pos": "62",
+   "pos_variants": [
+    "62"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 8,
+   "a": 180,
+   "b": 490,
+   "section": "-180×8",
+   "length": 490,
+   "mass": 5.5,
+   "check": {
+    "mass_calc_7850": 5.539
+   }
+  },
+  {
+   "pos": "63",
+   "pos_variants": [
+    "63"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 8,
+   "a": 150,
+   "b": 800,
+   "section": "-150×8",
+   "length": 800,
+   "mass": 7.6,
+   "check": {
+    "mass_calc_7850": 7.536
+   }
+  },
+  {
+   "pos": "64",
+   "pos_variants": [
+    "64"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 8,
+   "a": 150,
+   "b": 600,
+   "section": "-150×8",
+   "length": 600,
+   "mass": 5.7,
+   "check": {
+    "mass_calc_7850": 5.652
+   }
+  },
+  {
+   "pos": "65",
+   "pos_variants": [
+    "65"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 8,
+   "a": 150,
+   "b": 270,
+   "section": "-150×8",
+   "length": 270,
+   "mass": 2.5,
+   "check": {
+    "mass_calc_7850": 2.543
+   }
+  },
+  {
+   "pos": "66",
+   "pos_variants": [
+    "66"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 8,
+   "a": 150,
+   "b": 240,
+   "section": "-150×8",
+   "length": 240,
+   "mass": 2.3,
+   "check": {
+    "mass_calc_7850": 2.261
+   }
+  },
+  {
+   "pos": "67",
+   "pos_variants": [
+    "67"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 8,
+   "a": 150,
+   "b": 210,
+   "section": "-150×8",
+   "length": 210,
+   "mass": 2.0,
+   "check": {
+    "mass_calc_7850": 1.978
+   }
+  },
+  {
+   "pos": "68",
+   "pos_variants": [
+    "68"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 8,
+   "a": 150,
+   "b": 200,
+   "section": "-150×8",
+   "length": 200,
+   "mass": 1.9,
+   "check": {
+    "mass_calc_7850": 1.884
+   }
+  },
+  {
+   "pos": "69",
+   "pos_variants": [
+    "69"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 8,
+   "a": 150,
+   "b": 190,
+   "section": "-150×8",
+   "length": 190,
+   "mass": 1.8,
+   "check": {
+    "mass_calc_7850": 1.79
+   }
+  },
+  {
+   "pos": "70",
+   "pos_variants": [
+    "70"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 8,
+   "a": 150,
+   "b": 150,
+   "section": "-150×8",
+   "length": 150,
+   "mass": 1.4,
+   "check": {
+    "mass_calc_7850": 1.413
+   }
+  },
+  {
+   "pos": "71",
+   "pos_variants": [
+    "71"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 8,
+   "a": 140,
+   "b": 300,
+   "section": "-140×8",
+   "length": 300,
+   "mass": 2.6,
+   "check": {
+    "mass_calc_7850": 2.638
+   }
+  },
+  {
+   "pos": "72",
+   "pos_variants": [
+    "72"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 8,
+   "a": 120,
+   "b": 200,
+   "section": "-120×8",
+   "length": 200,
+   "mass": 1.5,
+   "check": {
+    "mass_calc_7850": 1.507
+   }
+  },
+  {
+   "pos": "73",
+   "pos_variants": [
+    "73"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 8,
+   "a": 120,
+   "b": 180,
+   "section": "-120×8",
+   "length": 180,
+   "mass": 1.4,
+   "check": {
+    "mass_calc_7850": 1.356
+   }
+  },
+  {
+   "pos": "74",
+   "pos_variants": [
+    "74"
+   ],
+   "page": 136,
+   "sheet": 110,
+   "table": "22",
+   "t": 8,
+   "a": 120,
+   "b": 150,
+   "section": "-120×8",
+   "length": 150,
+   "mass": 1.1,
+   "check": {
+    "mass_calc_7850": 1.13
+   }
+  },
+  {
+   "pos": "75",
+   "pos_variants": [
+    "75"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 8,
+   "a": 100,
+   "b": "п.м",
+   "section": "-100×8",
+   "length": null,
+   "mass": 6.3,
+   "mass_unit": "кг/п.м",
+   "note": "длина не фиксирована: в графе «b» — «п.м», вес дан на погонный метр",
+   "check": {
+    "mass_calc_7850": 6.28
+   }
+  },
+  {
+   "pos": "76",
+   "pos_variants": [
+    "76"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 8,
+   "a": 100,
+   "b": 700,
+   "section": "-100×8",
+   "length": 700,
+   "mass": 4.4,
+   "check": {
+    "mass_calc_7850": 4.396
+   }
+  },
+  {
+   "pos": "77",
+   "pos_variants": [
+    "77",
+    "77а"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 8,
+   "a": 100,
+   "b": 450,
+   "section": "-100×8",
+   "length": 450,
+   "mass": 2.8,
+   "check": {
+    "mass_calc_7850": 2.826
+   }
+  },
+  {
+   "pos": "78",
+   "pos_variants": [
+    "78"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 8,
+   "a": 100,
+   "b": 390,
+   "section": "-100×8",
+   "length": 390,
+   "mass": 2.5,
+   "check": {
+    "mass_calc_7850": 2.449
+   }
+  },
+  {
+   "pos": "79",
+   "pos_variants": [
+    "79"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 8,
+   "a": 100,
+   "b": 250,
+   "section": "-100×8",
+   "length": 250,
+   "mass": 1.6,
+   "check": {
+    "mass_calc_7850": 1.57
+   }
+  },
+  {
+   "pos": "80",
+   "pos_variants": [
+    "80"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 8,
+   "a": 100,
+   "b": 200,
+   "section": "-100×8",
+   "length": 200,
+   "mass": 1.3,
+   "check": {
+    "mass_calc_7850": 1.256
+   }
+  },
+  {
+   "pos": "81",
+   "pos_variants": [
+    "81"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 8,
+   "a": 100,
+   "b": 130,
+   "section": "-100×8",
+   "length": 130,
+   "mass": 0.8,
+   "check": {
+    "mass_calc_7850": 0.816
+   }
+  },
+  {
+   "pos": "82",
+   "pos_variants": [
+    "82"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 8,
+   "a": 100,
+   "b": 100,
+   "section": "-100×8",
+   "length": 100,
+   "mass": 0.6,
+   "check": {
+    "mass_calc_7850": 0.628
+   }
+  },
+  {
+   "pos": "83",
+   "pos_variants": [
+    "83"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 8,
+   "a": 80,
+   "b": 350,
+   "section": "-80×8",
+   "length": 350,
+   "mass": 1.8,
+   "check": {
+    "mass_calc_7850": 1.758
+   }
+  },
+  {
+   "pos": "84",
+   "pos_variants": [
+    "84"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 8,
+   "a": 80,
+   "b": 270,
+   "section": "-80×8",
+   "length": 270,
+   "mass": 1.4,
+   "check": {
+    "mass_calc_7850": 1.356
+   }
+  },
+  {
+   "pos": "85",
+   "pos_variants": [
+    "85"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 8,
+   "a": 80,
+   "b": 100,
+   "section": "-80×8",
+   "length": 100,
+   "mass": 0.5,
+   "check": {
+    "mass_calc_7850": 0.502
+   }
+  },
+  {
+   "pos": "86",
+   "pos_variants": [
+    "86"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 8,
+   "a": 60,
+   "b": 350,
+   "section": "-60×8",
+   "length": 350,
+   "mass": 1.3,
+   "check": {
+    "mass_calc_7850": 1.319
+   }
+  },
+  {
+   "pos": "87",
+   "pos_variants": [
+    "87"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 8,
+   "a": 60,
+   "b": 210,
+   "section": "-60×8",
+   "length": 210,
+   "mass": 0.8,
+   "check": {
+    "mass_calc_7850": 0.791
+   }
+  },
+  {
+   "pos": "88",
+   "pos_variants": [
+    "88"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 8,
+   "a": 60,
+   "b": 190,
+   "section": "-60×8",
+   "length": 190,
+   "mass": 0.7,
+   "check": {
+    "mass_calc_7850": 0.716
+   }
+  },
+  {
+   "pos": "89",
+   "pos_variants": [
+    "89"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 8,
+   "a": 60,
+   "b": "п.м",
+   "section": "-60×8",
+   "length": null,
+   "mass": 3.8,
+   "mass_unit": "кг/п.м",
+   "note": "длина не фиксирована: в графе «b» — «п.м», вес дан на погонный метр",
+   "check": {
+    "mass_calc_7850": 3.768
+   }
+  },
+  {
+   "pos": "90",
+   "pos_variants": [
+    "90"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 8,
+   "a": 50,
+   "b": 190,
+   "section": "-50×8",
+   "length": 190,
+   "mass": 0.6,
+   "check": {
+    "mass_calc_7850": 0.597
+   }
+  },
+  {
+   "pos": "91",
+   "pos_variants": [
+    "91"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 8,
+   "a": 50,
+   "b": 50,
+   "section": "-50×8",
+   "length": 50,
+   "mass": 0.16,
+   "check": {
+    "mass_calc_7850": 0.157
+   }
+  },
+  {
+   "pos": "92",
+   "pos_variants": [
+    "92"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 8,
+   "a": 40,
+   "b": 40,
+   "section": "-40×8",
+   "length": 40,
+   "mass": 0.1,
+   "check": {
+    "mass_calc_7850": 0.1
+   }
+  },
+  {
+   "pos": "93",
+   "pos_variants": [
+    "93"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 8,
+   "a": 120,
+   "b": 300,
+   "section": "-120×8",
+   "length": 300,
+   "mass": 2.3,
+   "check": {
+    "mass_calc_7850": 2.261
+   }
+  },
+  {
+   "pos": "94",
+   "pos_variants": [
+    "94"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 8,
+   "a": 60,
+   "b": 150,
+   "section": "-60×8",
+   "length": 150,
+   "mass": 0.6,
+   "check": {
+    "mass_calc_7850": 0.565
+   }
+  },
+  {
+   "pos": "95",
+   "pos_variants": [
+    "95"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": null,
+   "a": null,
+   "b": null,
+   "section": null,
+   "length": null,
+   "mass": null,
+   "empty_on_sheet": true,
+   "note": "строка позиции на листе пустая (номер зарезервирован)"
+  },
+  {
+   "pos": "96",
+   "pos_variants": [
+    "96"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": null,
+   "a": null,
+   "b": null,
+   "section": null,
+   "length": null,
+   "mass": null,
+   "empty_on_sheet": true,
+   "note": "строка позиции на листе пустая (номер зарезервирован)"
+  },
+  {
+   "pos": "97",
+   "pos_variants": [
+    "97"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 10,
+   "a": 390,
+   "b": 500,
+   "section": "-390×10",
+   "length": 500,
+   "mass": 15.3,
+   "check": {
+    "mass_calc_7850": 15.308
+   }
+  },
+  {
+   "pos": "98",
+   "pos_variants": [
+    "98"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 10,
+   "a": 220,
+   "b": 300,
+   "section": "-220×10",
+   "length": 300,
+   "mass": 5.2,
+   "check": {
+    "mass_calc_7850": 5.181
+   }
+  },
+  {
+   "pos": "99",
+   "pos_variants": [
+    "99"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 10,
+   "a": 220,
+   "b": 350,
+   "section": "-220×10",
+   "length": 350,
+   "mass": 6.1,
+   "check": {
+    "mass_calc_7850": 6.045
+   }
+  },
+  {
+   "pos": "100",
+   "pos_variants": [
+    "100"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 10,
+   "a": 500,
+   "b": 540,
+   "section": "-500×10",
+   "length": 540,
+   "mass": 21.2,
+   "check": {
+    "mass_calc_7850": 21.195
+   }
+  },
+  {
+   "pos": "101",
+   "pos_variants": [
+    "101",
+    "101а"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 10,
+   "a": 490,
+   "b": 590,
+   "section": "-490×10",
+   "length": 590,
+   "mass": 22.7,
+   "check": {
+    "mass_calc_7850": 22.694
+   }
+  },
+  {
+   "pos": "102",
+   "pos_variants": [
+    "102"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 10,
+   "a": 450,
+   "b": 450,
+   "section": "-450×10",
+   "length": 450,
+   "mass": 15.9,
+   "check": {
+    "mass_calc_7850": 15.896
+   }
+  },
+  {
+   "pos": "103",
+   "pos_variants": [
+    "103"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 10,
+   "a": 400,
+   "b": 490,
+   "section": "-400×10",
+   "length": 490,
+   "mass": 15.4,
+   "check": {
+    "mass_calc_7850": 15.386
+   }
+  },
+  {
+   "pos": "104",
+   "pos_variants": [
+    "104"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 10,
+   "a": 400,
+   "b": 450,
+   "section": "-400×10",
+   "length": 450,
+   "mass": 14.1,
+   "check": {
+    "mass_calc_7850": 14.13
+   }
+  },
+  {
+   "pos": "105",
+   "pos_variants": [
+    "105",
+    "105а"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 10,
+   "a": 400,
+   "b": 400,
+   "section": "-400×10",
+   "length": 400,
+   "mass": 12.6,
+   "check": {
+    "mass_calc_7850": 12.56
+   }
+  },
+  {
+   "pos": "106",
+   "pos_variants": [
+    "106"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 10,
+   "a": 390,
+   "b": 390,
+   "section": "-390×10",
+   "length": 390,
+   "mass": 11.9,
+   "check": {
+    "mass_calc_7850": 11.94
+   }
+  },
+  {
+   "pos": "107",
+   "pos_variants": [
+    "107",
+    "107а",
+    "107б"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 10,
+   "a": 390,
+   "b": 590,
+   "section": "-390×10",
+   "length": 590,
+   "mass": 18.1,
+   "check": {
+    "mass_calc_7850": 18.063
+   }
+  },
+  {
+   "pos": "108",
+   "pos_variants": [
+    "108"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 10,
+   "a": 300,
+   "b": 570,
+   "section": "-300×10",
+   "length": 570,
+   "mass": 13.4,
+   "check": {
+    "mass_calc_7850": 13.424
+   }
+  },
+  {
+   "pos": "109",
+   "pos_variants": [
+    "109"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 10,
+   "a": 300,
+   "b": 490,
+   "section": "-300×10",
+   "length": 490,
+   "mass": 11.5,
+   "check": {
+    "mass_calc_7850": 11.54
+   }
+  },
+  {
+   "pos": "110",
+   "pos_variants": [
+    "110"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 10,
+   "a": 300,
+   "b": 450,
+   "section": "-300×10",
+   "length": 450,
+   "mass": 10.6,
+   "check": {
+    "mass_calc_7850": 10.598
+   }
+  },
+  {
+   "pos": "111",
+   "pos_variants": [
+    "111"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 10,
+   "a": 300,
+   "b": 390,
+   "section": "-300×10",
+   "length": 390,
+   "mass": 9.2,
+   "check": {
+    "mass_calc_7850": 9.185
+   }
+  },
+  {
+   "pos": "112",
+   "pos_variants": [
+    "112"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 10,
+   "a": 300,
+   "b": 360,
+   "section": "-300×10",
+   "length": 360,
+   "mass": 8.5,
+   "check": {
+    "mass_calc_7850": 8.478
+   }
+  },
+  {
+   "pos": "113",
+   "pos_variants": [
+    "113"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 10,
+   "a": 290,
+   "b": 490,
+   "section": "-290×10",
+   "length": 490,
+   "mass": 11.2,
+   "check": {
+    "mass_calc_7850": 11.155
+   }
+  },
+  {
+   "pos": "114",
+   "pos_variants": [
+    "114"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 10,
+   "a": 290,
+   "b": 300,
+   "section": "-290×10",
+   "length": 300,
+   "mass": 6.8,
+   "check": {
+    "mass_calc_7850": 6.829
+   }
+  },
+  {
+   "pos": "115",
+   "pos_variants": [
+    "115"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 10,
+   "a": 290,
+   "b": 290,
+   "section": "-290×10",
+   "length": 290,
+   "mass": 6.6,
+   "check": {
+    "mass_calc_7850": 6.602
+   }
+  },
+  {
+   "pos": "116",
+   "pos_variants": [
+    "116"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 10,
+   "a": 250,
+   "b": 390,
+   "section": "-250×10",
+   "length": 390,
+   "mass": 7.7,
+   "check": {
+    "mass_calc_7850": 7.654
+   }
+  },
+  {
+   "pos": "117",
+   "pos_variants": [
+    "117"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 10,
+   "a": 250,
+   "b": 290,
+   "section": "-250×10",
+   "length": 290,
+   "mass": 5.7,
+   "check": {
+    "mass_calc_7850": 5.691
+   }
+  },
+  {
+   "pos": "118",
+   "pos_variants": [
+    "118"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 10,
+   "a": 250,
+   "b": 270,
+   "section": "-250×10",
+   "length": 270,
+   "mass": 5.3,
+   "check": {
+    "mass_calc_7850": 5.299
+   }
+  },
+  {
+   "pos": "119",
+   "pos_variants": [
+    "119"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 10,
+   "a": 230,
+   "b": 270,
+   "section": "-230×10",
+   "length": 270,
+   "mass": 4.9,
+   "check": {
+    "mass_calc_7850": 4.875
+   }
+  },
+  {
+   "pos": "120",
+   "pos_variants": [
+    "120"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 10,
+   "a": 220,
+   "b": 540,
+   "section": "-220×10",
+   "length": 540,
+   "mass": 9.3,
+   "check": {
+    "mass_calc_7850": 9.326
+   }
+  },
+  {
+   "pos": "121",
+   "pos_variants": [
+    "121"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 10,
+   "a": 220,
+   "b": 490,
+   "section": "-220×10",
+   "length": 490,
+   "mass": 8.5,
+   "check": {
+    "mass_calc_7850": 8.462
+   }
+  },
+  {
+   "pos": "122",
+   "pos_variants": [
+    "122"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 10,
+   "a": 160,
+   "b": 590,
+   "section": "-160×10",
+   "length": 590,
+   "mass": 7.4,
+   "check": {
+    "mass_calc_7850": 7.41
+   }
+  },
+  {
+   "pos": "123",
+   "pos_variants": [
+    "123"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 10,
+   "a": 210,
+   "b": 230,
+   "section": "-210×10",
+   "length": 230,
+   "mass": 3.8,
+   "check": {
+    "mass_calc_7850": 3.792
+   }
+  },
+  {
+   "pos": "124",
+   "pos_variants": [
+    "124",
+    "124а"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 10,
+   "a": 200,
+   "b": 390,
+   "section": "-200×10",
+   "length": 390,
+   "mass": 6.1,
+   "check": {
+    "mass_calc_7850": 6.123
+   }
+  },
+  {
+   "pos": "125",
+   "pos_variants": [
+    "125"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 10,
+   "a": 200,
+   "b": 290,
+   "section": "-200×10",
+   "length": 290,
+   "mass": 4.6,
+   "check": {
+    "mass_calc_7850": 4.553
+   }
+  },
+  {
+   "pos": "126",
+   "pos_variants": [
+    "126"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 10,
+   "a": 200,
+   "b": 500,
+   "section": "-200×10",
+   "length": 500,
+   "mass": 7.9,
+   "check": {
+    "mass_calc_7850": 7.85
+   }
+  },
+  {
+   "pos": "127",
+   "pos_variants": [
+    "127",
+    "127а"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 10,
+   "a": 200,
+   "b": 330,
+   "section": "-200×10",
+   "length": 330,
+   "mass": 5.2,
+   "check": {
+    "mass_calc_7850": 5.181
+   }
+  },
+  {
+   "pos": "128",
+   "pos_variants": [
+    "128"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 10,
+   "a": 200,
+   "b": 300,
+   "section": "-200×10",
+   "length": 300,
+   "mass": 4.7,
+   "check": {
+    "mass_calc_7850": 4.71
+   }
+  },
+  {
+   "pos": "129",
+   "pos_variants": [
+    "129"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 10,
+   "a": 200,
+   "b": 210,
+   "section": "-200×10",
+   "length": 210,
+   "mass": 3.3,
+   "check": {
+    "mass_calc_7850": 3.297
+   }
+  },
+  {
+   "pos": "130",
+   "pos_variants": [
+    "130"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 10,
+   "a": 190,
+   "b": 250,
+   "section": "-190×10",
+   "length": 250,
+   "mass": 3.7,
+   "check": {
+    "mass_calc_7850": 3.729
+   }
+  },
+  {
+   "pos": "131",
+   "pos_variants": [
+    "131"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 10,
+   "a": 180,
+   "b": 540,
+   "section": "-180×10",
+   "length": 540,
+   "mass": 7.6,
+   "check": {
+    "mass_calc_7850": 7.63
+   }
+  },
+  {
+   "pos": "132",
+   "pos_variants": [
+    "132"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 10,
+   "a": 160,
+   "b": 490,
+   "section": "-160×10",
+   "length": 490,
+   "mass": 6.2,
+   "check": {
+    "mass_calc_7850": 6.154
+   }
+  },
+  {
+   "pos": "133",
+   "pos_variants": [
+    "133",
+    "133а"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 10,
+   "a": 160,
+   "b": 290,
+   "section": "-160×10",
+   "length": 290,
+   "mass": 3.7,
+   "check": {
+    "mass_calc_7850": 3.642
+   },
+   "note": "в М6-2 (стр. 123) поз. 133а записана с весом 3.6 (здесь 3.7) — пластина 133а трапециевидная (эскиз стр. 140), её вес меньше"
+  },
+  {
+   "pos": "134",
+   "pos_variants": [
+    "134"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 10,
+   "a": 160,
+   "b": 280,
+   "section": "-160×10",
+   "length": 280,
+   "mass": 3.6,
+   "check": {
+    "mass_calc_7850": 3.517
+   }
+  },
+  {
+   "pos": "135",
+   "pos_variants": [
+    "135"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 10,
+   "a": 240,
+   "b": 500,
+   "section": "-240×10",
+   "length": 500,
+   "mass": 9.4,
+   "check": {
+    "mass_calc_7850": 9.42
+   },
+   "note": "строка вписана другим (машинописным) шрифтом"
+  },
+  {
+   "pos": "136",
+   "pos_variants": [
+    "136"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": null,
+   "a": null,
+   "b": null,
+   "section": null,
+   "length": null,
+   "mass": null,
+   "empty_on_sheet": true,
+   "note": "строка позиции на листе пустая (номер зарезервирован)"
+  },
+  {
+   "pos": "137",
+   "pos_variants": [
+    "137"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 10,
+   "a": 50,
+   "b": 50,
+   "section": "-50×10",
+   "length": 50,
+   "mass": 0.2,
+   "check": {
+    "mass_calc_7850": 0.196
+   },
+   "note": "строка 135 и 137 вписаны другим (машинописным) шрифтом"
+  },
+  {
+   "pos": "138",
+   "pos_variants": [
+    "138"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": null,
+   "a": null,
+   "b": null,
+   "section": null,
+   "length": null,
+   "mass": null,
+   "empty_on_sheet": true,
+   "note": "строка позиции на листе пустая (номер зарезервирован)"
+  },
+  {
+   "pos": "139",
+   "pos_variants": [
+    "139"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": null,
+   "a": null,
+   "b": null,
+   "section": null,
+   "length": null,
+   "mass": null,
+   "empty_on_sheet": true,
+   "note": "строка позиции на листе пустая (номер зарезервирован)"
+  },
+  {
+   "pos": "140",
+   "pos_variants": [
+    "140"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": null,
+   "a": null,
+   "b": null,
+   "section": null,
+   "length": null,
+   "mass": null,
+   "empty_on_sheet": true,
+   "note": "строка позиции на листе пустая (номер зарезервирован)"
+  },
+  {
+   "pos": "141",
+   "pos_variants": [
+    "141"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": null,
+   "a": null,
+   "b": null,
+   "section": null,
+   "length": null,
+   "mass": null,
+   "empty_on_sheet": true,
+   "note": "строка позиции на листе пустая (номер зарезервирован)"
+  },
+  {
+   "pos": "142",
+   "pos_variants": [
+    "142"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": null,
+   "a": null,
+   "b": null,
+   "section": null,
+   "length": null,
+   "mass": null,
+   "empty_on_sheet": true,
+   "note": "строка позиции на листе пустая (номер зарезервирован)"
+  },
+  {
+   "pos": "143",
+   "pos_variants": [
+    "143"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": null,
+   "a": null,
+   "b": null,
+   "section": null,
+   "length": null,
+   "mass": null,
+   "empty_on_sheet": true,
+   "note": "строка позиции на листе пустая (номер зарезервирован)"
+  },
+  {
+   "pos": "144",
+   "pos_variants": [
+    "144"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": null,
+   "a": null,
+   "b": null,
+   "section": null,
+   "length": null,
+   "mass": null,
+   "empty_on_sheet": true,
+   "note": "строка позиции на листе пустая (номер зарезервирован)"
+  },
+  {
+   "pos": "145",
+   "pos_variants": [
+    "145"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 12,
+   "a": 490,
+   "b": 500,
+   "section": "-490×12",
+   "length": 500,
+   "mass": 23.1,
+   "check": {
+    "mass_calc_7850": 23.079
+   }
+  },
+  {
+   "pos": "146",
+   "pos_variants": [
+    "146"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 12,
+   "a": 400,
+   "b": 490,
+   "section": "-400×12",
+   "length": 490,
+   "mass": 18.4,
+   "check": {
+    "mass_calc_7850": 18.463
+   },
+   "note": "вес «18.4» — первая цифра «1» слита с «8», но читается"
+  },
+  {
+   "pos": "147",
+   "pos_variants": [
+    "147"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 12,
+   "a": 390,
+   "b": 600,
+   "section": "-390×12",
+   "length": 600,
+   "mass": 22.0,
+   "check": {
+    "mass_calc_7850": 22.043
+   }
+  },
+  {
+   "pos": "148",
+   "pos_variants": [
+    "148",
+    "148а"
+   ],
+   "page": 137,
+   "sheet": null,
+   "table": "22",
+   "t": 12,
+   "a": 300,
+   "b": 390,
+   "section": "-300×12",
+   "length": 390,
+   "mass": 11.0,
+   "check": {
+    "mass_calc_7850": 11.021
+   }
+  },
+  {
+   "pos": "149",
+   "pos_variants": [
+    "149"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": 12,
+   "a": 300,
+   "b": 340,
+   "section": "-300×12",
+   "length": 340,
+   "mass": 9.6,
+   "check": {
+    "mass_calc_7850": 9.608
+   }
+  },
+  {
+   "pos": "150",
+   "pos_variants": [
+    "150"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": 12,
+   "a": 300,
+   "b": 310,
+   "section": "-300×12",
+   "length": 310,
+   "mass": 8.8,
+   "check": {
+    "mass_calc_7850": 8.761
+   }
+  },
+  {
+   "pos": "151",
+   "pos_variants": [
+    "151"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": 12,
+   "a": 290,
+   "b": 300,
+   "section": "-290×12",
+   "length": 300,
+   "mass": 8.2,
+   "check": {
+    "mass_calc_7850": 8.195
+   }
+  },
+  {
+   "pos": "152",
+   "pos_variants": [
+    "152"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": 12,
+   "a": 270,
+   "b": 300,
+   "section": "-270×12",
+   "length": 300,
+   "mass": 7.6,
+   "check": {
+    "mass_calc_7850": 7.63
+   }
+  },
+  {
+   "pos": "153",
+   "pos_variants": [
+    "153"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": 12,
+   "a": 270,
+   "b": 270,
+   "section": "-270×12",
+   "length": 270,
+   "mass": 6.9,
+   "check": {
+    "mass_calc_7850": 6.867
+   }
+  },
+  {
+   "pos": "154",
+   "pos_variants": [
+    "154"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": 12,
+   "a": 240,
+   "b": 300,
+   "section": "-240×12",
+   "length": 300,
+   "mass": 6.8,
+   "check": {
+    "mass_calc_7850": 6.782
+   }
+  },
+  {
+   "pos": "155",
+   "pos_variants": [
+    "155"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": 12,
+   "a": 230,
+   "b": 300,
+   "section": "-230×12",
+   "length": 300,
+   "mass": 6.5,
+   "check": {
+    "mass_calc_7850": 6.5
+   }
+  },
+  {
+   "pos": "156",
+   "pos_variants": [
+    "156"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": 12,
+   "a": 230,
+   "b": 250,
+   "section": "-230×12",
+   "length": 250,
+   "mass": 5.4,
+   "check": {
+    "mass_calc_7850": 5.417
+   }
+  },
+  {
+   "pos": "157",
+   "pos_variants": [
+    "157"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": 12,
+   "a": 200,
+   "b": 330,
+   "section": "-200×12",
+   "length": 330,
+   "mass": 6.2,
+   "check": {
+    "mass_calc_7850": 6.217
+   }
+  },
+  {
+   "pos": "158",
+   "pos_variants": [
+    "158"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": 12,
+   "a": 200,
+   "b": 300,
+   "section": "-200×12",
+   "length": 300,
+   "mass": 5.7,
+   "check": {
+    "mass_calc_7850": 5.652
+   }
+  },
+  {
+   "pos": "159",
+   "pos_variants": [
+    "159"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": 12,
+   "a": 190,
+   "b": 300,
+   "section": "-190×12",
+   "length": 300,
+   "mass": 5.4,
+   "check": {
+    "mass_calc_7850": 5.369
+   }
+  },
+  {
+   "pos": "160",
+   "pos_variants": [
+    "160",
+    "160а"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": 12,
+   "a": 140,
+   "b": 500,
+   "section": "-140×12",
+   "length": 500,
+   "mass": 6.6,
+   "check": {
+    "mass_calc_7850": 6.594
+   }
+  },
+  {
+   "pos": "161",
+   "pos_variants": [
+    "161"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": 12,
+   "a": 50,
+   "b": 70,
+   "section": "-50×12",
+   "length": 70,
+   "mass": 0.33,
+   "check": {
+    "mass_calc_7850": 0.33
+   }
+  },
+  {
+   "pos": "162",
+   "pos_variants": [
+    "162",
+    "162а"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": 12,
+   "a": 200,
+   "b": 600,
+   "section": "-200×12",
+   "length": 600,
+   "mass": 11.3,
+   "check": {
+    "mass_calc_7850": 11.304
+   }
+  },
+  {
+   "pos": "163",
+   "pos_variants": [
+    "163",
+    "163а"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": 12,
+   "a": 130,
+   "b": 500,
+   "section": "-130×12",
+   "length": 500,
+   "mass": 6.1,
+   "check": {
+    "mass_calc_7850": 6.123
+   }
+  },
+  {
+   "pos": "164",
+   "pos_variants": [
+    "164"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": null,
+   "a": null,
+   "b": null,
+   "section": null,
+   "length": null,
+   "mass": null,
+   "empty_on_sheet": true,
+   "note": "строка позиции на листе пустая (номер зарезервирован)"
+  },
+  {
+   "pos": "165",
+   "pos_variants": [
+    "165"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": null,
+   "a": null,
+   "b": null,
+   "section": null,
+   "length": null,
+   "mass": null,
+   "empty_on_sheet": true,
+   "note": "строка позиции на листе пустая (номер зарезервирован)"
+  },
+  {
+   "pos": "166",
+   "pos_variants": [
+    "166"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": null,
+   "a": null,
+   "b": null,
+   "section": null,
+   "length": null,
+   "mass": null,
+   "empty_on_sheet": true,
+   "note": "строка позиции на листе пустая (номер зарезервирован)"
+  },
+  {
+   "pos": "167",
+   "pos_variants": [
+    "167"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": null,
+   "a": null,
+   "b": null,
+   "section": null,
+   "length": null,
+   "mass": null,
+   "empty_on_sheet": true,
+   "note": "строка позиции на листе пустая (номер зарезервирован)"
+  },
+  {
+   "pos": "168",
+   "pos_variants": [
+    "168"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": 14,
+   "a": 390,
+   "b": 500,
+   "section": "-390×14",
+   "length": 500,
+   "mass": 21.4,
+   "check": {
+    "mass_calc_7850": 21.43
+   }
+  },
+  {
+   "pos": "169",
+   "pos_variants": [
+    "169"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": 14,
+   "a": 290,
+   "b": 500,
+   "section": "-290×14",
+   "length": 500,
+   "mass": 15.9,
+   "check": {
+    "mass_calc_7850": 15.935
+   }
+  },
+  {
+   "pos": "170",
+   "pos_variants": [
+    "170"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": 14,
+   "a": 290,
+   "b": 390,
+   "section": "-290×14",
+   "length": 390,
+   "mass": 12.4,
+   "check": {
+    "mass_calc_7850": 12.43
+   }
+  },
+  {
+   "pos": "171",
+   "pos_variants": [
+    "171"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": 14,
+   "a": 80,
+   "b": 80,
+   "section": "-80×14",
+   "length": 80,
+   "mass": 0.7,
+   "check": {
+    "mass_calc_7850": 0.703
+   }
+  },
+  {
+   "pos": "172",
+   "pos_variants": [
+    "172"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": 14,
+   "a": 60,
+   "b": 60,
+   "section": "-60×14",
+   "length": 60,
+   "mass": 0.4,
+   "check": {
+    "mass_calc_7850": 0.396
+   }
+  },
+  {
+   "pos": "173",
+   "pos_variants": [
+    "173"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": 14,
+   "a": 140,
+   "b": 390,
+   "section": "-140×14",
+   "length": 390,
+   "mass": 6.0,
+   "check": {
+    "mass_calc_7850": 6.001
+   }
+  },
+  {
+   "pos": "174",
+   "pos_variants": [
+    "174"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": null,
+   "a": null,
+   "b": null,
+   "section": null,
+   "length": null,
+   "mass": null,
+   "empty_on_sheet": true,
+   "note": "строка позиции на листе пустая (номер зарезервирован)"
+  },
+  {
+   "pos": "175",
+   "pos_variants": [
+    "175",
+    "175а"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": 16,
+   "a": 230,
+   "b": 330,
+   "section": "-230×16",
+   "length": 330,
+   "mass": 9.5,
+   "check": {
+    "mass_calc_7850": 9.533
+   }
+  },
+  {
+   "pos": "176",
+   "pos_variants": [
+    "176",
+    "176а"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": 16,
+   "a": 230,
+   "b": 240,
+   "section": "-230×16",
+   "length": 240,
+   "mass": 6.9,
+   "check": {
+    "mass_calc_7850": 6.933
+   }
+  },
+  {
+   "pos": "177",
+   "pos_variants": [
+    "177"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": null,
+   "a": null,
+   "b": null,
+   "section": null,
+   "length": null,
+   "mass": null,
+   "empty_on_sheet": true,
+   "note": "строка позиции на листе пустая (номер зарезервирован)"
+  },
+  {
+   "pos": "178",
+   "pos_variants": [
+    "178",
+    "178а"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": 16,
+   "a": 190,
+   "b": 330,
+   "section": "-190×16",
+   "length": 330,
+   "mass": 7.9,
+   "check": {
+    "mass_calc_7850": 7.875
+   }
+  },
+  {
+   "pos": "179",
+   "pos_variants": [
+    "179",
+    "179а"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": 16,
+   "a": 190,
+   "b": 240,
+   "section": "-190×16",
+   "length": 240,
+   "mass": 5.7,
+   "check": {
+    "mass_calc_7850": 5.727
+   }
+  },
+  {
+   "pos": "180",
+   "pos_variants": [
+    "180"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": null,
+   "a": null,
+   "b": null,
+   "section": null,
+   "length": null,
+   "mass": null,
+   "empty_on_sheet": true,
+   "note": "строка позиции на листе пустая (номер зарезервирован)"
+  },
+  {
+   "pos": "181",
+   "pos_variants": [
+    "181"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": null,
+   "a": null,
+   "b": null,
+   "section": null,
+   "length": null,
+   "mass": null,
+   "empty_on_sheet": true,
+   "note": "строка позиции на листе пустая (номер зарезервирован)"
+  },
+  {
+   "pos": "182",
+   "pos_variants": [
+    "182"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": null,
+   "a": null,
+   "b": null,
+   "section": null,
+   "length": null,
+   "mass": null,
+   "empty_on_sheet": true,
+   "note": "строка позиции на листе пустая (номер зарезервирован)"
+  },
+  {
+   "pos": "183",
+   "pos_variants": [
+    "183"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": null,
+   "a": null,
+   "b": null,
+   "section": null,
+   "length": null,
+   "mass": null,
+   "empty_on_sheet": true,
+   "note": "строка позиции на листе пустая (номер зарезервирован)"
+  },
+  {
+   "pos": "184",
+   "pos_variants": [
+    "184"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": null,
+   "a": null,
+   "b": null,
+   "section": null,
+   "length": null,
+   "mass": null,
+   "empty_on_sheet": true,
+   "note": "строка позиции на листе пустая (номер зарезервирован)"
+  },
+  {
+   "pos": "185",
+   "pos_variants": [
+    "185"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": null,
+   "a": null,
+   "b": null,
+   "section": null,
+   "length": null,
+   "mass": null,
+   "empty_on_sheet": true,
+   "note": "строка позиции на листе пустая (номер зарезервирован)"
+  },
+  {
+   "pos": "186",
+   "pos_variants": [
+    "186"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": null,
+   "a": null,
+   "b": null,
+   "section": null,
+   "length": null,
+   "mass": null,
+   "empty_on_sheet": true,
+   "note": "строка позиции на листе пустая (номер зарезервирован)"
+  },
+  {
+   "pos": "187",
+   "pos_variants": [
+    "187"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": 20,
+   "a": 140,
+   "b": 490,
+   "section": "-140×20",
+   "length": 490,
+   "mass": 10.8,
+   "check": {
+    "mass_calc_7850": 10.77
+   }
+  },
+  {
+   "pos": "188",
+   "pos_variants": [
+    "188"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": 20,
+   "a": 140,
+   "b": 390,
+   "section": "-140×20",
+   "length": 390,
+   "mass": 8.6,
+   "check": {
+    "mass_calc_7850": 8.572
+   }
+  },
+  {
+   "pos": "189",
+   "pos_variants": [
+    "189"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": 20,
+   "a": 140,
+   "b": 290,
+   "section": "-140×20",
+   "length": 290,
+   "mass": 6.4,
+   "check": {
+    "mass_calc_7850": 6.374
+   }
+  },
+  {
+   "pos": "190",
+   "pos_variants": [
+    "190"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": 20,
+   "a": 100,
+   "b": 280,
+   "section": "-100×20",
+   "length": 280,
+   "mass": 4.4,
+   "check": {
+    "mass_calc_7850": 4.396
+   }
+  },
+  {
+   "pos": "191",
+   "pos_variants": [
+    "191"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": 20,
+   "a": 100,
+   "b": 330,
+   "section": "-100×20",
+   "length": 330,
+   "mass": 5.2,
+   "check": {
+    "mass_calc_7850": 5.181
+   }
+  },
+  {
+   "pos": "192",
+   "pos_variants": [
+    "192"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": null,
+   "a": null,
+   "b": null,
+   "section": null,
+   "length": null,
+   "mass": null,
+   "empty_on_sheet": true,
+   "note": "строка позиции на листе пустая (номер зарезервирован)"
+  },
+  {
+   "pos": "193",
+   "pos_variants": [
+    "193"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": null,
+   "a": null,
+   "b": null,
+   "section": null,
+   "length": null,
+   "mass": null,
+   "empty_on_sheet": true,
+   "note": "строка позиции на листе пустая (номер зарезервирован)"
+  },
+  {
+   "pos": "194",
+   "pos_variants": [
+    "194"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": 22,
+   "a": 160,
+   "b": 390,
+   "section": "-160×22",
+   "length": 390,
+   "mass": 10.8,
+   "check": {
+    "mass_calc_7850": 10.776
+   }
+  },
+  {
+   "pos": "195",
+   "pos_variants": [
+    "195"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": 22,
+   "a": 130,
+   "b": 390,
+   "section": "-130×22",
+   "length": 390,
+   "mass": 8.8,
+   "check": {
+    "mass_calc_7850": 8.756
+   }
+  },
+  {
+   "pos": "196",
+   "pos_variants": [
+    "196"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": 22,
+   "a": 110,
+   "b": 390,
+   "section": "-110×22",
+   "length": 390,
+   "mass": 7.4,
+   "check": {
+    "mass_calc_7850": 7.409
+   }
+  },
+  {
+   "pos": "197",
+   "pos_variants": [
+    "197"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": 22,
+   "a": 100,
+   "b": 390,
+   "section": "-100×22",
+   "length": 390,
+   "mass": 6.8,
+   "check": {
+    "mass_calc_7850": 6.735
+   }
+  },
+  {
+   "pos": "198",
+   "pos_variants": [
+    "198"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": 22,
+   "a": 100,
+   "b": 290,
+   "section": "-100×22",
+   "length": 290,
+   "mass": 5.0,
+   "check": {
+    "mass_calc_7850": 5.008
+   }
+  },
+  {
+   "pos": "199",
+   "pos_variants": [
+    "199",
+    "199а"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": 30,
+   "a": 290,
+   "b": 390,
+   "section": "-290×30",
+   "length": 390,
+   "mass": 26.6,
+   "check": {
+    "mass_calc_7850": 26.635
+   },
+   "note": "последняя цифра веса обрезана краем листа («26.(»); 26.6 подтверждается спецификацией М7-5 (стр. 130, поз. 199а 26.6) и расчётом"
+  },
+  {
+   "pos": "200",
+   "pos_variants": [
+    "200"
+   ],
+   "page": 138,
+   "sheet": 112,
+   "table": "22",
+   "t": 30,
+   "a": 160,
+   "b": 390,
+   "section": "-160×30",
+   "length": 390,
+   "mass": 14.7,
+   "check": {
+    "mass_calc_7850": 14.695
+   }
+  }
+ ],
+ "plates_holes": [
+  {
+   "pos": "34а",
+   "base_pos": "34",
+   "A": 650,
+   "B": 490,
+   "page": 139,
+   "sheet": 113,
+   "holes": [
+    {
+     "d": 23,
+     "points": [
+      [
+       220,
+       120
+      ],
+      [
+       480,
+       120
+      ],
+      [
+       220,
+       370
+      ],
+      [
+       480,
+       370
+      ]
+     ],
+     "note": "сквозные отверстия (для стержней с нарезкой); x — от левой кромки, y — от верхней на виде листа"
+    }
+   ],
+   "chains": "гориз. 220-260-170; верт. 120-250-120",
+   "t_mass": "толщина и вес — по Табл. 22 (поз. 34)",
+   "xref": "РАСХОЖДЕНИЕ с чертежом М7-2 (стр. 129): там сквозные стержни 393 стоят на x = ось ± 250 (x=100, 600), а здесь отверстия по x совпадают с приварными анкерами 242 (220, 480); по y отверстия совпадают со стержнями 393. Какой лист верен — не установлено"
+  },
+  {
+   "pos": "35а",
+   "base_pos": "35",
+   "A": 590,
+   "B": 390,
+   "page": 139,
+   "sheet": 113,
+   "holes": [
+    {
+     "d": 27,
+     "points": [
+      [
+       195,
+       95
+      ],
+      [
+       395,
+       95
+      ],
+      [
+       195,
+       295
+      ],
+      [
+       395,
+       295
+      ]
+     ],
+     "note": "сквозные отверстия (для стержней с нарезкой); x — от левой кромки, y — от верхней на виде листа"
+    }
+   ],
+   "chains": "гориз. 195-200-195; верт. 95-200-95",
+   "t_mass": "толщина и вес — по Табл. 22 (поз. 35)"
+  },
+  {
+   "pos": "36а",
+   "base_pos": "36",
+   "A": 550,
+   "B": 390,
+   "page": 139,
+   "sheet": 113,
+   "holes": [
+    {
+     "d": 23,
+     "points": [
+      [
+       210,
+       115
+      ],
+      [
+       390,
+       115
+      ],
+      [
+       210,
+       275
+      ],
+      [
+       390,
+       275
+      ]
+     ],
+     "note": "сквозные отверстия (для стержней с нарезкой); x — от левой кромки, y — от верхней на виде листа"
+    }
+   ],
+   "chains": "гориз. 210-180-160; верт. 115-160-115",
+   "t_mass": "толщина и вес — по Табл. 22 (поз. 36)",
+   "xref": "РАСХОЖДЕНИЕ с чертежом М7-1 (стр. 129): там сквозные стержни 393 стоят на x = ось ± 200 (x=100, 500), а здесь отверстия по x совпадают с приварными анкерами 242 (210, 390); по y отверстия совпадают со стержнями 393. Какой лист верен — не установлено"
+  },
+  {
+   "pos": "42а",
+   "base_pos": "42",
+   "A": 590,
+   "B": 290,
+   "page": 139,
+   "sheet": 113,
+   "holes": [
+    {
+     "d": 27,
+     "points": [
+      [
+       195,
+       45
+      ],
+      [
+       395,
+       45
+      ],
+      [
+       195,
+       245
+      ],
+      [
+       395,
+       245
+      ]
+     ],
+     "note": "сквозные отверстия (для стержней с нарезкой); x — от левой кромки, y — от верхней на виде листа"
+    }
+   ],
+   "chains": "гориз. 195-200-195; верт. 45-200-45",
+   "t_mass": "толщина и вес — по Табл. 22 (поз. 42)"
+  },
+  {
+   "pos": "101а",
+   "base_pos": "101",
+   "A": 590,
+   "B": 490,
+   "page": 139,
+   "sheet": 113,
+   "holes": [
+    {
+     "d": 33,
+     "points": [
+      [
+       195,
+       145
+      ],
+      [
+       395,
+       145
+      ],
+      [
+       195,
+       345
+      ],
+      [
+       395,
+       345
+      ]
+     ],
+     "note": "сквозные отверстия (для стержней с нарезкой); x — от левой кромки, y — от верхней на виде листа"
+    }
+   ],
+   "chains": "гориз. 195-200-195; верт. 145-200-145",
+   "t_mass": "толщина и вес — по Табл. 22 (поз. 101)"
+  },
+  {
+   "pos": "107а",
+   "base_pos": "107",
+   "A": 590,
+   "B": 390,
+   "page": 139,
+   "sheet": 113,
+   "holes": [
+    {
+     "d": 27,
+     "points": [
+      [
+       195,
+       95
+      ],
+      [
+       395,
+       95
+      ],
+      [
+       195,
+       295
+      ],
+      [
+       395,
+       295
+      ]
+     ],
+     "note": "сквозные отверстия (для стержней с нарезкой); x — от левой кромки, y — от верхней на виде листа"
+    }
+   ],
+   "chains": "гориз. 195-200-195; верт. 95-200-95",
+   "t_mass": "толщина и вес — по Табл. 22 (поз. 107)"
+  },
+  {
+   "pos": "107б",
+   "base_pos": "107",
+   "A": 590,
+   "B": 390,
+   "page": 139,
+   "sheet": 113,
+   "holes": [
+    {
+     "d": 27,
+     "points": [
+      [
+       145,
+       95
+      ],
+      [
+       345,
+       95
+      ],
+      [
+       145,
+       295
+      ],
+      [
+       345,
+       295
+      ]
+     ],
+     "note": "сквозные отверстия (для стержней с нарезкой); x — от левой кромки, y — от верхней на виде листа"
+    }
+   ],
+   "chains": "гориз. 145-200-245; верт. 95-200-95",
+   "t_mass": "толщина и вес — по Табл. 22 (поз. 107)"
+  },
+  {
+   "pos": "175а",
+   "base_pos": "175",
+   "A": 330,
+   "B": 230,
+   "page": 139,
+   "sheet": 113,
+   "holes": [
+    {
+     "d": 23,
+     "points": [
+      [
+       60,
+       50
+      ],
+      [
+       140,
+       50
+      ],
+      [
+       60,
+       180
+      ],
+      [
+       140,
+       180
+      ]
+     ],
+     "note": "сквозные отверстия (для стержней с нарезкой); x — от левой кромки, y — от верхней на виде листа"
+    }
+   ],
+   "chains": "гориз. 60-80-190; верт. 50-130-50",
+   "t_mass": "толщина и вес — по Табл. 22 (поз. 175)"
+  },
+  {
+   "pos": "178а",
+   "base_pos": "178",
+   "A": 330,
+   "B": 190,
+   "page": 139,
+   "sheet": 113,
+   "holes": [
+    {
+     "d": 23,
+     "points": [
+      [
+       60,
+       30
+      ],
+      [
+       140,
+       30
+      ],
+      [
+       60,
+       160
+      ],
+      [
+       140,
+       160
+      ]
+     ],
+     "note": "сквозные отверстия (для стержней с нарезкой); x — от левой кромки, y — от верхней на виде листа"
+    }
+   ],
+   "chains": "гориз. 60-80-190; верт. 30-130-30",
+   "t_mass": "толщина и вес — по Табл. 22 (поз. 178)"
+  },
+  {
+   "pos": "199а",
+   "base_pos": "199",
+   "A": 390,
+   "B": 290,
+   "page": 139,
+   "sheet": 113,
+   "holes": [
+    {
+     "d": 23,
+     "points": [
+      [
+       130,
+       45
+      ],
+      [
+       260,
+       45
+      ],
+      [
+       130,
+       245
+      ],
+      [
+       260,
+       245
+      ]
+     ],
+     "note": "сквозные отверстия (для стержней с нарезкой); x — от левой кромки, y — от верхней на виде листа"
+    }
+   ],
+   "chains": "гориз. 130-130-130; верт. 45-200-45",
+   "t_mass": "толщина и вес — по Табл. 22 (поз. 199)",
+   "xref": "М7-5 (стр. 130): стержни 396 на x=130, 260 и y=45, 245 — совпадает"
+  },
+  {
+   "pos": "41а",
+   "base_pos": "41",
+   "A": 300,
+   "B": 390,
+   "page": 140,
+   "sheet": 114,
+   "holes": [
+    {
+     "d": 27,
+     "points": [
+      [
+       70,
+       95
+      ],
+      [
+       70,
+       295
+      ]
+     ],
+     "note": "сквозные отверстия (для стержней с нарезкой); x — от левой кромки, y — от верхней на виде листа"
+    }
+   ],
+   "chains": "гориз. 70-230; верт. 95-200-95",
+   "t_mass": "толщина и вес — по Табл. 22 (поз. 41)"
+  },
+  {
+   "pos": "43а",
+   "base_pos": "43",
+   "A": 300,
+   "B": 290,
+   "page": 140,
+   "sheet": 114,
+   "holes": [
+    {
+     "d": 27,
+     "points": [
+      [
+       70,
+       45
+      ],
+      [
+       70,
+       245
+      ]
+     ],
+     "note": "сквозные отверстия (для стержней с нарезкой); x — от левой кромки, y — от верхней на виде листа"
+    }
+   ],
+   "chains": "гориз. 70-230; верт. 45-200-45",
+   "t_mass": "толщина и вес — по Табл. 22 (поз. 43)"
+  },
+  {
+   "pos": "148а",
+   "base_pos": "148",
+   "A": 300,
+   "B": 390,
+   "page": 140,
+   "sheet": 114,
+   "holes": [
+    {
+     "d": 33,
+     "points": [
+      [
+       70,
+       95
+      ],
+      [
+       70,
+       295
+      ]
+     ],
+     "note": "сквозные отверстия (для стержней с нарезкой); x — от левой кромки, y — от верхней на виде листа"
+    }
+   ],
+   "chains": "гориз. 70-230; верт. 95-200-95",
+   "t_mass": "толщина и вес — по Табл. 22 (поз. 148)"
+  },
+  {
+   "pos": "48а",
+   "base_pos": "48",
+   "A": 240,
+   "B": 270,
+   "page": 140,
+   "sheet": 114,
+   "holes": [
+    {
+     "d": 15,
+     "points": [
+      [
+       70,
+       70
+      ],
+      [
+       70,
+       200
+      ]
+     ],
+     "note": "сквозные отверстия (для стержней с нарезкой); x — от левой кромки, y — от верхней на виде листа"
+    }
+   ],
+   "chains": "гориз. 70-170; верт. 70-130-70",
+   "t_mass": "толщина и вес — по Табл. 22 (поз. 48)"
+  },
+  {
+   "pos": "48б",
+   "base_pos": "48",
+   "A": 240,
+   "B": 270,
+   "page": 140,
+   "sheet": 114,
+   "holes": [
+    {
+     "d": 15,
+     "points": [
+      [
+       110,
+       70
+      ],
+      [
+       110,
+       200
+      ]
+     ],
+     "note": "сквозные отверстия (для стержней с нарезкой); x — от левой кромки, y — от верхней на виде листа"
+    }
+   ],
+   "chains": "гориз. 110-130; верт. 70-130-70",
+   "t_mass": "толщина и вес — по Табл. 22 (поз. 48)"
+  },
+  {
+   "pos": "49а",
+   "base_pos": "49",
+   "A": 240,
+   "B": 230,
+   "page": 140,
+   "sheet": 114,
+   "holes": [
+    {
+     "d": 15,
+     "points": [
+      [
+       70,
+       50
+      ],
+      [
+       70,
+       180
+      ]
+     ],
+     "note": "сквозные отверстия (для стержней с нарезкой); x — от левой кромки, y — от верхней на виде листа"
+    }
+   ],
+   "chains": "гориз. 70-170; верт. 50-130-50",
+   "t_mass": "толщина и вес — по Табл. 22 (поз. 49)"
+  },
+  {
+   "pos": "49б",
+   "base_pos": "49",
+   "A": 240,
+   "B": 230,
+   "page": 140,
+   "sheet": 114,
+   "holes": [
+    {
+     "d": 15,
+     "points": [
+      [
+       110,
+       50
+      ],
+      [
+       110,
+       180
+      ]
+     ],
+     "note": "сквозные отверстия (для стержней с нарезкой); x — от левой кромки, y — от верхней на виде листа"
+    }
+   ],
+   "chains": "гориз. 110-130; верт. 50-130-50",
+   "t_mass": "толщина и вес — по Табл. 22 (поз. 49)"
+  },
+  {
+   "pos": "58а",
+   "base_pos": "58",
+   "A": 240,
+   "B": 190,
+   "page": 140,
+   "sheet": 114,
+   "holes": [
+    {
+     "d": 15,
+     "points": [
+      [
+       70,
+       30
+      ],
+      [
+       70,
+       160
+      ]
+     ],
+     "note": "сквозные отверстия (для стержней с нарезкой); x — от левой кромки, y — от верхней на виде листа"
+    }
+   ],
+   "chains": "гориз. 70-170; верт. 30-130-30",
+   "t_mass": "толщина и вес — по Табл. 22 (поз. 58)"
+  },
+  {
+   "pos": "58б",
+   "base_pos": "58",
+   "A": 240,
+   "B": 190,
+   "page": 140,
+   "sheet": 114,
+   "holes": [
+    {
+     "d": 15,
+     "points": [
+      [
+       110,
+       30
+      ],
+      [
+       110,
+       160
+      ]
+     ],
+     "note": "сквозные отверстия (для стержней с нарезкой); x — от левой кромки, y — от верхней на виде листа"
+    }
+   ],
+   "chains": "гориз. 110-130; верт. 30-130-30",
+   "t_mass": "толщина и вес — по Табл. 22 (поз. 58)"
+  },
+  {
+   "pos": "176а",
+   "base_pos": "176",
+   "A": 240,
+   "B": 230,
+   "page": 140,
+   "sheet": 114,
+   "holes": [
+    {
+     "d": 23,
+     "points": [
+      [
+       70,
+       50
+      ],
+      [
+       70,
+       180
+      ]
+     ],
+     "note": "сквозные отверстия (для стержней с нарезкой); x — от левой кромки, y — от верхней на виде листа"
+    }
+   ],
+   "chains": "гориз. 70-170; верт. 50-130-50",
+   "t_mass": "толщина и вес — по Табл. 22 (поз. 176)"
+  },
+  {
+   "pos": "179а",
+   "base_pos": "179",
+   "A": 240,
+   "B": 190,
+   "page": 140,
+   "sheet": 114,
+   "holes": [
+    {
+     "d": 23,
+     "points": [
+      [
+       70,
+       30
+      ],
+      [
+       70,
+       160
+      ]
+     ],
+     "note": "сквозные отверстия (для стержней с нарезкой); x — от левой кромки, y — от верхней на виде листа"
+    }
+   ],
+   "chains": "гориз. 70-170; верт. 30-130-30",
+   "t_mass": "толщина и вес — по Табл. 22 (поз. 179)"
+  },
+  {
+   "pos": "105а",
+   "base_pos": "105",
+   "A": 400,
+   "B": 400,
+   "page": 140,
+   "sheet": 114,
+   "holes": [
+    {
+     "d": 23,
+     "points": [
+      [
+       200,
+       20
+      ],
+      [
+       200,
+       380
+      ]
+     ],
+     "note": "сквозные отверстия (для стержней с нарезкой); x — от левой кромки, y — от верхней на виде листа"
+    }
+   ],
+   "chains": "гориз. 200-200; верт. 20-360-20",
+   "t_mass": "толщина и вес — по Табл. 22 (поз. 105)"
+  },
+  {
+   "pos": "57а",
+   "base_pos": "57",
+   "A": 190,
+   "B": 250,
+   "page": 139,
+   "sheet": 113,
+   "slot": {
+    "r": 25,
+    "width": 50,
+    "axis_x": 95,
+    "center_y": 125,
+    "half_length_dims": [
+     30,
+     30
+    ],
+    "note": "продолговатое (овальное) отверстие по вертикальной оси x=95, симметрично относительно y=125; размеры 30+30 от середины — по чертежу, вероятно, до центров скруглений R=25 (тогда габарит паза 50×110); однозначно не указано"
+   },
+   "chains": "гориз. 95-95; верт. 125-125, 30+30",
+   "t_mass": "толщина и вес — по Табл. 22 (поз. 57)"
+  },
+  {
+   "pos": "127а",
+   "base_pos": "127",
+   "A": 330,
+   "B": 200,
+   "page": 139,
+   "sheet": 113,
+   "holes": [
+    {
+     "d": null,
+     "countersunk": true,
+     "for_bar": "Ø12 A-III",
+     "points": [
+      [
+       40,
+       40
+      ],
+      [
+       165,
+       40
+      ],
+      [
+       290,
+       40
+      ],
+      [
+       40,
+       160
+      ],
+      [
+       165,
+       160
+      ],
+      [
+       290,
+       160
+      ]
+     ],
+     "note": "«раззенкованные отверстия для стержней Ø12 A-III» — диаметр отверстия на листе не указан"
+    }
+   ],
+   "chains": "гориз. 40-125-125-40; верт. 40-120-40",
+   "t_mass": "толщина и вес — по Табл. 22 (поз. 127)"
+  },
+  {
+   "pos": "163а",
+   "base_pos": "163",
+   "A": 500,
+   "B": 130,
+   "page": 139,
+   "sheet": 113,
+   "holes": [
+    {
+     "d": null,
+     "countersunk": true,
+     "for_bar": "Ø14 A-III",
+     "points": [
+      [
+       40,
+       30
+      ],
+      [
+       180,
+       30
+      ],
+      [
+       320,
+       30
+      ],
+      [
+       460,
+       30
+      ],
+      [
+       40,
+       100
+      ],
+      [
+       180,
+       100
+      ],
+      [
+       320,
+       100
+      ],
+      [
+       460,
+       100
+      ]
+     ],
+     "note": "«раззенкованные отверстия для стержней Ø14 A-III» — диаметр не указан"
+    }
+   ],
+   "chains": "гориз. 40-140-140-140-40; верт. 30-70-30",
+   "t_mass": "толщина и вес — по Табл. 22 (поз. 163)"
+  },
+  {
+   "pos": "24а",
+   "base_pos": "24",
+   "A": 100,
+   "B": 60,
+   "page": 140,
+   "sheet": 114,
+   "holes": [
+    {
+     "d": 23,
+     "points": [
+      [
+       50,
+       35
+      ]
+     ]
+    }
+   ],
+   "chains": "гориз. 50-50; верт. 35-25",
+   "xref": "шайба МС-1/МС-2 (стр. 125): там вид повёрнут — 60×100, отверстие 25/35 и 50/50 — совпадает",
+   "t_mass": "по Табл. 22 (поз. 24, 24а: 60×100×6, 0.3)"
+  },
+  {
+   "pos": "77а",
+   "base_pos": "77",
+   "A": 450,
+   "B": 100,
+   "page": 140,
+   "sheet": 114,
+   "notches": {
+    "r": 30,
+    "count": 2,
+    "where": "на обоих коротких торцах, по оси (50+50)",
+    "shape": "полукруглые вырезы R=30"
+   },
+   "chains": "гориз. 450; верт. 50-50",
+   "t_mass": "по Табл. 22 (поз. 77, 77а: 100×450×8, 2.8)"
+  },
+  {
+   "pos": "124а",
+   "base_pos": "124",
+   "A": 200,
+   "B": 390,
+   "page": 140,
+   "sheet": 114,
+   "bevel": {
+    "angle_deg": 50,
+    "root_face": 2,
+    "t": 10,
+    "edges": "обе кромки шириной 200 (торцы по длине 390)",
+    "note": "на боковом виде у обоих концов скос под 50°, притупление 2; толщина 10"
+   },
+   "chains": "200 × 390",
+   "t_mass": "по Табл. 22 (поз. 124, 124а: 200×390×10, 6.1)"
+  },
+  {
+   "pos": "133а",
+   "base_pos": "133",
+   "A": 160,
+   "B": 290,
+   "page": 140,
+   "sheet": 114,
+   "shape": {
+    "type": "трапеция",
+    "width": 160,
+    "left_edge": 290,
+    "right_edge": 260,
+    "bevels": [
+     15,
+     15
+    ],
+    "note": "левая кромка 290, правая 260 (15+260+15), скос верхней и нижней кромок симметричный"
+   },
+   "xref": "М6-2 (стр. 123): трапеция нарисована зеркально — левая кромка 260, правая 290; вес в спецификации М6-2 3.6 (в Табл. 22 для 133/133а — 3.7)",
+   "t_mass": "по Табл. 22 (поз. 133, 133а: 160×290×10, 3.7)"
+  },
+  {
+   "pos": "160а",
+   "base_pos": "160",
+   "A": 500,
+   "B": 140,
+   "page": 140,
+   "sheet": 114,
+   "slots": {
+    "r": 30,
+    "width": 60,
+    "center_from_end": 50,
+    "axis_from_top": 55,
+    "axis_from_bottom": 85,
+    "ends": "оба коротких торца"
+   },
+   "holes": [
+    {
+     "d": null,
+     "points": [
+      [
+       400,
+       90
+      ]
+     ],
+     "note": "«отв. d=?0» — читается d=10 или d=70 (вероятнее 10); отверстие на 100 от правого торца и 50 от нижней (широкой) кромки"
+    }
+   ],
+   "xref": "МС-1 (стр. 125) — совпадает (там вид повёрнут на 90°)",
+   "t_mass": "по Табл. 22 (поз. 160, 160а: 140×500×12, 6.6)"
+  },
+  {
+   "pos": "162а",
+   "base_pos": "162",
+   "A": 600,
+   "B": 200,
+   "page": 140,
+   "sheet": 114,
+   "slots": {
+    "r": 30,
+    "width": 60,
+    "center_from_end": 50,
+    "axis_from_top": 100,
+    "axis_from_bottom": 100,
+    "ends": "оба коротких торца"
+   },
+   "holes": [
+    {
+     "d": null,
+     "points": [
+      [
+       500,
+       150
+      ]
+     ],
+     "note": "«отв. d=?0» (d=10 или 70); на 100 от правого торца, 50 от нижней кромки"
+    }
+   ],
+   "xref": "МС-2 (стр. 125) — совпадает",
+   "t_mass": "по Табл. 22 (поз. 162, 162а: 200×600×12, 11.3)"
+  }
+ ],
+ "anchors_straight": [
+  {
+   "pos": "209",
+   "d": 8,
+   "cls": "A-III",
+   "L": 40,
+   "mass": 0.02,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.016
+   }
+  },
+  {
+   "pos": "212",
+   "d": 8,
+   "cls": "A-III",
+   "L": 50,
+   "mass": 0.02,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.02
+   }
+  },
+  {
+   "pos": "210",
+   "d": 8,
+   "cls": "A-III",
+   "L": 60,
+   "mass": 0.02,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.024
+   }
+  },
+  {
+   "pos": "213",
+   "d": 8,
+   "cls": "A-III",
+   "L": 80,
+   "mass": 0.03,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.032
+   }
+  },
+  {
+   "pos": "214",
+   "d": 8,
+   "cls": "A-III",
+   "L": 100,
+   "mass": 0.04,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.039
+   }
+  },
+  {
+   "pos": "215",
+   "d": 8,
+   "cls": "A-III",
+   "L": 120,
+   "mass": 0.05,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.047
+   }
+  },
+  {
+   "pos": "216",
+   "d": 8,
+   "cls": "A-III",
+   "L": 130,
+   "mass": 0.05,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.051
+   }
+  },
+  {
+   "pos": "217",
+   "d": 8,
+   "cls": "A-III",
+   "L": 150,
+   "mass": 0.06,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.059
+   }
+  },
+  {
+   "pos": "218",
+   "d": 8,
+   "cls": "A-III",
+   "L": 200,
+   "mass": 0.08,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.079
+   }
+  },
+  {
+   "pos": "219",
+   "d": 8,
+   "cls": "A-III",
+   "L": 240,
+   "mass": 0.1,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.095
+   }
+  },
+  {
+   "pos": "220",
+   "d": 8,
+   "cls": "A-III",
+   "L": 250,
+   "mass": 0.1,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.099
+   }
+  },
+  {
+   "pos": "221",
+   "d": 8,
+   "cls": "A-III",
+   "L": 270,
+   "mass": 0.11,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.107
+   },
+   "note": "первая цифра номера бледная («·21»), читается 221"
+  },
+  {
+   "pos": "223",
+   "d": 8,
+   "cls": "A-III",
+   "L": 350,
+   "mass": 0.14,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.138
+   }
+  },
+  {
+   "pos": "222",
+   "d": 8,
+   "cls": "A-III",
+   "L": 380,
+   "mass": 0.15,
+   "page": 142,
+   "sheet": 116,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.15
+   }
+  },
+  {
+   "pos": "224",
+   "d": 8,
+   "cls": "A-III",
+   "L": 440,
+   "mass": 0.17,
+   "page": 142,
+   "sheet": 116,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.174
+   }
+  },
+  {
+   "pos": "230",
+   "d": 10,
+   "cls": "A-III",
+   "L": 50,
+   "mass": 0.03,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.031
+   }
+  },
+  {
+   "pos": "231",
+   "d": 10,
+   "cls": "A-III",
+   "L": 80,
+   "mass": 0.05,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.049
+   }
+  },
+  {
+   "pos": "232",
+   "d": 10,
+   "cls": "A-III",
+   "L": 100,
+   "mass": 0.06,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.062
+   }
+  },
+  {
+   "pos": "211",
+   "d": 10,
+   "cls": "A-III",
+   "L": 120,
+   "mass": 0.07,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.074
+   },
+   "note": "номер 211 стоит в столбце Ø10 (среди 230-х); позиции 211 в столбце Ø8 нет — записано как на листе"
+  },
+  {
+   "pos": "233",
+   "d": 10,
+   "cls": "A-III",
+   "L": 130,
+   "mass": 0.08,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.08
+   }
+  },
+  {
+   "pos": "234",
+   "d": 10,
+   "cls": "A-III",
+   "L": 150,
+   "mass": 0.09,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.092
+   }
+  },
+  {
+   "pos": "235",
+   "d": 10,
+   "cls": "A-III",
+   "L": 160,
+   "mass": 0.1,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.099
+   }
+  },
+  {
+   "pos": "236",
+   "d": 10,
+   "cls": "A-III",
+   "L": 170,
+   "mass": 0.11,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.105
+   }
+  },
+  {
+   "pos": "237",
+   "d": 10,
+   "cls": "A-III",
+   "L": 180,
+   "mass": 0.11,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.111
+   }
+  },
+  {
+   "pos": "238",
+   "d": 10,
+   "cls": "A-III",
+   "L": 200,
+   "mass": 0.12,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.123
+   }
+  },
+  {
+   "pos": "239",
+   "d": 10,
+   "cls": "A-III",
+   "L": 210,
+   "mass": 0.13,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.129
+   }
+  },
+  {
+   "pos": "240",
+   "d": 10,
+   "cls": "A-III",
+   "L": 220,
+   "mass": 0.14,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.136
+   }
+  },
+  {
+   "pos": "241",
+   "d": 10,
+   "cls": "A-III",
+   "L": 240,
+   "mass": 0.15,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.148
+   }
+  },
+  {
+   "pos": "242",
+   "d": 10,
+   "cls": "A-III",
+   "L": 250,
+   "mass": 0.15,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.154
+   }
+  },
+  {
+   "pos": "243",
+   "d": 10,
+   "cls": "A-III",
+   "L": 260,
+   "mass": 0.16,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.16
+   }
+  },
+  {
+   "pos": "244",
+   "d": 10,
+   "cls": "A-III",
+   "L": 270,
+   "mass": 0.17,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.166
+   }
+  },
+  {
+   "pos": "250",
+   "d": 10,
+   "cls": "A-III",
+   "L": 300,
+   "mass": 0.19,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.185
+   }
+  },
+  {
+   "pos": "245",
+   "d": 10,
+   "cls": "A-III",
+   "L": 310,
+   "mass": 0.19,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.191
+   }
+  },
+  {
+   "pos": "246",
+   "d": 10,
+   "cls": "A-III",
+   "L": 320,
+   "mass": 0.2,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.197
+   }
+  },
+  {
+   "pos": "247",
+   "d": 10,
+   "cls": "A-III",
+   "L": 350,
+   "mass": 0.22,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.216
+   }
+  },
+  {
+   "pos": "248",
+   "d": 10,
+   "cls": "A-III",
+   "L": 530,
+   "mass": 0.33,
+   "page": 142,
+   "sheet": 116,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.327
+   }
+  },
+  {
+   "pos": "249",
+   "d": 10,
+   "cls": "A-III",
+   "L": 830,
+   "mass": null,
+   "page": 142,
+   "sheet": 116,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.512
+   },
+   "mass_raw": "0 57",
+   "note": "вес на листе «0 57» без точки; последний знак — 7 или 1 (у «1» в этой таблице тоже бывает верхний штрих). Расчёт Ø10×830 = 0.51; гнутый 339 (Ø10, 830) в Табл. 24 = 0.51. Неоднозначно — null"
+  },
+  {
+   "pos": "255",
+   "d": 12,
+   "cls": "A-III",
+   "L": 120,
+   "mass": 0.11,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.107
+   }
+  },
+  {
+   "pos": "256",
+   "d": 12,
+   "cls": "A-III",
+   "L": 150,
+   "mass": 0.13,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.133
+   }
+  },
+  {
+   "pos": "257",
+   "d": 12,
+   "cls": "A-III",
+   "L": 170,
+   "mass": 0.15,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.151
+   }
+  },
+  {
+   "pos": "258",
+   "d": 12,
+   "cls": "A-III",
+   "L": 180,
+   "mass": 0.16,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.16
+   }
+  },
+  {
+   "pos": "259",
+   "d": 12,
+   "cls": "A-III",
+   "L": 190,
+   "mass": 0.17,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.169
+   }
+  },
+  {
+   "pos": "260",
+   "d": 12,
+   "cls": "A-III",
+   "L": 220,
+   "mass": 0.2,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.195
+   }
+  },
+  {
+   "pos": "254",
+   "d": 12,
+   "cls": "A-III",
+   "L": 240,
+   "mass": 0.21,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.213
+   }
+  },
+  {
+   "pos": "261",
+   "d": 12,
+   "cls": "A-III",
+   "L": 250,
+   "mass": 0.22,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.222
+   }
+  },
+  {
+   "pos": "262",
+   "d": 12,
+   "cls": "A-III",
+   "L": 270,
+   "mass": 0.24,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.24
+   }
+  },
+  {
+   "pos": "263",
+   "d": 12,
+   "cls": "A-III",
+   "L": 280,
+   "mass": 0.25,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.249
+   }
+  },
+  {
+   "pos": "264",
+   "d": 12,
+   "cls": "A-III",
+   "L": 300,
+   "mass": 0.27,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.266
+   }
+  },
+  {
+   "pos": "265",
+   "d": 12,
+   "cls": "A-III",
+   "L": 320,
+   "mass": 0.28,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.284
+   }
+  },
+  {
+   "pos": "266",
+   "d": 12,
+   "cls": "A-III",
+   "L": 360,
+   "mass": 0.32,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.32
+   }
+  },
+  {
+   "pos": "267",
+   "d": 12,
+   "cls": "A-III",
+   "L": 370,
+   "mass": 0.33,
+   "page": 142,
+   "sheet": 116,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.328
+   }
+  },
+  {
+   "pos": "268",
+   "d": 12,
+   "cls": "A-III",
+   "L": 420,
+   "mass": 0.37,
+   "page": 142,
+   "sheet": 116,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.373
+   }
+  },
+  {
+   "pos": "269",
+   "d": 12,
+   "cls": "A-III",
+   "L": 470,
+   "mass": 0.42,
+   "page": 142,
+   "sheet": 116,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.417
+   }
+  },
+  {
+   "pos": "270",
+   "d": 12,
+   "cls": "A-III",
+   "L": 490,
+   "mass": 0.44,
+   "page": 142,
+   "sheet": 116,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.435
+   }
+  },
+  {
+   "pos": "271",
+   "d": 12,
+   "cls": "A-III",
+   "L": 570,
+   "mass": 0.51,
+   "page": 142,
+   "sheet": 116,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.506
+   }
+  },
+  {
+   "pos": "273",
+   "d": 12,
+   "cls": "A-III",
+   "L": 830,
+   "mass": 0.74,
+   "page": 142,
+   "sheet": 116,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.737
+   }
+  },
+  {
+   "pos": "274",
+   "d": 12,
+   "cls": "A-III",
+   "L": 850,
+   "mass": 0.75,
+   "page": 142,
+   "sheet": 116,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.755
+   }
+  },
+  {
+   "pos": "275",
+   "d": 12,
+   "cls": "A-III",
+   "L": 960,
+   "mass": 0.85,
+   "page": 142,
+   "sheet": 116,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.852
+   }
+  },
+  {
+   "pos": "281",
+   "d": 14,
+   "cls": "A-III",
+   "L": 50,
+   "mass": 0.06,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.06
+   }
+  },
+  {
+   "pos": "280",
+   "d": 14,
+   "cls": "A-III",
+   "L": 150,
+   "mass": 0.18,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.181
+   }
+  },
+  {
+   "pos": "282",
+   "d": 14,
+   "cls": "A-III",
+   "L": 170,
+   "mass": 0.2,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.205
+   }
+  },
+  {
+   "pos": "283",
+   "d": 14,
+   "cls": "A-III",
+   "L": 220,
+   "mass": 0.27,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.266
+   }
+  },
+  {
+   "pos": "284",
+   "d": 14,
+   "cls": "A-III",
+   "L": 270,
+   "mass": 0.33,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.326
+   }
+  },
+  {
+   "pos": "286",
+   "d": 14,
+   "cls": "A-III",
+   "L": 300,
+   "mass": 0.36,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.363
+   }
+  },
+  {
+   "pos": "287",
+   "d": 14,
+   "cls": "A-III",
+   "L": 320,
+   "mass": 0.39,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.387
+   }
+  },
+  {
+   "pos": "288",
+   "d": 14,
+   "cls": "A-III",
+   "L": 350,
+   "mass": 0.42,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.423
+   }
+  },
+  {
+   "pos": "289",
+   "d": 14,
+   "cls": "A-III",
+   "L": 400,
+   "mass": 0.5,
+   "page": 142,
+   "sheet": 116,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.483
+   }
+  },
+  {
+   "pos": "290",
+   "d": 14,
+   "cls": "A-III",
+   "L": 420,
+   "mass": 0.51,
+   "page": 142,
+   "sheet": 116,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.508
+   }
+  },
+  {
+   "pos": "294",
+   "d": 14,
+   "cls": "A-III",
+   "L": 480,
+   "mass": 0.58,
+   "page": 142,
+   "sheet": 116,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.58
+   }
+  },
+  {
+   "pos": "285",
+   "d": 14,
+   "cls": "A-III",
+   "L": 490,
+   "mass": 0.59,
+   "page": 142,
+   "sheet": 116,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.592
+   }
+  },
+  {
+   "pos": "291",
+   "d": 14,
+   "cls": "A-III",
+   "L": 500,
+   "mass": 0.6,
+   "page": 142,
+   "sheet": 116,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.604
+   }
+  },
+  {
+   "pos": "292",
+   "d": 14,
+   "cls": "A-III",
+   "L": 560,
+   "mass": 0.68,
+   "page": 142,
+   "sheet": 116,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.677
+   }
+  },
+  {
+   "pos": "297",
+   "d": 14,
+   "cls": "A-III",
+   "L": 590,
+   "mass": 0.72,
+   "page": 142,
+   "sheet": 116,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.713
+   }
+  },
+  {
+   "pos": "293",
+   "d": 14,
+   "cls": "A-III",
+   "L": 700,
+   "mass": 0.85,
+   "page": 142,
+   "sheet": 116,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.846
+   }
+  },
+  {
+   "pos": "295",
+   "d": 14,
+   "cls": "A-III",
+   "L": 830,
+   "mass": 1.0,
+   "page": 142,
+   "sheet": 116,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 1.003
+   }
+  },
+  {
+   "pos": "296",
+   "d": 14,
+   "cls": "A-III",
+   "L": 850,
+   "mass": 1.03,
+   "page": 142,
+   "sheet": 116,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 1.027
+   }
+  },
+  {
+   "pos": "301",
+   "d": 16,
+   "cls": "A-III",
+   "L": 170,
+   "mass": 0.27,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.268
+   }
+  },
+  {
+   "pos": "302",
+   "d": 16,
+   "cls": "A-III",
+   "L": 270,
+   "mass": 0.43,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.426
+   }
+  },
+  {
+   "pos": "303",
+   "d": 16,
+   "cls": "A-III",
+   "L": 300,
+   "mass": 0.48,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.474
+   }
+  },
+  {
+   "pos": "304",
+   "d": 16,
+   "cls": "A-III",
+   "L": 320,
+   "mass": 0.51,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.505
+   }
+  },
+  {
+   "pos": "300",
+   "d": 16,
+   "cls": "A-III",
+   "L": 370,
+   "mass": 0.58,
+   "page": 142,
+   "sheet": 116,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.584
+   }
+  },
+  {
+   "pos": "306",
+   "d": 16,
+   "cls": "A-III",
+   "L": 400,
+   "mass": 0.63,
+   "page": 142,
+   "sheet": 116,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.631
+   }
+  },
+  {
+   "pos": "307",
+   "d": 16,
+   "cls": "A-III",
+   "L": 560,
+   "mass": 0.88,
+   "page": 142,
+   "sheet": 116,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.884
+   },
+   "note": "вес на листе без десятичной точки («0 88») — записан как 0.88 (расчёт 0.884)"
+  },
+  {
+   "pos": "310",
+   "d": 16,
+   "cls": "A-III",
+   "L": 790,
+   "mass": 1.25,
+   "page": 142,
+   "sheet": 116,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 1.247
+   }
+  },
+  {
+   "pos": "308",
+   "d": 16,
+   "cls": "A-III",
+   "L": 830,
+   "mass": 1.31,
+   "page": 142,
+   "sheet": 116,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 1.31
+   }
+  },
+  {
+   "pos": "309",
+   "d": 16,
+   "cls": "A-III",
+   "L": 850,
+   "mass": 1.34,
+   "page": 142,
+   "sheet": 116,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 1.342
+   }
+  },
+  {
+   "pos": "312",
+   "d": 18,
+   "cls": "A-III",
+   "L": 270,
+   "mass": 0.54,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.539
+   }
+  },
+  {
+   "pos": "313",
+   "d": 18,
+   "cls": "A-III",
+   "L": 320,
+   "mass": 0.64,
+   "page": 141,
+   "sheet": 115,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.639
+   }
+  },
+  {
+   "pos": "314",
+   "d": 18,
+   "cls": "A-III",
+   "L": 470,
+   "mass": 0.94,
+   "page": 142,
+   "sheet": 116,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.939
+   }
+  },
+  {
+   "pos": "315",
+   "d": 18,
+   "cls": "A-III",
+   "L": 500,
+   "mass": 1.0,
+   "page": 142,
+   "sheet": 116,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 0.999
+   }
+  },
+  {
+   "pos": "316",
+   "d": 18,
+   "cls": "A-III",
+   "L": 580,
+   "mass": 1.16,
+   "page": 142,
+   "sheet": 116,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 1.159
+   }
+  },
+  {
+   "pos": "317",
+   "d": 18,
+   "cls": "A-III",
+   "L": 830,
+   "mass": 1.66,
+   "page": 142,
+   "sheet": 116,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 1.658
+   }
+  },
+  {
+   "pos": "318",
+   "d": 18,
+   "cls": "A-III",
+   "L": 1350,
+   "mass": 2.7,
+   "page": 142,
+   "sheet": 116,
+   "table": "23",
+   "check": {
+    "mass_calc_7850": 2.697
+   }
+  }
+ ],
+ "anchors_bent": [
+  {
+   "pos": "327",
+   "d": 8,
+   "cls": "A-III",
+   "length": 330,
+   "mass": 0.13,
+   "page": 143,
+   "sheet": 117,
+   "table": "24",
+   "shape": "отгиб",
+   "dims": {
+    "straight": 50,
+    "inclined": 280,
+    "rise": 95,
+    "angle_deg": null,
+    "bend_radius": null
+   },
+   "sketch": "Г-образный стержень с отгибом: прямой участок 50, затем наклонный участок 280, конец которого поднят на 95 мм относительно оси прямого участка (размер по вертикали справа на эскизе); 50+280 = 330",
+   "uncertain": [
+    "угол и радиус гиба на эскизе не проставлены — null; angle_calc_deg_ref = asin(rise/inclined) только справочно, не с листа"
+   ],
+   "check": {
+    "segments_sum": 330,
+    "segments_sum_eq_length": true,
+    "mass_calc_7850": 0.13,
+    "angle_calc_deg_ref": 19.8
+   }
+  },
+  {
+   "pos": "328",
+   "d": 8,
+   "cls": "A-III",
+   "length": 290,
+   "mass": 0.11,
+   "page": 143,
+   "sheet": 117,
+   "table": "24",
+   "shape": "отгиб",
+   "dims": {
+    "straight": 50,
+    "inclined": 240,
+    "rise": 170,
+    "angle_deg": null,
+    "bend_radius": null
+   },
+   "sketch": "Г-образный стержень с отгибом: прямой участок 50, затем наклонный участок 240, конец которого поднят на 170 мм относительно оси прямого участка (размер по вертикали справа на эскизе); 50+240 = 290",
+   "uncertain": [
+    "угол и радиус гиба на эскизе не проставлены — null; angle_calc_deg_ref = asin(rise/inclined) только справочно, не с листа"
+   ],
+   "check": {
+    "segments_sum": 290,
+    "segments_sum_eq_length": true,
+    "mass_calc_7850": 0.114,
+    "angle_calc_deg_ref": 45.1
+   }
+  },
+  {
+   "pos": "329",
+   "d": 8,
+   "cls": "A-III",
+   "length": 190,
+   "mass": 0.08,
+   "page": 143,
+   "sheet": 117,
+   "table": "24",
+   "shape": "отгиб",
+   "dims": {
+    "straight": 50,
+    "inclined": 140,
+    "rise": 70,
+    "angle_deg": null,
+    "bend_radius": null
+   },
+   "sketch": "Г-образный стержень с отгибом: прямой участок 50, затем наклонный участок 140, конец которого поднят на 70 мм относительно оси прямого участка (размер по вертикали справа на эскизе); 50+140 = 190",
+   "uncertain": [
+    "подъём «70»: размерная линия проходит через вторую цифру (видно как «78»), читаю 70",
+    "угол и радиус гиба на эскизе не проставлены — null; angle_calc_deg_ref = asin(rise/inclined) только справочно, не с листа"
+   ],
+   "check": {
+    "segments_sum": 190,
+    "segments_sum_eq_length": true,
+    "mass_calc_7850": 0.075,
+    "angle_calc_deg_ref": 30.0
+   }
+  },
+  {
+   "pos": "330",
+   "d": 8,
+   "cls": "A-III",
+   "length": 250,
+   "mass": 0.1,
+   "page": 143,
+   "sheet": 117,
+   "table": "24",
+   "shape": "отгиб",
+   "dims": {
+    "straight": 50,
+    "inclined": 200,
+    "rise": 60,
+    "angle_deg": null,
+    "bend_radius": null
+   },
+   "sketch": "Г-образный стержень с отгибом: прямой участок 50, затем наклонный участок 200, конец которого поднят на 60 мм относительно оси прямого участка (размер по вертикали справа на эскизе); 50+200 = 250",
+   "uncertain": [
+    "угол и радиус гиба на эскизе не проставлены — null; angle_calc_deg_ref = asin(rise/inclined) только справочно, не с листа"
+   ],
+   "check": {
+    "segments_sum": 250,
+    "segments_sum_eq_length": true,
+    "mass_calc_7850": 0.099,
+    "angle_calc_deg_ref": 17.5
+   }
+  },
+  {
+   "pos": "331",
+   "d": 8,
+   "cls": "A-III",
+   "length": 280,
+   "mass": 0.11,
+   "page": 143,
+   "sheet": 117,
+   "table": "24",
+   "shape": "отгиб",
+   "dims": {
+    "straight": 50,
+    "inclined": 230,
+    "rise": 60,
+    "angle_deg": null,
+    "bend_radius": null
+   },
+   "sketch": "Г-образный стержень с отгибом: прямой участок 50, затем наклонный участок 230, конец которого поднят на 60 мм относительно оси прямого участка (размер по вертикали справа на эскизе); 50+230 = 280",
+   "uncertain": [
+    "угол и радиус гиба на эскизе не проставлены — null; angle_calc_deg_ref = asin(rise/inclined) только справочно, не с листа"
+   ],
+   "check": {
+    "segments_sum": 280,
+    "segments_sum_eq_length": true,
+    "mass_calc_7850": 0.11,
+    "angle_calc_deg_ref": 15.1
+   }
+  },
+  {
+   "pos": "332",
+   "d": 8,
+   "cls": "A-III",
+   "length": 290,
+   "mass": 0.11,
+   "page": 143,
+   "sheet": 117,
+   "table": "24",
+   "shape": "уступ",
+   "dims": {
+    "straight_1": 50,
+    "inclined": 40,
+    "straight_2": 200,
+    "offset": 20,
+    "angle_deg": null,
+    "bend_radius": null
+   },
+   "sketch": "Стержень с уступом (Z-образный «зигзаг»): нижний горизонтальный участок 50, короткий наклонный 40, верхний горизонтальный 200; уступ (смещение осей горизонтальных участков) 20; 50+40+200 = 290",
+   "uncertain": [
+    "угол и радиус гиба на эскизе не проставлены — null; angle_calc_deg_ref = asin(rise/inclined) только справочно, не с листа"
+   ],
+   "check": {
+    "segments_sum": 290,
+    "segments_sum_eq_length": true,
+    "mass_calc_7850": 0.114
+   }
+  },
+  {
+   "pos": "333",
+   "d": 8,
+   "cls": "A-III",
+   "length": 290,
+   "mass": 0.11,
+   "page": 143,
+   "sheet": 117,
+   "table": "24",
+   "shape": "отгиб",
+   "dims": {
+    "straight": 50,
+    "inclined": 240,
+    "rise": 80,
+    "angle_deg": null,
+    "bend_radius": null
+   },
+   "sketch": "Г-образный стержень с отгибом: прямой участок 50, затем наклонный участок 240, конец которого поднят на 80 мм относительно оси прямого участка (размер по вертикали справа на эскизе); 50+240 = 290",
+   "uncertain": [
+    "угол и радиус гиба на эскизе не проставлены — null; angle_calc_deg_ref = asin(rise/inclined) только справочно, не с листа"
+   ],
+   "check": {
+    "segments_sum": 290,
+    "segments_sum_eq_length": true,
+    "mass_calc_7850": 0.114,
+    "angle_calc_deg_ref": 19.5
+   }
+  },
+  {
+   "pos": "334",
+   "d": 8,
+   "cls": "A-III",
+   "length": 540,
+   "mass": 0.21,
+   "page": 143,
+   "sheet": 117,
+   "table": "24",
+   "shape": "корыто",
+   "dims": {
+    "straight_1": 200,
+    "inclined_1": 40,
+    "bottom": 60,
+    "inclined_2": 40,
+    "straight_2": 200,
+    "depth": 20,
+    "angle_deg": null,
+    "bend_radius": null
+   },
+   "sketch": "Стержень с прогибом посередине (корытообразный): горизонтальный 200, наклон вниз 40, нижняя полка 60, наклон вверх 40, горизонтальный 200; глубина прогиба 20; 200+40+60+40+200 = 540",
+   "uncertain": [
+    "угол и радиус гиба на эскизе не проставлены — null; angle_calc_deg_ref = asin(rise/inclined) только справочно, не с листа"
+   ],
+   "check": {
+    "segments_sum": 540,
+    "segments_sum_eq_length": true,
+    "mass_calc_7850": 0.213
+   }
+  },
+  {
+   "pos": "335",
+   "d": 8,
+   "cls": "A-III",
+   "length": 540,
+   "mass": 0.21,
+   "page": 143,
+   "sheet": 117,
+   "table": "24",
+   "shape": "V-корыто",
+   "dims": {
+    "inclined_1": 240,
+    "bottom": 60,
+    "inclined_2": 240,
+    "rise": 60,
+    "angle_deg": null,
+    "bend_radius": null
+   },
+   "sketch": "Стержень-«лоток»: два наклонных участка по 240, между ними горизонтальная нижняя полка 60; концы подняты на 60 над нижней полкой; 240+60+240 = 540",
+   "uncertain": [
+    "угол и радиус гиба на эскизе не проставлены — null; angle_calc_deg_ref = asin(rise/inclined) только справочно, не с листа"
+   ],
+   "check": {
+    "segments_sum": 540,
+    "segments_sum_eq_length": true,
+    "mass_calc_7850": 0.213,
+    "angle_calc_deg_ref": 14.5
+   }
+  },
+  {
+   "pos": "336",
+   "d": 10,
+   "cls": "A-III",
+   "length": 160,
+   "mass": 0.1,
+   "page": 143,
+   "sheet": 117,
+   "table": "24",
+   "shape": "отгиб",
+   "dims": {
+    "straight": 60,
+    "inclined": 100,
+    "rise": 80,
+    "angle_deg": null,
+    "bend_radius": null
+   },
+   "sketch": "Г-образный стержень с отгибом: прямой участок 60, затем наклонный участок 100, конец которого поднят на 80 мм относительно оси прямого участка (размер по вертикали справа на эскизе); 60+100 = 160",
+   "uncertain": [
+    "угол и радиус гиба на эскизе не проставлены — null; angle_calc_deg_ref = asin(rise/inclined) только справочно, не с листа"
+   ],
+   "check": {
+    "segments_sum": 160,
+    "segments_sum_eq_length": true,
+    "mass_calc_7850": 0.099,
+    "angle_calc_deg_ref": 53.1
+   }
+  },
+  {
+   "pos": "337",
+   "d": 10,
+   "cls": "A-III",
+   "length": 200,
+   "mass": 0.12,
+   "page": 143,
+   "sheet": 117,
+   "table": "24",
+   "shape": "отгиб",
+   "dims": {
+    "straight": 60,
+    "inclined": 140,
+    "rise": 100,
+    "angle_deg": null,
+    "bend_radius": null
+   },
+   "sketch": "Г-образный стержень с отгибом: прямой участок 60, затем наклонный участок 140, конец которого поднят на 100 мм относительно оси прямого участка (размер по вертикали справа на эскизе); 60+140 = 200",
+   "uncertain": [
+    "угол и радиус гиба на эскизе не проставлены — null; angle_calc_deg_ref = asin(rise/inclined) только справочно, не с листа"
+   ],
+   "check": {
+    "segments_sum": 200,
+    "segments_sum_eq_length": true,
+    "mass_calc_7850": 0.123,
+    "angle_calc_deg_ref": 45.6
+   }
+  },
+  {
+   "pos": "338",
+   "d": 10,
+   "cls": "A-III",
+   "length": 360,
+   "mass": 0.22,
+   "page": 143,
+   "sheet": 117,
+   "table": "24",
+   "shape": "отгиб",
+   "dims": {
+    "straight": 60,
+    "inclined": 300,
+    "rise": 100,
+    "angle_deg": null,
+    "bend_radius": null
+   },
+   "sketch": "Г-образный стержень с отгибом: прямой участок 60, затем наклонный участок 300, конец которого поднят на 100 мм относительно оси прямого участка (размер по вертикали справа на эскизе); 60+300 = 360",
+   "uncertain": [
+    "угол и радиус гиба на эскизе не проставлены — null; angle_calc_deg_ref = asin(rise/inclined) только справочно, не с листа"
+   ],
+   "check": {
+    "segments_sum": 360,
+    "segments_sum_eq_length": true,
+    "mass_calc_7850": 0.222,
+    "angle_calc_deg_ref": 19.5
+   }
+  },
+  {
+   "pos": "339",
+   "d": 10,
+   "cls": "A-III",
+   "length": 830,
+   "mass": 0.51,
+   "page": 143,
+   "sheet": 117,
+   "table": "24",
+   "shape": "отгиб",
+   "dims": {
+    "straight": 150,
+    "inclined": 680,
+    "rise": 35,
+    "angle_deg": null,
+    "bend_radius": null
+   },
+   "sketch": "Г-образный стержень с отгибом: прямой участок 150, затем наклонный участок 680, конец которого поднят на 35 мм относительно оси прямого участка (размер по вертикали справа на эскизе); 150+680 = 830",
+   "uncertain": [
+    "угол и радиус гиба на эскизе не проставлены — null; angle_calc_deg_ref = asin(rise/inclined) только справочно, не с листа"
+   ],
+   "check": {
+    "segments_sum": 830,
+    "segments_sum_eq_length": true,
+    "mass_calc_7850": 0.512,
+    "angle_calc_deg_ref": 3.0
+   }
+  },
+  {
+   "pos": "340",
+   "d": 12,
+   "cls": "A-III",
+   "length": 260,
+   "mass": 0.23,
+   "page": 143,
+   "sheet": 117,
+   "table": "24",
+   "shape": "уступ",
+   "dims": {
+    "straight_1": 70,
+    "inclined": 80,
+    "straight_2": 110,
+    "offset": 30,
+    "angle_deg": null,
+    "bend_radius": null
+   },
+   "sketch": "Стержень с уступом: верхний горизонтальный участок 70, наклонный 80 вниз, нижний горизонтальный 110; уступ 30; 70+80+110 = 260",
+   "uncertain": [
+    "угол и радиус гиба на эскизе не проставлены — null; angle_calc_deg_ref = asin(rise/inclined) только справочно, не с листа"
+   ],
+   "check": {
+    "segments_sum": 260,
+    "segments_sum_eq_length": true,
+    "mass_calc_7850": 0.231
+   }
+  },
+  {
+   "pos": "341",
+   "d": 12,
+   "cls": "A-III",
+   "length": 370,
+   "mass": 0.33,
+   "page": 143,
+   "sheet": 117,
+   "table": "24",
+   "shape": "отгиб",
+   "dims": {
+    "straight": 70,
+    "inclined": 300,
+    "rise": 100,
+    "angle_deg": null,
+    "bend_radius": null
+   },
+   "sketch": "Г-образный стержень с отгибом: прямой участок 70, затем наклонный участок 300, конец которого поднят на 100 мм относительно оси прямого участка (размер по вертикали справа на эскизе); 70+300 = 370",
+   "uncertain": [
+    "угол и радиус гиба на эскизе не проставлены — null; angle_calc_deg_ref = asin(rise/inclined) только справочно, не с листа"
+   ],
+   "check": {
+    "segments_sum": 370,
+    "segments_sum_eq_length": true,
+    "mass_calc_7850": 0.328,
+    "angle_calc_deg_ref": 19.5
+   }
+  },
+  {
+   "pos": "342",
+   "d": 12,
+   "cls": "A-III",
+   "length": 450,
+   "mass": 0.4,
+   "page": 143,
+   "sheet": 117,
+   "table": "24",
+   "shape": "уступ",
+   "dims": {
+    "straight_1": 70,
+    "inclined": 80,
+    "straight_2": 300,
+    "offset": 30,
+    "angle_deg": null,
+    "bend_radius": null
+   },
+   "sketch": "Стержень с уступом: верхний горизонтальный участок 70, наклонный 80 вниз, нижний горизонтальный 300; уступ 30; 70+80+300 = 450",
+   "uncertain": [
+    "угол и радиус гиба на эскизе не проставлены — null; angle_calc_deg_ref = asin(rise/inclined) только справочно, не с листа"
+   ],
+   "check": {
+    "segments_sum": 450,
+    "segments_sum_eq_length": true,
+    "mass_calc_7850": 0.4
+   }
+  },
+  {
+   "pos": "343",
+   "d": 12,
+   "cls": "A-III",
+   "length": 450,
+   "mass": 0.4,
+   "page": 143,
+   "sheet": 117,
+   "table": "24",
+   "shape": "отгиб",
+   "dims": {
+    "straight": 70,
+    "inclined": 380,
+    "rise": 100,
+    "angle_deg": null,
+    "bend_radius": null
+   },
+   "sketch": "Г-образный стержень с отгибом: прямой участок 70, затем наклонный участок 380, конец которого поднят на 100 мм относительно оси прямого участка (размер по вертикали справа на эскизе); 70+380 = 450",
+   "uncertain": [
+    "подъём 100 подтверждён чертежом М8-14 (стр. 135: нахлёст 70, наклонный 380, вылет 100)",
+    "угол и радиус гиба на эскизе не проставлены — null; angle_calc_deg_ref = asin(rise/inclined) только справочно, не с листа"
+   ],
+   "check": {
+    "segments_sum": 450,
+    "segments_sum_eq_length": true,
+    "mass_calc_7850": 0.4,
+    "angle_calc_deg_ref": 15.3
+   }
+  },
+  {
+   "pos": "344",
+   "d": 12,
+   "cls": "A-III",
+   "length": 490,
+   "mass": 0.44,
+   "page": 143,
+   "sheet": 117,
+   "table": "24",
+   "shape": "отгиб",
+   "dims": {
+    "straight": 70,
+    "inclined": 420,
+    "rise": 110,
+    "angle_deg": null,
+    "bend_radius": null
+   },
+   "sketch": "Г-образный стержень с отгибом: прямой участок 70, затем наклонный участок 420, конец которого поднят на 110 мм относительно оси прямого участка (размер по вертикали справа на эскизе); 70+420 = 490",
+   "uncertain": [
+    "угол и радиус гиба на эскизе не проставлены — null; angle_calc_deg_ref = asin(rise/inclined) только справочно, не с листа"
+   ],
+   "check": {
+    "segments_sum": 490,
+    "segments_sum_eq_length": true,
+    "mass_calc_7850": 0.435,
+    "angle_calc_deg_ref": 15.2
+   }
+  },
+  {
+   "pos": "345",
+   "d": 12,
+   "cls": "A-III",
+   "length": 490,
+   "mass": 0.44,
+   "page": 143,
+   "sheet": 117,
+   "table": "24",
+   "shape": "отгиб",
+   "dims": {
+    "straight": 70,
+    "inclined": 420,
+    "rise": 140,
+    "angle_deg": null,
+    "bend_radius": null
+   },
+   "sketch": "Г-образный стержень с отгибом: прямой участок 70, затем наклонный участок 420, конец которого поднят на 140 мм относительно оси прямого участка (размер по вертикали справа на эскизе); 70+420 = 490",
+   "uncertain": [
+    "в графе длины над «9» лишняя точка («4·90») — читается 490",
+    "угол и радиус гиба на эскизе не проставлены — null; angle_calc_deg_ref = asin(rise/inclined) только справочно, не с листа"
+   ],
+   "check": {
+    "segments_sum": 490,
+    "segments_sum_eq_length": true,
+    "mass_calc_7850": 0.435,
+    "angle_calc_deg_ref": 19.5
+   }
+  },
+  {
+   "pos": "346",
+   "d": 12,
+   "cls": "A-III",
+   "length": 830,
+   "mass": 0.74,
+   "page": 143,
+   "sheet": 117,
+   "table": "24",
+   "shape": "отгиб",
+   "dims": {
+    "straight": 150,
+    "inclined": 680,
+    "rise": 35,
+    "angle_deg": null,
+    "bend_radius": null
+   },
+   "sketch": "Г-образный стержень с отгибом: прямой участок 150, затем наклонный участок 680, конец которого поднят на 35 мм относительно оси прямого участка (размер по вертикали справа на эскизе); 150+680 = 830",
+   "uncertain": [
+    "угол и радиус гиба на эскизе не проставлены — null; angle_calc_deg_ref = asin(rise/inclined) только справочно, не с листа"
+   ],
+   "check": {
+    "segments_sum": 830,
+    "segments_sum_eq_length": true,
+    "mass_calc_7850": 0.737,
+    "angle_calc_deg_ref": 3.0
+   }
+  },
+  {
+   "pos": "347",
+   "d": 14,
+   "cls": "A-III",
+   "length": 580,
+   "mass": 0.7,
+   "page": 143,
+   "sheet": 117,
+   "table": "24",
+   "shape": "отгиб",
+   "dims": {
+    "straight": 80,
+    "inclined": 500,
+    "rise": null,
+    "angle_deg": null,
+    "bend_radius": null
+   },
+   "sketch": "Г-образный стержень с отгибом: прямой участок 80, затем наклонный участок 500, конец которого поднят на ? мм относительно оси прямого участка (размер по вертикали справа на эскизе); 80+500 = 580",
+   "uncertain": [
+    "подъём не однозначен: «100» или «180» — средняя цифра пересечена размерной линией; null. У 343 такой же знак = 100 (подтверждён листом 109), так что вероятнее 100",
+    "угол и радиус гиба на эскизе не проставлены — null; angle_calc_deg_ref = asin(rise/inclined) только справочно, не с листа"
+   ],
+   "check": {
+    "segments_sum": 580,
+    "segments_sum_eq_length": true,
+    "mass_calc_7850": 0.701
+   }
+  },
+  {
+   "pos": "348",
+   "d": 14,
+   "cls": "A-III",
+   "length": 850,
+   "mass": 1.03,
+   "page": 143,
+   "sheet": 117,
+   "table": "24",
+   "shape": "отгиб",
+   "dims": {
+    "straight": 150,
+    "inclined": 700,
+    "rise": 35,
+    "angle_deg": null,
+    "bend_radius": null
+   },
+   "sketch": "Г-образный стержень с отгибом: прямой участок 150, затем наклонный участок 700, конец которого поднят на 35 мм относительно оси прямого участка (размер по вертикали справа на эскизе); 150+700 = 850",
+   "uncertain": [
+    "угол и радиус гиба на эскизе не проставлены — null; angle_calc_deg_ref = asin(rise/inclined) только справочно, не с листа"
+   ],
+   "check": {
+    "segments_sum": 850,
+    "segments_sum_eq_length": true,
+    "mass_calc_7850": 1.027,
+    "angle_calc_deg_ref": 2.9
+   }
+  },
+  {
+   "pos": "349",
+   "d": 16,
+   "cls": "A-III",
+   "length": 650,
+   "mass": 1.03,
+   "page": 143,
+   "sheet": 117,
+   "table": "24",
+   "shape": "отгиб",
+   "dims": {
+    "straight": 90,
+    "inclined": 560,
+    "rise": null,
+    "angle_deg": null,
+    "bend_radius": null
+   },
+   "sketch": "Г-образный стержень с отгибом: прямой участок 90, затем наклонный участок 560, конец которого поднят на ? мм относительно оси прямого участка (размер по вертикали справа на эскизе); 90+560 = 650",
+   "uncertain": [
+    "подъём «100» или «180» — как у 347, средняя цифра пересечена размерной линией; null",
+    "угол и радиус гиба на эскизе не проставлены — null; angle_calc_deg_ref = asin(rise/inclined) только справочно, не с листа"
+   ],
+   "check": {
+    "segments_sum": 650,
+    "segments_sum_eq_length": true,
+    "mass_calc_7850": 1.026
+   }
+  },
+  {
+   "pos": "350",
+   "empty_on_sheet": true,
+   "page": 143,
+   "sheet": 117,
+   "table": "24",
+   "note": "строка 350 на листе пустая"
+  },
+  {
+   "pos": "351",
+   "d": 10,
+   "cls": "A-III",
+   "length": 410,
+   "mass": 0.25,
+   "page": 143,
+   "sheet": 117,
+   "table": "24",
+   "shape": "отгиб",
+   "dims": {
+    "straight": 60,
+    "inclined": 350,
+    "rise": 120,
+    "angle_deg": null,
+    "bend_radius": null
+   },
+   "sketch": "Г-образный стержень с отгибом: прямой участок 60, затем наклонный участок 350, конец которого поднят на 120 мм относительно оси прямого участка (размер по вертикали справа на эскизе); 60+350 = 410",
+   "uncertain": [
+    "угол и радиус гиба на эскизе не проставлены — null; angle_calc_deg_ref = asin(rise/inclined) только справочно, не с листа",
+    "строки 351–354 заполнены другим почерком (дописаны позже)"
+   ],
+   "check": {
+    "segments_sum": 410,
+    "segments_sum_eq_length": true,
+    "mass_calc_7850": 0.253,
+    "angle_calc_deg_ref": 20.1
+   }
+  },
+  {
+   "pos": "352",
+   "d": 10,
+   "cls": "A-III",
+   "length": 360,
+   "mass": 0.22,
+   "page": 143,
+   "sheet": 117,
+   "table": "24",
+   "shape": "отгиб",
+   "dims": {
+    "straight": 60,
+    "inclined": 300,
+    "rise": 210,
+    "angle_deg": null,
+    "bend_radius": null
+   },
+   "sketch": "Г-образный стержень с отгибом: прямой участок 60, затем наклонный участок 300, конец которого поднят на 210 мм относительно оси прямого участка (размер по вертикали справа на эскизе); 60+300 = 360",
+   "uncertain": [
+    "угол и радиус гиба на эскизе не проставлены — null; angle_calc_deg_ref = asin(rise/inclined) только справочно, не с листа",
+    "строки 351–354 заполнены другим почерком (дописаны позже)"
+   ],
+   "check": {
+    "segments_sum": 360,
+    "segments_sum_eq_length": true,
+    "mass_calc_7850": 0.222,
+    "angle_calc_deg_ref": 44.4
+   }
+  },
+  {
+   "pos": "353",
+   "d": 12,
+   "cls": "A-III",
+   "length": 370,
+   "mass": 0.33,
+   "page": 143,
+   "sheet": 117,
+   "table": "24",
+   "shape": "отгиб",
+   "dims": {
+    "straight": 70,
+    "inclined": 300,
+    "rise": 150,
+    "angle_deg": null,
+    "bend_radius": null
+   },
+   "sketch": "Г-образный стержень с отгибом: прямой участок 70, затем наклонный участок 300, конец которого поднят на 150 мм относительно оси прямого участка (размер по вертикали справа на эскизе); 70+300 = 370",
+   "uncertain": [
+    "угол и радиус гиба на эскизе не проставлены — null; angle_calc_deg_ref = asin(rise/inclined) только справочно, не с листа",
+    "строки 351–354 заполнены другим почерком (дописаны позже)"
+   ],
+   "check": {
+    "segments_sum": 370,
+    "segments_sum_eq_length": true,
+    "mass_calc_7850": 0.328,
+    "angle_calc_deg_ref": 30.0
+   }
+  },
+  {
+   "pos": "354",
+   "d": 14,
+   "cls": "A-III",
+   "length": 500,
+   "mass": 0.61,
+   "page": 143,
+   "sheet": 117,
+   "table": "24",
+   "shape": "отгиб",
+   "dims": {
+    "straight": 80,
+    "inclined": 420,
+    "rise": 110,
+    "angle_deg": null,
+    "bend_radius": null
+   },
+   "sketch": "Г-образный стержень с отгибом: прямой участок 80, затем наклонный участок 420, конец которого поднят на 110 мм относительно оси прямого участка (размер по вертикали справа на эскизе); 80+420 = 500",
+   "uncertain": [
+    "угол и радиус гиба на эскизе не проставлены — null; angle_calc_deg_ref = asin(rise/inclined) только справочно, не с листа",
+    "строки 351–354 заполнены другим почерком (дописаны позже)"
+   ],
+   "check": {
+    "segments_sum": 500,
+    "segments_sum_eq_length": true,
+    "mass_calc_7850": 0.604,
+    "angle_calc_deg_ref": 15.2
+   }
+  }
+ ],
+ "profiles": [
+  {
+   "pos": "356",
+   "profile": "∟50×5",
+   "gost": "ГОСТ 8509-72",
+   "length": 100,
+   "mass": 0.38,
+   "page": 144,
+   "sheet": 118,
+   "table": "25",
+   "check": {
+    "mass_calc_ref": 0.38,
+    "kg_per_m_ref": 3.77,
+    "ref_note": "справочная масса 1 м по сортаменту, не с листа"
+   }
+  },
+  {
+   "pos": "357",
+   "profile": "∟63×5",
+   "gost": "ГОСТ 8509-72",
+   "length": 150,
+   "mass": 0.73,
+   "page": 144,
+   "sheet": 118,
+   "table": "25",
+   "check": {
+    "mass_calc_ref": 0.72,
+    "kg_per_m_ref": 4.81,
+    "ref_note": "справочная масса 1 м по сортаменту, не с листа"
+   }
+  },
+  {
+   "pos": "358",
+   "profile": "∟63×6",
+   "gost": "ГОСТ 8509-72",
+   "length": 100,
+   "mass": 0.57,
+   "page": 144,
+   "sheet": 118,
+   "table": "25",
+   "check": {
+    "mass_calc_ref": 0.57,
+    "kg_per_m_ref": 5.72,
+    "ref_note": "справочная масса 1 м по сортаменту, не с листа"
+   }
+  },
+  {
+   "pos": "359",
+   "profile": "∟63×6",
+   "gost": "ГОСТ 8509-72",
+   "length": 200,
+   "mass": 1.14,
+   "page": 144,
+   "sheet": 118,
+   "table": "25",
+   "check": {
+    "mass_calc_ref": 1.14,
+    "kg_per_m_ref": 5.72,
+    "ref_note": "справочная масса 1 м по сортаменту, не с листа"
+   }
+  },
+  {
+   "pos": "360",
+   "profile": "∟63×6",
+   "gost": "ГОСТ 8509-72",
+   "length": 300,
+   "mass": 1.72,
+   "page": 144,
+   "sheet": 118,
+   "table": "25",
+   "check": {
+    "mass_calc_ref": 1.72,
+    "kg_per_m_ref": 5.72,
+    "ref_note": "справочная масса 1 м по сортаменту, не с листа"
+   }
+  },
+  {
+   "pos": "361",
+   "profile": "∟75×5",
+   "gost": "ГОСТ 8509-72",
+   "length": 290,
+   "mass": 1.68,
+   "page": 144,
+   "sheet": 118,
+   "table": "25",
+   "check": {
+    "mass_calc_ref": 1.68,
+    "kg_per_m_ref": 5.8,
+    "ref_note": "справочная масса 1 м по сортаменту, не с листа"
+   }
+  },
+  {
+   "pos": "362",
+   "profile": "∟75×7",
+   "gost": "ГОСТ 8509-72",
+   "length": 100,
+   "mass": 0.8,
+   "page": 144,
+   "sheet": 118,
+   "table": "25",
+   "check": {
+    "mass_calc_ref": 0.8,
+    "kg_per_m_ref": 7.96,
+    "ref_note": "справочная масса 1 м по сортаменту, не с листа"
+   }
+  },
+  {
+   "pos": "363",
+   "profile": "∟75×7",
+   "gost": "ГОСТ 8509-72",
+   "length": 200,
+   "mass": 1.59,
+   "page": 144,
+   "sheet": 118,
+   "table": "25",
+   "check": {
+    "mass_calc_ref": 1.59,
+    "kg_per_m_ref": 7.96,
+    "ref_note": "справочная масса 1 м по сортаменту, не с листа"
+   }
+  },
+  {
+   "pos": "364",
+   "profile": "∟75×7",
+   "gost": "ГОСТ 8509-72",
+   "length": 250,
+   "mass": 2.0,
+   "page": 144,
+   "sheet": 118,
+   "table": "25",
+   "check": {
+    "mass_calc_ref": 1.99,
+    "kg_per_m_ref": 7.96,
+    "ref_note": "справочная масса 1 м по сортаменту, не с листа"
+   }
+  },
+  {
+   "pos": "365",
+   "profile": "∟75×7",
+   "gost": "ГОСТ 8509-72",
+   "length": 300,
+   "mass": 2.39,
+   "page": 144,
+   "sheet": 118,
+   "table": "25",
+   "check": {
+    "mass_calc_ref": 2.39,
+    "kg_per_m_ref": 7.96,
+    "ref_note": "справочная масса 1 м по сортаменту, не с листа"
+   }
+  },
+  {
+   "pos": "366",
+   "profile": "∟75×50×5",
+   "gost": "ГОСТ 8510-72",
+   "length": 300,
+   "mass": 1.44,
+   "page": 144,
+   "sheet": 118,
+   "table": "25",
+   "check": {
+    "mass_calc_ref": 1.44,
+    "kg_per_m_ref": 4.79,
+    "ref_note": "справочная масса 1 м по сортаменту, не с листа"
+   }
+  },
+  {
+   "pos": "367",
+   "profile": "∟80×7",
+   "gost": "ГОСТ 8509-72",
+   "length": 100,
+   "mass": 0.85,
+   "page": 144,
+   "sheet": 118,
+   "table": "25",
+   "check": {
+    "mass_calc_ref": 0.85,
+    "kg_per_m_ref": 8.51,
+    "ref_note": "справочная масса 1 м по сортаменту, не с листа"
+   },
+   "note": "в спецификации М8-8 (стр. 134) сечение поз. 367 записано «∟80×2» — по этой таблице поз. 367 = ∟80×7"
+  },
+  {
+   "pos": "368",
+   "profile": "∟80×7",
+   "gost": "ГОСТ 8509-72",
+   "length": 200,
+   "mass": 1.7,
+   "page": 144,
+   "sheet": 118,
+   "table": "25",
+   "check": {
+    "mass_calc_ref": 1.7,
+    "kg_per_m_ref": 8.51,
+    "ref_note": "справочная масса 1 м по сортаменту, не с листа"
+   }
+  },
+  {
+   "pos": "369",
+   "profile": "∟90×8",
+   "gost": "ГОСТ 8509-72",
+   "length": 100,
+   "mass": 1.09,
+   "page": 144,
+   "sheet": 118,
+   "table": "25",
+   "check": {
+    "mass_calc_ref": 1.09,
+    "kg_per_m_ref": 10.93,
+    "ref_note": "справочная масса 1 м по сортаменту, не с листа"
+   }
+  },
+  {
+   "pos": "370",
+   "profile": "∟90×8",
+   "gost": "ГОСТ 8509-72",
+   "length": 250,
+   "mass": 2.73,
+   "page": 144,
+   "sheet": 118,
+   "table": "25",
+   "check": {
+    "mass_calc_ref": 2.73,
+    "kg_per_m_ref": 10.93,
+    "ref_note": "справочная масса 1 м по сортаменту, не с листа"
+   }
+  },
+  {
+   "pos": "371",
+   "profile": "∟90×8",
+   "gost": "ГОСТ 8509-72",
+   "length": 300,
+   "mass": 3.27,
+   "page": 144,
+   "sheet": 118,
+   "table": "25",
+   "check": {
+    "mass_calc_ref": 3.28,
+    "kg_per_m_ref": 10.93,
+    "ref_note": "справочная масса 1 м по сортаменту, не с листа"
+   }
+  },
+  {
+   "pos": "372",
+   "profile": "∟90×56×5,5",
+   "gost": "ГОСТ 8510-72",
+   "length": 250,
+   "mass": 1.54,
+   "page": 144,
+   "sheet": 118,
+   "table": "25",
+   "check": {
+    "mass_calc_ref": 1.54,
+    "kg_per_m_ref": 6.17,
+    "ref_note": "справочная масса 1 м по сортаменту, не с листа"
+   }
+  },
+  {
+   "pos": "373",
+   "profile": "∟100×63×6",
+   "gost": "ГОСТ 8510-72",
+   "length": 80,
+   "mass": 0.6,
+   "page": 144,
+   "sheet": 118,
+   "table": "25",
+   "check": {
+    "mass_calc_ref": 0.6,
+    "kg_per_m_ref": 7.53,
+    "ref_note": "справочная масса 1 м по сортаменту, не с листа"
+   }
+  },
+  {
+   "pos": "374",
+   "profile": "∟110×70×8",
+   "gost": "ГОСТ 8510-72",
+   "length": 240,
+   "mass": 2.62,
+   "page": 144,
+   "sheet": 118,
+   "table": "25",
+   "check": {
+    "mass_calc_ref": 2.62,
+    "kg_per_m_ref": 10.93,
+    "ref_note": "справочная масса 1 м по сортаменту, не с листа"
+   },
+   "pos_raw": "3.74",
+   "note": "номер позиции на листе написан «3.74» (лишняя точка; соседние 373, 375)"
+  },
+  {
+   "pos": "375",
+   "profile": "∟110×70×8",
+   "gost": "ГОСТ 8510-72",
+   "length": 300,
+   "mass": 3.28,
+   "page": 144,
+   "sheet": 118,
+   "table": "25",
+   "check": {
+    "mass_calc_ref": 3.28,
+    "kg_per_m_ref": 10.93,
+    "ref_note": "справочная масса 1 м по сортаменту, не с листа"
+   }
+  },
+  {
+   "pos": "376",
+   "profile": "∟180×110×10",
+   "gost": "ГОСТ 8510-72",
+   "length": 200,
+   "mass": 4.44,
+   "page": 144,
+   "sheet": 118,
+   "table": "25",
+   "check": {
+    "mass_calc_ref": 4.44,
+    "kg_per_m_ref": 22.2,
+    "ref_note": "справочная масса 1 м по сортаменту, не с листа"
+   }
+  },
+  {
+   "pos": "377",
+   "profile": "∟180×110×10",
+   "gost": "ГОСТ 8510-72",
+   "length": 300,
+   "mass": 6.65,
+   "page": 144,
+   "sheet": 118,
+   "table": "25",
+   "check": {
+    "mass_calc_ref": 6.66,
+    "kg_per_m_ref": 22.2,
+    "ref_note": "справочная масса 1 м по сортаменту, не с листа"
+   }
+  },
+  {
+   "pos": "378",
+   "profile": "[30",
+   "gost": "ГОСТ 8240-72",
+   "length": 300,
+   "mass": 9.6,
+   "page": 144,
+   "sheet": 118,
+   "table": "25",
+   "check": {
+    "mass_calc_ref": 9.54,
+    "kg_per_m_ref": 31.8,
+    "ref_note": "справочная масса 1 м по сортаменту, не с листа"
+   }
+  },
+  {
+   "pos": "379",
+   "profile": "[20",
+   "gost": "ГОСТ 8240-72",
+   "length": 200,
+   "mass": 3.7,
+   "page": 144,
+   "sheet": 118,
+   "table": "25",
+   "check": {
+    "mass_calc_ref": 3.68,
+    "kg_per_m_ref": 18.4,
+    "ref_note": "справочная масса 1 м по сортаменту, не с листа"
+   }
+  },
+  {
+   "pos": "380",
+   "profile": "[14",
+   "gost": "ГОСТ 8240-72",
+   "length": 300,
+   "mass": 3.7,
+   "page": 144,
+   "sheet": 118,
+   "table": "25",
+   "check": {
+    "mass_calc_ref": 3.69,
+    "kg_per_m_ref": 12.3,
+    "ref_note": "справочная масса 1 м по сортаменту, не с листа"
+   }
+  },
+  {
+   "pos": "381",
+   "profile": "∟50×5",
+   "gost": "ГОСТ 8509-72",
+   "length": null,
+   "mass": 3.78,
+   "page": 144,
+   "sheet": 118,
+   "table": "25",
+   "mass_unit": "кг/п.м",
+   "note": "строка «п.м.»: длина не фиксирована, вес на погонный метр"
+  },
+  {
+   "pos": "382",
+   "profile": "∟63×6",
+   "gost": "ГОСТ 8509-72",
+   "length": 470,
+   "mass": 2.68,
+   "page": 144,
+   "sheet": 118,
+   "table": "25",
+   "check": {
+    "mass_calc_ref": 2.69,
+    "kg_per_m_ref": 5.72,
+    "ref_note": "справочная масса 1 м по сортаменту, не с листа"
+   }
+  },
+  {
+   "pos": "383",
+   "profile": "∟63×6",
+   "gost": "ГОСТ 8509-72",
+   "length": 700,
+   "mass": 4.0,
+   "page": 144,
+   "sheet": 118,
+   "table": "25",
+   "check": {
+    "mass_calc_ref": 4.0,
+    "kg_per_m_ref": 5.72,
+    "ref_note": "справочная масса 1 м по сортаменту, не с листа"
+   }
+  },
+  {
+   "pos": "384",
+   "profile": "∟63×6",
+   "gost": "ГОСТ 8509-72",
+   "length": null,
+   "mass": 5.72,
+   "page": 144,
+   "sheet": 118,
+   "table": "25",
+   "mass_unit": "кг/п.м",
+   "note": "строка «п.м.»: длина не фиксирована, вес на погонный метр"
+  },
+  {
+   "pos": "385",
+   "profile": "∟75×7",
+   "gost": "ГОСТ 8509-72",
+   "length": 350,
+   "mass": 2.79,
+   "page": 144,
+   "sheet": 118,
+   "table": "25",
+   "check": {
+    "mass_calc_ref": 2.79,
+    "kg_per_m_ref": 7.96,
+    "ref_note": "справочная масса 1 м по сортаменту, не с листа"
+   }
+  },
+  {
+   "pos": "386",
+   "profile": "∟75×7",
+   "gost": "ГОСТ 8509-72",
+   "length": null,
+   "mass": 7.96,
+   "page": 144,
+   "sheet": 118,
+   "table": "25",
+   "mass_unit": "кг/п.м",
+   "note": "строка «п.м.»: длина не фиксирована, вес на погонный метр"
+  },
+  {
+   "pos": "387",
+   "profile": "∟90×8",
+   "gost": "ГОСТ 8509-72",
+   "length": 350,
+   "mass": 3.82,
+   "page": 144,
+   "sheet": 118,
+   "table": "25",
+   "check": {
+    "mass_calc_ref": 3.83,
+    "kg_per_m_ref": 10.93,
+    "ref_note": "справочная масса 1 м по сортаменту, не с листа"
+   }
+  },
+  {
+   "pos": "388",
+   "profile": "∟90×8",
+   "gost": "ГОСТ 8509-72",
+   "length": null,
+   "mass": 10.9,
+   "page": 144,
+   "sheet": 118,
+   "table": "25",
+   "mass_unit": "кг/п.м",
+   "note": "строка «п.м.»: длина не фиксирована, вес на погонный метр"
+  },
+  {
+   "pos": "389",
+   "profile": "∟110×70×8",
+   "gost": "ГОСТ 8510-72",
+   "length": 350,
+   "mass": 3.82,
+   "page": 144,
+   "sheet": 118,
+   "table": "25",
+   "check": {
+    "mass_calc_ref": 3.83,
+    "kg_per_m_ref": 10.93,
+    "ref_note": "справочная масса 1 м по сортаменту, не с листа"
+   }
+  },
+  {
+   "pos": "390",
+   "profile": "∟63×6",
+   "gost": "ГОСТ 8509-72",
+   "length": 320,
+   "mass": 1.83,
+   "page": 144,
+   "sheet": 118,
+   "table": "25",
+   "check": {
+    "mass_calc_ref": 1.83,
+    "kg_per_m_ref": 5.72,
+    "ref_note": "справочная масса 1 м по сортаменту, не с листа"
+   }
+  }
+ ],
+ "threaded": [
+  {
+   "pos": "391",
+   "d": 12,
+   "cls": "A-I",
+   "l": 110,
+   "thread": "M12",
+   "l1": 70,
+   "mass": 0.1,
+   "note_on_sheet": "с гайкой и шайбой",
+   "page": 145,
+   "sheet": 119,
+   "table": "26",
+   "sketch": "прямой стержень длиной l, на одном конце нарезка длиной l1; на эскизе ещё отмечен размер «a» у середины стержня — в таблице графы «a» нет (значение не дано)"
+  },
+  {
+   "pos": "392",
+   "d": 20,
+   "cls": "A-I",
+   "l": 110,
+   "thread": "M20",
+   "l1": 70,
+   "mass": 0.27,
+   "note_on_sheet": null,
+   "page": 145,
+   "sheet": 119,
+   "table": "26",
+   "sketch": "прямой стержень длиной l, на одном конце нарезка длиной l1; на эскизе ещё отмечен размер «a» у середины стержня — в таблице графы «a» нет (значение не дано)"
+  },
+  {
+   "pos": "393",
+   "d": 20,
+   "cls": "A-I",
+   "l": 760,
+   "thread": "M20",
+   "l1": 130,
+   "mass": 1.9,
+   "note_on_sheet": null,
+   "page": 145,
+   "sheet": 119,
+   "table": "26",
+   "sketch": "прямой стержень длиной l, на одном конце нарезка длиной l1; на эскизе ещё отмечен размер «a» у середины стержня — в таблице графы «a» нет (значение не дано)",
+   "xref": "М7-1, М7-2 (стр. 129): 760, нарезка 130 — совпадает"
+  },
+  {
+   "pos": "394",
+   "d": 22,
+   "cls": "A-III",
+   "l": 600,
+   "thread": "M20",
+   "l1": 90,
+   "mass": 1.8,
+   "note_on_sheet": null,
+   "page": 145,
+   "sheet": 119,
+   "table": "26",
+   "sketch": "прямой стержень длиной l, на одном конце нарезка длиной l1; на эскизе ещё отмечен размер «a» у середины стержня — в таблице графы «a» нет (значение не дано)",
+   "note": "стержень Ø22 A-III с резьбой M20 (резьба меньше диаметра стержня) — так на листе"
+  },
+  {
+   "pos": "395",
+   "d": 28,
+   "cls": "A-III",
+   "l": 700,
+   "thread": "M27",
+   "l1": 90,
+   "mass": 3.4,
+   "note_on_sheet": null,
+   "page": 145,
+   "sheet": 119,
+   "table": "26",
+   "sketch": "прямой стержень длиной l, на одном конце нарезка длиной l1; на эскизе ещё отмечен размер «a» у середины стержня — в таблице графы «a» нет (значение не дано)"
+  },
+  {
+   "pos": "396",
+   "d": 20,
+   "cls": "A-I",
+   "l": 570,
+   "thread": "M20",
+   "l1": 100,
+   "mass": 1.4,
+   "note_on_sheet": null,
+   "page": 145,
+   "sheet": 119,
+   "table": "26",
+   "sketch": "прямой стержень длиной l, на одном конце нарезка длиной l1; на эскизе ещё отмечен размер «a» у середины стержня — в таблице графы «a» нет (значение не дано)",
+   "xref": "М7-5 (стр. 130): 570, нарезка 100 — совпадает"
+  },
+  {
+   "pos": "397",
+   "d": 20,
+   "cls": "A-I",
+   "l": 130,
+   "thread": "M20",
+   "l1": 90,
+   "mass": 0.32,
+   "note_on_sheet": null,
+   "page": 145,
+   "sheet": 119,
+   "table": "26",
+   "sketch": "прямой стержень длиной l, на одном конце нарезка длиной l1; на эскизе ещё отмечен размер «a» у середины стержня — в таблице графы «a» нет (значение не дано)"
+  }
+ ],
+ "nuts_washers": [
+  {
+   "pos": "401",
+   "name": "Гайка",
+   "thread": "M20",
+   "mass": 0.07,
+   "page": 145,
+   "sheet": 119,
+   "table": "27"
+  },
+  {
+   "pos": "403",
+   "name": "Гайка",
+   "thread": "M27",
+   "mass": 0.16,
+   "page": 145,
+   "sheet": 119,
+   "table": "27"
+  },
+  {
+   "pos": "402",
+   "name": "Шайба",
+   "thread": "M20",
+   "mass": 0.03,
+   "page": 145,
+   "sheet": 119,
+   "table": "27"
+  },
+  {
+   "pos": "404",
+   "name": "Шайба",
+   "thread": "M27",
+   "mass": 0.05,
+   "page": 145,
+   "sheet": 119,
+   "table": "27"
+  }
+ ],
+ "notes": [
+  {
+   "page": 136,
+   "sheet": 110,
+   "text": "Табл. 22. Унифицированные пластины закладных деталей. Графы: δ (толщина), a, b (размеры пластины, мм), вес, кг. В штампе листа серия читается «3.400-6/76» (на остальных листах 1.400-6/76)."
+  },
+  {
+   "page": 137,
+   "sheet": null,
+   "text": "Табл. 22 (продолжение). Правая часть штампа повреждена — номер листа не виден (по порядку, вероятно, 111)."
+  },
+  {
+   "page": 138,
+   "sheet": 112,
+   "text": "Табл. 22 (окончание). Примечания: 1. Эскизы позиций с буквенными индексами смотрите на листах 113, 114. 2. Отверстия для фиксации закладных деталей в опалубочных формах выполнить по чертежу закладной детали или в соответствии с принятым на заводе-изготовителе способом фиксации."
+  },
+  {
+   "page": 139,
+   "sheet": 113,
+   "text": "Унифицированные пластины с отверстиями (поз. 34а, 35а, 36а, 42а, 101а, 107а, 107б, 175а, 178а, 199а, 127а, 57а, 163а). Примечания: 1. Раззенковку отверстий выполнять в соответствии с СН 3?3-65, п. 2.1? (номер частично повреждён). 2. Толщина и вес пластины указаны в таблице 22."
+  },
+  {
+   "page": 140,
+   "sheet": 114,
+   "text": "Унифицированные пластины с отверстиями (поз. 41а, 43а, 48а, 48б, 49а, 49б, 58а, 58б, 148а, 176а, 179а, 105а, 24а, 160а, 162а, 77а, 124а, 133а). Толщина и вес пластины указаны в таблице 22."
+  },
+  {
+   "page": 141,
+   "sheet": 115,
+   "text": "Табл. 23. Унифицированные прямые анкеры: горячекатаная арматурная сталь периодического профиля, ГОСТ 5781-75, класса A-III, Ø 8–18 мм."
+  },
+  {
+   "page": 142,
+   "sheet": 116,
+   "text": "Табл. 23 (окончание)."
+  },
+  {
+   "page": 143,
+   "sheet": 117,
+   "text": "Табл. 24. Унифицированные гнутые анкеры (эскиз, Ø, длина, вес). Номер листа в штампе частично стёрт («11?»), по порядку — 117. Строки 351–354 дописаны другим почерком."
+  },
+  {
+   "page": 144,
+   "sheet": 118,
+   "text": "Табл. 25. Унифицированные элементы фасонного проката: уголки ГОСТ 8509-72, неравнополочные ГОСТ 8510-72, швеллеры ГОСТ 8240-72. В числителе указан номер позиции, в знаменателе — её вес в кг."
+  },
+  {
+   "page": 145,
+   "sheet": 119,
+   "text": "Табл. 26. Унифицированные стержни с нарезкой (эскиз: длина l, нарезка l1; на эскизе есть размер «a», графы для него нет). Табл. 27. Гайки и шайбы."
+  },
+  {
+   "type": "xref",
+   "text": "Расхождение: пластины 36а и 34а (стр. 139) — x отверстий = x приварных анкеров 242 на чертежах М7-1/М7-2 (стр. 129), а не x стержней 393 (100/500 и 100/600). По y — совпадают со стержнями. См. plates_holes."
+  },
+  {
+   "type": "xref",
+   "text": "Табл. 25: поз. 367 = ∟80×7 (100 мм, 0.85 кг) — в спецификации М8-8 (стр. 134) записано «∟80×2»."
+  },
+  {
+   "type": "xref",
+   "text": "Табл. 22: поз. 133/133а 160×290×10 = 3.7 кг; в спецификации М6-2 поз. 133а — 3.6 кг (трапеция, эскиз стр. 140 — зеркален чертежу М6-2)."
+  },
+  {
+   "type": "xref",
+   "text": "Подтверждения: 199а ↔ М7-5; 343 ↔ М8-14; 393 ↔ М7-1/2; 396 ↔ М7-5; 160а/162а и 24а ↔ МС-1/2; 127 (200×330×10, 5.2) ↔ М6-3 (длина в спецификации М6-3 повреждена)."
+  }
+ ]
+}

@@ -1,0 +1,669 @@
+{
+ "page": 133,
+ "sheet": 107,
+ "title": "Детали М8-1 ÷ М8-4, М8-1-1, М8-11 ÷ М8-13",
+ "notes_on_sheet": [
+  "Указания к деталям группы «8» смотрите на листе 109."
+ ],
+ "items": [
+  {
+   "mark": "М8-1",
+   "family": "plate_straight",
+   "plate": {
+    "pos": "80",
+    "A": 100,
+    "B": 200,
+    "t": 8,
+    "qty": 1
+   },
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "234",
+     "d": 10,
+     "cls": "A-III",
+     "L": 150,
+     "qty": 4,
+     "kind": "straight",
+     "points": [
+      [
+       25,
+       30
+      ],
+      [
+       75,
+       30
+      ],
+      [
+       25,
+       170
+      ],
+      [
+       75,
+       170
+      ]
+     ],
+     "washer_pos": null,
+     "thread": null,
+     "bend": null
+    }
+   ],
+   "washers": [],
+   "other": [],
+   "tech_holes": [
+    {
+     "size": "10x10",
+     "points": [
+      [
+       50,
+       100
+      ]
+     ]
+    }
+   ],
+   "risk_top_x": null,
+   "spec": [
+    {
+     "pos": "80",
+     "section": "-100×8",
+     "length": 200,
+     "qty": 1,
+     "m1": 1.3,
+     "mall": 1.3
+    },
+    {
+     "pos": "234",
+     "section": "Ø10 A-III",
+     "length": 150,
+     "qty": 4,
+     "m1": 0.09,
+     "mall": 0.4
+    }
+   ],
+   "mass_total": 1.7,
+   "checks": {
+    "spec_sum": 1.7,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": [
+    "Вид общий для М8-1÷М8-4, М8-1-1. Гориз. «для М8-1, М8-2» 25-25-25-25 → x=25, 75; верт. «для М8-1, М8-1-1, М8-2» 30-70-70-30 → y=30, 170.",
+    "Тех. отверстие 10×10 — в центре пластины (x=50, y=100) по рисунку.",
+    "Сайт: 100×200×8, 4ф10AIII L150, 1,7 кг — совпадает."
+   ]
+  },
+  {
+   "mark": "М8-1-1",
+   "family": "plate_straight",
+   "plate": {
+    "pos": "80",
+    "A": 100,
+    "B": 200,
+    "t": 8,
+    "qty": 1
+   },
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "234",
+     "d": 10,
+     "cls": "A-III",
+     "L": 150,
+     "qty": 4,
+     "kind": "straight",
+     "points": [
+      [
+       30,
+       30
+      ],
+      [
+       70,
+       30
+      ],
+      [
+       30,
+       170
+      ],
+      [
+       70,
+       170
+      ]
+     ],
+     "washer_pos": null,
+     "thread": null,
+     "bend": null
+    }
+   ],
+   "washers": [],
+   "other": [],
+   "tech_holes": [
+    {
+     "size": "10x10",
+     "points": [
+      [
+       50,
+       100
+      ]
+     ]
+    }
+   ],
+   "risk_top_x": null,
+   "spec": [
+    {
+     "pos": "80",
+     "section": "-100×8",
+     "length": 200,
+     "qty": 1,
+     "m1": 1.3,
+     "mall": 1.3
+    },
+    {
+     "pos": "234",
+     "section": "Ø10 A-III",
+     "length": 150,
+     "qty": 4,
+     "m1": 0.09,
+     "mall": 0.4
+    }
+   ],
+   "mass_total": 1.7,
+   "checks": {
+    "spec_sum": 1.7,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": [
+    "Гориз. «для М8-1-1, М8-3, М8-4» 30-20-20-30 → x=30, 70; верт. 30-70-70-30. Спецификация общая с М8-1.",
+    "Сайт: 100×200×8, 4ф10AIII L150, 1,7 кг — совпадает."
+   ]
+  },
+  {
+   "mark": "М8-2",
+   "family": "plate_straight",
+   "plate": {
+    "pos": "80",
+    "A": 100,
+    "B": 200,
+    "t": 8,
+    "qty": 1
+   },
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "233",
+     "d": 10,
+     "cls": "A-III",
+     "L": 130,
+     "qty": 4,
+     "kind": "straight",
+     "points": [
+      [
+       25,
+       30
+      ],
+      [
+       75,
+       30
+      ],
+      [
+       25,
+       170
+      ],
+      [
+       75,
+       170
+      ]
+     ],
+     "washer_pos": null,
+     "thread": null,
+     "bend": null,
+     "incline": {
+      "end_offset": 30,
+      "count": null,
+      "note": "в разрезе 1-1 наклонён один из двух анкеров"
+     }
+    }
+   ],
+   "washers": [],
+   "other": [],
+   "tech_holes": [
+    {
+     "size": "10x10",
+     "points": [
+      [
+       50,
+       100
+      ]
+     ]
+    }
+   ],
+   "risk_top_x": null,
+   "spec": [
+    {
+     "pos": "80",
+     "section": "-100×8",
+     "length": 200,
+     "qty": 1,
+     "m1": 1.3,
+     "mall": 1.3
+    },
+    {
+     "pos": "233",
+     "section": "Ø10 A-III",
+     "length": 130,
+     "qty": 4,
+     "m1": 0.08,
+     "mall": 0.3
+    }
+   ],
+   "mass_total": 1.6,
+   "checks": {
+    "spec_sum": 1.6,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": [
+    "Разрез 1-1 «только для М8-2»: из двух анкеров ряда один наклонён — нижний конец смещён на 30 мм (к соседнему анкеру), размер 130 — по вертикали от пластины. Какие именно анкеры наклонены (оба ряда или один) — по листу не определить: показан только разрез 1-1.",
+    "Гориз. 25-25-25-25, верт. 30-70-70-30.",
+    "Сайт: 100×200×8, 4ф10AIII L130, 1,6 кг — совпадает (наклон анкера на сайте не отражён)."
+   ]
+  },
+  {
+   "mark": "М8-3",
+   "family": "plate_straight",
+   "plate": {
+    "pos": "79",
+    "A": 100,
+    "B": 250,
+    "t": 8,
+    "qty": 1
+   },
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "234",
+     "d": 10,
+     "cls": "A-III",
+     "L": 150,
+     "qty": 4,
+     "kind": "straight",
+     "points": [
+      [
+       30,
+       40
+      ],
+      [
+       70,
+       40
+      ],
+      [
+       30,
+       210
+      ],
+      [
+       70,
+       210
+      ]
+     ],
+     "washer_pos": null,
+     "thread": null,
+     "bend": null
+    }
+   ],
+   "washers": [],
+   "other": [],
+   "tech_holes": [
+    {
+     "size": "10x10",
+     "points": [
+      [
+       50,
+       125
+      ]
+     ]
+    }
+   ],
+   "risk_top_x": null,
+   "spec": [
+    {
+     "pos": "79",
+     "section": "-100×8",
+     "length": 250,
+     "qty": 1,
+     "m1": 1.6,
+     "mall": 1.6
+    },
+    {
+     "pos": "234",
+     "section": "Ø10 A-III",
+     "length": 150,
+     "qty": 4,
+     "m1": 0.09,
+     "mall": 0.4
+    }
+   ],
+   "mass_total": 2.0,
+   "checks": {
+    "spec_sum": 2.0,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": [
+    "Гориз. 30-20-20-30 → x=30, 70; верт. «для М8-3» 40-85-85-40 → y=40, 210.",
+    "Сайт: 100×250×8, 4ф10AIII L150, 2 кг — совпадает."
+   ]
+  },
+  {
+   "mark": "М8-4",
+   "family": "plate_straight",
+   "plate": {
+    "pos": "81",
+    "A": 100,
+    "B": 130,
+    "t": 8,
+    "qty": 1
+   },
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "234",
+     "d": 10,
+     "cls": "A-III",
+     "L": 150,
+     "qty": 4,
+     "kind": "straight",
+     "points": [
+      [
+       30,
+       30
+      ],
+      [
+       70,
+       30
+      ],
+      [
+       30,
+       100
+      ],
+      [
+       70,
+       100
+      ]
+     ],
+     "washer_pos": null,
+     "thread": null,
+     "bend": null
+    }
+   ],
+   "washers": [],
+   "other": [],
+   "tech_holes": [
+    {
+     "size": "10x10",
+     "points": [
+      [
+       50,
+       65
+      ]
+     ]
+    }
+   ],
+   "risk_top_x": null,
+   "spec": [
+    {
+     "pos": "81",
+     "section": "-100×8",
+     "length": 130,
+     "qty": 1,
+     "m1": 0.8,
+     "mall": 0.8
+    },
+    {
+     "pos": "234",
+     "section": "Ø10 A-III",
+     "length": 150,
+     "qty": 4,
+     "m1": 0.09,
+     "mall": 0.4
+    }
+   ],
+   "mass_total": 1.2,
+   "checks": {
+    "spec_sum": 1.2,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": [
+    "Гориз. 30-20-20-30 → x=30, 70; верт. «для М8-4» 30-35-35-30 → y=30, 100.",
+    "Сайт: 100×130×8, 4ф10AIII L150, 1,2 кг — совпадает."
+   ]
+  },
+  {
+   "mark": "М8-11",
+   "family": "plate_straight",
+   "plate": {
+    "pos": "17",
+    "A": 100,
+    "B": 200,
+    "t": 6,
+    "qty": 1
+   },
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "218",
+     "d": 8,
+     "cls": "A-III",
+     "L": 200,
+     "qty": 2,
+     "kind": "straight",
+     "points": [
+      [
+       50,
+       20
+      ],
+      [
+       50,
+       180
+      ]
+     ],
+     "washer_pos": null,
+     "thread": null,
+     "bend": null
+    }
+   ],
+   "washers": [],
+   "other": [],
+   "tech_holes": [
+    {
+     "size": "10x10",
+     "points": [
+      [
+       50,
+       100
+      ]
+     ]
+    }
+   ],
+   "risk_top_x": null,
+   "spec": [
+    {
+     "pos": "17",
+     "section": "-100×6",
+     "length": 200,
+     "qty": 1,
+     "m1": 0.9,
+     "mall": 0.9
+    },
+    {
+     "pos": "218",
+     "section": "Ø8 A-III",
+     "length": 200,
+     "qty": 2,
+     "m1": 0.08,
+     "mall": 0.2
+    }
+   ],
+   "mass_total": 1.1,
+   "checks": {
+    "spec_sum": 1.1,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": [
+    "Вид общий для М8-11÷М8-13: гориз. «для М8-11, М8-13» 50+50 → анкеры по оси x=50; верт. «для М8-11» 20-80-80-20 → y=20, 180.",
+    "РАСХОЖДЕНИЕ ВНУТРИ ЛИСТА: на боковом виде у размера 200 (длина анкера М8-11) толщина пластины подписана 8, а в спецификации -100×6 (и на сайте б=6). В plate.t записано 6 по спецификации.",
+    "Сайт: 100×200×6, 2ф8AIII L200, 1,1 кг — совпадает со спецификацией.",
+    "Табл. 22 (стр. 136): поз. 17 — 100×200, δ=6, 0,9 кг — подтверждает t=6 по спецификации (на боковом виде подписано 8)."
+   ]
+  },
+  {
+   "mark": "М8-12",
+   "family": "plate_straight",
+   "plate": {
+    "pos": "27",
+    "A": 50,
+    "B": 100,
+    "t": 6,
+    "qty": 1
+   },
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "223",
+     "d": 8,
+     "cls": "A-III",
+     "L": 350,
+     "qty": 2,
+     "kind": "straight",
+     "points": [
+      [
+       25,
+       25
+      ],
+      [
+       25,
+       75
+      ]
+     ],
+     "washer_pos": null,
+     "thread": null,
+     "bend": null
+    }
+   ],
+   "washers": [],
+   "other": [],
+   "tech_holes": [
+    {
+     "size": "10x10",
+     "points": [
+      [
+       25,
+       50
+      ]
+     ]
+    }
+   ],
+   "risk_top_x": null,
+   "spec": [
+    {
+     "pos": "27",
+     "section": "-50×6",
+     "length": 100,
+     "qty": 1,
+     "m1": 0.2,
+     "mall": 0.2
+    },
+    {
+     "pos": "223",
+     "section": "Ø8 A-III",
+     "length": 350,
+     "qty": 2,
+     "m1": 0.14,
+     "mall": 0.3
+    }
+   ],
+   "mass_total": 0.5,
+   "checks": {
+    "spec_sum": 0.5,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": [
+    "Гориз. «для М8-12» 25+25 → x=25; верт. «для М8-12» 25-25-25-25 → y=25, 75.",
+    "Тех. отверстие на общем виде одно, в центре; для узкой М8-12 положение (25, 50) — по общему виду, отдельно не оговорено.",
+    "Сайт: 50×100×6, 2ф8AIII L350, 0,5 кг — совпадает.",
+    "Табл. 22 (стр. 136): поз. 27 — 50×100×6, 0,24 кг (в спецификации М8-12 — 0,2)."
+   ]
+  },
+  {
+   "mark": "М8-13",
+   "family": "plate_straight",
+   "plate": {
+    "pos": "82",
+    "A": 100,
+    "B": 100,
+    "t": 8,
+    "qty": 1
+   },
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "214",
+     "d": 8,
+     "cls": "A-III",
+     "L": 100,
+     "qty": 2,
+     "kind": "straight",
+     "points": [
+      [
+       50,
+       30
+      ],
+      [
+       50,
+       70
+      ]
+     ],
+     "washer_pos": null,
+     "thread": null,
+     "bend": null
+    }
+   ],
+   "washers": [],
+   "other": [],
+   "tech_holes": [
+    {
+     "size": "10x10",
+     "points": [
+      [
+       50,
+       50
+      ]
+     ]
+    }
+   ],
+   "risk_top_x": null,
+   "spec": [
+    {
+     "pos": "82",
+     "section": "-100×8",
+     "length": 100,
+     "qty": 1,
+     "m1": 0.6,
+     "mall": 0.6
+    },
+    {
+     "pos": "214",
+     "section": "Ø8 A-III",
+     "length": 100,
+     "qty": 2,
+     "m1": 0.04,
+     "mall": 0.1
+    }
+   ],
+   "mass_total": 0.7,
+   "checks": {
+    "spec_sum": 0.7,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": [
+    "Гориз. 50+50 → x=50; верт. «для М8-13» 30-20-20-30 → y=30, 70; тех. отверстие (50,50) между анкерами.",
+    "Сайт: 100×100×8, 2ф8AIII L100, 0,7 кг — совпадает."
+   ]
+  }
+ ]
+}

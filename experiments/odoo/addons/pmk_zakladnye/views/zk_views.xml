@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Закладные изделия (25.10.2026, прототип принят в чате). Шапка — «вариант А»: слева
+    «Создать ▾» (задание на резку) и «Печать ▾» (все чертежи PDF, DXF zip, ведомость Excel),
+    справа главная кнопка «Подготовить чертежи». Ниже — поля документа и карточки, таблица
+    изделий (виджет pmk_zk_grid, таблица Бутика) и панель выбранного изделия.
+  -->
+  <record id="view_zk_calc_form" model="ir.ui.view">
+    <field name="name">pmk.zk.calc.form</field>
+    <field name="model">pmk.zk.calc</field>
+    <field name="arch" type="xml">
+      <form string="Закладные" class="pmk-doc-form pmk-labels-top o_pmk_header_up o_pmk_head_a">
+        <header>
+          <widget name="pmk_deal_doc_menu"/>
+          <button name="action_zk_draw" type="object" string="Подготовить чертежи" class="btn-primary"
+                  invisible="not id or draw_busy"/>
+        </header>
+        <sheet>
+          <div class="pmk-doc-top" name="pmk_doc_top">
+            <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
+            <div class="pmk-doc-head">
+              <div class="pmk-doc-head__fields">
+                <div class="pmk-field" name="pmk_f_deal"><label for="opportunity_id"/>
+                  <field name="opportunity_id" nolabel="1" options="{'no_create': True}"/></div>
+                <div class="pmk-field" name="pmk_f_partner"><label for="partner_id"/><field name="partner_id" nolabel="1"/></div>
+                <div class="pmk-field pmk-field--wide" name="pmk_f_note"><label for="object_name"/>
+                  <field name="object_name" nolabel="1" placeholder="Эстакада ТП-2, ось 3–7"/></div>
+                <div class="pmk-field" name="pmk_f_date"><label for="date"/><field name="date" nolabel="1"/></div>
+                <div class="pmk-field" name="pmk_f_user"><label for="user_id"/><field name="user_id" nolabel="1"/></div>
+                <div class="pmk-field" name="pmk_f_laser" invisible="not laser_task_id"><label for="laser_task_id"/>
+                  <field name="laser_task_id" nolabel="1"/></div>
+              </div>
+              <div class="pmk-kpi">
+                <div class="pmk-kpi__card"><div class="pmk-kpi__label">Масса всего, кг</div>
+                  <div class="pmk-kpi__value"><field name="total_weight"/></div></div>
+                <div class="pmk-kpi__card"><div class="pmk-kpi__label">Изделий, шт</div>
+                  <div class="pmk-kpi__value"><field name="total_qty"/></div>
+                  <div class="pmk-kpi__sub"><field name="mark_count"/> марок</div></div>
+                <div class="pmk-kpi__card"><div class="pmk-kpi__label">Чертежи</div>
+                  <div class="pmk-kpi__value o_pmk_zk__draw"><field name="draw_text"/></div></div>
+              </div>
+            </div>
+          </div>
+          <field name="draw_busy" invisible="1"/>
+          <field name="has_warnings" invisible="1"/>
+          <widget name="pmk_zk_grid"/>
+        </sheet>
+        <chatter/>
+      </form>
+    </field>
+  </record>
+
+  <record id="view_zk_calc_list" model="ir.ui.view">
+    <field name="name">pmk.zk.calc.list</field>
+    <field name="model">pmk.zk.calc</field>
+    <field name="arch" type="xml">
+      <list>
+        <field name="name"/>
+        <field name="date"/>
+        <field name="object_name"/>
+        <field name="partner_id" optional="show"/>
+        <field name="opportunity_id" optional="show"/>
+        <field name="mark_count" optional="show"/>
+        <field name="total_qty"/>
+        <field name="total_weight" sum="Итого"/>
+        <field name="user_id" optional="show"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="view_zk_calc_search" model="ir.ui.view">
+    <field name="name">pmk.zk.calc.search</field>
+    <field name="model">pmk.zk.calc</field>
+    <field name="arch" type="xml">
+      <search>
+        <field name="name"/>
+        <field name="object_name"/>
+        <field name="partner_id"/>
+        <field name="opportunity_id"/>
+        <field name="line_ids" string="Марка" filter_domain="[('line_ids.mark', 'ilike', self)]"/>
+        <filter name="mine" string="Мои" domain="[('user_id', '=', uid)]"/>
+      </search>
+    </field>
+  </record>
+
+  <record id="action_zk_calc" model="ir.actions.act_window">
+    <field name="name">Закладные</field>
+    <field name="res_model">pmk.zk.calc</field>
+    <field name="view_mode">list,form</field>
+    <field name="help" type="html">
+      <p class="o_view_nocontent_smiling_face">Закладные изделия по сериям 1.400-15 и 1.400-6/76</p>
+      <p>Марка коротко — «мн 201-5 12шт», «мн 104-1 1200 10шт», «м1-9-7 4шт»: состав и масса сразу,
+        чертёж PDF и DXF для лазера — кнопками.</p>
+    </field>
+  </record>
+</odoo>

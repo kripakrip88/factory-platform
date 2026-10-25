@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_pmk_zk_calc_user,pmk_zk_calc.user,model_pmk_zk_calc,base.group_user,1,1,1,1
+access_pmk_zk_line_user,pmk_zk_line.user,model_pmk_zk_line,base.group_user,1,1,1,1
+access_pmk_zk_job_user,pmk_zk_job.user,model_pmk_zk_job,base.group_user,1,1,1,0

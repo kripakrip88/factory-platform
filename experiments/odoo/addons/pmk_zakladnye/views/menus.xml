@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!-- «Калькуляторы → Закладные» — рядом с фундаментными болтами (решение Антона 25.10.2026). -->
+  <menuitem id="menu_zk_calc" name="Закладные" parent="pmk_calc.menu_pmk_calc"
+            action="action_zk_calc" sequence="36"/>
+</odoo>

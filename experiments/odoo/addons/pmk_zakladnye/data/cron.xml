@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!-- Забрать готовые чертежи у фонового процесса (worker/worker.py). Кнопка
+       «Подготовить чертежи» дёргает его сразу (_trigger), дальше — раз в минуту. -->
+  <record id="cron_zk_collect" model="ir.cron">
+    <field name="name">Закладные: забрать чертежи</field>
+    <field name="model_id" ref="model_pmk_zk_job"/>
+    <field name="state">code</field>
+    <field name="code">model._cron_collect()</field>
+    <field name="interval_number">1</field>
+    <field name="interval_type">minutes</field>
+    <field name="active" eval="True"/>
+  </record>
+</odoo>

@@ -1,0 +1,64 @@
+// Закладные — таблица Бутика (25.10.2026): стили — у pmk_butik (butik_grid.scss);
+// здесь — выбранная строка, статус чертежа и панель «состав + чертёж» под таблицей.
+.o_pmk_zk {
+  .o_pmk_zk__sel > td { background: #ededed; }
+  .o_pmk_zk__warning { color: var(--bt-warn, #9a6b00); }
+  .o_pmk_zk__clip { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .o_pmk_zk__draw { white-space: nowrap; }
+  .o_pmk_zk__draw--done { color: #2f7d32; }
+  .o_pmk_zk__draw--queued, .o_pmk_zk__draw--stale { color: #8a5a00; }
+  .o_pmk_zk__draw--error { color: #b3261e; }
+
+  .o_pmk_zk__panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .o_pmk_zk__card {
+    background: #fff;
+    border: 1px solid #e6e6e6;
+    border-radius: 10px;
+    padding: 10px 12px;
+    min-width: 0;
+  }
+  .o_pmk_zk__title { font-weight: 600; margin-bottom: 6px; }
+  .o_pmk_zk__comp {
+    width: 100%;
+    border-collapse: collapse;
+    th { font-weight: 500; color: #555; text-align: left; padding: 4px 6px; border-bottom: 1px solid #e6e6e6; background: #f9f9f9; }
+    td { padding: 4px 6px; border-bottom: 1px solid #eee; }
+    .n { text-align: right; white-space: nowrap; }
+  }
+  .o_pmk_zk__note { margin-top: 8px; color: #555; font-size: 12px; }
+  .o_pmk_zk__sheet {
+    display: block;
+    border: 1px solid #e6e6e6;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #fafafa;
+    img { display: block; width: 100%; height: auto; }
+  }
+  .o_pmk_zk__sheet--empty {
+    min-height: 150px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #777;
+    border-style: dashed;
+    padding: 12px;
+    text-align: center;
+  }
+  .o_pmk_zk__links { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+}
+
+body.o_nexus_dark .o_pmk_zk {
+  .o_pmk_zk__sel > td { background: rgba(255, 255, 255, 0.06); }
+  .o_pmk_zk__card { background: transparent; border-color: rgba(255, 255, 255, 0.12); }
+  .o_pmk_zk__comp th { background: rgba(255, 255, 255, 0.04); color: inherit; }
+  .o_pmk_zk__sheet { background: #fff; }
+}
+
+@media (max-width: 991px) {
+  .o_pmk_zk .o_pmk_zk__panel { grid-template-columns: minmax(0, 1fr); }
+}

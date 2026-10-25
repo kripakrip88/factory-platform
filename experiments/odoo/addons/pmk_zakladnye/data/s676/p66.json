@@ -1,0 +1,890 @@
+{
+ "page": 66,
+ "sheet": 40,
+ "title": "Детали М1-1-2 ÷ М1-1-5, М1-1-7 ÷ М1-1-10",
+ "notes_on_sheet": [
+  "Указания к деталям группы «1» см. на листе 39"
+ ],
+ "items": [
+  {
+   "mark": "М1-1-2",
+   "family": "plate_straight_washers",
+   "plate": {
+    "pos": "111",
+    "A": 390,
+    "B": 300,
+    "t": 10,
+    "qty": 1
+   },
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "287",
+     "d": 14,
+     "cls": "A-III",
+     "L": 320,
+     "qty": 6,
+     "kind": "straight",
+     "points": [
+      [
+       75,
+       40
+      ],
+      [
+       315,
+       40
+      ],
+      [
+       75,
+       150
+      ],
+      [
+       315,
+       150
+      ],
+      [
+       75,
+       260
+      ],
+      [
+       315,
+       260
+      ]
+     ],
+     "washer_pos": "137",
+     "thread": null,
+     "bend": null
+    }
+   ],
+   "washers": [
+    {
+     "pos": "137",
+     "a": 50,
+     "b": 50,
+     "t": 10,
+     "qty": 6
+    }
+   ],
+   "other": [],
+   "tech_holes": [
+    {
+     "size": "10x10",
+     "points": [
+      [
+       195,
+       40
+      ],
+      [
+       195,
+       260
+      ]
+     ]
+    }
+   ],
+   "risk_top_x": 195,
+   "spec": [
+    {
+     "pos": "111",
+     "section": "-300×10",
+     "length": 390,
+     "qty": 1,
+     "m1": 9.2,
+     "mall": 9.2
+    },
+    {
+     "pos": "287",
+     "section": "Ø14 A-III",
+     "length": 320,
+     "qty": 6,
+     "m1": 0.39,
+     "mall": 2.3
+    },
+    {
+     "pos": "137",
+     "section": "-50×10",
+     "length": 50,
+     "qty": 6,
+     "m1": 0.2,
+     "mall": 1.2
+    }
+   ],
+   "mass_total": 12.7,
+   "checks": {
+    "spec_sum": 12.7,
+    "spec_sum_eq_total": true,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": []
+  },
+  {
+   "mark": "М1-1-3",
+   "family": "plate_straight_washers",
+   "plate": {
+    "pos": "111",
+    "A": 390,
+    "B": 300,
+    "t": 10,
+    "qty": 1
+   },
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "284",
+     "d": 14,
+     "cls": "A-III",
+     "L": 270,
+     "qty": 6,
+     "kind": "straight",
+     "points": [
+      [
+       75,
+       40
+      ],
+      [
+       315,
+       40
+      ],
+      [
+       75,
+       150
+      ],
+      [
+       315,
+       150
+      ],
+      [
+       75,
+       260
+      ],
+      [
+       315,
+       260
+      ]
+     ],
+     "washer_pos": "137",
+     "thread": null,
+     "bend": null
+    }
+   ],
+   "washers": [
+    {
+     "pos": "137",
+     "a": 50,
+     "b": 50,
+     "t": 10,
+     "qty": 6
+    }
+   ],
+   "other": [],
+   "tech_holes": [
+    {
+     "size": "10x10",
+     "points": [
+      [
+       195,
+       40
+      ],
+      [
+       195,
+       260
+      ]
+     ]
+    }
+   ],
+   "risk_top_x": 195,
+   "spec": [
+    {
+     "pos": "111",
+     "section": "-300×10",
+     "length": 390,
+     "qty": 1,
+     "m1": 9.2,
+     "mall": 9.2
+    },
+    {
+     "pos": "284",
+     "section": "Ø14 A-III",
+     "length": 270,
+     "qty": 6,
+     "m1": 0.33,
+     "mall": 2.0
+    },
+    {
+     "pos": "137",
+     "section": "-50×10",
+     "length": 50,
+     "qty": 6,
+     "m1": 0.2,
+     "mall": 1.2
+    }
+   ],
+   "mass_total": 12.4,
+   "checks": {
+    "spec_sum": 12.4,
+    "spec_sum_eq_total": true,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": []
+  },
+  {
+   "mark": "М1-1-4",
+   "family": "plate_straight_washers",
+   "plate": {
+    "pos": "111",
+    "A": 390,
+    "B": 300,
+    "t": 10,
+    "qty": 1
+   },
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "283",
+     "d": 14,
+     "cls": "A-III",
+     "L": 220,
+     "qty": 6,
+     "kind": "straight",
+     "points": [
+      [
+       75,
+       40
+      ],
+      [
+       315,
+       40
+      ],
+      [
+       75,
+       150
+      ],
+      [
+       315,
+       150
+      ],
+      [
+       75,
+       260
+      ],
+      [
+       315,
+       260
+      ]
+     ],
+     "washer_pos": "137",
+     "thread": null,
+     "bend": null
+    }
+   ],
+   "washers": [
+    {
+     "pos": "137",
+     "a": 50,
+     "b": 50,
+     "t": 10,
+     "qty": 6
+    }
+   ],
+   "other": [],
+   "tech_holes": [
+    {
+     "size": "10x10",
+     "points": [
+      [
+       195,
+       40
+      ],
+      [
+       195,
+       260
+      ]
+     ]
+    }
+   ],
+   "risk_top_x": 195,
+   "spec": [
+    {
+     "pos": "111",
+     "section": "-300×10",
+     "length": 390,
+     "qty": 1,
+     "m1": 9.2,
+     "mall": 9.2
+    },
+    {
+     "pos": "283",
+     "section": "Ø14 A-III",
+     "length": 220,
+     "qty": 6,
+     "m1": 0.27,
+     "mall": 1.6
+    },
+    {
+     "pos": "137",
+     "section": "-50×10",
+     "length": 50,
+     "qty": 6,
+     "m1": 0.2,
+     "mall": 1.2
+    }
+   ],
+   "mass_total": 12.0,
+   "checks": {
+    "spec_sum": 12.0,
+    "spec_sum_eq_total": true,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": []
+  },
+  {
+   "mark": "М1-1-5",
+   "family": "plate_straight_washers",
+   "plate": {
+    "pos": "111",
+    "A": 390,
+    "B": 300,
+    "t": 10,
+    "qty": 1
+   },
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "282",
+     "d": 14,
+     "cls": "A-III",
+     "L": 170,
+     "qty": 6,
+     "kind": "straight",
+     "points": [
+      [
+       75,
+       40
+      ],
+      [
+       315,
+       40
+      ],
+      [
+       75,
+       150
+      ],
+      [
+       315,
+       150
+      ],
+      [
+       75,
+       260
+      ],
+      [
+       315,
+       260
+      ]
+     ],
+     "washer_pos": "137",
+     "thread": null,
+     "bend": null
+    }
+   ],
+   "washers": [
+    {
+     "pos": "137",
+     "a": 50,
+     "b": 50,
+     "t": 10,
+     "qty": 6
+    }
+   ],
+   "other": [],
+   "tech_holes": [
+    {
+     "size": "10x10",
+     "points": [
+      [
+       195,
+       40
+      ],
+      [
+       195,
+       260
+      ]
+     ]
+    }
+   ],
+   "risk_top_x": 195,
+   "spec": [
+    {
+     "pos": "111",
+     "section": "-300×10",
+     "length": 390,
+     "qty": 1,
+     "m1": 9.2,
+     "mall": 9.2
+    },
+    {
+     "pos": "282",
+     "section": "Ø14 A-III",
+     "length": 170,
+     "qty": 6,
+     "m1": 0.2,
+     "mall": 1.2
+    },
+    {
+     "pos": "137",
+     "section": "-50×10",
+     "length": 50,
+     "qty": 6,
+     "m1": 0.2,
+     "mall": 1.2
+    }
+   ],
+   "mass_total": 11.6,
+   "checks": {
+    "spec_sum": 11.6,
+    "spec_sum_eq_total": true,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": []
+  },
+  {
+   "mark": "М1-1-7",
+   "family": "plate_straight_washers",
+   "plate": {
+    "pos": "111",
+    "A": 390,
+    "B": 300,
+    "t": 10,
+    "qty": 1
+   },
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "287",
+     "d": 14,
+     "cls": "A-III",
+     "L": 320,
+     "qty": 6,
+     "kind": "straight",
+     "points": [
+      [
+       45,
+       40
+      ],
+      [
+       195,
+       40
+      ],
+      [
+       345,
+       40
+      ],
+      [
+       45,
+       260
+      ],
+      [
+       195,
+       260
+      ],
+      [
+       345,
+       260
+      ]
+     ],
+     "washer_pos": "137",
+     "thread": null,
+     "bend": null
+    }
+   ],
+   "washers": [
+    {
+     "pos": "137",
+     "a": 50,
+     "b": 50,
+     "t": 10,
+     "qty": 6
+    }
+   ],
+   "other": [],
+   "tech_holes": [
+    {
+     "size": "10x10",
+     "points": [
+      [
+       75,
+       150
+      ],
+      [
+       315,
+       150
+      ]
+     ]
+    }
+   ],
+   "risk_top_x": 195,
+   "spec": [
+    {
+     "pos": "111",
+     "section": "-300×10",
+     "length": 390,
+     "qty": 1,
+     "m1": 9.2,
+     "mall": 9.2
+    },
+    {
+     "pos": "287",
+     "section": "Ø14 A-III",
+     "length": 320,
+     "qty": 6,
+     "m1": 0.39,
+     "mall": 2.3
+    },
+    {
+     "pos": "137",
+     "section": "-50×10",
+     "length": 50,
+     "qty": 6,
+     "m1": 0.2,
+     "mall": 1.2
+    }
+   ],
+   "mass_total": 12.7,
+   "checks": {
+    "spec_sum": 12.7,
+    "spec_sum_eq_total": true,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": []
+  },
+  {
+   "mark": "М1-1-8",
+   "family": "plate_straight_washers",
+   "plate": {
+    "pos": "111",
+    "A": 390,
+    "B": 300,
+    "t": 10,
+    "qty": 1
+   },
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "284",
+     "d": 14,
+     "cls": "A-III",
+     "L": 270,
+     "qty": 6,
+     "kind": "straight",
+     "points": [
+      [
+       45,
+       40
+      ],
+      [
+       195,
+       40
+      ],
+      [
+       345,
+       40
+      ],
+      [
+       45,
+       260
+      ],
+      [
+       195,
+       260
+      ],
+      [
+       345,
+       260
+      ]
+     ],
+     "washer_pos": "137",
+     "thread": null,
+     "bend": null
+    }
+   ],
+   "washers": [
+    {
+     "pos": "137",
+     "a": 50,
+     "b": 50,
+     "t": 10,
+     "qty": 6
+    }
+   ],
+   "other": [],
+   "tech_holes": [
+    {
+     "size": "10x10",
+     "points": [
+      [
+       75,
+       150
+      ],
+      [
+       315,
+       150
+      ]
+     ]
+    }
+   ],
+   "risk_top_x": 195,
+   "spec": [
+    {
+     "pos": "111",
+     "section": "-300×10",
+     "length": 390,
+     "qty": 1,
+     "m1": 9.2,
+     "mall": 9.2
+    },
+    {
+     "pos": "284",
+     "section": "Ø14 A-III",
+     "length": 270,
+     "qty": 6,
+     "m1": 0.33,
+     "mall": 2.0
+    },
+    {
+     "pos": "137",
+     "section": "-50×10",
+     "length": 50,
+     "qty": 6,
+     "m1": 0.2,
+     "mall": 1.2
+    }
+   ],
+   "mass_total": 12.4,
+   "checks": {
+    "spec_sum": 12.4,
+    "spec_sum_eq_total": true,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": []
+  },
+  {
+   "mark": "М1-1-9",
+   "family": "plate_straight_washers",
+   "plate": {
+    "pos": "111",
+    "A": 390,
+    "B": 300,
+    "t": 10,
+    "qty": 1
+   },
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "283",
+     "d": 14,
+     "cls": "A-III",
+     "L": 220,
+     "qty": 6,
+     "kind": "straight",
+     "points": [
+      [
+       45,
+       40
+      ],
+      [
+       195,
+       40
+      ],
+      [
+       345,
+       40
+      ],
+      [
+       45,
+       260
+      ],
+      [
+       195,
+       260
+      ],
+      [
+       345,
+       260
+      ]
+     ],
+     "washer_pos": "137",
+     "thread": null,
+     "bend": null
+    }
+   ],
+   "washers": [
+    {
+     "pos": "137",
+     "a": 50,
+     "b": 50,
+     "t": 10,
+     "qty": 6
+    }
+   ],
+   "other": [],
+   "tech_holes": [
+    {
+     "size": "10x10",
+     "points": [
+      [
+       75,
+       150
+      ],
+      [
+       315,
+       150
+      ]
+     ]
+    }
+   ],
+   "risk_top_x": 195,
+   "spec": [
+    {
+     "pos": "111",
+     "section": "-300×10",
+     "length": 390,
+     "qty": 1,
+     "m1": 9.2,
+     "mall": 9.2
+    },
+    {
+     "pos": "283",
+     "section": "Ø14 A-III",
+     "length": 220,
+     "qty": 6,
+     "m1": 0.27,
+     "mall": 1.6
+    },
+    {
+     "pos": "137",
+     "section": "-50×10",
+     "length": 50,
+     "qty": 6,
+     "m1": 0.2,
+     "mall": 1.2
+    }
+   ],
+   "mass_total": 12.0,
+   "checks": {
+    "spec_sum": 12.0,
+    "spec_sum_eq_total": true,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": []
+  },
+  {
+   "mark": "М1-1-10",
+   "family": "plate_straight_washers",
+   "plate": {
+    "pos": "111",
+    "A": 390,
+    "B": 300,
+    "t": 10,
+    "qty": 1
+   },
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "282",
+     "d": 14,
+     "cls": "A-III",
+     "L": 170,
+     "qty": 6,
+     "kind": "straight",
+     "points": [
+      [
+       45,
+       40
+      ],
+      [
+       195,
+       40
+      ],
+      [
+       345,
+       40
+      ],
+      [
+       45,
+       260
+      ],
+      [
+       195,
+       260
+      ],
+      [
+       345,
+       260
+      ]
+     ],
+     "washer_pos": "137",
+     "thread": null,
+     "bend": null
+    }
+   ],
+   "washers": [
+    {
+     "pos": "137",
+     "a": 50,
+     "b": 50,
+     "t": 10,
+     "qty": 6
+    }
+   ],
+   "other": [],
+   "tech_holes": [
+    {
+     "size": "10x10",
+     "points": [
+      [
+       75,
+       150
+      ],
+      [
+       315,
+       150
+      ]
+     ]
+    }
+   ],
+   "risk_top_x": 195,
+   "spec": [
+    {
+     "pos": "111",
+     "section": "-300×10",
+     "length": 390,
+     "qty": 1,
+     "m1": 9.2,
+     "mall": 9.2
+    },
+    {
+     "pos": "282",
+     "section": "Ø14 A-III",
+     "length": 170,
+     "qty": 6,
+     "m1": 0.2,
+     "mall": 1.2
+    },
+    {
+     "pos": "137",
+     "section": "-50×10",
+     "length": 50,
+     "qty": 6,
+     "m1": 0.2,
+     "mall": 1.2
+    }
+   ],
+   "mass_total": 11.6,
+   "checks": {
+    "spec_sum": 11.6,
+    "spec_sum_eq_total": true,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": []
+  }
+ ]
+}

@@ -1,0 +1,493 @@
+{
+ "page": 67,
+ "sheet": 41,
+ "title": "Детали М1-1-6, М1-4-1, М1-4-6, М1-6-1, М1-6-6",
+ "notes_on_sheet": [
+  "Указания к деталям группы «1» см. на листе 39"
+ ],
+ "items": [
+  {
+   "mark": "М1-1-6",
+   "family": "plate_straight",
+   "plate": {
+    "pos": "111",
+    "A": 390,
+    "B": 300,
+    "t": 10,
+    "qty": 1
+   },
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "294",
+     "d": 14,
+     "cls": "A-III",
+     "L": 480,
+     "qty": 6,
+     "kind": "straight",
+     "points": [
+      [
+       45,
+       40
+      ],
+      [
+       195,
+       40
+      ],
+      [
+       345,
+       40
+      ],
+      [
+       45,
+       260
+      ],
+      [
+       195,
+       260
+      ],
+      [
+       345,
+       260
+      ]
+     ],
+     "washer_pos": null,
+     "thread": null,
+     "bend": null
+    }
+   ],
+   "washers": [],
+   "other": [],
+   "tech_holes": [
+    {
+     "size": "10x10",
+     "points": [
+      [
+       75,
+       150
+      ],
+      [
+       315,
+       150
+      ]
+     ]
+    }
+   ],
+   "risk_top_x": 195,
+   "spec": [
+    {
+     "pos": "111",
+     "section": "-300×10",
+     "length": 390,
+     "qty": 1,
+     "m1": 9.2,
+     "mall": 9.2
+    },
+    {
+     "pos": "294",
+     "section": "Ø14 A-III",
+     "length": 480,
+     "qty": 6,
+     "m1": 0.58,
+     "mall": 3.5
+    }
+   ],
+   "mass_total": 12.7,
+   "checks": {
+    "spec_sum": 12.7,
+    "spec_sum_eq_total": true,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": []
+  },
+  {
+   "mark": "М1-4-1",
+   "family": "plate_straight",
+   "plate": {
+    "pos": "116",
+    "A": 390,
+    "B": 250,
+    "t": 10,
+    "qty": 1
+   },
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "268",
+     "d": 12,
+     "cls": "A-III",
+     "L": 420,
+     "qty": 6,
+     "kind": "straight",
+     "points": [
+      [
+       75,
+       40
+      ],
+      [
+       195,
+       40
+      ],
+      [
+       315,
+       40
+      ],
+      [
+       75,
+       210
+      ],
+      [
+       195,
+       210
+      ],
+      [
+       315,
+       210
+      ]
+     ],
+     "washer_pos": null,
+     "thread": null,
+     "bend": null
+    }
+   ],
+   "washers": [],
+   "other": [],
+   "tech_holes": [
+    {
+     "size": "10x10",
+     "points": [
+      [
+       75,
+       125
+      ],
+      [
+       315,
+       125
+      ]
+     ]
+    }
+   ],
+   "risk_top_x": 195,
+   "spec": [
+    {
+     "pos": "116",
+     "section": "-250×10",
+     "length": null,
+     "qty": 1,
+     "m1": 7.7,
+     "mall": 7.7
+    },
+    {
+     "pos": "268",
+     "section": "Ø12 A-III",
+     "length": 420,
+     "qty": 6,
+     "m1": 0.37,
+     "mall": 2.2
+    }
+   ],
+   "mass_total": 9.9,
+   "checks": {
+    "spec_sum": 9.9,
+    "spec_sum_eq_total": true,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": [
+    "в спецификации длина поз. 116 читается как «39?» (последняя цифра смазана) — в spec записан null; A=390 взято с чертежа (габарит 390)"
+   ]
+  },
+  {
+   "mark": "М1-4-6",
+   "family": "plate_straight",
+   "plate": {
+    "pos": "116",
+    "A": 390,
+    "B": 250,
+    "t": 10,
+    "qty": 1
+   },
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "268",
+     "d": 12,
+     "cls": "A-III",
+     "L": 420,
+     "qty": 6,
+     "kind": "straight",
+     "points": [
+      [
+       45,
+       40
+      ],
+      [
+       195,
+       40
+      ],
+      [
+       345,
+       40
+      ],
+      [
+       45,
+       210
+      ],
+      [
+       195,
+       210
+      ],
+      [
+       345,
+       210
+      ]
+     ],
+     "washer_pos": null,
+     "thread": null,
+     "bend": null
+    }
+   ],
+   "washers": [],
+   "other": [],
+   "tech_holes": [
+    {
+     "size": "10x10",
+     "points": [
+      [
+       75,
+       125
+      ],
+      [
+       315,
+       125
+      ]
+     ]
+    }
+   ],
+   "risk_top_x": 195,
+   "spec": [
+    {
+     "pos": "116",
+     "section": "-250×10",
+     "length": null,
+     "qty": 1,
+     "m1": 7.7,
+     "mall": 7.7
+    },
+    {
+     "pos": "268",
+     "section": "Ø12 A-III",
+     "length": 420,
+     "qty": 6,
+     "m1": 0.37,
+     "mall": 2.2
+    }
+   ],
+   "mass_total": 9.9,
+   "checks": {
+    "spec_sum": 9.9,
+    "spec_sum_eq_total": true,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": [
+    "в спецификации длина поз. 116 читается как «39?» (последняя цифра смазана) — в spec записан null; A=390 взято с чертежа (габарит 390)"
+   ]
+  },
+  {
+   "mark": "М1-6-1",
+   "family": "plate_straight",
+   "plate": {
+    "pos": "124",
+    "A": 390,
+    "B": 200,
+    "t": 10,
+    "qty": 1
+   },
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "268",
+     "d": 12,
+     "cls": "A-III",
+     "L": 420,
+     "qty": 6,
+     "kind": "straight",
+     "points": [
+      [
+       75,
+       40
+      ],
+      [
+       195,
+       40
+      ],
+      [
+       315,
+       40
+      ],
+      [
+       75,
+       160
+      ],
+      [
+       195,
+       160
+      ],
+      [
+       315,
+       160
+      ]
+     ],
+     "washer_pos": null,
+     "thread": null,
+     "bend": null
+    }
+   ],
+   "washers": [],
+   "other": [],
+   "tech_holes": [
+    {
+     "size": "10x10",
+     "points": [
+      [
+       75,
+       100
+      ],
+      [
+       315,
+       100
+      ]
+     ]
+    }
+   ],
+   "risk_top_x": 195,
+   "spec": [
+    {
+     "pos": "124",
+     "section": "-200×10",
+     "length": 390,
+     "qty": 1,
+     "m1": 6.1,
+     "mall": 6.1
+    },
+    {
+     "pos": "268",
+     "section": "Ø12 A-III",
+     "length": 420,
+     "qty": 6,
+     "m1": 0.37,
+     "mall": null
+    }
+   ],
+   "mass_total": null,
+   "checks": {
+    "spec_sum": null,
+    "spec_sum_eq_total": null,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": [
+    "«вес всех поз.» поз. 268 бледный/смазан (похоже на 2.2) — null; 0.37×6=2.22",
+    "«вес изделия» на листе не пропечатан (правый край таблицы пустой) — null; 6.1+2.2=8.3",
+    "сайт: итог 8.3 кг (на листе итог не читается)"
+   ]
+  },
+  {
+   "mark": "М1-6-6",
+   "family": "plate_straight",
+   "plate": {
+    "pos": "124",
+    "A": 390,
+    "B": 200,
+    "t": 10,
+    "qty": 1
+   },
+   "extra_plates": [],
+   "anchors": [
+    {
+     "pos": "268",
+     "d": 12,
+     "cls": "A-III",
+     "L": 420,
+     "qty": 6,
+     "kind": "straight",
+     "points": [
+      [
+       45,
+       40
+      ],
+      [
+       195,
+       40
+      ],
+      [
+       345,
+       40
+      ],
+      [
+       45,
+       160
+      ],
+      [
+       195,
+       160
+      ],
+      [
+       345,
+       160
+      ]
+     ],
+     "washer_pos": null,
+     "thread": null,
+     "bend": null
+    }
+   ],
+   "washers": [],
+   "other": [],
+   "tech_holes": [
+    {
+     "size": "10x10",
+     "points": [
+      [
+       75,
+       100
+      ],
+      [
+       315,
+       100
+      ]
+     ]
+    }
+   ],
+   "risk_top_x": 195,
+   "spec": [
+    {
+     "pos": "124",
+     "section": "-200×10",
+     "length": 390,
+     "qty": 1,
+     "m1": 6.1,
+     "mall": 6.1
+    },
+    {
+     "pos": "268",
+     "section": "Ø12 A-III",
+     "length": 420,
+     "qty": 6,
+     "m1": 0.37,
+     "mall": null
+    }
+   ],
+   "mass_total": null,
+   "checks": {
+    "spec_sum": null,
+    "spec_sum_eq_total": null,
+    "anchors_points_eq_qty": true
+   },
+   "uncertain": [
+    "«вес всех поз.» поз. 268 бледный/смазан (похоже на 2.2) — null; 0.37×6=2.22",
+    "«вес изделия» на листе не пропечатан (правый край таблицы пустой) — null; 6.1+2.2=8.3",
+    "сайт: итог 8.3 кг (на листе итог не читается)"
+   ]
+  }
+ ],
+ "sheet_uncertain": "номер листа в штампе пропечатан частично («4» + бледная цифра); 41 — по порядку листов 39, 40, …, 51 (стр. 77)"
+}
