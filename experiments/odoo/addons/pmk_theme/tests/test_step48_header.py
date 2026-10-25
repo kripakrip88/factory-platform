@@ -153,7 +153,7 @@ class TestHeaderStep48(TransactionCase):
                       "Кнопки шапки — перед счётчиками.")
         # Шапка «вариант А» (25.10.2026): счётчиков в строке пути нет — их число
         # во вкладке «Связи · N».
-        self.assertEqual(children[1].get("t-if"), "!env.isSmall and buttonBoxTemplate and !pmkHeadAOn")
+        self.assertEqual(children[1].get("t-if"), "!env.isSmall and buttonBoxTemplate and !pmkCountersInTab")
         call = children[0].find("t[@t-call]")
         self.assertIn("pmkHeaderButtonsTemplate", call.get("t-call"))
         self.assertIn("state: {}", call.get("t-call-context"),

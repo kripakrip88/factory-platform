@@ -3787,7 +3787,8 @@ $pmk-tab-r: 10px !default;
     }
   }
 
-  > .btn[name="action_cancel"] {
+  > .btn[name="action_cancel"],
+  > .btn[name="button_cancel"] {
     color: #b3261e !important;
   }
 
@@ -3806,7 +3807,8 @@ body.o_nexus_dark .o_pmk_more_item.dropdown-item > .btn {
   }
 }
 
-body.o_nexus_dark .o_pmk_more_item.dropdown-item > .btn[name="action_cancel"] {
+body.o_nexus_dark .o_pmk_more_item.dropdown-item > .btn[name="action_cancel"],
+body.o_nexus_dark .o_pmk_more_item.dropdown-item > .btn[name="button_cancel"] {
   color: #ff8a80 !important;
 }
 

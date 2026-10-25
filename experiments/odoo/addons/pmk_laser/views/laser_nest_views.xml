@@ -26,7 +26,7 @@
     <field name="name">pmk.laser.nest.form</field>
     <field name="model">pmk.laser.nest</field>
     <field name="arch" type="xml">
-      <form string="Раскрой" class="pmk-doc-form o_pmk_header_up pmk-labels-top-groups">
+      <form string="Раскрой" class="pmk-doc-form o_pmk_header_up o_pmk_head_a pmk-labels-top-groups">
         <header>
           <button name="action_add_parts" type="object" string="Добавить детали" icon="fa-plus"
                   invisible="state != 'draft'"/>

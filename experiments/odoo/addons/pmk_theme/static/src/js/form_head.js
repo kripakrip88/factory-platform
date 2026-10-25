@@ -125,6 +125,10 @@ patch(FormController.prototype, {
         const up = Boolean(this.pmkHeaderButtonsTemplate || this.pmkHeaderStatusTemplate);
         // Шапка «вариант А» (Антон 25.10.2026): метка o_pmk_head_a у формы.
         this.pmkHeadA = up && Boolean(formEl.classList.contains(HEAD_A_CLASS));
+        // Кнопки-счётчики уходят во вкладку «Связи · N» — только если она есть;
+        // «Печать» из «⚙» — только если у документа меню «🖶» (Создать / Печать).
+        this.pmkFlowTab = Boolean(formEl?.querySelector?.("page[name='pmk_flow']"));
+        this.pmkDocMenu = Boolean(header?.querySelector?.("widget[name='pmk_deal_doc_menu']"));
         useSubEnv({
             pmkHeaderUp: up ? () => this.pmkHeaderInPanel() : null,
             pmkHeadA: this.pmkHeadA ? () => this.pmkHeaderInPanel() : null,
@@ -137,7 +141,7 @@ patch(FormController.prototype, {
      */
     get cogMenuProps() {
         const props = super.cogMenuProps;
-        if (this.pmkHeadA && props.items?.print) {
+        if (this.pmkHeadA && this.pmkDocMenu && props.items?.print) {
             return { ...props, items: { ...props.items, print: [] } };
         }
         return props;
@@ -146,6 +150,11 @@ patch(FormController.prototype, {
     /** Шапка «вариант А» сейчас в строке пути (экран от 1200 px). */
     get pmkHeadAOn() {
         return this.pmkHeadA && this.pmkHeaderInPanel();
+    },
+
+    /** Счётчики связей — не в шапке: их число во вкладке «Связи · N». */
+    get pmkCountersInTab() {
+        return this.pmkHeadAOn && this.pmkFlowTab;
     },
 
     /**

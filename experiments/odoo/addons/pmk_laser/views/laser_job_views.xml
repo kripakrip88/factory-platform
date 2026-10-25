@@ -79,7 +79,7 @@
            «Лист» со значением той же ширины, что соседние поля; «Ширина
            реза» и «Обрезок от» (с шага 36 — на вкладке «Обрезки») в рамке
            поля. -->
-      <form string="Программа раскроя" class="pmk-doc-form o_pmk_header_up pmk-labels-top-groups">
+      <form string="Программа раскроя" class="pmk-doc-form o_pmk_header_up o_pmk_head_a pmk-labels-top-groups">
         <header>
           <!-- Залитая — только пока файл не разобран: это следующий шаг
                (разбор UX, шаг 27; одна залитая кнопка на экран). После

@@ -504,3 +504,9 @@ class ButikLine(models.Model):
             "match_state": self.match_state,
             "label": self._butik_label() if self.kind == "detail" else "",
         }
+
+
+class PmkButikSpecFlowCount(models.Model):
+    """«Связи · N» в заголовке вкладки (шапка «вариант А», 25.10.2026, pmk_flow)."""
+    _name = "pmk.butik.spec"
+    _inherit = ["pmk.butik.spec", "pmk.flow.count.mixin"]

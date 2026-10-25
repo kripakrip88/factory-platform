@@ -41,3 +41,43 @@ class CrmLeadFlowCount(models.Model):
 class MetalSpecFlowCount(models.Model):
     _name = "pmk.metal.spec"
     _inherit = ["pmk.metal.spec", "pmk.flow.count.mixin"]
+
+
+class LaserJobFlowCount(models.Model):
+    _name = "pmk.laser.job"
+    _inherit = ["pmk.laser.job", "pmk.flow.count.mixin"]
+
+
+class LaserTaskFlowCount(models.Model):
+    _name = "pmk.laser.task"
+    _inherit = ["pmk.laser.task", "pmk.flow.count.mixin"]
+
+
+class LaserNestFlowCount(models.Model):
+    _name = "pmk.laser.nest"
+    _inherit = ["pmk.laser.nest", "pmk.flow.count.mixin"]
+
+
+class CutPlanFlowCount(models.Model):
+    _name = "pmk.cut.plan"
+    _inherit = ["pmk.cut.plan", "pmk.flow.count.mixin"]
+
+
+class PurchaseOrderFlowCount(models.Model):
+    _name = "purchase.order"
+    _inherit = ["purchase.order", "pmk.flow.count.mixin"]
+
+
+class MrpProductionFlowCount(models.Model):
+    _name = "mrp.production"
+    _inherit = ["mrp.production", "pmk.flow.count.mixin"]
+
+
+class AccountMoveFlowCount(models.Model):
+    _name = "account.move"
+    _inherit = ["account.move", "pmk.flow.count.mixin"]
+
+
+class StockPickingFlowCount(models.Model):
+    _name = "stock.picking"
+    _inherit = ["stock.picking", "pmk.flow.count.mixin"]

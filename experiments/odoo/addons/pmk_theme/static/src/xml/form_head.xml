@@ -25,9 +25,9 @@
          шапке нет — их число во вкладке «Связи · N» (pmk_flow). На телефоне и
          в листе (уже 1200 px) — как в ядре. -->
     <xpath expr="//t[@t-set-slot='layout-actions']/t[@t-if='!env.isSmall and buttonBoxTemplate']" position="attributes">
-      <attribute name="t-if">!env.isSmall and buttonBoxTemplate and !pmkHeadAOn</attribute>
+      <attribute name="t-if">!env.isSmall and buttonBoxTemplate and !pmkCountersInTab</attribute>
     </xpath>
-    <xpath expr="//t[@t-set-slot='layout-actions']/t[@t-if='!env.isSmall and buttonBoxTemplate and !pmkHeadAOn']" position="before">
+    <xpath expr="//t[@t-set-slot='layout-actions']/t[@t-if='!env.isSmall and buttonBoxTemplate and !pmkCountersInTab']" position="before">
       <div t-if="pmkHeaderButtonsTemplate and pmkHeaderInPanel()" class="o_pmk_cp_header o_pmk_cp_header_buttons d-flex align-items-center">
         <t t-call="{{ pmkHeaderButtonsTemplate }}" t-call-context="{ __comp__: Object.assign(Object.create(this), { this, props: { ...this.props, record: this.model.root }, state: {}, pmkPart: pmkHeadAOn ? 'right' : undefined }) }"/>
       </div>

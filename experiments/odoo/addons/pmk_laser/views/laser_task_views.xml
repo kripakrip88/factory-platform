@@ -32,7 +32,7 @@
     <field name="name">pmk.laser.task.form</field>
     <field name="model">pmk.laser.task</field>
     <field name="arch" type="xml">
-      <form string="Задание на резку" class="pmk-doc-form o_pmk_header_up pmk-labels-top-groups">
+      <form string="Задание на резку" class="pmk-doc-form o_pmk_header_up o_pmk_head_a pmk-labels-top-groups">
         <header>
           <button name="action_nest_all" type="object" string="Разложить" class="btn-primary"
                   icon="fa-th-large" invisible="not part_ids or state != 'new'"

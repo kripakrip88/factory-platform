@@ -53,6 +53,7 @@
         <field name="arch" type="xml">
             <xpath expr="/form/sheet/notebook" position="inside">
                 <page string="Связи" name="pmk_flow">
+                    <field name="pmk_flow_count" invisible="1"/>
                     <widget name="pmk_flow_map"/>
                 </page>
             </xpath>
@@ -69,6 +70,7 @@
         <field name="arch" type="xml">
             <xpath expr="/form/sheet/notebook" position="inside">
                 <page string="Связи" name="pmk_flow">
+                    <field name="pmk_flow_count" invisible="1"/>
                     <widget name="pmk_flow_map"/>
                 </page>
             </xpath>
@@ -84,6 +86,7 @@
         <field name="arch" type="xml">
             <xpath expr="/form/sheet/notebook" position="inside">
                 <page string="Связи" name="pmk_flow">
+                    <field name="pmk_flow_count" invisible="1"/>
                     <widget name="pmk_flow_map"/>
                 </page>
             </xpath>
@@ -101,6 +104,7 @@
         <field name="arch" type="xml">
             <xpath expr="/form/sheet/notebook" position="inside">
                 <page string="Связи" name="pmk_flow">
+                    <field name="pmk_flow_count" invisible="1"/>
                     <widget name="pmk_flow_map"/>
                 </page>
             </xpath>

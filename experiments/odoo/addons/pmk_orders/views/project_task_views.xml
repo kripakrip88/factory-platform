@@ -132,7 +132,7 @@
     <field name="priority">50</field>
     <field name="active" eval="True"/>
     <field name="arch" type="xml">
-      <form string="Заказ в работе" class="o_pmk_header_up">
+      <form string="Заказ в работе" class="o_pmk_header_up o_pmk_head_a">
         <header>
           <field name="stage_id" widget="statusbar" options="{'clickable': '1', 'fold_field': 'fold'}"/>
         </header>
