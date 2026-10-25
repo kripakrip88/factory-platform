@@ -136,6 +136,25 @@ services:
     mem_limit: 768m
     cpus: 1.0
 
+  # Чертёжный процесс закладных МН (25.10.2026, pmk_zakladnye): PDF рисует PyMuPDF — его нет в
+  # образе Odoo, а страница ждать не должна (правило «доработка не замедляет систему»). Свой
+  # маленький образ: python 3.12 + pymupdf 1.26.5 + fonts-liberation, uid 100/gid 101 как odoo.
+  # Обмен — файлами в /var/lib/odoo/zakladnye (общий том). Образ собирается из папки модуля:
+  #   docker compose build zk-worker
+  zk-worker:
+    image: pmk-zk-worker:1
+    build: ./addons-extra/pmk_zakladnye/worker
+    container_name: odoo-zk-worker
+    restart: unless-stopped
+    command: ["/var/lib/odoo/zakladnye"]
+    environment:
+      PYTHONDONTWRITEBYTECODE: "1"
+    volumes:
+      - odoo_data:/var/lib/odoo
+      - ${EXTRA_ADDONS:-/opt/experiments/odoo/addons-extra}:/mnt/third-party:ro
+    mem_limit: 512m
+    cpus: 1.0
+
 volumes:
   odoo_db_data:
   odoo_data:

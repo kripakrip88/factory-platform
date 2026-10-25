@@ -73,7 +73,11 @@ BRANCH="${BRANCH:-feature/experiment-carbon}"
 # pmk_cloud добавлен 15.10.2026 — новые файлы раскроя в Облаке Mail.ru → группа
 # Телеграма; пароль вписывает Антон (Настройки → Облако Mail.ru). Первый раз:
 # INSTALL="pmk_sheet_nest pmk_cloud".
-OURS="pmk_calc pmk_theme pmk_pdf pmk_cut pmk_mail_ui pmk_partner pmk_purchase pmk_dadata pmk_laser pmk_bridge pmk_deal pmk_deal_sms pmk_flow pmk_drawing pmk_telegram pmk_org pmk_orders pmk_list_prefs pmk_tech pmk_vent_nest pmk_moysklad pmk_bank pmk_sheet_nest pmk_cloud pmk_cut_cost pmk_butik pmk_sales_home pmk_prod_home pmk_purchase_home pmk_ai pmk_ai_mail pmk_bolt"
+# pmk_zakladnye (25.10.2026) — закладные МН: калькулятор, чертежи PDF фоновым процессом
+# (контейнер zk-worker), DXF, задание на резку. pmk_supplier_invoice (25.10.2026) — счета
+# поставщиков → цены (фон ассистента). pmk_opora (25.10.2026) — опоры трубопроводов по ОСТ.
+# Первый раз: INSTALL="pmk_opora pmk_zakladnye pmk_supplier_invoice".
+OURS="pmk_calc pmk_theme pmk_pdf pmk_cut pmk_mail_ui pmk_partner pmk_purchase pmk_dadata pmk_laser pmk_bridge pmk_deal pmk_deal_sms pmk_flow pmk_drawing pmk_telegram pmk_org pmk_orders pmk_list_prefs pmk_tech pmk_vent_nest pmk_moysklad pmk_bank pmk_sheet_nest pmk_cloud pmk_cut_cost pmk_butik pmk_sales_home pmk_prod_home pmk_purchase_home pmk_ai pmk_ai_mail pmk_bolt pmk_opora pmk_zakladnye pmk_supplier_invoice"
 # pmk_bolt — фундаментные болты по ГОСТ 24379.1, в расчёте и счёте (22.10.2026). Первый раз: INSTALL="pmk_bolt".
 # pmk_vent_nest — раскрой вентзонтов (12.10.2026). Первый раз: INSTALL="pmk_vent_nest".
 # pmk_moysklad — МойСклад → Odoo (12.10.2026). Первый раз: INSTALL="pmk_moysklad"; затем перенос
@@ -167,5 +171,10 @@ fi
 if grep -q "ai-worker:" docker-compose.yml; then
   docker compose up -d --no-deps ai-worker >/dev/null 2>&1
   docker compose restart ai-worker >/dev/null 2>&1 && echo "→ ассистент (фон) перезапущен"
+fi
+# Чертёжный процесс закладных (25.10.2026): worker.py в памяти — перезапуск; первый раз — поднять.
+if grep -q "zk-worker:" docker-compose.yml; then
+  docker compose up -d --no-deps zk-worker >/dev/null 2>&1
+  docker compose restart zk-worker >/dev/null 2>&1 && echo "→ чертёжный процесс перезапущен"
 fi
 echo "→ готово"
