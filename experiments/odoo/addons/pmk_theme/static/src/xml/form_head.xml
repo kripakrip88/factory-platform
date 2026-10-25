@@ -39,6 +39,12 @@
     <xpath expr="//t[@t-set-slot='control-panel-additional-actions']/CogMenu" position="attributes">
       <attribute name="t-if">!pmkHeadAOn</attribute>
     </xpath>
+    <!-- «Новое» у номера — не у документов варианта А (Антон 25.10.2026: «да давай
+         уберём»): как у счёта, сделки и расчёта; новый документ — из списка или
+         «Создать ▾». -->
+    <xpath expr="//t[@t-set-slot='control-panel-create-button']/button[hasclass('o_form_button_create')]" position="attributes">
+      <attribute name="t-if">canCreate and !pmkHeadA</attribute>
+    </xpath>
     <xpath expr="//t[@t-set-slot='control-panel-status-indicator']/t[@t-if='canEdit']" position="before">
       <div t-if="pmkHeadAOn and pmkHeaderButtonsTemplate" class="o_pmk_cp_header o_pmk_head_a_left d-flex align-items-center">
         <t t-call="{{ pmkHeaderButtonsTemplate }}" t-call-context="{ __comp__: Object.assign(Object.create(this), { this, props: { ...this.props, record: this.model.root }, state: {}, pmkPart: 'left' }) }"/>
