@@ -25,4 +25,11 @@ if not isinstance(action, dict):
     action = {"type": "ir.actions.client", "tag": "soft_reload"}
     </field>
   </record>
+
+  <!-- Штатное «Создать ссылку для оплаты» — не в «⚙» счёта (Антон 25.10.2026:
+       «да, убирай»): оплату по ссылке завод не принимает. Действие ядра цело,
+       снята только привязка к модели. -->
+  <record id="sale.action_sale_order_generate_link" model="ir.actions.act_window">
+    <field name="binding_model_id" eval="False"/>
+  </record>
 </odoo>

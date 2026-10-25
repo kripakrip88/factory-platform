@@ -3846,3 +3846,80 @@ body.o_nexus_dark .o_pmk_more_item.dropdown-item > .btn[name="action_cancel"] {
     height: 32px;
   }
 }
+
+// ═══ Шаг 74: «⚙» у «Истории», «Создать ▾ / Печать» у номера (Антон 25.10.2026) ═══
+// Шапка «вариант А»: «⚙» — в правом ряду (xml/form_head.xml, слот навигации),
+// перед «Историей» (у неё order: -1, раздел шага 65): ⚙ · ↺ · ‹ ›.
+.o_form_view.o_pmk_head_a .o_control_panel .o_control_panel_navigation > .o_cp_action_menus {
+  order: -2;
+}
+
+// Статус — справа, перед «⚙» (Антон 25.10.2026: «не кучковать 3 кнопки в одном
+// месте»): статус · ⚙ · ↺ · ‹ ›.
+.o_form_view.o_pmk_head_a .o_control_panel .o_control_panel_navigation > .o_pmk_cp_header_status {
+  order: -3;
+}
+
+// Строка «Создать ▾ / Печать» у номера — с тем же зазором, что статус.
+.o_pmk_head_a_left {
+  margin-left: 6px;
+
+  .o_form_statusbar,
+  .o_statusbar_buttons {
+    padding: 0 !important;
+  }
+}
+
+// Зазоры (Антон 25.10.2026: «посмотри зазоры между всеми кнопками, почему они у
+// всех как попало?»): были 4 / 6 / 16 / 24 / 1 px — у каждого блока ядра свой
+// gap. У шапки «вариант А» — 8 px везде, стрелки — отдельными кнопками.
+.o_form_view.o_pmk_head_a .o_control_panel {
+  // Ряд строки пути (ядро: gap 16 px) — 8 px между блоками.
+  .o_control_panel_main {
+    column-gap: 8px !important;
+  }
+
+  .o_control_panel_actions {
+    gap: 8px;
+  }
+
+  .o_control_panel_navigation {
+    gap: 8px !important;
+
+    > * {
+      margin: 0 !important;
+    }
+  }
+
+  // Обёртка «⚙» у ядра с отступом справа 8 px — с «Историей» выходило 16.
+  .o_cp_action_menus {
+    padding: 0 !important;
+  }
+
+  // Строка кнопок шапки (тема ставит 6 px с !important, вес выше) и меню
+  // «Создать ▾ / Печать» (gap-1 = 4 px).
+  .o_pmk_cp_header .o_form_statusbar .o_statusbar_buttons,
+  .o_pmk_doc_menu,
+  .o_cp_action_menus,
+  .o_pmk_doc_tools {
+    gap: 8px !important;
+  }
+
+  .o_cp_pager {
+    margin: 0 !important;
+
+    .btn-group {
+      gap: 8px;
+    }
+
+    .o_pager_previous,
+    .o_pager_next {
+      margin: 0 !important;
+      border-radius: 8px !important;
+    }
+  }
+
+  .o_pmk_head_a_left {
+    margin-left: 8px;
+  }
+}

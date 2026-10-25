@@ -29,19 +29,28 @@
     </xpath>
     <xpath expr="//t[@t-set-slot='layout-actions']/t[@t-if='!env.isSmall and buttonBoxTemplate and !pmkHeadAOn']" position="before">
       <div t-if="pmkHeaderButtonsTemplate and pmkHeaderInPanel()" class="o_pmk_cp_header o_pmk_cp_header_buttons d-flex align-items-center">
-        <t t-call="{{ pmkHeaderButtonsTemplate }}" t-call-context="{ __comp__: Object.assign(Object.create(this), { this, props: { ...this.props, record: this.model.root }, state: {} }) }"/>
+        <t t-call="{{ pmkHeaderButtonsTemplate }}" t-call-context="{ __comp__: Object.assign(Object.create(this), { this, props: { ...this.props, record: this.model.root }, state: {}, pmkPart: pmkHeadAOn ? 'right' : undefined }) }"/>
       </div>
     </xpath>
     <!-- Вариант А (Антон 25.10.2026): статус — у номера документа, первым в
          слоте рядом с названием (перед «Сохранить / Отменить»). -->
+    <!-- Вариант А (Антон 25.10.2026): «Создать ▾ / Печать» — слева, у номера,
+         где была «⚙»; «⚙» — справа, у «Истории» (слот навигации ниже). -->
+    <xpath expr="//t[@t-set-slot='control-panel-additional-actions']/CogMenu" position="attributes">
+      <attribute name="t-if">!pmkHeadAOn</attribute>
+    </xpath>
     <xpath expr="//t[@t-set-slot='control-panel-status-indicator']/t[@t-if='canEdit']" position="before">
+      <div t-if="pmkHeadAOn and pmkHeaderButtonsTemplate" class="o_pmk_cp_header o_pmk_head_a_left d-flex align-items-center">
+        <t t-call="{{ pmkHeaderButtonsTemplate }}" t-call-context="{ __comp__: Object.assign(Object.create(this), { this, props: { ...this.props, record: this.model.root }, state: {}, pmkPart: 'left' }) }"/>
+      </div>
       <div t-if="pmkStatusAtTitle" class="o_pmk_cp_header o_pmk_cp_header_status o_pmk_head_a_status d-flex align-items-center">
         <t t-call="{{ pmkHeaderStatusTemplate }}" t-call-context="{ __comp__: Object.assign(Object.create(this), { this, props: { ...this.props, record: this.model.root }, state: {} }) }"/>
       </div>
     </xpath>
     <xpath expr="//t[@t-set-slot='control-panel-status-indicator']" position="after">
       <t t-set-slot="control-panel-navigation-additional">
-        <div t-if="pmkHeaderStatusTemplate and pmkHeaderInPanel() and !pmkHeadA" class="o_pmk_cp_header o_pmk_cp_header_status d-flex align-items-center">
+        <CogMenu t-if="pmkHeadAOn" t-props="this.cogMenuProps"/>
+        <div t-if="pmkHeaderStatusTemplate and pmkHeaderInPanel() and !pmkStatusAtTitle" class="o_pmk_cp_header o_pmk_cp_header_status d-flex align-items-center">
           <t t-call="{{ pmkHeaderStatusTemplate }}" t-call-context="{ __comp__: Object.assign(Object.create(this), { this, props: { ...this.props, record: this.model.root }, state: {} }) }"/>
         </div>
       </t>
@@ -60,11 +69,15 @@
     <xpath expr="//t[@t-else='']" position="before">
       <t t-elif="env.pmkHeadA and env.pmkHeadA()">
         <t t-set="pmkSplit" t-value="pmkSplitSlots()"/>
-        <t t-if="pmkSplit.main" t-slot="{{ pmkSplit.main }}"/>
-        <t t-foreach="pmkSplit.inline" t-as="slot" t-key="slot">
-          <t t-slot="{{ slot }}"/>
+        <t t-set="pmkRight" t-value="props.pmkPart !== 'left'"/>
+        <t t-set="pmkLeft" t-value="props.pmkPart !== 'right'"/>
+        <t t-if="pmkRight and pmkSplit.main" t-slot="{{ pmkSplit.main }}"/>
+        <t t-if="pmkRight">
+          <t t-foreach="pmkSplit.inline" t-as="slot" t-key="slot">
+            <t t-slot="{{ slot }}"/>
+          </t>
         </t>
-        <Dropdown t-if="pmkSplit.more.length" menuClass="'o_pmk_more_menu'">
+        <Dropdown t-if="pmkRight and pmkSplit.more.length" menuClass="'o_pmk_more_menu'">
           <button class="btn btn-secondary o_pmk_more_btn" title="Другие действия документа">
             <span>Ещё</span><i class="fa fa-angle-down ms-1" aria-hidden="true"/>
           </button>
@@ -76,8 +89,10 @@
             </t>
           </t>
         </Dropdown>
-        <t t-foreach="pmkSplit.keep" t-as="slot" t-key="slot">
-          <t t-slot="{{ slot }}"/>
+        <t t-if="pmkLeft">
+          <t t-foreach="pmkSplit.keep" t-as="slot" t-key="slot">
+            <t t-slot="{{ slot }}"/>
+          </t>
         </t>
       </t>
     </xpath>

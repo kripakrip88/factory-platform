@@ -21,7 +21,7 @@ LibreOffice — то есть ровно того, ради чего его ст
 превращает тот же pdf.js в браузере, поэтому ни poppler, ни ghostscript
 не понадобятся.
 """,
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.0.1",
     "category": "Productivity/Documents",
     "author": "ПМК Парк",
     "license": "LGPL-3",

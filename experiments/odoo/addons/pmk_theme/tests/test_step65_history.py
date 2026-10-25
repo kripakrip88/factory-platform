@@ -256,10 +256,13 @@ class TestStep65History(TransactionCase):
         form = _apply(form, _block(_xml(OURS), "web.FormView"))
         slot = form.find(NAV_SLOT)
         kids = [c for c in slot if isinstance(c.tag, str)]
-        self.assertIn("o_pmk_cp_header_status", (kids[0].get("class") or "").split(), "Этап — первым.")
-        self.assertEqual(kids[1].get("t-component"), "pmkDocToolsCls", "Значки — после этапа.")
-        self.assertEqual(kids[1].get("t-if"), "pmkDocToolsOn")
-        self.assertEqual(kids[1].get("t-props"), "pmkDocToolsProps")
+        # Шапка «вариант А» (25.10.2026): «⚙» — в этом слоте, перед «Историей».
+        self.assertEqual(kids[0].tag, "CogMenu")
+        self.assertEqual(kids[0].get("t-if"), "pmkHeadAOn")
+        self.assertIn("o_pmk_cp_header_status", (kids[1].get("class") or "").split(), "Этап — перед значками.")
+        self.assertEqual(kids[2].get("t-component"), "pmkDocToolsCls", "Значки — после этапа.")
+        self.assertEqual(kids[2].get("t-if"), "pmkDocToolsOn")
+        self.assertEqual(kids[2].get("t-props"), "pmkDocToolsProps")
 
     def test_primary_copies_get_slot(self):
         """«Список дел», задачи (и доска «Доработка системы»), проекты:

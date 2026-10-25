@@ -131,14 +131,30 @@ patch(FormController.prototype, {
         });
     },
 
+    /**
+     * «⚙» шапки «вариант А» — без «Печати» (Антон 25.10.2026: «зачем в
+     * шестерёнке печать?»): печать у документа — меню «🖶» в строке.
+     */
+    get cogMenuProps() {
+        const props = super.cogMenuProps;
+        if (this.pmkHeadA && props.items?.print) {
+            return { ...props, items: { ...props.items, print: [] } };
+        }
+        return props;
+    },
+
     /** Шапка «вариант А» сейчас в строке пути (экран от 1200 px). */
     get pmkHeadAOn() {
         return this.pmkHeadA && this.pmkHeaderInPanel();
     },
 
-    /** Статус — у номера документа (вариант А), а не справа перед стрелками. */
+    /**
+     * Статус у номера документа — выключено (Антон 25.10.2026: «статус сдвинем
+     * вправо, чтоб не кучковать 3 кнопки в одном месте»): у варианта А статус
+     * справа, перед «⚙ · ↺ · ‹ ›», как у остальных форм.
+     */
     get pmkStatusAtTitle() {
-        return this.pmkHeadAOn && Boolean(this.pmkHeaderStatusTemplate);
+        return false;
     },
 
     /** Шапка рисуется в строке пути: она разобрана и экран от 1200 px. */
@@ -161,6 +177,12 @@ patch(FormCompiler.prototype, {
         const compiled = super.compileHeader(...arguments);
         // Вариант А: флаги кнопок для раскладки «главная / Ещё ▾ / в ряду»
         // (StatusBarButtons ниже) — параметрами слотов, как isVisible ядра.
+        // Часть строки кнопок (вариант А): «left» — у номера только «Создать ▾ /
+        // Печать», «right» — главная и остальные; без части — вся строка.
+        const bar = compiled?.querySelector?.("StatusBarButtons");
+        if (bar) {
+            bar.setAttribute("pmkPart", "__comp__.pmkPart");
+        }
         for (const slot of compiled?.querySelectorAll?.("StatusBarButtons > t[t-set-slot]") || []) {
             const node = slot.firstElementChild;
             const isButton = node?.tagName === "ViewButton";
@@ -179,6 +201,8 @@ patch(FormCompiler.prototype, {
         return compiled;
     },
 });
+
+StatusBarButtons.props = { ...StatusBarButtons.props, pmkPart: { type: String, optional: true } };
 
 patch(StatusBarButtons.prototype, {
     /** Вариант А: видимые кнопки — главная, «Ещё ▾» и оставшиеся в ряду. */
