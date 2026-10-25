@@ -347,10 +347,10 @@ export class PmkScheduleTask extends Component {
     }
 }
 
-// Документы, где «Задача» есть в «Создать ▾» (pmk_deal, pmk_orders: пункт
-// action_pmk_doc_task) — в «⚙» её не дублируем (Антон 25.10.2026: «в
+// Документы, где «Задача» есть в «Создать ▾» (pmk_deal — сделка и расчёт,
+// pmk_orders — счёт: пункт action_pmk_doc_task / action_pmk_new_task) — в «⚙» её не дублируем (Антон 25.10.2026: «в
 // шестерёнке можно создать задачу — это глупость»).
-const TASK_IN_CREATE_MENU = ["crm.lead", "sale.order"];
+const TASK_IN_CREATE_MENU = ["crm.lead", "sale.order", "pmk.metal.spec"];
 
 export const pmkScheduleTaskItem = {
     Component: PmkScheduleTask,

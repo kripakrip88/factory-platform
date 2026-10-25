@@ -22,14 +22,17 @@ export const HEAD_A_CLASS = "o_pmk_head_a";
  * шапке не показывать, есть в меню (o_pmk_in_create — пункт «Создать ▾»,
  * o_pmk_in_cog — пункт «⚙»; Антон 25.10.2026).
  */
-export function headButtonFlags(classes, isWidget = false) {
+export function headButtonFlags(classes, isWidget = false, isSignal = false) {
     const list = String(classes || "").split(/[\s`'"+]+/);
     const has = (c) => list.includes(c);
     return {
-        primary: has("btn-primary") || has("oe_highlight"),
+        primary: !isSignal && (has("btn-primary") || has("oe_highlight")),
         more: has("o_pmk_more"),
-        keep: isWidget || has("o_pmk_keep"),
+        keep: !isSignal && (isWidget || has("o_pmk_keep")),
         skip: has("o_pmk_in_create") || has("o_pmk_in_cog"),
+        // Пометка (не кнопка и не виджет: «Без цены клиенту: …» у расчёта) —
+        // справа первой, не в «Ещё ▾»: сигнал не прячут.
+        pin: isSignal,
     };
 }
 
@@ -43,11 +46,13 @@ export function headButtonFlags(classes, isWidget = false) {
  */
 export function splitHeadSlots(slots) {
     const shown = slots.filter((slot) => !slot.skip);
-    const rest = shown.filter((slot) => !slot.keep);
+    const pinned = shown.filter((slot) => slot.pin).map((slot) => slot.name);
+    const rest = shown.filter((slot) => !slot.keep && !slot.pin);
     const main =
         rest.find((slot) => slot.primary && !slot.more) || rest.find((slot) => slot.primary) || null;
     const others = rest.filter((slot) => slot !== main).map((slot) => slot.name);
     return {
+        pinned,
         main: main ? main.name : null,
         inline: others.length === 1 ? others : [],
         more: others.length > 1 ? others : [],

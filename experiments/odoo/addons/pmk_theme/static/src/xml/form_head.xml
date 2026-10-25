@@ -71,6 +71,11 @@
         <t t-set="pmkSplit" t-value="pmkSplitSlots()"/>
         <t t-set="pmkRight" t-value="props.pmkPart !== 'left'"/>
         <t t-set="pmkLeft" t-value="props.pmkPart !== 'right'"/>
+        <t t-if="pmkRight">
+          <t t-foreach="pmkSplit.pinned" t-as="slot" t-key="slot">
+            <t t-slot="{{ slot }}"/>
+          </t>
+        </t>
         <t t-if="pmkRight and pmkSplit.main" t-slot="{{ pmkSplit.main }}"/>
         <t t-if="pmkRight">
           <t t-foreach="pmkSplit.inline" t-as="slot" t-key="slot">

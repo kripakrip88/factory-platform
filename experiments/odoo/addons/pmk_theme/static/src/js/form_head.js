@@ -186,11 +186,14 @@ patch(FormCompiler.prototype, {
         for (const slot of compiled?.querySelectorAll?.("StatusBarButtons > t[t-set-slot]") || []) {
             const node = slot.firstElementChild;
             const isButton = node?.tagName === "ViewButton";
-            const flags = headButtonFlags(isButton ? node.getAttribute("className") : "", !isButton);
+            const isWidget = node?.tagName === "Widget";
+            const flags = headButtonFlags(
+                isButton ? node.getAttribute("className") : "", isWidget, !isButton && !isWidget);
             slot.setAttribute("pmkPrimary", String(flags.primary));
             slot.setAttribute("pmkMore", String(flags.more));
             slot.setAttribute("pmkKeep", String(flags.keep));
             slot.setAttribute("pmkSkip", String(flags.skip));
+            slot.setAttribute("pmkPin", String(flags.pin));
         }
         if (compiled && el.closest?.("form")?.classList.contains(HEADER_UP_CLASS)) {
             compiled.setAttribute(
@@ -215,6 +218,7 @@ patch(StatusBarButtons.prototype, {
                 more: Boolean(slots[name].pmkMore),
                 keep: Boolean(slots[name].pmkKeep),
                 skip: Boolean(slots[name].pmkSkip),
+                pin: Boolean(slots[name].pmkPin),
             }))
         );
     },

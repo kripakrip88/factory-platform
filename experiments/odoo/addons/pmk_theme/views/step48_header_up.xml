@@ -44,7 +44,8 @@
     <field name="active" eval="True"/>
     <field name="arch" type="xml">
       <xpath expr="/form" position="attributes">
-        <attribute name="class" add="o_pmk_header_up" separator=" "/>
+        <!-- o_pmk_head_a — шапка «вариант А» (Антон 25.10.2026), как у счёта и сделки. -->
+        <attribute name="class" add="o_pmk_header_up o_pmk_head_a" separator=" "/>
       </xpath>
     </field>
   </record>
