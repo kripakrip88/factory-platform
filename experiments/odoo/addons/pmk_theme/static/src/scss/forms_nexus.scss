@@ -3923,3 +3923,9 @@ body.o_nexus_dark .o_pmk_more_item.dropdown-item > .btn[name="action_cancel"] {
     margin-left: 8px;
   }
 }
+
+// «⚙» шапки «вариант А» — всегда значком: подпись «Действия» появлялась там,
+// где кнопок мало (лид, архивная сделка), и шапки выходили разными.
+.o_form_view.o_pmk_head_a .o_control_panel .o_pmk_actions_btn .o_pmk_btn_label {
+  display: none !important;
+}

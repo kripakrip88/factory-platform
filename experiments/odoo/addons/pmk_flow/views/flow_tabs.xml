@@ -113,6 +113,8 @@
         <field name="arch" type="xml">
             <xpath expr="//sheet/notebook" position="inside">
                 <page string="Связи" name="pmk_flow">
+                    <!-- «Связи · N» (шапка «вариант А», 25.10.2026, flow_tab_count.js). -->
+                    <field name="pmk_flow_count" invisible="1"/>
                     <widget name="pmk_flow_map"/>
                 </page>
             </xpath>

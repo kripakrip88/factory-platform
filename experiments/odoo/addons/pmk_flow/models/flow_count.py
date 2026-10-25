@@ -31,3 +31,8 @@ class PmkFlowCountMixin(models.AbstractModel):
 class SaleOrderFlowCount(models.Model):
     _name = "sale.order"
     _inherit = ["sale.order", "pmk.flow.count.mixin"]
+
+
+class CrmLeadFlowCount(models.Model):
+    _name = "crm.lead"
+    _inherit = ["crm.lead", "pmk.flow.count.mixin"]
