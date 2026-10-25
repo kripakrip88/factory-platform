@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!-- «Закупки → Счета поставщиков» — сразу за «Ценами поставщиков» (20): оттуда цены и приходят. -->
+  <record id="menu_supplier_invoice" model="ir.ui.menu">
+    <field name="name">Счета поставщиков</field>
+    <field name="parent_id" ref="pmk_theme.menu_pmk_purchase"/>
+    <field name="action" ref="action_supplier_invoice"/>
+    <field name="sequence">22</field>
+  </record>
+</odoo>

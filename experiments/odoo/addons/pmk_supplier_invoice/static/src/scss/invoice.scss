@@ -1,0 +1,15 @@
+// Счёт поставщика (25.10.2026): пометки ассистента под шапкой, таблица строк, оригинал.
+.o_pmk_si {
+  .o_pmk_si__reason { margin-top: 8px; color: #6b6f76; font-size: 12px; white-space: pre-wrap; }
+  .o_pmk_si__lines { margin-top: 12px; }
+  // Строка счёта и позиция — целиком, в несколько строк (обрезанное «трубы электро…» не проверить).
+  .o_pmk_si__lines .o_list_table td.o_data_cell:is([name="name"], [name="product_tmpl_id"], [name="warning"]) {
+    white-space: normal !important;
+    overflow: visible;
+    text-overflow: clip;
+    .o_field_widget, span, a { white-space: normal !important; }
+  }
+  .o_pmk_si__file { margin-top: 16px; h3 { font-size: 14px; font-weight: 600; margin-bottom: 6px; } }
+  .o_pmk_si__file .o_field_pdf_viewer iframe { min-height: 720px; }
+}
+body.o_nexus_dark .o_pmk_si .o_pmk_si__reason { color: rgba(255, 255, 255, 0.65); }

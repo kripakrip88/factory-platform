@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_pmk_supplier_invoice_user,pmk_supplier_invoice.user,model_pmk_supplier_invoice,base.group_user,1,1,1,0
+access_pmk_supplier_invoice_line_user,pmk_supplier_invoice_line.user,model_pmk_supplier_invoice_line,base.group_user,1,1,1,1
+access_pmk_supplier_invoice_alias_user,pmk_supplier_invoice_alias.user,model_pmk_supplier_invoice_alias,base.group_user,1,1,1,0
+access_pmk_supplier_invoice_admin,pmk_supplier_invoice.admin,model_pmk_supplier_invoice,base.group_system,1,1,1,1
+access_pmk_supplier_invoice_alias_admin,pmk_supplier_invoice_alias.admin,model_pmk_supplier_invoice_alias,base.group_system,1,1,1,1

@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!--
+    Счёт поставщика (25.10.2026, прототип принят в чате). Шапка «вариант А»: справа
+    главная кнопка «Обновить цены», статус; прочее — «Ещё ▾». Ниже — поставщик, номер,
+    дата и карточки суммы и разницы, строки счёта с позицией системы и ценами, оригинал.
+  -->
+  <record id="view_supplier_invoice_form" model="ir.ui.view">
+    <field name="name">pmk.supplier.invoice.form</field>
+    <field name="model">pmk.supplier.invoice</field>
+    <field name="arch" type="xml">
+      <form string="Счёт поставщика" class="pmk-doc-form pmk-labels-top o_pmk_header_up o_pmk_head_a o_pmk_si">
+        <header>
+          <button name="action_apply_prices" type="object" string="Обновить цены" class="btn-primary"
+                  invisible="state != 'review'" confirm="Записать цены отмеченных строк с датой счёта?"/>
+          <button name="action_recognize" type="object" string="Распознать" class="btn-primary"
+                  invisible="state != 'draft'"/>
+          <button name="action_rematch" type="object" string="Сопоставить заново" invisible="state != 'review'"/>
+          <button name="action_recognize" type="object" string="Распознать заново"
+                  invisible="state not in ('review', 'error', 'skipped')"/>
+          <button name="action_skip" type="object" string="Не счёт" invisible="state not in ('review', 'error', 'draft')"/>
+          <field name="state" widget="statusbar" statusbar_visible="queued,review,applied"/>
+        </header>
+        <sheet>
+          <div class="pmk-doc-top" name="pmk_doc_top">
+            <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
+            <div class="alert alert-info" role="status" invisible="state not in ('queued', 'running')">
+              Счёт читает ассистент — это до минуты. Страницу можно закрыть.
+            </div>
+            <div class="alert alert-danger" role="alert" invisible="state != 'error'">
+              <field name="error" readonly="1"/>
+            </div>
+            <div class="pmk-doc-head">
+              <div class="pmk-doc-head__fields">
+                <div class="pmk-field" name="pmk_f_partner"><label for="partner_id"/>
+                  <field name="partner_id" nolabel="1" options="{'no_create': True}" readonly="state == 'applied'"/>
+                  <div class="text-muted small" invisible="not supplier_name">
+                    <field name="supplier_name" readonly="1" class="d-inline"/> · ИНН <field name="supplier_inn" readonly="1" class="d-inline"/>
+                  </div>
+                </div>
+                <div class="pmk-field" name="pmk_f_number"><label for="number"/>
+                  <field name="number" nolabel="1" readonly="state == 'applied'"/></div>
+                <div class="pmk-field" name="pmk_f_date"><label for="date"/>
+                  <field name="date" nolabel="1" readonly="state == 'applied'"/></div>
+                <div class="pmk-field" name="pmk_f_payer"><label for="payer"/><field name="payer" nolabel="1" readonly="1"/></div>
+                <div class="pmk-field pmk-field--wide" name="pmk_f_mail" invisible="not message_id"><label for="message_id"/>
+                  <field name="message_id" nolabel="1" readonly="1"/></div>
+                <div class="pmk-field pmk-field--wide" name="pmk_f_file" invisible="message_id"><label for="file"/>
+                  <field name="file" nolabel="1" filename="file_name" readonly="state not in ('draft', 'error', 'skipped')"/>
+                  <field name="file_name" invisible="1"/></div>
+              </div>
+              <div class="pmk-kpi">
+                <div class="pmk-kpi__card"><div class="pmk-kpi__label">Итого с НДС, ₽</div>
+                  <div class="pmk-kpi__value"><field name="amount_total" digits="[14,2]" readonly="1"/></div>
+                  <div class="pmk-kpi__sub">НДС <field name="amount_vat" digits="[14,2]" readonly="1" class="d-inline"/></div></div>
+                <div class="pmk-kpi__card"><div class="pmk-kpi__label">Против текущих цен</div>
+                  <div class="pmk-kpi__value"><field name="diff_text"/></div>
+                  <div class="pmk-kpi__sub">к записи <field name="apply_count"/> · внимание <field name="problem_count"/></div></div>
+              </div>
+            </div>
+            <div class="o_pmk_si__reason" invisible="not reason"><field name="reason" readonly="1"/></div>
+          </div>
+          <field name="line_ids" nolabel="1" readonly="state != 'review'" class="o_pmk_si__lines">
+            <list editable="bottom" create="0" delete="0"
+                  decoration-warning="kind == 'metal' and (warning or match_state == 'none')"
+                  decoration-muted="kind != 'metal'">
+              <field name="kind" column_invisible="1"/>
+              <field name="match_state" column_invisible="1"/>
+              <field name="name" readonly="1" string="Строка счёта" width="240px"/>
+              <field name="note" readonly="1" optional="hide"/>
+              <field name="product_tmpl_id" options="{'no_create': True}" readonly="kind != 'metal'" width="240px"/>
+              <field name="product_id" optional="hide" options="{'no_create': True}" readonly="kind != 'metal'"/>
+              <field name="match_note" readonly="1" optional="hide"/>
+              <field name="qty" readonly="1"/>
+              <field name="unit" readonly="1" width="60px"/>
+              <field name="price_ton" readonly="1"/>
+              <field name="new_price" readonly="1"/>
+              <field name="current_price" readonly="1"/>
+              <field name="price_uom" readonly="1" string="за" width="50px"/>
+              <field name="current_price_ton" readonly="1" optional="hide"/>
+              <field name="mass_unit" readonly="1" optional="hide"/>
+              <field name="current_date" readonly="1" optional="hide"/>
+              <field name="diff_pct" readonly="1" decoration-success="diff_pct &lt; 0" decoration-danger="diff_pct &gt; 0"/>
+              <field name="warning" readonly="1" width="140px"/>
+              <field name="apply" widget="boolean_toggle" readonly="kind != 'metal'" width="120px"/>
+            </list>
+          </field>
+          <div class="o_pmk_si__file" invisible="not file">
+            <h3>Оригинал счёта</h3>
+            <field name="file" widget="pdf_viewer" readonly="1" invisible="not file"/>
+          </div>
+          <div class="text-muted small mt-2" invisible="not usage_id">
+            Распознал ассистент за <field name="seconds" class="d-inline"/> с · <field name="cost" class="d-inline"/> $
+            <field name="usage_id" invisible="1"/>
+          </div>
+        </sheet>
+        <chatter/>
+      </form>
+    </field>
+  </record>
+
+  <record id="view_supplier_invoice_list" model="ir.ui.view">
+    <field name="name">pmk.supplier.invoice.list</field>
+    <field name="model">pmk.supplier.invoice</field>
+    <field name="arch" type="xml">
+      <list decoration-muted="state in ('skipped',)" decoration-danger="state == 'error'">
+        <field name="name"/>
+        <field name="date"/>
+        <field name="partner_id"/>
+        <field name="number"/>
+        <field name="amount_total" sum="Итого"/>
+        <field name="diff_text" string="Разница"/>
+        <field name="apply_count" optional="show"/>
+        <field name="problem_count" optional="show"/>
+        <field name="subject" optional="hide"/>
+        <field name="state" widget="badge" decoration-warning="state == 'review'" decoration-success="state == 'applied'"
+               decoration-info="state in ('queued', 'running')" decoration-danger="state == 'error'"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="view_supplier_invoice_search" model="ir.ui.view">
+    <field name="name">pmk.supplier.invoice.search</field>
+    <field name="model">pmk.supplier.invoice</field>
+    <field name="arch" type="xml">
+      <search>
+        <field name="name"/>
+        <field name="number"/>
+        <field name="partner_id"/>
+        <field name="line_ids" string="Строка" filter_domain="[('line_ids.name', 'ilike', self)]"/>
+        <filter name="review" string="Ждут проверки" domain="[('state', '=', 'review')]"/>
+        <filter name="applied" string="Цены обновлены" domain="[('state', '=', 'applied')]"/>
+        <filter name="not_invoice" string="Не счёт" domain="[('state', '=', 'skipped')]"/>
+        <filter name="errors" string="Ошибки" domain="[('state', '=', 'error')]"/>
+        <separator/>
+        <filter name="group_partner" string="Поставщик" context="{'group_by': 'partner_id'}"/>
+      </search>
+    </field>
+  </record>
+
+  <record id="action_supplier_invoice" model="ir.actions.act_window">
+    <field name="name">Счета поставщиков</field>
+    <field name="res_model">pmk.supplier.invoice</field>
+    <field name="view_mode">list,form</field>
+    <field name="help" type="html">
+      <p class="o_view_nocontent_smiling_face">Счета на оплату от поставщиков</p>
+      <p>Счета из почты pmkpark@mail.ru появляются здесь сами: ассистент читает их, строки
+        сопоставляются со справочником. Проверьте и нажмите «Обновить цены». Счёт можно и
+        загрузить вручную — «Новый» и файл.</p>
+    </field>
+  </record>
+</odoo>
