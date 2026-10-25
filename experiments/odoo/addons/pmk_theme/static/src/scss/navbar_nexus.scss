@@ -1253,9 +1253,9 @@ $pmk-nav-tones: (
 
   // ─── Первая строка — вкладки ───────────────────────────────────────────
   // Полоса выше карточки (z-index), чтобы открытая вкладка легла поверх её
-  // черты. Слева — поле карточки (16): первая вкладка стоит вровень с её левым
-  // краем, «Продажи» над «Главная» (Антон 25.10: «что за отступ слева» — было
-  // 36 под левую ножку). Открыта первая — она как корешок папки, см. ниже.
+  // черты. Слева — поле карточки (16) и небольшой отступ 12 от её края (Антон
+  // 25.10: было 36 — «что за отступ слева», вровень — «небольшого отступа не
+  // хватает»). Левая ножка первой вкладки — как у остальных.
   // Справа 12 — под правую ножку «Настроек» (overflow: hidden у полосы режет
   // всё за её краями, шаг 5).
   header.o_navbar .pmk_apps_bar {
@@ -1266,7 +1266,7 @@ $pmk-nav-tones: (
     gap: 0;
     height: var(--o-navbar-height, 46px);
     margin-left: 0;
-    padding: 0 12px 0 16px;
+    padding: 0 12px 0 28px;
   }
 
   header.o_navbar .pmk_apps_bar .pmk_app {
@@ -1345,21 +1345,6 @@ $pmk-nav-tones: (
           #{$pmk-nav-line} $pmk-nav-r, #{$pmk-nav-line} $pmk-nav-r + 1px, #{$pmk-nav-card} $pmk-nav-r + 1px)
           right bottom / ($pmk-nav-r + 1px) ($pmk-nav-r + 1px) no-repeat;
     }
-  }
-
-  // Открыта первая вкладка — корешок папки: левой ножки нет (под ней угол
-  // карточки), левая черта вкладки продолжается чертой карточки, угол
-  // карточки под вкладкой прямой.
-  header.o_navbar .pmk_apps_bar .pmk_app:first-child.pmk_app--active::after {
-    left: 0;
-    background:
-      radial-gradient(circle at 100% 0, transparent $pmk-nav-r,
-        #{$pmk-nav-line} $pmk-nav-r, #{$pmk-nav-line} $pmk-nav-r + 1px, #{$pmk-nav-card} $pmk-nav-r + 1px)
-        right bottom / ($pmk-nav-r + 1px) ($pmk-nav-r + 1px) no-repeat;
-  }
-
-  header.o_navbar:has(.pmk_apps_bar > .pmk_app:first-child.pmk_app--active) .o_menu_sections {
-    border-top-left-radius: 0;
   }
 
   // ─── «Настройки» — значком справа ──────────────────────────────────────
