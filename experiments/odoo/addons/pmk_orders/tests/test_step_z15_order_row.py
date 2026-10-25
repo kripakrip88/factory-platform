@@ -433,21 +433,11 @@ class TestStepZ15OrderRow(Z2Common):
         self.assertTrue(self.env.ref("pmk_orders.view_crm_lead_form_won_dialog").active)
         self.assertTrue(self.env.ref("pmk_orders.view_pmk_orders_won_wizard_form").active)
         header = self._deal_arch().find("header")
-        ours = header.find("button[@name='action_pmk_won']")
-        self.assertIsNotNone(ours)
-        self.assertEqual(ours.get("string"), "Выиграно")
-        self.assertEqual(ours.get("invisible"), WON_INVISIBLE, "Видна там же, где штатная.")
-        self.assertEqual(ours.get("data-hotkey"), "w")
-        classes = ours.get("class") or ""
-        self.assertNotIn("oe_highlight", classes, "Контурная: залитая на сделке — «Расчёт и КП».")
-        self.assertNotIn("btn-primary", classes)
+        # 25.10.2026: «Выиграно» убрана — выигрыш стадией (в «Убранном»).
+        self.assertIsNone(header.find("button[@name='action_pmk_won']"))
         core = header.find("button[@name='action_set_won_rainbowman']")
         self.assertIsNotNone(core, "Штатная спрятана, а не удалена.")
         self.assertTrue(hidden(core))
-        names = [b.get("name") for b in header.iter("button")]
-        self.assertLess(names.index("action_pmk_won"), names.index("action_set_won_rainbowman"))
-        if "action_open_specs" in names:
-            self.assertLess(names.index("action_open_specs"), names.index("action_pmk_won"))
 
         views = self.env["pmk.orders.won.wizard"].with_user(self.manager).get_views([(False, "form")])
         form = etree.fromstring(views["views"]["form"]["arch"])

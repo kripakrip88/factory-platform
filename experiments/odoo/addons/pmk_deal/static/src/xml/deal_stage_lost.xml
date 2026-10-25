@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- «Проиграна…» в списке стадий сделки — js/deal_stage_lost.js. Полоса стадий
+     сделки — mail.RottingStatusBarDurationField (primary-копия, правим её). -->
+<templates xml:space="preserve">
+  <t t-inherit="mail.RottingStatusBarDurationField" t-inherit-mode="extension">
+    <xpath expr="//Dropdown[button[@t-ref='dropdown']]/t[@t-set-slot='content']" position="inside">
+      <t t-if="pmkLostAvailable">
+        <div class="dropdown-divider"/>
+        <DropdownItem class="'o_pmk_stage_lost text-danger'" onSelected="() => this.pmkMarkLost()">
+          <i class="fa fa-fw fa-times-circle-o me-2" aria-hidden="true"/>Проиграна…
+        </DropdownItem>
+      </t>
+    </xpath>
+  </t>
+</templates>

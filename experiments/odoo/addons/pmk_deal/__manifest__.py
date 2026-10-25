@@ -9,7 +9,7 @@
     # цены, CRM его не касается. Поэтому связка «сделка ↔ расчёт» живёт своим
     # модулем: не установлен — обе стороны работают как раньше.
     "name": "ПМК: сделка и расчёт",
-    "version": "19.0.1.0.9",
+    "version": "19.0.1.1.0",
     "summary": "Расчёт металлопроката привязан к сделке CRM",
     "category": "Sales/CRM",
     "author": "ПМК Парк",
@@ -69,6 +69,9 @@
             # 20.10.2026: меню «Создать ▾» / «Печать ▾» в шапке сделки.
             "pmk_deal/static/src/js/deal_doc_menu.js",
             "pmk_deal/static/src/xml/deal_doc_menu.xml",
+            # 25.10.2026: «Проиграна…» в списке стадий вместо кнопки «Проиграно».
+            "pmk_deal/static/src/js/deal_stage_lost.js",
+            "pmk_deal/static/src/xml/deal_stage_lost.xml",
             "pmk_deal/static/src/js/stage_badge_field.js",
             "pmk_deal/static/src/xml/stage_badge_field.xml",
             "pmk_deal/static/src/scss/deal_money.scss",

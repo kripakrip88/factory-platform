@@ -71,12 +71,22 @@
     <field name="active" eval="True"/>
     <field name="arch" type="xml">
       <xpath expr="//header/button[@name='action_set_won_rainbowman']" position="before">
+        <!-- 25.10.2026 (Антон: «зачем нам выпадашка ещё с выиграно проиграно,
+             когда есть статусы документа?»): выигрыш — стадия «Оплачено / в
+             работе» или «Закрыта» (тот же путь: счёт в работу, строка плана);
+             кнопка — в «Убранном». -->
         <button name="action_pmk_won" type="object" string="Выиграно" data-hotkey="w"
+                groups="pmk_theme.group_pmk_removed"
                 title="Пришла предоплата или гарантийное письмо"
                 invisible="won_status == 'won' or type == 'lead' or not active"/>
       </xpath>
       <xpath expr="//header/button[@name='action_set_won_rainbowman']" position="attributes">
         <attribute name="invisible">1</attribute>
+      </xpath>
+      <!-- «Проиграно» — у лида кнопкой (стадий у лида нет); у сделки — пунктом
+           «Проиграна…» в списке стадий (pmk_deal, deal_stage_lost.js). -->
+      <xpath expr="//header/button[@name='%(crm.crm_lead_lost_action)d']" position="attributes">
+        <attribute name="invisible">won_status != 'pending' or not active or type == 'opportunity'</attribute>
       </xpath>
     </field>
   </record>

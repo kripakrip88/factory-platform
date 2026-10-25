@@ -99,17 +99,22 @@
         <attribute name="invisible">state != 'draft' or pmk_is_revision</attribute>
         <attribute name="groups">pmk_theme.group_pmk_removed</attribute>
       </xpath>
+      <!-- 25.10.2026 (Антон): согласование убрано, «Отправить КП» — пунктом меню
+           «Печать и отправка» (pmk_doc_menu, «send»): кнопки ниже — в «Убранном». -->
       <!-- Залитые — следующий шаг черновика; перед «Оплата пришла». -->
       <xpath expr="//header/button[@id='action_confirm']" position="before">
         <button name="action_pmk_to_approval" id="pmk_to_approval" type="object"
+                groups="pmk_theme.group_pmk_removed"
                 string="На согласование" class="btn-primary"
                 title="Руководителю — задача «Согласовать счёт». Отправить КП можно и без согласования — на счёте останется пометка"
                 invisible="state != 'draft' or pmk_approval != 'none' or pmk_is_revision"/>
         <button name="action_pmk_approve" id="pmk_approve" type="object"
+                groups="pmk_theme.group_pmk_removed"
                 string="Согласовано" class="btn-primary"
                 title="Счёт согласован: менеджер может отправлять КП"
                 invisible="state != 'draft' or pmk_approval != 'pending' or not pmk_is_approver or pmk_is_revision"/>
         <button name="action_pmk_send_kp" id="pmk_send_kp_primary" type="object"
+                groups="pmk_theme.group_pmk_removed"
                 string="Отправить КП" class="btn-primary"
                 title="Окно письма расчёта: КП в PDF уходит клиенту по кнопке «Отправить» в окне, счёт станет «Отправлен», сделка — «КП отправлено»"
                 invisible="state != 'draft' or pmk_approval != 'approved' or not pmk_spec_id or pmk_is_revision"/>
@@ -125,14 +130,17 @@
       <!-- Контурные — после «Оплата пришла». -->
       <xpath expr="//header/button[@id='action_confirm']" position="after">
         <button name="action_pmk_approve" id="pmk_approve_direct" type="object"
+                groups="pmk_theme.group_pmk_removed"
                 string="Согласовано" class="btn-secondary"
                 title="Согласовать сразу, без отправки на согласование"
                 invisible="state != 'draft' or pmk_approval != 'none' or not pmk_is_approver or pmk_is_revision"/>
         <button name="action_pmk_return" id="pmk_return" type="object"
+                groups="pmk_theme.group_pmk_removed"
                 string="Вернуть на доработку" class="btn-secondary"
                 title="Вернуть менеджеру с комментарием, что поправить"
                 invisible="state != 'draft' or pmk_approval != 'pending' or not pmk_is_approver or pmk_is_revision"/>
         <button name="action_pmk_send_kp" id="pmk_send_kp" type="object"
+                groups="pmk_theme.group_pmk_removed"
                 string="Отправить КП" class="btn-secondary"
                 title="Окно письма расчёта. Отправить можно и без согласования — на счёте останется пометка. У отправленного: изменённый расчёт уйдёт новой редакцией"
                 invisible="not pmk_spec_id or pmk_is_revision or not (state == 'sent' or (state == 'draft' and pmk_approval != 'approved'))"/>
@@ -210,11 +218,6 @@
         <div class="pmk-price-alert o_pmk_invoice_alert" role="status"
              invisible="not pmk_spec_changed_text">
           <field name="pmk_spec_changed_text" nolabel="1"/>
-        </div>
-        <div class="pmk-price-alert o_pmk_invoice_alert" role="status"
-             invisible="not pmk_approval_signal"
-             title="Отправку никто не держит — пометка для руководителя">
-          <field name="pmk_approval_signal" nolabel="1"/> — руководитель не отмечал «Согласовано».
         </div>
         <div class="pmk-price-alert o_pmk_invoice_alert" role="status"
              invisible="not pmk_skip_text"
@@ -687,14 +690,9 @@
         <filter name="pmk_current" string="Действующие" domain="[('pmk_is_revision', '=', False)]"/>
         <separator/>
         <filter name="pmk_draft" string="Черновики" domain="[('pmk_status', '=', 'draft')]"/>
-        <filter name="pmk_on_approval" string="На согласовании" domain="[('pmk_status', '=', 'approval')]"/>
-        <filter name="pmk_approved" string="Согласованы" domain="[('pmk_status', '=', 'approved')]"/>
         <filter name="pmk_issued" string="Отправлены, ждём оплату" domain="[('state', '=', 'sent')]"/>
         <filter name="pmk_in_work" string="В работе (оплачены)" domain="[('state', '=', 'sale')]"/>
         <filter name="pmk_cancelled" string="Отменены" domain="[('state', '=', 'cancel')]"/>
-        <separator/>
-        <filter name="pmk_not_approved" string="Отправлены без согласования"
-                domain="[('state', 'in', ('sent', 'sale')), ('pmk_approval', '!=', 'approved'), ('pmk_is_revision', '=', False)]"/>
         <separator/>
         <filter name="pmk_revisions" string="Прежние редакции" domain="[('pmk_is_revision', '=', True)]"/>
         <field name="pmk_spec_id"/>

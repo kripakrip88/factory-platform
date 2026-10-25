@@ -25,7 +25,7 @@ export class DealDocMenu extends Component {
     static props = { ...standardWidgetProps };
 
     setup() {
-        this.state = useState({ create: [], print: [], loaded: false });
+        this.state = useState({ create: [], print: [], send: [], loaded: false });
         this.load = this.load.bind(this);
     }
 
@@ -36,6 +36,8 @@ export class DealDocMenu extends Component {
         const menu = await this.env.services.orm.call(model, "pmk_doc_menu", [id ? [id] : []]);
         this.state.create = menu.create || [];
         this.state.print = menu.print || [];
+        // «Печать и отправка» (25.10.2026): отправка документа клиенту — под чертой.
+        this.state.send = menu.send || [];
         this.state.loaded = true;
     }
 

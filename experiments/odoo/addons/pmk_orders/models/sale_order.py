@@ -92,10 +92,10 @@ APPROVAL = [
     ("pending", "На согласовании"),
     ("approved", "Согласован"),
 ]
+# Согласование убрано (Антон 25.10.2026: «убираем согласование») — в статусе
+# его шагов нет; поле pmk_approval и методы остались для старых счетов.
 STATUS = [
     ("draft", "Черновик"),
-    ("approval", "На согласовании"),
-    ("approved", "Согласован"),
     ("sent", "Отправлен"),
     ("sale", "В работе (оплачен)"),
     ("cancel", "Отменён"),
@@ -232,9 +232,9 @@ class SaleOrder(models.Model):
              "можно и без отметки — тогда на счёте видно «не согласован».")
     pmk_status = fields.Selection(
         STATUS, "Статус", compute="_compute_pmk_status", store=True, index=True,
-        help="Черновик → На согласовании → Согласован → Отправлен → В работе (оплачен). "
-             "Отправленным счёт становится по «Отправить КП» в расчёте или когда сделку "
-             "переносят в «КП отправлено» руками.")
+        help="Черновик → Отправлен → В работе (оплачен). "
+             "Отправленным счёт становится после «Отправить КП клиенту» (меню печати) или "
+             "когда сделку переносят в «КП отправлено» руками.")
     pmk_sent_date = fields.Datetime(
         "Отправлен", copy=False, readonly=True,
         help="Когда счёт последний раз отмечен отправленным клиенту.")
@@ -305,11 +305,7 @@ class SaleOrder(models.Model):
     @api.depends("state", "pmk_approval")
     def _compute_pmk_status(self):
         for order in self:
-            if order.state == "draft":
-                order.pmk_status = {"pending": "approval", "approved": "approved"}.get(
-                    order.pmk_approval, "draft")
-            else:
-                order.pmk_status = order.state or "draft"
+            order.pmk_status = order.state or "draft"
 
     @api.depends_context("uid")
     def _compute_pmk_is_approver(self):
@@ -610,7 +606,14 @@ class SaleOrder(models.Model):
                  "method": "action_open_planner_row"},
             ],
             "print": [],
+            # «Печать и отправка» (Антон 25.10.2026): «Отправить КП» — не кнопкой
+            # шапки, а пунктом меню печати, под чертой.
+            "send": [],
         }
+        order = self[:1]
+        if order and order.pmk_spec_id and not order.pmk_is_revision and order.state in ("draft", "sent"):
+            menu["send"].append({"key": "send_kp", "label": _("Отправить КП клиенту"), "icon": "fa-envelope-o",
+                                 "method": "action_pmk_send_kp"})
         if self[:1] and self.env.ref("l10n_ru_doc.action_report_saleorder_new", raise_if_not_found=False):
             menu["print"].append({"key": "invoice", "label": _("Счёт (PDF)"), "icon": "fa-file-pdf-o",
                                   "method": "action_pmk_doc_print_invoice"})

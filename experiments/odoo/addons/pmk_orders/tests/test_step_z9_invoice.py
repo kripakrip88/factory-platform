@@ -286,7 +286,8 @@ class TestStepZ9Invoice(Z2Common):
         deal, spec, invoice = self._draft()
         invoice.with_user(self.manager).action_pmk_to_approval()
         self.assertEqual(invoice.pmk_approval, "pending")
-        self.assertEqual(invoice.pmk_status, "approval")
+        # Согласование из интерфейса убрано (25.10.2026): статус — «Черновик».
+        self.assertEqual(invoice.pmk_status, "draft")
         activity = invoice.activity_ids.filtered(
             lambda a: a.activity_type_id == self.env.ref("pmk_orders.mail_activity_type_invoice_approve"))
         self.assertEqual(len(activity), 1, "Руководителю — задача «Согласовать счёт».")
@@ -299,7 +300,7 @@ class TestStepZ9Invoice(Z2Common):
         self.assertTrue(invoice.with_user(self.approver).pmk_is_approver)
         invoice.with_user(self.approver).action_pmk_approve()
         self.assertEqual(invoice.pmk_approval, "approved")
-        self.assertEqual(invoice.pmk_status, "approved")
+        self.assertEqual(invoice.pmk_status, "draft")
         self.assertFalse(invoice.activity_ids.filtered(lambda a: a.id == activity.id),
                          "Задача закрыта.")
         # Правка счёта после согласования — снова «Черновик».
@@ -346,7 +347,8 @@ class TestStepZ9Invoice(Z2Common):
         self.assertFalse(invoice.activity_ids.filtered(
             lambda a: a.activity_type_id == self.env.ref("pmk_orders.mail_activity_type_invoice_approve")),
             "Задача «Согласовать» закрыта отправкой.")
-        self.assertIn("Счёт не согласован", self._notes(deal))
+        # Согласование убрано (25.10.2026) — пометки «не согласован» нет.
+        self.assertNotIn("не согласован", self._notes(deal))
         unapproved = self.env["sale.order"].search([
             ("state", "in", ("sent", "sale")), ("pmk_approval", "!=", "approved"),
             ("pmk_is_revision", "=", False)])
@@ -548,14 +550,16 @@ class TestStepZ9Invoice(Z2Common):
             shown = [b.get("string") for b in filled if visible(b, values)]
             with self.subTest(state=state, approval=approval, approver=approver):
                 self.assertLessEqual(len(shown), 1, shown)
-        # Следующий шаг по состояниям.
-        steps = {("draft", "none"): "На согласование", ("draft", "approved"): "Отправить КП",
+        # Следующий шаг по состояниям. С 25.10.2026 у черновика залитой кнопки нет:
+        # согласование убрано, «Отправить КП» — в меню «Печать и отправка».
+        steps = {("draft", "none"): None, ("draft", "approved"): None,
                  ("sent", "none"): "Оплата пришла — в работу"}
         for (state, approval), word in steps.items():
             values = {"state": state, "pmk_approval": approval, "pmk_is_approver": False,
                       "pmk_spec_id": 1, "id": 1, "invoice_status": "no", "invoice_count": 0}
             with self.subTest(step=word):
-                self.assertEqual([b.get("string") for b in filled if visible(b, values)], [word])
+                self.assertEqual([b.get("string") for b in filled if visible(b, values)],
+                                 [word] if word else [])
 
     def test_spec_button(self):
         spec_arch = self._arch("pmk.metal.spec", "form")
@@ -580,7 +584,8 @@ class TestStepZ9Invoice(Z2Common):
         deal, spec, invoice = self._draft()
         action = spec.with_user(self.manager).action_send_quotation()
         form = Form(self.env["mail.compose.message"].with_user(self.manager).with_context(action["context"]))
-        self.assertIn("не согласован", form.pmk_kp_invoice_hint or "")
+        # Согласования нет (25.10.2026) — и подсказки о нём.
+        self.assertNotIn("соглас", form.pmk_kp_invoice_hint or "")
         self.assertIn("станет «Отправлен»", form.pmk_kp_invoice_text or "")
         # Из счёта — то же окно расчёта.
         again = invoice.with_user(self.manager).action_pmk_send_kp()
@@ -589,9 +594,11 @@ class TestStepZ9Invoice(Z2Common):
 
     def test_status_words(self):
         labels = dict(self.env["sale.order"]._fields["pmk_status"].selection)
+        # Без шагов согласования (25.10.2026).
         self.assertEqual(
-            [labels[key] for key in ("draft", "approval", "approved", "sent", "sale", "cancel")],
-            ["Черновик", "На согласовании", "Согласован", "Отправлен", "В работе (оплачен)", "Отменён"])
+            [labels[key] for key in ("draft", "sent", "sale", "cancel")],
+            ["Черновик", "Отправлен", "В работе (оплачен)", "Отменён"])
+        self.assertNotIn("approval", labels)
 
     # ─── Доводка З-9 (находки проверки 09.10) ───────────────────────────
     def _activities(self, invoice, xmlid):
@@ -731,7 +738,8 @@ class TestStepZ9Invoice(Z2Common):
         other = self._spec(deal)
         context = other.with_user(self.manager).action_send_quotation()["context"]
         form = Form(self.env["mail.compose.message"].with_user(self.manager).with_context(context))
-        self.assertIn("согласование сбросится", form.pmk_kp_invoice_hint or "")
+        # Согласование убрано (25.10.2026): подсказки о его сбросе нет.
+        self.assertNotIn("соглас", form.pmk_kp_invoice_hint or "")
 
     def test_lines_and_header_controls(self):
         arch = self._arch("sale.order", "form", view="sale.view_order_form")

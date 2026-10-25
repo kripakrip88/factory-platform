@@ -62,20 +62,6 @@ class MailComposeMessageInvoice(models.TransientModel):
                     text += " " + _("Черновик собран из расчёта %s — перейдёт на этот.",
                                     invoice.pmk_spec_id.name)
                 composer.pmk_kp_invoice_text = text
-                if invoice.pmk_approval == "approved" and changed:
-                    # Пересборка из этого расчёта сбросит согласование
-                    # (sale_order._pmk_sync_from_spec) — счёт уйдёт без него.
-                    composer.pmk_kp_invoice_hint = _(
-                        "Счёт %(invoice)s согласован по расчёту %(old)s — изделия обновятся из "
-                        "этого расчёта, согласование сбросится: отправить можно, на счёте "
-                        "останется пометка «без согласования».", invoice=invoice.display_name,
-                        old=invoice.pmk_spec_id.name or _("(нет)"))
-                elif invoice.pmk_approval != "approved":
-                    composer.pmk_kp_invoice_hint = _(
-                        "Счёт %(invoice)s не согласован%(pending)s — отправить можно, на счёте "
-                        "останется пометка.", invoice=invoice.display_name,
-                        pending=_(" (ждёт руководителя)") if invoice.pmk_approval == "pending"
-                        else "")
             elif invoice.state == "cancel":
                 # crm_lead._pmk_invoice_kp_sent: отменённый снова «Отправлен»;
                 # расчёт менялся — новой редакцией.

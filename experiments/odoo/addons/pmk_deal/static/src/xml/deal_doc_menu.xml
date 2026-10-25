@@ -15,7 +15,7 @@
                 </t>
             </Dropdown>
             <Dropdown beforeOpen="load">
-                <button type="button" class="btn btn-secondary o_pmk_doc_menu__print" title="Печать">
+                <button type="button" class="btn btn-secondary o_pmk_doc_menu__print" title="Печать и отправка">
                     <i class="fa fa-print"/><span class="o_pmk_doc_menu__label ms-1">Печать</span><i class="fa fa-caret-down ms-1"/>
                 </button>
                 <t t-set-slot="content">
@@ -24,9 +24,17 @@
                             <i t-att-class="'fa fa-fw me-2 ' + item.icon"/><t t-esc="item.label"/>
                         </DropdownItem>
                     </t>
-                    <div t-if="state.loaded and !state.print.length" class="dropdown-item-text text-muted small">
+                    <div t-if="state.loaded and !state.print.length and !state.send.length" class="dropdown-item-text text-muted small">
                         Печатать пока нечего
                     </div>
+                    <t t-if="state.send.length">
+                        <div t-if="state.print.length" class="dropdown-divider"/>
+                        <t t-foreach="state.send" t-as="item" t-key="item.key">
+                            <DropdownItem onSelected="() => this.run(item)">
+                                <i t-att-class="'fa fa-fw me-2 ' + item.icon"/><t t-esc="item.label"/>
+                            </DropdownItem>
+                        </t>
+                    </t>
                 </t>
             </Dropdown>
         </div>

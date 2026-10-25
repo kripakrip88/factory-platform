@@ -357,15 +357,13 @@ class CrmLead(models.Model):
         elif invoice.state == "draft":
             old = invoice.pmk_spec_id
             invoice._pmk_sync_from_spec(spec)
-            approved = invoice.pmk_approval == "approved"
             invoice._pmk_mark_sent(_("Отправлен вместе с КП %s.", spec.name))
             text = _("Счёт покупателю %(invoice)s отправлен вместе с КП %(spec)s: сумма "
                      "%(total)s (%(tax)s). Ждём оплату.")
             if old and old != spec:
                 text += " " + _("Черновик был из расчёта %s — переключён на отправленный.",
                                 old.name)
-            if not approved:
-                text += " " + _("Счёт не согласован.")
+            # Согласование убрано (25.10.2026) — пометки «не согласован» нет.
         elif invoice.state == "sale":
             if invoice._pmk_signature() != wanted:
                 lead._pmk_orders_note(_(
@@ -416,14 +414,12 @@ class CrmLead(models.Model):
                 "по «Отправить КП» или при таком же переносе."))
             return invoice
         if invoice.state == "draft":
-            approved = invoice.pmk_approval == "approved"
             invoice._pmk_mark_sent(_(
                 "Отмечен «Отправлен»: сделку перенесли в «КП отправлено» руками (КП ушло "
                 "вне системы)."))
             text = _("Счёт покупателю %s отмечен «Отправлен»: сделку перенесли в «КП "
                      "отправлено» руками.", invoice.display_name)
-            if not approved:
-                text += " " + _("Счёт не согласован.")
+            # Согласование убрано (25.10.2026) — пометки «не согласован» нет.
             lead._pmk_orders_note(text)
             return invoice
         spec = lead._pmk_invoice_source_spec().sudo()
