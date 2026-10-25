@@ -1,0 +1,6 @@
+// Опоры — таблица Бутика (25.10.2026): стили — у pmk_butik и pmk_bolt; здесь подписи под записью.
+.o_pmk_opora {
+  .o_pmk_opora__more { color: var(--bt-muted, #6b7079); }
+  .o_pmk_opora__warning { color: var(--bt-warn, #9a6b00); }
+  .o_pmk_opora__own .o_pmk_butik__ta { font-style: italic; }
+}
