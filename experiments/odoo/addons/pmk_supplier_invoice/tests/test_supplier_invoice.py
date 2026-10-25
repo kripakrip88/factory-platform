@@ -212,6 +212,15 @@ class TestSupplierInvoice(TransactionCase):
         self.assertEqual(inv.state, "queued")
         self.assertEqual(self.Invoice._enqueue(), 0, "второй раз то же письмо не берём")
 
+    def test_attachment_fetch_failed_is_error(self):
+        """Вложение не скачалось — «Ошибка» (повторить), а не «Не счёт» навсегда."""
+        inv = self.Invoice.create({"subject": "Cчет Сч-1", "email_from": "x@mc.example"})
+        inv.state = "running"
+        with patch.object(type(inv), "_files", return_value=([], [("счёт.pdf", "IMAP: timeout")])):
+            self.Invoice._process(inv.id)
+        self.assertEqual(inv.state, "error")
+        self.assertIn("не скачались", inv.error)
+
     def test_worker_jobs(self):
         inv = self.Invoice.create({"file": base64.b64encode(b"%PDF"), "file_name": "a.pdf"})
         inv.action_recognize()

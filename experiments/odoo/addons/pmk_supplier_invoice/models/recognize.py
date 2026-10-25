@@ -163,9 +163,13 @@ class SupplierInvoiceQueue(models.Model):
             self.write({"state": "queued"})
             return
         files, failed = self._files()
+        if not files and failed:
+            # Не скачалось с почтового сервера — сбой, а не «не счёт»: повторить кнопкой.
+            self.write({"state": "error", "error": _("Вложения не скачались с почты: %s. «Распознать заново» — "
+                                                     "повторить.") % "; ".join("%s — %s" % f for f in failed)[:500]})
+            return
         if not files:
-            self.write({"state": "skipped", "reason": _("Файлов счёта нет%s.") % (
-                (": " + "; ".join("%s — %s" % f for f in failed)) if failed else "")})
+            self.write({"state": "skipped", "reason": _("Файлов счёта нет.")})
             return
         data, usage, error = self._ask(files, failed)
         vals = {"usage_id": usage.id, "data_json": json.dumps(data, ensure_ascii=False)}
