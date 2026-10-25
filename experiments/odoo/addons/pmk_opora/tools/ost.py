@@ -27,6 +27,9 @@ DENSITY = 7.85e-6  # кг/мм³
 OST = "ОСТ 36-146-88"
 LENGTHS = {"1": 170, "2": 340, "3": 680}
 BEND_K = 0.4  # нейтральный слой гиба корпуса: r + 0,4·S
+# Фаски нижних углов рёбер под внутренний радиус гиба корпуса (Антон 25.10.2026: «у ребра должны быть
+# сняты фаски под радиус»): катет = r + 2 мм зазора (геометрически хватает 4,7 мм при r = 8).
+RIB_CHAMFER_GAP = 2
 
 TYPES = {
     "kp": dict(code="КП", label="КП подвижная", fixed=False),
@@ -333,6 +336,11 @@ def corpus_width(b, h1, s, r):
     return (b - 2 * (r + s)) + 2 * (h1 - (r + s)) + math.pi * (r + BEND_K * s)
 
 
+def rib_chamfer(r):
+    """Катет фаски нижних углов ребра под внутренний радиус гиба корпуса."""
+    return r + RIB_CHAMFER_GAP
+
+
 def end_rib_area(b, h1, s, radius, steps=200):
     """Торцевое ребро: ширина B − 2S, низ на дне, верх по дуге radius, касающейся внутренних
     кромок стенок (труба/подушка/хомут лежат на стенках) — площадь численно."""
@@ -368,16 +376,18 @@ def parts(kind, dn, exe, h=None):
         w = corpus_width(b, h1, s, r)
         out.append(_sheet("corpus", 1, "Корпус гнутый %s×%s — лист %s, развёртка %s×%s, 2 гиба R%s"
                           % (b, h1, s, round(w), L, r), s, 1, w * L))
+    ch = rib_chamfer(r) if not welded else 0  # сварной корпус — угол прямой, фаска не нужна
+    tail = (", фаски %s×45°" % ch) if ch else ""
     if g["h2"]:
-        out.append(_sheet("rib", 3, "Ребро — лист %s, %s×%s" % (s, b - 2 * s, g["h2"] - s), s, 1,
-                          (b - 2 * s) * (g["h2"] - s)))
+        out.append(_sheet("rib", 3, "Ребро — лист %s, %s×%s%s" % (s, b - 2 * s, g["h2"] - s, tail), s, 1,
+                          (b - 2 * s) * (g["h2"] - s) - ch * ch))
     is_kx = spec["code"] == "КХ"
     if base[2] in "23":
         # Верх торцевого ребра — по тому, что лежит на стенках: труба, подушка (Б) или хомут (КХ).
         over = CLAMP[dn][1] if is_kx else (s if base[0] == "Б" else 0)
         radius = dn / 2.0 + over
-        out.append(_sheet("rib_end", 4, "Ребро торцевое по R%s — лист %s, %s×%s" % (round(radius), s, b - 2 * s, h1 - s),
-                          s, 2, end_rib_area(b, h1, s, radius)))
+        out.append(_sheet("rib_end", 4, "Ребро торцевое по R%s — лист %s, %s×%s%s"
+                          % (round(radius), s, b - 2 * s, h1 - s, tail), s, 2, end_rib_area(b, h1, s, radius) - ch * ch))
     if base[0] == "Б":
         out.append(_sheet("pad", 5, "Подушка по трубе Дн %s — лист %s, развёртка %s×%s" % (dn, s, g["pad"], g["l"]),
                           s, 2, g["pad"] * g["l"]))
