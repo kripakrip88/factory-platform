@@ -142,3 +142,21 @@ class TestOst3694(TransactionCase):
         self.assertEqual(set(line.part_ids.mapped("auto_key")), {"corpus", "rib"})
         self.assertAlmostEqual(line.mass_one, 0.565, delta=0.01)  # 0,439 + 0,126; поле — 2 знака
         self.assertEqual(line.ost_mass, 0.6)
+
+
+@tagged("post_install", "-at_install")
+class TestMarkup(TransactionCase):
+    """Наценку ставит менеджер (Антон 25.10.2026): без неё цены нет."""
+
+    def test_no_markup_no_price(self):
+        calc = self.env["pmk.opora.calc"].create({})
+        key = calc.opora_rows()["rows"][0]["id"]
+        calc.opora_save_row(key, {"name": "кх а12 219 10шт"})
+        line = calc.line_ids
+        line.part_ids.filtered(lambda p: p.auto_key == "corpus").price_ton = 100000
+        line.markup_pct = 0
+        self.assertEqual(line.price_unit, 0)
+        self.assertIn("впишите наценку", line.warning)
+        calc.opora_save_row(key, {"markup": "150"})
+        self.assertGreater(line.price_unit, line.cost_one * 2.4)
+        self.assertNotIn("впишите наценку", line.warning)

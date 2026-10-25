@@ -12,7 +12,9 @@
 - Корпус по умолчанию гнутый, «С» в исполнении — сварной.
 - Себестоимость — сумма состава: лист по прайсам (₽/т, марка стали опоры),
   болты и гайки — покупные, цену вписывают. Только материалы, как у болтов.
-- Цена = себестоимость × (1 + наценка ценовой политики «Опоры трубопроводов»).
+- Наценку ставит менеджер (Антон 25.10.2026: «наценку устанавливает менеджер, 45 % — это очень
+  мало»): в строке или в «Ценовой политике» (вид «Опоры трубопроводов»); готовой наценки модуль
+  не заводит. Пока наценки нет — цены нет, под строкой «впишите наценку».
 """
 from odoo import _, api, fields, models
 
@@ -83,7 +85,7 @@ class OporaLine(models.Model):
     steel = fields.Selection(STEELS, "Сталь", default="Ст3пс")
     qty = fields.Integer("Кол-во, шт", required=True, default=1)
     markup_pct = fields.Float("Наценка, %", compute="_compute_markup", store=True, readonly=False,
-                              digits=(6, 1), help="Из ценовой политики на дату расчёта; можно поправить.")
+                              digits=(6, 1), help="Ставит менеджер: в строке или в ценовой политике на дату расчёта.")
     part_ids = fields.One2many("pmk.opora.part", "line_id", "Состав", copy=True)
 
     name = fields.Char("Наименование", compute="_compute_calc", store=True)
@@ -180,7 +182,7 @@ class OporaLine(models.Model):
 
     # ─── Расчёт ─────────────────────────────────────────────────────────
     @api.depends("opora_type", "dn", "execution", "height", "steel", "part_ids.cost", "part_ids.mass",
-                 "part_ids.qty", "part_ids.price_unit", "part_ids.price_ton")
+                 "part_ids.qty", "part_ids.price_unit", "part_ids.price_ton", "markup_pct")
     def _compute_calc(self):
         for line in self:
             empty = dict(mass_one=0, ost_mass=0, cost_one=0, name="", short_name="")
@@ -203,6 +205,8 @@ class OporaLine(models.Model):
                                t=", ".join("%g" % t for t in no_sheet), steel=line.steel or ""))
             if parts.filtered(lambda p: p.auto_key in ("bolt", "nut") and not p.price_unit):
                 notes.append(_("впишите цену болтов и гаек"))
+            if not line.markup_pct:
+                notes.append(_("впишите наценку — её ставит менеджер"))
             line.update(dict(
                 name=catalog.name(line.opora_type, line.dn, line.execution, line.steel, line.height or None),
                 short_name=catalog.short(line.opora_type, line.dn, line.execution, line.steel, line.height or None),
@@ -215,7 +219,10 @@ class OporaLine(models.Model):
     @api.depends("cost_one", "markup_pct")
     def _compute_price(self):
         for line in self:
-            raw = line.cost_one * (1 + (line.markup_pct or 0.0) / 100.0)
+            if not line.markup_pct:
+                line.price_unit = 0.0  # без наценки менеджера цены нет — не продаём по себестоимости
+                continue
+            raw = line.cost_one * (1 + line.markup_pct / 100.0)
             line.price_unit = float(int(raw) + (1 if raw > int(raw) else 0)) if raw else 0.0
 
     @api.depends("price_unit", "qty", "cost_one")
