@@ -361,6 +361,10 @@ class PmkTelegramBot(models.AbstractModel):
                       "Нет доступа. Ваш Telegram ID: <code>%s</code> — передайте "
                       "его администратору." % _esc(str(message["from"]["id"])))
             return
+        # Вебхук приходит публичным пользователем (язык en_US) — без этого
+        # этапы и колонки бот показывал бы английскими переводами (20.10.2026:
+        # Владимиру «Request / Costing»). Говорим на языке того, кто пишет.
+        self = self.with_context(lang=user.lang or "ru_RU")  # noqa: PLW0642
         session = self._pmk_session(chat_id, user)
         text = (message.get("text") or "").strip()
 
@@ -385,8 +389,19 @@ class PmkTelegramBot(models.AbstractModel):
             api_.send(chat_id, "Выберите действие в меню внизу.",
                       self._pmk_menu_markup(user))
 
-    def _pmk_menu_new_deal(self, api_, session):
+    def _pmk_deal_stages(self):
+        """Этапы, которые человек может выбрать в боте.
+
+        Без «Разобрал ассистент» (pmk_ai_mail.stage_ai): это колонка, куда ИИ
+        складывает разобранные письма, — вручную туда сделку не кладут
+        (Антон, 25.10.2026).
+        """
         stages = self.env["crm.stage"].sudo().search([], order="sequence, id")
+        ai = self.env.ref("pmk_ai_mail.stage_ai", raise_if_not_found=False)
+        return stages - ai if ai else stages
+
+    def _pmk_menu_new_deal(self, api_, session):
+        stages = self._pmk_deal_stages()
         session.write({"state": "await_stage", "lead_id": False, "task_id": False,
                        "stage_id": False, "media_group_id": False})
         api_.send(session.chat_id, "Этап сделки?", {"inline_keyboard": [
@@ -425,10 +440,12 @@ class PmkTelegramBot(models.AbstractModel):
         if not user or not chat_id:
             api_.answer_callback(cq["id"], "Нет доступа")
             return
+        self = self.with_context(lang=user.lang or "ru_RU")  # noqa: PLW0642 — см. _pmk_on_message
         session = self._pmk_session(chat_id, user)
 
         if data.startswith("stage:"):
             stage = self.env["crm.stage"].sudo().browse(int(data[6:])).exists()
+            stage = stage & self._pmk_deal_stages()
             if session.state != "await_stage" or not stage:
                 api_.answer_callback(cq["id"], "Кнопка устарела — начните заново")
                 return

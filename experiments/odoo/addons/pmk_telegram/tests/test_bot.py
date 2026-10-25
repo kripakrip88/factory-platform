@@ -659,3 +659,36 @@ class TestTelegramReviewNotice(TestTelegramDevTask):
         self.env["pmk.telegram.outbox"]._cron_flush()
         self.assertEqual(rec.state, "sent")
         self.assertIn("Готово к проверке", self.api.sent[-1][1])
+
+
+@tagged("post_install", "-at_install")
+class TestTelegramStagesLang(TestTelegramBot):
+    """Этапы — на языке пишущего; «Разобрал ассистент» в боте не предлагается."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.env["res.lang"]._activate_lang("ru_RU")
+        cls.user.lang = "ru_RU"
+        cls.costing = cls.env["crm.stage"].create({"name": "Costing", "sequence": 50})
+        cls.costing.with_context(lang="ru_RU").name = "Расчёт-тест"
+        cls.ai_stage = cls.env["crm.stage"].create({"name": "Разобрал ассистент", "sequence": 0})
+        cls.env["ir.model.data"].create({"module": "pmk_ai_mail", "name": "stage_ai",
+                                         "model": "crm.stage", "res_id": cls.ai_stage.id})
+
+    def _stage_buttons(self):
+        self._msg(text=bot_mod.BTN_NEW_DEAL)
+        return [row[0] for row in self.api.sent[-1][2]["inline_keyboard"]]
+
+    def test_stage_names_in_user_language(self):
+        self.bot = self.bot.with_context(lang="en_US")   # как у публичного пользователя вебхука
+        texts = [b["text"] for b in self._stage_buttons()]
+        self.assertIn("Расчёт-тест", texts)
+        self.assertNotIn("Costing", texts)
+
+    def test_ai_stage_hidden_and_not_selectable(self):
+        buttons = self._stage_buttons()
+        self.assertNotIn("stage:%d" % self.ai_stage.id, [b["callback_data"] for b in buttons])
+        self._click("stage:%d" % self.ai_stage.id)
+        self.assertIn("устарела", self.api.answers[-1])
+        self.assertEqual(self._session().state, "await_stage")
