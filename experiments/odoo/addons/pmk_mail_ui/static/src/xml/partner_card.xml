@@ -103,30 +103,8 @@
             <div t-else="" class="pmk-pcard__empty">Нет в контрагентах</div>
           </t>
 
-          <div class="pmk-pcard__actions">
-            <button t-if="card.lead" type="button" class="btn btn-sm btn-light"
-                    t-on-click="() => this.openRecord('crm.lead', card.lead.id)">
-              <i class="fa fa-handshake-o me-1" aria-hidden="true"/>Открыть лид
-            </button>
-            <button t-elif="card.can_lead" type="button" class="btn btn-sm btn-light"
-                    t-att-disabled="state.busy" t-on-click="() => this.createLead()">
-              <i class="fa me-1" aria-hidden="true" t-att-class="state.busy ? 'fa-circle-o-notch fa-spin' : 'fa-user-plus'"/>Лид из письма
-            </button>
-            <button t-if="card.can_link" type="button" class="btn btn-sm btn-light"
-                    t-on-click="() => this.linkDeal()">
-              <i class="fa fa-link me-1" aria-hidden="true"/>Привязать к сделке
-            </button>
-            <button t-if="card.partner" type="button" class="btn btn-sm btn-light"
-                    t-on-click="() => this.openPartner(card.partner.id)">
-              <i class="fa fa-address-card-o me-1" aria-hidden="true"/>Открыть контрагента
-            </button>
-            <button t-elif="card.email" type="button" class="btn btn-sm btn-light"
-                    t-att-disabled="state.busy"
-                    title="Реквизиты и контакт — из письма, вложений и справочника по ИНН; карточка откроется заполненной, сохраните после проверки"
-                    t-on-click="() => this.createPartner()">
-              <i class="fa me-1" aria-hidden="true" t-att-class="state.busy ? 'fa-circle-o-notch fa-spin' : 'fa-plus'"/>Создать контрагента
-            </button>
-          </div>
+          <!-- 25.10.2026 (почта проще): действия — в меню «В работу ▾» над
+               письмом (reading_pane.xml), здесь только сведения. -->
         </div>
       </t>
     </aside>

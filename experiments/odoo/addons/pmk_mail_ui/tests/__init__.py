@@ -39,3 +39,4 @@ from . import test_partner_card
 from . import test_lead_dialog
 from . import test_bus_unsubscribe
 from . import test_deal_letters
+from . import test_mail_buttons

@@ -1,5 +1,13 @@
 /**
- * Кнопка «Создать лида» в панели действий над письмом.
+ * Меню «В работу ▾» в строке над письмом (25.10.2026, почта проще; было —
+ * кнопка «Лид»): «Лид из письма» / «Открыть лид», «Привязать к сделке»,
+ * «Создать / Открыть контрагента». Сведения о письме — из карточки справа
+ * (cardStore, letter_actions.js), второго запроса к серверу нет.
+ *
+ * Лид и сделка — только тому, кто может завести лид (признак env.pmkCrm,
+ * ниже); контрагент — всем (снабженцу из «Закупок» тоже нужен поставщик).
+ *
+ * Прежнее описание кнопки «Лид»:
  *
  * Показывается только когда почта открыта из Продаж. Признак приезжает в
  * params отдельной записи действия и кладётся в env — не через props: у
@@ -27,6 +35,8 @@ import { patch } from "@web/core/utils/patch";
 import { MailClientInbox } from "@mail_client/mail_client_action";
 import { ReadingPane } from "@mail_client/panes/reading_pane";
 import { openLeadDialog } from "./lead_dialog";
+import { CARD_RELOAD, cardFor, cardStore, createPartnerDialog, linkDealDialog } from "./letter_actions";
+import { openFromMail } from "./mail_return";
 
 patch(MailClientInbox.prototype, {
     setup() {
@@ -58,6 +68,56 @@ patch(ReadingPane.prototype, {
         this.orm = useService("orm");
         this.action = useService("action");
         this.pmkLead = useState({ busy: false });
+        this.pmkCards = useState(cardStore);
+    },
+
+    /** Карточка открытого письма (или null — карточки нет / ещё грузится). */
+    get pmkCard() {
+        // pmkCards — подписка на cardStore: меню перерисуется, когда карточка
+        // догрузится.
+        return this.props.detail && this.pmkCards ? cardFor(this.props.detail.id) : null;
+    },
+
+    /** Меню «В работу» не пустое: лид/сделка (есть права) или контрагент. */
+    get pmkWorkMenu() {
+        return Boolean(this.env.pmkCrm || this.pmkCanPartner || this.pmkCard?.partner);
+    },
+
+    get pmkCanPartner() {
+        const card = this.pmkCard;
+        return card ? Boolean(!card.partner && card.email) : true;
+    },
+
+    pmkOpenLead() {
+        const card = this.pmkCard;
+        if (card?.lead && this.props.detail) {
+            openFromMail(this.env, "crm.lead", card.lead.id, this.props.detail.id);
+        }
+    },
+
+    pmkOpenPartner() {
+        const card = this.pmkCard;
+        if (card?.partner && this.props.detail) {
+            openFromMail(this.env, "res.partner", card.partner.id, this.props.detail.id);
+        }
+    },
+
+    pmkLinkDeal() {
+        if (this.props.detail) {
+            linkDealDialog(this.env, this.props.detail.id, this.pmkCard?.partner);
+        }
+    },
+
+    async pmkCreatePartner() {
+        if (!this.props.detail || this.pmkLead.busy) {
+            return;
+        }
+        this.pmkLead.busy = true;
+        try {
+            await createPartnerDialog(this.env, this.props.detail.id);
+        } finally {
+            this.pmkLead.busy = false;
+        }
     },
 
     async pmkCreateLead() {
@@ -74,7 +134,7 @@ patch(ReadingPane.prototype, {
             await openLeadDialog(this.env, messageId, {
                 onDone: () => {
                     // Карточка справа (partner_card.js) и значок у строки.
-                    this.env.bus.trigger("PMK_MAIL_CARD:RELOAD");
+                    this.env.bus.trigger(CARD_RELOAD);
                     this.env.pmkMail?.refreshLead(messageId);
                 },
             });

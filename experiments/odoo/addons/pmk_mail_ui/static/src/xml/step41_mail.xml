@@ -36,17 +36,8 @@
       </button>
     </xpath>
 
-    <xpath expr="//span[hasclass('o_mail_client_row_actions')]" position="inside">
-      <button type="button" t-if="env.pmkCrm and !message.pmk_lead and !message.is_outgoing"
-              class="btn btn-sm o_mail_client_row_action pmk-mail-row-lead"
-              t-att-disabled="pmkLead.busy"
-              title="Создать лида из этого письма"
-              aria-label="Создать лида из этого письма"
-              t-on-click.stop="() => this.pmkRowLead(message)">
-        <i class="fa fa-fw" aria-hidden="true"
-           t-att-class="pmkLead.busy === message.id ? 'fa-circle-o-notch fa-spin' : 'fa-user-plus'"/>
-      </button>
-    </xpath>
+    <!-- 25.10.2026 (почта проще): значок «Создать лида» у строки убран — лид
+         из письма теперь в меню «В работу ▾» над письмом (reading_pane.xml). -->
   </t>
 
   <t t-name="pmk_mail_ui.ReadingPaneStep41"

@@ -5,14 +5,15 @@
  *
  * Вид и поведение списка — в модуле почты (наша копия, vendor/README.md);
  * здесь то, что знает о лидах и о правилах завода:
- *   - фильтр «С лидом» в меню фильтров и кнопкой над списком (крючки
- *     extraFilters / extraQuickFilters) — тем, кто видит кнопку «Лид»
- *     (env.pmkCrm, reading_pane_lead.js);
+ *   - фильтр «С лидом» в меню фильтров (крючки extraFilters /
+ *     extraQuickFilters; с 25.10.2026 кружками только «Непрочитанные» и
+ *     «Ждут ответа», остальное — в «Фильтр ▾») — тем, кто видит меню
+ *     «В работу» с лидом (env.pmkCrm, reading_pane_lead.js);
  *   - значок сделки у строки (шаблон — xml/step41_mail.xml): щелчок
  *     открывает лид окном поверх почты, не создаёт новый; архивный —
  *     приглушённый, «в архиве» в подсказке;
- *   - «Лид» среди значков строки при наведении — входящему письму без
- *     лида; значок сделки встаёт сразу (и после кнопки «Лид» в окне письма);
+ *   - значок сделки встаёт сразу после «Лид из письма» в меню «В работу»
+ *     (значок «Лид» у строки при наведении убран 25.10.2026 — дубль меню);
  *   - значки при наведении в режиме переписок — как кнопки окна письма:
  *     «прочитано» гасит переписку целиком (pmkMarkThreadsSeen,
  *     thread_seen.js), «не прочитано» — одно письмо (pmkMarkUnseen); снять
@@ -27,14 +28,13 @@
  * thread_seen.js (pmkMarkThreadsSeen, pmkMarkUnseen) только вызываются — на
  * момент вызова они уже на месте.
  */
-import { useState, useSubEnv } from "@odoo/owl";
+import { useSubEnv } from "@odoo/owl";
 import { patch } from "@web/core/utils/patch";
 
 import { MailClientInbox } from "@mail_client/mail_client_action";
 import { MessageList } from "@mail_client/panes/message_list";
 import { ReadingPane } from "@mail_client/panes/reading_pane";
 import "@pmk_mail_ui/js/reading_pane_lead";
-import { openLeadDialog } from "./lead_dialog";
 import { openFromMail } from "./mail_return";
 
 /** Фильтр «С лидом»: имя — как на сервере (mail_client_step41.py, LEAD_FILTER). */
@@ -56,7 +56,6 @@ patch(MailClientInbox.prototype, {
         const inbox = this;
         useSubEnv({
             pmkMail: {
-                createLead: (message) => inbox.pmkRowCreateLead(message),
                 openLead: (lead) => inbox.pmkOpenLead(lead),
                 refreshLead: (messageId) => inbox.pmkRefreshLead(messageId),
             },
@@ -126,17 +125,6 @@ patch(MailClientInbox.prototype, {
         this.env?.services?.pmk_mail_counter?.refresh();
     },
 
-    /** «Лид» у строки списка — то же окно «Новый лид из письма»
-     *  (lead_dialog.js), что у кнопки окна письма. */
-    async pmkRowCreateLead(message) {
-        await openLeadDialog(this.env, message.id, {
-            onDone: (result) => {
-                this.pmkSetLead(message.id, result.thread_key, result.lead);
-                this.env.bus.trigger("PMK_MAIL_CARD:RELOAD");
-            },
-        });
-    },
-
     /** Значок сделки у строк письма и его переписки — сразу, без перечитывания. */
     pmkSetLead(messageId, threadKey, lead) {
         if (!lead) {
@@ -168,29 +156,12 @@ patch(MailClientInbox.prototype, {
 });
 
 patch(MessageList.prototype, {
-    setup() {
-        super.setup();
-        this.pmkLead = useState({ busy: null });
-    },
-
     pmkDealTitle(lead) {
         return dealTitle(lead);
     },
 
     pmkOpenLead(message) {
         return this.env.pmkMail?.openLead(message.pmk_lead);
-    },
-
-    async pmkRowLead(message) {
-        if (this.pmkLead.busy || !this.env.pmkMail) {
-            return;
-        }
-        this.pmkLead.busy = message.id;
-        try {
-            await this.env.pmkMail.createLead(message);
-        } finally {
-            this.pmkLead.busy = null;
-        }
     },
 });
 
