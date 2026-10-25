@@ -136,7 +136,8 @@ class OporaLine(models.Model):
         out, prices = {}, {}
         for part in catalog.parts(self.opora_type, self.dn, self.execution, self.height or None):
             vals = dict(sequence=part["sequence"], name=part["name"], qty=float(part["qty"]),
-                        unit_mass=part["unit_mass"], thickness=part["thickness"])
+                        unit_mass=part["unit_mass"], thickness=part["thickness"],
+                        a_mm=part.get("a") or 0.0, b_mm=part.get("b") or 0.0)
             if part["metal"]:
                 t = part["thickness"]
                 if t not in prices:
@@ -163,7 +164,8 @@ class OporaLine(models.Model):
                     part.unlink()
                     continue
                 if part.edited:
-                    vals = {k: v for k, v in vals.items() if k in ("name", "unit_mass", "sequence", "thickness")}
+                    vals = {k: v for k, v in vals.items() if k in ("name", "unit_mass", "sequence", "thickness",
+                                                                   "a_mm", "b_mm")}
                 part.write(vals)
             for key, vals in want.items():
                 Part.create(dict(vals, line_id=line.id, auto_key=key))

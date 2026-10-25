@@ -9,7 +9,12 @@
     <field name="name">pmk.bolt.calc.form</field>
     <field name="model">pmk.bolt.calc</field>
     <field name="arch" type="xml">
-      <form string="Фундаментные болты" class="pmk-doc-form pmk-labels-top">
+      <form string="Фундаментные болты" class="pmk-doc-form pmk-labels-top o_pmk_header_up o_pmk_head_a">
+        <!-- 25.10.2026 (Антон, вариант 1): болты — в расчёт изделиями «Конструкций», детали на номенклатуре. -->
+        <header>
+          <button name="action_bolt_to_spec" type="object" string="В расчёт" class="btn-primary"
+                  invisible="not id"/>
+        </header>
         <sheet>
           <div class="pmk-doc-top" name="pmk_doc_top">
             <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
@@ -20,7 +25,8 @@
               <div class="pmk-doc-head__fields">
                 <div class="pmk-field" name="pmk_f_partner"><label for="partner_id"/><field name="partner_id" nolabel="1"/></div>
                 <div class="pmk-field" name="pmk_f_deal"><label for="opportunity_id"/><field name="opportunity_id" nolabel="1"/></div>
-                <div class="pmk-field" name="pmk_f_spec" invisible="not spec_id"><label for="spec_id"/><field name="spec_id" nolabel="1" readonly="1"/></div>
+                <div class="pmk-field" name="pmk_f_spec"><label for="spec_id"/><field name="spec_id" nolabel="1"
+                     placeholder="главный расчёт сделки или новый" options="{'no_create': True}"/></div>
                 <div class="pmk-field" name="pmk_f_date"><label for="date"/><field name="date" nolabel="1"/></div>
                 <div class="pmk-field" name="pmk_f_user"><label for="user_id"/><field name="user_id" nolabel="1"/></div>
                 <div class="pmk-field pmk-field--wide" name="pmk_f_note"><label for="note"/><field name="note" nolabel="1" placeholder="Объект, чертёж"/></div>

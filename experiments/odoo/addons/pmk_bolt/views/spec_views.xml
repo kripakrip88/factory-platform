@@ -12,10 +12,10 @@
     <field name="active" eval="True"/>
     <field name="arch" type="xml">
       <xpath expr="//div[@name='pmk_spec_cats']" position="inside">
-        <span class="pmk-spec-cats__item"><field name="cat_bolt" widget="boolean_toggle" nolabel="1"/><label for="cat_bolt"/><span class="pmk-cat-draft" invisible="cat_bolt or not bolt_calc_ids">черновик</span></span>
+        <span class="pmk-spec-cats__item" invisible="not cat_bolt"><field name="cat_bolt" widget="boolean_toggle" nolabel="1"/><label for="cat_bolt"/><span class="pmk-cat-draft" invisible="cat_bolt or not bolt_calc_ids">черновик</span></span>
       </xpath>
       <xpath expr="//page[@name='pmk_cat_vent']" position="after">
-        <page string="Фундаментные болты" name="pmk_cat_bolt" invisible="not cat_bolt and not bolt_calc_ids">
+        <page string="Фундаментные болты" name="pmk_cat_bolt" invisible="not cat_bolt">
           <div class="pmk-cat-head">
             <button name="action_open_bolts" type="object" class="btn-secondary" icon="fa-external-link"
                     string="Открыть калькулятор болтов" invisible="not bolt_calc_ids"/>

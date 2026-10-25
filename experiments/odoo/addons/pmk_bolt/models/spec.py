@@ -21,8 +21,8 @@ class BoltCalcSpec(models.Model):
     _inherit = "pmk.bolt.calc"
 
     spec_id = fields.Many2one("pmk.metal.spec", "Расчёт", index=True, copy=False, ondelete="cascade",
-                              help="Расчёт заказа, к которому относятся эти болты (категория «Фундаментные "
-                                   "болты»). Пусто — расчёт болтов сам по себе (прикидка).")
+                              help="Расчёт заказа, куда болты переносятся изделиями «Конструкций» (кнопка «В "
+                                   "расчёт»). Пусто — при переносе возьмётся главный расчёт сделки или заведётся новый.")
 
 
 class BoltLineEntry(models.Model):
@@ -242,22 +242,23 @@ class MetalSpecBolt(models.Model):
         return labels
 
     def _pmk_entry_bolt(self, text):
-        """«бф 2.1 м30 600 09г2с 16шт» — болт в документ болтов расчёта (пустая строка таблицы —
-        в неё). Не понял — ошибка словами, строка не заводится."""
+        """«бф 2.1 м30 600 09г2с 16шт» — болт изделием «Конструкций» (Антон 25.10.2026, вариант 1):
+        калькулятор болтов подбирает состав по ГОСТ, в расчёт идёт изделие с деталями на
+        номенклатуре. Не понял — ошибка словами, строка не заводится."""
         error = parse.parse(text)[2]
         if error:
             raise UserError(error)
-        if not self.cat_bolt:
-            self.cat_bolt = True
-        doc = self._pmk_bolt_doc()
-        empty = doc.line_ids.filtered(lambda l: not l.bolt_type and not l.pmk_text and not l.part_ids)[:1]
-        if empty:
-            empty._grid_apply_text(text)
-            line = empty
-        else:
-            line = doc._grid_new_bolt(doc._grid_lines()[-1:], text)
+        doc = self.bolt_calc_ids[:1] or self.env["pmk.bolt.calc"].create({
+            "spec_id": self.id, "partner_id": self.partner_id.id or False,
+            "opportunity_id": self.opportunity_id.id if "opportunity_id" in self._fields else False})
+        line = doc._grid_new_bolt(doc._grid_lines()[-1:], text)
         line.pmk_entry_text = text
-        return line
+        if not line._pmk_ok() or line.parse_error:
+            raise UserError(line.parse_error or line.warning or _("болт не подобран"))
+        product = self._pmk_konstr_put(line.name, line.qty, line.price_unit, line._pmk_konstr_details(),
+                                       entry_text=text)
+        line.konstr_product_id = product
+        return product
 
     def _pmk_entry_source_more(self, kind, rid):
         if kind == "bolt":

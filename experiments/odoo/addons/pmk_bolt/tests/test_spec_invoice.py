@@ -109,20 +109,73 @@ class TestBoltInSpecAndInvoice(Z2Common):
         self.assertTrue(any(c.startswith("Гайка М30") for c in money))
 
     def test_summary_entry_bolt(self):
-        """Ввод в сводке: «бф …» — в болты расчёта (пустая строка таблицы — в неё), перенос обратно."""
+        """Ввод в сводке: «бф …» — изделием «Конструкций» (Антон 25.10.2026, вариант 1): шпилька —
+        круг, гайки и шайба — метизы; категория болтов не включается."""
         deal = self._deal()
         spec = self._spec(deal, products=[("Ферма Ф-1", 2, 1000.0)])
         res = spec.pmk_summary_add(["бф 1.1 м20 1000 ст3 8шт", "бф м20 8шт"])
         self.assertEqual(res["added"], {"Болты": 1})
         self.assertEqual(len(res["errors"]), 1)
-        line = spec.bolt_calc_ids.line_ids.filtered("name")
-        self.assertTrue(spec.cat_bolt)
-        self.assertEqual((line.bolt_type, line.diameter, line.length, line.qty), ("1.1", "20", 1000, 8))
-        self.assertEqual(len(spec.bolt_calc_ids.line_ids), 1, "Пустая строка таблицы заполнена, не добавлена.")
-        res = spec.pmk_summary_move("bolt-%s" % line.id, "metal")
-        self.assertEqual(res, {"moved": "Конструкции"})
-        self.assertFalse(line.exists())
-        self.assertIn("бф 1.1 м20 1000 ст3", spec.product_ids.mapped("name"))
+        self.assertFalse(spec.cat_bolt)
+        product = spec.product_ids.filtered(lambda p: p.pmk_entry_text == "бф 1.1 м20 1000 ст3 8шт")
+        self.assertEqual(product.qty, 8)
+        modes = product.line_ids.sorted("sequence").mapped("calc_mode")
+        self.assertEqual(modes[0], "linear")
+        self.assertIn("fastener", modes)
+        stud = product.line_ids.filtered(lambda l: l.calc_mode == "linear")
+        self.assertEqual(stud.profile_id.profile_type, "Круг")
+        row = next(r for r in spec.pmk_summary["rows"] if r["key"] == "metal-%s" % product.id)
+        self.assertEqual(row["source"], "metal")
+
+    def test_bolt_to_spec_konstr(self):
+        """«В расчёт» в калькуляторе: болт — изделие «Конструкций» на номенклатуре; цена гаек и
+        шайбы — вручную за штуку (в себестоимости); повторный перенос — то же изделие."""
+        deal = self._deal()
+        spec = self._spec(deal, products=[("Ферма Ф-1", 2, 1000.0)])
+        calc = self.env["pmk.bolt.calc"].create({"opportunity_id": deal.id, "partner_id": deal.partner_id.id})
+        rows = calc.bolt_rows()["rows"]
+        calc.bolt_save_row(rows[0]["id"], {"name": "бф 2.1 м30 600 09г2с 16шт гайка 45"})
+        line = calc.line_ids.filtered("name")
+        line.part_ids.filtered(lambda p: p.auto_key == "washer")._pmk_user_write({"price_unit": 30})
+        calc.spec_id = spec
+        action = calc.action_bolt_to_spec()
+        self.assertEqual(action["res_id"], spec.id)
+        product = line.konstr_product_id
+        self.assertEqual((product.spec_id, product.qty), (spec, 16))
+        self.assertAlmostEqual(product.price_customer_unit, line.price_unit, places=2)
+        stud = next(l for l in product.line_ids if l.calc_mode == "linear")
+        self.assertEqual(stud.profile_id.size_label, "d30")
+        self.assertEqual(stud.grade_id.name, "09Г2С")
+        plate = next(l for l in product.line_ids if l.calc_mode == "sheet")
+        self.assertTrue(plate.a_mm > 0 and plate.a_mm == plate.b_mm and plate.sheet_id.thickness_mm > 0)
+        nut = next(l for l in product.line_ids if l.calc_mode == "fastener" and l.fastener_id.fastener_type == "nut")
+        nuts = int(line.part_ids.filtered(lambda p: p.auto_key == "nut").qty)
+        self.assertEqual((nut.fastener_id.size_label, nut.qty, nut.price_state), ("М30", nuts, "manual"))
+        self.assertAlmostEqual(nut.price_unit, 45)
+        self.assertAlmostEqual(nut.cost_clean_total, 45 * nuts, places=2)
+        washer = next(l for l in product.line_ids if l.fastener_id.fastener_type == "washer")
+        self.assertAlmostEqual(washer.price_unit, 30)
+        # Повторный перенос — то же изделие, без второго.
+        calc.action_bolt_to_spec()
+        self.assertEqual(line.konstr_product_id, product)
+        self.assertEqual(len(spec.product_ids.filtered(lambda p: p.name == line.name)), 1)
+
+    def test_migration_category_to_konstr(self):
+        """Миграция 19.0.1.3.0: болты категории «Фундаментные болты» — изделиями «Конструкций»."""
+        import importlib.util
+        import os
+        from odoo.modules.module import get_module_path
+        _deal, spec, line = self._bolt_spec()
+        path = os.path.join(get_module_path("pmk_bolt"), "migrations", "19.0.1.3.0", "post-migrate.py")
+        spec_mod = importlib.util.spec_from_file_location("pmk_bolt_mig_1930", path)
+        mod = importlib.util.module_from_spec(spec_mod)
+        spec_mod.loader.exec_module(mod)
+        mod.migrate(self.env.cr, "19.0.1.2.0")
+        spec.invalidate_recordset()
+        self.assertFalse(spec.cat_bolt)
+        self.assertTrue(line.konstr_product_id)
+        self.assertEqual(line.konstr_product_id.spec_id, spec)
+        self.assertFalse(any(r["source"] == "bolt" for r in spec.pmk_summary["rows"]))
 
     def test_invoice_follows_summary_order(self):
         """№312: порядок сводки — порядок строк счёта (болт перетащили наверх)."""

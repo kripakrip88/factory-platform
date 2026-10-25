@@ -160,3 +160,42 @@ class TestMarkup(TransactionCase):
         calc.opora_save_row(key, {"markup": "150"})
         self.assertGreater(line.price_unit, line.cost_one * 2.4)
         self.assertNotIn("впишите наценку", line.warning)
+
+
+@tagged("post_install", "-at_install")
+class TestOporaToSpec(TransactionCase):
+    """Опора → расчёт изделием «Конструкций» (Антон 25.10.2026, вариант 1): лист — номенклатурой."""
+
+    def test_kx57_to_konstr(self):
+        partner = self.env["res.partner"].create({"name": "Заказчик опор (тест)", "is_company": True})
+        calc = self.env["pmk.opora.calc"].create({"partner_id": partner.id})
+        key = calc.opora_rows()["rows"][0]["id"]
+        calc.opora_save_row(key, {"name": "кх а12 57 10шт"})
+        line = calc.line_ids
+        bolt = line.part_ids.filtered(lambda p: p.auto_key == "bolt")
+        calc.opora_save_row("p%s" % bolt.id, {"price": "12"})
+        line.markup_pct = 60
+        action = calc.action_opora_to_spec()
+        spec = self.env["pmk.metal.spec"].browse(action["res_id"])
+        self.assertEqual((calc.spec_id, spec.partner_id, spec.cat_metal), (spec, partner, True))
+        product = line.konstr_product_id
+        self.assertEqual((product.name, product.qty), (line.name, 10))
+        sheets = product.line_ids.filtered(lambda l: l.calc_mode == "sheet")
+        corpus = sheets.filtered(lambda l: l.detail_name.startswith("Корпус"))
+        self.assertEqual((corpus.sheet_id.thickness_mm, corpus.a_mm, corpus.b_mm, corpus.qty), (3.0, 257.0, 340.0, 1))
+        self.assertEqual(corpus.sheet_id.sheet_type, "Гладкий")
+        self.assertTrue(corpus.grade_id or corpus.pmk_grade_text)
+        rib = sheets.filtered(lambda l: l.detail_name.startswith("Ребро торцевое"))
+        self.assertEqual((rib.a_mm, rib.b_mm, rib.qty), (44.0, 107.0, 2))
+        clamp = sheets.filtered(lambda l: l.detail_name.startswith("Полухомут"))
+        self.assertEqual((clamp.sheet_id.thickness_mm, clamp.qty), (6.0, 4))
+        fasteners = product.line_ids.filtered(lambda l: l.calc_mode == "fastener")
+        bolt_line = fasteners.filtered(lambda l: l.fastener_id.fastener_type == "bolt")
+        self.assertEqual((bolt_line.fastener_id.size_label, bolt_line.qty, bolt_line.price_state), ("М12×40", 4, "manual"))
+        self.assertAlmostEqual(bolt_line.price_unit, 12)
+        nut_line = fasteners.filtered(lambda l: l.fastener_id.fastener_type == "nut")
+        self.assertEqual(nut_line.fastener_id.size_label, "М12")
+        # Второй перенос — то же изделие.
+        calc.action_opora_to_spec()
+        self.assertEqual(line.konstr_product_id, product)
+        self.assertEqual(len(spec.product_ids), 1)

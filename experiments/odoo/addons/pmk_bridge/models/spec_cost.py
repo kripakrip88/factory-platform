@@ -995,6 +995,13 @@ class MetalSpecLineCost(models.Model):
         help="Позиции нет в прайсах — примерная цена металла за тонну (с НДС). Работает, только пока "
              "в прайсах цены нет.")
 
+    # Метизы опор и фундаментных болтов (Антон 25.10.2026: детали калькуляторов — изделиями
+    # «Конструкций» на номенклатуре): гаек и шайб нет в прайсах — цену за штуку вписывают
+    # (как в калькуляторах). Работает, только пока у метиза нет цены прайса.
+    pmk_manual_price_unit = fields.Float(
+        "Цена вручную, ₽/шт", digits=(12, 2),
+        help="Метиза нет в прайсах — цена за штуку (с НДС). Работает, только пока в прайсах цены нет.")
+
     price_partner_id = fields.Many2one(
         "res.partner", "Поставщик цены", compute="_compute_price_from_supplier",
         store=True, readonly=True)
@@ -1160,7 +1167,7 @@ class MetalSpecLineCost(models.Model):
     # расхождение подсвечивает «Цены не перечитаны»).
     @api.depends("calc_mode", "profile_id", "sheet_id", "fastener_id", "paint_id",
                  "spec_id.price_date", "spec_id.supplier_id", "grade_id", "layout_sheet_size",
-                 "pmk_manual_price_ton")
+                 "pmk_manual_price_ton", "pmk_manual_price_unit")
     def _compute_price_from_supplier(self):
         """Одна дверь к цене: прайс → цена за единицу → цена за килограмм.
 
@@ -1185,6 +1192,15 @@ class MetalSpecLineCost(models.Model):
                 # Услуга, а не материал: цена килограмма ей не соответствует.
                 line.price_state = "not_material"
                 continue
+            seller = line._cost_find_seller(tmpl) if tmpl else False
+            if not seller and line.calc_mode == "fastener" and line.pmk_manual_price_unit > 0:
+                # Метиз без цены прайса (и даже без карточки) — вписанная цена за штуку.
+                weight = line.fastener_id.weight_kg or 0.0
+                line.price_state = "manual"
+                line.price_unit = line.pmk_manual_price_unit
+                line.price_kg = line.price_unit / weight if weight else 0.0
+                line.price_ton = line.price_kg * KG_IN_TON
+                continue
             if not tmpl:
                 line.price_state = "no_link"
                 continue
@@ -1194,7 +1210,6 @@ class MetalSpecLineCost(models.Model):
                 line.price_state = "no_mass"
                 continue
 
-            seller = line._cost_find_seller(tmpl)
             if not seller:
                 if line.pmk_manual_price_ton > 0 and line.calc_mode in ("linear", "sheet"):
                     # №314: вписанная цена за тонну → кг → единица учёта (метр, м²).

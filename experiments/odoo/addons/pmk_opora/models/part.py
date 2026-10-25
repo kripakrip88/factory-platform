@@ -28,6 +28,10 @@ class OporaPart(models.Model):
     edited = fields.Boolean("Поправлено", help="Правили руками — пересчёт опоры её не перезапишет.")
     name = fields.Char("Наименование")
     thickness = fields.Float("Лист, мм", digits=(6, 1), help="Металл: толщина листа, из которого деталь.")
+    # Заготовка a×b (25.10.2026, вариант 1): в расчёт опора идёт изделием «Конструкций», лист —
+    # номенклатурой с размером заготовки (развёртка корпуса, ребро до выреза по трубе).
+    a_mm = fields.Float("Заготовка A, мм", digits=(8, 1))
+    b_mm = fields.Float("Заготовка B, мм", digits=(8, 1))
     qty = fields.Float("На 1 опору", digits=(10, 2), default=1.0)
     unit_mass = fields.Float("Масса ед., кг", digits=(10, 3))
     price_unit = fields.Float("Цена за шт", digits=(12, 2))
