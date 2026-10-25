@@ -1,81 +1,99 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
-    <!-- Фильтр документов в окне ползунков, вид первого прототипа: подписи мелко
-         серым над полями, сетка в четыре колонки — js/filter_panel.js. -->
+    <!-- Фильтр документов в окне ползунков — js/filter_panel.js. Упрощён 25.10.2026:
+         ряды по виду полей (период чипами, поля в ряд, варианты группами, «Показать
+         только»), штатное меню свёрнуто под ссылку, одна кнопка «Показать N». -->
     <t t-name="pmk_orders.FilterPanel">
-        <div t-if="fields.length" class="pmk-filter">
+        <div t-if="fields.length" t-attf-class="pmk-filter {{ state.std ? 'pmk-filter--std' : '' }}"
+             t-on-keydown="onKeydown">
             <div class="pmk-filter__head">
                 <i class="fa fa-filter" aria-hidden="true"/>
                 <span>Фильтр</span>
                 <span t-if="activeCount" class="pmk-filter__badge" t-esc="activeCount"/>
+                <button t-if="activeCount" type="button" class="pmk-filter__reset" t-on-click="() => this.clear()">Сбросить</button>
             </div>
-            <div class="pmk-filter__grid">
-                <t t-foreach="fields" t-as="f" t-key="f.name">
-                    <t t-set="v" t-value="value(f.name)"/>
-                    <div t-attf-class="pmk-filter__field pmk-filter__field--{{ f.type }}">
+
+            <!-- Период: быстрые чипы и «Свой…» с датами — одна настройка, один ряд. -->
+            <t t-set="pf" t-value="periodField"/>
+            <div t-if="pf" class="pmk-filter__row">
+                <div class="pmk-filter__label" t-esc="pf.label"/>
+                <div class="pmk-filter__chips">
+                    <t t-foreach="quickList" t-as="q" t-key="q[0]">
+                        <button type="button" t-attf-class="pmk-filter__chip {{ quickActive(q[0]) ? 'pmk-filter__chip--on' : '' }}"
+                                t-att-aria-pressed="quickActive(q[0]) ? 'true' : 'false'"
+                                t-on-click="() => this.quick(q[0])" t-esc="q[1]"/>
+                    </t>
+                    <button type="button" t-attf-class="pmk-filter__chip {{ quickActive('all') ? 'pmk-filter__chip--on' : '' }}"
+                            t-att-aria-pressed="quickActive('all') ? 'true' : 'false'"
+                            t-on-click="() => this.quick('all')">Всё время</button>
+                    <button type="button" t-attf-class="pmk-filter__chip {{ periodCustom ? 'pmk-filter__chip--on' : '' }}"
+                            t-att-aria-pressed="periodCustom ? 'true' : 'false'"
+                            t-on-click="() => this.quick('custom')">Свой…</button>
+                    <div t-if="periodCustom" class="pmk-filter__pair pmk-filter__pair--dates">
+                        <input type="date" class="pmk-filter__in" t-att-value="periodValue.from or ''" aria-label="С"
+                               t-on-change="(ev) => this.set(pf.key, { from: ev.target.value, quick: '' })"/>
+                        <span class="pmk-filter__dash">—</span>
+                        <input type="date" class="pmk-filter__in" t-att-value="periodValue.to or ''" aria-label="По"
+                               t-on-change="(ev) => this.set(pf.key, { to: ev.target.value, quick: '' })"/>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Выбор записей и суммы — один ряд. -->
+            <div t-if="inputFields.length" class="pmk-filter__grid">
+                <t t-foreach="inputFields" t-as="f" t-key="f.key">
+                    <t t-set="v" t-value="value(f.key)"/>
+                    <div class="pmk-filter__field">
                         <label class="pmk-filter__label" t-esc="f.label"/>
-                        <t t-if="f.type === 'period'">
-                            <div class="pmk-filter__pair">
-                                <input type="date" class="pmk-filter__in" t-att-value="v.from or ''" aria-label="С"
-                                       t-on-change="(ev) => this.set(f.name, { from: ev.target.value, quick: '' })"/>
-                                <span class="pmk-filter__dash">—</span>
-                                <input type="date" class="pmk-filter__in" t-att-value="v.to or ''" aria-label="По"
-                                       t-on-change="(ev) => this.set(f.name, { to: ev.target.value, quick: '' })"/>
-                            </div>
-                        </t>
-                        <t t-elif="f.type === 'range'">
-                            <div class="pmk-filter__pair">
-                                <input type="number" class="pmk-filter__in" placeholder="от" t-att-value="v.from or ''"
-                                       t-on-change="(ev) => this.set(f.name, { from: ev.target.value })"/>
-                                <span class="pmk-filter__dash">—</span>
-                                <input type="number" class="pmk-filter__in" placeholder="до" t-att-value="v.to or ''"
-                                       t-on-change="(ev) => this.set(f.name, { to: ev.target.value })"/>
-                            </div>
-                        </t>
-                        <t t-elif="f.type === 'many'">
-                            <div class="pmk-filter__in pmk-filter__in--many">
-                                <MultiRecordSelector resModel="f.model" resIds="v.ids or []" placeholder="'любой'"
-                                                     domain="f.domain ? f.domain(env.searchModel.globalContext or {}) : []"
-                                                     update="(ids) => this.set(f.name, { ids })"/>
-                            </div>
-                        </t>
-                        <t t-elif="f.type === 'choice'">
-                            <div class="pmk-filter__chips">
-                                <t t-foreach="f.choices" t-as="c" t-key="c[0]">
-                                    <button type="button" t-attf-class="pmk-filter__chip {{ (v.keys or []).includes(c[0]) ? 'pmk-filter__chip--on' : '' }}"
-                                            t-att-aria-pressed="(v.keys or []).includes(c[0]) ? 'true' : 'false'"
-                                            t-on-click="() => this.toggleChoice(f, c[0])" t-esc="c[1]"/>
-                                </t>
-                            </div>
-                        </t>
-                        <t t-elif="f.type === 'tri'">
-                            <div class="pmk-filter__seg" role="group" t-att-aria-label="f.label">
-                                <button type="button" t-attf-class="{{ !v.mode ? 'on' : '' }}" t-on-click="() => this.set(f.name, { mode: '' })">все</button>
-                                <button type="button" t-attf-class="{{ v.mode === 'yes' ? 'on' : '' }}" t-on-click="() => this.set(f.name, { mode: 'yes' })" t-esc="f.yes"/>
-                                <button type="button" t-attf-class="{{ v.mode === 'no' ? 'on' : '' }}" t-on-click="() => this.set(f.name, { mode: 'no' })" t-esc="f.no"/>
-                            </div>
-                        </t>
-                        <t t-elif="f.type === 'flag'">
-                            <div class="pmk-filter__seg" role="group" t-att-aria-label="f.label">
-                                <button type="button" t-attf-class="{{ !v.on ? 'on' : '' }}" t-on-click="() => this.set(f.name, { on: false })">все</button>
-                                <button type="button" t-attf-class="{{ v.on ? 'on' : '' }}" t-on-click="() => this.set(f.name, { on: true })">только такие</button>
-                            </div>
-                        </t>
+                        <div t-if="f.type === 'range'" class="pmk-filter__pair">
+                            <input type="number" class="pmk-filter__in" placeholder="от" t-att-value="v.from or ''"
+                                   t-on-change="(ev) => this.set(f.key, { from: ev.target.value })"/>
+                            <span class="pmk-filter__dash">—</span>
+                            <input type="number" class="pmk-filter__in" placeholder="до" t-att-value="v.to or ''"
+                                   t-on-change="(ev) => this.set(f.key, { to: ev.target.value })"/>
+                        </div>
+                        <div t-else="" class="pmk-filter__in pmk-filter__in--many">
+                            <MultiRecordSelector resModel="f.model" resIds="v.ids or []" placeholder="'любой'"
+                                                 domain="f.domain ? f.domain(env.searchModel.globalContext or {}) : []"
+                                                 update="(ids) => this.set(f.key, { ids })"/>
+                        </div>
                     </div>
                 </t>
             </div>
-            <div t-if="periodField" class="pmk-filter__quick">
-                <t t-foreach="periods" t-as="p" t-key="p[0]">
-                    <button type="button" t-attf-class="pmk-filter__q {{ quickActive(p[0]) ? 'pmk-filter__q--on' : '' }}"
-                            t-on-click="() => this.quick(p[0])" t-esc="p[1]"/>
-                </t>
+
+            <!-- Варианты (статусы МоегоСклада, вид расчёта) — чипы, с подписью группы. -->
+            <div t-foreach="choiceFields" t-as="f" t-key="f.key" class="pmk-filter__row">
+                <t t-set="v" t-value="value(f.key)"/>
+                <div class="pmk-filter__label" t-esc="f.label"/>
+                <div class="pmk-filter__chips" role="group" t-att-aria-label="f.label">
+                    <t t-foreach="choiceItems(f)" t-as="c" t-key="c.key">
+                        <span t-if="c.head" class="pmk-filter__group" t-esc="c.head"/>
+                        <button type="button" t-attf-class="pmk-filter__chip {{ (v.keys or []).includes(c.key) ? 'pmk-filter__chip--on' : '' }}"
+                                t-att-aria-pressed="(v.keys or []).includes(c.key) ? 'true' : 'false'"
+                                t-on-click="() => this.toggleChoice(f, c.key)" t-esc="c.label"/>
+                    </t>
+                </div>
             </div>
+
+            <!-- «Мои …», пары «да/нет» и признаки — одной строкой. -->
+            <div t-if="toggleFields.length" class="pmk-filter__row">
+                <div class="pmk-filter__label">Показать только</div>
+                <div class="pmk-filter__chips">
+                    <t t-foreach="toggleItems()" t-as="it" t-key="it.id">
+                        <button type="button" t-attf-class="pmk-filter__chip {{ it.on ? 'pmk-filter__chip--on' : '' }}"
+                                t-att-aria-pressed="it.on ? 'true' : 'false'"
+                                t-on-click="() => this.toggle(it)" t-esc="it.label"/>
+                    </t>
+                </div>
+            </div>
+
             <div class="pmk-filter__foot">
-                <span class="pmk-filter__found">
-                    <t t-if="state.count !== null">Найдено: <t t-esc="state.count"/></t>
-                </span>
-                <button type="button" class="btn btn-secondary btn-sm" t-on-click="() => this.clear()">Очистить</button>
-                <button type="button" class="btn btn-primary btn-sm" t-on-click="() => this.apply()">Найти</button>
+                <button type="button" class="pmk-filter__more" t-att-aria-expanded="state.std ? 'true' : 'false'"
+                        t-on-click="() => this.toggleStd()">
+                    <i t-attf-class="fa fa-angle-{{ state.std ? 'down' : 'right' }}" aria-hidden="true"/>
+                    Ещё фильтры, группировка и избранное
+                </button>
+                <button type="button" class="btn btn-primary btn-sm" t-on-click="() => this.apply()" t-esc="countLabel"/>
             </div>
         </div>
     </t>
