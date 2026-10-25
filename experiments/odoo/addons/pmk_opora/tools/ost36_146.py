@@ -357,9 +357,12 @@ def end_rib_area(b, h1, s, radius, steps=200):
     return area
 
 
-def _sheet(key, seq, name, s, qty, area_mm2):
+def _sheet(key, seq, name, s, qty, area_mm2, a=0.0, b=0.0):
+    """Деталь из листа. a×b — заготовка (прямоугольник раскроя: развёртка корпуса, ребро до
+    выреза по трубе) — для строки «Конструкций» (лист, марка, a×b) и раскроя листа; масса —
+    по фактической площади детали (вырез по радиусу, фаски, отверстия)."""
     return dict(key=key, sequence=seq, name=name, thickness=s, qty=qty,
-                unit_mass=round(area_mm2 * s * DENSITY, 3), metal=True)
+                unit_mass=round(area_mm2 * s * DENSITY, 3), metal=True, a=round(a, 1), b=round(b, 1))
 
 
 def parts(kind, dn, exe, h=None):
@@ -371,40 +374,41 @@ def parts(kind, dn, exe, h=None):
     b, s, h1, L, r = g["B"], g["S"], g["h1"], g["L"], g["r"]
     out = []
     if welded:
-        out.append(_sheet("bottom", 1, "Дно корпуса — лист %s, %s×%s" % (s, b, L), s, 1, b * L))
-        out.append(_sheet("wall", 2, "Стенка корпуса — лист %s, %s×%s" % (s, h1 - s, L), s, 2, (h1 - s) * L))
+        out.append(_sheet("bottom", 1, "Дно корпуса — лист %s, %s×%s" % (s, b, L), s, 1, b * L, b, L))
+        out.append(_sheet("wall", 2, "Стенка корпуса — лист %s, %s×%s" % (s, h1 - s, L), s, 2, (h1 - s) * L, h1 - s, L))
     else:
         w = corpus_width(b, h1, s, r)
         out.append(_sheet("corpus", 1, "Корпус гнутый %s×%s — лист %s, развёртка %s×%s, 2 гиба R%s"
-                          % (b, h1, s, round(w), L, r), s, 1, w * L))
+                          % (b, h1, s, round(w), L, r), s, 1, w * L, round(w), L))
     ch = rib_chamfer(r) if not welded else 0  # сварной корпус — угол прямой, фаска не нужна
     tail = (", фаски %s×45°" % ch) if ch else ""
     if g["h2"]:
         out.append(_sheet("rib", 3, "Ребро — лист %s, %s×%s%s" % (s, b - 2 * s, g["h2"] - s, tail), s, 1,
-                          (b - 2 * s) * (g["h2"] - s) - ch * ch))
+                          (b - 2 * s) * (g["h2"] - s) - ch * ch, b - 2 * s, g["h2"] - s))
     is_kx = spec["code"] == "КХ"
     if base[2] in "23":
         # Верх торцевого ребра — по тому, что лежит на стенках: труба, подушка (Б) или хомут (КХ).
         over = CLAMP[dn][1] if is_kx else (s if base[0] == "Б" else 0)
         radius = dn / 2.0 + over
         out.append(_sheet("rib_end", 4, "Ребро торцевое по R%s — лист %s, %s×%s%s"
-                          % (round(radius), s, b - 2 * s, h1 - s, tail), s, 2, end_rib_area(b, h1, s, radius) - ch * ch))
+                          % (round(radius), s, b - 2 * s, h1 - s, tail), s, 2, end_rib_area(b, h1, s, radius) - ch * ch,
+                          b - 2 * s, h1 - s))
     if base[0] == "Б":
         out.append(_sheet("pad", 5, "Подушка по трубе Дн %s — лист %s, развёртка %s×%s" % (dn, s, g["pad"], g["l"]),
-                          s, 2, g["pad"] * g["l"]))
+                          s, 2, g["pad"] * g["l"], g["pad"], g["l"]))
     if is_kx:
         m, cs, _b1, _mm, d, dev = CLAMP[dn]
         hoops = 1 if (base[2] == "1" and dn <= 89) else 2
         bd, bl = KX[(dn, base)][2:4]
         out.append(_sheet("clamp", 6, "Полухомут Дн %s — лист %s, полоса %s×%s, 2 отв. Ø%s" % (dn, cs, m, dev, d),
-                          cs, 2 * hoops, m * dev - 2 * math.pi * d * d / 4.0))
+                          cs, 2 * hoops, m * dev - 2 * math.pi * d * d / 4.0, dev, m))
         out.append(dict(key="bolt", sequence=7, name="Болт М%s×%s ГОСТ 7798-70" % (bd, bl), thickness=0,
                         qty=2 * hoops, unit_mass=BOLT_KG[(bd, bl)], metal=False))
         out.append(dict(key="nut", sequence=8, name="Гайка М%s ГОСТ 5915-70" % bd, thickness=0,
                         qty=2 * hoops, unit_mass=NUT_KG[bd], metal=False))
         if spec["fixed"]:
             ss, sl, sdev = STOP[dn]
-            out.append(_sheet("stop", 9, "Упор по трубе Дн %s — лист %s, %s×%s" % (dn, ss, sdev, sl), ss, 2, sdev * sl))
+            out.append(_sheet("stop", 9, "Упор по трубе Дн %s — лист %s, %s×%s" % (dn, ss, sdev, sl), ss, 2, sdev * sl, sdev, sl))
     return out
 
 

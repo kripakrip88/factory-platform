@@ -122,10 +122,11 @@ def parts(kind, dn, exe, h=None):
         dict(key="corpus", sequence=1, thickness=S, qty=1, metal=True,
              name="Корпус гнутый П %s×%s — лист %s, развёртка %s×%s, ложе R%s, 2 гиба R%s"
                   % (L, d["h1"], S, round(corpus_dev(dn, exe)), W0, d["R"], RB),
-             unit_mass=round(corpus_area(dn, exe) * S * DENSITY, 3)),
+             unit_mass=round(corpus_area(dn, exe) * S * DENSITY, 3),
+             a=round(corpus_dev(dn, exe)), b=W0),         # заготовка — развёртка (ложе вырезается из неё)
         dict(key="rib", sequence=3, thickness=S, qty=1, metal=True,
              name="Ребро — лист %s, %s×%s, фаски %s×45°" % (S, rib_l, rib_h, ch),
-             unit_mass=round((rib_l * rib_h - ch * ch) * S * DENSITY, 3)),
+             unit_mass=round((rib_l * rib_h - ch * ch) * S * DENSITY, 3), a=rib_l, b=rib_h),
     ]
 
 
