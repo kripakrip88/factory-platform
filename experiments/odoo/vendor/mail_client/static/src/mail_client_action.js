@@ -157,7 +157,12 @@ export class MailClientInbox extends Component {
             folderDrawer: false,
             // ПРАВКА ПМК (шаг 41, А10): письмо на весь экран (помнится; на
             // телефоне — всегда) и открыто ли сейчас письмо, а не список.
-            readerFull: readPref(prefKey("reader_full")) === "true",
+            // ПРАВКА ПМК (Антон 25.10.2026, «как в Mail.ru»): по умолчанию
+            // письмо открывается ВМЕСТО списка, сверху «← К списку»; ⤢ над
+            // письмом возвращает «рядом со списком» (выбор помнится). Ключ
+            // новый (reader_full2): прежний выбор «рядом» был умолчанием,
+            // а не решением человека.
+            readerFull: readPref(prefKey("reader_full2"), "true") === "true",
             readerOpen: false,
             // ПРАВКА ПМК (шаг 41, А9): ширины колонок, которые человек менял.
             widths: parseWidths(readPref(widthsKey(user.userId))),
@@ -417,7 +422,7 @@ export class MailClientInbox extends Component {
     /** ⤢ в строке над письмом: письмо на весь экран и обратно. */
     toggleReaderLayout() {
         this.state.readerFull = !this.state.readerFull;
-        writePref(prefKey("reader_full"), this.state.readerFull);
+        writePref(prefKey("reader_full2"), this.state.readerFull);
         this.state.readerOpen = Boolean(this.state.detail);
     }
 

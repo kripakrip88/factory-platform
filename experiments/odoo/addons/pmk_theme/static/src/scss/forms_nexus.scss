@@ -1186,7 +1186,9 @@ $pmk-stage-dots: (
 // отправитель и тема. Плашки «ждёт ответа / ждём клиента» — тонами наших
 // плашек стадий ($pmk-stage-tones): жёлтый и серый.
 .o_mail_client {
-  --mc-active-bg: #ddeb94;
+  // Открытая папка (Антон 25.10.2026: «лаймом слишком пёстро») — как
+  // открытое письмо: бледно-серая подложка и графитовая полоска слева.
+  --mc-active-bg: #ececec;
   --mc-active-color: #16191c;
   --mc-ticked-bg: rgba(221, 235, 148, 0.45);
   --mc-await-us-bg: #fbf3d5;
@@ -1228,7 +1230,7 @@ $pmk-stage-dots: (
 // рамка сдвинула бы текст строки.
 .o_mail_client_folder.active,
 .o_mail_client_row.active {
-  box-shadow: inset 3px 0 0 #7f9412;
+  box-shadow: inset 3px 0 0 #6b6f76;
   font-weight: 600;
 }
 
