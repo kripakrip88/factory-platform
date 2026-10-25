@@ -59,7 +59,7 @@
         <field name="designation"/>
         <filter name="st902" string="Стремянки С1 (902)" domain="[('item_type', '=', 'st902')]"/>
         <filter name="st901" string="Стремянки С (901)" domain="[('item_type', '=', 'st901')]"/>
-        <filter name="ms" string="Элементы МС" domain="[('item_type', '=', 'ms')]"/>
+        <filter name="ms" string="Элементы МС" domain="[('item_type', 'in', ('ms', 'ms902'))]"/>
         <filter name="pr" string="Проставки" domain="[('item_type', '=', 'pr')]"/>
         <separator/>
         <filter name="outside" string="Вне альбома" domain="[('outside', '=', True)]"/>

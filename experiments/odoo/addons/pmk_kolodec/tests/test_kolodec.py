@@ -56,6 +56,8 @@ class TestParse(TransactionCase):
         self.assertEqual(self._p("Стремянка водопроводного колодца С-4 (длина лестницы 2,25 м) ТПР 901-09-11.84"),
                          ("st901", "С-4"))
         self.assertEqual(self._p("Соединительный элемент колодец МС-5 (ширина90) ТПР 901-09-11.84"), ("ms", "МС-5"))
+        self.assertEqual(self._p("Элемент соединительный МС-3 по инд.чертежу РД 902-09-22.84 (УКУХ-001010)"), ("ms902", "МС-3"))
+        self.assertEqual(self._p("мс-5 100шт"), ("ms902", "МС-5"))
         self.assertEqual(self._p("Скоба ходовая МН-1"), ("mn1", "МН1"))
         self.assertEqual(self._p("Стремянка водопроводного колодца С-1-16 (длина лестницы 5,4 м) ТПР 902-09-22.84"),
                          ("st902", "С1-16"))
@@ -122,4 +124,5 @@ class TestCalc(TransactionCase):
         self.assertEqual(Ref.search_count([("item_type", "=", "st902")]), 19)
         self.assertEqual(Ref.search_count([("item_type", "=", "st902"), ("outside", "=", True)]), 6)
         self.assertEqual(Ref.search_count([("item_type", "=", "ms")]), 8)
+        self.assertEqual(Ref.search_count([("item_type", "=", "ms902")]), 8)
         self.assertEqual(Ref.search([("mark", "=", "С-1")]).rungs, 4)

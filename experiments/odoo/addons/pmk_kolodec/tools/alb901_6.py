@@ -5,6 +5,10 @@
 Источник — скан meganorm 4293845913 (~/Projects/kolodcy/normy/901-09-11.84_alb6.88.pdf),
 PDF-страницы 31–32. Документация — docs/TPR_901-09-11.84.md.
 
+Те же МС-1…МС-8 лист в лист есть в ТПР 902-09-22.84 ал. VIII.88 (КЖИ.10.0.0 / 11.0.0, PDF стр.
+29–30; скан meganorm 4293845924) — вид «ms902»: детали общие, другие шифр и название (в счетах МС
+чаще «… ТПР 902-09-22.84»).
+
 Элемент соединительный — связывает соседние кольца рабочей части колодца:
 - МС-1…МС-4 (КЖИ.10.0.0): две пластины 8×80 l = 160 по краям, между ними пластина
   6×80 длиной B (90/100/110/120) по оси — тавр с двух сторон (ГОСТ 5264-80-Т3-Δ6);
@@ -20,8 +24,12 @@ from .common import part, strip_kg
 ALBUM = "ТПР 901-09-11.84"
 ALBUM_FULL = "ТПР 901-09-11.84, альбом VI.88"
 
+ALBUM_902 = "ТПР 902-09-22.84"
+ALBUM_902_FULL = "ТПР 902-09-22.84, альбом VIII.88"
+
 TYPES = {
-    "ms": dict(code="МС", label="Элемент соединительный МС", album=ALBUM_FULL),
+    "ms": dict(code="МС", label="Элемент соединительный МС (901)", album=ALBUM_FULL),
+    "ms902": dict(code="МС", label="Элемент соединительный МС (902)", album=ALBUM_902_FULL),
 }
 
 # Марка → (обозначение, B, масса альбома).
@@ -73,16 +81,18 @@ def album_mass(kind, mark):
 
 
 def designation(kind, mark):
-    return "901-09-11.84-%s (%s)" % (MS[mark][0], mark)
+    return "%s-%s (%s)" % ("902-09-22.84" if kind == "ms902" else "901-09-11.84", MS[mark][0], mark)
 
 
 def name(kind, mark, steel):
-    return "Элемент соединительный %s (B=%s мм) %s" % (mark, MS[mark][1], ALBUM_FULL)
+    return "Элемент соединительный %s (B=%s мм) %s" % (mark, MS[mark][1], ALBUM_902_FULL if kind == "ms902" else ALBUM_FULL)
 
 
 def short(kind, mark, steel):
-    return "%s · B %s · %s" % (mark, MS[mark][1], "две пластины 160" if symmetric(mark) else "160 + 84")
+    return "%s · B %s · %s · %s" % (mark, MS[mark][1], "две пластины 160" if symmetric(mark) else "160 + 84",
+                                    "902" if kind == "ms902" else "901")
 
 
 def history_patterns(kind, mark):
+    """Изделие одно — продажи под обоими шифрами."""
     return [r"соедин", r"мс\s*-?\s*%s(\D|$)" % mark[3:]], None
