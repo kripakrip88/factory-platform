@@ -218,4 +218,4 @@ class ZkCalcExport(models.Model):
             self.message_post(body=_("Задание на резку %(task)s: деталей %(n)d.", task=task.name, n=res["created"]),
                               subtype_xmlid="mail.mt_note")
         return {"type": "ir.actions.act_window", "res_model": "pmk.laser.task", "res_id": task.id,
-                "view_mode": "form", "target": "current"}
+                "view_mode": "form", "views": [(False, "form")], "target": "current"}

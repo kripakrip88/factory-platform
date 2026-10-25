@@ -30,7 +30,7 @@
           <table class="o_pmk_butik__table">
             <colgroup>
               <col style="width:22px"/><col style="width:40px"/><col/>
-              <col style="width:92px"/><col style="width:80px"/><col style="width:72px"/>
+              <col style="width:104px"/><col style="width:80px"/><col style="width:72px"/>
               <col style="width:130px"/><col style="width:170px"/><col style="width:86px"/><col style="width:86px"/>
               <col style="width:104px"/><col style="width:52px"/>
             </colgroup>
@@ -87,7 +87,7 @@
                   </td>
                   <td class="o_pmk_butik__ro o_pmk_butik__nowrap" t-att-title="row.plate" t-esc="row.plate"/>
                   <td class="o_pmk_butik__ro o_pmk_zk__clip" t-att-title="row.anchors" t-esc="row.anchors"/>
-                  <td class="n o_pmk_butik__ro" t-esc="kg(row.mass)"/>
+                  <td class="n o_pmk_butik__ro" t-esc="kg2(row.mass)"/>
                   <td class="n o_pmk_butik__ro o_pmk_butik__pw" t-esc="kg(row.mass_total)"/>
                   <td class="o_pmk_butik__ro o_pmk_butik__nowrap">
                     <span t-if="row.draw_label" t-att-class="'o_pmk_zk__draw o_pmk_zk__draw--' + row.draw"
@@ -108,7 +108,7 @@
         <div class="o_pmk_butik__total">
           Изделий: <b><t t-esc="state.data.count or 0"/> шт</b> (<t t-esc="state.data.products or 0"/> марок)
           · Масса: <b><t t-esc="kg(state.data.weight_kg) or '0'"/> кг</b>
-          <span class="o_pmk_butik__muted ms-2">Марки нет в серии — строка жёлтым, с причиной.</span>
+          <span class="o_pmk_butik__muted ms-2">Марку не понял или серия её не поддерживает — причина под записью.</span>
         </div>
         <t t-set="p" t-value="panelRow"/>
         <div t-if="p" class="o_pmk_zk__panel">
@@ -119,13 +119,13 @@
               <tbody>
                 <tr t-foreach="p.comp" t-as="c" t-key="c.pos">
                   <td class="n" t-esc="c.pos"/><td t-esc="c.name"/><td class="n" t-esc="c.qty"/>
-                  <td class="n" t-esc="kg(c.mass)"/><td class="o_pmk_butik__muted" t-esc="c.material"/>
+                  <td class="n" t-esc="kg2(c.mass)"/><td class="o_pmk_butik__muted" t-esc="c.material"/>
                 </tr>
               </tbody>
             </table>
             <div class="o_pmk_zk__note">
               Шов: <t t-esc="p.weld"/>.
-              Масса <b><t t-esc="kg(p.mass)"/> кг</b> с наплавленным металлом 1 %<t t-if="p.site_mass"> · по серии <t t-esc="kg(p.site_mass)"/> кг</t>.
+              Масса <b><t t-esc="kg2(p.mass)"/> кг</b> с наплавленным металлом 1 %<t t-if="p.site_mass"> · по серии <t t-esc="kg2(p.site_mass)"/> кг</t>.
             </div>
           </div>
           <div class="o_pmk_zk__card o_pmk_zk__drawing">

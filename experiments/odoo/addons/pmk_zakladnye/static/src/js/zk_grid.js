@@ -77,8 +77,22 @@ export class PmkZkGrid extends PmkButikGrid {
         return value || "";
     }
 
+    // Ячейка показывала набранное («мн 127-3 2400 6шт»), а не разобранное («МН 127-3 L2400»):
+    // черновик ячейки убирается уже после перерисовки ответом сервера — перерисовать ещё раз.
+    async commit(row, col, ev) {
+        await super.commit(row, col, ev);
+        if (this.alive()) {
+            this.render();
+        }
+    }
+
     // Марку разбирает сервер — подсказок справочника нет.
     onNameInput() {}
+
+    // Масса изделия — до сотых (4,95 кг; таблица Бутика округляет до десятых — 5).
+    kg2(value) {
+        return value ? (Math.round(value * 100) / 100).toLocaleString("ru-RU", { minimumFractionDigits: 2 }) : "";
+    }
 
     drawIcon(row) {
         return DRAW_ICON[row.draw] || "";

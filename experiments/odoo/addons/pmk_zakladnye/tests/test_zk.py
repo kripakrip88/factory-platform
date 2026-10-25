@@ -213,6 +213,7 @@ class TestZkDocument(TransactionCase):
         rows = self._type(self.calc.zk_rows()["rows"][0]["id"], "мн 201-5 12шт")["rows"]
         self.calc.zk_save_row(False, {"after_id": rows[0]["id"], "name": "мн 101-1 2шт"})
         action = self.calc.action_zk_laser_task()
+        self.assertEqual(action["views"], [(False, "form")], "без views окно не откроется")
         task = self.env["pmk.laser.task"].browse(action["res_id"])
         self.assertEqual(self.calc.laser_task_id, task)
         parts = {(p.name, p.thickness_mm, p.qty) for p in task.part_ids}
