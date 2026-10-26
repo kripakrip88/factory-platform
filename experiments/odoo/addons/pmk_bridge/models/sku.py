@@ -325,6 +325,12 @@ def fastener_sku_full(fastener_type, size_label, strength_class=None, coating=No
         tail.append("HS")
     if gost and "6402" in gost:
         tail.append("SP")          # шайба пружинная
+    if gost and "6958" in gost:
+        tail.append("EN")          # шайба увеличенная
+    if gost and "10906" in gost:
+        tail.append("OB")          # шайба косая
+    if gost and "985" in gost:
+        tail.append("LK")          # гайка стопорная DIN 985
     if full_thread:
         tail.append("FT")
     if strength_class:

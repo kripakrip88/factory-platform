@@ -314,6 +314,11 @@ class MetalSpecKonstr(models.Model):
                 vals["qty"] = 1
         return vals
 
+    def _konstr_product_entry(self, product, text):
+        """Название изделия — запись калькулятора (болт и т. п.)? Собрать состав. → True, если
+        собрали. Здесь — никто; модули изделий дописывают (pmk_bolt)."""
+        return False
+
     # ─── правка ─────────────────────────────────────────────────────────
     def konstr_save_row(self, row_key, vals):
         """Правка ячейки (или новая деталь: row_key = False, vals["after_id"])."""
@@ -339,6 +344,10 @@ class MetalSpecKonstr(models.Model):
                 pvals["pmk_price_ton"] = _to_float(clean["price_ton"])
             if pvals:
                 record.write(pvals)
+            if "name" in clean:
+                # Запись готового изделия в названии («бф 1.1 м30 1000мм 10шт», 26.10.2026) —
+                # модуль изделия (калькулятор болтов) собирает состав в эту строку.
+                self._konstr_product_entry(record, (clean["name"] or "").strip())
         else:
             if clean.get("name"):
                 # Короткая запись «д1 шв10 1200мм 10шт 09г» — пустые колонки из неё.

@@ -17,6 +17,10 @@ from odoo.exceptions import UserError
 from ..tools import parse
 
 
+# Запись фундаментного болта в названии изделия: «бф 1.1 м30 …», «болт фунд…».
+BOLT_ENTRY_RE = re.compile(r"^\s*(?:бф|болт\s+фунд)", re.I)
+
+
 class BoltCalcSpec(models.Model):
     _inherit = "pmk.bolt.calc"
 
@@ -240,6 +244,27 @@ class MetalSpecBolt(models.Model):
         labels = super()._pmk_entry_labels()
         labels["bolt"] = _("Болты")
         return labels
+
+    def _konstr_product_entry(self, product, text):
+        """«бф 1.1 м30 1000мм 10шт» в названии изделия «Конструкций» (Антон 26.10.2026: «не
+        определился готовой позицией») — болт калькулятором, состав — в это изделие."""
+        if not BOLT_ENTRY_RE.match(text or "") or parse.parse(text)[2]:
+            return super()._konstr_product_entry(product, text)
+        doc = self.bolt_calc_ids[:1] or self.env["pmk.bolt.calc"].create({
+            "spec_id": self.id, "partner_id": self.partner_id.id or False,
+            "opportunity_id": self.opportunity_id.id if "opportunity_id" in self._fields else False})
+        line = doc.line_ids.filtered(lambda l: l.konstr_product_id == product)[:1]
+        if line:
+            line._grid_apply_text(text)
+        else:
+            line = doc._grid_new_bolt(doc._grid_lines()[-1:], text)
+        line.pmk_entry_text = text
+        if not line._pmk_ok() or line.parse_error:
+            raise UserError(line.parse_error or line.warning or _("болт не подобран"))
+        self._pmk_konstr_put(line.name, line.qty, line.price_unit, line._pmk_konstr_details(),
+                             product=product, entry_text=text)
+        line.konstr_product_id = product
+        return True
 
     def _pmk_entry_bolt(self, text):
         """«бф 2.1 м30 600 09г2с 16шт» — болт изделием «Конструкций» (Антон 25.10.2026, вариант 1):

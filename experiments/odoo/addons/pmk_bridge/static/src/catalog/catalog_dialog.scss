@@ -12,11 +12,15 @@
         &--on { background: rgba(0, 0, 0, 0.07); font-weight: 500; }
     }
     &__count { color: #999; font-size: 11px; }
+    &__label { display: inline-flex; align-items: center; gap: 7px; min-width: 0; }
+    &__icon { flex: 0 0 16px; opacity: 0.7; }
+    &__kind--on &__icon { opacity: 1; }
     &__all { padding-left: 14px; margin-bottom: 4px; }
     &__main { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; padding: 10px 14px 0; }
     &__filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
     &__q { flex: 1 1 220px; }
-    &__sel { width: auto; flex: 0 0 auto; }
+    // Подпись не наезжает на стрелку выпадашки (Антон 26.10: «Любой класс» залезал на шеврон).
+    &__sel { width: auto; flex: 0 0 auto; min-width: 84px; padding-right: 26px !important; }
     &__priced { display: flex; align-items: center; gap: 4px; font-size: 13px; color: #666; margin: 0; }
     &__table { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
     table { font-size: 13px; margin: 0; }

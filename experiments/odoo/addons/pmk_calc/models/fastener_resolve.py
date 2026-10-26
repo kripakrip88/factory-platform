@@ -32,6 +32,9 @@ ZINC_RE = re.compile(r"цинк|\bоц\w*|\bzn\b", re.I)
 PAINT_RE = re.compile(r"\bral\b|\bрал\b|окраш|(?<![\d.,])(?:10|20|30|50|60|70|80|90)\d\d(?![\d.,])", re.I)
 HS_RE = re.compile(r"высокопр|5264[456]|\bвп\b", re.I)
 SPRING_RE = re.compile(r"пружин|гровер|6402", re.I)
+BIG_RE = re.compile(r"увелич|6958|9021", re.I)
+OBLIQUE_RE = re.compile(r"\bкос\w*|10906", re.I)
+LOCK_RE = re.compile(r"стопор|самоконтр|\b985\b", re.I)
 FULL_RE = re.compile(r"полн\w*\s*резьб|\b933\b|7805", re.I)
 SCREW_KIND = [("кровельный", r"кровел|ш/г"), ("с прессшайбой", r"пресс|п/ш"), ("для сэндвич", r"сэндвич")]
 COAT_ORDER = {"black": 0, "zinc": 1, "hot_zinc": 2, "painted": 3, False: 4}
@@ -58,6 +61,9 @@ def parse(text):
                       else "painted" if PAINT_RE.search(body) else None)
     out["hs"] = bool(HS_RE.search(low))
     out["spring"] = bool(SPRING_RE.search(low))
+    out["big"] = bool(BIG_RE.search(low))
+    out["oblique"] = bool(OBLIQUE_RE.search(low))
+    out["lock"] = bool(LOCK_RE.search(low))
     out["full"] = bool(FULL_RE.search(low))
     out["screw_kind"] = next((k for k, rx in SCREW_KIND if re.search(rx, low)), None)
     return out
@@ -85,7 +91,11 @@ class MetalFastenerResolve(models.Model):
         if info["type"] in ("bolt", "nut", "washer"):
             cands = cands.filtered(lambda f: ("5264" in (f.gost or "")) == info["hs"])
         if info["type"] == "washer" and not info["hs"]:
-            cands = cands.filtered(lambda f: ("6402" in (f.gost or "")) == info["spring"])
+            cands = cands.filtered(lambda f: ("6402" in (f.gost or "")) == info["spring"]
+                                   and ("6958" in (f.gost or "")) == info["big"]
+                                   and ("10906" in (f.gost or "")) == info["oblique"])
+        if info["type"] == "nut" and not info["hs"]:
+            cands = cands.filtered(lambda f: ("985" in (f.gost or "")) == info["lock"])
         if info["type"] == "bolt":
             cands = cands.filtered(lambda f: f.full_thread == info["full"])
         if info["type"] == "screw" and info["screw_kind"]:

@@ -42,9 +42,11 @@ def main(path, out):
     I = {h: i for i, h in enumerate(H)}
     pos, prices, skipped = {}, defaultdict(list), defaultdict(int)
     for r in rows[1:]:
-        if not r[I["Ходовая (предложение)"]]:
-            continue
         kind, sub, name = r[I["Вид"]] or "", r[I["Подвид"]] or "", r[I["Наименование (как в прайсе)"]] or ""
+        # Антон 26.10 (вечер): «мало позиций, нет М6» — болты, гайки, шайбы — ВСЕ размеры прайсов;
+        # анкеры, саморезы — пока только ходовые (в прайсах вперемешку разные изделия).
+        if not r[I["Ходовая (предложение)"]] and not kind.startswith(("болт", "гайка", "шайба")):
+            continue
         d, length, cls = r[I["Ø / М"]], r[I["Длина"]], r[I["Класс"]]
         ppc, check = r[I["₽/шт"]], r[I["Проверить"]] or ""
         low = name.lower()
@@ -69,22 +71,26 @@ def main(path, out):
             size = "М%s×%s" % (num(d), num(length))
             title = "Болт %s%s%s" % ("высокопрочный " if hs else "", size, " полная резьба" if full else "")
             key = ("bolt", hs, d, length, cls, coat, full)
-        elif kind.startswith("гайка") and length:
+        elif kind.startswith("гайка") and (length or "мелкий шаг" in sub):
             skipped["мелкий шаг"] += 1          # «Гайка 48х3» — шаг резьбы в колонке длины
             continue
         elif kind.startswith("гайка"):
-            hs = "52645" in sub
-            ftype, gost = "nut", ("ГОСТ Р 52645-2006" if hs else "ГОСТ 5915-70")
+            hs, lock = "52645" in sub, "стопор" in sub
+            ftype = "nut"
+            gost = "ГОСТ Р 52645-2006" if hs else ("DIN 985" if lock else "ГОСТ 5915-70")
             size = "М%s" % num(d)
-            title = "Гайка %s%s" % ("высокопрочная " if hs else "", size)
-            key = ("nut", hs, d, None, cls, coat, False)
+            title = "Гайка %s%s" % ("высокопрочная " if hs else ("стопорная " if lock else ""), size)
+            key = ("nut", "hs" if hs else ("lock" if lock else ""), d, None, cls, coat, False)
         elif kind.startswith("шайба"):
-            spring, hs = "пружин" in sub, "52646" in sub
+            spring, hs, big, oblique = "пружин" in sub, "52646" in sub, "увелич" in sub, "кос" in sub
             ftype = "washer"
-            gost = "ГОСТ Р 52646-2006" if hs else ("ГОСТ 6402-70" if spring else "ГОСТ 11371-78")
+            gost = ("ГОСТ Р 52646-2006" if hs else "ГОСТ 6402-70" if spring else "ГОСТ 6958-78" if big
+                    else "ГОСТ 10906-78" if oblique else "ГОСТ 11371-78")
             size = "М%s" % num(d)
-            title = "Шайба %s%s" % ("высокопрочная " if hs else ("пружинная " if spring else ""), size)
-            key = ("washer", "hs" if hs else ("spring" if spring else ""), d, None, None, coat, False)
+            title = "Шайба %s%s" % ("высокопрочная " if hs else "пружинная " if spring else "увеличенная " if big
+                                    else "косая " if oblique else "", size)
+            key = ("washer", "hs" if hs else "spring" if spring else "big" if big else "oblique" if oblique else "",
+                   d, None, None, coat, False)
             cls = None
         elif kind.startswith("анкер"):
             xmlid = LEGACY_ANCHOR.get((d, length))
@@ -115,7 +121,8 @@ def main(path, out):
         else:
             skipped["вид не нужен"] += 1
             continue
-        name_full = " ".join(p for p in (title, ("кл. %s" % cls) if cls else "", COAT_WORD[coat]) if p)
+        # Единое название (Антон 26.10): «Болт М6×30 кл. 5.8 цинк ГОСТ 7798-70».
+        name_full = " ".join(p for p in (title, ("кл. %s" % cls) if cls else "", COAT_WORD[coat], gost) if p)
         slug = re.sub(r"[^a-z0-9]+", "_", "fast2 %s %s %s %s %s %s %s" % (
             ftype, key[1] if isinstance(key[1], str) else ("hs" if key[1] else ""), num(d), num(length),
             (cls or "").replace(".", ""), coat, "full" if full else "")).strip("_")
@@ -130,11 +137,14 @@ def main(path, out):
     import json, os
     gm = json.load(open(os.path.join(os.path.dirname(path), "gost_masses.json")))
     nut = {float(d): kg for d, kg in gm["nut_gost5915"]["data"].items()}
+    big = {float(d): kg for d, kg in (gm.get("washer_gost6958", {}).get("data") or {}).items()}
     for slug, p in list(pos.items()):
         if not p["weight_kg"]:
             d = float(re.search(r"\d+(?:\.\d+)?", p["size_label"]).group(0))
-            if p["fastener_type"] == "nut" and d in nut:
+            if p["fastener_type"] == "nut" and d in nut and "5915" in p["gost"]:
                 p["weight_kg"] = round(nut[d], 5)
+            elif p["fastener_type"] == "washer" and "6958" in p["gost"] and d in big:
+                p["weight_kg"] = round(big[d], 5)
             else:
                 print("  нет массы — позиция не заводится:", p["name"])
                 del pos[slug]

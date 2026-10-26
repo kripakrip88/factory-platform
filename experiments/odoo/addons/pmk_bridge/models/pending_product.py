@@ -182,7 +182,9 @@ class MetalPendingProduct(models.AbstractModel):
                  or self.env.ref(PARENT_CATEG[self._name], raise_if_not_found=False))
         uom = self.env.ref(UOM[self._name])
         if self._name == "pmk.metal.fastener":
-            name = ("%s %s" % (self.name, self.gost)).strip() if self.gost else self.name
+            # С 26.10.2026 ГОСТ — уже в названии метиза («… цинк ГОСТ 7798-70»).
+            name = ("%s %s" % (self.name, self.gost)).strip() if self.gost and self.gost not in (self.name or "") \
+                else self.name
         else:
             name = "%s %s" % (self.display_name, self.gost)
         vals = {

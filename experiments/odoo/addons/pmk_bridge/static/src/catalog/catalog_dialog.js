@@ -37,7 +37,7 @@ export class PmkCatalogDialog extends Component {
         this.orm = useService("orm");
         this.dialog = useService("dialog");
         this.state = useState({
-            tree: [], section: null, kind: null, query: "", strength_class: "", coating: "",
+            tree: [], section: null, kind: null, query: "", strength_class: "", coating: "", diameter: "",
             priced: false, rows: [], more: false, sel: null, loading: false, busy: false,
         });
         onWillStart(async () => {
@@ -63,12 +63,31 @@ export class PmkCatalogDialog extends Component {
         return this.state.section === "fastener";
     }
 
+    /** Диаметры выбранного вида метизов (М6 … М48) — фильтр «Ø». */
+    get diameters() {
+        const sec = this.state.tree.find((t) => t.key === "fastener");
+        const kinds = sec ? sec.kinds.filter((k) => !this.state.kind || k.key === this.state.kind) : [];
+        const all = new Set(kinds.flatMap((k) => k.diameters || []));
+        return [...all].sort((a, b) => parseFloat(a) - parseFloat(b));
+    }
+
+    /** Класс зависит от вида: у болта 5.8 / 8.8 / 10.9, у гайки 8 / 10 / 12. */
+    get classes() {
+        if (this.state.kind === "bolt") {
+            return ["5.8", "8.8", "10.9"];
+        }
+        if (this.state.kind === "nut") {
+            return ["8", "10", "12"];
+        }
+        return ["5.8", "8.8", "10.9", "8", "10", "12"];
+    }
+
     async search() {
         const s = this.state;
         s.loading = true;
         const res = await this.orm.call("pmk.metal.catalog", "catalog_search", [
             s.section, s.kind, s.query, this.isFastener ? s.strength_class : "",
-            this.isFastener ? s.coating : "", s.priced,
+            this.isFastener ? s.coating : "", s.priced, this.isFastener ? s.diameter : "",
         ]);
         s.rows = res.rows;
         s.more = res.more;
@@ -77,7 +96,7 @@ export class PmkCatalogDialog extends Component {
     }
 
     selectKind(section, kind) {
-        Object.assign(this.state, { section, kind, strength_class: "", coating: "" });
+        Object.assign(this.state, { section, kind, strength_class: "", coating: "", diameter: "" });
         this.search();
     }
 

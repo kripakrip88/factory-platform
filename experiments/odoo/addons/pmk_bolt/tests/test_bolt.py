@@ -240,3 +240,22 @@ class TestBoltCatalog(TransactionCase):
         stud = line.part_ids.filtered(lambda p: p.auto_key == "stud")
         with self.assertRaises(UserError):
             calc.bolt_set_part_from_catalog("p%d" % stud.id, "fastener:%d" % fastener.id)
+
+
+@tagged("post_install", "-at_install")
+class TestBoltKonstrEntry(TransactionCase):
+    """«бф 1.1 м30 1000мм 10шт» в названии изделия «Конструкций» — болт с составом (26.10.2026)."""
+
+    def test_product_name_is_bolt(self):
+        spec = self.env["pmk.metal.spec"].create({})
+        rows = spec.konstr_add_product()["rows"]
+        product = next(r for r in rows if r["kind"] == "product")
+        spec.konstr_save_row(product["id"], {"name": "бф 1.1 м30 1000мм 10шт"})
+        prod = spec.product_ids[:1]
+        self.assertIn("М-30х1000", prod.name)
+        self.assertEqual(prod.qty, 10)
+        self.assertTrue(prod.line_ids.filtered(lambda l: l.calc_mode == "linear"), "шпилька — круг")
+        self.assertEqual(len(spec.bolt_calc_ids.line_ids), 1)
+        spec.konstr_save_row(product["id"], {"name": "бф 1.1 м30 1200мм 10шт"})
+        self.assertEqual(len(spec.bolt_calc_ids.line_ids), 1, "правка — тот же болт, не второй")
+        self.assertIn("1200", spec.product_ids[:1].name)
