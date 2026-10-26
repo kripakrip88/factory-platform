@@ -4,4 +4,6 @@
      обновлении моста, повторный ничего не заводит. -->
 <odoo>
     <function model="pmk.metal.profile" name="_pmk_cards_for_data_rows"/>
+    <!-- 26.10.2026: и листу (оцинковка 1,2–3 мм) — с характеристикой марки. -->
+    <function model="pmk.metal.sheet" name="_pmk_sheet_cards_for_data_rows"/>
 </odoo>

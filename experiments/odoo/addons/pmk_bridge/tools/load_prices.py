@@ -716,6 +716,10 @@ def price_row_name(row):
     if low.startswith("гнутый швеллер"):
         return "Швеллер гнутый %s" % row.size
     if low.startswith("лист"):
+        # «Лист оцинк.» — вид листа в названии строки; «Лист %s» его терял, и оцинковка
+        # ложилась на гладкий лист (сторож признаков отбивал), 26.10.2026.
+        if "оцинк" in low or "оцинк" in row.section.lower():
+            return "Лист оцинкованный %s" % row.size
         return "Лист %s" % row.size
     return "%s %s" % (p, row.size)
 

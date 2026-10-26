@@ -95,6 +95,33 @@ class MetalPendingProduct(models.AbstractModel):
         return Profile._pmk_cards_create(Profile.search(
             [("product_tmpl_id", "=", False), ("pmk_pending", "=", False)]))
 
+    @api.model
+    def _pmk_sheet_cards_for_data_rows(self):
+        """Карточки строкам справочника ЛИСТА из файла данных (26.10.2026: оцинковка
+        1,2–3 мм — Металлсервис её продаёт, а справочник кончался на 1,0).
+
+        Как у залитых листов (scripts/load_products.py, шаг 5): единица м², строка
+        «Марка стали» сначала с ОДНИМ значением Ст3сп — единственный вариант впитывает
+        метку и остаётся жив с артикулом, потом полный набор марок (характеристика
+        динамическая — вариантов не плодит). Габарит-единицу («Лист 1250×2500») и
+        вариант марки прайса (08кп) заводит загрузчик цен при записи."""
+        Sheet = self.env["pmk.metal.sheet"].sudo().with_context(active_test=False)
+        if not Sheet.search_count([("product_tmpl_id", "!=", False)], limit=1):
+            return 0
+        rows = Sheet.search([("product_tmpl_id", "=", False), ("pmk_pending", "=", False)])
+        count = Sheet._pmk_cards_create(rows)
+        attr = self.env.ref("pmk_bridge.attr_grade", raise_if_not_found=False)
+        seed = self.env.ref("pmk_bridge.attr_grade_st3sp", raise_if_not_found=False)
+        if count and attr and seed:
+            Line = self.env["product.template.attribute.line"].sudo()
+            for tmpl in rows.mapped("product_tmpl_id"):
+                if tmpl.attribute_line_ids.filtered(lambda l: l.attribute_id == attr):
+                    continue
+                line = Line.create({"product_tmpl_id": tmpl.id, "attribute_id": attr.id,
+                                    "value_ids": [(6, 0, seed.ids)]})
+                line.value_ids = [(6, 0, attr.value_ids.ids)]
+        return count
+
     def _pmk_cards_create(self, rows):
         """Завести карточки строкам из файла данных (pmk_calc.*); черновики и
         строки с карточкой пропускаются. Возвращает, сколько заведено."""

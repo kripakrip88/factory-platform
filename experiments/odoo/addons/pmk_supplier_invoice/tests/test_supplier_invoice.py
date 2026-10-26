@@ -228,6 +228,19 @@ class TestSupplierInvoice(TransactionCase):
         self.assertEqual(line.supplierinfo_id.product_uom_id, sheet_uom)
         self.assertAlmostEqual(line.supplierinfo_id.price, 15999.02, places=2)
 
+    def test_galvanized_sheet_found(self):
+        """Оцинковка (26.10.2026): разборщик искал вид «Оцинкованный тонколистовой», а в справочнике
+        «Оцинкованный» — не находилась никогда; 1,5 мм в справочнике не было; «Ст08пс» не опознавалась."""
+        from odoo.addons.pmk_bridge.tools import grades
+        from ..models.prices import invoice_grade
+        m = M.matcher(self.env)
+        for th in (0.5, 1.5, 3):
+            res = m.match("Лист оцинкованный %sx1250x2500" % th)
+            self.assertEqual((res["status"], res["matches"][0]["type"]), ("совпало", "Оцинкованный"), res)
+            self.assertEqual(res["nums"], [th])
+        self.assertEqual(invoice_grade("Ст08пс"), "08пс")
+        self.assertIn("08кп", grades.grade_family("08пс"), "«08кп/пс» прайса и «Ст08пс» счёта — одна цена")
+
     def test_kind_and_size_rules(self):
         self.assertEqual(M.expected_kind("трубы электросварные квадрат 40х3")[0], "Труба профильная квадратная")
         self.assertEqual(M.expected_kind("Квадрат 16 Ст3")[0], "Квадрат")
