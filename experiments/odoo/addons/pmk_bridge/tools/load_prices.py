@@ -643,6 +643,64 @@ def read_price_metallcity(path):
     return rows, sections, sorted(set(dates))
 
 
+CK_SHEET = 1250      # «Лист гладкий 1250» Центра Кровли: ширина рулона, цена за м.п.
+CK_UNIT_LENGTH = 2500  # цена кладётся «за лист 1250×2500» (длина у них 500–4200 — в размер)
+
+
+def read_price_ck(path):
+    """Прайс «Центр Кровли» (ck.ru, .xlsx): берём только «Лист гладкий 1250» — цинк и краску
+    (Антон 26.10.2026: Принтек и двусторонний не нужны; профнастил, черепица, сайдинг — не наш
+    сортамент). Колонки: 0 «1 250, 0,65, 8017 шоколад в пленке, 1 000», 6 покрытие (только у
+    первой строки группы), 8 толщина, 11 цена опт за м.п., 14 ширина, м. Цена м.п. / ширину =
+    руб/м²; в загрузчик идёт как руб/т по массе листа 1250×2500 (толщина × 7,85)."""
+    import openpyxl
+    ws = openpyxl.load_workbook(path, read_only=True, data_only=True).worksheets[0]
+    rows, sections, dates = [], [], []
+    tier = [Tier(1, 11, "опт за м.п.", 0.0, "тн")]
+    on, coating = False, ""
+    for r, v in enumerate(ws.iter_rows(values_only=True), start=1):
+        v = list(v) + [None] * 16
+        txt = ["" if x is None else str(x).strip() for x in v]
+        if isinstance(v[2], datetime.datetime):
+            dates.append(v[2].date())
+        head = (txt[2] or txt[5]).lower()
+        if head and not txt[0]:
+            on = head.startswith("лист гладкий")
+            if on:
+                sections.append(txt[2] or txt[5])
+            continue
+        if txt[2] or txt[5]:
+            on = (txt[2] or txt[5]).lower().startswith("лист гладкий")
+            if on and (txt[2] or txt[5]) not in sections:
+                sections.append(txt[2] or txt[5])
+        if not on or not txt[0]:
+            continue
+        if txt[6]:
+            coating = txt[6].lower()
+        if coating == "цинк":
+            profile = "Лист оцинк."
+        elif coating.startswith("краска") and "двусторон" not in coating:
+            profile = "Лист окрашенный"
+        else:
+            continue
+        th, price, width = _cellnum(v[8]), _cellnum(v[11]), _cellnum(v[14]) or CK_SHEET / 1000.0
+        if not th:
+            m = re.match(r"[\d\s\xa0]+,\s*(\d+[.,]\d+)", txt[0])
+            th = _cellnum(m.group(1)) if m else 0.0
+        if not th or not price:
+            continue
+        area = CK_SHEET * CK_UNIT_LENGTH / 1e6
+        weight = th * 7.85 * area
+        per_sqm = price / width
+        rows.append(PriceRow(
+            excel_row=r, section=sections[-1] if sections else "", profile=profile,
+            # Марки в прайсе нет; тонкий оцинкованный и крашеный лист — 08пс (одна цена с 08кп).
+            size="%sх%dх%d" % (_num_str(th), CK_SHEET, CK_UNIT_LENGTH), grade="08пс", length="",
+            weight=_num_str(round(weight, 4)), tiers=tier,
+            gross=[_num_str(round(per_sqm * area / weight * 1000.0, 2))]))
+    return rows, sections, sorted(set(dates))
+
+
 TABLE_NAMES = [
     (r"^угол\b", "Уголок"),
     (r"^труба\s+э/с", "Труба эл/св"),
@@ -689,7 +747,7 @@ def read_price_table(path):
 
 
 READERS = {"metallservice": None, "spk": read_price_spk, "metallcity": read_price_metallcity,
-           "table": read_price_table}
+           "table": read_price_table, "ck": read_price_ck}
 
 
 def price_row_name(row):
@@ -718,6 +776,8 @@ def price_row_name(row):
     if low.startswith("лист"):
         # «Лист оцинк.» — вид листа в названии строки; «Лист %s» его терял, и оцинковка
         # ложилась на гладкий лист (сторож признаков отбивал), 26.10.2026.
+        if "окраш" in low:
+            return "Лист окрашенный %s" % row.size
         if "оцинк" in low or "оцинк" in row.section.lower():
             return "Лист оцинкованный %s" % row.size
         return "Лист %s" % row.size
@@ -735,6 +795,7 @@ def price_row_name(row):
 # лист на стальном и чечевичное рифление на гладком листе.
 QUALIFIERS = [
     ("оцинк", ("оцинк",), "оцинкованная позиция"),
+    ("окраш", ("окраш",), "крашеный лист"),
     ("алюмин", ("алюмин",), "алюминий"),
     ("нержав", ("нержав",), "нержавеющая сталь"),
     ("латун", ("латун",), "латунь"),

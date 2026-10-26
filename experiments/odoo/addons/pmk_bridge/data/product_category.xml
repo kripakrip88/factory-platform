@@ -228,6 +228,13 @@
             <field name="property_valuation">real_time</field>
             <field name="removal_strategy_id" ref="stock.removal_fifo"/>
         </record>
+        <record id="categ_sheet_pe" model="product.category">
+            <field name="name">Лист окрашенный</field>
+            <field name="parent_id" ref="categ_sheet"/>
+            <field name="property_cost_method">fifo</field>
+            <field name="property_valuation">real_time</field>
+            <field name="removal_strategy_id" ref="stock.removal_fifo"/>
+        </record>
 
         <!-- ═══ 3. МЕТИЗЫ — 25 карточек, 5 видов ════════════════════════
              Здесь FIFO не нужен: болт М8 одной партии от болта М8 другой

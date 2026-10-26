@@ -227,7 +227,11 @@ SIZE_WORD_ALIASES = {"бесш": ("бесшовная", "б/ш")}
 SHEET_TYPE_ALIASES = {
     "Просечно-вытяжной": ("пвл",),
     "Гладкий": ("г/к", "горячекатаный"),
+    "Окрашенный": ("крашеный", "ral", "рал", "полиэстер", "пэ"),
 }
+# Крашеный (26.10.2026) — после оцинковки при равной оценке: «0,45» — это оцинковка,
+# крашеный выбирают словом («окраш 0,45», «рал 0,45»).
+SHEET_TYPE_LAST = ("Окрашенный",)
 
 
 def normalize(text):
@@ -541,6 +545,6 @@ def _rank_sheets_pass(entries, tokens, strict):
         sw = (("%g" % (thick or 0),),) + tuple((w,) for w in normalize(size).split())
         score = match(tokens, sheet_words(stype), sw, strict)
         if score is not None:
-            scored.append((score + (natural_key(size or ""), pos), rid))
+            scored.append((score + (stype in SHEET_TYPE_LAST, natural_key(size or ""), pos), rid))
     scored.sort(key=lambda item: item[0])
     return [rid for _key, rid in scored]

@@ -245,9 +245,10 @@ class TestSupplierInvoice(TransactionCase):
 
     def test_painted_sheet_per_sqm(self):
         """Счёт ПРОФИЛЬ ДВ ПДФР-007493 от 02.10.2026: «Лист гладкий 0.65 (RAL 3005, Красное вино)
-        (710х1250)», 11 шт по 528,95. Крашеный лист — это оцинковка 0,65 (как в доборах и
-        вентзонтах); заготовка не габарит-упаковка — цена за м²: 528,95 / 0,8875 = 596,0."""
-        tmpl = self._sheet_card("Оцинкованный", 0.65)
+        (710х1250)», 11 шт по 528,95. Крашеный лист — вид «Окрашенный» (своя карточка, дороже цинка);
+        заготовка не габарит-упаковка — цена за м²: 528,95 / 0,8875 = 596,0."""
+        tmpl = self._sheet_card("Окрашенный", 0.65)
+        zinc = self._sheet_card("Оцинкованный", 0.65)
         data = dict(INVOICE, number="ПДФР-007493", date="2026-10-02", total=12210.55, vat=2201.9, lines=[
             {"name": "Лист гладкий 0.65 (RAL 3005, Красное вино) (710х1250)", "unit": "шт", "qty": 11,
              "price": 528.95, "amount": 5818.45, "kind": "metal", "catalog_name": "Лист 0.65x710x1250",
@@ -263,6 +264,7 @@ class TestSupplierInvoice(TransactionCase):
             self.assertAlmostEqual(line.new_price, line.price / area, places=2)
             self.assertTrue(line.apply, line.warning)
         self.assertAlmostEqual(a.new_price, 596.0, places=1)
+        self.assertNotEqual(a.product_tmpl_id, zinc, "крашеный не ложится на цинк")
         inv.action_apply_prices()
         self.assertEqual(a.supplierinfo_id.product_uom_id, tmpl.uom_id)
 
@@ -288,6 +290,9 @@ class TestSupplierInvoice(TransactionCase):
             res = m.match("Лист оцинкованный %sx1250x2500" % th)
             self.assertEqual((res["status"], res["matches"][0]["type"]), ("совпало", "Оцинкованный"), res)
             self.assertEqual(res["nums"], [th])
+        for name in ("Лист окрашенный 0.45x1250x2500", "Лист оцинк. 0,45 RAL 8017", "лист 0.65 полиэстер 3005"):
+            res = m.match(name)
+            self.assertEqual((res["status"], res["matches"][0]["type"]), ("совпало", "Окрашенный"), (name, res))
         self.assertEqual(invoice_grade("Ст08пс"), "08пс")
         self.assertIn("08кп", grades.grade_family("08пс"), "«08кп/пс» прайса и «Ст08пс» счёта — одна цена")
 

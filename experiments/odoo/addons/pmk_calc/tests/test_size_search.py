@@ -137,7 +137,8 @@ class TestRankProfiles(_Case):
         # справочника по прайсам поставщиков 18.10.2026.
         self.assertEqual(len(PROFILES), 812)
         self.assertEqual(len(TYPE), 14)
-        self.assertEqual(len(SHEETS), 57)
+        # +4 оцинковки 1,2–3 мм и +5 крашеного листа 0,35–0,65 (26.10.2026).
+        self.assertEqual(len(SHEETS), 66)
 
     def test_owner_examples(self):
         """Примеры из документа разбора: «уг 50х5», «двут 20ш», «тр 60х3»."""
@@ -396,6 +397,9 @@ class TestRankSheets(_Case):
             "лист гк 10": "Лист гладкий 10 мм",
             "лист г/к 10 ст3": "Лист гладкий 10 мм",
             "лист 10 ГОСТ 19903-2015": "Лист гладкий 10 мм",
+            # Крашеный (26.10.2026) — словом; без слова «0,45» осталась оцинковка.
+            "окраш 0,45": "Лист окрашенный 0.45 мм",
+            "рал 0,65": "Лист окрашенный 0.65 мм",
         }
         for text, want in cases.items():
             with self.subTest(text=text):

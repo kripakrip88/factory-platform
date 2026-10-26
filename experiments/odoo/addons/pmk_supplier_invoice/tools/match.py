@@ -49,23 +49,23 @@ LENGTH_RE = re.compile(r"(?:дл\.?|длин\w*)\s*(\d+(?:[.,]\d+)?)\s*(м\b|м�
 METRES_RE = re.compile(r"=\s*(\d+(?:[.,]\d+)?)\s*п\.?\s*м", re.I)
 
 
-# Крашеный лист («Лист гладкий 0.65 (RAL 3005, Красное вино)», «полиэстер», «ПЭ») — это
-# оцинковка с полимерным покрытием: в доборах и вентзонтах он — «Лист Оцинкованный 0,65»
-# + цвет из «Цвета доборки (RAL)». Своего вида в справочнике у крашеного нет (26.10.2026).
+# Крашеный лист («Лист гладкий 0.65 (RAL 3005, Красное вино)», «полиэстер», «ПЭ») — оцинковка
+# с полимерным покрытием, вид справочника «Окрашенный» (26.10.2026: дороже цинка — своя
+# карточка, цена одна на все RAL).
 PAINTED_RE = re.compile(r"\bral\b|\bрал\b|окраш|полиэст|\bпэ\b|\bpe\b|полимер|пурал|printech", re.I)
 
 
 def painted_sheet(raw, catalog_name):
-    """Название для разборщика: крашеный лист → «Лист оцинкованный …» (толщина и габарит —
+    """Название для разборщика: крашеный лист → «Лист окрашенный …» (толщина и габарит —
     из названия ассистента). Не крашеный — как было."""
     text = "%s %s" % (raw or "", catalog_name or "")
-    if "лист" not in text.lower() or not PAINTED_RE.search(text) or "оцинк" in (catalog_name or "").lower():
+    if "лист" not in text.lower() or not PAINTED_RE.search(text) or "окраш" in (catalog_name or "").lower():
         return catalog_name
     size = SIZE_RE.search(catalog_name or "") or SIZE_RE.search(raw or "")
     th = re.search(r"\b(\d+[.,]\d+)\b", raw or "")
     if size and "x" in size.group(0).lower().replace("х", "x").replace("×", "x"):
-        return "Лист оцинкованный %s" % size.group(0)
-    return "Лист оцинкованный %s" % (th.group(1) if th else "")
+        return "Лист окрашенный %s" % size.group(0)
+    return "Лист окрашенный %s" % (th.group(1) if th else "")
 
 
 class MatchError(Exception):
