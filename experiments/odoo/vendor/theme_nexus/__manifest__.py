@@ -23,7 +23,9 @@
     #   • menuService, getApps(), selectMenu(), getCurrentApp() на месте
     #     (navbar.js:42, 207, 89; menu_service.js:70).
     'version': '19.0.1.0.0',
-    'category': 'Theme/Backend',
+    # ПМК, 26.10.2026: было 'Theme/Backend' — website выкидывал модуль из сборки бэкенда в контексте
+    # сайта (задача 322). Тема бэкенда, не сайта.
+    'category': 'Extra Tools',
     'summary': 'A modern, intelligent and premium Odoo Enterprise backend experience',
     'description': """
 NEXUS Backend Theme
