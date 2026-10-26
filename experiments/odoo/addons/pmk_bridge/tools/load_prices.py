@@ -813,6 +813,9 @@ from odoo.addons.pmk_bridge.tools.grades import (  # noqa: E402,F401
 
 
 SKIP_GRADE_RE = re.compile(r"^РС[АВDД]")
+# Второй сорт («08пс (2 сорт )» у оцинковки Металлсервиса) — не покупаем (Антон 26.10.2026:
+# «второй сорт не годится»). Без пропуска он, как самый дешёвый, стал бы ценой листа.
+SECOND_GRADE_RE = re.compile(r"\b2\s*-?\s*(?:й\s*)?сорт", re.I)
 
 
 def sheet_gabarit(size_label):
@@ -899,6 +902,9 @@ def prepare(rows, matcher, book):
         # отказов она только мешала бы видеть настоящие.
         if SKIP_GRADE_RE.match(normalise_grade(row.grade)):
             stat["пропущено: сталь РС (не работаем)"] += 1
+            continue
+        if SECOND_GRADE_RE.search("%s %s %s" % (row.grade, row.profile, row.size)):
+            stat["пропущено: второй сорт (не покупаем)"] += 1
             continue
         res = matcher.match(price_row_name(row))
         if res["status"] != "совпало":
@@ -1367,6 +1373,9 @@ def main():
     if stat["пропущено: сталь РС (не работаем)"]:
         print("  пропущено, сталь РС:    %s (завод с ней не работает)"
               % stat["пропущено: сталь РС (не работаем)"])
+    if stat["пропущено: второй сорт (не покупаем)"]:
+        print("  пропущено, второй сорт: %s (не покупаем)"
+              % stat["пропущено: второй сорт (не покупаем)"])
     print("  сопоставлено правилами: %s" % stat["сопоставлено"])
     print("  отбито проверками:      %s" % stat["отбито проверками"])
     print("  годных строк:           %s" % len(prepared))

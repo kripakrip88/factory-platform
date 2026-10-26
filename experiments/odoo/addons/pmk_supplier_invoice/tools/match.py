@@ -49,6 +49,25 @@ LENGTH_RE = re.compile(r"(?:дл\.?|длин\w*)\s*(\d+(?:[.,]\d+)?)\s*(м\b|м�
 METRES_RE = re.compile(r"=\s*(\d+(?:[.,]\d+)?)\s*п\.?\s*м", re.I)
 
 
+# Крашеный лист («Лист гладкий 0.65 (RAL 3005, Красное вино)», «полиэстер», «ПЭ») — это
+# оцинковка с полимерным покрытием: в доборах и вентзонтах он — «Лист Оцинкованный 0,65»
+# + цвет из «Цвета доборки (RAL)». Своего вида в справочнике у крашеного нет (26.10.2026).
+PAINTED_RE = re.compile(r"\bral\b|\bрал\b|окраш|полиэст|\bпэ\b|\bpe\b|полимер|пурал|printech", re.I)
+
+
+def painted_sheet(raw, catalog_name):
+    """Название для разборщика: крашеный лист → «Лист оцинкованный …» (толщина и габарит —
+    из названия ассистента). Не крашеный — как было."""
+    text = "%s %s" % (raw or "", catalog_name or "")
+    if "лист" not in text.lower() or not PAINTED_RE.search(text) or "оцинк" in (catalog_name or "").lower():
+        return catalog_name
+    size = SIZE_RE.search(catalog_name or "") or SIZE_RE.search(raw or "")
+    th = re.search(r"\b(\d+[.,]\d+)\b", raw or "")
+    if size and "x" in size.group(0).lower().replace("х", "x").replace("×", "x"):
+        return "Лист оцинкованный %s" % size.group(0)
+    return "Лист оцинкованный %s" % (th.group(1) if th else "")
+
+
 class MatchError(Exception):
     def __init__(self, kind, detail=""):
         super().__init__(kind)
@@ -128,6 +147,7 @@ def match_line(env, m, raw, catalog_name, grade_text=""):
     exp_kind, human = expected_kind(raw)
     if not exp_kind:
         raise MatchError("вид проката не опознан", "в строке счёта нет слова вида (труба, уголок, лист…)")
+    catalog_name = painted_sheet(raw, catalog_name)
     res = m.match(catalog_name or raw)
     if res["status"] != "совпало":
         raise MatchError("позиция не найдена", "%s: «%s»" % (res["status"], catalog_name or raw))
@@ -142,6 +162,13 @@ def match_line(env, m, raw, catalog_name, grade_text=""):
     have = {float(x) for x in res.get("nums") or []}
     if is_sheet:
         have |= {float(item.get("th") or 0)}
+    if is_sheet and nums and min(nums) not in have:
+        # Лист: толщина — в любом месте строки («Лист гладкий 0.65 (RAL 3005) (710х1250)»:
+        # размер-группа там габарит заготовки, а толщина стоит отдельно).
+        th = float((res.get("nums") or [0])[0])
+        loose = {float(x.replace(",", ".")) for x in re.findall(r"\d+(?:[.,]\d+)?", raw or "")}
+        if th in loose:
+            nums = {th}
     if nums and not nums <= have and not (is_sheet and min(nums) in have):
         raise MatchError("размер не сходится", "в счёте %s, у позиции %s" % (
             "×".join("%g" % x for x in sorted(nums)), "×".join("%g" % x for x in sorted(have))))

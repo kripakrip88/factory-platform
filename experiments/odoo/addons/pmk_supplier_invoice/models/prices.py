@@ -24,6 +24,8 @@ TON_UNITS = {"т", "тн", "тонн", "тонна", "теор.т", "теорт"
 KG_UNITS = {"кг", "кг."}
 M_UNITS = {"м", "м.", "п.м", "пм", "п.м.", "мп", "м.п."}
 PCS_UNITS = {"шт", "шт."}
+# Второй сорт не покупаем (Антон 26.10.2026) — как загрузчик прайсов (SECOND_GRADE_RE).
+SECOND_GRADE_RE = re.compile(r"\b2\s*-?\s*(?:й\s*)?сорт", re.I)
 PCS_RE = re.compile(r"(\d+(?:[.,]\d+)?)\s*шт", re.I)
 
 
@@ -69,6 +71,10 @@ class SupplierInvoiceLinePrices(models.Model):
                 line.write({"match_state": "skip", "apply": False, "match_note": _("услуга") if
                             line.kind == "service" else _("не металл")})
                 continue
+            if SECOND_GRADE_RE.search("%s %s" % (line.name, line.grade_text or "")):
+                line.write({"match_state": "skip", "apply": False,
+                            "match_note": _("второй сорт — не покупаем, цену не пишем")})
+                continue
             alias = self.env["pmk.supplier.invoice.alias"].sudo().search([
                 ("partner_id", "=", line.invoice_id.partner_id.id), ("key", "=", _key(line.name))], limit=1) \
                 if line.invoice_id.partner_id else False
@@ -108,9 +114,11 @@ class SupplierInvoiceLinePrices(models.Model):
         if is_sheet and tmpl._pmk_is_sqm():
             gab = self._pmk_gabarit()
             uom = self.env["uom.uom"]._pmk_sheet_uom(gab) if gab else None
-            if not uom:
+            if not gab:
                 raise M.MatchError("габарит листа не опознан", "«%s» — нужен габарит 1500x6000 и т. п." % (
                     self.catalog_name or self.name))
+            # Габарит не из единиц-упаковок (крашеный лист 710×1250 — заготовка в размер):
+            # цена — за м² карточки (uom пусто).
         attr = self.env.ref("pmk_bridge.attr_grade", raise_if_not_found=False)
         partner = self.invoice_id.partner_id
         if partner:
@@ -185,17 +193,21 @@ class SupplierInvoiceLinePrices(models.Model):
             pieces = line._pmk_pieces()
             if is_sheet:
                 gab = line._pmk_gabarit()
+                # Масса листа — поставщика (тонны счёта / штуки), как у прайсов: Металлсервис
+                # 26.10 выставил 4 листа 3×1500×6000 на 0,872 т = 218 кг, а по справочнику 211,95.
+                amount_of, what, piece_area = pieces, "кг/лист", 1.0
                 if tmpl._pmk_is_sqm():
                     w, l = [float(x) for x in gab.split("x")] if gab else (0, 0)
-                    mass_ref = (ref.mass_per_sqm or 0.0) * w * l / 1e6
                     uom = line.env["uom.uom"]._pmk_sheet_uom(gab) if gab else None
+                    mass_ref = (ref.mass_per_sqm or 0.0) * w * l / 1e6
+                    if not uom and gab:
+                        # Заготовка в размер (крашеный 0,65 710×1250, ПРОФИЛЬ ДВ 02.10): цена за м².
+                        piece_area = w * l / 1e6
+                        mass_ref = ref.mass_per_sqm or 0.0
+                        amount_of, what = pieces * piece_area, "кг/м²"
                 else:
                     mass_ref = (line.product_id or tmpl).weight
                     uom = None
-                # Масса листа — поставщика (тонны счёта / штуки), как у прайсов: Металлсервис
-                # 26.10 выставил 4 листа 3×1500×6000 на 0,872 т = 218 кг, а по справочнику 211,95.
-                amount_of = pieces
-                what = "кг/лист"
             else:
                 mass_ref = ref.mass_per_meter or 0.0
                 # Метры: из счёта, иначе штуки × длина хлыста («4 шт», дл 6 м).
@@ -216,6 +228,9 @@ class SupplierInvoiceLinePrices(models.Model):
                 price_ton = line.price * 1000.0
             elif unit in M_UNITS and not is_sheet and mass:
                 price_ton = line.price / mass * 1000.0
+            elif unit in PCS_UNITS and is_sheet and mass:
+                # Лист поштучно: цена листа (или заготовки площадью piece_area м²).
+                price_ton = line.price / (mass * piece_area) * 1000.0
             else:
                 line.write({"apply": False, "warning": _("цена за «%s» — пересчитать в тонну не из чего") % (line.unit or "?")})
                 continue

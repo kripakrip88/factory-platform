@@ -228,6 +228,56 @@ class TestSupplierInvoice(TransactionCase):
         self.assertEqual(line.supplierinfo_id.product_uom_id, sheet_uom)
         self.assertAlmostEqual(line.supplierinfo_id.price, 15999.02, places=2)
 
+    def _sheet_card(self, kind, th):
+        """Карточка листа в м² под строку справочника — как заливка (pmk_bridge.product_<ключ>)."""
+        ref = self.env["pmk.metal.sheet"].search([("sheet_type", "=", kind), ("thickness_mm", "=", th)], limit=1)
+        self.assertTrue(ref, (kind, th))
+        key = ref.get_external_id()[ref.id].split(".", 1)[1]
+        tmpl = self.env.ref("pmk_bridge.product_%s" % key, raise_if_not_found=False)
+        if not tmpl:
+            tmpl = self.env["product.template"].create({"name": "Лист %s %s (тест)" % (kind, th), "type": "consu",
+                                                        "uom_id": self.env.ref("uom.product_uom_square_meter").id})
+            self.env["ir.model.data"].create({"module": "pmk_bridge", "name": "product_%s" % key,
+                                             "model": "product.template", "res_id": tmpl.id})
+        ref.product_tmpl_id = tmpl
+        tmpl.seller_ids.unlink()
+        return tmpl
+
+    def test_painted_sheet_per_sqm(self):
+        """Счёт ПРОФИЛЬ ДВ ПДФР-007493 от 02.10.2026: «Лист гладкий 0.65 (RAL 3005, Красное вино)
+        (710х1250)», 11 шт по 528,95. Крашеный лист — это оцинковка 0,65 (как в доборах и
+        вентзонтах); заготовка не габарит-упаковка — цена за м²: 528,95 / 0,8875 = 596,0."""
+        tmpl = self._sheet_card("Оцинкованный", 0.65)
+        data = dict(INVOICE, number="ПДФР-007493", date="2026-10-02", total=12210.55, vat=2201.9, lines=[
+            {"name": "Лист гладкий 0.65 (RAL 3005, Красное вино) (710х1250)", "unit": "шт", "qty": 11,
+             "price": 528.95, "amount": 5818.45, "kind": "metal", "catalog_name": "Лист 0.65x710x1250",
+             "grade": "", "length_mm": 0, "metres": 0, "note": ""},
+            {"name": "Лист гладкий 0.65 (RAL 3005, Красное вино) (780х1250)", "unit": "шт", "qty": 11,
+             "price": 581.1, "amount": 6392.1, "kind": "metal", "catalog_name": "Лист 0.65x780x1250",
+             "grade": "", "length_mm": 0, "metres": 0, "note": ""}])
+        inv = self._recognize(data)
+        a, b = inv.line_ids.sorted("sequence")
+        for line, area in ((a, 0.71 * 1.25), (b, 0.78 * 1.25)):
+            self.assertEqual(line.product_tmpl_id, tmpl, line.match_note)
+            self.assertFalse(line.uom_id, "цена — за м² карточки")
+            self.assertAlmostEqual(line.new_price, line.price / area, places=2)
+            self.assertTrue(line.apply, line.warning)
+        self.assertAlmostEqual(a.new_price, 596.0, places=1)
+        inv.action_apply_prices()
+        self.assertEqual(a.supplierinfo_id.product_uom_id, tmpl.uom_id)
+
+    def test_second_grade_not_applied(self):
+        """Второй сорт не покупаем (Антон 26.10.2026) — строка разбирается, но цену не пишем."""
+        self._sheet_card("Оцинкованный", 0.7)
+        data = dict(INVOICE, number="2СОРТ", lines=[
+            {"name": "Лист оцинк. 0,7х1250х2500 08пс (2 сорт )", "unit": "шт", "qty": 10, "price": 1400,
+             "amount": 14000, "kind": "metal", "catalog_name": "Лист оцинкованный 0.7x1250x2500",
+             "grade": "08пс (2 сорт )", "length_mm": 0, "metres": 0, "note": ""}])
+        line = self._recognize(data).line_ids
+        self.assertFalse(line.apply)
+        self.assertEqual(line.match_state, "skip")
+        self.assertIn("второй сорт", line.match_note)
+
     def test_galvanized_sheet_found(self):
         """Оцинковка (26.10.2026): разборщик искал вид «Оцинкованный тонколистовой», а в справочнике
         «Оцинкованный» — не находилась никогда; 1,5 мм в справочнике не было; «Ст08пс» не опознавалась."""
