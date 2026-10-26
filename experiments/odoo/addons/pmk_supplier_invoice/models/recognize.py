@@ -65,6 +65,15 @@ INVOICE_TOOL = {
 }
 
 
+def _vat_rate(rate, total, vat):
+    """Ставка НДС: из счёта; не указана (Металлсервис 26.10: «В т.ч. НДС 11 540,28» без %) —
+    из сумм, если выходит целое: 11 540,28 / (63 996,08 − 11 540,28) = 22 %."""
+    if rate or not (vat and total and total > vat):
+        return rate
+    calc = vat / (total - vat) * 100.0
+    return float(round(calc)) if abs(calc - round(calc)) < 0.1 else 0.0
+
+
 def _f(value):
     try:
         return float(str(value).replace(" ", "").replace(" ", "").replace(",", ".")) if value not in (None, "") else 0.0
@@ -201,7 +210,7 @@ class SupplierInvoiceQueue(models.Model):
             "number": (data.get("number") or "").strip()[:60] or False, "date": date,
             "payer": (data.get("payer") or "")[:250] or False,
             "amount_total": _f(data.get("total")), "amount_vat": _f(data.get("vat")),
-            "vat_rate": _f(data.get("vat_rate")), "reason": data.get("reason") or False,
+            "vat_rate": _vat_rate(_f(data.get("vat_rate")), _f(data.get("total")), _f(data.get("vat"))), "reason": data.get("reason") or False,
         })
         self.partner_id = self._find_partner()
         dup = self.search([("id", "!=", self.id), ("partner_id", "=", self.partner_id.id),

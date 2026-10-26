@@ -189,6 +189,45 @@ class TestSupplierInvoice(TransactionCase):
         self.assertIn("нет металлопроката", inv.reason)
         self.assertEqual(len(inv.line_ids), 2, "строки остаются — видно, что было в счёте")
 
+    def test_sheet_price_per_sheet(self):
+        """Счёт Металлсервиса 0029346 от 26.10.2026: 4 листа 3×1500×6000 на 0,872 т по 73 390 ₽/т.
+        Было: новая цена за лист (по массе справочника) против текущей за м² — «+755 %», НДС 0 %.
+        Стало: масса листа поставщика (218 кг), цена листа 15 999,02, текущая — тоже за лист."""
+        ref = self.env["pmk.metal.sheet"].search([("sheet_type", "=", "Гладкий"), ("thickness_mm", "=", 3)], limit=1)
+        self.assertTrue(ref)
+        key = ref.get_external_id()[ref.id].split(".", 1)[1]
+        sqm = self.env.ref("uom.product_uom_square_meter")
+        sheet_uom = self.env["uom.uom"]._pmk_sheet_uom("1500x6000")
+        self.assertTrue(sheet_uom)
+        tmpl = self.env.ref("pmk_bridge.product_%s" % key, raise_if_not_found=False)
+        if not tmpl:
+            tmpl = self.env["product.template"].create({"name": "Лист гладкий 3 мм (тест)", "uom_id": sqm.id,
+                                                        "type": "consu"})
+            self.env["ir.model.data"].create({"module": "pmk_bridge", "name": "product_%s" % key,
+                                             "model": "product.template", "res_id": tmpl.id})
+        self.assertTrue(tmpl._pmk_is_sqm())
+        ref.product_tmpl_id = tmpl
+        tmpl.seller_ids.unlink()
+        old = self.env["product.supplierinfo"].create({
+            "partner_id": self.partner.id, "product_tmpl_id": tmpl.id, "sequence": 1, "min_qty": 0,
+            "price": 16369.62, "date_start": datetime.date(2026, 10, 1), "product_uom_id": sheet_uom.id})
+        data = dict(INVOICE, number="0029346", date="2026-10-26", total=63996.08, vat=11540.28, vat_rate=0, lines=[
+            {"name": "лист г/к ГОСТ 16523-97 Ст3пс/сп5 3х1500х6000 (ММК) н/обр", "unit": "т", "qty": 0.872,
+             "price": 73390, "amount": 63996.08, "kind": "metal", "catalog_name": "Лист 3x1500x6000",
+             "grade": "Ст3пс/сп5", "length_mm": 0, "metres": 0, "note": "4 шт"}])
+        inv = self._recognize(data)
+        self.assertEqual(inv.vat_rate, 22, "ставка из сумм, раз в счёте её нет")
+        line = inv.line_ids
+        self.assertEqual((line.product_tmpl_id, line.uom_id), (tmpl, sheet_uom))
+        self.assertAlmostEqual(line.mass_unit, 218.0, places=3)
+        self.assertAlmostEqual(line.new_price, 63996.08 / 4, places=2)
+        self.assertAlmostEqual(line.current_price, old.price, places=2)
+        self.assertAlmostEqual(line.diff_pct, (63996.08 / 4 / 16369.62 - 1) * 100, places=1)
+        self.assertTrue(line.apply, line.warning)
+        inv.action_apply_prices()
+        self.assertEqual(line.supplierinfo_id.product_uom_id, sheet_uom)
+        self.assertAlmostEqual(line.supplierinfo_id.price, 15999.02, places=2)
+
     def test_kind_and_size_rules(self):
         self.assertEqual(M.expected_kind("трубы электросварные квадрат 40х3")[0], "Труба профильная квадратная")
         self.assertEqual(M.expected_kind("Квадрат 16 Ст3")[0], "Квадрат")

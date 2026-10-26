@@ -153,12 +153,12 @@ def match_line(env, m, raw, catalog_name, grade_text=""):
             "grade_text": normalise_grade(grade_text or res.get("grade") or "")}
 
 
-def check_mass(mass_invoice, mass_ref):
+def check_mass(mass_invoice, mass_ref, what="кг/м"):
     """Масса счёта против справочника; больше допуска — ошибка счёта или не та позиция."""
     if not (mass_invoice and mass_ref):
         return 0.0
     dev = abs(mass_invoice - mass_ref) / mass_ref * 100.0
     if dev > MASS_TOLERANCE_PCT:
-        raise MatchError("масса не сходится со справочником", "%.3f кг/м против %.3f (%.0f %%)" % (
-            mass_invoice, mass_ref, dev))
+        raise MatchError("масса не сходится со справочником", "%.3f %s против %.3f (%.0f %%)" % (
+            mass_invoice, what, mass_ref, dev))
     return dev

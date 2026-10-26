@@ -23,6 +23,8 @@ from .invoice import DIFF_WARN_PCT
 TON_UNITS = {"т", "тн", "тонн", "тонна", "теор.т", "теорт", "т.", "тн."}
 KG_UNITS = {"кг", "кг."}
 M_UNITS = {"м", "м.", "п.м", "пм", "п.м.", "мп", "м.п."}
+PCS_UNITS = {"шт", "шт."}
+PCS_RE = re.compile(r"(\d+(?:[.,]\d+)?)\s*шт", re.I)
 
 
 def _unit(text):
@@ -160,6 +162,13 @@ class SupplierInvoiceLinePrices(models.Model):
             lambda v: v.attribute_id == attr).mapped("name")
         return names[0] if names else (invoice_grade(self.grade_text) or BASE_GRADE)
 
+    def _pmk_pieces(self):
+        """Штук в строке: единица «шт» или «Прим.» («4 шт», «26шт x 12м»). Нет — 0."""
+        if _unit(self.unit) in PCS_UNITS:
+            return self.qty or 0.0
+        found = PCS_RE.search(self.note or "")
+        return float(found.group(1).replace(",", ".")) if found else 0.0
+
     # ─── цена ────────────────────────────────────────────────────────────
     def _pmk_price(self):
         """Цена в единице карточки и сравнение с текущей ценой поставщика."""
@@ -172,27 +181,35 @@ class SupplierInvoiceLinePrices(models.Model):
             is_sheet = ref._name == "pmk.metal.sheet"
             unit = _unit(line.unit)
             warn = []
+            tonnes = line.qty if unit in TON_UNITS else (line.qty / 1000.0 if unit in KG_UNITS else 0.0)
+            pieces = line._pmk_pieces()
             if is_sheet:
                 gab = line._pmk_gabarit()
                 if tmpl._pmk_is_sqm():
                     w, l = [float(x) for x in gab.split("x")] if gab else (0, 0)
-                    mass = (ref.mass_per_sqm or 0.0) * w * l / 1e6
+                    mass_ref = (ref.mass_per_sqm or 0.0) * w * l / 1e6
                     uom = line.env["uom.uom"]._pmk_sheet_uom(gab) if gab else None
                 else:
-                    mass = (line.product_id or tmpl).weight
+                    mass_ref = (line.product_id or tmpl).weight
                     uom = None
+                # Масса листа — поставщика (тонны счёта / штуки), как у прайсов: Металлсервис
+                # 26.10 выставил 4 листа 3×1500×6000 на 0,872 т = 218 кг, а по справочнику 211,95.
+                amount_of = pieces
+                what = "кг/лист"
             else:
                 mass_ref = ref.mass_per_meter or 0.0
-                mass = mass_ref
-                tonnes = line.qty if unit in TON_UNITS else (line.qty / 1000.0 if unit in KG_UNITS else 0.0)
-                if tonnes and line.metres:
-                    mass_inv = tonnes * 1000.0 / line.metres
-                    try:
-                        M.check_mass(mass_inv, mass_ref)
-                        mass = mass_inv       # поставщик считает по своей массе (как у прайсов)
-                    except M.MatchError as exc:
-                        warn.append("%s: %s" % (exc.kind, exc.detail))
+                # Метры: из счёта, иначе штуки × длина хлыста («4 шт», дл 6 м).
+                amount_of = line.metres or (pieces * line.length_mm / 1000.0 if pieces and line.length_mm else 0.0)
+                what = "кг/м"
                 uom = None
+            mass = mass_ref
+            if tonnes and amount_of:
+                mass_inv = tonnes * 1000.0 / amount_of
+                try:
+                    M.check_mass(mass_inv, mass_ref, what)
+                    mass = mass_inv       # поставщик считает по своей массе (как у прайсов)
+                except M.MatchError as exc:
+                    warn.append("%s: %s" % (exc.kind, exc.detail))
             if unit in TON_UNITS:
                 price_ton = line.price
             elif unit in KG_UNITS:
@@ -211,7 +228,14 @@ class SupplierInvoiceLinePrices(models.Model):
             grade = line._pmk_grade() if not (is_sheet and not tmpl._pmk_is_sqm()) else None
             seller = tmpl._pmk_find_seller(date, supplier=inv.partner_id or None, uom=uom,
                                            grade=grade) if inv.partner_id else line.env["product.supplierinfo"]
-            current = seller.price_discounted if seller else 0.0
+            # Текущая — в той же единице, что новая. price_discounted приводит к единице карточки
+            # (м² у листа), а новая цена листа — за «Лист 1500×6000»: 26.10 вышло «+755 %» вместо −2 %.
+            target = uom or (line.product_id or tmpl).uom_id
+            if seller:
+                src = seller.product_uom_id or (seller.product_id or tmpl).uom_id
+                current = src._compute_price(seller.price, target) * (1 - (seller.discount or 0.0) / 100.0)
+            else:
+                current = 0.0
             diff = (new_price / current - 1.0) * 100.0 if current else 0.0
             if current and abs(diff) > DIFF_WARN_PCT:
                 warn.append(_("цена отличается от текущей на %+.0f %%") % diff)
