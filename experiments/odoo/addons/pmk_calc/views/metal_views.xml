@@ -182,8 +182,12 @@
         <field name="fastener_type"/>
         <field name="name"/>
         <field name="size_label"/>
+        <field name="strength_class" string="Класс"/>
+        <field name="coating"/>
+        <field name="full_thread" optional="hide"/>
         <field name="gost" optional="show"/>
         <field name="weight_kg"/>
+        <field name="active" column_invisible="1"/>
         <field name="pmk_pending_label" string="Разнос" widget="badge"
                decoration-warning="pmk_pending_label" optional="show" readonly="1"/>
       </list>
@@ -197,6 +201,7 @@
       <search>
         <field name="name"/>
         <field name="size_label"/>
+        <field name="strength_class"/>
         <filter name="pmk_pending" string="На разнос" domain="[('pmk_pending', '=', True)]"/>
         <filter name="pmk_archived" string="Архив" domain="[('active', '=', False)]"/>
         <group>

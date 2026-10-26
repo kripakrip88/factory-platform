@@ -1,0 +1,255 @@
+fast2_bolt_10_30_109_black,Болт М10×30 кл. 10.9,bolt,ГОСТ 7798-70,М10×30,0.02852,10.9,black,False,True
+fast2_bolt_10_30_109_black_full,Болт М10×30 полная резьба кл. 10.9,bolt,ГОСТ 7798-70,М10×30,0.02806,10.9,black,True,True
+fast2_bolt_10_30_58_black,Болт М10×30 кл. 5.8,bolt,ГОСТ 7798-70,М10×30,0.02852,5.8,black,False,True
+fast2_bolt_10_30_58_zinc_full,Болт М10×30 полная резьба кл. 5.8 цинк,bolt,ГОСТ 7798-70,М10×30,0.02806,5.8,zinc,True,True
+fast2_bolt_10_30_88_black,Болт М10×30 кл. 8.8,bolt,ГОСТ 7798-70,М10×30,0.02852,8.8,black,False,True
+fast2_bolt_10_30_88_zinc_full,Болт М10×30 полная резьба кл. 8.8 цинк,bolt,ГОСТ 7798-70,М10×30,0.02806,8.8,zinc,True,True
+fast2_bolt_10_40_109_black,Болт М10×40 кл. 10.9,bolt,ГОСТ 7798-70,М10×40,0.03436,10.9,black,False,True
+fast2_bolt_10_40_58_black,Болт М10×40 кл. 5.8,bolt,ГОСТ 7798-70,М10×40,0.03436,5.8,black,False,True
+fast2_bolt_10_40_58_black_full,Болт М10×40 полная резьба кл. 5.8,bolt,ГОСТ 7798-70,М10×40,0.03276,5.8,black,True,True
+fast2_bolt_10_40_58_zinc,Болт М10×40 кл. 5.8 цинк,bolt,ГОСТ 7798-70,М10×40,0.03436,5.8,zinc,False,True
+fast2_bolt_10_40_88_black,Болт М10×40 кл. 8.8,bolt,ГОСТ 7798-70,М10×40,0.03436,8.8,black,False,True
+fast2_bolt_10_40_88_hot_zinc_full,Болт М10×40 полная резьба кл. 8.8 гор. цинк,bolt,ГОСТ 7798-70,М10×40,0.03276,8.8,hot_zinc,True,True
+fast2_bolt_10_40_88_zinc_full,Болт М10×40 полная резьба кл. 8.8 цинк,bolt,ГОСТ 7798-70,М10×40,0.03276,8.8,zinc,True,True
+fast2_bolt_12_40_109_black,Болт М12×40 кл. 10.9,bolt,ГОСТ 7798-70,М12×40,0.04978,10.9,black,False,True
+fast2_bolt_12_40_109_black_full,Болт М12×40 полная резьба кл. 10.9,bolt,ГОСТ 7798-70,М12×40,0.04818,10.9,black,True,True
+fast2_bolt_12_40_109_zinc,Болт М12×40 кл. 10.9 цинк,bolt,ГОСТ 7798-70,М12×40,0.04978,10.9,zinc,False,True
+fast2_bolt_12_40_109_zinc_full,Болт М12×40 полная резьба кл. 10.9 цинк,bolt,ГОСТ 7798-70,М12×40,0.04818,10.9,zinc,True,True
+fast2_bolt_12_40_58_black,Болт М12×40 кл. 5.8,bolt,ГОСТ 7798-70,М12×40,0.04978,5.8,black,False,True
+fast2_bolt_12_40_58_black_full,Болт М12×40 полная резьба кл. 5.8,bolt,ГОСТ 7798-70,М12×40,0.04818,5.8,black,True,True
+fast2_bolt_12_40_58_zinc,Болт М12×40 кл. 5.8 цинк,bolt,ГОСТ 7798-70,М12×40,0.04978,5.8,zinc,False,True
+fast2_bolt_12_40_88_zinc_full,Болт М12×40 полная резьба кл. 8.8 цинк,bolt,ГОСТ 7798-70,М12×40,0.04818,8.8,zinc,True,True
+fast2_bolt_12_50_109_black,Болт М12×50 кл. 10.9,bolt,ГОСТ 7798-70,М12×50,0.05867,10.9,black,False,True
+fast2_bolt_12_50_109_zinc_full,Болт М12×50 полная резьба кл. 10.9 цинк,bolt,ГОСТ 7798-70,М12×50,0.05547,10.9,zinc,True,True
+fast2_bolt_12_50_58_black,Болт М12×50 кл. 5.8,bolt,ГОСТ 7798-70,М12×50,0.05867,5.8,black,False,True
+fast2_bolt_12_50_58_zinc,Болт М12×50 кл. 5.8 цинк,bolt,ГОСТ 7798-70,М12×50,0.05867,5.8,zinc,False,True
+fast2_bolt_12_50_88_zinc,Болт М12×50 кл. 8.8 цинк,bolt,ГОСТ 7798-70,М12×50,0.05867,8.8,zinc,False,True
+fast2_bolt_12_50_88_zinc_full,Болт М12×50 полная резьба кл. 8.8 цинк,bolt,ГОСТ 7798-70,М12×50,0.05547,8.8,zinc,True,True
+fast2_bolt_16_50_109_black_full,Болт М16×50 полная резьба кл. 10.9,bolt,ГОСТ 7798-70,М16×50,0.11065,10.9,black,True,True
+fast2_bolt_16_50_58_black,Болт М16×50 кл. 5.8,bolt,ГОСТ 7798-70,М16×50,0.1136,5.8,black,False,True
+fast2_bolt_16_50_58_zinc,Болт М16×50 кл. 5.8 цинк,bolt,ГОСТ 7798-70,М16×50,0.1136,5.8,zinc,False,True
+fast2_bolt_16_50_88_black,Болт М16×50 кл. 8.8,bolt,ГОСТ 7798-70,М16×50,0.1136,8.8,black,False,True
+fast2_bolt_16_50_88_zinc,Болт М16×50 кл. 8.8 цинк,bolt,ГОСТ 7798-70,М16×50,0.1136,8.8,zinc,False,True
+fast2_bolt_16_50_88_zinc_full,Болт М16×50 полная резьба кл. 8.8 цинк,bolt,ГОСТ 7798-70,М16×50,0.11065,8.8,zinc,True,True
+fast2_bolt_16_60_109_black,Болт М16×60 кл. 10.9,bolt,ГОСТ 7798-70,М16×60,0.1294,10.9,black,False,True
+fast2_bolt_16_60_58_black,Болт М16×60 кл. 5.8,bolt,ГОСТ 7798-70,М16×60,0.1294,5.8,black,False,True
+fast2_bolt_16_60_58_black_full,Болт М16×60 полная резьба кл. 5.8,bolt,ГОСТ 7798-70,М16×60,0.12399,5.8,black,True,True
+fast2_bolt_16_60_58_zinc,Болт М16×60 кл. 5.8 цинк,bolt,ГОСТ 7798-70,М16×60,0.1294,5.8,zinc,False,True
+fast2_bolt_16_60_58_zinc_full,Болт М16×60 полная резьба кл. 5.8 цинк,bolt,ГОСТ 7798-70,М16×60,0.12399,5.8,zinc,True,True
+fast2_bolt_16_60_88_black,Болт М16×60 кл. 8.8,bolt,ГОСТ 7798-70,М16×60,0.1294,8.8,black,False,True
+fast2_bolt_16_60_88_zinc,Болт М16×60 кл. 8.8 цинк,bolt,ГОСТ 7798-70,М16×60,0.1294,8.8,zinc,False,True
+fast2_bolt_16_60_88_zinc_full,Болт М16×60 полная резьба кл. 8.8 цинк,bolt,ГОСТ 7798-70,М16×60,0.12399,8.8,zinc,True,True
+fast2_bolt_20_60_58_black,Болт М20×60 кл. 5.8,bolt,ГОСТ 7798-70,М20×60,0.216,5.8,black,False,True
+fast2_bolt_20_60_58_zinc,Болт М20×60 кл. 5.8 цинк,bolt,ГОСТ 7798-70,М20×60,0.216,5.8,zinc,False,True
+fast2_bolt_20_60_58_zinc_full,Болт М20×60 полная резьба кл. 5.8 цинк,bolt,ГОСТ 7798-70,М20×60,0.21062,5.8,zinc,True,True
+fast2_bolt_20_60_88_black,Болт М20×60 кл. 8.8,bolt,ГОСТ 7798-70,М20×60,0.216,8.8,black,False,True
+fast2_bolt_20_60_88_zinc,Болт М20×60 кл. 8.8 цинк,bolt,ГОСТ 7798-70,М20×60,0.216,8.8,zinc,False,True
+fast2_bolt_20_60_88_zinc_full,Болт М20×60 полная резьба кл. 8.8 цинк,bolt,ГОСТ 7798-70,М20×60,0.21062,8.8,zinc,True,True
+fast2_bolt_20_80_58_black,Болт М20×80 кл. 5.8,bolt,ГОСТ 7798-70,М20×80,0.265,5.8,black,False,True
+fast2_bolt_20_80_58_zinc,Болт М20×80 кл. 5.8 цинк,bolt,ГОСТ 7798-70,М20×80,0.265,5.8,zinc,False,True
+fast2_bolt_20_80_58_zinc_full,Болт М20×80 полная резьба кл. 5.8 цинк,bolt,ГОСТ 7798-70,М20×80,0.25194,5.8,zinc,True,True
+fast2_bolt_20_80_88_black,Болт М20×80 кл. 8.8,bolt,ГОСТ 7798-70,М20×80,0.265,8.8,black,False,True
+fast2_bolt_20_80_88_zinc,Болт М20×80 кл. 8.8 цинк,bolt,ГОСТ 7798-70,М20×80,0.265,8.8,zinc,False,True
+fast2_bolt_20_80_88_zinc_full,Болт М20×80 полная резьба кл. 8.8 цинк,bolt,ГОСТ 7798-70,М20×80,0.25194,8.8,zinc,True,True
+fast2_bolt_22_100_58_black,Болт М22×100 кл. 5.8,bolt,ГОСТ 7798-70,М22×100,0.3983,5.8,black,False,True
+fast2_bolt_22_100_88_zinc_full,Болт М22×100 полная резьба кл. 8.8 цинк,bolt,ГОСТ 7798-70,М22×100,0.37709,8.8,zinc,True,True
+fast2_bolt_24_100_109_black,Болт М24×100 кл. 10.9,bolt,ГОСТ 7798-70,М24×100,0.4732,10.9,black,False,True
+fast2_bolt_24_100_58_black,Болт М24×100 кл. 5.8,bolt,ГОСТ 7798-70,М24×100,0.4732,5.8,black,False,True
+fast2_bolt_24_100_58_zinc,Болт М24×100 кл. 5.8 цинк,bolt,ГОСТ 7798-70,М24×100,0.4732,5.8,zinc,False,True
+fast2_bolt_24_100_58_zinc_full,Болт М24×100 полная резьба кл. 5.8 цинк,bolt,ГОСТ 7798-70,М24×100,0.44775,5.8,zinc,True,True
+fast2_bolt_24_100_88_black,Болт М24×100 кл. 8.8,bolt,ГОСТ 7798-70,М24×100,0.4732,8.8,black,False,True
+fast2_bolt_24_100_88_zinc,Болт М24×100 кл. 8.8 цинк,bolt,ГОСТ 7798-70,М24×100,0.4732,8.8,zinc,False,True
+fast2_bolt_24_100_88_zinc_full,Болт М24×100 полная резьба кл. 8.8 цинк,bolt,ГОСТ 7798-70,М24×100,0.44775,8.8,zinc,True,True
+fast2_bolt_24_80_58_black,Болт М24×80 кл. 5.8,bolt,ГОСТ 7798-70,М24×80,0.4021,5.8,black,False,True
+fast2_bolt_24_80_58_zinc,Болт М24×80 кл. 5.8 цинк,bolt,ГОСТ 7798-70,М24×80,0.4021,5.8,zinc,False,True
+fast2_bolt_24_80_88_black,Болт М24×80 кл. 8.8,bolt,ГОСТ 7798-70,М24×80,0.4021,8.8,black,False,True
+fast2_bolt_24_80_88_zinc,Болт М24×80 кл. 8.8 цинк,bolt,ГОСТ 7798-70,М24×80,0.4021,8.8,zinc,False,True
+fast2_bolt_24_80_88_zinc_full,Болт М24×80 полная резьба кл. 8.8 цинк,bolt,ГОСТ 7798-70,М24×80,0.38772,8.8,zinc,True,True
+fast2_bolt_8_20_109_black,Болт М8×20 кл. 10.9,bolt,ГОСТ 7798-70,М8×20,0.01302,10.9,black,False,True
+fast2_bolt_8_20_109_black_full,Болт М8×20 полная резьба кл. 10.9,bolt,ГОСТ 7798-70,М8×20,0.01302,10.9,black,True,True
+fast2_bolt_8_20_58_black,Болт М8×20 кл. 5.8,bolt,ГОСТ 7798-70,М8×20,0.01302,5.8,black,False,True
+fast2_bolt_8_20_58_zinc_full,Болт М8×20 полная резьба кл. 5.8 цинк,bolt,ГОСТ 7798-70,М8×20,0.01302,5.8,zinc,True,True
+fast2_bolt_8_20_88_zinc_full,Болт М8×20 полная резьба кл. 8.8 цинк,bolt,ГОСТ 7798-70,М8×20,0.01302,8.8,zinc,True,True
+fast2_bolt_8_30_109_black,Болт М8×30 кл. 10.9,bolt,ГОСТ 7798-70,М8×30,0.01712,10.9,black,False,True
+fast2_bolt_8_30_109_black_full,Болт М8×30 полная резьба кл. 10.9,bolt,ГОСТ 7798-70,М8×30,0.01651,10.9,black,True,True
+fast2_bolt_8_30_58_black,Болт М8×30 кл. 5.8,bolt,ГОСТ 7798-70,М8×30,0.01712,5.8,black,False,True
+fast2_bolt_8_30_58_black_full,Болт М8×30 полная резьба кл. 5.8,bolt,ГОСТ 7798-70,М8×30,0.01651,5.8,black,True,True
+fast2_bolt_8_30_58_zinc,Болт М8×30 кл. 5.8 цинк,bolt,ГОСТ 7798-70,М8×30,0.01712,5.8,zinc,False,True
+fast2_bolt_8_30_88_zinc_full,Болт М8×30 полная резьба кл. 8.8 цинк,bolt,ГОСТ 7798-70,М8×30,0.01651,8.8,zinc,True,True
+fast2_bolt_hs_16_100_109_black,Болт высокопрочный М16×100 кл. 10.9,bolt,ГОСТ Р 52644-2006,М16×100,0.20227,10.9,black,False,True
+fast2_bolt_hs_16_110_109_black,Болт высокопрочный М16×110 кл. 10.9,bolt,ГОСТ Р 52644-2006,М16×110,0.21807,10.9,black,False,True
+fast2_bolt_hs_16_120_109_black,Болт высокопрочный М16×120 кл. 10.9,bolt,ГОСТ Р 52644-2006,М16×120,0.23387,10.9,black,False,True
+fast2_bolt_hs_16_130_109_black,Болт высокопрочный М16×130 кл. 10.9,bolt,ГОСТ Р 52644-2006,М16×130,0.24967,10.9,black,False,True
+fast2_bolt_hs_16_150_109_black,Болт высокопрочный М16×150 кл. 10.9,bolt,ГОСТ Р 52644-2006,М16×150,0.28127,10.9,black,False,True
+fast2_bolt_hs_16_50_109_black,Болт высокопрочный М16×50 кл. 10.9,bolt,ГОСТ Р 52644-2006,М16×50,0.12327,10.9,black,False,True
+fast2_bolt_hs_16_55_109_black,Болт высокопрочный М16×55 кл. 10.9,bolt,ГОСТ Р 52644-2006,М16×55,0.13117,10.9,black,False,True
+fast2_bolt_hs_16_60_109_black,Болт высокопрочный М16×60 кл. 10.9,bolt,ГОСТ Р 52644-2006,М16×60,0.13907,10.9,black,False,True
+fast2_bolt_hs_16_65_109_black,Болт высокопрочный М16×65 кл. 10.9,bolt,ГОСТ Р 52644-2006,М16×65,0.14697,10.9,black,False,True
+fast2_bolt_hs_16_70_109_black,Болт высокопрочный М16×70 кл. 10.9,bolt,ГОСТ Р 52644-2006,М16×70,0.15487,10.9,black,False,True
+fast2_bolt_hs_16_75_109_black,Болт высокопрочный М16×75 кл. 10.9,bolt,ГОСТ Р 52644-2006,М16×75,0.16277,10.9,black,False,True
+fast2_bolt_hs_16_80_109_black,Болт высокопрочный М16×80 кл. 10.9,bolt,ГОСТ Р 52644-2006,М16×80,0.17067,10.9,black,False,True
+fast2_bolt_hs_16_90_109_black,Болт высокопрочный М16×90 кл. 10.9,bolt,ГОСТ Р 52644-2006,М16×90,0.18647,10.9,black,False,True
+fast2_bolt_hs_20_100_109_black,Болт высокопрочный М20×100 кл. 10.9,bolt,ГОСТ Р 52644-2006,М20×100,0.32774,10.9,black,False,True
+fast2_bolt_hs_20_110_109_black,Болт высокопрочный М20×110 кл. 10.9,bolt,ГОСТ Р 52644-2006,М20×110,0.35244,10.9,black,False,True
+fast2_bolt_hs_20_120_109_black,Болт высокопрочный М20×120 кл. 10.9,bolt,ГОСТ Р 52644-2006,М20×120,0.37714,10.9,black,False,True
+fast2_bolt_hs_20_130_109_black,Болт высокопрочный М20×130 кл. 10.9,bolt,ГОСТ Р 52644-2006,М20×130,0.40184,10.9,black,False,True
+fast2_bolt_hs_20_140_109_black,Болт высокопрочный М20×140 кл. 10.9,bolt,ГОСТ Р 52644-2006,М20×140,0.42654,10.9,black,False,True
+fast2_bolt_hs_20_160_109_black,Болт высокопрочный М20×160 кл. 10.9,bolt,ГОСТ Р 52644-2006,М20×160,0.47584,10.9,black,False,True
+fast2_bolt_hs_20_170_109_black,Болт высокопрочный М20×170 кл. 10.9,bolt,ГОСТ Р 52644-2006,М20×170,0.50054,10.9,black,False,True
+fast2_bolt_hs_20_180_109_black,Болт высокопрочный М20×180 кл. 10.9,bolt,ГОСТ Р 52644-2006,М20×180,0.52524,10.9,black,False,True
+fast2_bolt_hs_20_200_109_black,Болт высокопрочный М20×200 кл. 10.9,bolt,ГОСТ Р 52644-2006,М20×200,0.57454,10.9,black,False,True
+fast2_bolt_hs_20_50_109_black,Болт высокопрочный М20×50 кл. 10.9,bolt,ГОСТ Р 52644-2006,М20×50,0.20394,10.9,black,False,True
+fast2_bolt_hs_20_55_109_black,Болт высокопрочный М20×55 кл. 10.9,bolt,ГОСТ Р 52644-2006,М20×55,0.21674,10.9,black,False,True
+fast2_bolt_hs_20_60_109_black,Болт высокопрочный М20×60 кл. 10.9,bolt,ГОСТ Р 52644-2006,М20×60,0.22904,10.9,black,False,True
+fast2_bolt_hs_20_65_109_black,Болт высокопрочный М20×65 кл. 10.9,bolt,ГОСТ Р 52644-2006,М20×65,0.24144,10.9,black,False,True
+fast2_bolt_hs_20_70_109_black,Болт высокопрочный М20×70 кл. 10.9,bolt,ГОСТ Р 52644-2006,М20×70,0.25374,10.9,black,False,True
+fast2_bolt_hs_20_75_109_black,Болт высокопрочный М20×75 кл. 10.9,bolt,ГОСТ Р 52644-2006,М20×75,0.26604,10.9,black,False,True
+fast2_bolt_hs_20_80_109_black,Болт высокопрочный М20×80 кл. 10.9,bolt,ГОСТ Р 52644-2006,М20×80,0.27804,10.9,black,False,True
+fast2_bolt_hs_20_85_109_black,Болт высокопрочный М20×85 кл. 10.9,bolt,ГОСТ Р 52644-2006,М20×85,0.29074,10.9,black,False,True
+fast2_bolt_hs_20_90_109_black,Болт высокопрочный М20×90 кл. 10.9,bolt,ГОСТ Р 52644-2006,М20×90,0.30314,10.9,black,False,True
+fast2_bolt_hs_22_100_109_black,Болт высокопрочный М22×100 кл. 10.9,bolt,ГОСТ Р 52644-2006,М22×100,0.41069,10.9,black,False,True
+fast2_bolt_hs_22_115_109_black,Болт высокопрочный М22×115 кл. 10.9,bolt,ГОСТ Р 52644-2006,М22×115,0.45549,10.9,black,False,True
+fast2_bolt_hs_22_120_109_black,Болт высокопрочный М22×120 кл. 10.9,bolt,ГОСТ Р 52644-2006,М22×120,0.47049,10.9,black,False,True
+fast2_bolt_hs_22_130_109_black,Болт высокопрочный М22×130 кл. 10.9,bolt,ГОСТ Р 52644-2006,М22×130,0.50029,10.9,black,False,True
+fast2_bolt_hs_22_140_109_black,Болт высокопрочный М22×140 кл. 10.9,bolt,ГОСТ Р 52644-2006,М22×140,0.53019,10.9,black,False,True
+fast2_bolt_hs_22_150_109_black,Болт высокопрочный М22×150 кл. 10.9,bolt,ГОСТ Р 52644-2006,М22×150,0.55999,10.9,black,False,True
+fast2_bolt_hs_22_160_109_black,Болт высокопрочный М22×160 кл. 10.9,bolt,ГОСТ Р 52644-2006,М22×160,0.58989,10.9,black,False,True
+fast2_bolt_hs_22_180_109_black,Болт высокопрочный М22×180 кл. 10.9,bolt,ГОСТ Р 52644-2006,М22×180,0.64959,10.9,black,False,True
+fast2_bolt_hs_22_200_109_black,Болт высокопрочный М22×200 кл. 10.9,bolt,ГОСТ Р 52644-2006,М22×200,0.70939,10.9,black,False,True
+fast2_bolt_hs_22_220_109_black,Болт высокопрочный М22×220 кл. 10.9,bolt,ГОСТ Р 52644-2006,М22×220,0.76909,10.9,black,False,True
+fast2_bolt_hs_22_240_109_black,Болт высокопрочный М22×240 кл. 10.9,bolt,ГОСТ Р 52644-2006,М22×240,0.82879,10.9,black,False,True
+fast2_bolt_hs_22_60_109_black,Болт высокопрочный М22×60 кл. 10.9,bolt,ГОСТ Р 52644-2006,М22×60,0.29129,10.9,black,False,True
+fast2_bolt_hs_22_65_109_black,Болт высокопрочный М22×65 кл. 10.9,bolt,ГОСТ Р 52644-2006,М22×65,0.30619,10.9,black,False,True
+fast2_bolt_hs_22_70_109_black,Болт высокопрочный М22×70 кл. 10.9,bolt,ГОСТ Р 52644-2006,М22×70,0.32119,10.9,black,False,True
+fast2_bolt_hs_22_75_109_black,Болт высокопрочный М22×75 кл. 10.9,bolt,ГОСТ Р 52644-2006,М22×75,0.33609,10.9,black,False,True
+fast2_bolt_hs_22_80_109_black,Болт высокопрочный М22×80 кл. 10.9,bolt,ГОСТ Р 52644-2006,М22×80,0.35099,10.9,black,False,True
+fast2_bolt_hs_22_80_109_zinc,Болт высокопрочный М22×80 кл. 10.9 цинк,bolt,ГОСТ Р 52644-2006,М22×80,0.35099,10.9,zinc,False,True
+fast2_bolt_hs_22_85_109_black,Болт высокопрочный М22×85 кл. 10.9,bolt,ГОСТ Р 52644-2006,М22×85,0.36599,10.9,black,False,True
+fast2_bolt_hs_22_90_109_black,Болт высокопрочный М22×90 кл. 10.9,bolt,ГОСТ Р 52644-2006,М22×90,0.38089,10.9,black,False,True
+fast2_bolt_hs_22_95_109_black,Болт высокопрочный М22×95 кл. 10.9,bolt,ГОСТ Р 52644-2006,М22×95,0.39579,10.9,black,False,True
+fast2_bolt_hs_24_100_109_black,Болт высокопрочный М24×100 кл. 10.9,bolt,ГОСТ Р 52644-2006,М24×100,0.50971,10.9,black,False,True
+fast2_bolt_hs_24_110_109_black,Болт высокопрочный М24×110 кл. 10.9,bolt,ГОСТ Р 52644-2006,М24×110,0.54521,10.9,black,False,True
+fast2_bolt_hs_24_120_109_black,Болт высокопрочный М24×120 кл. 10.9,bolt,ГОСТ Р 52644-2006,М24×120,0.58071,10.9,black,False,True
+fast2_bolt_hs_24_130_109_black,Болт высокопрочный М24×130 кл. 10.9,bolt,ГОСТ Р 52644-2006,М24×130,0.61631,10.9,black,False,True
+fast2_bolt_hs_24_140_109_black,Болт высокопрочный М24×140 кл. 10.9,bolt,ГОСТ Р 52644-2006,М24×140,0.65181,10.9,black,False,True
+fast2_bolt_hs_24_150_109_black,Болт высокопрочный М24×150 кл. 10.9,bolt,ГОСТ Р 52644-2006,М24×150,0.68731,10.9,black,False,True
+fast2_bolt_hs_24_160_109_black,Болт высокопрочный М24×160 кл. 10.9,bolt,ГОСТ Р 52644-2006,М24×160,0.72291,10.9,black,False,True
+fast2_bolt_hs_24_170_109_black,Болт высокопрочный М24×170 кл. 10.9,bolt,ГОСТ Р 52644-2006,М24×170,0.75841,10.9,black,False,True
+fast2_bolt_hs_24_180_109_black,Болт высокопрочный М24×180 кл. 10.9,bolt,ГОСТ Р 52644-2006,М24×180,0.79401,10.9,black,False,True
+fast2_bolt_hs_24_190_109_black,Болт высокопрочный М24×190 кл. 10.9,bolt,ГОСТ Р 52644-2006,М24×190,0.82951,10.9,black,False,True
+fast2_bolt_hs_24_200_109_black,Болт высокопрочный М24×200 кл. 10.9,bolt,ГОСТ Р 52644-2006,М24×200,0.86511,10.9,black,False,True
+fast2_bolt_hs_24_300_109_black,Болт высокопрочный М24×300 кл. 10.9,bolt,ГОСТ Р 52644-2006,М24×300,1.22051,10.9,black,False,True
+fast2_bolt_hs_24_60_109_black,Болт высокопрочный М24×60 кл. 10.9,bolt,ГОСТ Р 52644-2006,М24×60,0.36641,10.9,black,False,True
+fast2_bolt_hs_24_65_109_black,Болт высокопрочный М24×65 кл. 10.9,bolt,ГОСТ Р 52644-2006,М24×65,0.38531,10.9,black,False,True
+fast2_bolt_hs_24_70_109_black,Болт высокопрочный М24×70 кл. 10.9,bolt,ГОСТ Р 52644-2006,М24×70,0.40301,10.9,black,False,True
+fast2_bolt_hs_24_75_109_black,Болт высокопрочный М24×75 кл. 10.9,bolt,ГОСТ Р 52644-2006,М24×75,0.42081,10.9,black,False,True
+fast2_bolt_hs_24_80_109_black,Болт высокопрочный М24×80 кл. 10.9,bolt,ГОСТ Р 52644-2006,М24×80,0.43861,10.9,black,False,True
+fast2_bolt_hs_24_85_109_black,Болт высокопрочный М24×85 кл. 10.9,bolt,ГОСТ Р 52644-2006,М24×85,0.45631,10.9,black,False,True
+fast2_bolt_hs_24_90_109_black,Болт высокопрочный М24×90 кл. 10.9,bolt,ГОСТ Р 52644-2006,М24×90,0.47411,10.9,black,False,True
+fast2_bolt_hs_24_95_109_black,Болт высокопрочный М24×95 кл. 10.9,bolt,ГОСТ Р 52644-2006,М24×95,0.49191,10.9,black,False,True
+fast2_nut_10_10_black,Гайка М10 кл. 10,nut,ГОСТ 5915-70,М10,0.01022,10,black,False,True
+fast2_nut_10_10_zinc,Гайка М10 кл. 10 цинк,nut,ГОСТ 5915-70,М10,0.01022,10,zinc,False,True
+fast2_nut_10_12_black,Гайка М10 кл. 12,nut,ГОСТ 5915-70,М10,0.01022,12,black,False,True
+fast2_nut_10_12_zinc,Гайка М10 кл. 12 цинк,nut,ГОСТ 5915-70,М10,0.01022,12,zinc,False,True
+fast2_nut_10_8_black,Гайка М10 кл. 8,nut,ГОСТ 5915-70,М10,0.01022,8,black,False,True
+fast2_nut_10_8_zinc,Гайка М10 кл. 8 цинк,nut,ГОСТ 5915-70,М10,0.01022,8,zinc,False,True
+fast2_nut_10_black,Гайка М10,nut,ГОСТ 5915-70,М10,0.01022,,black,False,True
+fast2_nut_10_zinc,Гайка М10 цинк,nut,ГОСТ 5915-70,М10,0.01022,,zinc,False,True
+fast2_nut_12_10_zinc,Гайка М12 кл. 10 цинк,nut,ГОСТ 5915-70,М12,0.01567,10,zinc,False,True
+fast2_nut_12_12_zinc,Гайка М12 кл. 12 цинк,nut,ГОСТ 5915-70,М12,0.01567,12,zinc,False,True
+fast2_nut_12_8_black,Гайка М12 кл. 8,nut,ГОСТ 5915-70,М12,0.01567,8,black,False,True
+fast2_nut_12_8_zinc,Гайка М12 кл. 8 цинк,nut,ГОСТ 5915-70,М12,0.01567,8,zinc,False,True
+fast2_nut_12_black,Гайка М12,nut,ГОСТ 5915-70,М12,0.01567,,black,False,True
+fast2_nut_12_zinc,Гайка М12 цинк,nut,ГОСТ 5915-70,М12,0.01567,,zinc,False,True
+fast2_nut_16_10_black,Гайка М16 кл. 10,nut,ГОСТ 5915-70,М16,0.03761,10,black,False,True
+fast2_nut_16_10_zinc,Гайка М16 кл. 10 цинк,nut,ГОСТ 5915-70,М16,0.03761,10,zinc,False,True
+fast2_nut_16_12_zinc,Гайка М16 кл. 12 цинк,nut,ГОСТ 5915-70,М16,0.03761,12,zinc,False,True
+fast2_nut_16_8_black,Гайка М16 кл. 8,nut,ГОСТ 5915-70,М16,0.03761,8,black,False,True
+fast2_nut_16_8_zinc,Гайка М16 кл. 8 цинк,nut,ГОСТ 5915-70,М16,0.03761,8,zinc,False,True
+fast2_nut_16_black,Гайка М16,nut,ГОСТ 5915-70,М16,0.03761,,black,False,True
+fast2_nut_16_zinc,Гайка М16 цинк,nut,ГОСТ 5915-70,М16,0.03761,,zinc,False,True
+fast2_nut_20_10_black,Гайка М20 кл. 10,nut,ГОСТ 5915-70,М20,0.07144,10,black,False,True
+fast2_nut_20_10_zinc,Гайка М20 кл. 10 цинк,nut,ГОСТ 5915-70,М20,0.07144,10,zinc,False,True
+fast2_nut_20_8_black,Гайка М20 кл. 8,nut,ГОСТ 5915-70,М20,0.07144,8,black,False,True
+fast2_nut_20_8_zinc,Гайка М20 кл. 8 цинк,nut,ГОСТ 5915-70,М20,0.07144,8,zinc,False,True
+fast2_nut_20_black,Гайка М20,nut,ГОСТ 5915-70,М20,0.07144,,black,False,True
+fast2_nut_20_zinc,Гайка М20 цинк,nut,ГОСТ 5915-70,М20,0.07144,,zinc,False,True
+fast2_nut_22_8_black,Гайка М22 кл. 8,nut,ГОСТ 5915-70,М22,0.10315,8,black,False,True
+fast2_nut_22_8_zinc,Гайка М22 кл. 8 цинк,nut,ГОСТ 5915-70,М22,0.10315,8,zinc,False,True
+fast2_nut_22_black,Гайка М22,nut,ГОСТ 5915-70,М22,0.10315,,black,False,True
+fast2_nut_22_zinc,Гайка М22 цинк,nut,ГОСТ 5915-70,М22,0.10315,,zinc,False,True
+fast2_nut_24_10_black,Гайка М24 кл. 10,nut,ГОСТ 5915-70,М24,0.12287,10,black,False,True
+fast2_nut_24_10_zinc,Гайка М24 кл. 10 цинк,nut,ГОСТ 5915-70,М24,0.12287,10,zinc,False,True
+fast2_nut_24_8_black,Гайка М24 кл. 8,nut,ГОСТ 5915-70,М24,0.12287,8,black,False,True
+fast2_nut_24_8_zinc,Гайка М24 кл. 8 цинк,nut,ГОСТ 5915-70,М24,0.12287,8,zinc,False,True
+fast2_nut_24_black,Гайка М24,nut,ГОСТ 5915-70,М24,0.12287,,black,False,True
+fast2_nut_24_zinc,Гайка М24 цинк,nut,ГОСТ 5915-70,М24,0.12287,,zinc,False,True
+fast2_nut_30_10_black,Гайка М30 кл. 10,nut,ГОСТ 5915-70,М30,0.24254,10,black,False,True
+fast2_nut_30_8_black,Гайка М30 кл. 8,nut,ГОСТ 5915-70,М30,0.24254,8,black,False,True
+fast2_nut_30_8_hot_zinc,Гайка М30 кл. 8 гор. цинк,nut,ГОСТ 5915-70,М30,0.24254,8,hot_zinc,False,True
+fast2_nut_30_8_zinc,Гайка М30 кл. 8 цинк,nut,ГОСТ 5915-70,М30,0.24254,8,zinc,False,True
+fast2_nut_30_black,Гайка М30,nut,ГОСТ 5915-70,М30,0.24254,,black,False,True
+fast2_nut_30_zinc,Гайка М30 цинк,nut,ГОСТ 5915-70,М30,0.24254,,zinc,False,True
+fast2_nut_36_10_black,Гайка М36 кл. 10,nut,ГОСТ 5915-70,М36,0.41678,10,black,False,True
+fast2_nut_36_12_black,Гайка М36 кл. 12,nut,ГОСТ 5915-70,М36,0.41678,12,black,False,True
+fast2_nut_36_8_black,Гайка М36 кл. 8,nut,ГОСТ 5915-70,М36,0.41678,8,black,False,True
+fast2_nut_36_8_zinc,Гайка М36 кл. 8 цинк,nut,ГОСТ 5915-70,М36,0.41678,8,zinc,False,True
+fast2_nut_36_black,Гайка М36,nut,ГОСТ 5915-70,М36,0.41678,,black,False,True
+fast2_nut_36_zinc,Гайка М36 цинк,nut,ГОСТ 5915-70,М36,0.41678,,zinc,False,True
+fast2_nut_42_8_black,Гайка М42 кл. 8,nut,ГОСТ 5915-70,М42,0.62388,8,black,False,True
+fast2_nut_42_8_zinc,Гайка М42 кл. 8 цинк,nut,ГОСТ 5915-70,М42,0.62388,8,zinc,False,True
+fast2_nut_42_black,Гайка М42,nut,ГОСТ 5915-70,М42,0.62388,,black,False,True
+fast2_nut_42_zinc,Гайка М42 цинк,nut,ГОСТ 5915-70,М42,0.62388,,zinc,False,True
+fast2_nut_48_10_black,Гайка М48 кл. 10,nut,ГОСТ 5915-70,М48,0.9562,10,black,False,True
+fast2_nut_48_8_black,Гайка М48 кл. 8,nut,ГОСТ 5915-70,М48,0.9562,8,black,False,True
+fast2_nut_48_8_zinc,Гайка М48 кл. 8 цинк,nut,ГОСТ 5915-70,М48,0.9562,8,zinc,False,True
+fast2_nut_48_black,Гайка М48,nut,ГОСТ 5915-70,М48,0.9562,,black,False,True
+fast2_nut_48_zinc,Гайка М48 цинк,nut,ГОСТ 5915-70,М48,0.9562,,zinc,False,True
+fast2_nut_hs_16_10_black,Гайка высокопрочная М16 кл. 10,nut,ГОСТ Р 52645-2006,М16,0.05298,10,black,False,True
+fast2_nut_hs_20_10_black,Гайка высокопрочная М20 кл. 10,nut,ГОСТ Р 52645-2006,М20,0.08584,10,black,False,True
+fast2_nut_hs_20_black,Гайка высокопрочная М20,nut,ГОСТ Р 52645-2006,М20,0.08584,,black,False,True
+fast2_nut_hs_22_10_black,Гайка высокопрочная М22 кл. 10,nut,ГОСТ Р 52645-2006,М22,0.11543,10,black,False,True
+fast2_nut_hs_24_10_black,Гайка высокопрочная М24 кл. 10,nut,ГОСТ Р 52645-2006,М24,0.18066,10,black,False,True
+fast2_screw_4_2_16_painted,Саморез с прессшайбой 4.2×16 RAL,screw,,4.2×16,0.0019,,painted,False,True
+fast2_screw_4_2_16_zinc,Саморез с прессшайбой 4.2×16 цинк,screw,,4.2×16,0.0019,,zinc,False,True
+fast2_screw_4_8_35_painted,Саморез кровельный 4.8×35 RAL,screw,,4.8×35,0.0045,,painted,False,True
+fast2_screw_4_8_35_zinc,Саморез кровельный 4.8×35 цинк,screw,,4.8×35,0.0045,,zinc,False,True
+fast2_screw_5_5_19_painted,Саморез кровельный 5.5×19 RAL,screw,,5.5×19,0.004,,painted,False,True
+fast2_screw_5_5_19_zinc,Саморез кровельный 5.5×19 цинк,screw,,5.5×19,0.004,,zinc,False,True
+fast2_screw_6_3_280_painted,Саморез для сэндвич-панелей 6.3×280 RAL,screw,,6.3×280,0.06,,painted,False,True
+fast2_screw_6_3_280_zinc,Саморез для сэндвич-панелей 6.3×280 цинк,screw,,6.3×280,0.06,,zinc,False,True
+fast2_washer_10_black,Шайба М10,washer,ГОСТ 11371-78,М10,0.00357,,black,False,True
+fast2_washer_10_hot_zinc,Шайба М10 гор. цинк,washer,ГОСТ 11371-78,М10,0.00357,,hot_zinc,False,True
+fast2_washer_10_zinc,Шайба М10 цинк,washer,ГОСТ 11371-78,М10,0.00357,,zinc,False,True
+fast2_washer_12_black,Шайба М12,washer,ГОСТ 11371-78,М12,0.00627,,black,False,True
+fast2_washer_12_zinc,Шайба М12 цинк,washer,ГОСТ 11371-78,М12,0.00627,,zinc,False,True
+fast2_washer_16_black,Шайба М16,washer,ГОСТ 11371-78,М16,0.01129,,black,False,True
+fast2_washer_16_zinc,Шайба М16 цинк,washer,ГОСТ 11371-78,М16,0.01129,,zinc,False,True
+fast2_washer_20_black,Шайба М20,washer,ГОСТ 11371-78,М20,0.01716,,black,False,True
+fast2_washer_20_zinc,Шайба М20 цинк,washer,ГОСТ 11371-78,М20,0.01716,,zinc,False,True
+fast2_washer_22_black,Шайба М22,washer,ГОСТ 11371-78,М22,0.01834,,black,False,True
+fast2_washer_22_zinc,Шайба М22 цинк,washer,ГОСТ 11371-78,М22,0.01834,,zinc,False,True
+fast2_washer_24_black,Шайба М24,washer,ГОСТ 11371-78,М24,0.03231,,black,False,True
+fast2_washer_24_zinc,Шайба М24 цинк,washer,ГОСТ 11371-78,М24,0.03231,,zinc,False,True
+fast2_washer_30_black,Шайба М30,washer,ГОСТ 11371-78,М30,0.05361,,black,False,True
+fast2_washer_30_zinc,Шайба М30 цинк,washer,ГОСТ 11371-78,М30,0.05361,,zinc,False,True
+fast2_washer_36_black,Шайба М36,washer,ГОСТ 11371-78,М36,0.09203,,black,False,True
+fast2_washer_36_zinc,Шайба М36 цинк,washer,ГОСТ 11371-78,М36,0.09203,,zinc,False,True
+fast2_washer_42_black,Шайба М42,washer,ГОСТ 11371-78,М42,0.18268,,black,False,True
+fast2_washer_42_zinc,Шайба М42 цинк,washer,ГОСТ 11371-78,М42,0.18268,,zinc,False,True
+fast2_washer_48_black,Шайба М48,washer,ГОСТ 11371-78,М48,0.29401,,black,False,True
+fast2_washer_48_zinc,Шайба М48 цинк,washer,ГОСТ 11371-78,М48,0.29401,,zinc,False,True
+fast2_washer_hs_16_black,Шайба высокопрочная М16,washer,ГОСТ Р 52646-2006,М16,0.02323,,black,False,True
+fast2_washer_hs_20_black,Шайба высокопрочная М20,washer,ГОСТ Р 52646-2006,М20,0.0363,,black,False,True
+fast2_washer_hs_22_black,Шайба высокопрочная М22,washer,ГОСТ Р 52646-2006,М22,0.0386,,black,False,True
+fast2_washer_hs_24_black,Шайба высокопрочная М24,washer,ГОСТ Р 52646-2006,М24,0.0517,,black,False,True
+fast2_washer_spring_10_black,Шайба пружинная М10,washer,ГОСТ 6402-70,М10,0.00196,,black,False,True
+fast2_washer_spring_10_zinc,Шайба пружинная М10 цинк,washer,ГОСТ 6402-70,М10,0.00196,,zinc,False,True
+fast2_washer_spring_12_black,Шайба пружинная М12,washer,ГОСТ 6402-70,М12,0.00337,,black,False,True
+fast2_washer_spring_12_zinc,Шайба пружинная М12 цинк,washer,ГОСТ 6402-70,М12,0.00337,,zinc,False,True
+fast2_washer_spring_16_black,Шайба пружинная М16,washer,ГОСТ 6402-70,М16,0.00598,,black,False,True
+fast2_washer_spring_16_zinc,Шайба пружинная М16 цинк,washer,ГОСТ 6402-70,М16,0.00598,,zinc,False,True
+fast2_washer_spring_20_black,Шайба пружинная М20,washer,ГОСТ 6402-70,М20,0.01248,,black,False,True
+fast2_washer_spring_20_zinc,Шайба пружинная М20 цинк,washer,ГОСТ 6402-70,М20,0.01248,,zinc,False,True
+fast2_washer_spring_24_black,Шайба пружинная М24,washer,ГОСТ 6402-70,М24,0.02238,,black,False,True
+fast2_washer_spring_24_zinc,Шайба пружинная М24 цинк,washer,ГОСТ 6402-70,М24,0.02238,,zinc,False,True

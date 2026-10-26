@@ -92,6 +92,11 @@ class MetalSpecKonstrPut(models.Model):
         Справочник метизов правят не все — заводим от имени системы."""
         Fastener = self.env["pmk.metal.fastener"].sudo()
         label = (d.get("label") or d.get("name") or "").strip()
+        if d.get("type") == "nut" and (d.get("gost") or "").startswith("ГОСТ 5915") and d.get("size"):
+            # 26.10.2026: гайка ГОСТ 5915 — позиция справочника с ценами (без класса, без покрытия).
+            found = Fastener._pmk_resolve("Гайка %s" % d["size"])
+            if found:
+                return found
         domain = [("fastener_type", "=", d.get("type") or "other")]
         if d.get("size"):
             domain += [("size_label", "=", d["size"])]

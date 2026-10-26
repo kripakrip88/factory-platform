@@ -214,8 +214,9 @@ class MetalSpecKonstr(models.Model):
 
     # ─── распознавание наименования ─────────────────────────────────────
     @api.model
-    def _konstr_resolve(self, text):
-        """Наименование → вид детали и позиция справочника (как у Бутика)."""
+    def _konstr_resolve(self, text, grade_text=""):
+        """Наименование → вид детали и позиция справочника (как у Бутика). grade_text — ячейка
+        «Марка»: у метиза там класс («кл. 8.8») и покрытие (26.10.2026)."""
         vals = {"profile_id": False, "sheet_id": False, "fastener_id": False, "paint_id": False}
         info = parse.classify(text)
         if info["kind"] == "coating":
@@ -232,8 +233,8 @@ class MetalSpecKonstr(models.Model):
             if info["length"]:
                 vals["b_mm"] = info["length"]
         elif info["kind"] == "piece":
-            found = self.env["pmk.metal.fastener"].name_search(parse.piece_query(text), limit=1)
-            vals.update(calc_mode="fastener", fastener_id=found[0][0] if found else False)
+            found = self.env["pmk.metal.fastener"]._pmk_resolve("%s %s" % (parse.piece_query(text), grade_text or ""))
+            vals.update(calc_mode="fastener", fastener_id=found.id or False)
         elif info["kind"] != "empty":
             found = self.env["pmk.metal.profile"].name_search(text, limit=1)
             vals.update(calc_mode="linear", profile_id=found[0][0] if found else False)
@@ -274,10 +275,14 @@ class MetalSpecKonstr(models.Model):
                 vals["pmk_mass_kg"] = 0.0
         if "pos" in clean:
             vals["detail_name"] = (clean["pos"] or "").strip() or False
+        grade_cell = clean["grade"] if "grade" in clean else ((line.pmk_grade_text or "") if line else "")
         if "name" in clean:
             text = (clean["name"] or "").strip()
             vals["pmk_text"] = text or False
-            vals.update(self._konstr_resolve(text))
+            vals.update(self._konstr_resolve(text, grade_cell))
+        elif "grade" in clean and line and line.calc_mode == "fastener":
+            # Поменяли класс / покрытие у метиза — другая позиция и цена.
+            vals.update(self._konstr_resolve(line.pmk_text or line.fastener_id.name or "", grade_cell))
         mode = vals.get("calc_mode") or (line.calc_mode if line else "linear")
         if "width" in clean and mode == "sheet":
             vals["a_mm"] = _to_float(clean["width"])

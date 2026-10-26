@@ -122,6 +122,17 @@ class MetalPendingProduct(models.AbstractModel):
                 line.value_ids = [(6, 0, attr.value_ids.ids)]
         return count
 
+    @api.model
+    def _pmk_fastener_cards_for_data_rows(self):
+        """Карточки метизам из файла данных (26.10.2026: 256 ходовых с классом и покрытием).
+        Единица — штука, вес — масса штуки; характеристик нет. Архивные (старые без класса)
+        не трогаем."""
+        Fastener = self.env["pmk.metal.fastener"].sudo()
+        if not Fastener.search_count([("product_tmpl_id", "!=", False)], limit=1):
+            return 0
+        return Fastener._pmk_cards_create(Fastener.search(
+            [("product_tmpl_id", "=", False), ("pmk_pending", "=", False)]))
+
     def _pmk_cards_create(self, rows):
         """Завести карточки строкам из файла данных (pmk_calc.*); черновики и
         строки с карточкой пропускаются. Возвращает, сколько заведено."""
@@ -149,7 +160,10 @@ class MetalPendingProduct(models.AbstractModel):
                 categ = "pmk_bridge.categ_sheet_%s" % sku_gen.SHEET_PREFIX[
                     self.sheet_type].split("-")[1].lower()
             else:
-                code = sku_gen.fastener_sku(self.fastener_type, self.size_label)
+                # 26.10.2026: класс, покрытие, полная резьба, высокопрочный — в артикуле.
+                code = sku_gen.fastener_sku_full(
+                    self.fastener_type, self.size_label, getattr(self, "strength_class", None),
+                    getattr(self, "coating", None), getattr(self, "full_thread", False), self.gost)
                 categ = "pmk_bridge.categ_hw_%s" % sku_gen.FASTENER_KIND[
                     self.fastener_type].lower()
         except (sku_gen.SkuError, KeyError) as exc:

@@ -21,6 +21,7 @@
 ORM, никаких запросов. Так их можно прогнать по CSV и по живой базе, не
 поднимая Odoo, и так их проверяют тесты.
 """
+import re
 
 
 # --- Транслитерация ------------------------------------------------------
@@ -306,6 +307,31 @@ def fastener_sku(fastener_type, size_label):
 
     body = PROFILE_SEP.join(translit(p.strip()) for p in parts)
     return _assert_ascii("%s-%s-%s" % (FASTENER_PREFIX, kind, body), size_label)
+
+
+FASTENER_COATING = {"black": "BK", "zinc": "ZN", "hot_zinc": "HZ", "painted": "PE"}
+
+
+def fastener_sku_full(fastener_type, size_label, strength_class=None, coating=None, full_thread=False,
+                      gost=None):
+    """Артикул метиза с классом и покрытием (26.10.2026: класс и покрытие — отдельные позиции).
+
+    («bolt», «М20×60», «8.8», «zinc») → MTZ-BLT-M20x60-88-ZN; высокопрочный (ГОСТ Р 5264x) —
+    «-HS», полная резьба — «-FT», без покрытия — «-BK» (не путать со старыми). Без класса и покрытия — как
+    fastener_sku (старые позиции)."""
+    base = fastener_sku(fastener_type, size_label)
+    tail = []
+    if gost and "5264" in gost:
+        tail.append("HS")
+    if gost and "6402" in gost:
+        tail.append("SP")          # шайба пружинная
+    if full_thread:
+        tail.append("FT")
+    if strength_class:
+        tail.append(re.sub(r"[^0-9]", "", strength_class))
+    if coating in FASTENER_COATING:
+        tail.append(FASTENER_COATING[coating])
+    return _assert_ascii("-".join([base] + tail), size_label)
 
 
 # --- ЛКП -----------------------------------------------------------------

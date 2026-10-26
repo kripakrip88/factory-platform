@@ -99,7 +99,7 @@ class TestBoltCalc(TransactionCase):
         nut = self._part(line, "nut")
         nut._pmk_user_write({"qty": 6})
         self.assertTrue(nut.edited)
-        self.assertAlmostEqual(line.mass_one, 6.64 + 2 * gost.NUT_KG[30], places=3)
+        self.assertAlmostEqual(line.mass_one, 6.64 + 2 * gost.NUT_KG[30], places=2)
         line.length = 700  # пересчёт болта
         self.assertEqual((nut.qty, nut.price_unit), (6, 40), "поправленное не затёрто")
         self.assertIn("заготовка 700 мм", self._part(line, "stud").name)

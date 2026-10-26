@@ -1,4 +1,6 @@
 from . import metal_reference
+# 26.10.2026: метиз по записи — класс и покрытие.
+from . import fastener_resolve
 # Шаг З-10: метка «на разнос» у справочников (до расчёта: metal_spec берёт
 # отсюда пометку детали).
 from . import metal_pending

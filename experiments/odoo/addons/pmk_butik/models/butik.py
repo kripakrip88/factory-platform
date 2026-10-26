@@ -384,6 +384,10 @@ class ButikLine(models.Model):
         result = super().write(vals)
         if "name" in vals and not self.env.context.get("pmk_butik_keep"):
             self.filtered(lambda l: l.kind == "detail")._butik_resolve(force="name" in vals)
+        elif "grade" in vals and not self.env.context.get("pmk_butik_keep"):
+            # Метиз: класс и покрытие — в «Марке» (26.10.2026); поменяли — другая позиция.
+            self.filtered(lambda l: l.kind == "detail" and l.match_state != "manual"
+                          and parse.classify(l.name)["kind"] == "piece")._butik_resolve()
         return result
 
     def _butik_resolve(self, force=False):
@@ -412,9 +416,10 @@ class ButikLine(models.Model):
                 if info["length"] and not line.length_mm:
                     vals["length_mm"] = info["length"]
             elif info["kind"] == "piece":
-                found = Fastener.name_search(parse.piece_query(line.name), limit=1)
+                # 26.10.2026: класс и покрытие — разные позиции и цены; «кл. 8.8» стоит в «Марке».
+                found = Fastener._pmk_resolve("%s %s" % (parse.piece_query(line.name), line.grade or ""))
                 if found:
-                    vals.update(fastener_id=found[0][0], match_state="auto")
+                    vals.update(fastener_id=found.id, match_state="auto")
             else:
                 found = Profile.name_search(line.name, limit=1)
                 if found:

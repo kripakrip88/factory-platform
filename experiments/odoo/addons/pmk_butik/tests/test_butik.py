@@ -124,12 +124,17 @@ class TestButik(TransactionCase):
             "name": "Болт М10×40 (тест бутика)", "weight_kg": 0.0281})
         spec = self.env["pmk.butik.spec"].create({"subject": "Тест"})
         detail = spec.butik_rows()["rows"][1]
-        spec.butik_save_row(detail["id"], {"name": "Болт М10х40", "qty": "4"})
+        spec.butik_save_row(detail["id"], {"name": "Болт М10х40", "grade": "кл. 8.8", "qty": "4"})
         line = spec.line_ids.filtered(lambda l: l.id == detail["id"])
-        # справочник может уже знать этот болт — проверяем размер, а не запись
-        self.assertIn("М10×40", line.fastener_id.name)
+        # 26.10.2026: класс — в «Марке», позиция своего класса (цены 5.8 / 8.8 / 10.9 разные)
+        self.assertEqual(line.fastener_id, self.env.ref("pmk_calc.fast2_bolt_10_40_88_black"))
         self.assertAlmostEqual(line.weight_total, 4 * line.fastener_id.weight_kg, places=3)
         self.assertTrue(bolt)
+        # Класс не указан, а классов несколько — не угадываем: «не найдено», уточнить класс.
+        spec.butik_save_row(detail["id"], {"grade": "кл. 5.8"})
+        self.assertEqual(line.fastener_id, self.env.ref("pmk_calc.fast2_bolt_10_40_58_black"), "сменили класс")
+        spec.butik_save_row(detail["id"], {"grade": ""})
+        self.assertFalse(line.fastener_id)
 
     def test_rows_weight_and_paste(self):
         spec = self.env["pmk.butik.spec"].create({"subject": "Тест"})

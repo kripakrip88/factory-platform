@@ -6,4 +6,6 @@
     <function model="pmk.metal.profile" name="_pmk_cards_for_data_rows"/>
     <!-- 26.10.2026: и листу (оцинковка 1,2–3 мм) — с характеристикой марки. -->
     <function model="pmk.metal.sheet" name="_pmk_sheet_cards_for_data_rows"/>
+    <!-- 26.10.2026: и метизам (класс, покрытие) — штука, без характеристик. -->
+    <function model="pmk.metal.fastener" name="_pmk_fastener_cards_for_data_rows"/>
 </odoo>

@@ -241,6 +241,15 @@ class MetalFastener(models.Model):
     gost = fields.Char("Стандарт")
     size_label = fields.Char("Типоразмер", help="Например: М12×40")
     weight_kg = fields.Float("Масса, кг/шт", required=True, digits=(12, 5), aggregator=None)
+    # Класс и покрытие — отдельные позиции и цены (Антон 26.10.2026: «классы 5.8, 8.8 и 10.9 —
+    # обязательно отдельные цены»; болт М20×60 стоит 28 ₽ в 5.8, 51 ₽ в 8.8 и 77 ₽ в 10.9).
+    strength_class = fields.Char("Класс прочности", help="Болт: 5.8 / 8.8 / 10.9; гайка: 8 / 10 / 12.")
+    coating = fields.Selection(
+        [("black", "Без покрытия"), ("zinc", "Цинк"), ("hot_zinc", "Горячий цинк"), ("painted", "Окрашенный (RAL)")],
+        "Покрытие", help="Не указано в прайсе — без покрытия (Антон 26.10.2026).")
+    full_thread = fields.Boolean("Полная резьба", help="Болт с резьбой на всю длину (DIN 933 / ГОСТ 7805).")
+    # Старые позиции без класса (до 26.10.2026) — в архиве (active — из pmk.metal.pending.mixin):
+    # строки расчётов на них остаются как были.
 
 
 class PaintCoating(models.Model):

@@ -100,6 +100,9 @@ COATINGS = {
     "пф115": "Эмаль ПФ-115", "пф-115": "Эмаль ПФ-115", "хв124": "Эмаль ХВ-124",
     "цинк": "Горячее цинкование", "гц": "Горячее цинкование", "порошок": "Порошковая окраска",
 }
+# Покрытие метиза в короткой записи — в «Марку» рядом с классом (pmk_calc/models/fastener_resolve.py).
+PIECE_COATINGS = {"цинк": "цинк", "оц": "цинк", "оцинк": "цинк", "zn": "цинк", "гц": "гор. цинк", "рал": "RAL",
+                  "ral": "RAL"}
 _X = r"\s*[xхXХ*×]\s*"
 NUM = r"\d+(?:[.,]\d+)?"
 POS_RE = re.compile(r"^([а-яё]{1,4})(\d+[а-яё]?)$", re.IGNORECASE)
@@ -185,6 +188,10 @@ def decode(line):
         tokens, lowered = tokens[1:], lowered[1:]
     first_word = tokens[0] if tokens and "pos" not in out else None
     for token, low in zip(tokens, lowered):
+        if kind == "piece" and low.rstrip(".") in PIECE_COATINGS:
+            # Метиз (26.10.2026): «цинк» — покрытие самого болта, не покраска изделия; к классу.
+            out["grade"] = ("%s %s" % (out.get("grade", ""), PIECE_COATINGS[low.rstrip(".")])).strip()
+            continue
         if low in COATINGS:
             out["coating"] = COATINGS[low]
             continue
@@ -195,7 +202,7 @@ def decode(line):
             out["grade"] = GRADES[low.rstrip(".")]
             continue
         if CLASS_RE.match(low) and kind == "piece":
-            out["grade"] = "кл. " + low
+            out["grade"] = ("кл. %s %s" % (low, out.get("grade", ""))).strip()
             continue
         m = QTY_RE.match(low)
         if m:

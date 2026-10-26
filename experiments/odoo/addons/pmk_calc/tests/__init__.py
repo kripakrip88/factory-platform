@@ -29,3 +29,4 @@ from . import test_spec_categories
 from . import test_product_name_wrap
 from . import test_metal_overview
 from . import test_sheet_coating
+from . import test_fastener_resolve

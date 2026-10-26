@@ -285,3 +285,24 @@ class TestDispatcher(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+class TestFastenerSkuFull(unittest.TestCase):
+    """26.10.2026: класс и покрытие метиза — в артикуле; артикулы справочника не повторяются."""
+
+    def test_examples(self):
+        self.assertEqual(sku.fastener_sku_full("bolt", "М20×60", "8.8", "zinc"), "MTZ-BLT-M20x60-88-ZN")
+        self.assertEqual(sku.fastener_sku_full("bolt", "М20×60", "10.9", "black", False, "ГОСТ Р 52644-2006"),
+                         "MTZ-BLT-M20x60-HS-109-BK")
+        self.assertEqual(sku.fastener_sku_full("washer", "М20", None, "zinc", False, "ГОСТ 6402-70"),
+                         "MTZ-WSH-M20-SP-ZN")
+        self.assertEqual(sku.fastener_sku_full("nut", "М20"), "MTZ-NUT-M20", "старые — как были")
+
+    def test_reference_unique(self):
+        import csv
+        import os
+        path = os.path.join(os.path.dirname(__file__), "..", "..", "pmk_calc", "data", "pmk.metal.fastener.csv")
+        codes = [sku.fastener_sku_full(r["fastener_type"], r["size_label"], r["strength_class"] or None,
+                                       r["coating"] or None, r["full_thread"] == "True", r["gost"])
+                 for r in csv.DictReader(open(path, encoding="utf-8"))]
+        self.assertEqual(len(codes), len(set(codes)))
