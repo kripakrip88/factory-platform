@@ -17,3 +17,5 @@ from . import partner_supplier
 from . import print_seller
 # Шаг З-10: карточка товара позиции, принятой в справочник из «на разнос».
 from . import pending_product
+# 26.10.2026: каталог материалов — найти позицию глазами (окно catalog_dialog.js).
+from . import catalog

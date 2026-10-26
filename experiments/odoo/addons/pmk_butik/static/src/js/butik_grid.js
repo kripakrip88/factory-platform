@@ -18,6 +18,7 @@ import { _t } from "@web/core/l10n/translation";
 import { ConfirmationDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { registry } from "@web/core/registry";
 import { standardWidgetProps } from "@web/views/widgets/standard_widget_props";
+import { openCatalog } from "@pmk_bridge/catalog/catalog_dialog";
 
 const NUMERIC = new Set(["width", "length_mm", "qty", "product_qty", "price", "price_ton", "mass"]);
 
@@ -455,6 +456,24 @@ export class PmkButikGrid extends Component {
         await this.call("butik_set_position", [row.id, item.key]);
         this.closeSuggest();
         this.focusCell(index, "length_mm");
+    }
+
+    /** Каталог материалов (26.10.2026): позиция из окна — как из подсказки, «выбрано вручную». */
+    openCatalog(index) {
+        const row = this.rows[index];
+        const input = this.root.el.querySelector(`[data-index="${index}"][data-col="name"]`);
+        const text = (input && input.value) || row.name || "";
+        this.closeSuggest();
+        openCatalog(this.env, {
+            text,
+            onPick: async (key) => {
+                if (input && input.value !== row.name) {
+                    await this.call("butik_save_row", [row.id, { name: input.value }]);
+                }
+                delete this.drafts[`${row.id}:name`];
+                await this.call("butik_set_position", [row.id, key]);
+            },
+        });
     }
 
     // ─── кнопки ─────────────────────────────────────────────────────────

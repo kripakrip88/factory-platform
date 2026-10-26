@@ -103,6 +103,10 @@
                              t-on-paste="(ev) => this.onPaste(row_index, ev)"/>
                       <div t-if="col === 'name' and row.label" class="o_pmk_butik__rec"
                            t-att-class="{ 'o_pmk_butik__rec--bad': row.match_state === 'none' }" t-esc="row.label"/>
+                      <!-- Каталог материалов (26.10.2026): найти позицию глазами, если запись не попала. -->
+                      <button t-if="col === 'name' and state.data.can_write" type="button" class="o_pmk_butik__cat"
+                              title="Каталог материалов — найти позицию вручную"
+                              t-on-mousedown.prevent="() => this.openCatalog(row_index)"><i class="fa fa-book"/></button>
                       <div t-if="col === 'name' and state.suggest and state.suggestRow === row_index" class="o_pmk_butik__suggest">
                         <div t-foreach="state.suggest" t-as="item" t-key="item.key" class="o_pmk_butik__sitem"
                              t-att-class="{ 'o_pmk_butik__sitem--active': item_index === state.suggestIdx }"

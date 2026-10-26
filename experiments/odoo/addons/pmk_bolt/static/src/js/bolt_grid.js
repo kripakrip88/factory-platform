@@ -10,6 +10,7 @@
  */
 import { registry } from "@web/core/registry";
 import { PmkButikGrid } from "@pmk_butik/js/butik_grid";
+import { openCatalog } from "@pmk_bridge/catalog/catalog_dialog";
 
 const METHODS = {
     butik_rows: "bolt_rows",
@@ -58,6 +59,17 @@ export class PmkBoltGrid extends PmkButikGrid {
 
     // У болтов нет подсказок справочника: запись разбирает сервер.
     onNameInput() {}
+
+    /** Каталог (26.10.2026): метиз в строку состава — название, масса, цена из прайса. */
+    openCatalog(index) {
+        const row = this.rows[index];
+        const input = this.root.el.querySelector(`[data-index="${index}"][data-col="name"]`);
+        openCatalog(this.env, {
+            text: (input && input.value) || row.name || "",
+            sections: ["fastener"],
+            onPick: (key) => this.call("bolt_set_part_from_catalog", [row.id, key]),
+        });
+    }
 
     // «+ Болт» (Ctrl+Enter): новый болт встаёт последним — туда и курсор.
     async addProduct() {

@@ -128,6 +128,10 @@
                            t-on-keydown="(ev) => this.onKeydown(row_index, 'name', ev)"
                            t-on-paste="(ev) => this.onPaste(row_index, ev)"/>
                     <div t-if="row.changed" class="o_pmk_butik__rec o_pmk_bolt__warning" t-esc="row.changed"/>
+                    <!-- Каталог материалов (26.10.2026): гайка, шайба, свой метиз — из справочника с ценой. -->
+                    <button t-if="state.data.can_write and row.price_label !== '₽/т'" type="button" class="o_pmk_butik__cat"
+                            title="Каталог метизов — взять позицию с ценой из прайса"
+                            t-on-mousedown.prevent="() => this.openCatalog(row_index)"><i class="fa fa-book"/></button>
                   </td>
                   <td t-att-class="{ sel: isSel(row_index, 'qty'), n: true }">
                     <input class="o_pmk_butik__in n" t-att-value="val(row, 'qty')" inputmode="decimal"

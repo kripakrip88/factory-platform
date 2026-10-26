@@ -70,6 +70,13 @@
         "views/metal_arrival_views.xml",
         "views/menus.xml",
     ],
+    # Каталог материалов над строками заявки (26.10.2026); окно — pmk_bridge.
+    "assets": {
+        "web.assets_backend": [
+            "pmk_tech/static/src/catalog_po.js",
+            "pmk_tech/static/src/catalog_po.xml",
+        ],
+    },
     # Своих стилей нет: плашки — класс pmk-price-alert темы (светлая и
     # тёмная пары есть), карточка сравнения — pmk-kpi__card (без цены —
     # pmk-kpi__card--warn, как у моста), метка «Вид» —

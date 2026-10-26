@@ -155,6 +155,10 @@
                         <button type="button" class="btn btn-link btn-sm p-0 align-baseline o_pmk_konstr__hint-use"
                                 t-att-disabled="!state.data.can_write" t-on-click="() => this.useManualHint(row)">подставить</button>
                       </div>
+                      <!-- Каталог материалов (26.10.2026): найти позицию глазами, если запись не попала. -->
+                      <button t-if="col === 'name' and state.data.can_write" type="button" class="o_pmk_butik__cat"
+                              title="Каталог материалов — найти позицию вручную"
+                              t-on-mousedown.prevent="() => this.openCatalog(row_index)"><i class="fa fa-book"/></button>
                       <div t-if="col === 'name' and state.suggest and state.suggestRow === row_index" class="o_pmk_butik__suggest">
                         <div t-foreach="state.suggest" t-as="item" t-key="item.key" class="o_pmk_butik__sitem"
                              t-att-class="{ 'o_pmk_butik__sitem--active': item_index === state.suggestIdx }"

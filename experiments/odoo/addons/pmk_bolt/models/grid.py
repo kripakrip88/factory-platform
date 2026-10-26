@@ -172,6 +172,28 @@ class BoltCalcGrid(models.Model):
         return self._grid_new_part(line, record if kind == PART else False,
                                    parse_part(text) if text else {"name": "", "qty": 1.0})
 
+    def bolt_set_part_from_catalog(self, row_key, key):
+        """Каталог материалов (26.10.2026): метиз справочника в строку состава — название, масса
+        штуки и цена из прайса (нет цены — прежняя). Строка становится «поправленной»."""
+        self.ensure_one()
+        self.check_access("write")
+        kind, part = self._grid_record(row_key)
+        if kind != PART or not part or part.auto_key == "stud":
+            raise UserError(_("Из каталога — метиз в строку состава (гайка, шайба, своя строка)."))
+        model, _sep, ident = (key or "").partition(":")
+        if model != "fastener" or not ident.isdigit():
+            raise UserError(_("В состав болта ставится метиз — выберите в разделе «Метизы»."))
+        fastener = self.env["pmk.metal.fastener"].browse(int(ident)).exists()
+        if not fastener:
+            raise UserError(_("Позиция не найдена — обновите каталог."))
+        vals = {"name": ("%s %s" % (fastener.name, fastener.gost or "")).strip(), "unit_mass": fastener.weight_kg}
+        tmpl = fastener.product_tmpl_id
+        seller = tmpl._pmk_find_seller(fields.Date.context_today(self)) if tmpl else False
+        if seller:
+            vals["price_unit"] = round(seller.price_discounted, 2)
+        part._pmk_user_write(vals)
+        return self.bolt_rows()
+
     def bolt_save_row(self, row_key, vals):
         """Правка ячейки (или новая строка: row_key = False, vals["after_id"])."""
         self.ensure_one()

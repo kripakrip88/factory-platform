@@ -24,3 +24,4 @@ from . import test_sheet_m2
 from . import test_spec_summary
 # №313: марка проката в цене.
 from . import test_linear_grade
+from . import test_catalog

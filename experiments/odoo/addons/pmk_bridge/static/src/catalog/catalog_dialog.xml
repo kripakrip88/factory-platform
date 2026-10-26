@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+  <t t-name="pmk_bridge.CatalogDialog">
+    <Dialog title="'Каталог материалов'" size="'xl'" contentClass="'o_pmk_catalog'">
+      <div class="o_pmk_catalog__body">
+        <nav class="o_pmk_catalog__tree" t-ref="tree">
+          <div class="o_pmk_catalog__kind o_pmk_catalog__all"
+               t-att-class="{ 'o_pmk_catalog__kind--on': state.section === 'all' }"
+               t-on-click="() => this.selectKind('all', null)"><span><i class="fa fa-search me-1"/>Искать везде</span></div>
+          <t t-foreach="state.tree" t-as="sec" t-key="sec.key">
+            <div class="o_pmk_catalog__sec" t-esc="sec.label"/>
+            <div class="o_pmk_catalog__kind"
+                 t-att-class="{ 'o_pmk_catalog__kind--on': state.section === sec.key and !state.kind }"
+                 t-on-click="() => this.selectKind(sec.key, null)">Все</div>
+            <t t-foreach="sec.kinds" t-as="k" t-key="k.key">
+              <div class="o_pmk_catalog__kind"
+                   t-att-class="{ 'o_pmk_catalog__kind--on': state.section === sec.key and state.kind === k.key }"
+                   t-on-click="() => this.selectKind(sec.key, k.key)">
+                <span t-esc="k.label"/><span class="o_pmk_catalog__count" t-esc="k.count"/>
+              </div>
+            </t>
+          </t>
+        </nav>
+        <section class="o_pmk_catalog__main">
+          <div class="o_pmk_catalog__filters">
+            <input class="o_input o_pmk_catalog__q" placeholder="Размер или название: 20х60, 63х5, 4 мм"
+                   t-att-value="state.query" t-on-input="onQuery"/>
+            <t t-if="isFastener">
+              <select class="o_input o_pmk_catalog__sel" t-on-change="(ev) => this.onFilter('strength_class', ev)">
+                <option value="" t-att-selected="!state.strength_class">Любой класс</option>
+                <t t-foreach="['5.8', '8.8', '10.9', '8', '10', '12']" t-as="c" t-key="c">
+                  <option t-att-value="c" t-att-selected="state.strength_class === c" t-esc="'кл. ' + c"/>
+                </t>
+              </select>
+              <select class="o_input o_pmk_catalog__sel" t-on-change="(ev) => this.onFilter('coating', ev)">
+                <option value="" t-att-selected="!state.coating">Любое покрытие</option>
+                <option value="black" t-att-selected="state.coating === 'black'">Без покрытия</option>
+                <option value="zinc" t-att-selected="state.coating === 'zinc'">Цинк</option>
+                <option value="hot_zinc" t-att-selected="state.coating === 'hot_zinc'">Горячий цинк</option>
+                <option value="painted" t-att-selected="state.coating === 'painted'">RAL</option>
+              </select>
+            </t>
+            <label class="o_pmk_catalog__priced">
+              <input type="checkbox" t-att-checked="state.priced" t-on-change="(ev) => this.onFilter('priced', ev)"/>
+              только с ценой
+            </label>
+          </div>
+          <div class="o_pmk_catalog__table">
+            <table class="table table-sm">
+              <thead><tr>
+                <th>Позиция</th><th class="o_pmk_catalog__mass">Масса</th>
+                <th class="text-end">Цена</th><th>Поставщик</th>
+              </tr></thead>
+              <tbody>
+                <tr t-foreach="state.rows" t-as="row" t-key="row.key"
+                    t-att-class="{ 'o_pmk_catalog__row--sel': state.sel === row.key }"
+                    t-on-click="() => this.state.sel = row.key" t-on-dblclick="() => this.pick(row.key)">
+                  <td>
+                    <span t-esc="row.name"/>
+                    <span t-if="row.pending" class="o_pmk_catalog__pending">на разнос</span>
+                    <span t-if="row.gost and !isFastener" class="o_pmk_catalog__gost" t-esc="row.gost"/>
+                  </td>
+                  <td class="o_pmk_catalog__mass" t-esc="row.mass"/>
+                  <td class="text-end">
+                    <t t-if="row.price"><span t-esc="priceText(row)"/> ₽/<t t-esc="row.unit"/></t>
+                    <span t-else="" class="o_pmk_catalog__noprice">нет цены</span>
+                  </td>
+                  <td class="o_pmk_catalog__sup" t-att-title="row.date and ('цена от ' + row.date)" t-esc="row.supplier or '—'"/>
+                </tr>
+                <tr t-if="!state.rows.length and !state.loading">
+                  <td colspan="4" class="o_pmk_catalog__empty">
+                    <t t-if="state.section === 'all' and !state.query">Наберите размер или название — поиск по всему справочнику.</t>
+                    <t t-else="">Ничего не найдено. Уберите фильтр, поищите «везде» или заведите позицию.</t>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <div t-if="state.more" class="o_pmk_catalog__more">Показаны первые 80 — уточните поиск.</div>
+          </div>
+        </section>
+      </div>
+      <t t-set-slot="footer">
+        <button class="btn btn-primary" t-on-click="() => this.pick()" t-att-disabled="!state.sel or state.busy">Выбрать</button>
+        <button class="btn btn-secondary" t-on-click="createPending">Нет в справочнике — завести</button>
+        <button class="btn btn-link" t-on-click="props.close">Отмена</button>
+      </t>
+    </Dialog>
+  </t>
+</templates>

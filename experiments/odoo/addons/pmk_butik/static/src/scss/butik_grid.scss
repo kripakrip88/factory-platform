@@ -117,6 +117,23 @@
   &.o_pmk_butik__rec--bad { color: var(--bt-bad); }
 }
 
+// Каталог материалов (26.10.2026): кнопка в ячейке «Наименование» — видна у строки под курсором,
+// в выбранной ячейке и всегда у строки «нет в справочнике».
+.o_pmk_butik__cat {
+  position: absolute;
+  right: 4px;
+  top: 5px;
+  z-index: 2;
+  padding: 1px 5px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--bt-card);
+  color: var(--bt-muted);
+  opacity: 0;
+  &:hover { color: inherit; background: var(--bt-border); }
+}
+tr:hover .o_pmk_butik__cat, td.sel .o_pmk_butik__cat, .o_pmk_butik__detail--bad .o_pmk_butik__cat { opacity: 1; }
+
 .o_pmk_butik__suggest {
   position: absolute;
   left: 0;

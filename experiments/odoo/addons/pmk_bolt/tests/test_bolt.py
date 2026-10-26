@@ -4,6 +4,7 @@ from datetime import date
 from unittest.mock import patch
 
 from odoo import Command
+from odoo.exceptions import UserError
 from odoo.tests import TransactionCase, tagged
 
 from ..tools import gost
@@ -220,3 +221,22 @@ class TestQuickAdd(TransactionCase):
         bad_key = data["rows"][0]["id"]
         bad = calc.bolt_save_row(bad_key, {"name": "бф м30 600"})["rows"][0]
         self.assertEqual((bad["name"], bad["bad"]), ("бф м30 600", True))
+
+
+@tagged("post_install", "-at_install")
+class TestBoltCatalog(TransactionCase):
+    """Каталог (26.10.2026): метиз справочника в строку состава — название, масса, цена."""
+
+    def test_part_from_catalog(self):
+        calc = self.env["pmk.bolt.calc"].create({"line_ids": [Command.create(dict(
+            bolt_type="1.1", diameter="20", length=600, steel="Ст3", qty=4))]})
+        line = calc.line_ids
+        nut = line.part_ids.filtered(lambda p: p.auto_key == "nut")[:1]
+        fastener = self.env.ref("pmk_calc.fast2_nut_20_8_zinc")
+        calc.bolt_set_part_from_catalog("p%d" % nut.id, "fastener:%d" % fastener.id)
+        self.assertIn("Гайка М20 кл. 8 цинк", nut.name)
+        self.assertAlmostEqual(nut.unit_mass, fastener.weight_kg, places=3)
+        self.assertTrue(nut.edited, "пересчёт болта её не перезапишет")
+        stud = line.part_ids.filtered(lambda p: p.auto_key == "stud")
+        with self.assertRaises(UserError):
+            calc.bolt_set_part_from_catalog("p%d" % stud.id, "fastener:%d" % fastener.id)

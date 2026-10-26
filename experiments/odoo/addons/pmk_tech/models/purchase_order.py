@@ -31,7 +31,8 @@ _name, доводка шага З-4). Снабженец поправил чер
 «Заявка», «Заявка отправлена», «Заказ поставщику», «Отменён»), иначе у одной
 стадии одного документа два названия — в списке одно, в форме другое.
 """
-from odoo import api, fields, models
+from odoo import _, api, fields, models
+from odoo.exceptions import UserError
 
 NO_SUPPLIER = "pmk_tech.partner_no_supplier"
 
@@ -168,6 +169,29 @@ class PurchaseOrderTech(models.Model):
             "module": "pmk_tech", "name": "partner_no_supplier", "model": "res.partner",
             "res_id": partner.id, "noupdate": True})
         return partner.with_env(self.env)
+
+    def pmk_catalog_add(self, key):
+        """Каталог материалов (26.10.2026): позиция справочника — новой строкой заявки (1 ед.,
+        цена — штатная, из прайса поставщика заявки). Позиция «на разнос» без карточки — строкой
+        своего названия на служебный товар, как у «Заявки на металл» (шаг З-10)."""
+        self.ensure_one()
+        self.check_access("write")
+        if self.state not in ("draft", "sent"):
+            raise UserError(_("Строки добавляются в заявку, пока её не подтвердили."))
+        model, _sep, ident = (key or "").partition(":")
+        name = {"profile": "pmk.metal.profile", "sheet": "pmk.metal.sheet", "fastener": "pmk.metal.fastener"}.get(model)
+        rec = self.env[name].browse(int(ident)).exists() if name and ident.isdigit() else None
+        if not rec:
+            raise UserError(_("Позиция не найдена — обновите каталог."))
+        Line = self.env["purchase.order.line"]
+        tmpl = rec.product_tmpl_id
+        if tmpl:
+            Line.create({"order_id": self.id, "product_id": tmpl.product_variant_id.id, "product_qty": 1.0})
+        else:
+            mode = {"profile": "linear", "sheet": "sheet", "fastener": "fastener"}[model]
+            Line.create({"order_id": self.id, "product_id": self._pmk_pending_product(mode).id,
+                         "name": rec.display_name, "product_qty": 1.0, "pmk_pending": True})
+        return True
 
     @api.model
     def _pmk_pending_product(self, mode, create=True):

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+  <t t-name="pmk_tech.CatalogPo">
+    <button type="button" class="btn btn-secondary btn-sm mb-2" t-on-click="open"
+            title="Найти позицию справочника глазами и добавить строкой заявки">
+      <i class="fa fa-book me-1"/>Каталог материалов
+    </button>
+  </t>
+</templates>

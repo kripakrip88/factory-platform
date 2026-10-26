@@ -75,6 +75,10 @@
           техническом расчёте — строка встанет настоящим товаром.
         </div>
       </xpath>
+      <!-- Каталог материалов (26.10.2026): позиция справочника новой строкой заявки. -->
+      <xpath expr="//field[@name='order_line']" position="before">
+        <widget name="pmk_catalog_po" invisible="not pmk_tech_spec_id or state not in ('draft', 'sent')"/>
+      </xpath>
       <!-- Метка строки «на разнос» — колонка только у заявки с такими строками. -->
       <xpath expr="//field[@name='order_line']/list/field[@name='product_id']" position="after">
         <field name="pmk_pending" column_invisible="1"/>
