@@ -72,10 +72,10 @@ class VentNestMaterial(models.Model):
     choice_kg = fields.Float("Выбрано, кг", digits=(10, 1), compute="_compute_choice")
     choice_lengths = fields.Char("Выбрано: листы", compute="_compute_choice")
 
-    @api.depends("thickness", "order_id.line_ids.sheet_id")
+    @api.depends("thickness", "order_id.line_ids.sheet_id", "order_id.line_ids.coating_id")
     def _compute_price(self):
         for rec in self:
-            price, name = rec.order_id._nest_price_kg(rec.thickness)
+            price, name = rec.order_id._nest_price_kg(rec.thickness, rec._lines() or None)
             rec.price_kg = price or 0.0
             rec.price_sheet = name or False
 

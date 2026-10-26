@@ -8,6 +8,8 @@ from . import dobor_report
 from . import dobor_cut
 # 11.10.2026: вентзонты — генератор развёрток tools/vent_hood.py.
 from . import vent_hood
+# 26.10.2026: лист доборки и вентзонта по цвету (цинк / окрашенный).
+from . import sheet_coating
 from . import spec_layout
 # Шаг З-13: «Лист раскладки» — группа деталей одного листа и габарита.
 from . import spec_sheet_group

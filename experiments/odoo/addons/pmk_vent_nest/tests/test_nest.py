@@ -73,7 +73,9 @@ class TestVentNest(TransactionCase):
         self.assertGreater(mat.coil_kg, 0)
         sves = {(int(r["sves"]), r["source"]) for r in json.loads(mat.sves_json)}
         self.assertEqual(sves, {(s, src) for s in (150, 145, 140, 135, 130, 125) for src in ("stock", "coil")})
-        self.assertEqual(mat.price_sheet, self.sheet065.display_name)
+        # RAL 8017 — лист окрашенный 0,65 (26.10.2026: у крашеного своя карточка и цена).
+        self.assertEqual(mat.price_sheet, order.line_ids[:1].sheet_id.display_name)
+        self.assertEqual(order.line_ids[:1].sheet_id.sheet_type, "Окрашенный")
         self.assertEqual(order.nest_status_kind, "done")
         self.assertIn("Раскрой готов", order.message_ids[0].body)
 

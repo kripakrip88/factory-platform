@@ -67,10 +67,12 @@ class VentHoodOrder(models.Model):
                 order.nest_status = "Раскрой ещё не считали."
                 order.nest_status_kind = "none"
 
-    def _nest_price_kg(self, thickness):
+    def _nest_price_kg(self, thickness, lines=None):
         """Цена кг листа этой толщины из прайса или None. Не подставляем соседнюю позицию:
-        нет цены — рублей нет (сигнал «в городе нет», а не дыра)."""
-        sheets = self.line_ids.filtered(lambda l: abs((l.thickness or 0) - thickness) < 1e-6).mapped("sheet_id")
+        нет цены — рублей нет (сигнал «в городе нет», а не дыра). lines — строки материала
+        (цвет + толщина): с 26.10.2026 цинк и краска одной толщины — разные карточки и цены."""
+        lines = lines if lines is not None else self.line_ids
+        sheets = lines.filtered(lambda l: abs((l.thickness or 0) - thickness) < 1e-6).mapped("sheet_id")
         for s in sheets:
             if "pmk_price_ton" in s._fields and not s.pmk_price_missing and s.pmk_price_ton:
                 return s.pmk_price_ton / 1000.0, s.display_name

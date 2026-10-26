@@ -28,3 +28,4 @@ from . import test_dobor_cut
 from . import test_spec_categories
 from . import test_product_name_wrap
 from . import test_metal_overview
+from . import test_sheet_coating

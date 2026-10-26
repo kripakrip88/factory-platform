@@ -282,6 +282,7 @@ class VentHood(models.Model):
     # только оцинковка. Толщина приходит из металла.
     sheet_id = fields.Many2one(
         "pmk.metal.sheet", "Металл",
+        # Выбирают толщину оцинковки; RAL сам переводит на «Окрашенный» (sheet_coating.py).
         domain=[("sheet_type", "=", "Оцинкованный")],
         default=lambda self: self._default_sheet(),
         help="Оцинкованный лист из справочника «Лист» — тот же список, что у доборки. "
