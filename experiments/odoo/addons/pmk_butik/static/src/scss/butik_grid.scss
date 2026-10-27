@@ -11,7 +11,7 @@
   --bt-ok: #3f5a12;
   --bt-bad: #9b2c22;
   --bt-bad-bg: #fbecea;
-  --bt-calc: #f4f4f2;          // 27.10.2026: ячейки, которые считает система
+  --bt-calc: #fafaf9;          // 27.10.2026: ячейки, которые считает система (Антон: #f4f4f2 — слишком контрастно)
   --bt-edit-rim: #c9ccd1;      // рамка ячейки для ввода при наведении
 
   margin: 8px 0 12px;
@@ -188,7 +188,7 @@ tr:hover .o_pmk_butik__cat, td.sel .o_pmk_butik__cat, .o_pmk_butik__detail--bad 
     --bt-ok: #c3d877;
     --bt-bad: #f3a19e;
     --bt-bad-bg: #3a2a2c;
-    --bt-calc: #2b2e34;
+    --bt-calc: #2a2d33;
     --bt-edit-rim: #555a64;
   }
 }
