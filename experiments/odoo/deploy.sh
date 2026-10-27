@@ -113,6 +113,11 @@ git archive "origin/$BRANCH" experiments/odoo/addons experiments/odoo/vendor \
 # полусостояния, а ALTER TABLE при -u упирается в блокировку от открытой формы.
 cd "$STAND"
 docker compose stop odoo >/dev/null 2>&1 || true
+# Фоновые процессы Odoo (ассистент, раскрой) тоже держат соединения с базой: вопрос к ИИ идёт
+# в одной транзакции, пока ждёт ответа (при плохой связи — минуты), и ALTER TABLE при -u не
+# дожидается блокировки — «lock timeout», обновление откатилось (v1.120.0, 27.10.2026). Гасим
+# на время обновления; ниже их всё равно перезапускают.
+docker compose stop ai-worker nest-worker >/dev/null 2>&1 || true
 
 for M in $OURS; do
   SRC="$WORK/experiments/odoo/addons/$M"
@@ -163,7 +168,7 @@ docker compose exec -T db psql -U odoo -d odoo -tAc \
 docker compose start odoo >/dev/null 2>&1
 # Расчётчик раскроя (16.10.2026) держит worker.py в памяти — перезапуск, чтобы взял новый
 # код. Не поднят (описание контейнеров стенда старое) — пропуск: Odoo считает у себя.
-if [ -n "$(docker compose ps -q nest-worker 2>/dev/null)" ]; then
+if [ -n "$(docker compose ps -a -q nest-worker 2>/dev/null)" ]; then
   docker compose restart nest-worker >/dev/null 2>&1 && echo "→ расчётчик перезапущен"
 fi
 # Фоновый процесс ассистента (18.10.2026): держит код pmk_ai в памяти — перезапуск; первый
