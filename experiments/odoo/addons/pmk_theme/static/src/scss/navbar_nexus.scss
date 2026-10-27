@@ -1306,6 +1306,29 @@ $pmk-nav-tones: (
     }
   }
 
+  // 28.10.2026 (Антон): у закрытых вкладок — лёгкий цвет раздела, «чтоб визуальная ассоциация
+  // работала»: приглушён к серому, под курсором — полный. Открытая отличается и формой (вкладка).
+  @each $xmlid, $accent in $pmk-accents-light {
+    body:not(.o_nexus_dark) header.o_navbar .pmk_apps_bar .pmk_app:not(.pmk_app--active)[data-menu-xmlid="#{$xmlid}"] {
+      &::before { color: mix($accent, #9a9ea6, 60%); }
+      &:hover::before { color: $accent; }
+    }
+  }
+  // Тёмная пара — исходные светлые цвета разделов (как на тёмной шапке выше), приглушение — opacity.
+  $pmk-accents-dark-tabs: (
+    "pmk_theme.menu_pmk_sales": #c8f000, "pmk_theme.menu_pmk_production": #f0a04b,
+    "pmk_theme.menu_pmk_purchase": #4dd0b1, "pmk_theme.menu_pmk_stock": #6bb6f5,
+    "pmk_theme.menu_pmk_money": #86c66b, "pmk_theme.menu_pmk_reports": #9aa9bd,
+    "pmk_theme.menu_pmk_people": #f08fb0, "pmk_laser.menu_pmk_laser": #c98bd8,
+    "pmk_calc.menu_pmk_calc": #d8dee9, "base.menu_administration": #9aa9bd,
+    "pmk_theme.menu_pmk_tasks": #e8b84a,
+  );
+  @each $xmlid, $accent in $pmk-accents-dark-tabs {
+    body.o_nexus_dark header.o_navbar .pmk_apps_bar .pmk_app:not(.pmk_app--active)[data-menu-xmlid="#{$xmlid}"]::before {
+      color: $accent;
+    }
+  }
+
   // Черта между закрытыми — фоном (::before занят значком, ::after —
   // таблеткой/ножками). У соседа открытой и под курсором её нет.
   header.o_navbar .pmk_apps_bar .pmk_app + .pmk_app {
@@ -1425,8 +1448,13 @@ $pmk-nav-tones: (
       color: #e4e1da;
     }
 
+    // 28.10.2026: закрытые — цвет раздела тёмной пары (правила выше), приглушённый.
     &:not(.pmk_app--active)::before {
-      color: rgba(244, 241, 234, 0.42);
+      opacity: 0.6;
+    }
+
+    &:not(.pmk_app--active):hover::before {
+      opacity: 1;
     }
 
     &:not(.pmk_app--active):hover::after {
