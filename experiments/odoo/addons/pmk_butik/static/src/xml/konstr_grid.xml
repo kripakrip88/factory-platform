@@ -173,7 +173,8 @@
                     </td>
                   </t>
                   <td class="n o_pmk_butik__ro" t-esc="total(row)"/>
-                  <td t-att-class="{ sel: isSel(row_index, 'grade') }">
+                  <td t-att-class="{ sel: isSel(row_index, 'grade'), o_pmk_konstr__gradecell: row.grade_list }"
+                      t-att-title="row.grade_list ? (row.is_fastener ? 'Класс, покрытие, резьба — выберите из списка или впишите (8.8, цинк)' : 'Марка стали — выберите из списка или впишите (ст3, 09г)') : ''">
                     <input class="o_pmk_butik__in" t-att-value="val(row, 'grade')" t-att-data-index="row_index" t-att-data-key="row.id"
                            data-col="grade" t-att-readonly="!state.data.can_write"
                            t-on-focus="() => this.onFocus(row_index, 'grade')"
@@ -196,7 +197,7 @@
                   <td t-att-class="{ sel: isSel(row_index, 'mass') }">
                     <input class="o_pmk_butik__in n o_pmk_konstr__mass" t-att-class="{ 'o_pmk_konstr__mass--km': row.by_mass }"
                            t-att-value="val(row, 'mass')" inputmode="decimal" t-att-placeholder="kg(row.weight_total)"
-                           t-att-title="row.by_mass ? 'Масса по КМ: длина выведена из неё. Сотрите — вес снова по размерам' : 'Впишите массу по КМ — длина посчитается сама'"
+                           t-att-title="row.is_fastener ? 'Впишите общий вес метизов по КМ — посчитается количество' : (row.by_mass ? 'Масса по КМ: длина выведена из неё. Сотрите — вес снова по размерам' : 'Впишите массу по КМ — длина посчитается сама')"
                            t-att-data-index="row_index" t-att-data-key="row.id" data-col="mass" t-att-readonly="!state.data.can_write"
                            t-on-focus="() => this.onFocus(row_index, 'mass')"
                            t-on-input="(ev) => this.onInput(row, row_index, 'mass', ev)"

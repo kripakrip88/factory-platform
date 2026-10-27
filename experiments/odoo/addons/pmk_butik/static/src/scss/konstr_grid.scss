@@ -73,3 +73,22 @@
   .o_pmk_butik__sitem { display: flex; gap: 12px; white-space: nowrap; }
 }
 .o_pmk_konstr__gprice { margin-left: auto; color: var(--bt-muted); font-variant-numeric: tabular-nums; }
+
+// 27.10.2026 (Антон: «микроакцент, что там выпадашка»): значок ▾ в «Марке» у детали со списком.
+td.o_pmk_konstr__gradecell {
+  .o_pmk_butik__in { padding-right: 20px; }
+  &::after {
+    content: "";
+    position: absolute;
+    top: 12px;
+    right: 8px;
+    width: 6px;
+    height: 6px;
+    border-right: 1.5px solid var(--bt-muted);
+    border-bottom: 1.5px solid var(--bt-muted);
+    transform: rotate(45deg);
+    opacity: 0.5;
+    pointer-events: none;
+  }
+  &:hover::after, &.sel::after { opacity: 1; }
+}

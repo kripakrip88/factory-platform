@@ -148,6 +148,9 @@ class MetalSpecLineKonstr(models.Model):
             "length_derived": bool(self.pmk_mass_kg) and self.calc_mode == "linear",
             # 27.10.2026: у метиза и покрытия длины нет — в ячейке прочерк, не пустое поле для ввода.
             "no_length": self.calc_mode in ("fastener", "paint"),
+            "is_fastener": self.calc_mode == "fastener",
+            # «Марка» со списком (классы метиза / марки стали) — значок ▾ в ячейке.
+            "grade_list": self.calc_mode in ("fastener", "linear", "sheet"),
             "qty": self.qty or 0,
             "qty_total": (self.qty or 0) * qty_product,
             # Вписанное («С345») — поверх марки справочника, по которой цена (09Г2С).
@@ -275,7 +278,16 @@ class MetalSpecKonstr(models.Model):
         # короткой записи. В строке храним на одно изделие. Вписали длину или
         # ширину руками — деталь снова считается по размерам.
         mass = clean.get("mass", clean.get("mass_kg"))
-        if mass is not None:
+        is_fastener = bool(line) and line.calc_mode == "fastener" and "name" not in clean
+        if mass is not None and is_fastener:
+            # 27.10.2026 (Антон): в КМ у метизов часто только общий вес — «Вес всего» болта пересчитывается
+            # в штуки на изделие по массе 1 шт; масса сама не хранится (метиз считают штуками).
+            total, unit = _to_float(mass), line.fastener_id.weight_kg or 0.0
+            if total and not unit:
+                raise UserError(_("Сначала выберите класс в «Марке» — тогда вес пересчитается в штуки."))
+            if total:
+                clean = dict(clean, qty=max(1, round(total / unit / ((product.qty if product else 1) or 1))))
+        elif mass is not None:
             total = _to_float(mass)
             vals["pmk_mass_kg"] = total / (product.qty or 1) if (total and product) else total
         elif "length_mm" in clean or "width" in clean:

@@ -235,3 +235,14 @@ class TestKonstr(TransactionCase):
         self.spec.konstr_save_row(detail["id"], {"name": "Уголок 63х4"})
         opts = self.spec.konstr_grade_options(detail["id"], "09")
         self.assertTrue(opts and all("09" in o["label"] for o in opts))
+
+    def test_fastener_total_weight_to_qty(self):
+        """27.10.2026: «Вес всего» у болта (в КМ только общий вес метизов) → количество штук."""
+        detail = self._detail(self._rows(self.spec.konstr_add_product()))[0]
+        self.spec.konstr_save_row(detail["id"], {"name": "болт м10х40", "grade": "8.8"})
+        line = self.spec.product_ids.line_ids.filtered(lambda l: l.id == int(detail["id"][1:]))
+        unit = line.fastener_id.weight_kg
+        self.assertTrue(unit)
+        self.spec.konstr_save_row(detail["id"], {"mass": str(round(unit * 12, 3))})
+        self.assertEqual(line.qty, 12)
+        self.assertFalse(line.pmk_mass_kg, "масса метиза не хранится — он считается штуками")
