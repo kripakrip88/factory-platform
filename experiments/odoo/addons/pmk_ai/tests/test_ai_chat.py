@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """Панель ассистента (18.10.2026): цикл инструментов, лимит, расход, права — без сети."""
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from odoo.tests import TransactionCase, new_test_user, tagged
 
@@ -92,7 +92,7 @@ class TestAiChat(TransactionCase):
                  "stop_reason": "tool_use", "usage": {"input_tokens": 10, "output_tokens": 5}}, 1.0)
         calls = []
 
-        def fake(key, payload, base=None):
+        def fake(key, payload, base=None, **_kw):
             calls.append(dict(payload))
             if payload.get("tool_choice"):
                 return _text("Итог")
@@ -170,3 +170,71 @@ class TestAiChat(TransactionCase):
         self.assertEqual((usage.rating, usage.feedback), ("bad", "неполно"))
         other = new_test_user(self.env, login="pmk_ai_rater", groups="base.group_user")
         self.assertFalse(self.Chat.with_user(other).rate(res["usage_id"], "good"), "Только свой ответ.")
+
+
+class _Resp:
+    def __init__(self, code=200, data=None):
+        self.status_code, self._data, self.content = code, data or {}, b"{}"
+
+    def json(self):
+        return self._data
+
+
+@tagged("post_install", "-at_install")
+class TestAiLink(TransactionCase):
+    """Плохая связь VPS → Anthropic (27.10.2026): повторы соединения, тёплое соединение, пустой ответ."""
+
+    def _session(self, *effects):
+        session = type("S", (), {})()
+        session.post = Mock(side_effect=list(effects))
+        session.get = Mock(return_value=_Resp(200))
+        return session
+
+    def test_connect_retry_then_answer(self):
+        requests = ai_chat.claude.requests
+        ok = _Resp(200, {"content": [{"type": "text", "text": "Есть"}]})
+        session = self._session(requests.ConnectTimeout(), requests.ConnectionError(), ok)
+        notes = []
+        with patch.object(ai_chat.claude, "_http", return_value=session), \
+                patch.object(ai_chat.claude.time, "sleep"):
+            data, _sec = ai_chat.claude.messages("sk", {"x": 1}, on_retry=notes.append)
+        self.assertEqual(data["content"][0]["text"], "Есть")
+        self.assertEqual(session.post.call_count, 3)
+        self.assertEqual(len(notes), 2)
+        self.assertIn("пробую ещё", notes[0])
+
+    def test_connect_gives_up(self):
+        requests = ai_chat.claude.requests
+        session = self._session(*[requests.ConnectTimeout()] * ai_chat.claude.CONNECT_TRIES)
+        with patch.object(ai_chat.claude, "_http", return_value=session), \
+                patch.object(ai_chat.claude.time, "sleep"):
+            with self.assertRaises(ai_chat.claude.ClaudeError) as err:
+                ai_chat.claude.messages("sk", {"x": 1})
+        self.assertIn("Нет связи с ИИ", str(err.exception))
+        self.assertEqual(session.post.call_count, ai_chat.claude.CONNECT_TRIES)
+
+    def test_fast_read_timeout_is_handshake(self):
+        """«ReadTimeout» через секунды — сорвалось рукопожатие, запрос не ушёл: повторяем как соединение."""
+        requests = ai_chat.claude.requests
+        ok = _Resp(200, {"content": []})
+        session = self._session(requests.ReadTimeout(), requests.ReadTimeout(), ok)
+        with patch.object(ai_chat.claude, "_http", return_value=session), \
+                patch.object(ai_chat.claude.time, "sleep"):
+            ai_chat.claude.messages("sk", {"x": 1}, retries=0)
+        self.assertEqual(session.post.call_count, 3)
+
+    def test_keepalive_is_free_get(self):
+        session = self._session()
+        with patch.object(ai_chat.claude, "_http", return_value=session):
+            self.assertEqual(ai_chat.claude.keepalive("sk"), 200)
+        self.assertIn("/v1/models", session.get.call_args[0][0])
+
+    def test_empty_last_answer_keeps_earlier_text(self):
+        self.env["ir.config_parameter"].sudo().set_param("pmk_ai.api_key", "sk-test")
+        tool = ({"content": [{"type": "text", "text": "Черновик отказа: …"},
+                             {"type": "tool_use", "id": "t1", "name": "summary", "input": {"kind": "deal"}}],
+                 "stop_reason": "tool_use", "usage": {"input_tokens": 50, "output_tokens": 10}}, 1.0)
+        empty = ({"content": [], "stop_reason": "end_turn", "usage": {}}, 1.0)
+        with patch.object(ai_chat.claude, "messages", side_effect=[tool, empty]):
+            res = self.env["pmk.ai.chat"]._answer("напиши отказ", [], {})
+        self.assertEqual(res["answer"], "Черновик отказа: …")

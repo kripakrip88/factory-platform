@@ -2,8 +2,14 @@
 """Клиент Anthropic Messages API для Odoo (без пакета anthropic — на requests).
 
 Соединение держится открытым на процесс (requests.Session): рукопожатие TLS с нашего VPS
-занимает 4–10 с (замер 17.10.2026), повторять его на каждый вопрос нельзя. Обрыв
-соединения — один повтор; ответ API с ошибкой — сразу ошибка с текстом Anthropic.
+занимает 4–10 с (замер 17.10.2026), повторять его на каждый вопрос нельзя. Ответ API с
+ошибкой — сразу ошибка с текстом Anthropic.
+
+27.10.2026: с VPS до api.anthropic.com теряется 50–75 % пакетов (только этот адрес; Google —
+0 %), новое соединение в 2 из 5 попыток висит 25 с. Поэтому: (1) фон раз в KEEPALIVE_SEC
+дёргает бесплатный GET /v1/models — соединение не остывает, вопрос идёт по готовому;
+(2) не удалось соединиться — запрос ещё не ушёл, повтор бесплатный: до CONNECT_TRIES раз с
+коротким ожиданием, человеку — «связь плохая, пробую ещё» (on_retry).
 """
 import time
 
@@ -12,8 +18,10 @@ import requests
 DEFAULT_BASE = "https://api.anthropic.com"
 DEFAULT_MODEL = "claude-sonnet-5-5"
 API_VERSION = "2023-06-01"
-CONNECT_TIMEOUT = 20
+CONNECT_TIMEOUT = 15     # TCP + TLS: удачные рукопожатия 27.10 — 3–10 с
+CONNECT_TRIES = 4        # попыток соединиться (запрос не ушёл — токены не тратятся)
 READ_TIMEOUT = 180
+KEEPALIVE_SEC = 50       # фон держит соединение тёплым (worker/ai_worker.py)
 
 _session = None
 
@@ -31,22 +39,42 @@ def _http():
     return _session
 
 
-def messages(api_key, payload, base=None, retries=1):
-    """POST /v1/messages → (ответ JSON, секунд). Ошибки — ClaudeError."""
+def _headers(api_key):
+    return {"x-api-key": api_key.strip(), "anthropic-version": API_VERSION, "content-type": "application/json"}
+
+
+def messages(api_key, payload, base=None, retries=1, on_retry=None):
+    """POST /v1/messages → (ответ JSON, секунд). Ошибки — ClaudeError.
+
+    on_retry(текст) — сообщить человеку, что связь плохая и идёт повтор."""
     if not api_key:
         raise ClaudeError("Ключ API не задан: Настройки → Ассистент.")
     url = (base or DEFAULT_BASE).rstrip("/") + "/v1/messages"
-    headers = {"x-api-key": api_key.strip(), "anthropic-version": API_VERSION,
-               "content-type": "application/json"}
     started = time.time()
-    for attempt in range(retries + 1):
+    connect_fails = read_fails = 0
+    while True:
+        tried = time.time()
         try:
-            resp = _http().post(url, json=payload, headers=headers, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT))
+            resp = _http().post(url, json=payload, headers=_headers(api_key),
+                                timeout=(CONNECT_TIMEOUT, READ_TIMEOUT))
             break
         except (requests.ConnectionError, requests.Timeout) as exc:
-            if attempt >= retries:
-                raise ClaudeError("Нет связи с API Anthropic (%s). Повторите или проверьте адрес API."
-                                  % exc.__class__.__name__) from exc
+            last = exc
+        # «ReadTimeout» раньше READ_TIMEOUT — сорвалось рукопожатие TLS (Голубенко 27.10: через
+        # 43 с), запрос не ушёл. Настоящий таймаут чтения — запрос ушёл, повтор стоит токенов:
+        # только retries раз. Остальное (не соединились, остывшее соединение закрыто) — повтор.
+        if isinstance(last, requests.ReadTimeout) and time.time() - tried >= READ_TIMEOUT - 5:
+            read_fails += 1
+            failed = read_fails > retries
+        else:
+            connect_fails += 1
+            failed = connect_fails >= CONNECT_TRIES
+        if failed:
+            raise ClaudeError("Нет связи с ИИ (Anthropic): сервер не смог соединиться за %d попыток (%s). "
+                              "Повторите через минуту." % (connect_fails + read_fails, last.__class__.__name__)) from last
+        if on_retry:
+            on_retry("Связь с ИИ плохая — пробую ещё (попытка %d)…" % (connect_fails + read_fails + 1))
+        time.sleep(1)
     seconds = time.time() - started
     try:
         data = resp.json()
@@ -65,6 +93,14 @@ def messages(api_key, payload, base=None, retries=1):
         }.get(kind, "")
         raise ClaudeError("%s (HTTP %s: %s)" % (human or "Ошибка API", resp.status_code, text or kind))
     return data, seconds
+
+
+def keepalive(api_key, base=None):
+    """Бесплатный запрос (список моделей) по тому же соединению — чтобы не остывало. → HTTP-код."""
+    url = (base or DEFAULT_BASE).rstrip("/") + "/v1/models?limit=1"
+    resp = _http().get(url, headers=_headers(api_key), timeout=(CONNECT_TIMEOUT, 30))
+    resp.content  # дочитать — иначе соединение не вернётся в пул
+    return resp.status_code
 
 
 def ping(api_key, model=None, base=None):

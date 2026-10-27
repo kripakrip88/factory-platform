@@ -29,7 +29,7 @@
           </div>
           <t t-foreach="state.items" t-as="item" t-key="item_index">
             <div t-if="item.role === 'user'" class="o_pmk_ai__q" t-esc="item.text"/>
-            <div t-elif="item.pending" class="o_pmk_ai__a o_pmk_ai__typing">Думаю… ответ занимает 10–60 секунд</div>
+            <div t-elif="item.pending" class="o_pmk_ai__a o_pmk_ai__typing" t-esc="item.note || 'Думаю… ответ занимает 10–60 секунд'"/>
             <div t-elif="item.error" class="o_pmk_ai__a o_pmk_ai__a--err" t-esc="item.text"/>
             <div t-else="" class="o_pmk_ai__a">
               <t t-if="item.html" t-out="item.html"/>

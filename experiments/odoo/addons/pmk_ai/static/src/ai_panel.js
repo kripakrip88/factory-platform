@@ -156,6 +156,9 @@ export class PmkAiPanel extends Component {
         do {
             await new Promise((r) => setTimeout(r, 1500));
             res = await this.orm.call("pmk.ai.chat", "poll", [requestId]);
+            // «Связь с ИИ плохая — пробую ещё…» вместо «Думаю…», пока фон повторяет (27.10.2026).
+            const pending = this.state.items.find((i) => i.pending === requestId);
+            if (pending && (pending.note || "") !== (res.note || "")) pending.note = res.note || "";
         } while ((res.state === "queued" || res.state === "running") && Date.now() < until);
         if (res.state === "queued" || res.state === "running") {
             res = { error: "Ответ задерживается — загляните позже: он сохранится в диалоге." };

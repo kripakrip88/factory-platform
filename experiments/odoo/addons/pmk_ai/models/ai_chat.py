@@ -134,6 +134,8 @@ class PmkAiRequest(models.Model):
     started = fields.Datetime("Начат")
     usage_id = fields.Many2one("pmk.ai.usage", "Расход", ondelete="set null")
     thread_id = fields.Many2one("pmk.ai.thread", "Диалог", index=True, ondelete="cascade")
+    # 27.10.2026: «Связь с ИИ плохая — пробую ещё…» — пишет фон, пока идёт повтор; видно в окне.
+    note = fields.Char("Состояние связи")
 
 
 class PmkAiChat(models.AbstractModel):
@@ -579,7 +581,7 @@ class PmkAiChat(models.AbstractModel):
         req = self.env["pmk.ai.request"].sudo().browse(int(request_id)).exists()
         if not req or req.user_id != self.env.user:
             return {"state": "error", "error": "Вопрос не найден."}
-        out = {"state": req.state}
+        out = {"state": req.state, "note": req.note or ""}
         if req.state == "done":
             out.update(answer=req.answer, seconds=round(req.seconds, 1), status=self.get_status(),
                        usage_id=req.usage_id.id)
@@ -647,12 +649,25 @@ class PmkAiChat(models.AbstractModel):
                 history += [{"role": "user", "text": prev.question}, {"role": "assistant", "text": prev.answer or ""}]
         chat = self.with_user(req.user_id).with_context(lang=req.user_id.lang or "ru_RU",
                                                          tz=req.user_id.tz or "Asia/Vladivostok")
+        retried = []
+
+        def on_retry(text):
+            # Своим курсором с фиксацией: транзакция вопроса закрепится только в конце, а
+            # страница опрашивает состояние сейчас.
+            retried.append(text)
+            with self.env.registry.cursor() as cr:
+                cr.execute("UPDATE pmk_ai_request SET note = %s WHERE id = %s", (text, req.id))
+
         try:
-            res = chat._answer(req.question, history, context)
+            res = chat._answer(req.question, history, context, on_retry=on_retry)
         except Exception as exc:  # фон не должен падать от одного вопроса
             _logger.exception("pmk_ai: вопрос %s", req.id)
             res = {"error": "Ошибка при ответе: %s" % exc.__class__.__name__, "seconds": 0}
-        req.write({"state": "error" if res.get("error") else "done",
+        if retried:
+            # Строку вопроса уже менял другой курсор (on_retry): в REPEATABLE READ запись ниже
+            # упала бы «could not serialize access» — фиксируем и пишем в новом снимке.
+            self.env.cr.commit()
+        req.write({"state": "error" if res.get("error") else "done", "note": False,
                    "answer": res.get("error") or res.get("answer"), "seconds": res.get("seconds") or 0,
                    "usage_id": res.get("usage_id") or False})
 
@@ -665,7 +680,7 @@ class PmkAiChat(models.AbstractModel):
         usage.write({"rating": rating, "feedback": _text(note or "", 2000) or False})
         return True
 
-    def _answer(self, question, history=None, context=None):
+    def _answer(self, question, history=None, context=None, on_retry=None):
         """Сам ответ: Claude + инструменты. Зовёт фоновый процесс, не страница."""
         messages = []
         for item in (history or [])[-2 * HISTORY:]:
@@ -677,7 +692,7 @@ class PmkAiChat(models.AbstractModel):
                    "tools": self._tools(), "messages": messages}
         totals = {"input_tokens": 0, "output_tokens": 0, "cache_creation_input_tokens": 0,
                   "cache_read_input_tokens": 0}
-        started, calls, answer, error = time.time(), 0, "", ""
+        started, calls, answer, error, said = time.time(), 0, "", "", ""
         try:
             while calls < MAX_CALLS:
                 if calls == MAX_CALLS - 1 or time.time() - started > TIME_BUDGET:
@@ -685,13 +700,14 @@ class PmkAiChat(models.AbstractModel):
                     # вместо вывода (разбор 18.10: «расскажи о заказчике» упёрся в лимит вызовов).
                     payload["tool_choice"] = {"type": "none"}
                 data, _sec = claude.messages(self._param("pmk_ai.api_key"), payload,
-                                             base=self._param("pmk_ai.api_base"))
+                                             base=self._param("pmk_ai.api_base"), on_retry=on_retry)
                 calls += 1
                 usage = data.get("usage") or {}
                 for key in totals:
                     totals[key] += int(usage.get(key) or 0)
                 content = data.get("content") or []
                 answer = "".join(b.get("text", "") for b in content if b.get("type") == "text").strip()
+                said = answer or said
                 uses = [b for b in content if b.get("type") == "tool_use"]
                 if data.get("stop_reason") != "tool_use" or not uses:
                     break
@@ -702,6 +718,9 @@ class PmkAiChat(models.AbstractModel):
                                            ensure_ascii=False, default=str)[:20000]} for b in uses]})
         except claude.ClaudeError as exc:
             error = str(exc)
+        # Последний заход вернулся пустым (Голубенко 27.10, «Ответ пустой» после 4 минут) — отдать
+        # текст, сказанный по ходу сбора данных, он лучше, чем ничего.
+        answer = answer or said
         seconds = time.time() - started
         usage = self.env["pmk.ai.usage"].sudo().create({
             "user_id": self.env.uid, "question": _text(question, 200), "model": model, "calls": calls,
