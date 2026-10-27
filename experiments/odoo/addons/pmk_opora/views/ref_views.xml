@@ -20,6 +20,8 @@
         <field name="mass"/>
         <field name="ost_mass"/>
         <field name="ratio" optional="show"/>
+        <field name="draw_state" optional="show" widget="badge" decoration-success="draw_state == 'done'"
+               decoration-info="draw_state == 'queued'" decoration-danger="draw_state == 'error'"/>
       </list>
     </field>
   </record>
@@ -51,6 +53,8 @@
             </group>
           </group>
           <field name="parts_text" nolabel="1"/>
+          <!-- 27.10.2026: чертежи марки по правилам в.2 — PDF и DXF по кнопке (models/ref_draw.py). -->
+          <widget name="pmk_opora_drawing"/>
         </sheet>
       </form>
     </field>
@@ -74,6 +78,10 @@
         <filter name="kp_fix" string="КП неподвижные" domain="[('opora_type', '=', 'kp_fix')]"/>
         <filter name="kx" string="КХ подвижные" domain="[('opora_type', '=', 'kx')]"/>
         <filter name="kx_fix" string="КХ неподвижные" domain="[('opora_type', '=', 'kx_fix')]"/>
+        <separator/>
+        <filter name="draw_v2" string="Чертежи в.2: КХ А12, КП А12, ОПП1"
+                domain="['|', '&amp;', ('opora_type', 'in', ('kx', 'kp')), ('execution', '=', 'А12'), ('opora_type', '=', 'opp1')]"/>
+        <filter name="draw_done" string="Чертёж готов" domain="[('draw_state', '=', 'done')]"/>
         <group>
           <filter name="by_standard" string="Стандарт" context="{'group_by': 'standard'}"/>
           <filter name="by_family" string="Тип" context="{'group_by': 'family'}"/>
@@ -89,5 +97,13 @@
     <field name="res_model">pmk.opora.ref</field>
     <field name="view_mode">list,form</field>
     <field name="context">{'search_default_by_standard': 1, 'search_default_by_family': 1}</field>
+  </record>
+
+  <!-- 27.10.2026: «Чертежи опор» — справочник с отбором марок, для которых есть генератор в.2 (для Игоря). -->
+  <record id="action_opora_drawings" model="ir.actions.act_window">
+    <field name="name">Чертежи опор (в.2)</field>
+    <field name="res_model">pmk.opora.ref</field>
+    <field name="view_mode">list,form</field>
+    <field name="context">{'search_default_draw_v2': 1, 'search_default_by_family': 1}</field>
   </record>
 </odoo>

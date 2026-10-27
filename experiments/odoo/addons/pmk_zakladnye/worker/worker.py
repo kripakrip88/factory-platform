@@ -15,6 +15,7 @@
 """
 import glob
 import os
+import re
 import signal
 import subprocess
 import sys
@@ -49,11 +50,26 @@ def _next(root):
     return None
 
 
+def _runner(workdir):
+    """Исполнитель задания. По умолчанию — чертежи закладных; файл «runner» в папке задания
+    называет исполнитель другого модуля (опоры, 27.10.2026: тот же образ с PyMuPDF и шрифтом).
+    Только pmk_<модуль>/worker/<файл>.py из папки модулей — чужой путь не исполняем."""
+    try:
+        with open(os.path.join(workdir, "runner"), encoding="utf-8") as f:
+            rel = f.read().strip()
+    except OSError:
+        return RUNNER
+    full = os.path.join(os.path.dirname(os.path.dirname(HERE)), rel)
+    if re.fullmatch(r"pmk_[a-z0-9_]+/worker/[a-z0-9_]+\.py", rel) and os.path.isfile(full):
+        return full
+    return RUNNER
+
+
 def run_job(root, workdir):
     env = dict(os.environ, TMPDIR=os.path.join(workdir, "tmp"), PYTHONDONTWRITEBYTECODE="1")
     os.makedirs(env["TMPDIR"], exist_ok=True)
     with open(os.path.join(workdir, "run.log"), "ab") as log:
-        proc = subprocess.Popen([sys.executable, RUNNER, workdir], env=env, stdout=log,
+        proc = subprocess.Popen([sys.executable, _runner(workdir), workdir], env=env, stdout=log,
                                 stderr=subprocess.STDOUT, start_new_session=True)
         while proc.poll() is None:
             if not os.path.isdir(workdir):

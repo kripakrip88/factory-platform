@@ -1,0 +1,25 @@
+// Чертежи марки справочника опор (27.10.2026).
+.o_pmk_opora_draw {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color, #e5e5e5);
+    .o_pmk_opora_draw__bar {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+    .o_pmk_opora_draw__title {
+        font-weight: 500;
+        margin-right: 8px;
+    }
+    .o_pmk_opora_draw__wait { color: var(--bs-secondary-color, #6c757d); }
+    .o_pmk_opora_draw__err { color: var(--bs-danger, #b02a37); }
+    .o_pmk_opora_draw__img img {
+        display: block;
+        max-width: 100%;
+        border: 1px solid var(--border-color, #e5e5e5);
+        border-radius: 6px;
+    }
+}

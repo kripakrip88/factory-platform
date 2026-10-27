@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+  <t t-name="pmk_opora.OporaDrawing">
+    <div class="o_pmk_opora_draw" t-if="state.info">
+      <t t-set="i" t-value="state.info"/>
+      <div t-if="!i.supported" class="text-muted">Чертежи пока есть для КХ А12, КП А12 и ОПП1 — остальные типы позже.</div>
+      <t t-else="">
+        <div class="o_pmk_opora_draw__bar">
+          <span class="o_pmk_opora_draw__title">Чертежи · правила <t t-esc="i.rules"/> (по чертежам И. Бутова)</span>
+          <t t-if="i.state === 'done'">
+            <a class="btn btn-secondary btn-sm" t-att-href="url(i.pdf)" target="_blank"><i class="fa fa-file-pdf-o"/> PDF</a>
+            <a class="btn btn-secondary btn-sm" t-att-href="url(i.zip, true)"><i class="fa fa-download"/> DXF для лазера</a>
+            <button class="btn btn-link btn-sm" t-att-disabled="state.busy" t-on-click="draw">Перерисовать</button>
+          </t>
+          <button t-elif="i.state !== 'queued'" class="btn btn-primary btn-sm" t-att-disabled="state.busy" t-on-click="draw">Сделать чертежи</button>
+        </div>
+        <div t-if="i.state === 'queued'" class="o_pmk_opora_draw__wait"><i class="fa fa-circle-o-notch fa-spin"/> Рисую… обычно 5–20 секунд, окно можно не держать.</div>
+        <div t-if="i.state === 'error'" class="o_pmk_opora_draw__err" t-esc="i.error"/>
+        <div t-if="i.state === 'none'" class="text-muted">PDF (2 листа: сборка и детали с развёртками) и DXF деталей для лазера — по кнопке; готовые остаются у марки.</div>
+        <a t-if="i.state === 'done' and i.png" t-att-href="url(i.pdf)" target="_blank" class="o_pmk_opora_draw__img">
+          <img t-att-src="url(i.png)" t-att-alt="i.designation"/>
+        </a>
+      </t>
+    </div>
+  </t>
+</templates>
