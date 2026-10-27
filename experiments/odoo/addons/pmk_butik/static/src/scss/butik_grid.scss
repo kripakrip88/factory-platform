@@ -11,6 +11,8 @@
   --bt-ok: #3f5a12;
   --bt-bad: #9b2c22;
   --bt-bad-bg: #fbecea;
+  --bt-calc: #f4f4f2;          // 27.10.2026: ячейки, которые считает система
+  --bt-edit-rim: #c9ccd1;      // рамка ячейки для ввода при наведении
 
   margin: 8px 0 12px;
 }
@@ -186,6 +188,8 @@ tr:hover .o_pmk_butik__cat, td.sel .o_pmk_butik__cat, .o_pmk_butik__detail--bad 
     --bt-ok: #c3d877;
     --bt-bad: #f3a19e;
     --bt-bad-bg: #3a2a2c;
+    --bt-calc: #2b2e34;
+    --bt-edit-rim: #555a64;
   }
 }
 
@@ -279,3 +283,15 @@ textarea.o_pmk_butik__ta {
   .o_pmk_butik__dragging { opacity: 0.4; }
   tr[data-over="1"] > td { box-shadow: inset 0 2px 0 var(--pmk-accent, #378add); }
 }
+
+// ─── 27.10.2026: где вписывать самому (Антон: «расставить акценты на поля, куда можно вводить») ──
+// Строки деталей: то, что считает система, — серым фоном; ячейки для ввода — белые, при
+// наведении в рамке. Своя цифра в ячейке — тёмная, расчётная подсказка (placeholder) — бледная.
+.o_pmk_butik__detail td.o_pmk_butik__ro { background: var(--bt-calc); }
+.o_pmk_butik__detail td:not(.o_pmk_butik__ro):not(.o_pmk_butik__grip):not(.o_pmk_butik__acts):hover {
+  box-shadow: inset 0 0 0 1px var(--bt-edit-rim);
+}
+.o_pmk_butik__detail td.sel:hover { box-shadow: inset 0 0 0 2px var(--bt-sel); }
+.o_pmk_konstr__dash { text-align: center !important; }
+// Нераспознанная строка остаётся целиком бледно-красной (16.10), серый фон её не перебивает.
+.o_pmk_butik__detail--bad td.o_pmk_butik__ro { background: var(--bt-bad-bg); }

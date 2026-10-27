@@ -127,6 +127,9 @@
                   <td class="o_pmk_butik__grip" title="Перетащить строку" t-on-mousedown="() => this.armDrag()">⠿</td>
                   <t t-foreach="['pos', 'name', 'width', 'length_mm', 'qty']" t-as="col" t-key="col">
                     <td t-if="col === 'width' and !row.is_sheet" class="o_pmk_butik__ro"/>
+                    <!-- 27.10.2026: у метиза и покрытия длины нет — прочерк, а не пустое поле для ввода. -->
+                    <td t-elif="col === 'length_mm' and row.no_length" class="n o_pmk_butik__ro o_pmk_konstr__dash"
+                        title="У метиза и покрытия длины нет">—</td>
                     <td t-else="" t-att-class="{ sel: isSel(row_index, col), n: isNum(col), 'o_pmk_butik__namecell': col === 'name' }">
                       <textarea t-if="col === 'name'" rows="1" class="o_pmk_butik__in o_pmk_butik__ta"
                              t-att-value="val(row, col)" t-att-data-index="row_index" t-att-data-key="row.id" data-col="name"
@@ -178,6 +181,16 @@
                            t-on-change="(ev) => this.commit(row, 'grade', ev)"
                            t-on-keydown="(ev) => this.onKeydown(row_index, 'grade', ev)"
                            t-on-paste="(ev) => this.onPaste(row_index, ev)"/>
+                    <!-- 27.10.2026: «Марка» списком — у метиза классы / покрытия этого размера, у проката и листа — марки. -->
+                    <div t-if="state.gradeOpts and state.gradeRow === row_index" class="o_pmk_butik__suggest o_pmk_konstr__grades">
+                      <div t-foreach="state.gradeOpts" t-as="opt" t-key="opt_index" class="o_pmk_butik__sitem"
+                           t-att-class="{ 'o_pmk_butik__sitem--active': opt_index === state.gradeIdx }"
+                           t-on-mousedown="(ev) => this.pickGrade(row_index, opt, ev)">
+                        <span t-esc="opt.label"/>
+                        <span t-if="opt.price" class="o_pmk_konstr__gprice"><t t-esc="pieceMoney(opt.price)"/> ₽/шт</span>
+                        <span t-elif="opt.key" class="o_pmk_konstr__gprice">нет цены</span>
+                      </div>
+                    </div>
                   </td>
                   <td class="n o_pmk_butik__ro" t-esc="kg(row.weight_one)"/>
                   <td t-att-class="{ sel: isSel(row_index, 'mass') }">

@@ -78,16 +78,13 @@ class MetalFastenerResolve(models.Model):
     _inherit = "pmk.metal.fastener"
 
     @api.model
-    def _pmk_resolve(self, text):
-        """Позиция справочника по записи или пустой набор (не найдено / неоднозначно)."""
-        info = parse(text)
+    def _pmk_same_size(self, info):
+        """Позиции того же вида, размера и подвида — без учёта класса, покрытия и резьбы."""
         if not info["type"] or not info["d"]:
             return self.browse()
         want = (info["d"], info["l"]) if info["l"] else (info["d"],)
         cands = self.search([("fastener_type", "=", info["type"])]).filtered(
             lambda f: _size(f.size_label) == want)
-        if not cands:
-            return self.browse()
         if info["type"] in ("bolt", "nut", "washer"):
             cands = cands.filtered(lambda f: ("5264" in (f.gost or "")) == info["hs"])
         if info["type"] == "washer" and not info["hs"]:
@@ -96,10 +93,35 @@ class MetalFastenerResolve(models.Model):
                                    and ("10906" in (f.gost or "")) == info["oblique"])
         if info["type"] == "nut" and not info["hs"]:
             cands = cands.filtered(lambda f: ("985" in (f.gost or "")) == info["lock"])
-        if info["type"] == "bolt":
-            cands = cands.filtered(lambda f: f.full_thread == info["full"])
         if info["type"] == "screw" and info["screw_kind"]:
             cands = cands.filtered(lambda f: info["screw_kind"] in (f.name or ""))
+        return cands
+
+    @api.model
+    def _pmk_variants(self, text):
+        """Выбор для ячейки «Марка» (27.10.2026, Антон: «выпадашка в марке, как у листа»): все
+        классы / покрытия / резьбы этого размера — по классу, потом покрытию."""
+        return self._pmk_same_size(parse(text)).sorted(
+            lambda f: (f.strength_class or "", COAT_ORDER.get(f.coating, 4), f.full_thread, f.id))
+
+    def _pmk_variant_label(self):
+        """«кл. 8.8 · цинк · полная резьба» — то, чем позиция отличается от соседей по размеру."""
+        self.ensure_one()
+        coat = dict(self._fields["coating"]._description_selection(self.env)).get(self.coating) or ""
+        parts = ["кл. %s" % self.strength_class if self.strength_class else "",
+                 "" if self.coating in (False, "black") else coat.lower(),
+                 "полная резьба" if self.full_thread else ""]
+        return " · ".join(p for p in parts if p) or "без класса"
+
+    @api.model
+    def _pmk_resolve(self, text):
+        """Позиция справочника по записи или пустой набор (не найдено / неоднозначно)."""
+        info = parse(text)
+        cands = self._pmk_same_size(info)
+        if not cands:
+            return self.browse()
+        if info["type"] == "bolt":
+            cands = cands.filtered(lambda f: f.full_thread == info["full"])
         if info["class"]:
             cands = cands.filtered(lambda f: (f.strength_class or "") == info["class"])
         elif len(set(cands.mapped(lambda f: f.strength_class or ""))) > 1:

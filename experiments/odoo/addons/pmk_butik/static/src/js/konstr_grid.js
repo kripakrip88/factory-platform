@@ -118,7 +118,84 @@ export class PmkKonstrGrid extends PmkButikGrid {
             return ["name", "product_qty", "price_ton", "price"];
         }
         // №314: нет цены в прайсах — «Цена за т» детали вписывается руками.
-        return [...super.colsOf(row), "mass", ...(row.can_manual ? ["metal_ton"] : [])];
+        // 27.10.2026: у метиза и покрытия длины нет — ячейка с прочерком, курсор её пропускает.
+        const base = super.colsOf(row).filter((col) => !(row.no_length && col === "length_mm"));
+        return [...base, "mass", ...(row.can_manual ? ["metal_ton"] : [])];
+    }
+
+    // ─── «Марка» списком (27.10.2026, Антон: «выпадашка в марке, как у листа и сортамента») ──
+    // У метиза — классы / покрытия / резьбы этого размера, у проката и листа — марки стали.
+    // Набранное руками («8.8», «ст3», «09г») по-прежнему распознаётся само.
+    onFocus(index, col) {
+        super.onFocus(index, col);
+        if (col === "grade" && this.rows[index]?.kind === "detail") {
+            this.loadGrades(index, "");
+        } else {
+            this.closeGrades();
+        }
+    }
+
+    onInput(row, index, col, ev) {
+        super.onInput(row, index, col, ev);
+        if (col === "grade" && row.kind === "detail") {
+            clearTimeout(this.gradeTimer);
+            const query = ev.target.value;
+            this.gradeTimer = setTimeout(() => this.loadGrades(index, query), 200);
+        }
+    }
+
+    async loadGrades(index, query) {
+        const row = this.rows[index];
+        if (!row || !this.specId) {
+            return;
+        }
+        const opts = await this.orm.call("pmk.metal.spec", "konstr_grade_options", [[this.specId], row.id, query]);
+        if (this.alive() && this.state.sel.row === index && this.state.sel.col === "grade") {
+            this.state.gradeOpts = opts.length ? opts : null;
+            this.state.gradeRow = index;
+            this.state.gradeIdx = opts.findIndex((o) => o.current);
+        }
+    }
+
+    closeGrades() {
+        clearTimeout(this.gradeTimer);
+        if (this.state.gradeOpts) {
+            this.state.gradeOpts = null;
+            this.state.gradeRow = null;
+            this.state.gradeIdx = -1;
+        }
+    }
+
+    async pickGrade(index, opt, ev) {
+        ev?.preventDefault();
+        const row = this.rows[index];
+        this.closeGrades();
+        delete this.drafts[`${row.id}:grade`];
+        await this.call("konstr_set_grade_option", [row.id, opt]);
+    }
+
+    async onKeydown(index, col, ev) {
+        const open = col === "grade" && this.state.gradeOpts && this.state.gradeRow === index;
+        if (open && (ev.key === "ArrowDown" || ev.key === "ArrowUp")) {
+            ev.preventDefault();
+            const count = this.state.gradeOpts.length;
+            this.state.gradeIdx = (this.state.gradeIdx + (ev.key === "ArrowDown" ? 1 : -1) + count) % count;
+            return;
+        }
+        if (open && ev.key === "Enter" && this.state.gradeIdx >= 0
+                && ev.target.value === this.saved(this.rows[index], "grade")) {
+            // Enter без своего текста — взять выделенный вариант; набрали сами — сохраняется набранное.
+            await this.pickGrade(index, this.state.gradeOpts[this.state.gradeIdx], ev);
+            return;
+        }
+        if (open && ev.key === "Escape") {
+            this.closeGrades();
+            return;
+        }
+        if (col === "grade") {
+            this.closeGrades();
+        }
+        return super.onKeydown(index, col, ev);
     }
 
     /** №314: цена, вписанная вручную в другом расчёте, — в эту деталь по щелчку (до «Сохранить цены»). */
@@ -143,6 +220,11 @@ export class PmkKonstrGrid extends PmkButikGrid {
 
     money(value) {
         return value ? Math.round(value).toLocaleString("ru-RU") : "";
+    }
+
+    /** Цена метиза за штуку — с копейками (19,80, не 20). */
+    pieceMoney(value) {
+        return value ? value.toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "";
     }
 
     async setMode(mode) {

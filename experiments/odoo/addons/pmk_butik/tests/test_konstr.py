@@ -208,3 +208,30 @@ class TestKonstr(TransactionCase):
         self.assertEqual(a1.product_id, b)
         self.assertEqual(b.line_ids.sorted("sequence").mapped("detail_name"), ["б1", "а1"])
         self.assertEqual(a.line_ids.mapped("detail_name"), ["а2"])
+
+    def test_bolt_class_from_grade_list(self):
+        """27.10.2026: болт без класса — подсказка «выберите в «Марке»», список классов, прочерк в длине."""
+        detail = self._detail(self._rows(self.spec.konstr_add_product()))[0]
+        rows = self._rows(self.spec.konstr_save_row(detail["id"], {"name": "болт м10х40"}))
+        row = next(r for r in rows if r["id"] == detail["id"])
+        self.assertTrue(row["no_length"])
+        self.assertIn("выберите в «Марке»", row["label"])
+        self.assertIn("кл. 8.8", row["label"])
+        opts = self.spec.konstr_grade_options(detail["id"])
+        want = self.env.ref("pmk_calc.fast2_bolt_10_40_88_black")
+        opt = next(o for o in opts if o["key"] == "fastener:%d" % want.id)
+        self.assertEqual(opt["label"], "кл. 8.8")
+        rows = self._rows(self.spec.konstr_set_grade_option(detail["id"], opt))
+        row = next(r for r in rows if r["id"] == detail["id"])
+        line = self.spec.product_ids.line_ids.filtered(lambda l: l.id == int(detail["id"][1:]))
+        self.assertEqual(line.fastener_id, want)
+        self.assertEqual(row["grade"], "кл. 8.8")
+        # набранное руками по-прежнему распознаётся
+        self.spec.konstr_save_row(detail["id"], {"grade": "5.8"})
+        self.assertEqual(line.fastener_id, self.env.ref("pmk_calc.fast2_bolt_10_40_58_black"))
+
+    def test_grade_list_for_profile(self):
+        detail = self._detail(self._rows(self.spec.konstr_add_product()))[0]
+        self.spec.konstr_save_row(detail["id"], {"name": "Уголок 63х4"})
+        opts = self.spec.konstr_grade_options(detail["id"], "09")
+        self.assertTrue(opts and all("09" in o["label"] for o in opts))

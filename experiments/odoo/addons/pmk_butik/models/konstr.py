@@ -72,6 +72,12 @@ class MetalSpecLineKonstr(models.Model):
         self.ensure_one()
         item = self._konstr_item()
         if not item:
+            if self.pmk_text and self.calc_mode == "fastener":
+                # 27.10.2026: «болт м20х100» без класса — не «нет в справочнике», а какой выбрать.
+                variants = self.env["pmk.metal.fastener"]._pmk_variants(self.pmk_text)
+                if variants:
+                    return _("выберите в «Марке»: %s") % " / ".join(
+                        dict.fromkeys(v._pmk_variant_label() for v in variants[:8]))
             if self.pmk_text:
                 return _("нет в справочнике — выберите из подсказки")
             return ""
@@ -140,6 +146,8 @@ class MetalSpecLineKonstr(models.Model):
             "length_mm": (self.b_mm if not self.pmk_mass_kg else 0.0) if sheet
             else (self.length_mm if self.calc_mode == "linear" else 0.0),
             "length_derived": bool(self.pmk_mass_kg) and self.calc_mode == "linear",
+            # 27.10.2026: у метиза и покрытия длины нет — в ячейке прочерк, не пустое поле для ввода.
+            "no_length": self.calc_mode in ("fastener", "paint"),
             "qty": self.qty or 0,
             "qty_total": (self.qty or 0) * qty_product,
             # Вписанное («С345») — поверх марки справочника, по которой цена (09Г2С).
@@ -498,6 +506,43 @@ class MetalSpecKonstr(models.Model):
             "line_ids": [fields.Command.create({"calc_mode": "linear", "qty": 1})],
         })
         return self.konstr_rows()
+
+    def konstr_grade_options(self, row_key, query=""):
+        """Выпадающий список ячейки «Марка» (27.10.2026, Антон: «выпадашка в марке, как у листа и
+        сортамента»): у метиза — классы / покрытия / резьбы этого размера (выбор — сама позиция),
+        у проката и листа — марки стали справочника (с отбором по набранному)."""
+        self.ensure_one()
+        kind, line = self._konstr_record(row_key)
+        if kind != DETAIL:
+            return []
+        if line.calc_mode == "fastener":
+            text = line.pmk_text or line.fastener_id.name or ""
+            out = []
+            for f in self.env["pmk.metal.fastener"]._pmk_variants(text):
+                prices = f.product_tmpl_id.seller_ids.mapped("price") if f.product_tmpl_id else []
+                out.append({"key": "fastener:%d" % f.id, "label": f._pmk_variant_label(), "grade": f._pmk_variant_label(),
+                            "price": min(prices) if prices else 0.0, "current": f == line.fastener_id})
+            return out
+        if line.calc_mode in ("linear", "sheet"):
+            query = (query or "").strip().lower()
+            grades = self.env["pmk.metal.grade"].search([])
+            names = list(dict.fromkeys(g.name for g in grades if not query or query in g.name.lower()))
+            return [{"key": "", "label": n, "grade": n, "current": n == (line.pmk_grade_text or line.grade_id.name)}
+                    for n in names[:12]]
+        return []
+
+    def konstr_set_grade_option(self, row_key, option):
+        """Выбор из списка «Марки»: метиз — позиция и подпись класса; прокат/лист — марка."""
+        self.ensure_one()
+        self.check_access("write")
+        kind, line = self._konstr_record(row_key)
+        if kind != DETAIL:
+            raise UserError(_("Марка выбирается у детали."))
+        if (option.get("key") or "").startswith("fastener:"):
+            self.konstr_set_position(row_key, option["key"])
+            line.write({"pmk_grade_text": option.get("grade") or False, "grade_id": False})
+            return self.konstr_rows()
+        return self.konstr_save_row(row_key, {"grade": option.get("grade") or ""})
 
     def konstr_set_position(self, row_key, key):
         """Позиция из подсказки (как в Бутике): прокат / лист / метиз / покрытие."""

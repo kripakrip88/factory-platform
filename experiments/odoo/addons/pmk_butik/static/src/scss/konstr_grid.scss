@@ -65,3 +65,11 @@
 }
 .o_pmk_konstr__unsaved { color: var(--pmk-tone-orange, #d85a30) !important; }
 .o_pmk_pending__table td, .o_pmk_pending__table th { padding: 4px 8px; }
+
+// 27.10.2026: «Марка» списком — шире ячейки, вариант в одну строку, цена за штуку справа.
+.o_pmk_konstr__grades {
+  right: auto;
+  min-width: 260px;
+  .o_pmk_butik__sitem { display: flex; gap: 12px; white-space: nowrap; }
+}
+.o_pmk_konstr__gprice { margin-left: auto; color: var(--bt-muted); font-variant-numeric: tabular-nums; }
