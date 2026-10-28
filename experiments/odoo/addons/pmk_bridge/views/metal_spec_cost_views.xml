@@ -149,7 +149,7 @@
           документа, а себестоимость — то, что он проверяет. Маржа рядом,
           потому что смысл имеет только их разница.
         -->
-        <div class="pmk-kpi__card">
+        <div class="pmk-kpi__card pmk-kpi__card--price">
           <div class="pmk-kpi__label">Цена клиенту</div>
           <div class="pmk-kpi__value">
             <field name="price_customer_total" widget="monetary"/>
@@ -169,8 +169,9 @@
           верхняя граница. Вариант переключается по price_incomplete: у
           разметки формы нет условного класса.
         -->
-        <div class="pmk-kpi__card"
-             invisible="price_customer_total == 0 or price_incomplete">
+        <!-- 28.10.2026 (итог справа): маржа цветом — зелёная, жёлтая при неполном расчёте, красная в минусе. -->
+        <div class="pmk-kpi__card pmk-kpi__card--margin pmk-kpi__card--good"
+             invisible="price_customer_total == 0 or price_incomplete or margin_amount &lt; 0">
           <div class="pmk-kpi__label">Маржа над металлом</div>
           <div class="pmk-kpi__value">
             <field name="margin_amount" widget="monetary"/>
@@ -178,8 +179,17 @@
           <div class="pmk-kpi__sub"><field name="margin_pct" nolabel="1"/> % от цены</div>
           <div class="pmk-kpi__sub" invisible="price_uncosted == 0">доборка, зонты — не входят</div>
         </div>
-        <div class="pmk-kpi__card pmk-kpi__card--warn"
-             invisible="price_customer_total == 0 or not price_incomplete">
+        <div class="pmk-kpi__card pmk-kpi__card--margin pmk-kpi__card--bad"
+             invisible="price_customer_total == 0 or margin_amount &gt;= 0">
+          <div class="pmk-kpi__label">Маржа над металлом</div>
+          <div class="pmk-kpi__value">
+            <field name="margin_amount" widget="monetary"/>
+          </div>
+          <div class="pmk-kpi__sub"><field name="margin_pct" nolabel="1"/> % от цены
+            <span invisible="not price_incomplete">· предварительно: без <field name="no_price_count" nolabel="1"/> поз.</span></div>
+        </div>
+        <div class="pmk-kpi__card pmk-kpi__card--margin pmk-kpi__card--warn"
+             invisible="price_customer_total == 0 or not price_incomplete or margin_amount &lt; 0">
           <div class="pmk-kpi__label">Маржа над металлом</div>
           <div class="pmk-kpi__value">
             <field name="margin_amount" widget="monetary"/>
@@ -188,13 +198,13 @@
             <field name="no_price_count" nolabel="1"/> поз.</div>
           <div class="pmk-kpi__sub" invisible="price_uncosted == 0">доборка, зонты — не входят</div>
         </div>
-        <div class="pmk-kpi__card" invisible="price_incomplete">
+        <div class="pmk-kpi__card pmk-kpi__card--metal" invisible="price_incomplete">
           <div class="pmk-kpi__label">Металл к закупке</div>
           <div class="pmk-kpi__value">
             <field name="cost_all_total" widget="monetary"/>
           </div>
         </div>
-        <div class="pmk-kpi__card pmk-kpi__card--warn" invisible="not price_incomplete">
+        <div class="pmk-kpi__card pmk-kpi__card--metal pmk-kpi__card--warn" invisible="not price_incomplete">
           <div class="pmk-kpi__label">Металл к закупке</div>
           <div class="pmk-kpi__value">
             <field name="cost_all_total" widget="monetary"/>
@@ -209,7 +219,7 @@
           поломка: владелец так и прочитал — «такого не может быть».
           Появится отход — карточка вернётся сама.
         -->
-        <div class="pmk-kpi__card" invisible="total_cost_waste == 0">
+        <div class="pmk-kpi__card pmk-kpi__card--clean" invisible="total_cost_waste == 0">
           <div class="pmk-kpi__label">Из них в деталях</div>
           <div class="pmk-kpi__value">
             <field name="total_cost_clean" widget="monetary"/>
@@ -552,6 +562,31 @@
     считается на дату, и суммы в уже названных клиенту расчётах не должны
     меняться сами.
   -->
+  <!--
+    ИТОГ СПРАВА (Антон 28.10.2026, по макету Lovable, прототип согласован). Карточки итогов
+    (.pmk-kpi) выносятся из шапки в свой блок — прямым потомком листа, между рамкой шапки и
+    вкладками: рамку и вкладки тема оформляет как прямых потомков листа (52.x, ≈26 правил), их не
+    трогаем. Дальше всё делает spec_cost.scss: обычно блок — полоса карточек над вкладками; на
+    широком экране и открытой вкладке «Металлоизделия» лист становится сеткой, блок — колонкой
+    «Итог» справа, которая не уезжает при прокрутке. На «Конструкциях» и прочих — полоса.
+  -->
+  <record id="view_metal_spec_form_aside" model="ir.ui.view">
+    <field name="name">pmk.metal.spec.form.aside</field>
+    <field name="model">pmk.metal.spec</field>
+    <field name="inherit_id" ref="pmk_calc.view_metal_spec_form"/>
+    <field name="priority">90</field>
+    <field name="arch" type="xml">
+      <xpath expr="//div[@name='pmk_doc_top']" position="after">
+        <div class="pmk-spec-aside" name="pmk_spec_aside">
+          <div class="pmk-spec-aside__title">Итог</div>
+        </div>
+      </xpath>
+      <xpath expr="//div[@name='pmk_spec_aside']" position="inside">
+        <xpath expr="//div[hasclass('pmk-kpi')]" position="move"/>
+      </xpath>
+    </field>
+  </record>
+
   <record id="view_metal_spec_list_cost" model="ir.ui.view">
     <field name="name">pmk.metal.spec.list.cost</field>
     <field name="model">pmk.metal.spec</field>

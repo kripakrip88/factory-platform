@@ -124,3 +124,156 @@
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
+
+// ═══ Итог справа (Антон 28.10.2026, макет согласован) ════════════════════════
+//
+// Карточки итогов вынесены из шапки в .pmk-spec-aside — прямой потомок листа между рамкой шапки
+// и вкладками (views/metal_spec_cost_views.xml, view_metal_spec_form_aside).
+// • Обычно (узкий экран, вкладки «Конструкции», «Металл», «Цены»…) — полоса карточек над
+//   вкладками: таблица «Конструкций» остаётся во всю ширину.
+// • Широкий экран + открыта вкладка «Металлоизделия» — колонка «Итог» справа, не уезжает при
+//   прокрутке (sticky в прокрутке .o_content). Какая вкладка открыта — по :has() ярлыка
+//   (.nav-link.active[name=pmk_summary]); у ярлыков Odoo 19 имя страницы в атрибуте name.
+
+// Поля шапки — на всю ширину рамки: правая колонка карточек из неё ушла.
+.o_form_sheet:has(> .pmk-spec-aside) .pmk-doc-head {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.o_form_sheet > .pmk-spec-aside {
+  margin: 0 0 12px;
+
+  .pmk-spec-aside__title { display: none; }
+
+  .pmk-kpi {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  // Полоса — в одну строку: подпись, сумма и пометка в ряд (прототип 28.10: «цена · маржа ·
+  // металл · вес · нет цены у N»), чтобы над таблицей не стояли высокие плитки.
+  .pmk-kpi__card {
+    flex: 1 1 auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 8px;
+    border-radius: 10px;
+    padding: 6px 12px;
+  }
+
+  .pmk-kpi__value { font-size: 15px; margin-top: 0; }
+  .pmk-kpi__sub { margin-top: 0; }
+
+  .pmk-kpi__note {
+    flex: 0 0 auto;
+    align-self: center;
+    padding: 0 4px;
+  }
+
+  // Порядок: цена → маржа → металл → в деталях → вес (вес — первая карточка pmk_calc).
+  .pmk-kpi__card--price  { order: 1; }
+  .pmk-kpi__card--margin { order: 2; }
+  .pmk-kpi__card--metal  { order: 3; }
+  .pmk-kpi__card--clean  { order: 4; }
+  .pmk-kpi > .pmk-kpi__card:first-child { order: 5; }
+}
+
+// Маржа цветом: зелёная — расчёт полный и в плюсе; красная — в минусе (жёлтая — тема, --warn).
+.pmk-kpi__card--good {
+  border-color: #c4dcae !important;
+  background: #eef6e6 !important;
+
+  .pmk-kpi__value { color: #27500a; }
+}
+
+.pmk-kpi__card--bad {
+  border-color: #f0b4b4 !important;
+  background: #fcebeb !important;
+
+  .pmk-kpi__value, .pmk-kpi__sub { color: #791f1f; }
+}
+
+@media screen {
+  body.o_nexus_dark .pmk-kpi__card--good {
+    border-color: #3b5a22 !important;
+    background: #233019 !important;
+
+    .pmk-kpi__value { color: #c0dd97; }
+  }
+
+  body.o_nexus_dark .pmk-kpi__card--bad {
+    border-color: #6b2a2a !important;
+    background: #3a2224 !important;
+
+    .pmk-kpi__value, .pmk-kpi__sub { color: #f7c1c1; }
+  }
+}
+
+@media screen and (min-width: 1400px) {
+  // Прилипание считается от ближайшего предка с overflow ≠ visible. У .o_form_sheet_bg ядро
+  // ставит overflow-y: auto, хотя прокручивается не он, а .o_content, — колонка уезжала вместе
+  // со страницей. Здесь у расчёта (чаттера сбоку нет) подложка без своей прокрутки.
+  .o_action_manager .o_form_view .o_form_sheet_bg:has(> .o_form_sheet > .pmk-spec-aside) {
+    overflow: visible;
+  }
+
+  .o_action_manager .o_form_view .o_form_sheet:has(> .pmk-spec-aside):has(.o_notebook_headers .nav-link.active[name="pmk_summary"]) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    // Третья строка 1fr: если колонка выше левой части, лишняя высота уходит в неё,
+    // а не в промежуток между шапкой и вкладками.
+    grid-template-rows: auto auto 1fr;
+    column-gap: 16px;
+    align-items: start;
+
+    > * { grid-column: 1; }
+
+    > .pmk-spec-aside {
+      grid-column: 2;
+      grid-row: 1 / 4;
+      position: sticky;
+      top: 0;          // край прокрутки .o_content — вровень с рамкой шапки
+      margin: 0;
+      padding: 14px 14px 12px;
+      background: #fff;
+      border: 1px solid #e6e6e6;
+      border-radius: 10px;
+
+      .pmk-spec-aside__title {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 15px;
+        font-weight: 600;
+      }
+
+      .pmk-kpi { flex-direction: column; }
+
+      .pmk-kpi__card {
+        flex: 0 0 auto;
+        flex-direction: column;
+        flex-wrap: nowrap;
+        align-items: stretch;
+        padding: 8px 12px;
+      }
+
+      .pmk-kpi__value { font-size: 18px; margin-top: 2px; }
+      .pmk-kpi__sub { margin-top: 3px; }
+      .pmk-kpi__note { align-self: flex-start; }
+
+      .pmk-kpi__card--price {
+        border: 0;
+        background: transparent;
+        padding: 0 2px 4px;
+
+        .pmk-kpi__value { font-size: 24px; }
+      }
+    }
+  }
+
+  body.o_nexus_dark .o_action_manager .o_form_view .o_form_sheet:has(> .pmk-spec-aside):has(.o_notebook_headers .nav-link.active[name="pmk_summary"]) > .pmk-spec-aside {
+    background: #272a30;
+    border-color: #3d414a;
+  }
+}
