@@ -12,7 +12,7 @@ from datetime import datetime
 
 import pytz
 
-from odoo import api, fields, models
+from odoo import api, fields, models, modules
 
 from . import links
 
@@ -199,7 +199,7 @@ class PmkVpnKey(models.Model):
                     key.state = "failed"
             # Отправленное фиксируем сразу: сбой на следующем человеке не
             # должен откатить отметку и повторить рассылку тому, кто уже получил.
-            if not self.env.registry.in_test_mode():
+            if not modules.module.current_test:   # в Odoo 19 нет registry.in_test_mode()
                 self.env.cr.commit()
 
     def _pmk_links(self):
