@@ -1,0 +1,22 @@
+[Unit]
+Description=VPN: синхронизация ключей сотрудников с Odoo (pmk_vpn)
+After=network-online.target xray.service
+Wants=network-online.target
+
+[Service]
+EnvironmentFile=/etc/vpn-sync/env
+ExecStart=/usr/bin/python3 /usr/local/lib/vpn-sync/vpn_sync.py
+Restart=always
+RestartSec=10
+# Нужен только API Xray на 127.0.0.1 и чтение его конфига (группа nogroup).
+User=nobody
+Group=nogroup
+StateDirectory=vpn-sync
+Environment=STATE=/var/lib/vpn-sync/state.json
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

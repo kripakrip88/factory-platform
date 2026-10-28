@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Настройки → VPN-ключи: кто получил ключ, кто в сети, трафик.
+         «Доступ» — переключатель прямо в строке. -->
+    <record id="pmk_vpn_key_view_list" model="ir.ui.view">
+        <field name="name">pmk.vpn.key.list</field>
+        <field name="model">pmk.vpn.key</field>
+        <field name="arch" type="xml">
+            <list string="VPN-ключи" editable="bottom" create="false"
+                  decoration-muted="not access" decoration-danger="state == 'failed'">
+                <header>
+                    <button name="action_pmk_issue_all" type="object" string="Разослать ключи"
+                            display="always" class="btn-primary"
+                            confirm="Каждому сотруднику с привязанным Телеграмом уйдёт личный QR-код VPN с инструкцией. Новым сотрудникам ключ будет уходить сам, как только им привяжут Телеграм. Разослать?"/>
+                </header>
+                <field name="user_id" readonly="1"/>
+                <field name="access" widget="boolean_toggle"/>
+                <field name="state" readonly="1"/>
+                <field name="sent_at" readonly="1" optional="hide"/>
+                <field name="last_seen" readonly="1"/>
+                <field name="devices_now" readonly="1"/>
+                <field name="blocked_ips" readonly="1" optional="show"/>
+                <field name="traffic_today" readonly="1"/>
+                <field name="traffic_month" readonly="1"/>
+                <button name="action_pmk_resend" type="object" string="Отправить ещё раз"
+                        icon="fa-paper-plane" invisible="not access"/>
+                <button name="action_pmk_new_key" type="object" string="Новый ключ"
+                        icon="fa-refresh"
+                        confirm="Старый ключ перестанет работать в течение минуты, новый уйдёт сотруднику в Телеграм. Выдать новый?"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="pmk_vpn_key_view_search" model="ir.ui.view">
+        <field name="name">pmk.vpn.key.search</field>
+        <field name="model">pmk.vpn.key</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="user_id"/>
+                <filter name="over_limit" string="Лишние устройства" domain="[('blocked_ips', '!=', False)]"/>
+                <filter name="off" string="Отключённые" domain="[('access', '=', False)]"/>
+                <filter name="failed" string="Не доставлен" domain="[('state', '=', 'failed')]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_pmk_vpn_keys" model="ir.actions.act_window">
+        <field name="name">VPN-ключи</field>
+        <field name="res_model">pmk.vpn.key</field>
+        <field name="view_mode">list</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Ключей пока нет</p>
+            <p>«Разослать ключи» — каждому сотруднику с привязанным Телеграмом
+               уйдёт личный QR-код VPN. Telegram ID привязывается в карточке
+               пользователя, вкладка «Предпочтения».</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_pmk_vpn_keys" name="VPN-ключи" parent="base.menu_administration"
+              action="action_pmk_vpn_keys" sequence="90" groups="base.group_system"/>
+</odoo>

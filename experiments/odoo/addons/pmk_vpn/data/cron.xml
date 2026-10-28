@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Ключи VPN: выдать новым (если рассылка включена) и отправить ждущие.
+         Пачкой по 10, пока ничего не ждёт — проход пустой и мгновенный. -->
+    <record id="cron_pmk_vpn_send" model="ir.cron">
+        <field name="name">VPN: отправить ключи в Телеграм</field>
+        <field name="model_id" ref="model_pmk_vpn_key"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_pmk_send()</field>
+        <field name="interval_number">5</field>
+        <field name="interval_type">minutes</field>
+        <field name="active" eval="True"/>
+    </record>
+</odoo>
