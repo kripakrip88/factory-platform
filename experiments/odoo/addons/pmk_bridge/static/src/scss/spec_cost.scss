@@ -251,24 +251,57 @@
 
       .pmk-kpi { flex-direction: column; }
 
+      // Колонка — строками (Антон 28.10.2026: «плитки занимают много места — к обычному виду
+      // строк, при тревоге подсветка и жирный»): подпись слева, сумма справа, пояснение мелко
+      // под ними; без рамок и фона. Тревога (--warn неполный расчёт, --bad минус) — фон тоном и
+      // жирная сумма.
       .pmk-kpi__card {
         flex: 0 0 auto;
-        flex-direction: column;
-        flex-wrap: nowrap;
-        align-items: stretch;
-        padding: 8px 12px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        column-gap: 8px;
+        align-items: baseline;
+        padding: 7px 4px;
+        border: 0;
+        border-bottom: 1px solid #ececec;
+        border-radius: 0;
+        background: transparent;
       }
 
-      .pmk-kpi__value { font-size: 18px; margin-top: 2px; }
-      .pmk-kpi__sub { margin-top: 3px; }
-      .pmk-kpi__note { align-self: flex-start; }
+      .pmk-kpi__label { font-size: 13px; color: inherit; white-space: normal; }
+      .pmk-kpi__value { font-size: 14px; font-weight: 500; margin-top: 0; justify-self: end; }
+      .pmk-kpi__sub { grid-column: 1 / -1; margin-top: 1px; font-size: 11px; }
+      .pmk-kpi__note { align-self: flex-start; padding-top: 6px; }
 
+      .pmk-kpi__card--good {
+        background: transparent !important;
+        border-color: #ececec !important;
+      }
+
+      .pmk-kpi__card--warn,
+      .pmk-kpi__card--bad {
+        margin: 2px 0;
+        padding: 7px 8px;
+        border-bottom: 0;
+        border-radius: 8px;
+
+        .pmk-kpi__value { font-weight: 700; }
+      }
+
+      // Фон строки «без цены» задаём здесь: общее «без фона» выше перебивает тон темы.
+      .pmk-kpi__card--warn {
+        background: #fbf3d5;
+
+        .pmk-kpi__label, .pmk-kpi__value { color: #633806; }
+      }
+
+      // Цена клиенту — крупно, подпись над суммой (главное число документа).
       .pmk-kpi__card--price {
-        border: 0;
-        background: transparent;
-        padding: 0 2px 4px;
+        display: flex;
+        flex-direction: column;
+        padding: 0 4px 8px;
 
-        .pmk-kpi__value { font-size: 24px; }
+        .pmk-kpi__value { font-size: 24px; justify-self: start; }
       }
     }
   }
@@ -276,5 +309,11 @@
   body.o_nexus_dark .o_action_manager .o_form_view .o_form_sheet:has(> .pmk-spec-aside):has(.o_notebook_headers .nav-link.active[name="pmk_summary"]) > .pmk-spec-aside {
     background: #272a30;
     border-color: #3d414a;
+
+    .pmk-kpi__card { border-bottom-color: #343840; }
+    .pmk-kpi__card--good { border-color: #343840 !important; }
+    .pmk-kpi__card--warn { background: #3a3322; }
+    .pmk-kpi__card--warn .pmk-kpi__label,
+    .pmk-kpi__card--warn .pmk-kpi__value { color: #f0d58a; }
   }
 }
