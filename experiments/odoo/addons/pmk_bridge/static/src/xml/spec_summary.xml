@@ -9,9 +9,10 @@
       <table t-if="summary.rows.length or canEdit" class="o_pmk_summary__table">
         <colgroup>
           <col t-if="canEdit" style="width: 26px"/>
-          <col/><col style="width: 130px"/><col style="width: 80px"/><col style="width: 110px"/>
-          <col style="width: 120px"/><col style="width: 130px"/>
-          <col t-if="canEdit" style="width: 200px"/>
+          <!-- 28.10.2026: справа колонка «Итог» — служебные колонки уже, «Изделию» место. -->
+          <col/><col style="width: 116px"/><col style="width: 68px"/><col style="width: 96px"/>
+          <col style="width: 108px"/><col style="width: 116px"/>
+          <col t-if="canEdit" style="width: 160px"/>
         </colgroup>
         <thead t-if="summary.rows.length">
           <tr>

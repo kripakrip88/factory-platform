@@ -131,7 +131,7 @@
 // и вкладками (views/metal_spec_cost_views.xml, view_metal_spec_form_aside).
 // • Обычно (узкий экран, вкладки «Конструкции», «Металл», «Цены»…) — полоса карточек над
 //   вкладками: таблица «Конструкций» остаётся во всю ширину.
-// • Широкий экран + открыта вкладка «Металлоизделия» — колонка «Итог» справа, не уезжает при
+// • Экран от 1280 (MacBook 13) + открыта вкладка «Металлоизделия» — колонка «Итог» справа, не уезжает при
 //   прокрутке (sticky в прокрутке .o_content). Какая вкладка открыта — по :has() ярлыка
 //   (.nav-link.active[name=pmk_summary]); у ярлыков Odoo 19 имя страницы в атрибуте name.
 
@@ -211,7 +211,7 @@
   }
 }
 
-@media screen and (min-width: 1400px) {
+@media screen and (min-width: 1280px) {
   // Прилипание считается от ближайшего предка с overflow ≠ visible. У .o_form_sheet_bg ядро
   // ставит overflow-y: auto, хотя прокручивается не он, а .o_content, — колонка уезжала вместе
   // со страницей. Здесь у расчёта (чаттера сбоку нет) подложка без своей прокрутки.
@@ -221,7 +221,8 @@
 
   .o_action_manager .o_form_view .o_form_sheet:has(> .pmk-spec-aside):has(.o_notebook_headers .nav-link.active[name="pmk_summary"]) {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 300px;
+    // MacBook 13 (≈1280) — колонка 260, шире экран — до 300 (Антон 28.10: «уменьшить до макбука 13»).
+    grid-template-columns: minmax(0, 1fr) clamp(260px, 21vw, 300px);
     // Третья строка 1fr: если колонка выше левой части, лишняя высота уходит в неё,
     // а не в промежуток между шапкой и вкладками.
     grid-template-rows: auto auto 1fr;

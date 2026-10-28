@@ -43,10 +43,10 @@
   &__row.is-clickable:hover > td { background: var(--pmk-hover, #f3f3f3); }
   &__row.is-open > td { font-weight: 600; }
 
+  // Длинное название — переносом в две-три строки, а не «блок ф…» (28.10.2026, колонка «Итог» справа).
   &__name {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
+    white-space: normal;
 
     .fa { color: var(--pmk-text-muted, #6b6b6b); margin-right: 2px; }
   }
