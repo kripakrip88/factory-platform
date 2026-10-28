@@ -129,11 +129,10 @@
 //
 // Карточки итогов вынесены из шапки в .pmk-spec-aside — прямой потомок листа между рамкой шапки
 // и вкладками (views/metal_spec_cost_views.xml, view_metal_spec_form_aside).
-// • Обычно (узкий экран, вкладки «Конструкции», «Металл», «Цены»…) — полоса карточек над
-//   вкладками: таблица «Конструкций» остаётся во всю ширину.
-// • Экран от 1280 (MacBook 13) + открыта вкладка «Металлоизделия» — колонка «Итог» справа, не уезжает при
-//   прокрутке (sticky в прокрутке .o_content). Какая вкладка открыта — по :has() ярлыка
-//   (.nav-link.active[name=pmk_summary]); у ярлыков Odoo 19 имя страницы в атрибуте name.
+// Раскладка не зависит от вкладки — иначе при переключении всё скакало (Антон 28.10.2026):
+// • экран уже 1600 (ноутбуки) — полоса итогов и «Проверка» под рамкой шапки, на всех вкладках;
+// • от 1600 (рабочий монитор) — колонка «Итог» справа на всех вкладках, не уезжает при
+//   прокрутке (sticky в прокрутке .o_content).
 
 // Поля шапки — на всю ширину рамки: правая колонка карточек из неё ушла.
 .o_form_sheet:has(> .pmk-spec-aside) .pmk-doc-head {
@@ -211,7 +210,7 @@
   }
 }
 
-@media screen and (min-width: 1280px) {
+@media screen and (min-width: 1600px) {
   // Прилипание считается от ближайшего предка с overflow ≠ visible. У .o_form_sheet_bg ядро
   // ставит overflow-y: auto, хотя прокручивается не он, а .o_content, — колонка уезжала вместе
   // со страницей. Здесь у расчёта (чаттера сбоку нет) подложка без своей прокрутки.
@@ -219,7 +218,7 @@
     overflow: visible;
   }
 
-  .o_action_manager .o_form_view .o_form_sheet:has(> .pmk-spec-aside):has(.o_notebook_headers .nav-link.active[name="pmk_summary"]) {
+  .o_action_manager .o_form_view .o_form_sheet:has(> .pmk-spec-aside) {
     display: grid;
     // MacBook 13 (≈1280) — колонка 260, шире экран — до 300 (Антон 28.10: «уменьшить до макбука 13»).
     grid-template-columns: minmax(0, 1fr) clamp(260px, 21vw, 300px);
@@ -306,7 +305,7 @@
     }
   }
 
-  body.o_nexus_dark .o_action_manager .o_form_view .o_form_sheet:has(> .pmk-spec-aside):has(.o_notebook_headers .nav-link.active[name="pmk_summary"]) > .pmk-spec-aside {
+  body.o_nexus_dark .o_action_manager .o_form_view .o_form_sheet:has(> .pmk-spec-aside) > .pmk-spec-aside {
     background: #272a30;
     border-color: #3d414a;
 
@@ -315,5 +314,81 @@
     .pmk-kpi__card--warn { background: #3a3322; }
     .pmk-kpi__card--warn .pmk-kpi__label,
     .pmk-kpi__card--warn .pmk-kpi__value { color: #f0d58a; }
+  }
+}
+
+// ─── «Проверка» (28.10.2026, models/spec_checks.py) ────────────────────────────
+// Список того, что не так, — вместо больших жёлтых плашек над шапкой («Нет цены», «Раскладка
+// устарела») и сигнала «В КП не попадут» в строке кнопок: одно и то же в двух местах.
+.o_form_sheet:has(> .pmk-spec-aside) > .pmk-doc-top > .pmk-price-alert:not(.pmk-pending-alert) {
+  display: none !important;
+}
+.o_form_view:has(.o_form_sheet > .pmk-spec-aside) .o_form_statusbar .pmk-signal {
+  display: none !important;
+}
+
+.pmk-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 10px;
+
+  .pmk-checks__title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b6f76;
+    text-transform: none;
+  }
+
+  .pmk-checks__item {
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+    width: 100%;
+    padding: 6px 8px;
+    border: 0;
+    border-radius: 8px;
+    background: #fbf3d5;
+    color: #633806;
+    font-size: 12px;
+    text-align: left;
+    line-height: 1.35;
+    cursor: pointer;
+
+    &:hover { filter: brightness(0.97); }
+    &--bad { background: #fcebeb; color: #791f1f; }
+    &--ok { background: #eef6e6; color: #27500a; cursor: default; }
+    &--ok:hover { filter: none; }
+
+    .pmk-checks__go { margin-left: auto; opacity: 0.6; }
+  }
+}
+
+// Полоса (узкий экран): «Проверка» — строкой пунктов под карточками.
+.o_form_sheet > .pmk-spec-aside .pmk-checks {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 6px;
+
+  .pmk-checks__item { width: auto; }
+}
+
+@media screen and (min-width: 1600px) {
+  .o_action_manager .o_form_view .o_form_sheet:has(> .pmk-spec-aside) > .pmk-spec-aside .pmk-checks {
+    flex-direction: column;
+    align-items: stretch;
+    margin-top: 12px;
+
+    .pmk-checks__item { width: 100%; }
+  }
+}
+
+@media screen {
+  body.o_nexus_dark .pmk-checks {
+    .pmk-checks__title { color: #a3a6ad; }
+    .pmk-checks__item { background: #3a3322; color: #f0d58a; }
+    .pmk-checks__item--bad { background: #3a2224; color: #f7c1c1; }
+    .pmk-checks__item--ok { background: #233019; color: #c0dd97; }
   }
 }

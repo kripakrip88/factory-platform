@@ -19,3 +19,5 @@ from . import print_seller
 from . import pending_product
 # 26.10.2026: каталог материалов — найти позицию глазами (окно catalog_dialog.js).
 from . import catalog
+# 28.10.2026: «Проверка» расчёта в колонке «Итог» — что не так, со ссылками на место.
+from . import spec_checks

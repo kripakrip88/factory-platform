@@ -584,6 +584,11 @@
       <xpath expr="//div[@name='pmk_spec_aside']" position="inside">
         <xpath expr="//div[hasclass('pmk-kpi')]" position="move"/>
       </xpath>
+      <!-- «Проверка» — что не так, со ссылками на место (models/spec_checks.py); заменяет плашки. -->
+      <xpath expr="//div[@name='pmk_spec_aside']" position="inside">
+        <widget name="pmk_spec_checks"/>
+        <field name="pmk_checks_json" invisible="1"/>
+      </xpath>
     </field>
   </record>
 

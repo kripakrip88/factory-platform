@@ -110,6 +110,9 @@
             "pmk_bridge/static/src/scss/spec_summary.scss",
             "pmk_bridge/static/src/js/spec_summary.js",
             "pmk_bridge/static/src/xml/spec_summary.xml",
+            # 28.10.2026: «Проверка» расчёта в колонке «Итог».
+            "pmk_bridge/static/src/js/spec_checks.js",
+            "pmk_bridge/static/src/xml/spec_checks.xml",
             # Каталог материалов (26.10.2026): найти позицию справочника глазами.
             "pmk_bridge/static/src/catalog/catalog_dialog.scss",
             "pmk_bridge/static/src/catalog/catalog_dialog.js",

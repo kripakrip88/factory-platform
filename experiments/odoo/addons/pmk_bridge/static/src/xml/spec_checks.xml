@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+  <t t-name="pmk_bridge.SpecChecks">
+    <div class="pmk-checks">
+      <div class="pmk-checks__title">Проверка</div>
+      <div t-if="!items.length" class="pmk-checks__item pmk-checks__item--ok">
+        <i class="fa fa-check" aria-hidden="true"/> Всё заполнено
+      </div>
+      <button t-foreach="items" t-as="item" t-key="item.key" type="button"
+              t-att-class="'pmk-checks__item pmk-checks__item--' + item.tone"
+              t-att-title="item.tab ? 'Открыть вкладку' : 'Перейти к полю'" t-on-click="() => this.go(item)">
+        <i class="fa fa-exclamation-circle" aria-hidden="true"/>
+        <span t-esc="item.text"/>
+        <i class="fa fa-angle-right pmk-checks__go" aria-hidden="true"/>
+      </button>
+    </div>
+  </t>
+</templates>
