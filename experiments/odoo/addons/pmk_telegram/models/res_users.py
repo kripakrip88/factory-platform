@@ -13,6 +13,11 @@ class ResUsers(models.Model):
              "человека сделки и создаёт их от его имени. ID бот сам "
              "показывает в ответ на /start тому, у кого нет доступа.")
 
+    # «Мои настройки»: кнопка «Подключить / Переподключить Телеграм» смотрит, привязан ли (задача 317).
+    @property
+    def SELF_READABLE_FIELDS(self):
+        return super().SELF_READABLE_FIELDS + ["pmk_telegram_id"]
+
     _pmk_telegram_id_uniq = models.Constraint(
         "UNIQUE(pmk_telegram_id)",
         "Этот Telegram ID уже привязан к другому пользователю.",

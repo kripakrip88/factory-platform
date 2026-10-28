@@ -2,3 +2,6 @@ id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_pmk_telegram_session_admin,pmk.telegram.session admin,model_pmk_telegram_session,base.group_system,1,1,1,1
 access_pmk_telegram_carousel_admin,pmk.telegram.carousel admin,model_pmk_telegram_carousel,base.group_system,1,1,1,1
 access_pmk_telegram_outbox_admin,pmk.telegram.outbox admin,model_pmk_telegram_outbox,base.group_system,1,1,1,1
+access_pmk_telegram_join_admin,pmk.telegram.join admin,model_pmk_telegram_join,base.group_system,1,1,1,1
+access_pmk_telegram_join_link_admin,pmk.telegram.join.link admin,model_pmk_telegram_join_link,base.group_system,1,1,1,1
+access_pmk_telegram_link_show_user,pmk.telegram.link.show user,model_pmk_telegram_link_show,base.group_user,1,1,1,0

@@ -297,6 +297,56 @@ class PmkTelegramBot(models.AbstractModel):
                   % (label, self._pmk_routes_text()),
                   thread_id=thread)
 
+    # ── подключение (задача 317, models/join.py) ──────────────────────────
+
+    def _pmk_link_by_start(self, api_, message, token):
+        """«Начать» по личной ссылке из Odoo: привязать Телеграм к её хозяину. → обработано?"""
+        tg = message.get("from") or {}
+        user = self.env["res.users"]._pmk_by_link_token(token)
+        if not user:
+            self._pmk_on_stranger(api_, message, note="Ссылка устарела или уже использована. ")
+            return True
+        tg_id = str(tg.get("id"))
+        other = self.env["res.users"].sudo().with_context(active_test=False).search(
+            [("pmk_telegram_id", "=", tg_id), ("id", "!=", user.id)], limit=1)
+        if other:
+            api_.send(message["chat"]["id"], "Этот Телеграм уже привязан к другому сотруднику — "
+                      "обратитесь к администратору.")
+            return True
+        user.sudo().write({"pmk_telegram_id": tg_id, "pmk_telegram_link_hash": False,
+                           "pmk_telegram_link_until": False})
+        self.env["pmk.telegram.join"].sudo().search([("tg_id", "=", tg_id)])._pmk_done(user)
+        self._pmk_welcome(user)
+        return True
+
+    def _pmk_on_stranger(self, api_, message, note=""):
+        """Написал без доступа: заявка (models/join.py), администраторам — один раз."""
+        tg = message.get("from") or {}
+        join, fresh = self.env["pmk.telegram.join"]._pmk_register(tg)
+        if join.state == "ignored":
+            api_.send(message["chat"]["id"], "Нет доступа.")
+            return
+        api_.send(message["chat"]["id"],
+                  "%sЗаявка отправлена администратору — как откроют доступ, напишу сюда.\n"
+                  "Ваш Telegram ID: <code>%s</code>" % (note, _esc(join.tg_id)))
+        if fresh:
+            self._pmk_notify_admins(api_, join)
+
+    def _pmk_notify_admins(self, api_, join):
+        admins = self.env["res.users"].sudo().search(
+            [("pmk_telegram_id", "!=", False), ("group_ids", "in", self.env.ref("base.group_system").id)])
+        base = (self.env["ir.config_parameter"].sudo().get_param("web.base.url") or "").rstrip("/")
+        markup = {"inline_keyboard": [[{"text": "Открыть в Odoo",
+                                        "url": "%s/odoo/action-pmk_telegram.action_pmk_telegram_join/%d"
+                                               % (base, join.id)}]]}
+        for admin in admins:
+            api_.send(admin.pmk_telegram_id, "👤 %s хочет подключиться к боту." % _esc(join._pmk_label()), markup)
+
+    def _pmk_welcome(self, user):
+        """Человеку после привязки — «Готово» и меню (сам он ничего больше не нажимает)."""
+        return self.pmk_send_user(user, "✅ Готово, доступ есть, %s. Меню — внизу." % _esc(user.name),
+                                  self._pmk_menu_markup(user))
+
     def _pmk_user(self, tg_user):
         return self.env["res.users"].sudo().search(
             [("pmk_telegram_id", "=", str(tg_user.get("id")))], limit=1)
@@ -356,10 +406,12 @@ class PmkTelegramBot(models.AbstractModel):
         if message["chat"].get("type") != "private":
             return
         user = self._pmk_user(message.get("from") or {})
+        first = (message.get("text") or "").strip()
+        if not user and first.startswith("/start ") and self._pmk_link_by_start(api_, message, first[7:].strip()):
+            return
         if not user:
-            api_.send(chat_id,
-                      "Нет доступа. Ваш Telegram ID: <code>%s</code> — передайте "
-                      "его администратору." % _esc(str(message["from"]["id"])))
+            # Задача 317: не «передайте ID администратору», а заявка в Odoo и весть администраторам.
+            self._pmk_on_stranger(api_, message)
             return
         # Вебхук приходит публичным пользователем (язык en_US) — без этого
         # этапы и колонки бот показывал бы английскими переводами (20.10.2026:

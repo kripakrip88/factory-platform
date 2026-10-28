@@ -117,8 +117,9 @@ class TestTelegramBot(TransactionCase):
     # ── сценарии ──────────────────────────────────────────────────────────
 
     def test_stranger_gets_his_id(self):
+        # Задача 317: незнакомцу — «заявка отправлена» и его ID; доступа (сессии) нет.
         self._msg(from_id=999, text="/start")
-        self.assertIn("Нет доступа", self.api.sent[-1][1])
+        self.assertIn("Заявка отправлена", self.api.sent[-1][1])
         self.assertIn("999", self.api.sent[-1][1])
         self.assertFalse(self.env["pmk.telegram.session"].search(
             [("chat_id", "=", "999")]))

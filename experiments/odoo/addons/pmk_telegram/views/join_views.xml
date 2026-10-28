@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Задача 317 (28.10.2026): подключение к боту без пересылки ID — models/join.py. -->
+
+    <record id="view_pmk_telegram_join_list" model="ir.ui.view">
+        <field name="name">pmk.telegram.join.list</field>
+        <field name="model">pmk.telegram.join</field>
+        <field name="arch" type="xml">
+            <list create="0" decoration-muted="state == 'ignored'" decoration-bf="state == 'new'">
+                <field name="name"/>
+                <field name="username"/>
+                <field name="tg_id"/>
+                <field name="last_at"/>
+                <field name="count"/>
+                <field name="state" widget="badge" decoration-warning="state == 'new'"
+                       decoration-success="state == 'linked'"/>
+                <field name="user_id"/>
+                <button name="action_pmk_link" type="object" string="Привязать…" icon="fa-link"
+                        invisible="state == 'linked'"/>
+                <button name="action_pmk_ignore" type="object" string="Отклонить" icon="fa-ban"
+                        invisible="state != 'new'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_pmk_telegram_join_form" model="ir.ui.view">
+        <field name="name">pmk.telegram.join.form</field>
+        <field name="model">pmk.telegram.join</field>
+        <field name="arch" type="xml">
+            <form create="0">
+                <header>
+                    <button name="action_pmk_link" type="object" string="Привязать…" class="btn-primary"
+                            invisible="state == 'linked'"/>
+                    <button name="action_pmk_ignore" type="object" string="Отклонить" invisible="state != 'new'"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title"><h1><field name="name"/></h1></div>
+                    <group>
+                        <group>
+                            <field name="username"/>
+                            <field name="tg_id"/>
+                            <field name="user_id"/>
+                        </group>
+                        <group>
+                            <field name="first_at"/>
+                            <field name="last_at"/>
+                            <field name="count"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_pmk_telegram_join" model="ir.actions.act_window">
+        <field name="name">Хотят подключиться к боту</field>
+        <field name="res_model">pmk.telegram.join</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Заявок нет</p>
+            <p>Кто без доступа нажмёт «Начать» у бота, появится здесь — «Привязать…» к сотруднику.
+               Проще — личная ссылка: в карточке пользователя «Ссылка для подключения».</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_pmk_telegram_join" name="Хотят подключиться к боту" parent="base.menu_users"
+              action="action_pmk_telegram_join" sequence="40" groups="base.group_system"/>
+
+    <record id="view_pmk_telegram_join_link_form" model="ir.ui.view">
+        <field name="name">pmk.telegram.join.link.form</field>
+        <field name="model">pmk.telegram.join.link</field>
+        <field name="arch" type="xml">
+            <form>
+                <group>
+                    <field name="join_id" invisible="1"/>
+                    <field name="join_label"/>
+                    <field name="user_id" options="{'no_create': True}"/>
+                </group>
+                <p class="text-muted">Telegram ID встанет в карточку сотрудника, бот сразу напишет ему
+                    «Готово, доступ есть» и покажет меню.</p>
+                <footer>
+                    <button name="action_link" type="object" string="Привязать" class="btn-primary"/>
+                    <button string="Отмена" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_pmk_telegram_link_show_form" model="ir.ui.view">
+        <field name="name">pmk.telegram.link.show.form</field>
+        <field name="model">pmk.telegram.link.show</field>
+        <field name="arch" type="xml">
+            <form>
+                <field name="is_self" invisible="1"/>
+                <p invisible="not is_self">Нажмите «Открыть Телеграм» — откроется бот, нажмите в нём «Начать».
+                    Телеграм привяжется сам.</p>
+                <p invisible="is_self">Отправьте ссылку сотруднику: он откроет её и нажмёт в боте «Начать» —
+                    Телеграм привяжется сам.</p>
+                <group>
+                    <field name="user_id"/>
+                    <field name="link" widget="CopyClipboardChar"/>
+                    <field name="until"/>
+                </group>
+                <p class="text-muted">Ссылка разовая и действует сутки.</p>
+                <footer>
+                    <button name="action_open" type="object" string="Открыть Телеграм" class="btn-primary"
+                            invisible="not is_self"/>
+                    <button string="Закрыть" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Кнопки «Подключить Телеграм»: администратору — в карточке пользователя, себе — в «Моих настройках». -->
+    <record id="pmk_telegram_view_users_form_link" model="ir.ui.view">
+        <field name="name">res.users.form.pmk_telegram.link</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="pmk_telegram.pmk_telegram_view_users_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='pmk_telegram_id']" position="after">
+                <button name="action_pmk_telegram_link" type="object" string="Ссылка для подключения Телеграма"
+                        class="btn-link ps-0" icon="fa-telegram" groups="base.group_system" colspan="2"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="pmk_telegram_view_users_preferences" model="ir.ui.view">
+        <field name="name">res.users.preferences.pmk_telegram</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form_simple_modif"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='other_preferences']" position="inside">
+                <field name="pmk_telegram_id" invisible="1"/>
+                <button name="action_pmk_telegram_link" type="object" string="Подключить Телеграм к боту"
+                        class="btn-secondary" icon="fa-telegram" invisible="pmk_telegram_id" colspan="2"/>
+                <button name="action_pmk_telegram_link" type="object" string="Переподключить Телеграм"
+                        class="btn-link ps-0" icon="fa-telegram" invisible="not pmk_telegram_id" colspan="2"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -3,3 +3,4 @@
 #   odoo -d pmk_tg_test -i pmk_telegram --test-enable \
 #        --test-tags /pmk_telegram --stop-after-init --http-port 8099
 from . import test_bot
+from . import test_join

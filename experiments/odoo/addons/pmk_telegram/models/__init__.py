@@ -7,3 +7,5 @@ from . import bot
 from . import carousel
 from . import outbox
 from . import project_task
+# Задача 317: подключение к боту по личной ссылке и заявки «Хотят подключиться».
+from . import join
