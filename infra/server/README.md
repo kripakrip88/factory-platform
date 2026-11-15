@@ -1,0 +1,62 @@
+# Сервер pmk-main — 45.153.188.84 (с 15.11.2026)
+
+Бегет, Санкт-Петербург (AS198610, сеть RU-BEGET-20190913 45.153.188.0/22). 6 vCPU, 11 ГБ RAM,
+4 ГБ swap, 145 ГБ NVMe, Ubuntu 24.04. Замена VPS 155.212.143.179, погибшего при атаке на Бегет 02.11.2026.
+Доступ: ключ `id_factory`, алиас `ssh odoo-new` (ControlMaster — sshd под постоянным подбором пароля,
+отдельные подключения иногда рвутся на обмене баннером).
+
+## Что на сервере
+
+| Система | Папка | Docker-проект | Порт (только 172.17.0.1) | Домен |
+|---|---|---|---|---|
+| Общий вход nginx 80/443 + Let's Encrypt | /opt/edge | `edge` | 80, 443 наружу | все |
+| Odoo 19 боевой | /opt/experiments/odoo | `odoo` | 8084 (+8085 websocket) | erppark.ru |
+| Odoo — копия для проверки | /opt/experiments/odoo/dryrun | `odoo-stage` | 127.0.0.1:8099 | туннель с Mac |
+| Сайт pmkpark.ru (Битрикс) | /opt/site | `site` | 8090 | pmkpark.ru — заготовка |
+| 1С | /opt/1c | `onec` | 8091 (веб-публикация) | 1c.erppark.ru — заготовка |
+| Бэкапы | /opt/backups/{odoo,site,1c} | — | — | — |
+
+Код: GitHub с сервера по HTTPS недоступен (15.11.2026, см. ниже), поэтому на сервере свой bare-репозиторий
+`/opt/git/factory-platform.git` — в него пушат с Mac (`git push odoo-new:/opt/git/factory-platform.git
+<ветка>`), чекаут `/opt/factory-platform` берёт `origin` оттуда. deploy.sh работает как раньше.
+
+## Бюджет памяти (11 ГБ + 4 ГБ swap)
+
+| | лимит | обычно |
+|---|---|---|
+| Odoo app (2 http + cron) | 2,5 ГБ | ~1 ГБ |
+| Odoo db | 768 МБ | ~300 МБ |
+| раскрой / ассистент / чертежи | 3 ГБ / 768 МБ / 512 МБ | ~0,3 ГБ |
+| копия Odoo (workers 0) | 1,5 ГБ | ~0,6 ГБ |
+| сайт: nginx+php-fpm+MySQL | 2 ГБ | ~1 ГБ |
+| 1С: сервер + PostgreSQL для 1С | 4 ГБ | 2–3 ГБ |
+| edge nginx | 256 МБ | ~20 МБ |
+
+Всё вместе в обычной работе ≈ 6–7 ГБ. Если 1С разрастётся — раскрою (`NEST_PROCS`) снизить до 2.
+
+## Подготовка ОС (сделано 15.11.2026, повторить на новом сервере — bootstrap.sh)
+
+- Зеркало apt Бегета (public-mirrors.beget.ru) отвечало 502 — строки в /etc/apt/sources.list закомментированы
+  (копия sources.list.beget.bak), обновления идут с archive.ubuntu.com (ubuntu.sources).
+- Docker CE из download.docker.com, логи контейнеров 5×20 МБ, live-restore.
+- swap 4 ГБ, swappiness 10; часовой пояс Europe/Moscow; hostname pmk-main.
+- ufw: 22, 80, 443. Порты контейнеров привязаны к 172.17.0.1 — Docker идёт в обход ufw.
+- fail2ban (sshd) — из образа Бегета, за сутки 40 банов.
+
+## Сеть: что недоступно (15.11.2026)
+
+- github.com — TCP 443/80 не проходит (22 — проходит), пакеты теряются после последнего хопа Telia
+  перед GitHub. api.moysklad.ru — теряются на MSK-IX (195.208.209.96), 80 и 443.
+  С Mac и с NL-сервера VPN оба отвечают → блокируют адреса этой сети на их стороне.
+- api.anthropic.com — 403 (регион), ассистенту нужен ретранслятор `pmk_ai.api_base`.
+- Работают: Телеграм, DaData, Docker Hub, pypi, git.ruodoo.ru, Let's Encrypt.
+
+## RuOdoo: выпуск 2026-11-08 против наших модулей (15.11.2026)
+
+Публичный репозиторий RuOdoo хранит только последний выпуск (история не доступна), а в выпуске 2026-10-15:
+- `l10n_ru_upd_xml` помечен `installable: False` («устаревший механизм УПД»), но на нём стоят `pmk_bridge`
+  (поле ОКЕИ единиц) и `pmk_partner`. На сервере в чекауте RuOdoo флаг вручную возвращён в True
+  (`git -C /opt/experiments/odoo/ruodoo diff`). После `git pull` RuOdoo — повторить, иначе наши модули не
+  загрузятся. Правильный путь — уйти с этого модуля на `rsbu_fns_reporting` (отдельная задача).
+- `l10n_ru_act_rev` (акты сверки) выведен по безопасности — со старой базы удалён (button_immediate_uninstall).
+- `l10n_ru_advance_payments` теперь требует `l10n_latam_check` и `docx_report` — на старой базе доставить `-i`.
