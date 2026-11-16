@@ -166,8 +166,9 @@ if (!$id) fail('Bitrix: ' . strip_tags($el->LAST_ERROR));
 // Фото 2 → PREVIEW_PICTURE ОТДЕЛЬНЫМ шагом: в ИБ32 включено «картинка анонса из детальной + обновлять вместе с
 // детальной» (FROM_DETAIL/UPDATE_WITH_DETAIL) — при Add Bitrix затирает переданное фото 2 уменьшенной копией фото 1
 // (17.11: так потерялись фото 2 у 1728/1729). Update без DETAIL_PICTURE это правило не включает.
+// bResizePictures=false: иначе ужмёт до 700 px, а блок «Что сделали» рисует 760×520 — как у старых проектов, 2000×1500.
 if (isset($files[1])) {
-    if (!$el->Update($id, ['PREVIEW_PICTURE' => $files[1]], false, true, true)) fail("фото 2: " . strip_tags($el->LAST_ERROR) . " (проект $id создан)");
+    if (!$el->Update($id, ['PREVIEW_PICTURE' => $files[1]], false, true, false)) fail("фото 2: " . strip_tags($el->LAST_ERROR) . " (проект $id создан)");
 }
 clear_cache();
 out(['ok' => true, 'id' => (int)$id, 'active' => empty($j['draft']), 'code' => $code, 'url' => url_of($id), 'photos' => count($files)]);
