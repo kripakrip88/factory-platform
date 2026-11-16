@@ -63,18 +63,18 @@ $j = json_decode(@file_get_contents("$dir/project.json"), true);
 if (!is_array($j)) fail('нет или битый project.json');
 $name = trim($j['name'] ?? ''); if ($name === '' || mb_strlen($name) > 250) fail('name: пусто или длиннее 250');
 
-// SEO обязательно (Антон 16.11.2026: «сразу готовил под сео — тайтл, дескрипшен, альты»)
-foreach (['seo_title' => [20, 80], 'seo_desc' => [70, 200], 'seo_h1' => [10, 150]] as $sk => [$mn, $mx]) {
-    $l = mb_strlen(trim($j[$sk] ?? ''));
-    if ($l < $mn || $l > $mx) fail("$sk: нужно $mn–$mx знаков, сейчас $l");
-}
-
 // Заказчика на сайте не называем (Антон 16.11.2026: «эти данные мы на сайт не выкладываем»).
 // Ловим юрлица в любом тексте карточки, включая подписи фото. Сфера заказчика (orderer) — можно.
 $texts = [];
 array_walk_recursive($j, function ($v, $k) use (&$texts) { if (is_string($v) && $k !== 'file' && $k !== 'section' && $k !== 'catalog_section') $texts[] = $v; });
 $legal = '~(?<![\p{L}])(ООО|ОАО|ЗАО|ПАО|НАО|АО|ИП|ГУП|МУП|ФГУП|ГКУ|МКУ|ГБУ|МБУ|ФГБУ|АНО|LLC|Ltd|GmbH)(?![\p{L}])~u';
 foreach ($texts as $t) if (preg_match($legal, $t, $m)) fail("заказчика называть нельзя: в тексте «{$m[1]}» — уберите юрлицо, пишите сферу («застройщик», «промышленное предприятие»)");
+
+// SEO обязательно (Антон 16.11.2026: «сразу готовил под сео — тайтл, дескрипшен, альты»)
+foreach (['seo_title' => [20, 80], 'seo_desc' => [70, 200], 'seo_h1' => [10, 150]] as $sk => [$mn, $mx]) {
+    $l = mb_strlen(trim($j[$sk] ?? ''));
+    if ($l < $mn || $l > $mx) fail("{$sk}: нужно {$mn}–{$mx} знаков, сейчас {$l}");
+}
 
 $sec = CIBlockSection::GetList([], ['IBLOCK_ID' => PMK_PROJECTS_IB, '=CODE' => $j['section'] ?? ''], false, ['ID'])->Fetch();
 if (!$sec) fail('section: нет раздела «' . ($j['section'] ?? '') . '» в ИБ32 (см. справочник)');
@@ -107,10 +107,10 @@ $files = [];
 foreach ($photos as $i => $p) {
     $fn = basename((string)($p['file'] ?? ''));
     $path = "$dir/$fn";
-    if ($fn === '' || !is_file($path)) fail("photos[$i]: нет файла «$fn»");
+    if ($fn === '' || !is_file($path)) fail("photos[$i]: нет файла «{$fn}»");
     $info = @getimagesize($path);
-    if (!$info || !in_array($info[2], [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_WEBP], true)) fail("photos[$i]: «$fn» — не jpg/png/webp");
-    if (filesize($path) > 15 * 1024 * 1024) fail("photos[$i]: «$fn» больше 15 МБ");
+    if (!$info || !in_array($info[2], [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_WEBP], true)) fail("photos[$i]: «{$fn}» — не jpg/png/webp");
+    if (filesize($path) > 15 * 1024 * 1024) fail("photos[$i]: «{$fn}» больше 15 МБ");
     $alt = trim((string)($p['alt'] ?? ''));
     if ($alt === '') fail("photos[$i]: нет подписи alt");
     $f = CFile::MakeFileArray($path); $f['description'] = $alt; $f['MODULE_ID'] = 'iblock';
