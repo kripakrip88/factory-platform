@@ -53,6 +53,15 @@ for img in odoo-ru:19.0-20261006 pmk-zk-worker:1 postgres:16-alpine pmkpark-web:
   fi
 done
 
+# 4б. Дистрибутив 1С — без входа ИТС его потом не скачать (сервер, ws; 634 МБ, выгружается один раз)
+for z in /opt/1c/dist/deb64_*.zip; do
+  [ -f "$z" ] || continue
+  h=$(stat -c '%s %Y' "$z")
+  if changed "1c_$(basename "$z")" "$h"; then
+    $R copyto "$z" "$B/1c/$(basename "$z")"; mark "1c_$(basename "$z")" "$h"; echo "   комплект: дистрибутив 1С $(basename "$z")"
+  fi
+done
+
 # 5. Секреты — то, чего нет ни в git, ни в бакете открытым текстом
 PASSF=/root/.backup-passphrase
 [ -s "$PASSF" ] || { echo "ОШИБКА: нет $PASSF — секреты не зашифровать"; exit 1; }

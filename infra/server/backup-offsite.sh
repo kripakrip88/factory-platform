@@ -81,6 +81,15 @@ if [ -d /opt/site/www ] && docker ps --format '{{.Names}}' | grep -qx site-db; t
   echo "   сайт, файлы: изменённые догружены — ок"
 fi
 
+# 4б. 1С (с 16.11.2026, infra/1c): ночная выгрузка .dt → 1c/db/ (бакет удаляет через 30 дней)
+if [ -f /opt/1c/bases/buh/1Cv8.1CD ]; then
+  cd1=$(ls -1t /opt/backups/1c/buh_*.dt 2>/dev/null | head -1 || true)
+  [ -n "$cd1" ] || { echo "ОШИБКА: нет выгрузки 1С в /opt/backups/1c"; exit 1; }
+  [ $(( $(date +%s) - $(stat -c %Y "$cd1") )) -lt 86400 ] || { echo "ОШИБКА: свежей выгрузки 1С нет, последняя $(basename "$cd1")"; exit 1; }
+  $R copyto "$cd1" "yc:$YC_BUCKET/1c/db/$(basename "$cd1")"
+  echo "   1С: $(basename "$cd1") — ок"
+fi
+
 # 5. Комплект восстановления: код, RuOdoo, образы Docker, секреты — чтобы всё поднималось из одного бакета
 R="$R" YC_BUCKET="$YC_BUCKET" bash "$(dirname "$0")/backup-kit.sh"
 

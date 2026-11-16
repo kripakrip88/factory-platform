@@ -53,12 +53,14 @@ cat > /etc/apache2/sites-available/1c.conf <<'EOF'
     DocumentRoot /opt/1c/www
     RemoteIPHeader X-Real-IP
     RemoteIPTrustedProxy 172.16.0.0/12
-    RedirectMatch 302 ^/$ /buh/
+    RedirectMatch 302 ^/$ https://1c.erppark.ru/buh/
     ErrorLog ${APACHE_LOG_DIR}/1c-error.log
     CustomLog ${APACHE_LOG_DIR}/1c-access.log "%a %t \"%r\" %>s %b %D"
 </VirtualHost>
 EOF
 a2ensite -q 1c >/dev/null
+# общий nginx живёт в Docker-сети: к Apache (процесс на хосте, не порт Docker) его пускает только это правило
+ufw allow from 172.16.0.0/12 to 172.17.0.1 port 8091 proto tcp comment '1C apache for edge nginx' >/dev/null
 mkdir -p "$WWW" "$BASES"
 
 step "4. Информационная база «$IB» (пока пустая проверочная — заменит restore-1c.sh)"
@@ -68,6 +70,9 @@ if [ ! -f "$BASES/$IB/1Cv8.1CD" ]; then
 fi
 chown -R www-data:www-data "$BASES" "$WWW"
 chmod 750 "$BASES"
+# 1С пишет кэш в домашнюю папку пользователя Apache (www-data → /var/www, она root) — без этого
+# веб-клиент: «В данный момент вход в приложение невозможен»
+install -d -o www-data -g www-data /var/www/.1cv8 /var/www/.1C
 
 step "5. Веб-публикация /$IB"
 CONF=/etc/apache2/conf-available/1c-$IB.conf

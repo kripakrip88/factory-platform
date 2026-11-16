@@ -22,6 +22,11 @@ if [ -d /opt/site/www ]; then
   [ -n "$last_site" ] && [ "$(age_of "$last_site")" -lt "$LIMIT" ] || \
     problems+=("ночной дамп сайта не снят (последний: $(basename "${last_site:-нет}"))")
 fi
+if [ -f /opt/1c/bases/buh/1Cv8.1CD ]; then
+  last_1c=$(ls -1t /opt/backups/1c/buh_*.dt 2>/dev/null | head -1)
+  [ -n "$last_1c" ] && [ "$(age_of "$last_1c")" -lt "$LIMIT" ] || \
+    problems+=("ночная выгрузка 1С не снята (последняя: $(basename "${last_1c:-нет}"))")
+fi
 run=$(tac /var/log/odoo-offsite.log 2>/dev/null | sed '/^── /q' | tac)
 echo "$run" | grep -q "ОШИБКА" && problems+=("выгрузка: $(echo "$run" | grep -m1 'ОШИБКА')")
 

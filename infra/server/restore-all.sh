@@ -86,6 +86,21 @@ S=$($R lsf "yc:$YC_BUCKET/site/db/" | sort | tail -1)
 $R copyto "yc:$YC_BUCKET/site/db/$S" "/opt/backups/site/$S"
 bash /opt/factory-platform/infra/site/site-restore.sh "/opt/backups/site/$S"
 
+step "6б. 1С: платформа из комплекта + последняя выгрузка базы"
+if $R lsf "yc:$YC_BUCKET/kit/1c/" 2>/dev/null | grep -q '\.zip$'; then
+  mkdir -p /opt/1c/dist /opt/backups/1c
+  $R copy "yc:$YC_BUCKET/kit/1c" /opt/1c/dist
+  bash /opt/factory-platform/infra/1c/install-1c.sh
+  C=$($R lsf "yc:$YC_BUCKET/1c/db/" 2>/dev/null | sort | tail -1 || true)
+  if [ -n "$C" ]; then
+    $R copyto "yc:$YC_BUCKET/1c/db/$C" "/opt/backups/1c/$C"
+    bash /opt/factory-platform/infra/1c/restore-1c.sh "/opt/backups/1c/$C"
+  fi
+  echo "⚠️ 1С: программные лицензии привязаны к «железу» — на новом сервере их надо активировать заново (пин-коды)."
+else
+  echo "1С в комплекте нет — пропуск"
+fi
+
 step "7. Общий вход nginx и туннель ассистента"
 bash /opt/factory-platform/infra/edge/edge.sh up
 [ -z "${RESTORE_TEST:-}" ] && [ -f /etc/systemd/system/anthropic-relay.service ] && { systemctl daemon-reload; systemctl enable --now anthropic-relay || true; }
@@ -94,6 +109,7 @@ step "8. Ночные задания (бэкапы, сертификаты, ст
 if [ -n "${RESTORE_TEST:-}" ]; then echo "RESTORE_TEST: ночные задания НЕ ставлю"; else
 crontab - <<'CRON'
 40 3 * * * /opt/factory-platform/experiments/odoo/scripts/backup-stand.sh --with-files >> /var/log/odoo-backup.log 2>&1
+30 3 * * * /opt/factory-platform/infra/1c/backup-1c.sh >> /var/log/1c-backup.log 2>&1
 50 3 * * * /opt/factory-platform/infra/site/backup-site.sh >> /var/log/site-backup.log 2>&1
 17 4 * * * sh /opt/factory-platform/infra/edge/edge.sh renew >> /var/log/edge-renew.log 2>&1
 20 4 * * * /opt/factory-platform/infra/server/backup-offsite.sh >> /var/log/odoo-offsite.log 2>&1
@@ -105,10 +121,11 @@ IP=$(curl -s -m 10 https://ifconfig.me || hostname -I | cut -d' ' -f1)
 cat <<EOF
 
 ══ ГОТОВО. Осталось руками:
-  1. DNS: erppark.ru, www.erppark.ru, pmkpark.ru, www.pmkpark.ru → A $IP
+  1. DNS: erppark.ru, www.erppark.ru, pmkpark.ru, www.pmkpark.ru, 1c.erppark.ru → A $IP
   2. После DNS — сертификаты:
        bash /opt/factory-platform/infra/edge/edge.sh cert erppark.ru www.erppark.ru
        bash /opt/factory-platform/infra/edge/edge.sh cert pmkpark.ru www.pmkpark.ru
+       bash /opt/factory-platform/infra/edge/edge.sh cert 1c.erppark.ru
   3. Проверка: https://erppark.ru/web/login, https://pmkpark.ru/
   4. МойСклад/почта/банки — ключи в базе, работают сами. Ассистенту нужен туннель (шаг 7) или новый ретранслятор.
 EOF
