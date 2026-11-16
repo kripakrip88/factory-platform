@@ -66,7 +66,8 @@ done
 PASSF=/root/.backup-passphrase
 [ -s "$PASSF" ] || { echo "ОШИБКА: нет $PASSF — секреты не зашифровать"; exit 1; }
 LIST=(/opt/experiments/odoo/.env /opt/experiments/odoo/odoo.conf /opt/site/.env /root/.yc-backup.env
-      /root/.ssh/id_relay /root/.ssh/id_relay.pub /etc/systemd/system/anthropic-relay.service)
+      /root/.ssh/id_relay /root/.ssh/id_relay.pub /etc/systemd/system/anthropic-relay.service
+      /opt/edge/nginx/auth/1c.htpasswd /opt/edge/nginx/auth/1c-gate.conf)
 present=(); for f in "${LIST[@]}"; do [ -e "$f" ] && present+=("$f"); done
 h=$(cat "${present[@]}" | sha256sum | cut -c1-16)
 if changed secrets "$h"; then

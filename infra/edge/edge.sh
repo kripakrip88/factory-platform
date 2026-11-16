@@ -11,7 +11,7 @@ set -e
 HERE="$(cd "$(dirname "$0")" && pwd)"
 RUN=/opt/edge
 EMAIL="kripakrip88@gmail.com"
-mkdir -p "$RUN/nginx/sites"
+mkdir -p "$RUN/nginx/sites" "$RUN/nginx/auth"
 
 sync_conf() {
   cp "$HERE/docker-compose.yml" "$RUN/docker-compose.yml"
@@ -24,7 +24,17 @@ sync_conf() {
   done
 }
 
+# Проверить конфиг во временном контейнере ДО пересоздания боевого: если новый контейнер не
+# стартует из-за ошибки в конфиге — лежат все сайты сразу (Odoo, pmkpark.ru, 1С).
+check() {
+  docker run --rm --add-host host.docker.internal:host-gateway \
+    -v "$RUN/nginx/nginx.conf:/etc/nginx/nginx.conf:ro" -v "$RUN/nginx/sites:/etc/nginx/sites:ro" \
+    -v "$RUN/nginx/auth:/etc/nginx/auth:ro" -v edge_certbot_conf:/etc/letsencrypt:ro \
+    nginx:1.27.5-alpine nginx -t -q || { echo "ОШИБКА: конфиг nginx не проходит проверку — вход не трогаю"; exit 1; }
+}
+
 reload() {
+  check
   cd "$RUN"
   docker compose up -d >/dev/null
   docker compose exec -T nginx nginx -t && docker compose exec -T nginx nginx -s reload
