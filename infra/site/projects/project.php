@@ -148,7 +148,8 @@ if (count($files) > 2) {
 $fields = [
     'IBLOCK_ID' => PMK_PROJECTS_IB, 'IBLOCK_SECTION_ID' => $sec['ID'], 'ACTIVE' => empty($j['draft']) ? 'Y' : 'N',
     'NAME' => $name, 'CODE' => $code, 'ACTIVE_FROM' => $activeFrom, 'SORT' => 500,
-    'PREVIEW_TEXT' => paras($j['preview_text'] ?? ''), 'PREVIEW_TEXT_TYPE' => 'html',
+    // анонс шаблон выводит экранированным под H1 — только простой текст, без <p> (16.11: на странице были видны теги)
+    'PREVIEW_TEXT' => trim(preg_replace('~\s+~u', ' ', (string)($j['preview_text'] ?? ''))), 'PREVIEW_TEXT_TYPE' => 'text',
     'DETAIL_TEXT' => paras($j['detail_text'] ?? ''), 'DETAIL_TEXT_TYPE' => 'html',
     'DETAIL_PICTURE' => $files[0], 'PREVIEW_PICTURE' => $files[1] ?? false,
     'PROPERTY_VALUES' => $prop,
