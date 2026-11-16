@@ -17,8 +17,10 @@ STAMP=$(date +%Y%m%d-%H%M)
 [ -s "$DUMP" ] || { echo "нет файла $DUMP"; exit 1; }
 [ -d "$FILESTORE" ] || { echo "нет каталога $FILESTORE"; exit 1; }
 
-echo "→ бэкап нынешней боевой (на всякий случай)"
-docker compose exec -T db pg_dump -U "$ODOO_DB_USER" -Fc odoo > "/opt/backups/odoo/odoo-before-restore-$STAMP.dump"
+if [ -z "${SKIP_BACKUP:-}" ]; then   # SKIP_BACKUP=1 — повторный запуск, бэкап уже снят
+  echo "→ бэкап нынешней боевой (на всякий случай)"
+  docker compose exec -T db pg_dump -U "$ODOO_DB_USER" -Fc odoo > "/opt/backups/odoo/odoo-before-restore-$STAMP.dump"
+fi
 
 echo "→ гашу Odoo и фоновые процессы"
 docker compose stop odoo ai-worker nest-worker zk-worker >/dev/null 2>&1 || true
@@ -33,8 +35,14 @@ docker run --rm -v odoo_odoo_data:/data -v "$FILESTORE":/src:ro alpine:3.20 \
   sh -c 'rm -rf /data/filestore/odoo && mkdir -p /data/filestore && cp -a /src /data/filestore/odoo && chown -R 100:101 /data/filestore'
 
 RUN="docker compose run --rm -T odoo odoo -d odoo --stop-after-init"
-echo "→ RuOdoo 2026-11: новые зависимости l10n_ru_advance_payments"
-$RUN -i l10n_latam_check,docx_report -u l10n_ru_advance_payments 2>&1 | grep -E "CRITICAL| ERROR |Modules loaded" | tail -4 || true
+# Одним проходом: зависимости RuOdoo 2026-11 + модули после 22.10 + -u всех наших. Порознь нельзя
+# (16.11.2026): реестр грузит НОВЫЙ код наших модулей на СТАРЫЕ таблицы (нет колонок
+# pmk_telegram_link_hash и др.) — Odoo ловит ошибку и сам себя блокирует на чтении полей.
+OURS=$(grep -m1 '^OURS=' /opt/factory-platform/experiments/odoo/deploy.sh | cut -d'"' -f2 | tr ' ' ',')
+NEW=pmk_opora,pmk_zakladnye,pmk_supplier_invoice,pmk_vpn
+echo "→ RuOdoo 2026-11 + новые модули + обновление наших (одним проходом)"
+timeout 1800 $RUN -i l10n_latam_check,docx_report,$NEW -u l10n_ru_advance_payments,$OURS 2>&1 \
+  | grep -E "CRITICAL| ERROR |Modules loaded|not loaded" | grep -v "(ERROR/3)" | tail -15 || true
 
 echo "→ l10n_ru_act_rev выведен RuOdoo по безопасности — удаляю (на время делаю устанавливаемым)"
 M=$STAND/ruodoo/l10n_ru_act_rev/__manifest__.py
