@@ -151,7 +151,7 @@ $fields = [
     // анонс шаблон выводит экранированным под H1 — только простой текст, без <p> (16.11: на странице были видны теги)
     'PREVIEW_TEXT' => trim(preg_replace('~\s+~u', ' ', (string)($j['preview_text'] ?? ''))), 'PREVIEW_TEXT_TYPE' => 'text',
     'DETAIL_TEXT' => paras($j['detail_text'] ?? ''), 'DETAIL_TEXT_TYPE' => 'html',
-    'DETAIL_PICTURE' => $files[0], 'PREVIEW_PICTURE' => $files[1] ?? false,
+    'DETAIL_PICTURE' => $files[0],
     'PROPERTY_VALUES' => $prop,
 ];
 $ipt = [];
@@ -163,5 +163,11 @@ if ($ipt) $fields['IPROPERTY_TEMPLATES'] = $ipt;
 $el = new CIBlockElement;
 $id = $el->Add($fields, false, true, true);
 if (!$id) fail('Bitrix: ' . strip_tags($el->LAST_ERROR));
+// Фото 2 → PREVIEW_PICTURE ОТДЕЛЬНЫМ шагом: в ИБ32 включено «картинка анонса из детальной + обновлять вместе с
+// детальной» (FROM_DETAIL/UPDATE_WITH_DETAIL) — при Add Bitrix затирает переданное фото 2 уменьшенной копией фото 1
+// (17.11: так потерялись фото 2 у 1728/1729). Update без DETAIL_PICTURE это правило не включает.
+if (isset($files[1])) {
+    if (!$el->Update($id, ['PREVIEW_PICTURE' => $files[1]], false, true, true)) fail("фото 2: " . strip_tags($el->LAST_ERROR) . " (проект $id создан)");
+}
 clear_cache();
 out(['ok' => true, 'id' => (int)$id, 'active' => empty($j['draft']), 'code' => $code, 'url' => url_of($id), 'photos' => count($files)]);
