@@ -4,7 +4,8 @@
 #   ssh siteproj@pmk-main list
 #   ssh siteproj@pmk-main hide <id> | show <id>
 #   tar -czf - -C <папка с project.json и фото> . | ssh siteproj@pmk-main add
-# authorized_keys siteproj: restrict,command="sudo -n /usr/local/sbin/pmk-site-project" ssh-ed25519 …
+# authorized_keys siteproj: from="132.243.127.33",restrict,command="sudo -n /usr/local/sbin/pmk-site-project \"$SSH_ORIGINAL_COMMAND\"" ssh-ed25519 …
+# (sudo стирает SSH_ORIGINAL_COMMAND — команда приходит аргументом)
 # sudoers: siteproj ALL=(root) NOPASSWD: /usr/local/sbin/pmk-site-project
 # Удаления нет. Каждое действие — в /var/log/pmk-site-project.log.
 set -euo pipefail
@@ -13,7 +14,7 @@ LOG=/var/log/pmk-site-project.log
 C=site-web
 MAX=$((150 * 1024 * 1024))
 CMD="${SSH_ORIGINAL_COMMAND:-${*:-}}"
-log() { echo "$(date '+%F %T') ${SSH_CLIENT%% *} $*" >> "$LOG"; }
+log() { echo "$(date '+%F %T') ${SUDO_USER:-root} $*" >> "$LOG"; }   # под sudo SSH_CLIENT не доходит
 fail() { echo "{\"ok\":false,\"error\":\"$1\"}"; log "ОТКАЗ: $1 [$CMD]"; exit 1; }
 
 # свежий код из репозитория в контейнер (скрипты маленькие)
