@@ -23,7 +23,7 @@ if [ -d /opt/site/www ]; then
     problems+=("ночной дамп сайта не снят (последний: $(basename "${last_site:-нет}"))")
 fi
 if [ -f /opt/1c/bases/buh/1Cv8.1CD ]; then
-  last_1c=$(ls -1t /opt/backups/1c/buh_*.dt 2>/dev/null | head -1)
+  last_1c=$(ls -1t /opt/backups/1c/buh_*.1cd.zst /opt/backups/1c/buh_*.dt 2>/dev/null | head -1)
   [ -n "$last_1c" ] && [ "$(age_of "$last_1c")" -lt "$LIMIT" ] || \
     problems+=("ночная выгрузка 1С не снята (последняя: $(basename "${last_1c:-нет}"))")
 fi

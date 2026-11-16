@@ -1,22 +1,26 @@
 #!/bin/bash
-# Ночная выгрузка базы 1С в .dt (16.11.2026). Cron 03:30 — до выгрузки в облако (04:20, backup-offsite.sh).
+# Ночной бэкап базы 1С (16.11.2026). Cron 03:30 — до выгрузки в облако (04:20, backup-offsite.sh).
 #   30 3 * * * /opt/factory-platform/infra/1c/backup-1c.sh >> /var/log/1c-backup.log 2>&1
-# Файловая база: на время выгрузки Apache останавливается (ночью, 1–2 пользователя — секунды-минуты).
-# Восстановление: bash /opt/factory-platform/infra/1c/restore-1c.sh /opt/backups/1c/buh_….dt
+# Копия ФАЙЛА базы 1Cv8.1CD, сжатая zstd, а не выгрузка .dt: `ibcmd infobase dump` требует логин и пароль
+# администратора базы, а хранить пароль бухгалтерии на сервере не хочется. Файловая база = один файл,
+# его копия при остановленном Apache — полноценный бэкап (грузится той же платформой 8.5).
+# Apache стоит только на время копирования файла (секунды), сжатие — уже при работающей 1С.
+# Восстановление: bash /opt/factory-platform/infra/1c/restore-1c.sh /opt/backups/1c/buh_….1cd.zst
 set -euo pipefail
-. "$(dirname "$(readlink -f "$0")")/version.sh"   # VER, BIN
 DB=/opt/1c/bases/buh
 DIR=/opt/backups/1c
 KEEP_DAYS=14
 [ -f "$DB/1Cv8.1CD" ] || { echo "нет базы 1С в $DB — пропуск"; exit 0; }
 mkdir -p "$DIR"
-OUT=$DIR/buh_$(date +%Y%m%d_%H%M%S).dt
-echo "── $(date '+%F %T') выгрузка 1С"
+OUT=$DIR/buh_$(date +%Y%m%d_%H%M%S).1cd.zst
+TMP=$DIR/.buh.1cd.tmp
+echo "── $(date '+%F %T') бэкап 1С"
 systemctl stop apache2
 trap 'systemctl start apache2' EXIT
-"$BIN/ibcmd" infobase dump --db-path="$DB" "$OUT.part" 2>&1 | tail -1
+cp "$DB/1Cv8.1CD" "$TMP"
 systemctl start apache2; trap - EXIT
-[ -s "$OUT.part" ] || { echo "ОШИБКА: пустая выгрузка"; rm -f "$OUT.part"; exit 1; }
+zstd -q -T2 -6 --rm "$TMP" -o "$OUT.part"
+zstd -q -t "$OUT.part" || { echo "ОШИБКА: архив 1С не прошёл проверку"; rm -f "$OUT.part"; exit 1; }
 mv "$OUT.part" "$OUT"
-find "$DIR" -maxdepth 1 -name 'buh_*.dt' -mtime +$KEEP_DAYS -delete
+find "$DIR" -maxdepth 1 \( -name 'buh_*.1cd.zst' -o -name 'buh_*.dt' \) -mtime +$KEEP_DAYS -delete
 echo "   $(basename "$OUT") $(du -h "$OUT" | cut -f1) — ок"
