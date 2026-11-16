@@ -43,8 +43,13 @@ echo 'm=env["ir.module.module"].search([("name","=","l10n_ru_act_rev"),("state",
   | docker compose run --rm -T odoo odoo shell -d odoo --no-http 2>&1 | grep -E "^ACT_REV|Error" || true
 sed -i 's/"installable": True/"installable": False/' "$M"
 
+echo "→ адрес Anthropic — туннель через NL (служба anthropic-relay, с IP в РФ ответ 403)"
+$PSQL -d odoo -qc "INSERT INTO ir_config_parameter(key,value,create_date,write_date) VALUES ('pmk_ai.api_base','https://api.anthropic.com:8443',now(),now()) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value, write_date=now();"
+
 echo "→ код до текущего: deploy.sh (-u всех наших, чистка ассетов, старт)"
 sh /opt/factory-platform/experiments/odoo/deploy.sh
+# deploy.sh делает stop/start — новые extra_hosts (туннель Anthropic) так не подхватятся
+docker compose up -d odoo ai-worker
 
 echo "→ проверка"
 sleep 5

@@ -43,13 +43,22 @@
 - ufw: 22, 80, 443. Порты контейнеров привязаны к 172.17.0.1 — Docker идёт в обход ufw.
 - fail2ban (sshd) — из образа Бегета, за сутки 40 банов.
 
-## Сеть: что недоступно (15.11.2026)
+## Сеть (проверка 16.11.2026)
 
-- github.com — TCP 443/80 не проходит (22 — проходит), пакеты теряются после последнего хопа Telia
-  перед GitHub. api.moysklad.ru — теряются на MSK-IX (195.208.209.96), 80 и 443.
-  С Mac и с NL-сервера VPN оба отвечают → блокируют адреса этой сети на их стороне.
-- api.anthropic.com — 403 (регион), ассистенту нужен ретранслятор `pmk_ai.api_base`.
-- Работают: Телеграм, DaData, Docker Hub, pypi, git.ruodoo.ru, Let's Encrypt.
+- 13–15.11 github.com (443/80) и api.moysklad.ru были недоступны — пакеты терялись на стороне
+  получателя (Telia / MSK-IX). 16.11 повторная проверка: оба отвечают за 0,05–0,4 с, `git ls-remote`
+  по https проходит, MTU 1500 в порядке. Было временным у Бегета после атаки; обходов не ставили.
+- api.anthropic.com — 403 «Request not allowed» (Anthropic не пускает IP из РФ). Обход — туннель:
+  - служба `anthropic-relay` (systemd): `ssh -N -L 172.17.0.1:8443:api.anthropic.com:443
+    relay@31.77.141.89` (NL, сервер личного VPN), ключ `/root/.ssh/id_relay`;
+  - на NL — пользователь `relay` без консоли, в authorized_keys `restrict,port-forwarding,
+    permitopen="api.anthropic.com:443",from="45.153.188.84"` — ничего, кроме этого адреса;
+  - TLS сквозной до Anthropic (сертификат настоящий), ключ API на NL не виден;
+  - в контейнерах odoo и ai-worker `extra_hosts: api.anthropic.com:host-gateway`, в Odoo
+    `pmk_ai.api_base = https://api.anthropic.com:8443`; ufw пускает к 8443 только 172.16.0.0/12;
+  - проверка: `curl --resolve api.anthropic.com:8443:172.17.0.1 https://api.anthropic.com:8443/v1/models`
+    → 401 (без ключа) за ~0,3 с. Упал туннель — `systemctl status anthropic-relay`.
+- Работают напрямую: GitHub, МойСклад, Телеграм, DaData, Docker Hub, pypi, git.ruodoo.ru, Let's Encrypt.
 
 ## RuOdoo: выпуск 2026-11-08 против наших модулей (15.11.2026)
 

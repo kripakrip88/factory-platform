@@ -52,6 +52,12 @@ services:
     # очередь и перебор адресов в pmk_telegram.
     extra_hosts:
       - "api.telegram.org:149.154.167.220"
+      # Ассистент (pmk_ai), разбор почты, распознавание счетов: с IP в РФ Anthropic отвечает
+      # 403 «Request not allowed» (сервер 45.153.188.84, 16.11.2026). Ходим туннелем через NL
+      # 31.77.141.89 — служба anthropic-relay на хосте слушает 172.17.0.1:8443 и пропускает
+      # только api.anthropic.com:443 (TLS сквозной). Адрес в Odoo: pmk_ai.api_base =
+      # https://api.anthropic.com:8443. Подробно — infra/server/README.md.
+      - "api.anthropic.com:host-gateway"
     depends_on:
       db:
         condition: service_healthy
@@ -121,6 +127,8 @@ services:
     image: odoo-ru:19.0-20261006
     container_name: odoo-ai-worker
     restart: unless-stopped
+    extra_hosts:
+      - "api.anthropic.com:host-gateway"   # туннель через NL, см. сервис odoo
     depends_on:
       - db
     entrypoint: ["sh", "-c", "odoo shell -c /etc/odoo/odoo.conf -d odoo --db_host=$$HOST --db_user=$$USER --db_password=$$PASSWORD --no-http < /mnt/third-party/pmk_ai/worker/ai_worker.py"]
