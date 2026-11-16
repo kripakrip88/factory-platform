@@ -364,7 +364,9 @@ class PmkSalesHome(models.AbstractModel):
     def _action(self, xmlid, domain=None, name=None, views=None):
         try:
             action = dict(self.env["ir.actions.act_window"]._for_xml_id(xmlid))
-        except (ValueError, AccessError):
+        except (ValueError, AccessError, AssertionError):
+            # AssertionError: Odoo 19 _for_xml_id проверяет тип — «Почта продаж» это ir.actions.client,
+            # не окно; без перехвата блок «Почта» на главной падал RPC_ERROR (17.11.2026)
             try:
                 action = dict(self.env["ir.actions.actions"]._for_xml_id(xmlid))
             except (ValueError, AccessError):

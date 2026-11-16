@@ -337,7 +337,7 @@ class PmkPurchaseHome(models.AbstractModel):
     def _action(self, xmlid, domain=None, name=None):
         try:
             action = dict(self.env["ir.actions.act_window"]._for_xml_id(xmlid))
-        except (ValueError, AccessError):
+        except (ValueError, AccessError, AssertionError):  # клиентское действие (Odoo 19 проверяет тип)
             return False
         if domain is not None:
             action["domain"] = domain
