@@ -69,3 +69,11 @@
   загрузятся. Правильный путь — уйти с этого модуля на `rsbu_fns_reporting` (отдельная задача).
 - `l10n_ru_act_rev` (акты сверки) выведен по безопасности — со старой базы удалён (button_immediate_uninstall).
 - `l10n_ru_advance_payments` теперь требует `l10n_latam_check` и `docx_report` — на старой базе доставить `-i`.
+
+## Бэкап вне Бегета — Yandex Object Storage (16.11.2026)
+
+`infra/server/backup-offsite.sh`, cron 04:20 (после `backup-stand.sh` в 03:40), журнал `/var/log/odoo-offsite.log`.
+Ночной дамп базы → `odoo/db/` (бакет удаляет старше 30 дней), вложения по файлам, только новые → `odoo/filestore/`,
+разово дамп 22.10 → `archive/`. Ключ — `/root/.yc-backup.env` (YC_KEY_ID, YC_SECRET, YC_BUCKET; chmod 600),
+сервисный аккаунт с ролью `storage.uploader` (удалять не может), в бакете версионирование. ~2 ГБ ≈ 3 ₽/мес.
+Отметка последнего успеха — `/var/lib/pmk-offsite/last_ok`. Восстановление — в шапке скрипта.
