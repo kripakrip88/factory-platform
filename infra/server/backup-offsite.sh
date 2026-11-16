@@ -66,5 +66,20 @@ if [ -f "$OLD" ] && [ ! -f "$STATE/archive-2210.done" ]; then
   echo "   архив 22.10 — выгружен"
 fi
 
+# 4. Сайт pmkpark.ru (с 16.11.2026, infra/site): ночной дамп базы → site/db/ (бакет удаляет через 30 дней),
+#    файлы → site/www/ только изменённые (--checksum: md5 из листинга, без запроса на каждый файл).
+if [ -d /opt/site/www ] && docker ps --format '{{.Names}}' | grep -qx site-db; then
+  sd=$(ls -1t /opt/backups/site/site_*.sql.gz 2>/dev/null | head -1 || true)
+  [ -n "$sd" ] || { echo "ОШИБКА: нет дампа сайта в /opt/backups/site"; exit 1; }
+  sage=$(( $(date +%s) - $(stat -c %Y "$sd") ))
+  [ "$sage" -lt 86400 ] || { echo "ОШИБКА: свежего дампа сайта нет, последний $(basename "$sd")"; exit 1; }
+  $R copyto "$sd" "yc:$YC_BUCKET/site/db/$(basename "$sd")"
+  echo "   сайт, база: $(basename "$sd") — ок"
+  $R copy /opt/site/www "yc:$YC_BUCKET/site/www" --checksum --transfers 8 --checkers 16 \
+    --exclude "/bitrix/cache/**" --exclude "/bitrix/managed_cache/**" --exclude "/bitrix/stack_cache/**" \
+    --exclude "/bitrix/tmp/**" --exclude "/upload/tmp/**" --exclude "/upload/resize_cache/**"
+  echo "   сайт, файлы: изменённые догружены — ок"
+fi
+
 date '+%F %T' > "$STATE/last_ok"
 echo "   готово"
