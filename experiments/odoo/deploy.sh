@@ -122,6 +122,7 @@ docker compose stop odoo >/dev/null 2>&1 || true
 # на время обновления; ниже их всё равно перезапускают.
 docker compose stop ai-worker nest-worker >/dev/null 2>&1 || true
 
+mkdir -p "$DEST"   # чистый сервер (restore-all.sh): папки ещё нет — cp -r скопировал бы модуль НА её место
 for M in $OURS; do
   SRC="$WORK/experiments/odoo/addons/$M"
   [ -d "$SRC" ] || { echo "НЕТ МОДУЛЯ В РЕПО: addons/$M"; exit 1; }
