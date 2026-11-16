@@ -81,5 +81,8 @@ if [ -d /opt/site/www ] && docker ps --format '{{.Names}}' | grep -qx site-db; t
   echo "   сайт, файлы: изменённые догружены — ок"
 fi
 
+# 5. Комплект восстановления: код, RuOdoo, образы Docker, секреты — чтобы всё поднималось из одного бакета
+R="$R" YC_BUCKET="$YC_BUCKET" bash "$(dirname "$0")/backup-kit.sh"
+
 date '+%F %T' > "$STATE/last_ok"
 echo "   готово"

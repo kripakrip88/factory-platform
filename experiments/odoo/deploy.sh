@@ -134,6 +134,9 @@ for M in $VENDOR; do
   rm -rf "$DEST/$M" && cp -r "$SRC" "$DEST/" && chmod -R a+rX "$DEST/$M"
 done
 echo "→ разложено: $OURS | вендор: $VENDOR"
+# LAYOUT_ONLY=1 — только разложить модули и выйти (восстановление на чистом сервере: базы ещё нет,
+# -u делать не на чем; infra/server/restore-all.sh). 16.11.2026.
+[ -n "${LAYOUT_ONLY:-}" ] && { echo "→ LAYOUT_ONLY: модули разложены, база не трогалась"; exit 0; }
 
 UPD="$OURS"
 # I18N=1 — дозалить переводы вендорских модулей в базу. Строки кода (.po)
