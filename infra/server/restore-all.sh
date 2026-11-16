@@ -6,6 +6,8 @@
 #   export YC_KEY_ID=… YC_SECRET=… YC_BUCKET=pmkpark-odoo-backup
 #   bash restore-all.sh            # спросит пароль комплекта
 #   (или BACKUP_PASSPHRASE=… bash restore-all.sh)
+#   RESTORE_TEST=1 — ПРОВЕРОЧНОЕ восстановление: Odoo обезврежен (кроны, почта, ключи), без ночных заданий
+#   (иначе ночью выгрузит себя в тот же бакет поверх настоящих бэкапов) и без туннеля ассистента.
 # Шаги можно повторять: каждый проверяет, сделан ли он.
 set -euo pipefail
 : "${YC_KEY_ID:?export YC_KEY_ID=…}" "${YC_SECRET:?export YC_SECRET=…}" "${YC_BUCKET:=pmkpark-odoo-backup}"
@@ -71,7 +73,7 @@ $R copyto "yc:$YC_BUCKET/odoo/db/$D" "/opt/backups/odoo/restore/$D"
 $R copy "yc:$YC_BUCKET/odoo/filestore" /opt/backups/odoo/restore/filestore --transfers 16
 echo "дамп: $D, вложений: $(find /opt/backups/odoo/restore/filestore -type f | wc -l)"
 LAYOUT_ONLY=1 sh /opt/factory-platform/experiments/odoo/deploy.sh   # модули в addons-extra до восстановления базы
-DUMP=/opt/backups/odoo/restore/$D FILESTORE=/opt/backups/odoo/restore/filestore SKIP_BACKUP=1 \
+NEUTRALIZE="${RESTORE_TEST:-}" DUMP=/opt/backups/odoo/restore/$D FILESTORE=/opt/backups/odoo/restore/filestore SKIP_BACKUP=1 \
   bash /opt/factory-platform/experiments/odoo/scripts/restore-prod-from-dump.sh
 
 step "6. Сайт pmkpark.ru: файлы и база из бакета"
@@ -83,9 +85,10 @@ bash /opt/factory-platform/infra/site/site-restore.sh "/opt/backups/site/$S"
 
 step "7. Общий вход nginx и туннель ассистента"
 bash /opt/factory-platform/infra/edge/edge.sh up
-[ -f /etc/systemd/system/anthropic-relay.service ] && { systemctl daemon-reload; systemctl enable --now anthropic-relay || true; }
+[ -z "${RESTORE_TEST:-}" ] && [ -f /etc/systemd/system/anthropic-relay.service ] && { systemctl daemon-reload; systemctl enable --now anthropic-relay || true; }
 
 step "8. Ночные задания (бэкапы, сертификаты, сторож)"
+if [ -n "${RESTORE_TEST:-}" ]; then echo "RESTORE_TEST: ночные задания НЕ ставлю"; else
 crontab - <<'CRON'
 40 3 * * * /opt/factory-platform/experiments/odoo/scripts/backup-stand.sh --with-files >> /var/log/odoo-backup.log 2>&1
 50 3 * * * /opt/factory-platform/infra/site/backup-site.sh >> /var/log/site-backup.log 2>&1
@@ -93,6 +96,7 @@ crontab - <<'CRON'
 20 4 * * * /opt/factory-platform/infra/server/backup-offsite.sh >> /var/log/odoo-offsite.log 2>&1
 0 9 * * * /opt/factory-platform/infra/server/backup-check.sh >> /var/log/backup-check.log 2>&1
 CRON
+fi
 
 IP=$(curl -s -m 10 https://ifconfig.me || hostname -I | cut -d' ' -f1)
 cat <<EOF

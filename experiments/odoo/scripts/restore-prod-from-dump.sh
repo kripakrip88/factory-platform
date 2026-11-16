@@ -30,6 +30,23 @@ $PSQL -d postgres -qc "DROP DATABASE IF EXISTS odoo WITH (FORCE);"
 $PSQL -d postgres -qc "CREATE DATABASE odoo OWNER $ODOO_DB_USER;"
 docker compose exec -T db pg_restore -U "$ODOO_DB_USER" -d odoo --no-owner < "$DUMP" || echo "   (pg_restore: предупреждения выше)"
 
+# NEUTRALIZE=1 — проверочное восстановление (не боевое): второй живой Odoo с теми же ключами забирал бы почту,
+# опрашивал банки, слал в Телеграм. Как у копии :8099 (stage_rebuild.sh) + ключ ассистента. Кроны гасятся ДО
+# первого старта Odoo (deploy.sh ниже его запускает).
+if [ -n "${NEUTRALIZE:-}" ]; then
+  echo "→ NEUTRALIZE: кроны, почта, ключи ботов/банков/МС/ассистента — выключены"
+  $PSQL -d odoo -q <<'SQL'
+UPDATE ir_cron SET active = false;
+UPDATE ir_mail_server SET active = false, smtp_host = 'smtp.disabled.invalid';
+DO $$ BEGIN
+  IF to_regclass('fetchmail_server') IS NOT NULL THEN UPDATE fetchmail_server SET active = false; END IF;
+  IF to_regclass('mail_client_server') IS NOT NULL THEN UPDATE mail_client_server SET imap_host = 'imap.disabled.invalid'; END IF;
+END $$;
+DELETE FROM ir_config_parameter WHERE key ~ '^(pmk_telegram|pmk_bank|pmk_moysklad|pmk_cloud|pmk_vpn|pmk_ai)\.'
+  AND key ~ '(token|key|secret|password|webhook)';
+SQL
+fi
+
 echo "→ вложения из $FILESTORE"
 docker run --rm -v odoo_odoo_data:/data -v "$FILESTORE":/src:ro alpine:3.20 \
   sh -c 'rm -rf /data/filestore/odoo && mkdir -p /data/filestore && cp -a /src /data/filestore/odoo && chown -R 100:101 /data/filestore'
