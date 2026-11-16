@@ -1,0 +1,36 @@
+# Сайт pmkpark.ru на pmk-main (45.153.188.84). Запуск: cd /opt/site && docker compose up -d --build
+# Снаружи — только через общий nginx (infra/edge, sites-available/pmkpark.ru.conf → 172.17.0.1:8090).
+name: site
+services:
+  db:
+    image: mysql:8.0.46
+    container_name: site-db
+    restart: unless-stopped
+    env_file: .env                       # MYSQL_ROOT_PASSWORD — в git не кладём
+    volumes:
+      - db_data:/var/lib/mysql
+      - mysqld_sock:/var/run/mysqld
+      - ./conf/my.cnf:/etc/mysql/conf.d/pmkpark.cnf:ro
+    mem_limit: 1g
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping --socket=/var/run/mysqld/mysqld.sock -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      retries: 12
+  web:
+    build: .
+    image: pmkpark-web:8.3.35
+    container_name: site-web
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./www:/var/www/html
+      - mysqld_sock:/var/run/mysqld
+    ports:
+      - "172.17.0.1:8090:80"
+    mem_limit: 1g
+    cpus: 2.0
+volumes:
+  db_data:
+  mysqld_sock:
