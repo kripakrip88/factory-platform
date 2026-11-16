@@ -12,7 +12,7 @@
 | Общий вход nginx 80/443 + Let's Encrypt | /opt/edge | `edge` | 80, 443 наружу | все |
 | Odoo 19 боевой | /opt/experiments/odoo | `odoo` | 8084 (+8085 websocket) | erppark.ru |
 | Odoo — копия для проверки | /opt/experiments/odoo/dryrun | `odoo-stage` | 127.0.0.1:8099 | туннель с Mac |
-| Сайт pmkpark.ru (Битрикс) | /opt/site | `site` | 8090 | pmkpark.ru — заготовка |
+| Сайт pmkpark.ru (Битрикс) | /opt/site (infra/site) | `site` | 8090 | pmkpark.ru — с 16.11.2026 |
 | 1С | /opt/1c | `onec` | 8091 (веб-публикация) | 1c.erppark.ru — заготовка |
 | Бэкапы | /opt/backups/{odoo,site,1c} | — | — | — |
 
@@ -77,3 +77,17 @@
 разово дамп 22.10 → `archive/`. Ключ — `/root/.yc-backup.env` (YC_KEY_ID, YC_SECRET, YC_BUCKET; chmod 600),
 сервисный аккаунт с ролью `storage.uploader` (удалять не может), в бакете версионирование. ~2 ГБ ≈ 3 ₽/мес.
 Отметка последнего успеха — `/var/lib/pmk-offsite/last_ok`. Восстановление — в шапке скрипта.
+
+## Сайт pmkpark.ru (с 16.11.2026)
+
+Перенесён с 141.133.188.220 (ISPmanager; остаётся запасным ~неделю). Стек `infra/site`: PHP 8.3.35 + Apache
+(mod_php, .htaccess как было) + MySQL 8.0.46, база сокетом — файлы Битрикса без правок. Данные таблицы
+`b_user_session` (1,6 ГБ сессий) не переносились. Письма форм — модуль wsrubi.smtp → smtp.yandex.ru:587.
+Восстановить базу из дампа: `bash infra/site/site-restore.sh <дамп.sql.gz>`. Дамп — `infra/site/backup-site.sh`, 03:50.
+
+## Восстановление из одного места
+
+Всё (код, RuOdoo, образы Docker, зашифрованные секреты, базы, вложения, файлы сайта) — в бакете Яндекса,
+см. `RESTORE.md` и `restore-all.sh`. Комплект обновляет `backup-kit.sh` (шаг ночной выгрузки), только изменившееся.
+Пароль комплекта — /root/.backup-passphrase и у Антона в менеджере паролей. Сторож `backup-check.sh` (09:00)
+пишет Антону в Телеграм, если ночной бэкап не прошёл.
