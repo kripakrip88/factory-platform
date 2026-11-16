@@ -8,10 +8,9 @@
 #
 # Загрузить настоящую базу: bash /opt/factory-platform/infra/1c/restore-1c.sh /путь/база.dt
 set -euo pipefail
-VER=8.3.27.2342
+. "$(dirname "$(readlink -f "$0")")/version.sh"   # VER, BIN
 DIST=/opt/1c/dist
 ZIP=$DIST/deb64_${VER//./_}.zip
-BIN=/opt/1cv8/x86_64/$VER
 BASES=/opt/1c/bases
 IB=buh
 WWW=/opt/1c/www
@@ -34,6 +33,9 @@ if [ ! -x "$BIN/ibcmd" ]; then
     >/dev/null 2>&1 || apt-get install -f -y -qq >/dev/null
   dpkg -l | grep -c "1c-enterprise-$VER" | xargs echo "пакетов 1С:"
 fi
+# прежние версии платформы — убрать (модуль Apache должен быть один, от $VER)
+old=$(dpkg-query -W -f '${Package}\n' '1c-enterprise-*' 2>/dev/null | grep -v -- "-$VER-" | grep -v -- "-$VER\$" || true)
+[ -n "$old" ] && { echo "удаляю прежние пакеты 1С: $(echo $old | tr '\n' ' ')"; apt-get purge -y -qq $old >/dev/null; }
 "$BIN/ibcmd" --version 2>/dev/null | head -1 || true
 
 step "3. Apache только на 172.17.0.1:8091 (80/443 — у общего nginx)"
@@ -76,7 +78,7 @@ install -d -o www-data -g www-data /var/www/.1cv8 /var/www/.1C
 
 step "5. Веб-публикация /$IB"
 CONF=/etc/apache2/conf-available/1c-$IB.conf
-touch "$CONF"
+rm -f "$CONF"; touch "$CONF"   # модуль wsap24 — от текущей $VER
 "$BIN/webinst" -publish -apache24 -wsdir "$IB" -dir "$WWW/$IB" -connstr "File=\"$BASES/$IB\";" -confpath "$CONF" 2>&1 | tail -1
 a2enconf -q "1c-$IB" >/dev/null
 chown -R www-data:www-data "$WWW"

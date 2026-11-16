@@ -4,8 +4,7 @@
 # Перед загрузкой Apache останавливается (файловая база — монопольный доступ), после — проверка веб-клиента.
 set -euo pipefail
 DT="${1:?путь к выгрузке .dt}"
-VER=8.3.27.2342
-BIN=/opt/1cv8/x86_64/$VER
+. "$(dirname "$(readlink -f "$0")")/version.sh"   # VER, BIN
 BASES=/opt/1c/bases
 IB=buh
 [ -s "$DT" ] || { echo "нет файла $DT"; exit 1; }

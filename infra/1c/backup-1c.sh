@@ -4,8 +4,7 @@
 # Файловая база: на время выгрузки Apache останавливается (ночью, 1–2 пользователя — секунды-минуты).
 # Восстановление: bash /opt/factory-platform/infra/1c/restore-1c.sh /opt/backups/1c/buh_….dt
 set -euo pipefail
-VER=8.3.27.2342
-BIN=/opt/1cv8/x86_64/$VER
+. "$(dirname "$(readlink -f "$0")")/version.sh"   # VER, BIN
 DB=/opt/1c/bases/buh
 DIR=/opt/backups/1c
 KEEP_DAYS=14
