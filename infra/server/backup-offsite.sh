@@ -34,7 +34,7 @@ echo "── $(date '+%F %T') offsite → Yandex Object Storage"
 # shellcheck disable=SC1090
 . "$ENV"
 : "${YC_KEY_ID:?нет YC_KEY_ID}" "${YC_SECRET:?нет YC_SECRET}" "${YC_BUCKET:?нет YC_BUCKET}"
-export RCLONE_CONFIG_YC_TYPE=s3 RCLONE_CONFIG_YC_PROVIDER=Other \
+export RCLONE_CONFIG=/dev/null RCLONE_CONFIG_YC_TYPE=s3 RCLONE_CONFIG_YC_PROVIDER=Other \
   RCLONE_CONFIG_YC_ENDPOINT=https://storage.yandexcloud.net RCLONE_CONFIG_YC_REGION=ru-central1 \
   RCLONE_CONFIG_YC_ACCESS_KEY_ID="$YC_KEY_ID" RCLONE_CONFIG_YC_SECRET_ACCESS_KEY="$YC_SECRET" \
   RCLONE_CONFIG_YC_NO_CHECK_BUCKET=true
