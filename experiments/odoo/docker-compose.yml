@@ -117,7 +117,7 @@ services:
       - odoo_data:/var/lib/odoo
       - ${EXTRA_ADDONS:-/opt/experiments/odoo/addons-extra}:/mnt/third-party:ro
     mem_limit: 3g
-    cpus: 3.0
+    cpus: ${NEST_CPUS:-3.0}   # restore-all.sh: на сервере с 2 ядрами 3.0 — ошибка Docker
 
   # Фоновый процесс ассистента (18.10.2026, правило Антона «доработка не должна замедлять
   # систему»): вопрос к Claude идёт 10–60 с — страница только ставит его в очередь

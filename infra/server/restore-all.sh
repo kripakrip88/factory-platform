@@ -75,6 +75,9 @@ echo "дамп: $D, вложений: $(find /opt/backups/odoo/restore/filestore
 LAYOUT_ONLY=1 sh /opt/factory-platform/experiments/odoo/deploy.sh   # модули в addons-extra до восстановления базы
 NEUTRALIZE="${RESTORE_TEST:-}" DUMP=/opt/backups/odoo/restore/$D FILESTORE=/opt/backups/odoo/restore/filestore SKIP_BACKUP=1 \
   bash /opt/factory-platform/experiments/odoo/scripts/restore-prod-from-dump.sh
+# все службы стека (расчётчик раскроя, чертёжный процесс): deploy.sh их только перезапускает, если они есть
+export NEST_CPUS=$(( $(nproc) < 3 ? $(nproc) : 3 ))
+docker compose up -d --no-build
 
 step "6. Сайт pmkpark.ru: файлы и база из бакета"
 mkdir -p /opt/site/www /opt/backups/site
