@@ -69,6 +69,13 @@ foreach (['seo_title' => [20, 80], 'seo_desc' => [70, 200], 'seo_h1' => [10, 150
     if ($l < $mn || $l > $mx) fail("$sk: нужно $mn–$mx знаков, сейчас $l");
 }
 
+// Заказчика на сайте не называем (Антон 16.11.2026: «эти данные мы на сайт не выкладываем»).
+// Ловим юрлица в любом тексте карточки, включая подписи фото. Сфера заказчика (orderer) — можно.
+$texts = [];
+array_walk_recursive($j, function ($v, $k) use (&$texts) { if (is_string($v) && $k !== 'file' && $k !== 'section' && $k !== 'catalog_section') $texts[] = $v; });
+$legal = '~(?<![\p{L}])(ООО|ОАО|ЗАО|ПАО|НАО|АО|ИП|ГУП|МУП|ФГУП|ГКУ|МКУ|ГБУ|МБУ|ФГБУ|АНО|LLC|Ltd|GmbH)(?![\p{L}])~u';
+foreach ($texts as $t) if (preg_match($legal, $t, $m)) fail("заказчика называть нельзя: в тексте «{$m[1]}» — уберите юрлицо, пишите сферу («застройщик», «промышленное предприятие»)");
+
 $sec = CIBlockSection::GetList([], ['IBLOCK_ID' => PMK_PROJECTS_IB, '=CODE' => $j['section'] ?? ''], false, ['ID'])->Fetch();
 if (!$sec) fail('section: нет раздела «' . ($j['section'] ?? '') . '» в ИБ32 (см. справочник)');
 
