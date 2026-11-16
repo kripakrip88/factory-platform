@@ -15,7 +15,7 @@
 //   "catalog_section": "vintovye-svai", "services": ["Лазерная резка металла", ...],
 //   "preview_text": "...", "task": "...", "detail_text": "абзац\n\nабзац",
 //   "seo_h1": "...", "seo_title": "...", "seo_desc": "...",
-//   "photos": [{"file": "1.jpg", "alt": "..."}, ...],      // первое фото — главное
+//   "photos": [{"file": "1.jpg", "alt": "..."}, ...],      // 1 — шапка, 2 — «что сделали»/превью, далее галерея
 //   "draft": true }                                         // необязательно: создать скрытым (проверка)
 require __DIR__ . '/_boot.php';
 
@@ -32,16 +32,18 @@ function clear_cache() {
     if (isset($GLOBALS['stackCacheManager'])) $GLOBALS['stackCacheManager']->CleanAll();
     CIBlock::clearIblockTagCache(PMK_PROJECTS_IB);
 }
-function url_of($id) {
-    $e = CIBlockElement::GetList([], ['IBLOCK_ID' => PMK_PROJECTS_IB, 'ID' => $id], false, false, ['ID', 'DETAIL_PAGE_URL'])->GetNext();
-    return $e ? 'https://pmkpark.ru' . $e['DETAIL_PAGE_URL'] : null;
+function url_of($id) {   // шаблон ИБ32 «#SECTION_CODE#/#ELEMENT_CODE#/» без /projects/ — собираем сами
+    $e = CIBlockElement::GetList([], ['IBLOCK_ID' => PMK_PROJECTS_IB, 'ID' => $id], false, false, ['ID', 'CODE', 'IBLOCK_SECTION_ID'])->Fetch();
+    if (!$e) return null;
+    $s = $e['IBLOCK_SECTION_ID'] ? CIBlockSection::GetByID($e['IBLOCK_SECTION_ID'])->Fetch() : null;
+    return 'https://pmkpark.ru/projects/' . ($s ? $s['CODE'] . '/' : '') . $e['CODE'] . '/';
 }
 const MONTHS = ['январь'=>1,'февраль'=>2,'март'=>3,'апрель'=>4,'май'=>5,'июнь'=>6,'июль'=>7,'август'=>8,'сентябрь'=>9,'октябрь'=>10,'ноябрь'=>11,'декабрь'=>12];
 
 $cmd = $argv[1] ?? '';
 if ($cmd === 'list') {
-    $r = CIBlockElement::GetList(['ID' => 'DESC'], ['IBLOCK_ID' => PMK_PROJECTS_IB], false, ['nTopCount' => 15], ['ID', 'NAME', 'ACTIVE', 'ACTIVE_FROM', 'DETAIL_PAGE_URL']);
-    $a = []; while ($e = $r->GetNext()) $a[] = ['id' => (int)$e['ID'], 'active' => $e['ACTIVE'] === 'Y', 'date' => $e['ACTIVE_FROM'], 'name' => $e['~NAME'], 'url' => 'https://pmkpark.ru' . $e['DETAIL_PAGE_URL']];
+    $r = CIBlockElement::GetList(['ID' => 'DESC'], ['IBLOCK_ID' => PMK_PROJECTS_IB], false, ['nTopCount' => 15], ['ID', 'NAME', 'ACTIVE', 'ACTIVE_FROM']);
+    $a = []; while ($e = $r->Fetch()) $a[] = ['id' => (int)$e['ID'], 'active' => $e['ACTIVE'] === 'Y', 'date' => $e['ACTIVE_FROM'], 'name' => $e['NAME'], 'url' => url_of($e['ID'])];
     out(['ok' => true, 'projects' => $a]);
 }
 if ($cmd === 'hide' || $cmd === 'show') {
@@ -128,9 +130,12 @@ if ($catId) $prop['LINK_CATALOG_SECTION'] = $catId;
 if (trim($j['task'] ?? '') !== '') $prop['TASK_PROJECT'] = ['VALUE' => ['TEXT' => paras($j['task']), 'TYPE' => 'html']];
 $chOk = ['CH_QTY','CH_DIAM','CH_MASS','CH_MAT','CH_THICK','CH_SECT','CH_HEIGHT','CH_LENGTH','CH_AREA','CH_RAL','CH_COATING','CH_OBJECT'];
 foreach ((array)($j['ch'] ?? []) as $ck => $cv) { if (!in_array($ck, $chOk, true)) fail("ch: нет характеристики $ck"); $prop[$ck] = $cv; }
-if (count($files) > 1) {
+// Шаблон страницы (karneev-prod …/projects/page_blocks/element_1.php): DETAIL_PICTURE — шапка,
+// PREVIEW_PICTURE — блок «что сделали» и превью в списках, PHOTOS — галерея. Одно фото — PREVIEW пустой
+// (шаблон сам возьмёт DETAIL и не задвоит).
+if (count($files) > 2) {
     $prop['PHOTOS'] = [];
-    foreach (array_slice($files, 1) as $n => $f) $prop['PHOTOS']["n$n"] = ['VALUE' => $f, 'DESCRIPTION' => $f['description']];
+    foreach (array_slice($files, 2) as $n => $f) $prop['PHOTOS']["n$n"] = ['VALUE' => $f, 'DESCRIPTION' => $f['description']];
 }
 
 $fields = [
@@ -138,7 +143,7 @@ $fields = [
     'NAME' => $name, 'CODE' => $code, 'ACTIVE_FROM' => $activeFrom, 'SORT' => 500,
     'PREVIEW_TEXT' => paras($j['preview_text'] ?? ''), 'PREVIEW_TEXT_TYPE' => 'html',
     'DETAIL_TEXT' => paras($j['detail_text'] ?? ''), 'DETAIL_TEXT_TYPE' => 'html',
-    'PREVIEW_PICTURE' => $files[0], 'DETAIL_PICTURE' => $files[0],
+    'DETAIL_PICTURE' => $files[0], 'PREVIEW_PICTURE' => $files[1] ?? false,
     'PROPERTY_VALUES' => $prop,
 ];
 $ipt = [];
