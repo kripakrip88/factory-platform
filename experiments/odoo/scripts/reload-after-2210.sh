@@ -5,7 +5,8 @@
 #   2. дубль «ЦЕНТР КРОВЛИ» → ООО «ЦЕНТР КРОВЛИ» (ИНН 2540249518)          — scripts_v1182/merge_ck.py;
 #   3. прайс «Центр Кровли» 14.09 (лист гладкий 1250, цинк + краска)        — PMK_PRICE_FORMAT=ck;
 #   4. дубли поставщиков крепежа → карточки с ИНН (МК-27, Метиз Центр)     — scripts_v1183/merge_…py;
-#   5. 1976 цен метизов ₽/шт                                               — load_fastener_prices.py.
+#   5. 1976 цен метизов ₽/шт                                               — load_fastener_prices.py;
+#   6. доска «Доработка системы»: задачи №318–326 по журналам               — scripts/restore_tasks_2210.py.
 #
 #   bash reload-after-2210.sh stage   — копия odoo_stage (:8099)
 #   bash reload-after-2210.sh prod    — боевая, ТОЛЬКО по «выкладывай» Антона (бэкап снимается сам)
@@ -58,4 +59,6 @@ echo "══ 4. слияние поставщиков крепежа"
 shell $REPO/scripts_v1183/merge_fastener_suppliers.py
 echo "══ 5. цены метизов"
 shell $TOOLS/load_fastener_prices.py PMK_FAST_FILE=/reload/fasteners_prices.csv PMK_FAST_APPLY=1
+echo "══ 6. доска задач: №318–326 заново, №317 → «Выложено — проверить»"
+shell $REPO/scripts/restore_tasks_2210.py
 echo "DONE $TARGET"
