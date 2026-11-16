@@ -47,7 +47,9 @@ echo "→ адрес Anthropic — туннель через NL (служба an
 $PSQL -d odoo -qc "INSERT INTO ir_config_parameter(key,value,create_date,write_date) VALUES ('pmk_ai.api_base','https://api.anthropic.com:8443',now(),now()) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value, write_date=now();"
 
 echo "→ код до текущего: deploy.sh (-u всех наших, чистка ассетов, старт)"
-sh /opt/factory-platform/experiments/odoo/deploy.sh
+# Модули, сделанные после 22.10, в базе 22.10 не установлены, а deploy.sh их только обновляет (-u
+# неустановленного ничего не делает) — ставим явно (16.11.2026: на копии без этого их не было).
+INSTALL="pmk_opora pmk_zakladnye pmk_supplier_invoice pmk_vpn" sh /opt/factory-platform/experiments/odoo/deploy.sh
 # deploy.sh делает stop/start — новые extra_hosts (туннель Anthropic) так не подхватятся
 docker compose up -d odoo ai-worker
 

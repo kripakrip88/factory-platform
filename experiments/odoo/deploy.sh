@@ -96,6 +96,9 @@ OURS="pmk_calc pmk_theme pmk_pdf pmk_cut pmk_mail_ui pmk_partner pmk_purchase pm
 # только то, что раскладывает, поэтому папка старого модуля там остаётся и
 # установленный модуль продолжает работать. Удаляется он руками: Приложения →
 # «Transaction Flow Visualizer» → Удалить, потом папку из addons-extra.
+# ⚠️ Это список РАСКЛАДКИ, не установки. theme_liquid_glass и techy_backend_theme в боевой базе НЕ
+# установлены (пробовали 22.09, сняли) — на чистую базу их не ставить: перекрывают pmk_theme (тёмный
+# фон, белые пустые карточки, невидимое меню — так вышло на новом сервере 15.11.2026).
 VENDOR="mail_client theme_liquid_glass northlight_teaminbox tracking_manager techy_backend_theme theme_nexus"
 # Модули, которые надо ПОСТАВИТЬ, а не обновить (через переменную окружения).
 INSTALL="${INSTALL:-}"
