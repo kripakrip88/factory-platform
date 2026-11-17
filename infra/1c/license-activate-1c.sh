@@ -9,7 +9,9 @@ set -euo pipefail
 SERIAL=20001106256
 LICDIR=/var/1C/licenses
 RING=$(ls -d /opt/1C/1CE/components/1c-enterprise-ring-*/ring | tail -1)
-export JAVA_HOME=${JAVA_HOME:-/usr/lib/jvm/java-17-openjdk-amd64}
+export JAVA_HOME=${JAVA_HOME:-/usr/lib/jvm/java-17-openjdk-amd64}   # ring 0.20 нужна Java 17 (на 11 не стартует)
+# 17.11: модуль лицензий (JAX-WS) на Java 17 падал «Unsafe.defineClass» ДО отправки запроса — открываем java.lang
+export RING_OPTS="--add-opens java.base/java.lang=ALL-UNNAMED"
 [ -x "$RING" ] || { echo "нет утилиты ring — установить из /opt/1c/dist/lictools (1ce-installer-cli install)"; exit 1; }
 
 read -r -p "Почтовый индекс по адресу регистрации ИП (6 цифр): " ZIP
