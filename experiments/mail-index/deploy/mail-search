@@ -1,0 +1,5 @@
+#!/bin/bash
+# Поиск по почте pmkpark@ для Claude: mail-search "закладные МН" --who stroytrest --since 2025-01-01
+# Выдаёт пути к Markdown-цепочкам переписки. Пароль почты не нужен — только индекс.
+export MAIL_INDEX_DIR=/srv/mail-index
+cd /opt/mail-index && exec /opt/mail-index/venv/bin/python -m mailindex search "$@"

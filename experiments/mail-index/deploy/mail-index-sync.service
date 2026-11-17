@@ -1,0 +1,27 @@
+[Unit]
+Description=mail-index: новые письма pmkpark@ → Markdown-цепочки + поиск
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=mailidx
+Group=mailidx
+EnvironmentFile=/etc/mail-index/settings.env
+EnvironmentFile=/etc/mail-index/imap.env
+WorkingDirectory=/opt/mail-index
+# группа mailidx (в ней claudeuser) читает Markdown и пишет служебный -shm SQLite при поиске
+UMask=0007
+ExecStart=/opt/mail-index/venv/bin/python -m mailindex sync
+# Сервер маленький (2 ядра, 3,8 ГБ) и на нём живёт Claude в Телеграме — сборщик всегда в фоне
+Nice=15
+IOSchedulingClass=idle
+CPUQuota=60%
+MemoryMax=700M
+TimeoutStartSec=6h
+# Защита: пишет только в свою папку
+ProtectSystem=strict
+ReadWritePaths=/srv/mail-index
+ProtectHome=yes
+PrivateTmp=yes
+NoNewPrivileges=yes
