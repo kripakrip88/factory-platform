@@ -95,7 +95,8 @@ def render_all(cfg, db, log=print):
     changed = 0
     for tid in tids:
         msgs = db.execute("SELECT * FROM messages WHERE thread_id=? ORDER BY date, key", (tid,)).fetchall()
-        sig = hashlib.sha1(("|".join("%s:%s" % (m["key"], m["parsed_version"]) for m in msgs)).encode()).hexdigest()
+        sig = hashlib.sha1(("|".join("%s:%s:%s:%s" % (m["key"], m["parsed_version"], m["direction"], m["counterpart"])
+                                       for m in msgs)).encode()).hexdigest()
         old = db.execute("SELECT sig, md_path FROM threads WHERE thread_id=?", (tid,)).fetchone()
         if old and old["sig"] == sig and old["md_path"] and (cfg.md_dir / old["md_path"]).exists():
             continue

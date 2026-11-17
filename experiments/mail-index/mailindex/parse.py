@@ -15,7 +15,7 @@ try:
 except ImportError:  # pragma: no cover
     _h2t = None
 
-PARSED_VERSION = 1
+PARSED_VERSION = 2
 
 
 class _Text(HTMLParser):
@@ -54,7 +54,11 @@ class _Text(HTMLParser):
         self.out.append(data)
 
 
+HTML_MAX = 1500000   # огромные HTML-рассылки: дальше 1,5 МБ текста нет, только вёрстка
+
+
 def html_to_text(html):
+    html = html[:HTML_MAX]
     if _h2t:
         h = _h2t.HTML2Text()
         h.body_width = 0

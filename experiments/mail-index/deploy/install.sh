@@ -27,7 +27,10 @@ MAIL_INDEX_DIR=/srv/mail-index
 # Первая загрузка — только с этой даты (отладка). Пусто = вся история.
 MAIL_SINCE=2026-08-17
 MAIL_TZ=Asia/Vladivostok
+# наш ящик — по нему письма делятся на «наши» и «от собеседника» (нужен и без пароля: reparse, build)
+MAIL_OWN_ADDRESSES=pmkpark@mail.ru
 EOF
+grep -q '^MAIL_OWN_ADDRESSES=' /etc/mail-index/settings.env || echo 'MAIL_OWN_ADDRESSES=pmkpark@mail.ru' >> /etc/mail-index/settings.env
 
 install -m 644 "$SRC/deploy/mail-index-sync.service" "$SRC/deploy/mail-index-sync.timer" /etc/systemd/system/
 install -m 755 "$SRC/deploy/mail-search" /usr/local/bin/mail-search

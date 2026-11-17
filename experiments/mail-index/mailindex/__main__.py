@@ -59,6 +59,7 @@ def cmd_reparse(cfg, db, args):
         if i % 500 == 0:
             db.commit()
             _log("перечитано %d/%d" % (i, len(keys)))
+    db.execute("UPDATE threads SET sig=NULL")   # перечитали — перерисовать все цепочки
     db.commit()
     return cmd_build(cfg, db, args)
 

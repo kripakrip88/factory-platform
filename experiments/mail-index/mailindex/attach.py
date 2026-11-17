@@ -2,6 +2,7 @@
 PDF с текстовым слоем (pdftotext), DOCX, XLSX/XLS, TXT/CSV. Сканы и картинки — только имя (распознавание — отдельно).
 Тяжёлые файлы обрабатываются с лимитом времени, чтобы один кривой PDF не вешал сборщик."""
 import io
+import warnings
 import os
 import re
 import subprocess
@@ -9,6 +10,8 @@ import tempfile
 
 MAX_CHARS = 40000          # на одно вложение
 MAX_ROWS = 300             # строк на лист таблицы
+# крупнее — текст не извлекаем (память: сервер 3,8 ГБ, сборщику дано 700 МБ); файл остаётся в оригинале письма
+MAX_BYTES = {".pdf": 30 << 20, ".xlsx": 8 << 20, ".xlsm": 8 << 20, ".xls": 8 << 20, ".docx": 15 << 20}
 TEXT_EXT = {".txt", ".csv"}
 
 
@@ -67,6 +70,7 @@ def _rows_to_md(name, rows):
 
 
 def _xlsx(data):
+    warnings.filterwarnings("ignore", module="openpyxl")
     try:
         import openpyxl
     except ImportError:
@@ -92,6 +96,8 @@ def _xls(data):
 def extract(filename, content_type, data):
     """→ (text|None, note)."""
     ext = os.path.splitext(filename or "")[1].lower()
+    if len(data) > MAX_BYTES.get(ext, 20 << 20):
+        return None, "крупный файл (%d МБ) — текст не извлекался" % (len(data) >> 20)
     try:
         if ext == ".pdf" or content_type == "application/pdf":
             text, note = _pdf(data)

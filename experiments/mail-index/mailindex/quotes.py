@@ -34,7 +34,7 @@ FORWARD = re.compile(
     r"(-{2,}\s*(пересылаемое сообщение|пересланное сообщение|forwarded message|перенаправленное сообщение|"
     r"переадресованное сообщение)\s*-{0,})|^\s*(начало переадресованного сообщения|begin forwarded message)\s*:",
     re.I)
-SIG_DASH = re.compile(r"^\\?--\s?$")      # html2text экранирует «--» как «\--»
+SIG_DASH = re.compile(r"^\\?--\s*$")      # html2text экранирует «--» как «\--»
 SIG_GREETING = re.compile(
     r"^\s*(с уважением|с наилучшими пожеланиями|всего доброго|best regards|kind regards|regards)\b[,.!]?",
     re.I)
