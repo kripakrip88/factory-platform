@@ -137,12 +137,14 @@ if ($catId) $prop['LINK_CATALOG_SECTION'] = $catId;
 if (trim($j['task'] ?? '') !== '') $prop['TASK_PROJECT'] = ['VALUE' => ['TEXT' => paras($j['task']), 'TYPE' => 'html']];
 $chOk = ['CH_QTY','CH_DIAM','CH_MASS','CH_MAT','CH_THICK','CH_SECT','CH_HEIGHT','CH_LENGTH','CH_AREA','CH_RAL','CH_COATING','CH_OBJECT'];
 foreach ((array)($j['ch'] ?? []) as $ck => $cv) { if (!in_array($ck, $chOk, true)) fail("ch: нет характеристики $ck"); $prop[$ck] = $cv; }
-// Шаблон страницы (karneev-prod …/projects/page_blocks/element_1.php): DETAIL_PICTURE — шапка,
-// PREVIEW_PICTURE — блок «что сделали» и превью в списках, PHOTOS — галерея. Одно фото — PREVIEW пустой
-// (шаблон сам возьмёт DETAIL и не задвоит).
-if (count($files) > 2) {
+// Шаблон страницы (karneev-prod …/projects/page_blocks/element_1.php): DETAIL_PICTURE — шапка;
+// блок «Что сделали» показывает КАРУСЕЛЬ PHOTOS, если она есть, иначе PREVIEW_PICTURE (с alt фото 1);
+// PREVIEW_PICTURE — ещё превью в списках и og:image. 17.11.2026: при 3+ фото фото 2 на странице не было
+// (карусель вытесняла PREVIEW) → фото 2..N идут в PHOTOS, фото 2 — первым слайдом и со своей подписью,
+// и оно же PREVIEW. Одно фото — PREVIEW пустой (шаблон возьмёт DETAIL и не задвоит).
+if (count($files) > 1) {
     $prop['PHOTOS'] = [];
-    foreach (array_slice($files, 2) as $n => $f) $prop['PHOTOS']["n$n"] = ['VALUE' => $f, 'DESCRIPTION' => $f['description']];
+    foreach (array_slice($files, 1) as $n => $f) $prop['PHOTOS']["n$n"] = ['VALUE' => $f, 'DESCRIPTION' => $f['description']];
 }
 
 $fields = [
