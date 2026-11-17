@@ -75,6 +75,9 @@ chmod 750 "$BASES"
 # 1С пишет кэш в домашнюю папку пользователя Apache (www-data → /var/www, она root) — без этого
 # веб-клиент: «В данный момент вход в приложение невозможен»
 install -d -o www-data -g www-data /var/www/.1cv8 /var/www/.1C
+# Лицензия файловой базы через веб: её получает модуль 1С в Apache (www-data) и пишет в /var/1C/licenses
+# (владелец usr1cv8:grp1cv8) — без группы активация пин-кода падает на сохранении файла (17.11.2026)
+getent group grp1cv8 >/dev/null && usermod -aG grp1cv8 www-data
 
 step "5. Веб-публикация /$IB"
 CONF=/etc/apache2/conf-available/1c-$IB.conf
