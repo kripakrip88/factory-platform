@@ -75,3 +75,22 @@ class TestSalesHome(TransactionCase):
         self.assertEqual(menu.parent_id, self.env.ref("pmk_theme.menu_pmk_sales"))
         siblings = menu.parent_id.child_id.sorted("sequence")
         self.assertEqual(siblings[0], menu, "щелчок по «Продажам» открывает главную")
+
+    def test_payments_skip_internal_transfers(self):
+        """Перевод между своими счетами в «Оплаты за неделю» не попадает (19.11.2026)."""
+        if "pmk.bank.payment" not in self.env:
+            self.skipTest("без pmk_bank плитки нет")
+        today = fields.Date.context_today(self.Home)
+        before = self.Home._payments(today)
+        account = self.env["pmk.bank.account"].search([], limit=1)
+        if not account:
+            self.skipTest("нет счёта в банке")
+        Payment = self.env["pmk.bank.payment"]
+        Payment.create({"account_id": account.id, "ext_id": "t-int", "executed": today,
+                        "amount": 10_000_000, "state": "internal"})
+        Payment.create({"account_id": account.id, "ext_id": "t-cli", "executed": today,
+                        "amount": 50_000, "state": "notified"})
+        after = self.Home._payments(today)
+        self.assertEqual(after["count"], before["count"] + 1)
+        self.assertEqual(sum(d["amount"] for d in after["days"]) - sum(d["amount"] for d in before["days"]),
+                         50_000)

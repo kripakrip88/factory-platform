@@ -254,7 +254,10 @@ class PmkSalesHome(models.AbstractModel):
             return None
         start = today - timedelta(days=6)
         try:
-            pays = Payment.search([("executed", ">=", start), ("executed", "<=", today), ("amount", ">", 0)])
+            # Переводы между своими счетами — не оплата клиентов (19.11.2026: 13.11 два перевода
+            # ИП Чулкова на 11,9 млн подняли плитку до 12,9 млн при реальных ~1,1 млн).
+            pays = Payment.search([("executed", ">=", start), ("executed", "<=", today), ("amount", ">", 0),
+                                   ("state", "!=", "internal")])
         except AccessError:
             return None
         days = []
