@@ -7,7 +7,7 @@
       2. Контрагент (ИНН серым у подписи) · Договор
       3. Заявка контрагента · Объект
       4. Срок изготовления · Условия оплаты · Условия доставки
-      строкой: вес продукции по расчёту Odoo (основание — ссылка на расчёт), сделка.
+      5. Вес продукции по расчёту (основание — ссылка на расчёт) · Сделка (правится с 19.11.2026)
     Поля берутся из готовых узлов (position="move"): условия (pmk_orders),
     организация (pmk_org), договор и объект (вкладка «МойСклад»), заявка —
     штатное «Ссылка клиента» из скрытой вкладки «Прочее». Readonly-условия
@@ -114,19 +114,20 @@
             <label for="pmk_delivery" string="Условия доставки"/>
             <div class="pmk-inv-delivery" name="pmk_inv_delivery"/>
           </div>
-          <div class="pmk-inv-foot" name="pmk_f_foot">
-            <span class="pmk-inv-foot__item" invisible="not pmk_weight_text">
-              <span class="pmk-inv-foot__k">Вес продукции</span>
+          <!-- Последняя строка сетки (19.11.2026): слева вес по расчёту, справа сделка —
+               обычные поля с подписью сверху, по колонкам соседей. Сделка правится:
+               только сделки этого клиента, новую из счёта не заводим. -->
+          <div class="pmk-inv-f pmk-inv-half" name="pmk_f_weight" invisible="not pmk_weight_text">
+            <label for="pmk_weight_text" string="Вес продукции"/>
+            <div class="pmk-inv-weight">
               <field name="pmk_weight_text" nolabel="1"/>
               <span class="pmk-inv-foot__muted">· по расчёту</span>
               <field name="pmk_spec_id" nolabel="1" readonly="1" class="pmk-inv-foot__link"/>
-            </span>
-            <!-- Сделка правится (18.11.2026): только сделки этого клиента, новую из счёта не
-                 заводим. Пустое поле видно, чтобы счёт без сделки можно было привязать. -->
-            <span class="pmk-inv-foot__item ms-auto" name="pmk_f_deal" invisible="not partner_id">
-              <label for="opportunity_id" string="Сделка" class="pmk-inv-foot__k"/>
-              <field name="pmk_deal_client_id" invisible="1"/>
-            </span>
+            </div>
+          </div>
+          <div class="pmk-inv-f pmk-inv-half" name="pmk_f_deal" invisible="not partner_id">
+            <label for="opportunity_id" string="Сделка"/>
+            <field name="pmk_deal_client_id" invisible="1"/>
           </div>
         </div>
       </xpath>
@@ -156,10 +157,10 @@
         <xpath expr="//field[@name='pmk_delivery']" position="move"/>
         <xpath expr="//field[@name='pmk_delivery_address']" position="move"/>
       </xpath>
-      <xpath expr="//span[@name='pmk_f_deal']" position="inside">
+      <xpath expr="//div[@name='pmk_f_deal']" position="inside">
         <xpath expr="//group[@name='order_details']/field[@name='opportunity_id']" position="move"/>
       </xpath>
-      <xpath expr="//span[@name='pmk_f_deal']/field[@name='opportunity_id']" position="attributes">
+      <xpath expr="//div[@name='pmk_f_deal']/field[@name='opportunity_id']" position="attributes">
         <attribute name="readonly">pmk_is_revision or state == 'cancel'</attribute>
         <attribute name="invisible">0</attribute>
         <attribute name="nolabel">1</attribute>

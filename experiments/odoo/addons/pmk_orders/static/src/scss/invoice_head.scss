@@ -89,6 +89,10 @@
   &[name="pmk_f_payment"] { grid-column: 1 / 7; }
   // Доставка — на высоту двух строк (срок + условия оплаты).
   &[name="pmk_f_delivery"] { grid-column: 7 / 13; grid-row: span 2; }
+  // Последняя строка (19.11.2026): вес слева, сделка — всегда в правой колонке,
+  // даже когда веса нет (иначе плотная раскладка утянула бы её влево).
+  &[name="pmk_f_weight"] { grid-column: 1 / 7; }
+  &[name="pmk_f_deal"] { grid-column: 7 / 13; }
 
   > label,
   > .pmk-inv-label > label,
@@ -284,11 +288,17 @@
   }
 }
 
-// Сделка в счёте правится (18.11.2026): поле шире подсказки «выбрать сделку клиента»,
-// длинные названия сделок обрезаются многоточием, а не растягивают строку.
-.pmk-inv-foot__item[name="pmk_f_deal"] .o_field_many2one {
-  min-width: 260px;
-  max-width: 420px;
+// Вес продукции: строка высотой с поле соседей, текст по линии букв.
+.pmk-inv-weight {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 26px;
+  font-size: 13px;
+
+  .o_field_widget {
+    width: auto !important;
+  }
 }
 
 .pmk-inv-foot__k {
