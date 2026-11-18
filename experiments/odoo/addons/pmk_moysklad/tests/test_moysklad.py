@@ -115,7 +115,7 @@ class TestMoysklad(TransactionCase):
         self.assertEqual(o3.state, "cancel")
         # Повторный прогон — обновляет, не дублирует.
         self.env["pmk.moysklad"].with_context(pmk_ms_no_commit=True).sync_all(full=True)
-        self.assertEqual(Order.search_count([("pmk_ms_id", "!=", False)]), 4)
+        self.assertEqual(Order.search_count([("pmk_ms_id", "in", ["i-1", "i-2", "i-3", "i-4"])]), 4)
         o4 = Order.search([("pmk_ms_id", "=", "i-4")])
         self.assertEqual(o4.partner_id.name, "Контрагент удалён в МоёмСкладе")
         self.assertEqual(self.env["res.partner"].search_count([("pmk_ms_id", "=", "c-1")]), 1)

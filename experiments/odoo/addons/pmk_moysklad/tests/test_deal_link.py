@@ -106,13 +106,14 @@ class TestMsDealLink(TransactionCase):
         self.assertEqual(deal.expected_revenue, 5000)
 
     def test_unpaid_invoice_without_deal_no_deal(self):
+        ms_deals = self.env["crm.lead"].search_count([("pmk_source", "=", "ms")])  # на копии они есть
         self.invoices.append(invoice("c1", "Согласование"))
         # Отгружен, а статус не ведут — тоже без сделки (прогон на копии 21.10).
         self.invoices.append(invoice("c2", "Согласование", shipped=1000))
         self._sync()
         self.assertFalse(self._order("c1").opportunity_id)
         self.assertFalse(self._order("c2").opportunity_id)
-        self.assertFalse(self.env["crm.lead"].search_count([("pmk_source", "=", "ms")]))
+        self.assertEqual(self.env["crm.lead"].search_count([("pmk_source", "=", "ms")]), ms_deals)
 
     def test_paid_and_shipped_new_deal_closed_named_by_line(self):
         row = invoice("h1", "Оплачен", shipped=1000)
@@ -225,6 +226,10 @@ class TestMsReconcile(TestMsDealLink):
 
     def setUp(self):
         super().setUp()
+        # На копии и боевой — тысячи настоящих счетов МС: в тесте их не должно быть видно
+        # сверке (откат транзакции вернёт всё как было).
+        self.env.cr.execute("UPDATE sale_order SET pmk_ms_id = NULL WHERE pmk_ms_id IS NOT NULL")
+        self.env.invalidate_all()
         self.deleted = set()
         test = self
         base_get = type(self.env["pmk.moysklad"])._ms_get
