@@ -49,4 +49,16 @@
     <field name="interval_type">minutes</field>
     <field name="active" eval="True"/>
   </record>
+  <!-- Ночью, 05:00 по Хабаровску (19:00 UTC): счета, удалённые в МоёмСкладе, — отменить в Odoo
+       (18.11.2026, models/reconcile.py). ~6 запросов к МоемуСкладу, страницы Odoo не держит. -->
+  <record id="cron_ms_reconcile" model="ir.cron">
+    <field name="name">МойСклад: отменить удалённые там счета</field>
+    <field name="model_id" ref="model_pmk_moysklad"/>
+    <field name="state">code</field>
+    <field name="code">model._cron_ms_reconcile()</field>
+    <field name="interval_number">1</field>
+    <field name="interval_type">days</field>
+    <field name="nextcall" eval="(DateTime.now() + timedelta(days=1)).strftime('%Y-%m-%d 19:00:00') if DateTime.now().hour &gt;= 19 else DateTime.now().strftime('%Y-%m-%d 19:00:00')"/>
+    <field name="active" eval="True"/>
+  </record>
 </odoo>

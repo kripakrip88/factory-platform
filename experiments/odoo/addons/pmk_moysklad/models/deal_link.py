@@ -109,6 +109,9 @@ class SaleOrderDeal(models.Model):
         self.ensure_one()
         Lead = self.env["crm.lead"].with_context(**{SKIP: True}, mail_auto_subscribe_no_notify=True)
         deal = self.opportunity_id
+        if deal and self._pmk_ms_deal_foreign(deal):
+            self._pmk_ms_deal_detach(deal)
+            deal = self.opportunity_id
         target_xmlid = self._pmk_ms_target_stage()
         target = target_xmlid and self.env.ref(target_xmlid, raise_if_not_found=False)
         created = False
@@ -139,6 +142,24 @@ class SaleOrderDeal(models.Model):
         elif target and not created:
             self._pmk_ms_deal_forward(deal, target)
         return deal
+
+    def _pmk_ms_deal_foreign(self, deal):
+        """Сделка чужого клиента (18.11.2026). Менеджер копирует счёт в МоёмСкладе и
+        через пару минут меняет контрагента — синхронизация успевала привязать копию к
+        сделке прежнего клиента (01295, 01296 → «Панель 3D» МОНТАЖ МОДУЛЬ-СТРОЙ).
+        Сделка без клиента — не чужая: её не трогаем."""
+        self.ensure_one()
+        mine = self.partner_id.commercial_partner_id
+        theirs = deal.partner_id.commercial_partner_id
+        return bool(mine and theirs and mine != theirs)
+
+    def _pmk_ms_deal_detach(self, deal):
+        """Снять счёт со сделки чужого клиента; новую сделку подберёт обычное правило."""
+        self.with_context(tracking_disable=True, mail_notrack=True).opportunity_id = False
+        deal.with_context(**{SKIP: True}).message_post(body=_(
+            "Счёт %(inv)s отвязан от сделки: в МоёмСкладе у него теперь другой контрагент — "
+            "%(client)s.", inv=self.name, client=self.partner_id.commercial_partner_id.display_name),
+            subtype_xmlid="mail.mt_note")
 
     def _pmk_ms_deal_forward(self, deal, stage):
         """Только вперёд: закрытую, проигранную и ушедшую дальше сделку не трогаем."""

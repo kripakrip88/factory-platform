@@ -121,8 +121,11 @@
               <span class="pmk-inv-foot__muted">· по расчёту</span>
               <field name="pmk_spec_id" nolabel="1" readonly="1" class="pmk-inv-foot__link"/>
             </span>
-            <span class="pmk-inv-foot__item ms-auto" name="pmk_f_deal" invisible="not opportunity_id">
-              <span class="pmk-inv-foot__k">Сделка</span>
+            <!-- Сделка правится (18.11.2026): только сделки этого клиента, новую из счёта не
+                 заводим. Пустое поле видно, чтобы счёт без сделки можно было привязать. -->
+            <span class="pmk-inv-foot__item ms-auto" name="pmk_f_deal" invisible="not partner_id">
+              <label for="opportunity_id" string="Сделка" class="pmk-inv-foot__k"/>
+              <field name="pmk_deal_client_id" invisible="1"/>
             </span>
           </div>
         </div>
@@ -155,6 +158,14 @@
       </xpath>
       <xpath expr="//span[@name='pmk_f_deal']" position="inside">
         <xpath expr="//group[@name='order_details']/field[@name='opportunity_id']" position="move"/>
+      </xpath>
+      <xpath expr="//span[@name='pmk_f_deal']/field[@name='opportunity_id']" position="attributes">
+        <attribute name="readonly">pmk_is_revision or state == 'cancel'</attribute>
+        <attribute name="invisible">0</attribute>
+        <attribute name="nolabel">1</attribute>
+        <attribute name="placeholder">выбрать сделку клиента</attribute>
+        <attribute name="domain">[('type', '=', 'opportunity'), ('partner_id', 'child_of', pmk_deal_client_id)]</attribute>
+        <attribute name="options">{'no_create': True, 'no_quick_create': True}</attribute>
       </xpath>
       <xpath expr="//div[@name='pmk_doc_top']/group[@name='sale_header']" position="attributes">
         <attribute name="invisible">1</attribute>

@@ -36,6 +36,10 @@ class SaleOrderMs(models.Model):
     _rec_names_search = ["name", "partner_id.name", "client_order_ref"]
 
     pmk_ms_id = fields.Char("Id МоегоСклада", index=True, copy=False, readonly=True)
+    # Для выбора сделки в счёте (18.11.2026): только сделки этого клиента — и когда
+    # в счёте контактное лицо, а сделка заведена на организацию.
+    pmk_deal_client_id = fields.Many2one(related="partner_id.commercial_partner_id",
+                                         string="Клиент для сделки")
     pmk_ms_state = fields.Char("Статус МоегоСклада", index=True, copy=False, readonly=True,
                                help="Статус счёта в МоёмСкладе, как там (Согласование, Оплачен, "
                                     "Постоплата…). Наш статус счёта к нему не привязан.")
