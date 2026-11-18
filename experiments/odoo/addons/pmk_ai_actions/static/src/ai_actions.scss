@@ -1,0 +1,29 @@
+// Карточки «Сделаю: …» (19.11.2026). Цвета — переменные темы, как у панели (ai_panel.scss).
+.o_pmk_ai__card {
+  margin: 8px 0 4px;
+  padding: 8px 10px;
+  border: 1px solid var(--pmk-border, #dcdde2);
+  border-radius: 8px;
+  background: var(--pmk-surface, #ffffff);
+  font-size: 12.5px;
+
+  &--done { border-color: #9fc7a4; }
+  &--cancelled { opacity: 0.7; }
+  &--failed { border-color: #e2a3a3; }
+}
+
+.o_pmk_ai__card_t { font-weight: 600; margin-bottom: 4px; }
+
+.o_pmk_ai__card_rows {
+  width: 100%;
+  border-collapse: collapse;
+
+  th { width: 32%; padding: 1px 8px 1px 0; font-weight: 500; color: var(--pmk-label, #6b7079); vertical-align: top; }
+  td { padding: 1px 0; vertical-align: top; }
+}
+
+.o_pmk_ai__card_warn { margin-top: 6px; color: #8a6100; }
+.o_pmk_ai__card_btns { display: flex; gap: 8px; margin-top: 8px; }
+.o_pmk_ai__card_done { margin-top: 6px; color: #2f6b36; }
+.o_pmk_ai__card_muted { margin-top: 6px; color: var(--pmk-ink-3, #6b7079); }
+.o_pmk_ai__card_err { margin-top: 6px; color: #a32d2d; }

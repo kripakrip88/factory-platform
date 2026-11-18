@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Карточки «Сделаю: …» под ответом ассистента (19.11.2026), ai_actions.js. -->
+<templates xml:space="preserve">
+  <t t-name="pmk_ai_actions.Panel" t-inherit="pmk_ai.Panel" t-inherit-mode="extension">
+    <xpath expr="//div[hasclass('o_pmk_ai__src')]" position="before">
+      <div t-foreach="item.proposals or []" t-as="card" t-key="card.id" class="o_pmk_ai__card"
+           t-att-class="'o_pmk_ai__card--' + card.state">
+        <div class="o_pmk_ai__card_t">
+          <t t-if="card.state === 'proposed'">Сделаю: </t>
+          <t t-esc="card.title"/>
+        </div>
+        <table class="o_pmk_ai__card_rows">
+          <tr t-foreach="card.lines" t-as="row" t-key="row_index">
+            <th t-esc="row[0]"/><td t-esc="row[1]"/>
+          </tr>
+        </table>
+        <div t-if="card.warn" class="o_pmk_ai__card_warn"><i class="fa fa-exclamation-triangle" aria-hidden="true"/> <t t-esc="card.warn"/></div>
+        <div t-if="card.state === 'proposed'" class="o_pmk_ai__card_btns">
+          <button type="button" class="btn btn-primary btn-sm" t-att-disabled="card.busy"
+                  t-on-click="() => this.runProposal(card)"><t t-if="card.busy">Выполняю…</t><t t-else="">Выполнить</t></button>
+          <button type="button" class="btn btn-secondary btn-sm" t-att-disabled="card.busy"
+                  t-on-click="() => this.cancelProposal(card)">Отмена</button>
+        </div>
+        <div t-elif="card.state === 'done'" class="o_pmk_ai__card_done">
+          <i class="fa fa-check" aria-hidden="true"/> Готово:
+          <a href="#" t-on-click.prevent="() => this.openResult(card)" t-esc="card.result and card.result.name"/>
+        </div>
+        <div t-elif="card.state === 'cancelled'" class="o_pmk_ai__card_muted">Отменено</div>
+        <div t-elif="card.state === 'failed'" class="o_pmk_ai__card_err" t-esc="card.error or 'Не вышло'"/>
+      </div>
+    </xpath>
+    <xpath expr="//div[hasclass('o_pmk_ai__list')]/div[hasclass('o_pmk_ai__hint')]" position="replace">
+      <div t-if="!state.items.length" class="o_pmk_ai__hint">
+        Спросите про открытый документ или найдите нужное: «почему маржа минус?», «у кого дешевле уголок 63×5?».
+        Может и подготовить действие: «посмотри письмо от Лыковой, заведи сделку и контрагента», в сделке —
+        «создай расчёт по прикреплённой спецификации». Сделает только после кнопки «Выполнить».
+      </div>
+    </xpath>
+    <xpath expr="//div[hasclass('o_pmk_ai__foot')]//t[@t-else='']" position="replace">
+      <t t-else=""><t t-esc="usageText"/> · создаёт только по кнопке «Выполнить»</t>
+    </xpath>
+  </t>
+</templates>
