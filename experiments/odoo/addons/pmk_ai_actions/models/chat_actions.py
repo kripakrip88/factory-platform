@@ -46,6 +46,8 @@ propose_deal (сделка и контрагент из письма) и propose
 - ИНН клиента бери из письма или подписи (10 или 12 цифр); нет ИНН — контрагента не заводим, сделка
   будет с организацией текстом. Контактное лицо — человек из подписи.
 - Для расчёта: файлы сделки — deal_files, нужный файл — в propose_konstr. Один файл — одна карточка.
+  Из нескольких файлов бери спецификацию (в имени «спецификация», «ведомость», «КМД»), не чертёж.
+  Разбор файла не удался — так и скажи и предложи повторить; другой файл без спроса не подставляй.
 - После карточки коротко скажи, что в ней и что проверить. Не повторяй её строки целиком.
 """
 
@@ -301,13 +303,18 @@ class PmkAiChatActions(models.AbstractModel):
         blob = base64.b64decode(att.datas or b"")
         if not blob:
             return {"ошибка": "файл пустой"}
-        data = self._konstr_extract(att.name or "spec", blob, (args.get("hint") or "").strip())
+        # Сколько изделий — часто только в заявке («блоки Бб1 30 компл.»), в самой спецификации нет.
+        hint = "; ".join(x for x in ((args.get("hint") or "").strip(), "сделка: %s" % deal.name) if x)
+        data = self._konstr_extract(att.name or "spec", blob, hint)
+        if not (data.get("products") or []):
+            data = self._konstr_extract(att.name or "spec", blob, hint)   # разовый сбой ответа — ещё раз
         products = [p for p in (data.get("products") or []) if (p.get("name") or "").strip()]
         if not products:
             return {"ошибка": "в файле не нашлось изделий и деталей", "не понял": data.get("unclear") or []}
         lines, shown, total = [], 0, 0
         for prod in products:
-            details = prod.get("details") or []
+            details = prod.get("details") or prod.get("parts") or []
+            prod["details"] = details
             total += len(details)
             lines.append([prod["name"][:60], "%s шт · деталей %d" % (int(prod.get("qty") or 1), len(details))])
             for det in details:
@@ -339,7 +346,7 @@ class PmkAiChatActions(models.AbstractModel):
             raise UserError(_("Файл не читается: %s") % ("; ".join(notes) or name))
         ask = "Спецификация из файла «%s» (%s). Разбери её в изделия и детали." % (name, "; ".join(notes))
         if hint:
-            ask += "\nУточнение менеджера: %s" % hint
+            ask += ("\nКонтекст: %s. Количество изделий бери отсюда, если в файле его нет." % hint)
         model = self._param("pmk_ai.model") or claude.DEFAULT_MODEL
         payload = {"model": model, "max_tokens": KONSTR_TOKENS,
                    "system": [{"type": "text", "text": KONSTR_SYSTEM}],

@@ -1,0 +1,12 @@
+# systemd --user на claude-vps (claudeuser): шлюз ассистента Odoo → Claude Code (19.11.2026).
+[Unit]
+Description=Odoo assistant -> Claude Code gateway
+After=network-online.target
+
+[Service]
+ExecStart=/usr/bin/python3 %h/bin/odoo-claude-gw.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
