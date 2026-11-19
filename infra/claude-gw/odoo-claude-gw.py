@@ -38,6 +38,7 @@ LISTEN = ("127.0.0.1", 8765)
 PARALLEL = threading.Semaphore(2)     # одновременно не больше двух запусков Claude Code
 TIMEOUT = 170                          # у Odoo READ_TIMEOUT 180 с
 MAX_BODY = 40 * 1024 * 1024
+MODEL = "claude-opus-5-5"
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
 log = logging.getLogger("odoo-claude-gw")
@@ -147,7 +148,8 @@ def _ask(payload):
         sys_file = os.path.join(folder, ".system.md")
         with open(sys_file, "w", encoding="utf-8") as fh:
             fh.write(system)
-        cmd = [CLAUDE, "-p", "--output-format", "json", "--system-prompt-file", sys_file,
+        # Модель — явно (Антон 19.11.2026: «пусть всё опус будет»), чтобы обновление Claude Code её не сменило.
+        cmd = [CLAUDE, "-p", "--model", MODEL, "--output-format", "json", "--system-prompt-file", sys_file,
                "--tools", "Read", "--strict-mcp-config", "--permission-mode", "auto", "--max-turns", "6"]
         with PARALLEL:
             started = time.time()
@@ -178,7 +180,7 @@ def _ask(payload):
             # Ждали вызова инструмента, а пришёл не протокол — в журнал, чтобы видеть почему.
             log.info("не протокол: %s", text[:400].replace("\n", " "))
         return {"id": "msg_gw_%s" % uuid.uuid4().hex[:16], "type": "message", "role": "assistant",
-                "model": "claude-code-gw", "content": content, "stop_reason": stop,
+                "model": MODEL, "content": content, "stop_reason": stop,
                 "usage": {"input_tokens": 0, "output_tokens": 0}}
     finally:
         shutil.rmtree(folder, ignore_errors=True)
