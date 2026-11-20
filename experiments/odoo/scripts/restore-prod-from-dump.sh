@@ -42,7 +42,7 @@ DO $$ BEGIN
   IF to_regclass('fetchmail_server') IS NOT NULL THEN UPDATE fetchmail_server SET active = false; END IF;
   IF to_regclass('mail_client_server') IS NOT NULL THEN UPDATE mail_client_server SET imap_host = 'imap.disabled.invalid'; END IF;
 END $$;
-DELETE FROM ir_config_parameter WHERE key ~ '^(pmk_telegram|pmk_bank|pmk_moysklad|pmk_cloud|pmk_vpn|pmk_ai)\.'
+DELETE FROM ir_config_parameter WHERE key ~ '^(pmk_telegram|pmk_bank|pmk_moysklad|pmk_cloud|pmk_ai)\.'
   AND key ~ '(token|key|secret|password|webhook)';
 SQL
 fi
@@ -56,7 +56,7 @@ RUN="docker compose run --rm -T odoo odoo -d odoo --stop-after-init"
 # (16.11.2026): реестр грузит НОВЫЙ код наших модулей на СТАРЫЕ таблицы (нет колонок
 # pmk_telegram_link_hash и др.) — Odoo ловит ошибку и сам себя блокирует на чтении полей.
 OURS=$(grep -m1 '^OURS=' /opt/factory-platform/experiments/odoo/deploy.sh | cut -d'"' -f2 | tr ' ' ',')
-NEW=pmk_opora,pmk_zakladnye,pmk_supplier_invoice,pmk_vpn
+NEW=pmk_opora,pmk_zakladnye,pmk_supplier_invoice
 echo "→ RuOdoo 2026-11 + новые модули + обновление наших (одним проходом)"
 timeout 1800 $RUN -i l10n_latam_check,docx_report,$NEW -u l10n_ru_advance_payments,$OURS 2>&1 \
   | grep -E "CRITICAL| ERROR |Modules loaded|not loaded" | grep -v "(ERROR/3)" | tail -15 || true
@@ -75,7 +75,7 @@ echo "→ код до текущего: deploy.sh (-u всех наших, чи�
 # (на чистом сервере том создаётся здесь от root — chown /data, иначе Odoo не создаст sessions/, zakladnye/: 500)
 # Модули, сделанные после 22.10, в базе 22.10 не установлены, а deploy.sh их только обновляет (-u
 # неустановленного ничего не делает) — ставим явно (16.11.2026: на копии без этого их не было).
-INSTALL="pmk_opora pmk_zakladnye pmk_supplier_invoice pmk_vpn" sh /opt/factory-platform/experiments/odoo/deploy.sh
+INSTALL="pmk_opora pmk_zakladnye pmk_supplier_invoice" sh /opt/factory-platform/experiments/odoo/deploy.sh
 # deploy.sh делает stop/start — новые extra_hosts (туннель Anthropic) так не подхватятся
 docker compose up -d odoo ai-worker
 # NEUTRALIZE: -u в deploy.sh вернул кроны с active=True из XML модулей — гасим ещё раз (проверка 16.11.2026)

@@ -54,7 +54,7 @@ DO $$ BEGIN
 END $$;
 -- Боты, банки, МойСклад, ассистент: ключи копии не нужны — второй потребитель того же бота/вебхука
 -- ломает боевой. Пусто = модуль молчит.
-DELETE FROM ir_config_parameter WHERE key ~ '^(pmk_telegram|pmk_bank|pmk_moysklad|pmk_cloud|pmk_vpn)\.'
+DELETE FROM ir_config_parameter WHERE key ~ '^(pmk_telegram|pmk_bank|pmk_moysklad|pmk_cloud)\.'
   AND key ~ '(token|key|secret|password|webhook)';
 SQL
 docker compose run --rm -T odoo odoo neutralize -d odoo_stage >/dev/null 2>&1 || echo "   (neutralize: предупреждение, см. вручную)"

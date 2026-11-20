@@ -79,7 +79,7 @@ BRANCH="${BRANCH:-feature/experiment-carbon}"
 # Первый раз: INSTALL="pmk_opora pmk_zakladnye pmk_supplier_invoice".
 # pmk_ai_actions добавлен 19.11.2026 — ассистент: карточки действий («Сделаю: …» → «Выполнить»):
 # сделка и контрагент из письма, расчёт «Конструкции» по спецификации. Первый раз: INSTALL="pmk_ai_actions".
-OURS="pmk_calc pmk_theme pmk_pdf pmk_cut pmk_mail_ui pmk_partner pmk_purchase pmk_dadata pmk_laser pmk_bridge pmk_deal pmk_deal_sms pmk_flow pmk_drawing pmk_telegram pmk_org pmk_orders pmk_list_prefs pmk_tech pmk_vent_nest pmk_moysklad pmk_bank pmk_sheet_nest pmk_cloud pmk_cut_cost pmk_butik pmk_sales_home pmk_prod_home pmk_purchase_home pmk_ai pmk_ai_mail pmk_bolt pmk_opora pmk_zakladnye pmk_supplier_invoice pmk_vpn pmk_ai_actions"
+OURS="pmk_calc pmk_theme pmk_pdf pmk_cut pmk_mail_ui pmk_partner pmk_purchase pmk_dadata pmk_laser pmk_bridge pmk_deal pmk_deal_sms pmk_flow pmk_drawing pmk_telegram pmk_org pmk_orders pmk_list_prefs pmk_tech pmk_vent_nest pmk_moysklad pmk_bank pmk_sheet_nest pmk_cloud pmk_cut_cost pmk_butik pmk_sales_home pmk_prod_home pmk_purchase_home pmk_ai pmk_ai_mail pmk_bolt pmk_opora pmk_zakladnye pmk_supplier_invoice pmk_ai_actions"
 # pmk_bolt — фундаментные болты по ГОСТ 24379.1, в расчёте и счёте (22.10.2026). Первый раз: INSTALL="pmk_bolt".
 # pmk_vent_nest — раскрой вентзонтов (12.10.2026). Первый раз: INSTALL="pmk_vent_nest".
 # pmk_moysklad — МойСклад → Odoo (12.10.2026). Первый раз: INSTALL="pmk_moysklad"; затем перенос
