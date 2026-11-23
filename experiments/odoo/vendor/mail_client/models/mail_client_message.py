@@ -717,7 +717,7 @@ class MailClientMessage(models.Model):
         ПРАВКА ПМК (шаг 20, 30.09.2026): переписка видна под письмом целиком
         (panes/conversation.js), поэтому у строки ещё:
         ``folder_role`` (роль папки письма), ``body_state`` (тело уже
-        загружено или придёт с сервера при развороте); ``is_outgoing`` и
+        загружено или придёт с сервера при чтении); ``is_outgoing`` и
         ``email_to`` строка несёт с шага 18 (_to_list_payload) — по ним
         «мы» и подложка наших писем.
 
@@ -740,13 +740,14 @@ class MailClientMessage(models.Model):
             key=lambda m: (m.date or datetime.min, m.id))._thread_payload()
 
     def _thread_payload(self):
-        """ПРАВКА ПМК (шаг 20): строка переписки — строка списка плюс роль
-        папки и состояние тела."""
+        """Conversation rows include the body availability on a neutralized copy."""
         payload = self._to_list_payload()
+        neutralized = self.env['ir.config_parameter'].sudo().get_param('database.is_neutralized')
         for row, message in zip(payload, self):
             row.update({
                 'folder_role': message.folder_id.role or False,
                 'body_state': message.body_state,
+                'body_unavailable': bool(neutralized and message.body_state != 'fetched'),
             })
         return payload
 

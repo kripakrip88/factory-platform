@@ -20,10 +20,8 @@ import { followFrame } from "./frame_fit";
  *
  * В переписке (panes/conversation.js) развёрнутое письмо — та же карточка,
  * а в строке «От» ещё плашка «мы» (ours), маленькие «Ответить» и
- * «Переслать» (onReply) и сворачивание (onCollapse). У каждой карточки
- * своя рамка и своя подгонка высоты (frame_fit.js): рамок в окне теперь
- * несколько, и каждая следит за своим письмом и останавливается, когда
- * карточку сворачивают.
+ * «Переслать» (onReply). У каждой карточки своя рамка и подгонка
+ * высоты (frame_fit.js).
  */
 export class MessageCard extends Component {
     static template = "mail_client.MessageCard";
@@ -38,7 +36,7 @@ export class MessageCard extends Component {
         onReply: { type: Function, optional: true },
         // «Ответить» на нашем письме ушло бы нам же (Г3) — до шага 21 скрыто.
         canReply: { type: Boolean, optional: true },
-        onCollapse: { type: Function, optional: true },
+        inConversation: { type: Boolean, optional: true },
         slots: { type: Object, optional: true },
     };
 
@@ -89,28 +87,8 @@ export class MessageCard extends Component {
         return _t("Our message");
     }
 
-    get collapseTitle() {
-        return _t("Collapse");
-    }
-
     toggleRecipients() {
         this.state.recipientsFor = this.showRecipients ? null : this.props.detail.id;
-    }
-
-    /**
-     * Щелчок по пустому месту строки «От» сворачивает письмо в переписке.
-     * Кнопки и ссылки в строке делают своё.
-     */
-    onHeaderClick(ev) {
-        if (!this.props.onCollapse || ev.target.closest("button, a, input, label")) {
-            return;
-        }
-        // Мышью выделяли адрес или дату, чтобы скопировать, — не сворачивать.
-        const selection = window.getSelection ? window.getSelection() : null;
-        if (selection && !selection.isCollapsed) {
-            return;
-        }
-        this.props.onCollapse();
     }
 
     formatDate(value) {

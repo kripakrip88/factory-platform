@@ -2849,6 +2849,12 @@ msgstr "Свернуть"
 msgid "This message could not be opened."
 msgstr "Письмо не открылось."
 
+#. module: mail_client
+#. odoo-javascript
+#: code:addons/mail_client/static/src/panes/conversation.xml:0
+msgid "The message body was not saved in this copy."
+msgstr "Текст письма не сохранился в копии."
+
 # ПМК, шаг 22 (30.09.2026): почта — новые письма быстрее. Синхронизация раз в
 # 2 минуты, один проход по ящику в каждый момент («ящик занят» вместо ошибки;
 # занять его может и дочитка структур, поэтому не «синхронизация уже идёт»),

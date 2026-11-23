@@ -573,10 +573,6 @@
         display: none;
     }
 
-    .o_mail_client_conv_name {
-        max-width: 8rem;
-    }
-
     // В ленте на узком окне — только имя (адрес в подсказке), а дата и
     // кнопки, если не влезли, уходят второй строкой. Иначе имя обрезалось
     // до «Иван Пет…» рядом с датой и кнопками. Адрес прячем, только когда
@@ -662,31 +658,20 @@
 }
 
 // --- ПРАВКА ПМК: переписка под письмом (шаг 20 плана, 30.09.2026) ---
-// Лента panes/conversation.xml, новые сверху: развёрнутое письмо — карточка
-// (строка «От», вложения, рамка ростом с письмо), свёрнутое — строка, «ещё N
-// писем» — кнопка. Каждая — во всю ширину окна чтения, между ними черта.
-
+// Лента писем (panes/conversation.xml), новые снизу.
 .o_mail_client_contact + .o_mail_client_conv {
     margin-top: .75rem;
 }
 
-.o_mail_client_conv_card,
-.o_mail_client_conv_row,
-.o_mail_client_conv_more {
-    border-bottom: 1px solid var(--mc-border);
-}
-
 .o_mail_client_conv_card {
-    // Шапка письма в ленте без своей черты — черта у карточки. Щелчок по
-    // пустому месту шапки сворачивает письмо (MessageCard.onHeaderClick).
+    border-bottom: 1px solid var(--mc-border);
+
     .o_mail_client_reading_header {
         border-bottom: 0;
-        cursor: pointer;
     }
 
-    // Лист письма в ленте ростом с письмо и не тянется до низа окна (это
-    // только у одиночного письма). Без подгонки (рамке закрыт документ) —
-    // своя высота 24rem с прокруткой внутри, как у одиночного письма.
+    // Лист в ленте ростом с письмо. Если документ рамки недоступен,
+    // рамка сохраняет высоту 24rem и прокрутку внутри.
     .o_mail_client_frame_wrap {
         flex: none;
         padding-bottom: 1rem !important;
@@ -701,78 +686,6 @@
     --#{$prefix}btn-padding-y: .1rem;
     --#{$prefix}btn-padding-x: .45rem;
     white-space: nowrap;
-}
-
-.o_mail_client_card_collapse {
-    color: inherit;
-    opacity: .6;
-
-    &:hover,
-    &:focus-visible {
-        opacity: 1;
-    }
-}
-
-.o_mail_client_conv_row {
-    min-height: 2.5rem;
-    padding-top: .375rem;
-    padding-bottom: .375rem;
-    border-width: 0 0 1px;
-    border-radius: 0;
-    background-color: transparent;
-    color: inherit;
-    font-size: .875rem;
-
-    &:hover {
-        background-color: var(--mc-hover-bg);
-    }
-
-    &:focus-visible {
-        outline: 2px solid var(--mc-unread-dot);
-        outline-offset: -2px;
-    }
-
-    &.is-ours {
-        background-color: var(--mc-ours-bg);
-
-        &:hover {
-            background-color: var(--mc-hover-bg);
-        }
-    }
-
-    // Непрочитанное — жирным, как в списке.
-    &.o_unread .o_mail_client_conv_name,
-    &.o_unread .o_mail_client_conv_snippet {
-        font-weight: 700;
-    }
-}
-
-.o_mail_client_conv_name {
-    max-width: 14rem;
-}
-
-// Цвет — классом text-muted в шаблоне: у тёмной темы pmk_theme он свой.
-.o_mail_client_conv_snippet {
-    min-width: 0;
-}
-
-.o_mail_client_conv_date {
-    font-size: .8125rem;
-}
-
-.o_mail_client_conv_more {
-    min-height: 2.25rem;
-    border-radius: 0;
-    color: var(--#{$prefix}secondary-color);
-    font-size: .8125rem;
-    text-decoration: none;
-
-    &:hover,
-    &:focus-visible {
-        background-color: var(--mc-hover-bg);
-        color: inherit;
-        text-decoration: none;
-    }
 }
 
 .o_mail_client_ours {

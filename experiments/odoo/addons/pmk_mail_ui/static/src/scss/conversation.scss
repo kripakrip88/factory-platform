@@ -1,5 +1,5 @@
 // Layout is scoped to the mail action. Message iframes keep their own styling.
-.o_mail_client[data-pmk-mail-build="conversation-3"] {
+.o_mail_client[data-pmk-mail-build="conversation-4"] {
   .o_mail_client_row.active {
     background: #edf1e6;
     box-shadow: inset 3px 0 #6c803f;
@@ -62,8 +62,7 @@
     padding: .65rem .75rem;
   }
 
-  .o_mail_client_conv_card,
-  .o_mail_client_conv_row {
+  .o_mail_client_conv_card {
     align-self: flex-start;
     width: 93% !important;
     max-width: 46rem;
@@ -73,29 +72,13 @@
     background-color: var(--bs-body-bg);
   }
 
-  .o_mail_client_conv_card.is-ours,
-  .o_mail_client_conv_row.is-ours {
+  .o_mail_client_conv_card.is-ours {
     align-self: flex-end;
     background: #edf0f4;
   }
 
-  .o_mail_client_conv_row:hover,
-  .o_mail_client_conv_row:focus-visible {
-    background: var(--mc-hover-bg);
-  }
-
-  .o_mail_client_conv_more {
-    align-self: center;
-    width: auto !important;
-    border-bottom: 0;
-  }
-
-  .o_mail_client_conv_card .o_mail_client_reading_header,
-  .o_mail_client_conv_row {
-    padding-inline: .7rem !important;
-  }
-
-  .o_mail_client_conv_card > .px-4 {
+  .o_mail_client_conv_card > .px-4,
+  .o_mail_client_conv_state {
     padding-inline: .7rem !important;
   }
 
@@ -132,15 +115,14 @@
       padding-inline: .5rem;
     }
 
-    .o_mail_client_conv_card,
-    .o_mail_client_conv_row {
+    .o_mail_client_conv_card {
       width: 96% !important;
     }
   }
 }
 
 @media screen {
-  body.o_nexus_dark .o_mail_client[data-pmk-mail-build="conversation-3"] {
+  body.o_nexus_dark .o_mail_client[data-pmk-mail-build="conversation-4"] {
     .o_mail_client_row.active {
       background: #31382a;
       box-shadow: inset 3px 0 #9eae75;
@@ -157,8 +139,7 @@
       color: #f0d49c;
     }
 
-    .o_mail_client_conv_card.is-ours,
-    .o_mail_client_conv_row.is-ours {
+    .o_mail_client_conv_card.is-ours {
       background: #303641;
     }
   }
