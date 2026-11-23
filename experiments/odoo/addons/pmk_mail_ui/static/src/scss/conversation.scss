@@ -1,5 +1,5 @@
 // Layout is scoped to the mail action. Message iframes keep their own styling.
-.o_mail_client[data-pmk-mail-build="conversation-2"] {
+.o_mail_client[data-pmk-mail-build="conversation-3"] {
   .o_mail_client_row.active {
     background: #edf1e6;
     box-shadow: inset 3px 0 #6c803f;
@@ -140,7 +140,7 @@
 }
 
 @media screen {
-  body.o_nexus_dark .o_mail_client[data-pmk-mail-build="conversation-2"] {
+  body.o_nexus_dark .o_mail_client[data-pmk-mail-build="conversation-3"] {
     .o_mail_client_row.active {
       background: #31382a;
       box-shadow: inset 3px 0 #9eae75;

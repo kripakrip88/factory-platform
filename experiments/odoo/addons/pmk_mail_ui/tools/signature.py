@@ -64,18 +64,43 @@ _INVISIBLE = ".//style|.//script|.//head|.//title"
 _FOLDED = ('.//details[contains(concat(" ", normalize-space(@class), " "), " %s ")]'
            % quote_fold.FOLD_CLASS)
 _DISPLAY_SIGNATURE = re.compile(
-    r"gmail_signature|moz-signature|yahoo-signature|ms-outlook-mobile-signature|id\s*=\s*['\"]Signature['\"]",
+    r"gmail_signature|moz-signature|yahoo-signature|ms-outlook-mobile-signature|o_mail_client_signature|id\s*=\s*['\"]Signature['\"]",
     re.IGNORECASE,
 )
-_SIGNATURE_CLASSES = frozenset({"gmail_signature", "moz-signature", "yahoo-signature", "ms-outlook-mobile-signature"})
+_SIGNATURE_CLASSES = frozenset({"gmail_signature", "moz-signature", "yahoo-signature", "ms-outlook-mobile-signature", "o_mail_client_signature"})
 _QUOTE_CLASSES = frozenset({quote_fold.FOLD_CLASS, "gmail_quote", "gmail_quote_container", "moz-cite-prefix"})
 _SPACES = re.compile(r"[ \t\r\f\v   ]+")
 MAX_CHARS = 1024 * 1024
 
 
-def fold_for_display(html_text, label):
-    """Collapse explicit mail client signature blocks without guessing from text."""
-    if not html_text or len(html_text) > MAX_CHARS or not _DISPLAY_SIGNATURE.search(html_text):
+_BRANDED_SIGNATURE = re.compile(r"пмк[\s«»\"-]*парк|pmkpark(?:@mail\.ru|\.(?:ru|com))", re.I)
+_SIGNOFF = re.compile(r"с уважением[,.:!\s]*", re.I)
+
+
+def _is_branded_outgoing_signature(node):
+    """Mail.ru does not always mark the company's own signature in HTML."""
+    if node.tag != "div" or node.text and node.text.strip():
+        return False
+    children = list(node)
+    if not 5 <= len(children) <= 14:
+        return False
+    if any(child.tag not in {"div", "p", "br"} or (child.tail or "").strip() for child in children):
+        return False
+    parts = [" ".join(child.text_content().split()) for child in children]
+    visible = [part for part in parts if part]
+    if len(visible) < 4 or not _SIGNOFF.fullmatch(visible[0]) or max(map(len, visible)) > 100:
+        return False
+    if node.xpath(".//table | .//blockquote | .//details | .//ul | .//ol"):
+        return False
+    text = " ".join(visible)
+    return bool(children[-1].xpath(".//img") and _BRANDED_SIGNATURE.search(text) and signature_phone(visible))
+
+
+def fold_for_display(html_text, label, outgoing=False):
+    """Collapse marked signatures and the known template of our outgoing mail."""
+    if not html_text or len(html_text) > MAX_CHARS:
+        return html_text
+    if not _DISPLAY_SIGNATURE.search(html_text) and not (outgoing and _BRANDED_SIGNATURE.search(html_text)):
         return html_text
     try:
         root = lxml_html.fragment_fromstring(html_text, create_parent="div")
@@ -83,11 +108,12 @@ def fold_for_display(html_text, label):
         for node in root.iterdescendants("div", "p", "pre", "table", "section"):
             classes = set(node.get("class", "").lower().split())
             if not (classes & _SIGNATURE_CLASSES or node.get("data-smartmail") == "gmail_signature"
-                    or node.get("id") == "Signature"):
+                    or node.get("id") == "Signature"
+                    or outgoing and _is_branded_outgoing_signature(node)):
                 continue
             if any(parent.tag in {"details", "blockquote"} or
                    set(parent.get("class", "").lower().split()) & _QUOTE_CLASSES or
-                   parent in candidates for parent in node.iterancestors()):
+                   "mail-quote-collapse" in parent.get("class", "").lower() or parent in candidates for parent in node.iterancestors()):
                 continue
             if not node.text_content().strip() and not node.xpath(".//img"):
                 continue

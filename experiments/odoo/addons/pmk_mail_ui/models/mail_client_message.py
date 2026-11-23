@@ -372,7 +372,7 @@ class MailClientMessage(models.Model):
         """
         self.ensure_one()
         folded, rule = quote_fold.fold_quotes(body, self.subject)
-        displayed = signature.fold_for_display(folded, _("Подпись"))
+        displayed = signature.fold_for_display(folded, _("Подпись"), outgoing=self._is_outgoing())
         if not rule and displayed is folded:
             return body
         if self.images_allowed:

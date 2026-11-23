@@ -112,6 +112,15 @@ export class ReadingPane extends Component {
             },
             () => [this.props.detail?.id]
         );
+        useEffect(
+            () => {
+                const scroller = this.scrollerRef.el;
+                if (this.props.draft && scroller) {
+                    scroller.scrollTop = scroller.scrollHeight;
+                }
+            },
+            () => [this.props.draft?.id]
+        );
     }
 
     /**
