@@ -72,6 +72,13 @@
                             t-on-click="() => props.onBack()">
                         <i class="fa fa-arrow-left" aria-hidden="true"/>
                     </button>
+                    <button t-if="props.layout !== 'phone' and props.onToggleLayout"
+                            type="button" class="btn btn-sm btn-light flex-shrink-0 pmk-mail-expand"
+                            t-att-title="props.layout === 'full' ? 'Вернуть список' : 'На весь экран'"
+                            t-att-aria-label="props.layout === 'full' ? 'Вернуть список' : 'На весь экран'"
+                            t-on-click="() => props.onToggleLayout()">
+                        <i class="fa" t-att-class="props.layout === 'full' ? 'fa-columns' : 'fa-expand'" aria-hidden="true"/>
+                    </button>
                     <div class="o_mail_client_subject text-truncate"
                          t-att-title="props.detail.subject"
                          t-esc="props.detail.subject"/>
@@ -138,7 +145,7 @@
 
                 <!-- ПРАВКА ПМК (шаг 20): письмо без переписки — карточка MessageCard
                      (та же разметка шага 17, блоки прямо в окне прокрутки),
-                     переписка — лента Conversation, новые сверху. -->
+                     переписка — лента Conversation, новые снизу. -->
                 <div class="o_mail_client_reading_scroll flex-grow-1" t-ref="scroller">
                     <t t-if="threadCount">
                         <t t-call="mail_client.ReadingPaneContact"/>
@@ -159,39 +166,39 @@
                             <t t-call="mail_client.ReadingPaneContact"/>
                         </t>
                     </MessageCard>
-                </div>
 
-                <!-- ПРАВКА ПМК (редизайн почты, шаг 6; доска №40): ответ —
-                     внизу окна чтения, письмо видно над ним. Пока ответа
-                     нет — строка «Ответить …»: щелчок = кнопка «Ответить». -->
-                <div class="o_mail_client_reply_dock flex-shrink-0">
-                    <Composer t-if="props.draft" t-key="props.draft.id"
-                              draft="props.draft" inline="true"
-                              onClose="props.onCloseDraft"
-                              onSent="props.onDraftSent"
-                              onExpand="props.onExpandDraft"
-                              onFlushed="props.onDraftFlushed"/>
-                    <!-- ПРАВКА ПМК (почта проще, 25.10.2026): «Всем» и «Переслать»
-                         — здесь же, справа от строки ответа; клавиши R / A / F.
-                         На НАШЕЙ строке с лентой «Ответить / Всем» — на последнее
-                         письмо клиента (replyTargetId), а не нам же. -->
-                    <div t-else="" class="o_mail_client_reply_bar d-flex align-items-center">
-                        <button type="button"
-                                class="o_mail_client_reply_stub text-start text-muted flex-grow-1"
-                                data-mc-key="r" aria-keyshortcuts="R"
-                                t-on-click="() => props.onReply('reply', replyTargetId)">
-                            <i class="fa fa-reply me-2" aria-hidden="true"/><t t-esc="replyStubLabel"/>
-                        </button>
-                        <button type="button" class="o_mail_client_reply_alt"
-                                data-mc-key="a" aria-keyshortcuts="A" title="Ответить всем"
-                                t-on-click="() => props.onReply('reply_all', replyTargetId)">
-                            <i class="fa fa-reply-all me-1" aria-hidden="true"/>Всем
-                        </button>
-                        <button type="button" class="o_mail_client_reply_alt"
-                                data-mc-key="f" aria-keyshortcuts="F" title="Переслать"
-                                t-on-click="() => props.onReply('forward')">
-                            <i class="fa fa-share me-1" aria-hidden="true"/>Переслать
-                        </button>
+                    <!-- ПРАВКА ПМК (редизайн почты, шаг 6; доска №40): ответ —
+                         внизу окна чтения, письмо видно над ним. Пока ответа
+                         нет — строка «Ответить …»: щелчок = кнопка «Ответить». -->
+                    <div class="o_mail_client_reply_dock flex-shrink-0">
+                        <Composer t-if="props.draft" t-key="props.draft.id"
+                                  draft="props.draft" inline="true"
+                                  onClose="props.onCloseDraft"
+                                  onSent="props.onDraftSent"
+                                  onExpand="props.onExpandDraft"
+                                  onFlushed="props.onDraftFlushed"/>
+                        <!-- ПРАВКА ПМК (почта проще, 25.10.2026): «Всем» и «Переслать»
+                             — здесь же, справа от строки ответа; клавиши R / A / F.
+                             На НАШЕЙ строке с лентой «Ответить / Всем» — на последнее
+                             письмо клиента (replyTargetId), а не нам же. -->
+                        <div t-else="" class="o_mail_client_reply_bar d-flex align-items-center">
+                            <button type="button"
+                                    class="o_mail_client_reply_stub text-start text-muted flex-grow-1"
+                                    data-mc-key="r" aria-keyshortcuts="R"
+                                    t-on-click="() => props.onReply('reply', replyTargetId)">
+                                <i class="fa fa-reply me-2" aria-hidden="true"/><t t-esc="replyStubLabel"/>
+                            </button>
+                            <button type="button" class="o_mail_client_reply_alt"
+                                    data-mc-key="a" aria-keyshortcuts="A" title="Ответить всем"
+                                    t-on-click="() => props.onReply('reply_all', replyTargetId)">
+                                <i class="fa fa-reply-all me-1" aria-hidden="true"/>Всем
+                            </button>
+                            <button type="button" class="o_mail_client_reply_alt"
+                                    data-mc-key="f" aria-keyshortcuts="F" title="Переслать"
+                                    t-on-click="() => props.onReply('forward')">
+                                <i class="fa fa-share me-1" aria-hidden="true"/>Переслать
+                            </button>
+                        </div>
                     </div>
                 </div>
             </t>

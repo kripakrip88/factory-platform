@@ -26,6 +26,17 @@
      t-inherit="mail_client.ReadingPane"
      t-inherit-mode="extension">
 
+    <xpath expr="//div[hasclass('o_mail_client_reading_scroll')]" position="before">
+      <div t-if="pmkCurrentDeal" class="pmk-mail-current-deal">
+        <button type="button" class="btn btn-link btn-sm pmk-mail-current-deal-link"
+                t-on-click="() => this.pmkOpenCurrentDeal()">
+          <i class="fa fa-link me-1" aria-hidden="true"/>
+          <t t-esc="pmkCurrentDeal.number or pmkCurrentDeal.name"/>
+        </button>
+        <span t-if="pmkCurrentDeal.stage" class="text-muted" t-esc="pmkCurrentDeal.stage"/>
+      </div>
+    </xpath>
+
     <xpath expr="//div[hasclass('o_mail_client_toolbar')]/div[hasclass('vr')]" position="before">
       <Dropdown t-if="pmkWorkMenu" position="'bottom-end'" menuClass="'pmk-mail-work-menu'">
         <button class="btn btn-sm btn-primary flex-shrink-0 pmk-mail-lead"

@@ -1,0 +1,164 @@
+// Layout is scoped to the mail action. Message iframes keep their own styling.
+.o_mail_client[data-pmk-mail-build="conversation-1"] {
+  .o_mail_client_row.active {
+    background: #edf1e6;
+    box-shadow: inset 3px 0 #6c803f;
+  }
+
+  .pmk-mail-sender {
+    color: var(--bs-secondary-color);
+    font-size: .75rem;
+    line-height: 1.35;
+  }
+
+  .pmk-mail-row-context {
+    margin-top: .17rem;
+  }
+
+  .pmk-mail-deal {
+    border: 1px solid #ccd6bb;
+    border-radius: 5px;
+    color: #4e602f;
+    background: transparent;
+    font-size: .72rem;
+    font-weight: 650;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .pmk-mail-deal--archived {
+    color: var(--bs-secondary-color);
+  }
+
+  .o_mail_client_await.o_await_us {
+    color: #694a1b;
+    background-color: #f8eed7;
+  }
+
+  .pmk-mail-current-deal {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0 .5rem;
+    padding: .2rem 1rem;
+    border-bottom: 1px solid var(--mc-border);
+    font-size: .8125rem;
+  }
+
+  .pmk-mail-current-deal-link {
+    padding-inline: .25rem;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    text-align: left;
+    color: #4e602f;
+  }
+
+  .o_mail_client_conv {
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+    padding: .65rem .75rem;
+  }
+
+  .o_mail_client_conv_card,
+  .o_mail_client_conv_row {
+    align-self: flex-start;
+    width: min(93%, 46rem) !important;
+    min-width: 0;
+    border: 1px solid var(--mc-border);
+    border-radius: .625rem;
+    background-color: var(--bs-body-bg);
+  }
+
+  .o_mail_client_conv_card.is-ours,
+  .o_mail_client_conv_row.is-ours {
+    align-self: flex-end;
+    background: #edf0f4;
+  }
+
+  .o_mail_client_conv_row:hover,
+  .o_mail_client_conv_row:focus-visible {
+    background: var(--mc-hover-bg);
+  }
+
+  .o_mail_client_conv_more {
+    align-self: center;
+    width: auto !important;
+    border-bottom: 0;
+  }
+
+  .o_mail_client_conv_card .o_mail_client_reading_header,
+  .o_mail_client_conv_row {
+    padding-inline: .7rem !important;
+  }
+
+  .o_mail_client_conv_card > .px-4 {
+    padding-inline: .7rem !important;
+  }
+
+  .o_mail_client_conv_card .o_mail_client_from_text {
+    min-width: 0;
+  }
+
+  .o_mail_client_frame_wrap {
+    flex: none;
+  }
+
+  .o_mail_client_reply_dock {
+    margin: .4rem .75rem .75rem;
+    border: 1px solid var(--mc-border);
+    border-radius: .625rem;
+    background: var(--bs-body-bg);
+  }
+
+  .o_mail_client_editor_bar,
+  .o_mail_client_editor_bar > .btn-group {
+    flex-wrap: wrap;
+  }
+
+  .o_mail_client_composer_inline .o_mail_client_editor {
+    min-height: 8rem;
+  }
+
+  .o_mail_client_list.o_compact .pmk-mail-row-context {
+    margin: 0;
+  }
+
+  @media (max-width: 575.98px) {
+    .o_mail_client_conv {
+      padding-inline: .5rem;
+    }
+
+    .o_mail_client_conv_card,
+    .o_mail_client_conv_row {
+      width: 96% !important;
+    }
+  }
+}
+
+@media screen {
+  body.o_nexus_dark .o_mail_client[data-pmk-mail-build="conversation-1"] {
+    .o_mail_client_row.active {
+      background: #31382a;
+      box-shadow: inset 3px 0 #9eae75;
+    }
+
+    .pmk-mail-deal:not(.pmk-mail-deal--archived),
+    .pmk-mail-current-deal-link {
+      color: #d4e0af;
+      border-color: #536044;
+    }
+
+    .o_mail_client_await.o_await_us {
+      background: #473b26;
+      color: #f0d49c;
+    }
+
+    .o_mail_client_conv_card.is-ours,
+    .o_mail_client_conv_row.is-ours {
+      background: #303641;
+    }
+  }
+}

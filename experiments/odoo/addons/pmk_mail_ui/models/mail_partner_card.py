@@ -143,6 +143,7 @@ class MailClientMessage(models.Model):
             "deals": [{
                 "id": deal.id,
                 "name": deal.name,
+                "number": deal.pmk_number if "pmk_number" in deal._fields else False,
                 "stage": deal.stage_id.name or "",
                 "amount": format_amount(self.env, deal.expected_revenue, deal.company_currency or currency)
                           if deal.expected_revenue else "",

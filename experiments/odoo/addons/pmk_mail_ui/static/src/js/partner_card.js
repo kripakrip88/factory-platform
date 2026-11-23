@@ -29,7 +29,7 @@ import { MailClientInbox } from "@mail_client/mail_client_action";
 import { CARD_RELOAD, cardStore } from "./letter_actions";
 import { openFromMail } from "./mail_return";
 
-const PREF = "pmk_mail.partner_card";
+const PREF = "pmk_mail.partner_card.v2";
 // Меню «В работу ▾» над письмом (reading_pane_lead.js, letter_actions.js) шлёт
 // CARD_RELOAD — карточка узнаёт о новом лиде, сделке, контрагенте.
 
@@ -40,9 +40,9 @@ function readOpen() {
             return value === "open";
         }
     } catch {
-        // Хранилище недоступно (приватное окно) — по ширине экрана.
+        // Хранилище недоступно (приватное окно).
     }
-    return window.innerWidth >= 1280;
+    return false;
 }
 
 function writeOpen(open) {

@@ -78,6 +78,16 @@ patch(ReadingPane.prototype, {
         return this.props.detail && this.pmkCards ? cardFor(this.props.detail.id) : null;
     },
 
+    get pmkCurrentDeal() {
+        return this.pmkCard?.deals?.find((deal) => deal.current);
+    },
+
+    pmkOpenCurrentDeal() {
+        if (this.pmkCurrentDeal) {
+            openFromMail(this.env, "crm.lead", this.pmkCurrentDeal.id, this.props.detail.id);
+        }
+    },
+
     /** Меню «В работу» не пустое: лид/сделка (есть права) или контрагент. */
     get pmkWorkMenu() {
         return Boolean(this.env.pmkCrm || this.pmkCanPartner || this.pmkCard?.partner);

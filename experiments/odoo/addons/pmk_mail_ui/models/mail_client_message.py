@@ -152,6 +152,10 @@ _FRAME_HEAD = (
     "details.pmk-quote>summary::-webkit-details-marker{display:none}"
     "details.pmk-quote>summary:hover{background:#dadce0;color:#3c4043}"
     "details.pmk-quote[open]>summary{margin-bottom:8px}"
+    "details.pmk-signature{margin:8px 0}"
+    "details.pmk-signature>summary{color:#4b535c;cursor:pointer;font-size:12px;"
+    "font-weight:600;width:fit-content}"
+    "details.pmk-signature[open]>summary{margin-bottom:6px}"
     "</style>"
 )
 
@@ -368,11 +372,12 @@ class MailClientMessage(models.Model):
         """
         self.ensure_one()
         folded, rule = quote_fold.fold_quotes(body, self.subject)
-        if not rule:
+        displayed = signature.fold_for_display(folded, _("Подпись"))
+        if not rule and displayed is folded:
             return body
         if self.images_allowed:
-            return self._pmk_block_assets(folded, allow_remote=True)
-        return self._block_remote_assets(folded)
+            return self._pmk_block_assets(displayed, allow_remote=True)
+        return self._block_remote_assets(displayed)
 
     # ------------------------------------------------------------------
     # переписка целиком (разбор «Почта как в Mail.ru», Г9)

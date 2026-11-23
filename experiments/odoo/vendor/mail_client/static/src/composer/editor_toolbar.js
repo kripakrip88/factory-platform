@@ -26,6 +26,9 @@ const BUTTONS = [
     { separator: true },
     { command: "openLinkTools", icon: "fa-link", title: _t("Insert link") },
     { command: "removeFormat", icon: "fa-eraser", title: _t("Clear formatting") },
+    { separator: true },
+    { command: "historyUndo", icon: "fa-undo", title: _t("Undo") },
+    { command: "historyRedo", icon: "fa-repeat", title: _t("Redo") },
 ];
 
 export class EditorToolbar extends Component {

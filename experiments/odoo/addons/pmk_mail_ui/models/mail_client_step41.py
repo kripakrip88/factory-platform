@@ -118,6 +118,7 @@ class MailClientMessage(models.Model):
             "id": lead.id,
             "name": lead.name or "",
             "type": lead.type or "lead",
+            "number": lead.pmk_number if "pmk_number" in lead._fields else False,
             "active": bool(lead.active),
         }
 
@@ -206,7 +207,11 @@ class MailClientMessage(models.Model):
     def _to_list_payload(self):
         rows = super()._to_list_payload()
         leads = self._pmk_thread_leads()
+        companies = self.partner_id.commercial_partner_id._filtered_access("read")
+        company_names = {company.id: company.name for company in companies if company.is_company}
         for message, row in zip(self, rows):
+            if not row["is_outgoing"]:
+                row["pmk_company"] = company_names.get(message.partner_id.commercial_partner_id.id, "")
             names = message._pmk_name_list()
             row["attachment_names"] = names[:ROW_NAMES]
             row["attachment_count"] = len(names)

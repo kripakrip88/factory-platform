@@ -96,8 +96,18 @@ export class ReadingPane extends Component {
         // оно наверх не вернётся.
         useEffect(
             () => {
-                if (this.scrollerRef.el) {
-                    this.scrollerRef.el.scrollTop = 0;
+                const scroller = this.scrollerRef.el;
+                if (!scroller) {
+                    return;
+                }
+                const id = this.props.detail?.id;
+                const selected = scroller.querySelector(`.o_mail_client_conv_card[data-message-id="${id}"]`);
+                scroller.scrollTop = 0;
+                if (selected) {
+                    const offset = selected.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
+                    if (offset > scroller.clientHeight / 2) {
+                        scroller.scrollTop = offset - 12;
+                    }
                 }
             },
             () => [this.props.detail?.id]

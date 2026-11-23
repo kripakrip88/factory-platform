@@ -55,7 +55,7 @@
                                         onUpdate="(value) => this.updateField('email_to', value)"/>
                         <button class="btn btn-sm btn-link text-muted flex-shrink-0 px-2"
                                 t-on-click="() => state.showCc = !state.showCc">
-                            <t t-if="props.inline">Cc, subject</t><t t-else="">Cc/Bcc</t>
+                            <t t-if="props.inline">Копия / скрытая / тема</t><t t-else="">Cc/Bcc</t>
                         </button>
                     </div>
 

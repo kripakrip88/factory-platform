@@ -25,15 +25,26 @@
      t-inherit="mail_client.MessageList"
      t-inherit-mode="extension">
 
-    <xpath expr="//span[hasclass('o_mail_client_marks')]" position="before">
-      <button type="button" t-if="message.pmk_lead"
-              class="btn btn-sm pmk-mail-deal o_mail_client_no_open"
-              t-att-class="{ 'pmk-mail-deal--archived': !message.pmk_lead.active }"
-              t-att-title="pmkDealTitle(message.pmk_lead)"
-              t-att-aria-label="pmkDealTitle(message.pmk_lead)"
-              t-on-click.stop="() => this.pmkOpenLead(message)">
-        <i class="fa fa-handshake-o" aria-hidden="true"/>
-      </button>
+    <xpath expr="//span[hasclass('o_mail_client_who')][@t-else]" position="attributes">
+      <attribute name="t-esc">message.pmk_company or sender(message)</attribute>
+    </xpath>
+    <xpath expr="//div[hasclass('o_mail_client_line2')][span[hasclass('o_mail_client_row_subject')]]" position="before">
+      <div class="pmk-mail-sender text-truncate" t-if="message.pmk_company and message.pmk_company !== sender(message)">
+        <t t-esc="sender(message)"/>
+      </div>
+    </xpath>
+    <xpath expr="//div[hasclass('o_mail_client_line2')][span[hasclass('o_mail_client_row_subject')]]" position="after">
+      <div class="pmk-mail-row-context" t-if="message.pmk_lead">
+        <button type="button" class="btn btn-sm pmk-mail-deal o_mail_client_no_open"
+                t-att-class="{ 'pmk-mail-deal--archived': !message.pmk_lead.active }"
+                t-att-title="pmkDealTitle(message.pmk_lead)"
+                t-att-aria-label="pmkDealTitle(message.pmk_lead)"
+                t-on-click.stop="() => this.pmkOpenLead(message)">
+          <i class="fa fa-link me-1" aria-hidden="true"/>
+          <t t-esc="message.pmk_lead.type === 'opportunity' ? 'Сделка' : 'Лид'"/>
+          <t t-if="message.pmk_lead.number" t-esc="' ' + message.pmk_lead.number"/>
+        </button>
+      </div>
     </xpath>
 
     <!-- 25.10.2026 (почта проще): значок «Создать лида» у строки убран — лид
