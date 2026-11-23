@@ -1,5 +1,5 @@
 // Layout is scoped to the mail action. Message iframes keep their own styling.
-.o_mail_client[data-pmk-mail-build="conversation-1"] {
+.o_mail_client[data-pmk-mail-build="conversation-2"] {
   .o_mail_client_row.active {
     background: #edf1e6;
     box-shadow: inset 3px 0 #6c803f;
@@ -65,7 +65,8 @@
   .o_mail_client_conv_card,
   .o_mail_client_conv_row {
     align-self: flex-start;
-    width: min(93%, 46rem) !important;
+    width: 93% !important;
+    max-width: 46rem;
     min-width: 0;
     border: 1px solid var(--mc-border);
     border-radius: .625rem;
@@ -114,7 +115,7 @@
   }
 
   .o_mail_client_editor_bar,
-  .o_mail_client_editor_bar > .btn-group {
+  .o_mail_client_editor_toolbar {
     flex-wrap: wrap;
   }
 
@@ -139,7 +140,7 @@
 }
 
 @media screen {
-  body.o_nexus_dark .o_mail_client[data-pmk-mail-build="conversation-1"] {
+  body.o_nexus_dark .o_mail_client[data-pmk-mail-build="conversation-2"] {
     .o_mail_client_row.active {
       background: #31382a;
       box-shadow: inset 3px 0 #9eae75;

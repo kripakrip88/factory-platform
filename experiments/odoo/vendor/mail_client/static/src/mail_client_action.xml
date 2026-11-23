@@ -16,7 +16,7 @@
            остаются значки (mail_client.scss). -->
     <t t-name="mail_client.Inbox">
         <div class="o_mail_client d-flex flex-column h-100" t-ref="root"
-             data-pmk-mail-build="conversation-1"
+             data-pmk-mail-build="conversation-2"
              t-att-class="layoutClass" t-att-style="paneStyle">
             <!-- ПРАВКА ПМК (почта проще, 25.10.2026; Антон: «очень много кнопок,
                  в которых путаешься»): в строке — «Написать», поиск с меню
