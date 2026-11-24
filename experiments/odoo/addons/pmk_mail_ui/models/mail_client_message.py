@@ -310,7 +310,13 @@ class MailClientMessage(models.Model):
         result = super().get_message_detail(message_id)
         if result.get("body"):
             # Доступ проверен в super(); тема и «картинки разрешены» — полями.
-            result["body"] = self.browse(message_id)._pmk_fold_quotes(result["body"])
+            has_document = any(
+                attachment["content_type"] and not attachment["content_type"].lower().startswith("image/")
+                for attachment in result["attachments"]
+            )
+            result["body"] = self.browse(message_id)._pmk_fold_quotes(
+                result["body"], has_document=has_document,
+            )
         body = result.get("body") or ""
         if "cid:" not in body:
             return result
@@ -356,7 +362,7 @@ class MailClientMessage(models.Model):
         ]
         return result
 
-    def _pmk_fold_quotes(self, body):
+    def _pmk_fold_quotes(self, body, *, has_document=False):
         """Цитата письма — под «···» (шаг 20 плана, В2, 30.09.2026).
 
         Правила — в tools/quote_fold.py (чистая функция, при сомнении не
@@ -371,7 +377,7 @@ class MailClientMessage(models.Model):
         второй раз не совпадает. Без свёртки строка возвращается как есть.
         """
         self.ensure_one()
-        folded, rule = quote_fold.fold_quotes(body, self.subject)
+        folded, rule = quote_fold.fold_quotes(body, self.subject, has_document=has_document)
         displayed = signature.fold_for_display(folded, _("Подпись"), outgoing=self._is_outgoing())
         if not rule and displayed is folded:
             return body

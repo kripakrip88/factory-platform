@@ -282,6 +282,19 @@ class TestQuoteRules(unittest.TestCase):
         self.assertIn("Просим прислать прайс", inside)
         self.assertNotIn("Добрый день! Цены в магазине", inside)
 
+    def test_outlook_attachment_reply_folds_the_duplicated_text(self):
+        body = (
+            '<p>&nbsp;</p><div style="border-top:solid #E1E1E1 1pt">'
+            '<p><b>From:</b> seller@example.org<br><b>Sent:</b> Monday, 10:00<br>'
+            '<b>To:</b> buyer@example.org<br><b>Subject:</b> Quote</p></div>'
+            '<p>Here is our earlier quote.</p>'
+        )
+        folded, rule = fold_quotes(body, "Re: Quote", has_document=True)
+        self.assertEqual(rule, "outlook")
+        self.assertLess(folded.index("<details"), folded.index("Here is our earlier quote."))
+        self.assertEqual(fold_quotes(body, "Re: Quote"), (body, None))
+        self.assertEqual(fold_quotes(body, "Fwd: Quote", has_document=True), (body, None))
+
     def test_mailru_app_keeps_the_bare_header_visible(self):
         body = next(case[1] for case in CASES if case[0].startswith("mail.ru приложение"))
         out, _rule = fold_quotes(body)

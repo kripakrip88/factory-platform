@@ -43,7 +43,8 @@ Chrome находит текст и в закрытом <details> и раскр�
 ПРИ СОМНЕНИИ — НЕ СВОРАЧИВАТЬ:
   - тема письма начинается с «Fwd:/Fw:» или перед цитатой (или в её начале)
     стоит признак пересылки: пересланное письмо — это и есть содержание;
-  - вне цитаты нет видимого текста (письмо — сплошная цитата);
+  - вне цитаты нет видимого текста (письмо — сплошная цитата). В окне чтения
+    у ответа Outlook цитату можно свернуть, если виден приложенный документ;
   - после цитаты видимый текст, а за ним снова цитата — ответы между
     цитатами. Подпись или ответ ПОСЛЕ единственной цитаты свёртке не мешают;
   - голый blockquote без шапки — это отступ (Word, Gmail), не цитата;
@@ -117,11 +118,12 @@ _BLOCK_PARENTS = frozenset({
 _BLANK_TAGS = frozenset({"br", "div", "p"})
 
 
-def fold_quotes(html_text, subject=None):
+def fold_quotes(html_text, subject=None, *, has_document=False):
     """Свернуть цитату письма. -> (html, правило | None).
 
     Ничего не свернули — возвращается исходная строка (тот же объект).
     subject — тема письма: «Fwd:/Fw:» в начале значит пересылку.
+    has_document — рядом с телом виден файл, приложенный к ответу.
     """
     if not html_text or len(html_text) > MAX_CHARS:
         return html_text, None
@@ -131,12 +133,12 @@ def fold_quotes(html_text, subject=None):
     if subject and _FWD_SUBJECT.match(subject):
         return html_text, None
     try:
-        return _fold(html_text, text)
+        return _fold(html_text, text, has_document)
     except (etree.LxmlError, ValueError, TypeError, RecursionError):
         return html_text, None
 
 
-def _fold(original, text):
+def _fold(original, text, has_document):
     root = lxml_html.fragment_fromstring(text, create_parent="div")
     found = _first_candidate(root)
     if not found:
@@ -162,7 +164,8 @@ def _fold(original, text):
         return original, None
     if _FWD_TEXT.search(before[-600:]) or _FWD_TEXT.search(inside[:300]):
         return original, None
-    if len(_WORD.findall(before + after)) < 2:
+    attachment_reply = has_document and rule in {'outlook', 'owa'}
+    if not attachment_reply and len(_WORD.findall(before + after)) < 2:
         return original, None
 
     details = etree.Element("details", {"class": FOLD_CLASS, "data-pmk-rule": rule})
